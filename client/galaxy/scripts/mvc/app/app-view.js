@@ -10,10 +10,12 @@ define([
     'mvc/ui/ui-misc',
     'mvc/ui/ui-modal',
     'mvc/user/user-quotameter',
+    'galaxy.panels',
     'mvc/app/app-login',
     'mvc/app/app-analysis'
-], function( Utils, Masthead, Menu, Frame, Portlet, Ui, Modal, QuotaMeter, Login, Analysis ) {
+], function( Utils, Masthead, Menu, Frame, Portlet, Ui, Modal, QuotaMeter, Panel, Login, Analysis ) {
     console.debug( 'loading app-view' );
+    console.debug( 'panel:', Panel );
 
     return Backbone.View.extend({
         initialize: function( options ) {
@@ -31,7 +33,6 @@ define([
 
             // configure body
             $( 'body' ).append( this.$el );
-            ensure_dd_helper();
 
             // adjust parent container
             var $container = $( this.$el.parent() ).attr( 'scroll', 'no' ).addClass( 'full-content' );

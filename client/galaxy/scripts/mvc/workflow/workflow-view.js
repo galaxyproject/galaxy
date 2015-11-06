@@ -1,6 +1,49 @@
 define('mvc/workflow/workflow-globals', {});
-define(['utils/utils', 'mvc/workflow/workflow-globals', 'mvc/workflow/workflow-manager', 'mvc/workflow/workflow-canvas', 'mvc/workflow/workflow-node', 'mvc/tools/tools-form-workflow'],
-    function( Utils, Globals, Workflow, WorkflowCanvas, Node, ToolsForm ){
+define([
+    'utils/utils',
+    'mvc/workflow/workflow-globals',
+    'mvc/workflow/workflow-manager',
+    'mvc/workflow/workflow-canvas',
+    'mvc/workflow/workflow-node',
+    'mvc/tools/tools-form-workflow',
+    'utils/async-save-text',
+], function( Utils, Globals, Workflow, WorkflowCanvas, Node, ToolsForm, async_save_text ){
+
+// Reset tool search to start state.
+function reset_tool_search( initValue ) {
+    // Function may be called in top frame or in tool_menu_frame;
+    // in either case, get the tool menu frame.
+    var tool_menu_frame = $("#galaxy_tools").contents();
+    if (tool_menu_frame.length === 0) {
+        tool_menu_frame = $(document);
+    }
+
+    // Remove classes that indicate searching is active.
+    $(this).removeClass("search_active");
+    tool_menu_frame.find(".toolTitle").removeClass("search_match");
+
+    // Reset visibility of tools and labels.
+    tool_menu_frame.find(".toolSectionBody").hide();
+    tool_menu_frame.find(".toolTitle").show();
+    tool_menu_frame.find(".toolPanelLabel").show();
+    tool_menu_frame.find(".toolSectionWrapper").each( function() {
+        if ($(this).attr('id') !== 'recently_used_wrapper') {
+            // Default action.
+            $(this).show();
+        } else if ($(this).hasClass("user_pref_visible")) {
+            $(this).show();
+        }
+    });
+    tool_menu_frame.find("#search-no-results").hide();
+
+    // Reset search input.
+    tool_menu_frame.find("#search-spinner").hide();
+    if (initValue) {
+        var search_input = tool_menu_frame.find("#tool-search-query");
+        search_input.val("search tools");
+    }
+}
+
     // create form view
     return Backbone.View.extend({
         initialize: function(options) {
@@ -381,17 +424,15 @@ define(['utils/utils', 'mvc/workflow/workflow-globals', 'mvc/workflow/workflow-m
             });
 
             // Rename async.
-            if (window.async_save_text) {
-                async_save_text("workflow-name", "workflow-name", self.urls.rename_async, "new_name");
+            async_save_text("workflow-name", "workflow-name", self.urls.rename_async, "new_name");
 
-                // Tag async. Simply have the workflow edit element generate a click on the tag element to activate tagging.
-                $('#workflow-tag').click( function() {
-                    $('.tag-area').click();
-                    return false;
-                });
-                // Annotate async.
-                async_save_text("workflow-annotation", "workflow-annotation", self.urls.annotate_async, "new_annotation", 25, true, 4);
-            }
+            // Tag async. Simply have the workflow edit element generate a click on the tag element to activate tagging.
+            $('#workflow-tag').click( function() {
+                $('.tag-area').click();
+                return false;
+            });
+            // Annotate async.
+            async_save_text("workflow-annotation", "workflow-annotation", self.urls.annotate_async, "new_annotation", 25, true, 4);
         },
 
         // Global state for the whole workflow
@@ -657,7 +698,7 @@ define(['utils/utils', 'mvc/workflow/workflow-globals', 'mvc/workflow/workflow-m
             }
             var title = $("<div class='toolFormTitle unselectable'>" + title_text + "</div>" );
             f.append( title );
-            f.css( "left", $(window).scrollLeft() + 20 ); f.css( "top", $(window).scrollTop() + 20 );    
+            f.css( "left", $(window).scrollLeft() + 20 ); f.css( "top", $(window).scrollTop() + 20 );
             var b = $("<div class='toolFormBody'></div>");
             var tmp = "<div><img height='16' align='middle' src='" + galaxy_config.root + "static/images/loading_small_white_bg.gif'/> loading tool info...</div>";
             b.append( tmp );

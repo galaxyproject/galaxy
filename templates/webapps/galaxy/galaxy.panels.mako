@@ -56,11 +56,8 @@
     ## load jscript libraries
     ${h.js(
         ## TODO: remove when all libs are required directly in modules
-        'bundled/vendor.bundled',
+        'bundled/libs.bundled',
     )}
-    <script type="text/javascript">
-        console.debug( 'jQuery:', jQuery )
-    </script>
     ${h.js(
        'libs/jquery/jquery-ui',
        'libs/d3',
@@ -149,8 +146,6 @@
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout
     <script type="text/javascript">
-
-        ensure_dd_helper();
 
         ## configure left panel
         %if self.galaxy_config['left_panel']:
@@ -247,8 +242,9 @@
                 </div>
             %endif
         </div>
+        <div id='DD-helper' style="display: none;"></div>
+        ## Scripts can be loaded later since they progressively add features to
+        ## the panels, but do not change layout
+        ${self.late_javascripts()}
     </body>
-    ## Scripts can be loaded later since they progressively add features to
-    ## the panels, but do not change layout
-    ${self.late_javascripts()}
 </html>

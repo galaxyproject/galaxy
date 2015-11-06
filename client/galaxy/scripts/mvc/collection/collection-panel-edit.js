@@ -3,7 +3,8 @@ define([
     "mvc/collection/collection-model",
     "mvc/collection/collection-li-edit",
     "mvc/base-mvc",
-    "utils/localization"
+    "utils/localization",
+    "ui/editable-text",
 ], function( DC_PANEL, DC_MODEL, DC_EDIT, BASE_MVC, _l ){
 /* =============================================================================
 TODO:

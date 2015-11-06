@@ -14,6 +14,7 @@ define([
             this.options = Utils.merge( options, {} );
             this.setElement( this._template() );
             var self = this;
+
             this.$( '#galaxy_main' ).on( 'load', function() {
                 var location = this.contentWindow && this.contentWindow.location;
                 if ( location && location.host ) {
@@ -28,6 +29,7 @@ define([
                     });
                 }
             });
+
             var params = $.extend( {}, Galaxy.params );
             if ( params.tool_id !== 'upload1' && ( params.tool_id || params.job_id ) ) {
                 params.tool_id && ( params.id = params.tool_id );

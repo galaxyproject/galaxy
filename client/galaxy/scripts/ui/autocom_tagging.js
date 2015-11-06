@@ -12,7 +12,7 @@ function init_tag_click_function(tag_elt, click_func) {
             var tag_str = $(this).text();
             var tag_name_and_value = tag_str.split(":");
             click_func(tag_name_and_value[0], tag_name_and_value[1]);
-            return true;            
+            return true;
         });
     });
 }
@@ -20,9 +20,9 @@ function init_tag_click_function(tag_elt, click_func) {
 jQuery.fn.autocomplete_tagging = function(options) {
 
     var defaults = {
-        get_toggle_link_text_fn: function(tags) { 
+        get_toggle_link_text_fn: function(tags) {
             var text = "";
-            var num_tags = obj_length(tags);
+            var num_tags = _.size(tags);
             if (num_tags > 0) {
                 text = num_tags + (num_tags > 1 ? " Tags" : " Tag");
             } else {
@@ -52,7 +52,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
     // Initalize object's elements.
     //
 
-    // Get elements for this object. For this_obj, assume the last element with the id is the "this"; this is somewhat of a hack to address the problem 
+    // Get elements for this object. For this_obj, assume the last element with the id is the "this"; this is somewhat of a hack to address the problem
     // that there may be two tagging elements for a single item if there are both community and individual tags for an element.
     var this_obj = $(this);
     var tag_area = this_obj.find('.tag-area');
@@ -93,7 +93,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
             ( e.keyCode === 13 ) || // Return Key
             ( e.keyCode === 188 ) || // Comma
             ( e.keyCode === 32 ) // Space
-        ) {   
+        ) {
             //
             // Check input.
             //
@@ -110,7 +110,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
             if ( (e.keyCode === 188) || (e.keyCode === 32) ) {
                 new_value = new_value.substring( 0 , new_value.length - 1 );
             }
-            
+
             // Trim whitespace.
             new_value = $.trim(new_value);
 
@@ -134,7 +134,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
             } else {
                 tag_area.prepend(new_tag_button);
             }
-            
+
             // Add tag to internal list.
             var tag_name_and_value = new_value.split(":");
             settings.tags[tag_name_and_value[0]] = tag_name_and_value[1];
@@ -182,7 +182,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
     this_obj.find('.delete-tag-img').each(function() {
         init_delete_tag_image( $(this) );
     });
-    
+
 
     // Initialize tag click function.
     init_tag_click_function($(this), settings.tag_click_fn);
@@ -195,14 +195,14 @@ jQuery.fn.autocomplete_tagging = function(options) {
         tag_area.click();
         return false;
     });
-    
+
     //
     // Set up tag area interactions; these are needed only if tags are editable.
     //
     if (settings.editable) {
         // When the tag area blurs, go to "view tag" mode.
         tag_area.bind("blur", function(e) {
-            if (obj_length(settings.tags) > 0) {
+            if (_.size(settings.tags) > 0) {
                 add_tag_button.show();
                 tag_input_field.hide();
                 tag_area.removeClass("active-tag-area");
@@ -225,11 +225,11 @@ jQuery.fn.autocomplete_tagging = function(options) {
             if ($(e.target).hasClass("tag-name") && !is_active) {
                 return false;
             }
-            
+
             // Remove tooltip.
             // $(this).removeClass("tooltip");
 
-            // Hide add tag button, show tag_input field. Change background to show 
+            // Hide add tag button, show tag_input field. Change background to show
             // area is active.
             $(this).addClass("active-tag-area");
             add_tag_button.hide();
@@ -271,7 +271,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
     // Helper functions.
     //
 
-    //  
+    //
     // Collapse tag name + value into a single string.
     //
     function build_tag_str(tag_name, tag_value) {
@@ -312,7 +312,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
             $.ajax({
                 url: settings.ajax_delete_tag_url,
                 data: { tag_name: tag_name },
-                error: function() { 
+                error: function() {
                     // Failed. Roll back changes and show alert.
                     settings.tags[tag_name] = tag_value;
                     if (prev_button.hasClass("tag-button")) {
@@ -328,7 +328,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
                     delete_img.mouseenter( function () {
                         $(this).attr("src", settings.delete_tag_img_rollover);
                     });
-                    delete_img.mouseleave( function () {	
+                    delete_img.mouseleave( function () {
                         $(this).attr("src", settings.delete_tag_img);
                     });
                 },
@@ -346,7 +346,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
         // Build "delete tag" image.
         var delete_img = $("<img/>").attr("src", settings.delete_tag_img).addClass("delete-tag-img");
         init_delete_tag_image(delete_img);
-        
+
         // Build tag button.
         var tag_name_elt = $("<span>").text(tag_str).addClass("tag-name");
         tag_name_elt.click( function() {

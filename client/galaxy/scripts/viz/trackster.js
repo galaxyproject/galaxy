@@ -19,7 +19,8 @@ require(
     'libs/jquery/select2',
     'libs/farbtastic',
     'libs/jquery/jquery.form',
-    'libs/jquery/jquery.rating'
+    'libs/jquery/jquery.rating',
+    "ui/editable-text",
 ], function(mod_utils, mod_icon_btn)
 {
     // load css

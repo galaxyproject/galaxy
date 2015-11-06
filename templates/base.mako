@@ -47,7 +47,7 @@
     ${h.js(
         'libs/require',
         ## TODO: remove when all libs are required directly in modules
-        'bundled/vendor.bundled',
+        'bundled/libs.bundled',
     )}
 
     <script type="text/javascript">

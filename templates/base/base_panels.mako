@@ -53,7 +53,7 @@
     ${h.js(
         'libs/require',
         ## TODO: remove when all libs are required directly in modules
-        'bundled/vendor.bundled'
+        'bundled/libs.bundled',
     )}
 
     <script type="text/javascript">
@@ -112,8 +112,6 @@
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout
     <script type="text/javascript">
-
-    ensure_dd_helper();
 
     %if self.has_left_panel:
         var lp = new Panel( { panel: $("#left"), center: $("#center"), drag: $("#left > .unified-panel-footer > .drag" ), toggle: $("#left > .unified-panel-footer > .panel-collapse" ) } );
@@ -252,6 +250,7 @@
                 </div><!--end right-->
             %endif
         </div><!--end everything-->
+        <div id='DD-helper' style="display: none;"></div>
         ## Allow other body level elements
         ## Scripts can be loaded later since they progressively add features to
         ## the panels, but do not change layout

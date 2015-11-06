@@ -15,14 +15,16 @@ var webpack = require( 'webpack' ),
         'libs/jquery/jquery.rating',
         'libs/jquery.sparklines',
         'libs/bootstrap',
+        'ui/autocom_tagging',
         // // mvc
         'libs/underscore',
         'libs/backbone',
         'libs/handlebars.runtime',
-        // // all pages get these
-        'galaxy.base',
+        // all pages get these
+        'polyfills',
         'galaxy.panels',
-        'galaxy.autocom_tagging'
+        'modal',
+        'galaxy.base',
     ];
 
 
@@ -31,7 +33,7 @@ module.exports = {
     entry   : {
         galaxy  : './galaxy/scripts/apps/galaxy.js',
         analysis: './galaxy/scripts/apps/analysis.js',
-        vendor  : commonLibs
+        libs    : commonLibs
     },
     output  : {
         path        : '../static/scripts/bundled',
@@ -44,17 +46,13 @@ module.exports = {
             // Backbone looks for these in the same directory
             jquery      : path.join( libsBase, 'jquery/jquery' ),
             underscore  : path.join( libsBase, 'underscore.js' ),
-            // we import these (for now) from the libs dir
-            // TODO:?? needed?
-            'libs/underscore'   : path.join( libsBase, 'underscore.js' ),
-            'libs/backbone'     : path.join( libsBase, 'backbone.js' ),
             // requirejs' i18n doesn't play well with webpack
             // note: strangely, order does matter here - this must come before utils below
             'utils/localization' : path.join( scriptsBase, 'utils/webpack-localization' ),
         }
     },
     plugins : [
-        new webpack.optimize.CommonsChunkPlugin( 'vendor', 'vendor.bundled.js' ),
+        new webpack.optimize.CommonsChunkPlugin( 'libs', 'libs.bundled.js' ),
         // this plugin allows using the following keys/globals in scripts (w/o req'ing them first)
         // and webpack will automagically require them in the bundle for you
         new webpack.ProvidePlugin({

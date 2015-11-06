@@ -1,7 +1,16 @@
-define( ["libs/underscore", "viz/visualization", "viz/viz_views", "viz/trackster/util",
-         "viz/trackster/slotting", "viz/trackster/painters", "viz/trackster/filters",
-         "mvc/data", "mvc/tools", "utils/config" ],
-         function(_, visualization, viz_views, util, slotting, painters, filters_mod, data, tools_mod, config_mod) {
+define([
+    "libs/underscore",
+    "viz/visualization",
+    "viz/viz_views",
+    "viz/trackster/util",
+    "viz/trackster/slotting",
+    "viz/trackster/painters",
+    "viz/trackster/filters",
+    "mvc/data",
+    "mvc/tools",
+    "utils/config",
+    "ui/editable-text",
+], function(_, visualization, viz_views, util, slotting, painters, filters_mod, data, tools_mod, config_mod) {
 
 var extend = _.extend;
 
@@ -1154,8 +1163,8 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
     },
 
     update_location: function(low, high) {
-        this.location_span.text( commatize(low) + ' - ' + commatize(high) );
-        this.nav_input.val( this.chrom + ':' + commatize(low) + '-' + commatize(high) );
+        this.location_span.text( util.commatize(low) + ' - ' + util.commatize(high) );
+        this.nav_input.val( this.chrom + ':' + util.commatize(low) + '-' + util.commatize(high) );
 
         // Update location. Only update when there is a valid chrom; when loading vis, there may
         // not be a valid chrom.
@@ -3249,7 +3258,7 @@ extend(LabelTrack.prototype, Track.prototype, {
             new_div = $("<div/>").addClass('label-container');
         while ( position < view.high ) {
             var screenPosition = Math.floor( ( position - view.low ) / range * width );
-            new_div.append( $("<div/>").addClass('label').text(commatize( position )).css( {
+            new_div.append( $("<div/>").addClass('label').text(util.commatize( position )).css( {
                 left: screenPosition
             }));
             position += tickDistance;

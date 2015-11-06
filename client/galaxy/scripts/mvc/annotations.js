@@ -1,6 +1,7 @@
 define([
     "mvc/base-mvc",
-    "utils/localization"
+    "utils/localization",
+    "ui/editable-text",
 ], function( baseMVC, _l ){
 // =============================================================================
 /** A view on any model that has a 'annotation' attribute

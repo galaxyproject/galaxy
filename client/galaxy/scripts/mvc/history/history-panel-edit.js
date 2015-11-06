@@ -12,7 +12,8 @@ define([
     "mvc/collection/list-of-pairs-collection-creator",
     "ui/fa-icon-button",
     "mvc/ui/popup-menu",
-    "utils/localization"
+    "utils/localization",
+    "ui/editable-text",
 ], function(
     HPANEL,
     HISTORY_CONTENTS,

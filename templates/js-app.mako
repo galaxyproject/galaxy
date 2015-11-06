@@ -29,7 +29,8 @@
     </head>
 
     <body>
-        <script type="text/javascript" src="/static/scripts/bundled/vendor.bundled.js"></script>
+        ## ${ h.js( 'bundled/libs.bundled', 'bundled/galaxy.bundled' ) }
+        <script type="text/javascript" src="/static/scripts/bundled/libs.bundled.js"></script>
         <script type="text/javascript" src="/static/scripts/bundled/galaxy.bundled.js"></script>
         <script type="text/javascript">
             window.Galaxy = new GalaxyApp(
@@ -39,6 +40,7 @@
             // TODO: find and replace with Galaxy.root
             window.galaxy_config = { root: Galaxy.options.root };
         </script>
+        ## ${ h.js( js_app_name + '.bundled' ) }
         <script type="text/javascript" src="/static/scripts/bundled/${js_app_name}.bundled.js"></script>
         <script type="text/javascript">
             // TODO: should *inherit* from GalaxyApp - then remove above and galaxy.bundled.js
@@ -96,4 +98,5 @@
         ga('send', 'pageview');
     </script>
     %endif
+
 </%def>
