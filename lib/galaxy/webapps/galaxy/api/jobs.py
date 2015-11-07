@@ -29,6 +29,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
     def __init__( self, app ):
         super( JobController, self ).__init__( app )
         self.hda_manager = managers.hdas.HDAManager( app )
+        self.history_manager = managers.histories.HistoryManager( app )
 
     @expose_api
     def index( self, trans, **kwd ):
@@ -230,19 +231,15 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
             decoded_job_id = self.decode_id( id )
         except Exception:
             raise exceptions.MalformedId()
-        query = trans.sa_session.query( trans.app.model.Job )
-        if trans.user_is_admin():
-            query = query.filter(
-                trans.app.model.Job.id == decoded_job_id
-            )
-        else:
-            query = query.filter(
-                trans.app.model.Job.user == trans.user,
-                trans.app.model.Job.id == decoded_job_id
-            )
-        job = query.first()
+        job = trans.sa_session.query( trans.app.model.Job ).filter( trans.app.model.Job.id == decoded_job_id ).first()
         if job is None:
             raise exceptions.ObjectNotFound()
+        if not trans.user_is_admin() and job.user != trans.user:
+            history = self.history_manager.get_current( trans )
+            if history is None:
+                raise exceptions.ObjectNotFound()
+            if len( [ hda.id for hda in history.datasets if hda.creating_job.id == job.id ] ) == 0:
+                raise exceptions.ItemAccessibilityException()
         return job
 
     @expose_api
