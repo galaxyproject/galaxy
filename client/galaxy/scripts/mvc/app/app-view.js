@@ -4,16 +4,13 @@
 define([
     'utils/utils',
     'galaxy.masthead',
-    'galaxy.menu',
-    'galaxy.frame',
     'mvc/ui/ui-portlet',
     'mvc/ui/ui-misc',
     'mvc/ui/ui-modal',
-    'mvc/user/user-quotameter',
     'panel',
     'mvc/app/app-login',
     'mvc/app/app-analysis'
-], function( Utils, Masthead, Menu, Frame, Portlet, Ui, Modal, QuotaMeter, Panel, Login, Analysis ) {
+], function( Utils, Masthead, Portlet, Ui, Modal, Panel, Login, Analysis ) {
     console.debug( 'loading app-view' );
     console.debug( 'panel:', Panel );
 
@@ -46,25 +43,8 @@ define([
             }
 
             // load global galaxy objects
-            if ( !Galaxy.masthead ) {
-                Galaxy.masthead = new Masthead.GalaxyMasthead( this.options );
-                Galaxy.modal = new Modal.View();
-                Galaxy.frame = new Frame.GalaxyFrame();
-
-                // construct default menu options
-                Galaxy.menu = new Menu.GalaxyMenu({
-                    masthead    : Galaxy.masthead,
-                    config      : this.options
-                });
-
-                // set up the quota meter (And fetch the current user data from trans)
-                // add quota meter to masthead
-                Galaxy.quotaMeter = new QuotaMeter.UserQuotaMeter({
-                    model       : Galaxy.user,
-                    el          : Galaxy.masthead.$( '.quota-meter-container' )
-                }).render();
-            }
-
+            Galaxy.modal = new Modal.View();
+            Galaxy.masthead = new Masthead.GalaxyMasthead( this.options );
             // build page
             if ( Galaxy.config.require_login && !Galaxy.user.id ) {
                 this.build( Login );

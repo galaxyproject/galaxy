@@ -280,7 +280,7 @@ class JSAppLauncher( BaseUIController ):
             log.exception( exc )
             return {}
 
-    def template( self, trans, app_name, entry_fn='app', options=None, bootstrapped_data=None ):
+    def template( self, trans, app_name, entry_fn='app', options=None, bootstrapped_data=None, panels=None, masthead=True ):
         """
         Render and return the single page mako template that starts the app.
 
@@ -296,7 +296,9 @@ class JSAppLauncher( BaseUIController ):
             js_app_name=app_name,
             js_app_entry_fn=( entry_fn or self.DEFAULT_ENTRY_FN ),
             options=( options or self._get_js_options( trans ) ),
-            bootstrapped=( bootstrapped_data or {} )
+            bootstrapped=( bootstrapped_data or {} ),
+            panels=panels,
+            masthead=masthead
         )
 
 

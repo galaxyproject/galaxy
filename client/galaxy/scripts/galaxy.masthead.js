@@ -1,5 +1,9 @@
-// dependencies
-define([], function() {
+define([
+    'utils/utils',
+    'galaxy.menu',
+    'galaxy.frame',
+    'mvc/user/user-quotameter',
+], function(Utils, Menu, Frame, QuotaMeter) {
 
 /** Masthead **/
 var GalaxyMasthead = Backbone.View.extend({
@@ -36,16 +40,34 @@ var GalaxyMasthead = Backbone.View.extend({
         var self = this;
         $(window).on('beforeunload', function() {
             var text = "";
-            for (key in self.list) {
+            for (var key in self.list) {
                 if (self.list[key].options.onunload) {
                     var q = self.list[key].options.onunload();
                     if (q) text += q + " ";
                 }
             }
-            if (text != "") {
+            if (text !== "") {
                 return text;
             }
         });
+
+        // construct default menu options
+        this.menu = Galaxy.menu = new Menu.GalaxyMenu({
+            masthead    : this,
+            config      : this.options
+        });
+
+        // scratchpad
+        this.frame = Galaxy.frame = new Frame.GalaxyFrame({
+            masthead    : this,
+        });
+
+        // set up the quota meter (And fetch the current user data from trans)
+        // add quota meter to masthead
+        Galaxy.quotaMeter = new QuotaMeter.UserQuotaMeter({
+            model       : Galaxy.user,
+            el          : this.$( '.quota-meter-container' )
+        }).render();
     },
 
     // configure events
@@ -140,274 +162,9 @@ var GalaxyMasthead = Backbone.View.extend({
     }
 });
 
-/** Masthead icon **/
-var GalaxyMastheadIcon = Backbone.View.extend({
-    // icon options
-    options:{
-        id              : '',
-        icon            : 'fa-cog',
-        tooltip         : '',
-        with_number     : false,
-        onclick         : function() { alert ('clicked') },
-        onunload        : null,
-        visible         : true
-    },
-
-    // location identifier for masthead class
-    location: 'iconbar',
-
-    // initialize
-    initialize: function (options){
-        // read in defaults
-        if (options)
-            this.options = _.defaults(options, this.options);
-
-        // add template for icon
-        this.setElement($(this._template(this.options)));
-
-        // configure icon
-        var self = this;
-        $(this.el).find('.icon').tooltip({title: this.options.tooltip, placement: 'bottom'})
-                                .on('mouseup', self.options.onclick);
-
-        // visiblity
-        if (!this.options.visible)
-            this.hide();
-    },
-
-    // show
-    show: function(){
-        $(this.el).css({visibility : 'visible'});
-    },
-
-    // show
-    hide: function(){
-        $(this.el).css({visibility : 'hidden'});
-    },
-
-    // switch icon
-    icon: function (new_icon){
-        // update icon class
-        $(this.el).find('.icon').removeClass(this.options.icon)
-                                .addClass(new_icon);
-
-        // update icon
-        this.options.icon = new_icon;
-    },
-
-    // toggle
-    toggle: function(){
-        $(this.el).addClass('toggle');
-    },
-
-    // untoggle
-    untoggle: function(){
-        $(this.el).removeClass('toggle');
-    },
-
-    // set/get number
-    number: function(new_number){
-        $(this.el).find('.number').text(new_number);
-    },
-
-    // fill template icon
-    _template: function (options){
-        var tmpl =  '<div id="' + options.id + '" class="symbol">' +
-                        '<div class="icon fa fa-2x ' + options.icon + '"></div>';
-        if (options.with_number)
-            tmpl+=      '<div class="number"></div>';
-        tmpl +=     '</div>';
-
-        // return template
-        return tmpl;
-    }
-});
-
-/** Masthead tab **/
-var GalaxyMastheadTab = Backbone.View.extend({
-    // main options
-    options:{
-        id              : '',
-        title           : '',
-        target          : '_parent',
-        content         : '',
-        type            : 'url',
-        scratchbook     : false,
-        onunload        : null,
-        visible         : true,
-        disabled        : false,
-        title_attribute : ''
-    },
-
-    // location
-    location: 'navbar',
-
-    // optional sub menu
-    $menu: null,
-
-    // events
-    events:{
-        'click .head' : '_head'
-    },
-
-    // initialize
-    initialize: function ( options ){
-        // read in defaults
-        if ( options ){
-            this.options = _.defaults( options, this.options );
-        }
-
-        // update url
-        if ( this.options.content !== undefined && this.options.content.indexOf( '//' ) === -1 ){
-            this.options.content = galaxy_config.root + this.options.content;
-        }
-
-        // add template for tab
-        this.setElement( $( this._template( this.options ) ) );
-
-        // disable menu items that are not available to anonymous user
-        // also show title to explain why they are disabled
-        if ( this.options.disabled ){
-            $( this.el ).find( '.root' ).addClass( 'disabled' );
-            this._attachPopover();
-        }
-
-        // visiblity
-        if ( !this.options.visible ){
-            this.hide();
-        }
-    },
-
-    // show
-    show: function(){
-        $(this.el).css({visibility : 'visible'});
-    },
-
-    // show
-    hide: function(){
-        $(this.el).css({visibility : 'hidden'});
-    },
-
-    // add menu item
-    add: function (options){
-        // menu option defaults
-        var menuOptions = {
-            title       : 'Title',
-            content     : '',
-            type        : 'url',
-            target      : '_parent',
-            scratchbook : false,
-            divider     : false
-        }
-
-        // read in defaults
-        if (options)
-            menuOptions = _.defaults(options, menuOptions);
-
-        // update url
-        if (menuOptions.content && menuOptions.content.indexOf('//') === -1)
-            menuOptions.content = galaxy_config.root + menuOptions.content;
-
-        // check if submenu element is available
-        if (!this.$menu){
-            // insert submenu element into root
-            $(this.el).find('.root').append(this._templateMenu());
-
-            // show caret
-            $(this.el).find('.symbol').addClass('caret');
-
-            // update element link
-            this.$menu = $(this.el).find('.popup');
-        }
-
-        // create
-        var $item = $(this._templateMenuItem(menuOptions));
-
-        // append menu
-        this.$menu.append($item);
-
-        // add events
-        var self = this;
-        $item.on('click', function(e){
-            // prevent default
-            e.preventDefault();
-
-            // no modifications if new tab is requested
-            if (self.options.target === '_blank')
-                return true;
-
-            // load into frame
-            Galaxy.frame.add(options);
-        });
-
-        // append divider
-        if (menuOptions.divider)
-            this.$menu.append($(this._templateDivider()));
-    },
-
-    // show menu on header click
-    _head: function(e){
-        // prevent default
-        e.preventDefault();
-
-        if (this.options.disabled){
-            return // prevent link following if menu item is disabled
-        }
-
-        // check for menu options
-        if (!this.$menu) {
-            Galaxy.frame.add(this.options);
-        }
-    },
-
-    _attachPopover : function(){
-        var $popover_element = $(this.el).find('.head');
-        $popover_element.popover({
-            html: true,
-            content: 'Please <a href="' + galaxy_config.root + 'user/login?use_panels=True">log in</a> or <a href="' + galaxy_config.root + 'user/create?use_panels=True">register</a> to use this feature.',
-            placement: 'bottom'
-        }).on('shown.bs.popover', function() { // hooking on bootstrap event to automatically hide popovers after delay
-            setTimeout(function() {
-                $popover_element.popover('hide');
-            }, 5000);
-        });
-     },
-
-    // fill template header
-    _templateMenuItem: function (options){
-        return '<li><a href="' + options.content + '" target="' + options.target + '">' + options.title + '</a></li>';
-    },
-
-    // fill template header
-    _templateMenu: function (){
-        return '<ul class="popup dropdown-menu"></ul>';
-    },
-
-    _templateDivider: function(){
-        return '<li class="divider"></li>';
-    },
-
-    // fill template
-    _template: function (options){
-        // start template
-        var tmpl =  '<ul id="' + options.id + '" class="nav navbar-nav" border="0" cellspacing="0">' +
-                        '<li class="root dropdown" style="">' +
-                            '<a class="head dropdown-toggle" data-toggle="dropdown" target="' + options.target + '" href="' + options.content + '" title="' + options.title_attribute + '">' +
-                                options.title + '<b class="symbol"></b>' +
-                            '</a>' +
-                        '</li>' +
-                    '</ul>';
-
-        // return template
-        return tmpl;
-    }
-});
-
 // return
 return {
-    GalaxyMasthead: GalaxyMasthead,
-    GalaxyMastheadTab: GalaxyMastheadTab,
-    GalaxyMastheadIcon: GalaxyMastheadIcon
+    GalaxyMasthead: GalaxyMasthead
 };
 
 });

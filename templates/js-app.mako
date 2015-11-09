@@ -1,5 +1,7 @@
 <%
     import pprint
+    print panels
+    print masthead
     print js_app_name
     print js_app_entry_fn
     printable = dict( options[ 'config' ] )
@@ -22,13 +24,15 @@
         ## TODO: use loaders to move everything but the essentials below the fold
         ${ h.css(
             'base',
-            'jquery.rating'
+            'jquery.rating',
             'jquery-ui/smoothness/jquery-ui'
         )}
         ${ page_setup() }
     </head>
 
-    <body>
+    <body scroll="no" class="full-content">
+        ${ body_template( panels=panels, masthead=masthead ) }
+
         ## ${ h.js( 'bundled/libs.bundled', 'bundled/galaxy.bundled' ) }
         <script type="text/javascript" src="/static/scripts/bundled/libs.bundled.js"></script>
         <script type="text/javascript" src="/static/scripts/bundled/galaxy.bundled.js"></script>
@@ -40,7 +44,7 @@
             // TODO: find and replace with Galaxy.root
             window.galaxy_config = { root: Galaxy.options.root };
         </script>
-        ## ${ h.js( js_app_name + '.bundled' ) }
+        ${ h.js( js_app_name + '.bundled' ) }
         <script type="text/javascript" src="/static/scripts/bundled/${js_app_name}.bundled.js"></script>
         <script type="text/javascript">
             // TODO: should *inherit* from GalaxyApp - then remove above and galaxy.bundled.js
@@ -99,4 +103,69 @@
     </script>
     %endif
 
+</%def>
+
+## ============================================================================
+<%def name="body_template( panels=None, masthead=True )">
+    <%
+        panels = panels or [ 'center', 'right' ]
+        if 'left' in panels or 'right' in panels and 'center' not in panels:
+            panels.append( 'center' )
+    %>
+
+    <div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+        ## TODO: needed?
+        <div id="background"></div>
+
+        %if masthead:
+        <div id="masthead" class="navbar navbar-fixed-top navbar-inverse"></div>
+        ## TODO: needed?
+        <div id="messagebox" style="display: none;"></div>
+        ## TODO: needed?
+        <div id="inactivebox" class="panel-warning-message" style="display: none;"></div>
+        %endif
+
+        <!-- content sections -->
+        %if 'left' in panels:
+        ${ side_panel( 'left' ) }
+        %endif
+
+        %if 'center' in panels:
+        <div id="center" class="inbound" style="background: aliceblue"></div>
+        %endif
+
+        %if 'right' in panels:
+        ${ side_panel( 'right' ) }
+        %endif
+
+    </div><!--end everything-->
+    <div id='DD-helper' style="display: none;"></div>
+
+    <noscript>
+        <div class="overlay overlay-background noscript-overlay">
+            <div>
+                <h3 class="title">Javascript Required for Galaxy</h3>
+                <div>
+                    The Galaxy analysis interface requires a browser with Javascript enabled.<br>
+                    Please enable Javascript and refresh this page
+                </div>
+            </div>
+        </div>
+    </noscript>
+
+</%def>
+
+<%def name="side_panel( side )">
+    <div id="${side}">
+        <div class="unified-panel-header" unselectable="on">
+            <div class='unified-panel-header-inner'></div>
+        </div>
+        <div class="unified-panel-body">
+        </div>
+        <div class="unified-panel-footer">
+            ## TODO: use child selector and remove the side class here
+            <div class="panel-collapse ${side}"></div>
+            <div class="drag"></div>
+        </div>
+    </div>
 </%def>

@@ -48,10 +48,11 @@
 
         ## load galaxy js-modules
         require([
-            'galaxy.masthead', 'galaxy.menu', 'mvc/ui/ui-modal', 'galaxy.frame', 'mvc/upload/upload-view',
-            'mvc/user/user-model',
-            'mvc/user/user-quotameter'
-        ], function( mod_masthead, mod_menu, mod_modal, mod_frame, GalaxyUpload, user, quotameter ){
+            'galaxy.masthead',
+            'mvc/ui/ui-modal',
+            'mvc/upload/upload-view',
+            'mvc/user/user-model'
+        ], function( mod_masthead, mod_modal, GalaxyUpload, user ){
             if( !Galaxy.currUser ){
                 // this doesn't need to wait for the page being readied
                 Galaxy.currUser = new user.User(${ h.dumps( masthead_config[ 'user_json' ], indent=2 ) });
@@ -71,23 +72,9 @@
                 // load global galaxy objects
                 Galaxy.masthead = new mod_masthead.GalaxyMasthead(masthead_config);
                 Galaxy.modal = new mod_modal.View();
-                Galaxy.frame = new mod_frame.GalaxyFrame();
-
-                // construct default menu options
-                Galaxy.menu = new mod_menu.GalaxyMenu({
-                    masthead: Galaxy.masthead,
-                    config: masthead_config
-                });
 
                 // add upload plugin
                 Galaxy.upload = new GalaxyUpload(masthead_config);
-
-                // set up the quota meter (And fetch the current user data from trans)
-                // add quota meter to masthead
-                Galaxy.quotaMeter = new quotameter.UserQuotaMeter({
-                    model   : Galaxy.currUser,
-                    el      : Galaxy.masthead.$('.quota-meter-container')
-                }).render();
             });
         });
     </script>

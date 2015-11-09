@@ -79,6 +79,7 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
         config.update( self._get_extended_config( trans ) )
 
         return self.template( trans, 'analysis', options=js_options )
+        # return self.template( trans, 'analysis', options=js_options, panels=[ 'left', 'center', 'right' ])
 
     # @web.expose
     # def index(self, trans, id=None, tool_id=None, mode=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd):

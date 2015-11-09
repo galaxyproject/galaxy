@@ -1,5 +1,5 @@
 // dependencies
-define(['galaxy.masthead'], function( Masthead ) {
+define([], function() {
 
 /** GalaxyMenu uses the GalaxyMasthead class in order to add menu items and icons to the Masthead **/
 var GalaxyMenu = Backbone.Model.extend({
@@ -14,7 +14,7 @@ var GalaxyMenu = Backbone.Model.extend({
         //
         // Analyze data tab.
         //
-        var tab_analysis = new Masthead.GalaxyMastheadTab({
+        var tab_analysis = new GalaxyMastheadTab({
             id              : 'analysis',
             title           : 'Analyze Data',
             content         : '',
@@ -36,13 +36,13 @@ var GalaxyMenu = Backbone.Model.extend({
             workflow_options.disabled = true; // disable workflows for anonymous users
         }
 
-        var tab_workflow = new Masthead.GalaxyMastheadTab( workflow_options );
+        var tab_workflow = new GalaxyMastheadTab( workflow_options );
         this.masthead.append( tab_workflow );
 
         //
         // 'Shared Items' or Libraries tab.
         //
-        var tab_shared = new Masthead.GalaxyMastheadTab({
+        var tab_shared = new GalaxyMastheadTab({
             id              : 'shared',
             title           : 'Shared Data',
             content         : 'library/index',
@@ -87,7 +87,7 @@ var GalaxyMenu = Backbone.Model.extend({
         // Lab menu.
         //
         if ( this.options.user_requests ) {
-            var tab_lab = new Masthead.GalaxyMastheadTab({
+            var tab_lab = new GalaxyMastheadTab({
                 id      : 'lab',
                 title   : 'Lab'
             });
@@ -121,7 +121,7 @@ var GalaxyMenu = Backbone.Model.extend({
         if ( !Galaxy.user.id ) {
             visualization_options.disabled = true;
         }
-        var tab_visualization = new Masthead.GalaxyMastheadTab( visualization_options );
+        var tab_visualization = new GalaxyMastheadTab( visualization_options );
 
         // add submenu only when user is logged in
         if ( Galaxy.user.id ) {
@@ -142,7 +142,7 @@ var GalaxyMenu = Backbone.Model.extend({
         // Admin.
         //
         if ( Galaxy.user.get( 'is_admin' ) ) {
-            var tab_admin = new Masthead.GalaxyMastheadTab({
+            var tab_admin = new GalaxyMastheadTab({
                 id              : 'admin',
                 title           : 'Admin',
                 content         : 'admin',
@@ -155,7 +155,7 @@ var GalaxyMenu = Backbone.Model.extend({
         //
         // Help tab.
         //
-        var tab_help = new Masthead.GalaxyMastheadTab({
+        var tab_help = new GalaxyMastheadTab({
             id              : 'help',
             title           : 'Help',
             title_attribute : 'Support, contact, and community hubs'
@@ -215,7 +215,7 @@ var GalaxyMenu = Backbone.Model.extend({
         // User tab.
         //
         if ( !Galaxy.user.id ){
-            var tab_user = new Masthead.GalaxyMastheadTab({
+            var tab_user = new GalaxyMastheadTab({
                 id              : 'user',
                 title           : 'User',
                 extra_class     : 'loggedout-only',
@@ -241,7 +241,7 @@ var GalaxyMenu = Backbone.Model.extend({
             // add to masthead
             this.masthead.append( tab_user );
         } else {
-            var tab_user = new Masthead.GalaxyMastheadTab({
+            var tab_user = new GalaxyMastheadTab({
                 id              : 'user',
                 title           : 'User',
                 extra_class     : 'loggedin-only',
@@ -314,9 +314,190 @@ var GalaxyMenu = Backbone.Model.extend({
     }
 });
 
+/** Masthead tab **/
+var GalaxyMastheadTab = Backbone.View.extend({
+    // main options
+    options:{
+        id              : '',
+        title           : '',
+        target          : '_parent',
+        content         : '',
+        type            : 'url',
+        scratchbook     : false,
+        onunload        : null,
+        visible         : true,
+        disabled        : false,
+        title_attribute : ''
+    },
+
+    // location
+    location: 'navbar',
+
+    // optional sub menu
+    $menu: null,
+
+    // events
+    events:{
+        'click .head' : '_head'
+    },
+
+    // initialize
+    initialize: function ( options ){
+        // read in defaults
+        if ( options ){
+            this.options = _.defaults( options, this.options );
+        }
+
+        // update url
+        if ( this.options.content !== undefined && this.options.content.indexOf( '//' ) === -1 ){
+            this.options.content = galaxy_config.root + this.options.content;
+        }
+
+        // add template for tab
+        this.setElement( $( this._template( this.options ) ) );
+
+        // disable menu items that are not available to anonymous user
+        // also show title to explain why they are disabled
+        if ( this.options.disabled ){
+            $( this.el ).find( '.root' ).addClass( 'disabled' );
+            this._attachPopover();
+        }
+
+        // visiblity
+        if ( !this.options.visible ){
+            this.hide();
+        }
+    },
+
+    // show
+    show: function(){
+        $(this.el).css({visibility : 'visible'});
+    },
+
+    // show
+    hide: function(){
+        $(this.el).css({visibility : 'hidden'});
+    },
+
+    // add menu item
+    add: function (options){
+        // menu option defaults
+        var menuOptions = {
+            title       : 'Title',
+            content     : '',
+            type        : 'url',
+            target      : '_parent',
+            scratchbook : false,
+            divider     : false
+        }
+
+        // read in defaults
+        if (options)
+            menuOptions = _.defaults(options, menuOptions);
+
+        // update url
+        if (menuOptions.content && menuOptions.content.indexOf('//') === -1)
+            menuOptions.content = galaxy_config.root + menuOptions.content;
+
+        // check if submenu element is available
+        if (!this.$menu){
+            // insert submenu element into root
+            $(this.el).find('.root').append(this._templateMenu());
+
+            // show caret
+            $(this.el).find('.symbol').addClass('caret');
+
+            // update element link
+            this.$menu = $(this.el).find('.popup');
+        }
+
+        // create
+        var $item = $(this._templateMenuItem(menuOptions));
+
+        // append menu
+        this.$menu.append($item);
+
+        // add events
+        var self = this;
+        $item.on('click', function(e){
+            // prevent default
+            e.preventDefault();
+
+            // no modifications if new tab is requested
+            if (self.options.target === '_blank')
+                return true;
+
+            // load into frame
+            Galaxy.frame.add(options);
+        });
+
+        // append divider
+        if (menuOptions.divider)
+            this.$menu.append($(this._templateDivider()));
+    },
+
+    // show menu on header click
+    _head: function(e){
+        // prevent default
+        e.preventDefault();
+
+        if (this.options.disabled){
+            return // prevent link following if menu item is disabled
+        }
+
+        // check for menu options
+        if (!this.$menu) {
+            Galaxy.frame.add(this.options);
+        }
+    },
+
+    _attachPopover : function(){
+        var $popover_element = $(this.el).find('.head');
+        $popover_element.popover({
+            html: true,
+            content: 'Please <a href="' + galaxy_config.root + 'user/login?use_panels=True">log in</a> or <a href="' + galaxy_config.root + 'user/create?use_panels=True">register</a> to use this feature.',
+            placement: 'bottom'
+        }).on('shown.bs.popover', function() { // hooking on bootstrap event to automatically hide popovers after delay
+            setTimeout(function() {
+                $popover_element.popover('hide');
+            }, 5000);
+        });
+     },
+
+    // fill template header
+    _templateMenuItem: function (options){
+        return '<li><a href="' + options.content + '" target="' + options.target + '">' + options.title + '</a></li>';
+    },
+
+    // fill template header
+    _templateMenu: function (){
+        return '<ul class="popup dropdown-menu"></ul>';
+    },
+
+    _templateDivider: function(){
+        return '<li class="divider"></li>';
+    },
+
+    // fill template
+    _template: function (options){
+        // start template
+        var tmpl =  '<ul id="' + options.id + '" class="nav navbar-nav" border="0" cellspacing="0">' +
+                        '<li class="root dropdown" style="">' +
+                            '<a class="head dropdown-toggle" data-toggle="dropdown" target="' + options.target + '" href="' + options.content + '" title="' + options.title_attribute + '">' +
+                                options.title + '<b class="symbol"></b>' +
+                            '</a>' +
+                        '</li>' +
+                    '</ul>';
+
+        // return template
+        return tmpl;
+    }
+});
+
 // return
 return {
-    GalaxyMenu: GalaxyMenu
+    GalaxyMenu: GalaxyMenu,
+    GalaxyMastheadTab: GalaxyMastheadTab
 };
 
 });
