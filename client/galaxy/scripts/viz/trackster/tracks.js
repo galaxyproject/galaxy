@@ -12,6 +12,7 @@ define([
     "ui/editable-text",
 ], function(_, visualization, viz_views, util, slotting, painters, filters_mod, data, tools_mod, config_mod) {
 
+
 var extend = _.extend;
 
 // ---- Web UI specific utilities ----

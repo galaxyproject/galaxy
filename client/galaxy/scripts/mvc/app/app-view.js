@@ -10,7 +10,7 @@ define([
     'mvc/ui/ui-misc',
     'mvc/ui/ui-modal',
     'mvc/user/user-quotameter',
-    'galaxy.panels',
+    'panel',
     'mvc/app/app-login',
     'mvc/app/app-analysis'
 ], function( Utils, Masthead, Menu, Frame, Portlet, Ui, Modal, QuotaMeter, Panel, Login, Analysis ) {

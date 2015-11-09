@@ -128,6 +128,7 @@ var get_random_color = function(colors) {
 };
 
 return {
+    commatize: commatize,
     is_deferred: is_deferred,
     ServerStateDeferred : ServerStateDeferred,
     get_random_color    : get_random_color

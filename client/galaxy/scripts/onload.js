@@ -12,12 +12,13 @@ window.Handlebars = Handlebars;
 console.debug('globals loaded:', window.jQuery, window.Backbone, '...');
 
 // these are galaxy globals not defined in the provider (although they could be - but why encourage that?)
-window.Panel = require( 'galaxy.panels' );
+window.Panel = require( 'panel' );
 _.extend( window, require( 'modal' ) );
 window.async_save_text = require( 'utils/async-save-text' );
 var POPUPMENU = require( 'ui/popupmenu' );
 window.make_popupmenu = POPUPMENU.make_popupmenu;
 window.make_popup_menus = POPUPMENU.make_popup_menus;
+window.init_tag_click_function = require( 'ui/autocom_tagging' );
 console.debug( 'galaxy globals loaded:', window.Panel);
 
 // ============================================================================

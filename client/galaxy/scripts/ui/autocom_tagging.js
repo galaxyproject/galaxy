@@ -1,3 +1,22 @@
+// from: https://raw.githubusercontent.com/umdjs/umd/master/jqueryPlugin.js
+// Uses AMD or browser globals to create a jQuery plugin.
+(function (factory) {
+    if (typeof define === 'function' && define.amd) {
+        //TODO: So...this turns out to be an all or nothing thing. If I load jQuery in the define below, it will
+        //  (of course) wipe the old jquery *and all the plugins loaded into it*. So the define below *is still
+        //  relying on jquery being loaded globally* in order to preserve plugins.
+        define([ 'jquery' ], factory);
+    } else {
+        // Browser globals
+        factory(jQuery);
+    }
+
+}(function ( jQuery ) {
+'use_strict';
+
+var $ = jQuery;
+
+// ============================================================================
 /**
 * JQuery extension for tagging with autocomplete.
 * @author: Jeremy Goecks
@@ -366,3 +385,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
     }
 
 };
+
+// ============================================================================
+    return init_tag_click_function;
+}));

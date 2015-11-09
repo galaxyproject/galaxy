@@ -15,16 +15,16 @@ var webpack = require( 'webpack' ),
         'libs/jquery/jquery.rating',
         'libs/jquery.sparklines',
         'libs/bootstrap',
-        'ui/autocom_tagging',
         // // mvc
         'libs/underscore',
         'libs/backbone',
         'libs/handlebars.runtime',
         // all pages get these
         'polyfills',
-        'galaxy.panels',
+        'panel',
         'modal',
-        'galaxy.base',
+        'onload',
+        'ui/autocom_tagging',
     ];
 
 
