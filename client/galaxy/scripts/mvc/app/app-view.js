@@ -3,16 +3,14 @@
 */
 define([
     'utils/utils',
-    'galaxy.masthead',
     'mvc/ui/ui-portlet',
     'mvc/ui/ui-misc',
     'mvc/ui/ui-modal',
-    'panel',
+    'layout/masthead',
+    'layout/panel',
     'mvc/app/app-login',
     'mvc/app/app-analysis'
-], function( Utils, Masthead, Portlet, Ui, Modal, Panel, Login, Analysis ) {
-    console.debug( 'loading app-view' );
-    console.debug( 'panel:', Panel );
+], function( Utils, Portlet, Ui, Modal, Masthead, Panel, Login, Analysis ) {
 
     return Backbone.View.extend({
         initialize: function( options ) {

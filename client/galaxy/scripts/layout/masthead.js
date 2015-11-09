@@ -1,9 +1,9 @@
 define([
     'utils/utils',
-    'galaxy.menu',
-    'galaxy.frame',
+    'layout/menu',
+    'layout/scratchbook',
     'mvc/user/user-quotameter',
-], function(Utils, Menu, Frame, QuotaMeter) {
+], function(Utils, Menu, Scratchbook, QuotaMeter) {
 
 /** Masthead **/
 var GalaxyMasthead = Backbone.View.extend({
@@ -58,7 +58,7 @@ var GalaxyMasthead = Backbone.View.extend({
         });
 
         // scratchpad
-        this.frame = Galaxy.frame = new Frame.GalaxyFrame({
+        this.frame = Galaxy.frame = new Scratchbook.GalaxyFrame({
             masthead    : this,
         });
 

@@ -48,7 +48,7 @@
 
         ## load galaxy js-modules
         require([
-            'galaxy.masthead',
+            'layout/masthead',
             'mvc/ui/ui-modal',
             'mvc/upload/upload-view',
             'mvc/user/user-model'
