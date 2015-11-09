@@ -68,6 +68,10 @@ class ConditionalDependencies( object ):
         return ( asbool( self.config["debug"] ) and
                  asbool( self.config["use_interactive"] ) )
 
+    def check_pygments( self ):
+        # pygments is a dependency of weberror and only weberror
+        return self.check_weberror()
+
 
 def optional( config_file ):
     rval = []
