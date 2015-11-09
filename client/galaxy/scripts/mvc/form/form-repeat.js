@@ -67,7 +67,7 @@ var View = Backbone.View.extend({
     add: function(options) {
         // repeat block already exists
         if (!options.id || this.list[options.id]) {
-            Galaxy.emit.debug('form-repeat::add()', 'Duplicate repeat block id.');
+            Utils.emit.debug('form-repeat::add()', 'Duplicate repeat block id.');
             return;
         }
 
@@ -123,7 +123,7 @@ var View = Backbone.View.extend({
     del: function(id) {
         // could not find element
         if (!this.list[id]) {
-            Galaxy.emit.debug('form-repeat::del()', 'Invalid repeat block id.');
+            Utils.emit.debug('form-repeat::del()', 'Invalid repeat block id.');
             return;
         }
 

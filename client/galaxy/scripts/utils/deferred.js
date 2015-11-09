@@ -23,13 +23,13 @@ return Backbone.Model.extend({
         var process = $.Deferred();
         process.promise().always(function() {
             delete self.active[ id ];
-            has_deferred && Galaxy.emit.debug( 'deferred::execute()', this.state().charAt(0).toUpperCase() + this.state().slice(1) + ' ' + id );
+            has_deferred && Utils.emit.debug( 'deferred::execute()', this.state().charAt(0).toUpperCase() + this.state().slice(1) + ' ' + id );
         });
 
         // deferred queue
         $.when( this.last ).always(function() {
             if ( self.active[ id ] ) {
-                has_deferred && Galaxy.emit.debug( 'deferred::execute()', 'Running ' + id );
+                has_deferred && Utils.emit.debug( 'deferred::execute()', 'Running ' + id );
                 callback( process );
                 !has_deferred && process.resolve();
             } else {
@@ -42,7 +42,7 @@ return Backbone.Model.extend({
     /** Resets the promise queue. All currently queued but unexecuted callbacks/promises will be rejected.
     */
     reset: function() {
-        Galaxy.emit.debug('deferred::execute()', 'Reset');
+        Utils.emit.debug('deferred::execute()', 'Reset');
         for ( var i in this.active ) {
             this.active[ i ] = false;
         }

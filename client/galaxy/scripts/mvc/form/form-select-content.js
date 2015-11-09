@@ -222,7 +222,7 @@ var View = Backbone.View.extend({
                     for (var i in new_value.values) {
                         list.push(new_value.values[i].id);
                     }
-                    
+
                     // identify suitable select field
                     if (new_value && new_value.values.length > 0 && new_value.values[0].src == 'hdca') {
                         this.current = 'collection';
@@ -237,7 +237,7 @@ var View = Backbone.View.extend({
                         }
                     }
                 } catch (err) {
-                    Galaxy.emit.debug('tools-select-content::value()', 'Skipped.');
+                    Utils.emit.debug('tools-select-content::value()', 'Skipped.');
                 }
             } else {
                 for (var i in this.list) {
