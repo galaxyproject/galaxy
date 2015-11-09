@@ -23,7 +23,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             this.options = Utils.merge(options, this.optionsDefault);
 
             // log options
-            console.debug(this.options);
+            Galaxy.emit.debug('form-view::initialize()', 'Ready to build form.', this.options);
 
             // link galaxy modal or create one
             var galaxy = parent.Galaxy;
@@ -69,7 +69,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                             }
                             field.update(new_options);
                             field.trigger('change');
-                            console.debug('Updating options for ' + input_id);
+                            Galaxy.emit.debug('form-view::update()', 'Updating options for ' + input_id);
                         }
                     }
                 }
@@ -231,7 +231,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             }
 
             // log
-            console.debug('tools-form-base::initialize() - Completed.');
+            Galaxy.emit.debug('form-view::initialize()', 'Completed');
         }
     });
 });
