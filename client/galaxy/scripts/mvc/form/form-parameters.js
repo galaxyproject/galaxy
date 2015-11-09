@@ -71,7 +71,7 @@ define(['utils/utils',
                 }
 
                 // log
-                console.debug('tools-form::_addRow() : Auto matched field type (' + input_def.type + ').');
+                Galaxy.emit.debug('form-parameters::_addRow()', 'Auto matched field type (' + input_def.type + ').');
             }
 
             // set field value

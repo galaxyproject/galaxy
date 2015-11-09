@@ -2927,7 +2927,7 @@ class ImplicitlyConvertedDatasetAssociation( object ):
             try:
                 os.unlink( self.file_name )
             except Exception, e:
-                print "Failed to purge associated file (%s) from disk: %s" % ( self.file_name, e )
+                log.error( "Failed to purge associated file (%s) from disk: %s" % ( self.file_name, e ) )
 
 
 DEFAULT_COLLECTION_NAME = "Unnamed Collection"

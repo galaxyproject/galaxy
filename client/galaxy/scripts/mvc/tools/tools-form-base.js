@@ -20,7 +20,10 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             if (options.inputs) {
                 this._buildForm(options);
             } else {
-                this._buildModel(options, true);
+                var self = this;
+                this.deferred.execute(function(process) {
+                    self._buildModel(process, options, true);
+                });
             }
         },
 
@@ -30,6 +33,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             this.$el.hide();
             this.deferred.execute(function(){
                 Backbone.View.prototype.remove.call(self);
+                Galaxy.emit.debug('tools-form-base::remove()', 'Destroy view.');
             });
         },
 
@@ -44,11 +48,10 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 icon            : 'fa-wrench',
                 title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Tool Version ' + options.version + ')',
                 operations      : this._operations(),
-                onchange        : function(current_state) {
-                    // by resetting the deferred ajax queue the number of redundant calls is reduced
+                onchange        : function() {
                     self.deferred.reset();
-                    self.deferred.execute(function(){
-                        self._updateModel();
+                    self.deferred.execute(function(process) {
+                        self._updateModel(process);
                     });
                 }
             }, this.options);
@@ -69,7 +72,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
 
         /** Builds a new model through api call and recreates the entire form
         */
-        _buildModel: function(options, hide_message) {
+        _buildModel: function(process, options, hide_message) {
             var self = this;
             this.options.id = options.id;
             this.options.version = options.version;
@@ -87,9 +90,6 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 }
             }
 
-            // register process
-            var process_id = this.deferred.register();
-
             // get initial model
             Utils.request({
                 type    : 'GET',
@@ -102,9 +102,9 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                         message     : 'Now you are using \'' + self.options.name + '\' version ' + self.options.version + '.',
                         persistent  : false
                     });
-                    console.debug('tools-form::initialize() - Initial tool model ready.');
-                    console.debug(new_model);
-                    self.deferred.done(process_id);
+                    Galaxy.emit.debug('tools-form-base::initialize()', 'Initial tool model ready.', new_model);
+                    process.resolve();
+
                 },
                 error   : function(response) {
                     var error_message = ( response && response.err_msg ) || 'Uncaught error.';
@@ -126,16 +126,15 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                             }
                         });
                     }
-                    console.debug('tools-form::initialize() - Initial tool model request failed.');
-                    console.debug(response);
-                    self.deferred.done(process_id);
+                    Galaxy.emit.debug('tools-form::initialize()', 'Initial tool model request failed.', response);
+                    process.reject();
                 }
             });
         },
 
         /** Request a new model for an already created tool form and updates the form inputs
         */
-        _updateModel: function() {
+        _updateModel: function(process) {
             // model url for request
             var model_url = this.options.update_url || Galaxy.root + 'api/tools/' + this.options.id + '/build';
 
@@ -155,12 +154,8 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             // set wait mode
             form.wait(true);
 
-            // register process
-            var process_id = this.deferred.register();
-
             // log tool state
-            console.debug('tools-form-base::_updateModel() - Sending current state (see below).');
-            console.debug(current_state);
+            Galaxy.emit.debug('tools-form-base::_updateModel()', 'Sending current state.', current_state);
 
             // post job
             Utils.request({
@@ -168,29 +163,15 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 url     : model_url,
                 data    : current_state,
                 success : function(new_model) {
-                    // update form with new model
                     self.form.update(new_model['tool_model'] || new_model);
-
-                    // custom update
                     self.options.update && self.options.update(new_model);
-
-                    // unset wait mode
                     form.wait(false);
-
-                    // log success
-                    console.debug('tools-form-base::_updateModel() - Received new model (see below).');
-                    console.debug(new_model);
-
-                    // process completed
-                    self.deferred.done(process_id);
+                    Galaxy.emit.debug('tools-form-base::_updateModel()', 'Received new model.', new_model);
+                    process.resolve();
                 },
                 error   : function(response) {
-                    // process completed
-                    self.deferred.done(process_id);
-
-                    // log error
-                    console.debug('tools-form-base::_updateModel() - Refresh request failed.');
-                    console.debug(response);
+                    Galaxy.emit.debug('tools-form-base::_updateModel()', 'Refresh request failed.', response);
+                    process.reject();
                 }
             });
         },
@@ -221,8 +202,8 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                                 var version = this.version;
                                 // queue model request
                                 self.deferred.reset();
-                                self.deferred.execute(function() {
-                                    self._buildModel({id: id, version: version})
+                                self.deferred.execute(function(process) {
+                                    self._buildModel(process, {id: id, version: version})
                                 });
                             }
                         });

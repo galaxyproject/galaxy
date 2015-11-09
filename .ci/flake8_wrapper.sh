@@ -4,5 +4,5 @@ set -e
 
 flake8 --exclude `paste -sd, .ci/flake8_blacklist.txt` .
 
-# Look for obviously broken stuff lots more places.
-flake8 --select=E901,E902,F821,F822,F823,F831 --exclude lib/pkg_resources.py contrib/ lib/
+# Apply stricter rules for the directories shared with Pulsar
+flake8 --ignore= --max-line-length=150 lib/galaxy/jobs/runners/util/ lib/pulsar/

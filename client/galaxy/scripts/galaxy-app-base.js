@@ -3,8 +3,11 @@ define([
     'utils/metrics-logger',
     'utils/add-logging',
     'utils/localization',
+    'mvc/base-mvc',
     'bootstrapped-data'
-], function( userModel, metricsLogger, addLogging, localize, bootstrapped ){
+], function( userModel, metricsLogger, addLogging, localize, BASE_MVC, bootstrapped ){
+
+// TODO: move into a singleton pattern and have dependents import Galaxy
 // ============================================================================
 /** Base galaxy client-side application.
  *      Iniitializes:
@@ -22,33 +25,37 @@ function GalaxyApp( options ){
 // add logging shortcuts for this object
 addLogging( GalaxyApp, 'GalaxyApp' );
 
-/** default options */
-GalaxyApp.prototype.defaultOptions = {
-    /** monkey patch attributes from existing window.Galaxy object? */
-    patchExisting   : true,
-    /** root url of this app */
-    // move to self.root?
-    root            : '/'
-};
+// a debug flag can be set via local storage and made available during script/page loading
+var DEBUGGING_KEY = 'galaxy:debug',
+    NAMESPACE_KEY = DEBUGGING_KEY + ':namespaces',
+    localDebugging = false;
+try {
+    localDebugging = localStorage.getItem( DEBUGGING_KEY ) == 'true';
+} catch( storageErr ){
+    console.log( localize( 'localStorage not available for debug flag retrieval' ) );
+}
 
 /** initalize options and sub-components */
 GalaxyApp.prototype._init = function init( options ){
     var self = this;
     _.extend( self, Backbone.Events );
+    if( localDebugging ){
+        self.logger = console;
+    }
 
     self._processOptions( options );
     self.debug( 'GalaxyApp.options: ', self.options );
 
+    self._initConfig( options.config || bootstrapped.config || {} );
+    self.debug( 'GalaxyApp.config: ', self.config );
+
     self._patchGalaxy( window.Galaxy );
 
-    self._initLogger( options.loggerOptions || {} );
+    self._initLogger( self.options.loggerOptions || {} );
     self.debug( 'GalaxyApp.logger: ', self.logger );
 
     self._initLocale();
     self.debug( 'GalaxyApp.localize: ', self.localize );
-
-    self.config = options.config || bootstrapped.config || {};
-    self.debug( 'GalaxyApp.config: ', self.config );
 
     self._initUser( options.user || bootstrapped.user || {} );
     self.debug( 'GalaxyApp.user: ', self.user );
@@ -64,6 +71,17 @@ GalaxyApp.prototype._init = function init( options ){
     return self;
 };
 
+/** default options */
+GalaxyApp.prototype.defaultOptions = {
+    /** monkey patch attributes from existing window.Galaxy object? */
+    patchExisting   : true,
+    /** root url of this app */
+    // move to self.root?
+    root            : '/',
+    /** options for the logger */
+    loggerOptions   : {}
+};
+
 /** add an option from options if the key matches an option in defaultOptions */
 GalaxyApp.prototype._processOptions = function _processOptions( options ){
     var self = this,
@@ -76,6 +94,18 @@ GalaxyApp.prototype._processOptions = function _processOptions( options ){
             self.options[ k ] = ( options.hasOwnProperty( k ) )?( options[ k ] ):( defaults[ k ] );
         }
     }
+    return self;
+};
+
+/** parse the config and any extra info derived from it */
+GalaxyApp.prototype._initConfig = function _initConfig( config ){
+    var self = this;
+    self.debug( '_initConfig: ', config );
+    self.config = config;
+
+    // give precendence to localdebugging for this setting
+    self.config.debug = localDebugging || self.config.debug;
+
     return self;
 };
 
@@ -99,8 +129,26 @@ GalaxyApp.prototype._patchGalaxy = function _processOptions( patchWith ){
 /** set up the metrics logger (utils/metrics-logger) and pass loggerOptions */
 GalaxyApp.prototype._initLogger = function _initLogger( loggerOptions ){
     var self = this;
+    // default to console logging at the debug level if the debug flag is set
+    if( self.config.debug ){
+        loggerOptions.consoleLogger = loggerOptions.consoleLogger || console;
+        loggerOptions.consoleLevel = loggerOptions.consoleLevel || metricsLogger.MetricsLogger.ALL;
+        // load any logging namespaces from localStorage if we can
+        try {
+            loggerOptions.consoleNamespaceWhitelist = localStorage.getItem( NAMESPACE_KEY ).split( ',' );
+        } catch( storageErr ){}
+    }
     self.debug( '_initLogger:', loggerOptions );
     self.logger = new metricsLogger.MetricsLogger( loggerOptions );
+    self.emit = {};
+    [ 'log', 'debug', 'info', 'warn', 'error', 'metric' ].map(function( i ) {
+        self.emit[ i ] = function( data ) { self.logger.emit( i, arguments[ 0 ], Array.prototype.slice.call( arguments, 1 ) ) };
+    });
+
+    if( self.config.debug ){
+        // add this logger to mvc's loggable mixin so that all models can use the logger
+        BASE_MVC.LoggableMixin.logger = self.logger;
+    }
     return self;
 };
 
@@ -119,6 +167,7 @@ GalaxyApp.prototype._initUser = function _initUser( userJSON ){
     var self = this;
     self.debug( '_initUser:', userJSON );
     self.user = new userModel.User( userJSON );
+    self.user.logger = self.logger;
     //TODO: temp - old alias
     self.currUser = self.user;
     return self;
@@ -146,9 +195,58 @@ GalaxyApp.prototype._setUpListeners = function _setUpListeners(){
     return self;
 };
 
+/** Turn debugging/console-output on/off by passing boolean. Pass nothing to get current setting. */
+GalaxyApp.prototype.debugging = function _debugging( setting ){
+    var self = this;
+    try {
+        if( setting === undefined ){
+            return localStorage.getItem( DEBUGGING_KEY ) === 'true';
+        }
+        if( setting ){
+            localStorage.setItem( DEBUGGING_KEY, true );
+            return true;
+        }
+
+        localStorage.removeItem( DEBUGGING_KEY );
+        // also remove all namespaces
+        self.debuggingNamespaces( null );
+
+    } catch( storageErr ){
+        console.log( localize( 'localStorage not available for debug flag retrieval' ) );
+    }
+    return false;
+};
+
+/** Add, remove, or clear namespaces from the debugging filters
+ *  Pass no arguments to retrieve the existing namespaces as an array.
+ *  Pass in null to clear all namespaces (all logging messages will show now).
+ *  Pass in an array of strings or single string of the namespaces to filter to.
+ *  Returns the new/current namespaces as an array;
+ */
+GalaxyApp.prototype.debuggingNamespaces = function _debuggingNamespaces( namespaces ){
+    var self = this;
+    try {
+        if( namespaces === undefined ){
+            var csv = localStorage.getItem( NAMESPACE_KEY );
+            return typeof( csv ) === 'string'? csv.split( ',' ) : [];
+        } else if( namespaces === null ) {
+            localStorage.removeItem( NAMESPACE_KEY );
+        } else {
+            localStorage.setItem( NAMESPACE_KEY, namespaces );
+        }
+        var newSettings = self.debuggingNamespaces();
+        if( self.logger ){
+            self.logger.options.consoleNamespaceWhitelist = newSettings;
+        }
+        return newSettings;
+    } catch( storageErr ){
+        console.log( localize( 'localStorage not available for debug namespace retrieval' ) );
+    }
+};
+
 /** string rep */
 GalaxyApp.prototype.toString = function toString(){
-    var userEmail = this.user.get( 'email' ) || '(anonymous)';
+    var userEmail = this.user? ( this.user.get( 'email' ) || '(anonymous)' ) : 'uninitialized';
     return 'GalaxyApp(' + userEmail + ')';
 };
 

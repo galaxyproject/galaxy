@@ -4,16 +4,15 @@ define([
 ], function( baseMVC, _l ){
 /* global Backbone */
 
+var logNamespace = 'citation';
 //==============================================================================
 /** @class model for tool citations.
  *  @name Citation
- *
  *  @augments Backbone.Model
- *  @borrows LoggableMixin#logger as #logger
- *  @borrows LoggableMixin#log as #log
- *  @constructs
  */
 var Citation = Backbone.Model.extend( baseMVC.LoggableMixin ).extend( {
+    _logNamespace : logNamespace,
+
     initialize: function( ) {
         var bibtex = this.attributes.content;
         var entry = new BibtexParser(bibtex).entries[0];
@@ -36,12 +35,10 @@ var Citation = Backbone.Model.extend( baseMVC.LoggableMixin ).extend( {
 
 //==============================================================================
 /** @class Backbone collection of citations.
- *
- *  @borrows LoggableMixin#logger as #logger
- *  @borrows LoggableMixin#log as #log
- *  @constructs
  */
 var BaseCitationCollection = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend( {
+    _logNamespace : logNamespace,
+
     /** root api url */
     urlRoot : galaxy_config.root + 'api',
     partial : true, // Assume some tools in history/workflow may not be properly annotated yet.

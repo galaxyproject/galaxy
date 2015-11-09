@@ -25,29 +25,14 @@ define([
  *
  */
 var LoggableMixin =  /** @lends LoggableMixin# */{
-
+    // replace null with console (if available) to see all logs for a particular view/model
     /** The logging object whose log function will be used to output
      *      messages. Null will supress all logging. Commonly set to console.
      */
-    // replace null with console (if available) to see all logs
-    logger       : null,
-    _logNamespace : '?',
+    logger        : null,
+    /** @type {String} a namespace for filtering/focusing log output */
+    _logNamespace : '.',
 
-    /** Output log messages/arguments to logger.
-     *  @param {Arguments} ... (this function is variadic)
-     *  @returns undefined if not this.logger
-     */
-    log : function(){
-        if( this.logger ){
-            var log = this.logger.log;
-            if( typeof this.logger.log === 'object' ){
-//TODO:! there has to be a way to get the lineno/file into this
-                log = Function.prototype.bind.call( this.logger.log, this.logger );
-            }
-            return log.apply( this.logger, arguments );
-        }
-        return undefined;
-    }
 };
 addLogging( LoggableMixin );
 

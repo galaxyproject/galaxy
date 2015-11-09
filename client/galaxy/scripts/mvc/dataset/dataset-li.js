@@ -6,6 +6,8 @@ define([
     "utils/localization"
 ], function( LIST_ITEM, STATES, faIconButton, BASE_MVC, _l ){
 /* global Backbone */
+
+var logNamespace = 'dataset';
 /*==============================================================================
 TODO:
     straighten out state rendering and templates used
@@ -19,9 +21,7 @@ var _super = LIST_ITEM.ListItemView;
  */
 var DatasetListItemView = _super.extend(
 /** @lends DatasetListItemView.prototype */{
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger      : console,
+    _logNamespace : logNamespace,
 
     className   : _super.prototype.className + " dataset",
     //TODO:?? doesn't exactly match an hda's type_id
