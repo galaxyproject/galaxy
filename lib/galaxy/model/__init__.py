@@ -368,6 +368,7 @@ class Job( object, JobLike, Dictifiable ):
         self.destination_id = None
         self.destination_params = None
         self.post_job_actions = []
+        self.state_history = []
         self.imported = False
         self.handler = None
         self.exit_code = None
