@@ -29,7 +29,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
     def __init__( self, app ):
         super( JobController, self ).__init__( app )
         self.hda_manager = managers.hdas.HDAManager( app )
-        self.history_manager = managers.histories.HistoryManager( app )
+        self.dataset_manager = managers.datasets.DatasetManager( app )
 
     @expose_api
     def index( self, trans, **kwd ):
@@ -235,11 +235,9 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
         if job is None:
             raise exceptions.ObjectNotFound()
         if not trans.user_is_admin() and job.user != trans.user:
-            history = self.history_manager.get_current( trans )
-            if history is None:
-                raise exceptions.ObjectNotFound()
-            if len( [ hda.id for hda in history.datasets if hda.creating_job.id == job.id ] ) == 0:
-                raise exceptions.ItemAccessibilityException()
+            for data_assoc in job.output_datasets:
+                if not self.dataset_manager.is_accessible( data_assoc.dataset.dataset, trans.user ):
+                    raise exceptions.ItemAccessibilityException( "You are not allowed to rerun this job." )
         return job
 
     @expose_api
