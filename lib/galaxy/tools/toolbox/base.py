@@ -918,9 +918,9 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
             #  _tools_by_id and _tool_versions_by_id
             self.register_tool( new_tool )
             message = "Reloaded the tool:<br/>"
-            message += "<b>name:</b> %s<br/>" % old_tool.name
-            message += "<b>id:</b> %s<br/>" % old_tool.id
-            message += "<b>version:</b> %s" % old_tool.version
+            message += "<b>name:</b> %s<br/>" % escape( old_tool.name )
+            message += "<b>id:</b> %s<br/>" % escape( old_tool.id )
+            message += "<b>version:</b> %s" % escape( old_tool.version )
             status = 'done'
         return message, status
 
