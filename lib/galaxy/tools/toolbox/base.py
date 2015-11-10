@@ -952,9 +952,9 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                     del self.data_manager_tools[ tool_id ]
             # TODO: do we need to manually remove from the integrated panel here?
             message = "Removed the tool:<br/>"
-            message += "<b>name:</b> %s<br/>" % tool.name
-            message += "<b>id:</b> %s<br/>" % tool.id
-            message += "<b>version:</b> %s" % tool.version
+            message += "<b>name:</b> %s<br/>" % escape( tool.name )
+            message += "<b>id:</b> %s<br/>" % escape( tool.id )
+            message += "<b>version:</b> %s" % escape( tool.version )
             status = 'done'
         return message, status
 
