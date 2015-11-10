@@ -869,7 +869,7 @@ class JobWrapper( object ):
         self.dependency_shell_commands = self.tool.build_dependency_shell_commands()
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
         # if the server was stopped and restarted before the job finished
-        job.command_line = self.command_line
+        job.command_line = util.unicodify(self.command_line)
         self.sa_session.add( job )
         self.sa_session.flush()
         # Return list of all extra files
@@ -990,7 +990,7 @@ class JobWrapper( object ):
                 self.sa_session.add( dataset )
                 self.sa_session.flush()
             job.set_final_state( job.states.ERROR )
-            job.command_line = self.command_line
+            job.command_line = util.unicodify(self.command_line)
             job.info = message
             # TODO: Put setting the stdout, stderr, and exit code in one place
             # (not duplicated with the finish method).
@@ -1324,7 +1324,7 @@ class JobWrapper( object ):
         self.tool.call_hook( 'exec_after_process', self.queue.app, inp_data=inp_data,
                              out_data=out_data, param_dict=param_dict,
                              tool=self.tool, stdout=job.stdout, stderr=job.stderr )
-        job.command_line = self.command_line
+        job.command_line = util.unicodify(self.command_line)
 
         collected_bytes = 0
         # Once datasets are collected, set the total dataset size (includes extra files)
