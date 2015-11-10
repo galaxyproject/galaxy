@@ -235,6 +235,8 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
         if job is None:
             raise exceptions.ObjectNotFound()
         if not trans.user_is_admin() and job.user != trans.user:
+            if not job.output_datasets:
+                raise exceptions.ItemAccessibilityException( "Job has no output datasets." )
             for data_assoc in job.output_datasets:
                 if not self.dataset_manager.is_accessible( data_assoc.dataset.dataset, trans.user ):
                     raise exceptions.ItemAccessibilityException( "You are not allowed to rerun this job." )
