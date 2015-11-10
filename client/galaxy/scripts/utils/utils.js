@@ -255,7 +255,17 @@ function time() {
                 + d.getFullYear() + ", "
                 + hours + ":"
                 + minutes;
-};
+}
+
+/**
+ * Output message to Galaxy logger
+ */
+var emit = {};
+[ 'log', 'debug', 'info', 'warn', 'error', 'metric' ].map(function( i ) {
+    emit[ i ] = function( data ) {
+        Galaxy.logger.emit( i, arguments[ 0 ], Array.prototype.slice.call( arguments, 1 ) );
+    };
+});
 
 return {
     cssLoadFile: cssLoadFile,
@@ -270,7 +280,8 @@ return {
     textify: textify,
     validate: validate,
     deepeach: deepeach,
-    isJSON: isJSON
+    isJSON: isJSON,
+    emit: emit
 };
 
 });
