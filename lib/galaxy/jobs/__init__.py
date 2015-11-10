@@ -1823,6 +1823,7 @@ class TaskWrapper(JobWrapper):
 
         # Save stdout and stderr
         task.set_streams( stdout, stderr )
+        self._collect_metrics( task )
         task.exit_code = tool_exit_code
         task.command_line = self.command_line
         self.sa_session.flush()
