@@ -37,9 +37,6 @@ from .datasets import DatasetPath
 
 log = logging.getLogger( __name__ )
 
-DATABASE_MAX_STRING_SIZE = util.DATABASE_MAX_STRING_SIZE
-DATABASE_MAX_STRING_SIZE_PRETTY = util.DATABASE_MAX_STRING_SIZE_PRETTY
-
 # This file, if created in the job's working directory, will be used for
 # setting advanced metadata properties on the job and its associated outputs.
 # This interface is currently experimental, is only used by the upload tool,
