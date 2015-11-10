@@ -994,14 +994,7 @@ class JobWrapper( object ):
             job.info = message
             # TODO: Put setting the stdout, stderr, and exit code in one place
             # (not duplicated with the finish method).
-            if ( len( stdout ) > DATABASE_MAX_STRING_SIZE ):
-                stdout = util.shrink_string_by_size( stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
-                log.info( "stdout for job %d is greater than %s, only a portion will be logged to database" % ( job.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
-            job.stdout = stdout
-            if ( len( stderr ) > DATABASE_MAX_STRING_SIZE ):
-                stderr = util.shrink_string_by_size( stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
-                log.info( "stderr for job %d is greater than %s, only a portion will be logged to database" % ( job.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
-            job.stderr = stderr
+            job.set_streams( stdout, stderr )
             # Let the exit code be Null if one is not provided:
             if ( exit_code is not None ):
                 job.exit_code = exit_code
@@ -1093,8 +1086,6 @@ class JobWrapper( object ):
         the contents of the output files.
         """
         finish_timer = util.ExecutionTimer()
-        stdout = unicodify( stdout )
-        stderr = unicodify( stderr )
 
         # default post job setup
         self.sa_session.expunge_all()
@@ -1272,13 +1263,10 @@ class JobWrapper( object ):
         # Flush all the dataset and job changes above.  Dataset state changes
         # will now be seen by the user.
         self.sa_session.flush()
-        # Save stdout and stderr
-        if len( job.stdout ) > DATABASE_MAX_STRING_SIZE:
-            log.info( "stdout for job %d is greater than %s, only a portion will be logged to database" % ( job.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
-        job.stdout = util.shrink_string_by_size( job.stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
-        if len( job.stderr ) > DATABASE_MAX_STRING_SIZE:
-            log.info( "stderr for job %d is greater than %s, only a portion will be logged to database" % ( job.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
-        job.stderr = util.shrink_string_by_size( job.stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+
+        # Shrink streams and ensure unicode.
+        job.set_streams( job.stdout, job.stderr )
+
         # The exit code will be null if there is no exit code to be set.
         # This is so that we don't assign an exit code, such as 0, that
         # is either incorrect or has the wrong semantics.
@@ -1839,13 +1827,7 @@ class TaskWrapper(JobWrapper):
             task.state = task.states.ERROR
 
         # Save stdout and stderr
-        if len( stdout ) > DATABASE_MAX_STRING_SIZE:
-            log.error( "stdout for task %d is greater than %s, only a portion will be logged to database" % ( task.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
-        task.stdout = util.shrink_string_by_size( stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
-        if len( stderr ) > DATABASE_MAX_STRING_SIZE:
-            log.error( "stderr for task %d is greater than %s, only a portion will be logged to database" % ( task.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
-        self._collect_metrics( task )
-        task.stderr = util.shrink_string_by_size( stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+        task.set_streams( stdout, stderr )
         task.exit_code = tool_exit_code
         task.command_line = self.command_line
         self.sa_session.flush()
