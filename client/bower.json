@@ -32,7 +32,6 @@
     "threedubmedia.jquery.event": "*",
     "handlebars": "~3.0.0",
     "jquery-migrate": "~1.2.1",
-    // "intro.js": "git://github.com/usablica/intro.js.git#~1.1.1",
     "requirejs": "~2.1.17"
   },
   "resolutions": {
