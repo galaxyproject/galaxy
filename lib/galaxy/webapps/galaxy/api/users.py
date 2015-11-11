@@ -150,6 +150,8 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         :param purge: (optional) if True, purge the user
         :type  purge: bool
         """
+        if not trans.app.config.allow_user_deletion:
+            raise exceptions.ConfigDoesNotAllowException( 'The configuration of this Galaxy instance does not allow admins to delete users.' )
         purge = util.string_as_bool(kwd.get('purge', False))
         if purge:
             raise exceptions.NotImplemented('Purge option has not been implemented yet')
