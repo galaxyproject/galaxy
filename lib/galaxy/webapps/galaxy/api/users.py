@@ -6,9 +6,8 @@ import logging
 
 from sqlalchemy import false, true
 
-from galaxy import exceptions
-from galaxy import util
-from galaxy import web
+from galaxy import exceptions, util, web
+from galaxy.managers import users
 from galaxy.security.validate_user_input import validate_email
 from galaxy.security.validate_user_input import validate_password
 from galaxy.security.validate_user_input import validate_publicname
@@ -23,6 +22,11 @@ log = logging.getLogger( __name__ )
 
 
 class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, CreatesApiKeysMixin ):
+
+    def __init__(self, app):
+        super(UserAPIController, self).__init__(app)
+        self.user_manager = users.UserManager(app)
+        self.user_serializer = users.UserSerializer( app )
 
     @expose_api
     def index( self, trans, deleted='False', f_email=None, **kwd ):
@@ -143,10 +147,27 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         raise exceptions.NotImplemented()
 
     @expose_api
-    def delete( self, trans, **kwd ):
-        raise exceptions.NotImplemented()
+    @web.require_admin
+    def delete( self, trans, id, **kwd ):
+        """
+        DELETE /api/users/{id}
+        delete the user with the given ``id``
+
+        :param id: the encoded id of the user to delete
+        :type  id: str
+
+        :param purge: (optional) if True, purge the user
+        :type  purge: bool
+        """
+        purge = util.string_as_bool(kwd.get('purge', False))
+        if purge:
+            raise exceptions.NotImplemented('Purge option has not been implemented yet')
+        user = self.get_user(trans, id)
+        self.user_manager.delete(user)
+        return self.user_serializer.serialize_to_view(user, view='detailed')
 
     @expose_api
+    @web.require_admin
     def undelete( self, trans, **kwd ):
         raise exceptions.NotImplemented()
 
