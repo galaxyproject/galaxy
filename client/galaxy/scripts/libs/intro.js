@@ -65,7 +65,8 @@
       /* Precedence of positions, when auto is enabled */
       positionPrecedence: ["bottom", "top", "right", "left"],
       /* Disable an interaction with element? */
-      disableInteraction: false
+      disableInteraction: false,
+      click: undefined,
     };
   }
 
@@ -95,6 +96,7 @@
 
         //intro without element
         if (typeof(currentItem.element) === 'undefined' || currentItem.element == null) {
+
           var floatingElementQuery = document.querySelector(".introjsFloatingElement");
 
           if (floatingElementQuery == null) {
@@ -314,7 +316,63 @@
       return;
     }
 
+    if (this._currentStep != 0){
+        var previousStep = this._introItems[this._currentStep -1];
+    }else{
+        var previousStep = this._introItems[this._currentStep];
+    }
+
+    if (typeof (previousStep.postclick) !== 'undefined') {
+        var ln = document.querySelector( previousStep.postclick );
+        ln.click();
+    }
+
     var nextStep = this._introItems[this._currentStep];
+
+    if (typeof (nextStep.textinsert) !== 'undefined') {
+        //insert text given as textinsert attribute
+        nextStep.element.innerText = nextStep.textinsert;
+        //fire change argument
+        $(nextStep.element).trigger('change');
+    }
+
+    if (typeof (nextStep.preclick) !== 'undefined') {
+        var ln = document.querySelector( nextStep.preclick );
+        ln.click();
+          var introItems = [];
+          for (var i = 0, stepsLength = this._options.steps.length; i < stepsLength; i++) {
+            var currentItem = _cloneObject(this._options.steps[i]);
+            //set the step
+            currentItem.step = introItems.length + 1;
+            //use querySelector function only when developer used CSS selector
+            if (typeof(currentItem.element) === 'string') {
+              //grab the element with given selector from the page
+              currentItem.element = document.querySelector(currentItem.element);
+            }
+
+            //intro without element
+            if (typeof(currentItem.element) === 'undefined' || currentItem.element == null) {
+
+              var floatingElementQuery = document.querySelector(".introjsFloatingElement");
+
+              if (floatingElementQuery == null) {
+                floatingElementQuery = document.createElement('div');
+                floatingElementQuery.className = 'introjsFloatingElement';
+
+                document.body.appendChild(floatingElementQuery);
+              }
+
+              currentItem.element  = floatingElementQuery;
+              currentItem.position = 'floating';
+            }
+
+            if (currentItem.element != null) {
+              introItems.push(currentItem);
+            }
+          }
+        this._introItems=introItems;
+    }
+
     if (typeof (this._introBeforeChangeCallback) !== 'undefined') {
       this._introBeforeChangeCallback.call(this, nextStep.element);
     }

@@ -571,34 +571,6 @@ function init_refresh_on_change () {
         });
 };
 
-function start_tutorial_from_url( url ){
-    var intro = introJs();
-    $.getJSON( url, function( data ) {
-        intro.setOptions(
-            data
-        ).oncomplete(function() {
-            window.location.href = '/library/index?multipage=true';
-        });
-        intro.start();
-    });
-};
-
-var getUrlParameter = function getUrlParameter(sParam) {
-    var sPageURL = decodeURIComponent(window.location.search.substring(1)),
-        sURLVariables = sPageURL.split('&'),
-        sParameterName,
-        i;
-
-    for (i = 0; i < sURLVariables.length; i++) {
-        sParameterName = sURLVariables[i].split('=');
-
-        if (sParameterName[0] === sParam) {
-            return sParameterName[1] === undefined ? true : sParameterName[1];
-        }
-    }
-};
-
-
 // jQuery plugin to prevent double submission of forms
 // Ref: http://stackoverflow.com/questions/2830542/prevent-double-submission-of-forms-in-jquery
 jQuery.fn.preventDoubleSubmission = function() {

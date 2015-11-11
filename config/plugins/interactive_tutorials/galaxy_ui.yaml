@@ -13,45 +13,42 @@
       element: ".upload-button"
       intro: "Use this button to upload your data."
       position: "right"
-      postclick: "#tool-panel-upload-button"
+      postclick: ".upload-button"
     -
       element: ".upload-button"
       intro: "Use this button to upload your data."
       position: "right"
-      preclick: "#tool-panel-upload-button"
+      preclick: ".upload-button"
+    - 
+      element: ".ui-modal"
+      intro: "TEST"
+      position: "bottom"
     - 
       element: "button#btn-local"
       intro: "Upload data from your computer."
       position: "top"
       postclick: "button#btn-new"
-
     - 
       element: "button#btn-new"
       intro: "Copy and Paste data or include URLs."
       position: "top"
-      preclick: "#tool-panel-upload-button"
-
+      preclick: ".upload-button"
     - 
       element: "textarea#text-content"
       intro: "Insert data into Galaxy."
       position: "top"
       textinsert: 'https://raw.githubusercontent.com/arq5x/bedtools/master/test/merge/a.full.bed'
       postclick: "textarea#text-content"
-
-
-
     - 
       element: "button#btn-start"
       intro: "Upload the data into your Galaxy history."
       position: "bottom"
       preclick: "button#btn-start"
-
     - 
       element: "button#btn-close"
       intro: "Hit the close button in upload <b>Workflows</b>."
       position: "bottom"
       postclick: "#btn-close"
-
     -
       element: "#center"
       intro: "<i>Main</i> panel. Here you can configure your Tools and can inpect results."

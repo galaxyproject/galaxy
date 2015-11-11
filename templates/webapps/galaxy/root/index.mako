@@ -69,38 +69,5 @@ ${h.css("base")}
           ga('create', '${app.config.ga_code}', 'auto');
           ga('send', 'pageview');
     %endif
-                var tech = getUrlParameter('tutorial_url');
-                if (tech) {
-                    window.onload = function startIntro(){
-                        var url = '${h.url_for(controller='page', action='get_tutorial_content', tutorial_config_file='')}'
-
-                        $.getJSON( url + tech, function( data ) {
-                            var intro = introJs();
-                            intro.setOptions(
-                                data
-                            )
-                            //.oncomplete(function() {
-                            //    window.location.href = '/library/index?multipage=true';
-                            //})
-                            //).onafterchange(function() {
-                            //    var ln = document.querySelector('#tool-panel-upload-button');
-                            //    ln.click();
-                            //    var ln = document.querySelector('#title_filter a');
-                            //    ln.click();
-                            //})
-
-                            ;
-
-                            intro.start();
-                        });
-
-                    };
-                }
-
-
-            //%endif
-        //%endif
-
-
 
 </script>

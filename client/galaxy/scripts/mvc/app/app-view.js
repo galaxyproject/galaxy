@@ -60,6 +60,27 @@ define(['utils/utils', 'galaxy.masthead', 'galaxy.menu', 'galaxy.frame',
             } else {
                 this.build( Analysis );
             }
+
+            this.startIntro(this.getUrlParameter('tutorial_url'));
+        },
+
+        startIntro : function(yml_name){
+            var url = Galaxy.root + 'api/tutorials/' + yml_name;
+            $.getJSON( url, function( data ) {
+                var intro = introJs();
+                intro.setOptions(data);
+                intro.start();
+            });
+        },
+
+        getUrlParameter: function(sParam){
+                var sPageURL = decodeURIComponent(window.location.search.substring(1)), sURLVariables = sPageURL.split('&'), sParameterName, i;
+                for (i = 0; i < sURLVariables.length; i++) {
+                    sParameterName = sURLVariables[i].split('=');
+                    if (sParameterName[0] === sParam) {
+                        return sParameterName[1] === undefined ? true : sParameterName[1];
+                    }
+                }
         },
 
         /** Display content */
