@@ -53,7 +53,7 @@
     ${h.js(
         'libs/require',
         ## TODO: remove when all libs are required directly in modules
-        'bundled/libs.bundled',
+        'bundled/libs.bundled'
     )}
 
     <script type="text/javascript">
@@ -114,12 +114,12 @@
     <script type="text/javascript">
 
     %if self.has_left_panel:
-        var lp = new Panel( { panel: $("#left"), center: $("#center"), drag: $("#left > .unified-panel-footer > .drag" ), toggle: $("#left > .unified-panel-footer > .panel-collapse" ) } );
+        var lp = new panels.LeftPanel({});
         force_left_panel = function( x ) { lp.force_panel( x ) };
     %endif
 
     %if self.has_right_panel:
-        var rp = new Panel( { panel: $("#right"), center: $("#center"), drag: $("#right > .unified-panel-footer > .drag" ), toggle: $("#right > .unified-panel-footer > .panel-collapse" ), right: true } );
+        var rp = new panels.RightPanel({});
         window.handle_minwidth_hint = function( x ) { rp.handle_minwidth_hint( x ) };
         force_right_panel = function( x ) { rp.force_panel( x ) };
     %endif

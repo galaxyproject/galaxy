@@ -1,2 +1,766 @@
-webpackJsonp([3],{0:function(t,e,i){var n=i(67).GalaxyApp;window.GalaxyApp=n,console.debug("galaxy.js, GalaxyApp is now in window"),e=n},67:function(t,e,i){var n,s;(function(a){n=[i(3),i(2),i(6),i(59),i(126),i(63),i(5)],s=function(t,e,i,n,s,o,r){function l(t,e){console.debug("GalaxyApp:",t,e);var i=this;return i._init(t||{},e||{})}o(l,"GalaxyApp");var c="galaxy:debug",h=c+":namespaces",d=!1;try{d="true"==localStorage.getItem(c)}catch(u){console.log(r("localStorage not available for debug flag retrieval"))}return l.prototype._init=function(i,n){var s=this;return t.extend(s,e.Events),d&&(s.logger=console),s._processOptions(i),s.debug("GalaxyApp.options: ",s.options),s.root=i.root||"/",s._initConfig(i.config||n.config||{}),s.debug("GalaxyApp.config: ",s.config),s._patchGalaxy(window.Galaxy),s._initLogger(s.options.loggerOptions||{}),s.debug("GalaxyApp.logger: ",s.logger),s._initLocale(),s.debug("GalaxyApp.localize: ",s.localize),s.config=i.config||{},s.debug("GalaxyApp.config: ",s.config),s._initUser(i.user||{}),s.debug("GalaxyApp.user: ",s.user),s._setUpListeners(),s.trigger("ready",s),s},l.prototype.defaultOptions={patchExisting:!0,root:"/"},l.prototype._processOptions=function(t){var e=this,i=e.defaultOptions;e.debug("_processOptions: ",t),e.options={};for(var n in i)i.hasOwnProperty(n)&&(e.options[n]=t.hasOwnProperty(n)?t[n]:i[n]);return e},l.prototype._initConfig=function(t){var e=this;return e.debug("_initConfig: ",t),e.config=t,e.config.debug=d||e.config.debug,e},l.prototype._patchGalaxy=function(t){var e=this;if(e.options.patchExisting&&t){e.debug("found existing Galaxy object:",t);for(var i in t)t.hasOwnProperty(i)&&(e.debug("	 patching in "+i+" to Galaxy"),e[i]=t[i])}},l.prototype._initLogger=function(t){var e=this;if(e.config.debug){t.consoleLogger=t.consoleLogger||console,t.consoleLevel=t.consoleLevel||s.MetricsLogger.ALL;try{t.consoleNamespaceWhitelist=localStorage.getItem(h).split(",")}catch(n){}}return e.debug("_initLogger:",t),e.logger=new s.MetricsLogger(t),e.config.debug&&(i.LoggableMixin.logger=e.logger),e},l.prototype._initLocale=function(t){var e=this;return e.debug("_initLocale:",t),e.localize=r,window._l=e.localize,e},l.prototype._initUser=function(t){var e=this;return e.debug("_initUser:",t),e.user=new n.User(t),e.user.logger=e.logger,e.currUser=e.user,e},l.prototype._setUpListeners=function(){var t=this;return t.lastAjax={},a(document).bind("ajaxSend",function(e,i,n){var s=n.data;try{s=JSON.parse(s)}catch(a){}t.lastAjax={url:location.href.slice(0,-1)+n.url,data:s}}),t},l.prototype.debugging=function(t){var e=this;try{if(void 0===t)return"true"===localStorage.getItem(c);if(t)return localStorage.setItem(c,!0),!0;localStorage.removeItem(c),e.debuggingNamespaces(null)}catch(i){console.log(r("localStorage not available for debug flag retrieval"))}return!1},l.prototype.debuggingNamespaces=function(t){var e=this;try{if(void 0===t){var i=localStorage.getItem(h);return"string"==typeof i?i.split(","):[]}null===t?localStorage.removeItem(h):localStorage.setItem(h,t);var n=e.debuggingNamespaces();return e.logger&&(e.logger.options.consoleNamespaceWhitelist=n),n}catch(s){console.log(r("localStorage not available for debug namespace retrieval"))}},l.prototype.toString=function(){var t=this.user?this.user.get("email")||"(anonymous)":"uninitialized";return"GalaxyApp("+t+")"},{GalaxyApp:l}}.apply(e,n),!(void 0!==s&&(t.exports=s))}).call(e,i(1))},126:function(t,e,i){var n,s;(function(i){n=[],s=function(){function t(t){t=t||{};var e=this;return e.userId=window.bootstrapped&&window.bootstrapped.user?window.bootstrapped.user.id:null,e.userId=e.userId||t.userId||null,e.consoleLogger=t.consoleLogger||null,e._init(t),e}function e(t){var e=this;return e._init(t||{})}return t.ALL=0,t.LOG=0,t.DEBUG=10,t.INFO=20,t.WARN=30,t.ERROR=40,t.METRIC=50,t.NONE=100,t.defaultOptions={logLevel:t.NONE,consoleLevel:t.NONE,defaultNamespace:"Galaxy",consoleNamespaceWhitelist:null,clientPrefix:"client.",maxCacheSize:3e3,postSize:1e3,addTime:!0,cacheKeyPrefix:"logs-",postUrl:"/api/metrics",delayPostInMs:6e5,getPingData:void 0,onServerResponse:void 0},t.prototype._init=function(e){var i=this;i.options={};for(var n in t.defaultOptions)t.defaultOptions.hasOwnProperty(n)&&(i.options[n]=e.hasOwnProperty(n)?e[n]:t.defaultOptions[n]);return i.options.logLevel=i._parseLevel(i.options.logLevel),i.options.consoleLevel=i._parseLevel(i.options.consoleLevel),i._sending=!1,i._waiting=null,i._postSize=i.options.postSize,i._initCache(),i},t.prototype._initCache=function(){try{this.cache=new e({maxSize:this.options.maxCacheSize,key:this.options.cacheKeyPrefix+this.userId})}catch(i){this._emitToConsole("warn","MetricsLogger",["Could not intitialize logging cache:",i]),this.options.logLevel=t.NONE}},t.prototype._parseLevel=function(e){var i=typeof e;if("number"===i)return e;if("string"===i){var n=e.toUpperCase();if(t.hasOwnProperty(n))return t[n]}throw new Error("Unknown log level: "+e)},t.prototype.emit=function(t,e,i){var n=this;return e=e||n.options.defaultNamespace,t&&i?(t=n._parseLevel(t),t>=n.options.logLevel&&n._addToCache(t,e,i),n.consoleLogger&&t>=n.options.consoleLevel&&n._emitToConsole(t,e,i),n):n},t.prototype._addToCache=function(t,e,i){this._emitToConsole("debug","MetricsLogger",["_addToCache:",arguments,this.options.addTime,this.cache.length()]);var n=this;try{var s=n.cache.add(n._buildEntry(t,e,i));s>=n._postSize&&n._postCache()}catch(a){n._emitToConsole("warn","MetricsLogger",["Metrics logger could not stringify logArguments:",e,i]),n._emitToConsole("error","MetricsLogger",[a])}return n},t.prototype._buildEntry=function(t,e,i){this._emitToConsole("debug","MetricsLogger",["_buildEntry:",arguments]);var n={level:t,namespace:this.options.clientPrefix+e,args:i};return this.options.addTime&&(n.time=(new Date).toISOString()),n},t.prototype._postCache=function(t){if(t=t||{},this._emitToConsole("info","MetricsLogger",["_postCache",t,this._postSize]),!this.options.postUrl||this._sending)return i.when({});var e=this,n=t.count||e._postSize,s=e.cache.get(n),a=s.length,o="function"==typeof e.options.getPingData?e.options.getPingData():{};return o.metrics=JSON.stringify(s),e._sending=!0,i.post(e.options.postUrl,o).always(function(){e._sending=!1}).fail(function(t,i,n){e._postSize=e.options.maxCacheSize,this.emit("error","MetricsLogger",["_postCache error:",t.readyState,t.status,t.responseJSON||t.responseText])}).done(function(t){"function"==typeof e.options.onServerResponse&&e.options.onServerResponse(t),e.cache.remove(a),e._postSize=e.options.postSize})},t.prototype._delayPost=function(){var t=this;t._waiting=setTimeout(function(){t._waiting=null},t.options.delayPostInMs)},t.prototype._emitToConsole=function(e,i,n){var s=this,a=s.options.consoleNamespaceWhitelist;if(!s.consoleLogger)return s;if(a&&-1===a.indexOf(i))return s;var o=Array.prototype.slice.call(n,0);return o.unshift(i),e>=t.METRIC&&"function"==typeof s.consoleLogger.info?s.consoleLogger.info.apply(s.consoleLogger,o):e>=t.ERROR&&"function"==typeof s.consoleLogger.error?s.consoleLogger.error.apply(s.consoleLogger,o):(e>=t.WARN&&"function"==typeof s.consoleLogger.warn?s.consoleLogger.warn.apply(s.consoleLogger,o):e>=t.INFO&&"function"==typeof s.consoleLogger.info?s.consoleLogger.info.apply(s.consoleLogger,o):e>=t.DEBUG&&"function"==typeof s.consoleLogger.debug?s.consoleLogger.debug.apply(s.consoleLogger,o):"function"==typeof s.consoleLogger.log&&s.consoleLogger.log.apply(s.consoleLogger,o),s)},t.prototype.log=function(){this.emit(1,this.options.defaultNamespace,Array.prototype.slice.call(arguments,0))},t.prototype.debug=function(){this.emit(t.DEBUG,this.options.defaultNamespace,Array.prototype.slice.call(arguments,0))},t.prototype.info=function(){this.emit(t.INFO,this.options.defaultNamespace,Array.prototype.slice.call(arguments,0))},t.prototype.warn=function(){this.emit(t.WARN,this.options.defaultNamespace,Array.prototype.slice.call(arguments,0))},t.prototype.error=function(){this.emit(t.ERROR,this.options.defaultNamespace,Array.prototype.slice.call(arguments,0))},t.prototype.metric=function(){this.emit(t.METRIC,this.options.defaultNamespace,Array.prototype.slice.call(arguments,0))},e.defaultOptions={maxSize:5e3},e.prototype._init=function(t){if(!this._hasStorage())throw new Error("LoggingCache needs localStorage");if(!t.key)throw new Error("LoggingCache needs key for localStorage");return this.key=t.key,this._initStorage(),this.maxSize=t.maxSize||e.defaultOptions.maxSize,this},e.prototype._hasStorage=function(){var t="test";try{return localStorage.setItem(t,t),localStorage.removeItem(t),!0}catch(e){return!1}},e.prototype._initStorage=function(){return null===localStorage.getItem(this.key)?this.empty():this},e.prototype.add=function(t){var e=this,i=e._fetchAndParse(),n=i.length+1-e.maxSize;return n>0&&i.splice(0,n),i.push(t),e._unparseAndStore(i),i.length},e.prototype._fetchAndParse=function(){var t=this;return JSON.parse(localStorage.getItem(t.key))},e.prototype._unparseAndStore=function(t){var e=this;return localStorage.setItem(e.key,JSON.stringify(t))},e.prototype.length=function(){return this._fetchAndParse().length},e.prototype.get=function(t){return this._fetchAndParse().slice(0,t)},e.prototype.remove=function(t){var e=this._fetchAndParse(),i=e.splice(0,t);return this._unparseAndStore(e),i},e.prototype.empty=function(){return localStorage.setItem(this.key,"[]"),this},e.prototype.stringify=function(t){return JSON.stringify(this.get(t))},e.prototype.print=function(){console.log(JSON.stringify(this._fetchAndParse(),null,"  "))},{MetricsLogger:t,LoggingCache:e}}.apply(e,n),!(void 0!==s&&(t.exports=s))}).call(e,i(1))}});
+webpackJsonp([3],{
+
+/***/ 0:
+/*!***************************************!*\
+  !*** ./galaxy/scripts/apps/galaxy.js ***!
+  \***************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	//TODO: remove this
+	var GalaxyApp = __webpack_require__( /*! ../galaxy-app-base */ 122 ).GalaxyApp;
+	window.GalaxyApp = GalaxyApp;
+	exports = GalaxyApp;
+
+
+/***/ },
+
+/***/ 122:
+/*!*******************************************!*\
+  !*** ./galaxy/scripts/galaxy-app-base.js ***!
+  \*******************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function($) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
+	    __webpack_require__(/*! libs/underscore */ 1),
+	    __webpack_require__(/*! libs/backbone */ 4),
+	    __webpack_require__(/*! mvc/base-mvc */ 5),
+	    __webpack_require__(/*! mvc/user/user-model */ 77),
+	    __webpack_require__(/*! utils/metrics-logger */ 123),
+	    __webpack_require__(/*! utils/add-logging */ 6),
+	    __webpack_require__(/*! utils/localization */ 7)
+	], __WEBPACK_AMD_DEFINE_RESULT__ = function( _, Backbone, BASE_MVC, userModel, metricsLogger, addLogging, localize ){
+	
+	// TODO: move into a singleton pattern and have dependents import Galaxy
+	// ============================================================================
+	/** Base galaxy client-side application.
+	 *      Iniitializes:
+	 *          logger      : the logger/metrics-logger
+	 *          localize    : the string localizer
+	 *          config      : the current configuration (any k/v in
+	 *              galaxy.ini available from the configuration API)
+	 *          user        : the current user (as a mvc/user/user-model)
+	 */
+	function GalaxyApp( options, bootstrapped ){
+	    var self = this;
+	    return self._init( options || {}, bootstrapped || {} );
+	}
+	
+	// add logging shortcuts for this object
+	addLogging( GalaxyApp, 'GalaxyApp' );
+	
+	// a debug flag can be set via local storage and made available during script/page loading
+	var DEBUGGING_KEY = 'galaxy:debug',
+	    NAMESPACE_KEY = DEBUGGING_KEY + ':namespaces',
+	    localDebugging = false;
+	try {
+	    localDebugging = localStorage.getItem( DEBUGGING_KEY ) == 'true';
+	} catch( storageErr ){
+	    console.log( localize( 'localStorage not available for debug flag retrieval' ) );
+	}
+	
+	/** initalize options and sub-components */
+	GalaxyApp.prototype._init = function __init( options, bootstrapped ){
+	    var self = this;
+	    _.extend( self, Backbone.Events );
+	    if( localDebugging ){
+	        self.logger = console;
+	        console.debug( 'debugging galaxy:', 'options:', options, 'bootstrapped:', bootstrapped );
+	    }
+	
+	    self._processOptions( options );
+	    // special case for root
+	    self.root = options.root || '/';
+	
+	    self._initConfig( options.config || bootstrapped.config || {} );
+	    self._patchGalaxy( window.Galaxy );
+	
+	    self._initLogger( self.options.loggerOptions || {} );
+	    // at this point, either logging or not and namespaces are enabled - chat it up
+	    self.debug( 'GalaxyApp.options: ', self.options );
+	    self.debug( 'GalaxyApp.config: ', self.config );
+	    self.debug( 'GalaxyApp.logger: ', self.logger );
+	
+	    self._initLocale();
+	    self.debug( 'GalaxyApp.localize: ', self.localize );
+	
+	    self.config = options.config || {};
+	    self.debug( 'GalaxyApp.config: ', self.config );
+	
+	    self._initUser( options.user || {} );
+	    self.debug( 'GalaxyApp.user: ', self.user );
+	
+	    self._setUpListeners();
+	    self.trigger( 'ready', self );
+	
+	    return self;
+	};
+	
+	/** default options */
+	GalaxyApp.prototype.defaultOptions = {
+	    /** monkey patch attributes from existing window.Galaxy object? */
+	    patchExisting   : true,
+	    /** root url of this app */
+	    // move to self.root?
+	    root            : '/'
+	};
+	
+	/** add an option from options if the key matches an option in defaultOptions */
+	GalaxyApp.prototype._processOptions = function _processOptions( options ){
+	    var self = this,
+	        defaults = self.defaultOptions;
+	
+	    self.options = {};
+	    for( var k in defaults ){
+	        if( defaults.hasOwnProperty( k ) ){
+	            self.options[ k ] = ( options.hasOwnProperty( k ) )?( options[ k ] ):( defaults[ k ] );
+	        }
+	    }
+	    return self;
+	};
+	
+	/** parse the config and any extra info derived from it */
+	GalaxyApp.prototype._initConfig = function _initConfig( config ){
+	    var self = this;
+	    self.config = config;
+	
+	    // give precendence to localdebugging for this setting
+	    self.config.debug = localDebugging || self.config.debug;
+	
+	    return self;
+	};
+	
+	/** add an option from options if the key matches an option in defaultOptions */
+	GalaxyApp.prototype._patchGalaxy = function _patchGalaxy( patchWith ){
+	    var self = this;
+	    // in case req or plain script tag order has created a prev. version of the Galaxy obj...
+	    if( self.options.patchExisting && patchWith ){
+	        // self.debug( 'found existing Galaxy object:', patchWith );
+	        // ...(for now) monkey patch any added attributes that the previous Galaxy may have had
+	        //TODO: move those attributes to more formal assignment in GalaxyApp
+	        for( var k in patchWith ){
+	            if( patchWith.hasOwnProperty( k ) ){
+	                // self.debug( '\t patching in ' + k + ' to Galaxy:', self[ k ] );
+	                self[ k ] = patchWith[ k ];
+	            }
+	        }
+	    }
+	};
+	
+	/** set up the metrics logger (utils/metrics-logger) and pass loggerOptions */
+	GalaxyApp.prototype._initLogger = function _initLogger( loggerOptions ){
+	    var self = this;
+	    // default to console logging at the debug level if the debug flag is set
+	    if( self.config.debug ){
+	        loggerOptions.consoleLogger = loggerOptions.consoleLogger || console;
+	        loggerOptions.consoleLevel = loggerOptions.consoleLevel || metricsLogger.MetricsLogger.ALL;
+	        // load any logging namespaces from localStorage if we can
+	        try {
+	            loggerOptions.consoleNamespaceWhitelist = localStorage.getItem( NAMESPACE_KEY ).split( ',' );
+	        } catch( storageErr ){}
+	    }
+	    self.logger = new metricsLogger.MetricsLogger( loggerOptions );
+	
+	    if( self.config.debug ){
+	        // add this logger to mvc's loggable mixin so that all models can use the logger
+	        BASE_MVC.LoggableMixin.logger = self.logger;
+	    }
+	    return self;
+	};
+	
+	/** add the localize fn to this object and the window namespace (as '_l') */
+	GalaxyApp.prototype._initLocale = function _initLocale( options ){
+	    var self = this;
+	    self.debug( '_initLocale:', options );
+	    self.localize = localize;
+	    // add to window as global shortened alias
+	    window._l = self.localize;
+	    return self;
+	};
+	
+	/** set up the current user as a Backbone model (mvc/user/user-model) */
+	GalaxyApp.prototype._initUser = function _initUser( userJSON ){
+	    var self = this;
+	    self.debug( '_initUser:', userJSON );
+	    self.user = new userModel.User( userJSON );
+	    self.user.logger = self.logger;
+	    //TODO: temp - old alias
+	    self.currUser = self.user;
+	    return self;
+	};
+	
+	/** Set up DOM/jQuery/Backbone event listeners enabled for all pages */
+	GalaxyApp.prototype._setUpListeners = function _setUpListeners(){
+	    var self = this;
+	
+	    // hook to jq beforeSend to record the most recent ajax call and cache some data about it
+	    /** cached info about the last ajax call made through jQuery */
+	    self.lastAjax = {};
+	    $( document ).bind( 'ajaxSend', function( ev, xhr, options ){
+	        var data = options.data;
+	        try {
+	            data = JSON.parse( data );
+	        } catch( err ){}
+	
+	        self.lastAjax = {
+	            url     : location.href.slice( 0, -1 ) + options.url,
+	            data    : data
+	        };
+	        //TODO:?? we might somehow manage to *retry* ajax using either this hook or Backbone.sync
+	    });
+	    return self;
+	};
+	
+	/** Turn debugging/console-output on/off by passing boolean. Pass nothing to get current setting. */
+	GalaxyApp.prototype.debugging = function _debugging( setting ){
+	    var self = this;
+	    try {
+	        if( setting === undefined ){
+	            return localStorage.getItem( DEBUGGING_KEY ) === 'true';
+	        }
+	        if( setting ){
+	            localStorage.setItem( DEBUGGING_KEY, true );
+	            return true;
+	        }
+	
+	        localStorage.removeItem( DEBUGGING_KEY );
+	        // also remove all namespaces
+	        self.debuggingNamespaces( null );
+	
+	    } catch( storageErr ){
+	        console.log( localize( 'localStorage not available for debug flag retrieval' ) );
+	    }
+	    return false;
+	};
+	
+	/** Add, remove, or clear namespaces from the debugging filters
+	 *  Pass no arguments to retrieve the existing namespaces as an array.
+	 *  Pass in null to clear all namespaces (all logging messages will show now).
+	 *  Pass in an array of strings or single string of the namespaces to filter to.
+	 *  Returns the new/current namespaces as an array;
+	 */
+	GalaxyApp.prototype.debuggingNamespaces = function _debuggingNamespaces( namespaces ){
+	    var self = this;
+	    try {
+	        if( namespaces === undefined ){
+	            var csv = localStorage.getItem( NAMESPACE_KEY );
+	            return typeof( csv ) === 'string'? csv.split( ',' ) : [];
+	        } else if( namespaces === null ) {
+	            localStorage.removeItem( NAMESPACE_KEY );
+	        } else {
+	            localStorage.setItem( NAMESPACE_KEY, namespaces );
+	        }
+	        var newSettings = self.debuggingNamespaces();
+	        if( self.logger ){
+	            self.logger.options.consoleNamespaceWhitelist = newSettings;
+	        }
+	        return newSettings;
+	    } catch( storageErr ){
+	        console.log( localize( 'localStorage not available for debug namespace retrieval' ) );
+	    }
+	};
+	
+	/** string rep */
+	GalaxyApp.prototype.toString = function toString(){
+	    var userEmail = this.user? ( this.user.get( 'email' ) || '(anonymous)' ) : 'uninitialized';
+	    return 'GalaxyApp(' + userEmail + ')';
+	};
+	
+	
+	// ============================================================================
+	    return {
+	        GalaxyApp : GalaxyApp
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 2)))
+
+/***/ },
+
+/***/ 123:
+/*!************************************************!*\
+  !*** ./galaxy/scripts/utils/metrics-logger.js ***!
+  \************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(jQuery) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
+	], __WEBPACK_AMD_DEFINE_RESULT__ = function(){
+	/*global window, jQuery, console */
+	/*=============================================================================
+	TODO:
+	    while anon: logs saved to 'logs-null' - this will never post
+	        unless we manually do so at/after login
+	        OR prepend when userId and localStorage has 'logs-null'
+	    wire up _delayPost and test
+	
+	=============================================================================*/
+	/** @class MetricsLogger
+	 *
+	 *  Object to cache, output, and post log/metric messages to the server.
+	 *  Meant to be attached to the Galaxy object.
+	 *
+	 *  Log from objects by either attaching logger directly:
+	 *      panel.logger.metric( 'user dataset deletion', panel.user.id, hda.toJSON() )
+	 *  or using the LoggableMixin or addLogging function:
+	 *      MyBackboneModel.extend( LoggableMixin ).extend({ ... })
+	 *      addLogging( MyBackboneModel, 'my-backbone-model' )
+	 *
+	 *  Log from templates by calling directly from Galaxy object:
+	 *      Galaxy.logger.metric( 'template loaded', { ownedByUser : true });
+	 *
+	 *  If you attempt to log an un-serializable object (circular reference, window, etc.),
+	 *  that entry will not be cached (or sent). If you set consoleLevel and consoleLogger
+	 *  appropriately, a warning will be shown when this happens:
+	 *      > panel.metric( 'something weird with window', { window : window })
+	 *      !'Metrics logger could not stringify logArguments: ...'
+	 */
+	function MetricsLogger( options ){
+	    options = options || {};
+	    var self = this;
+	
+	    ///** get the current user's id from bootstrapped data or options */
+	    self.userId = ( window.bootstrapped && window.bootstrapped.user )? window.bootstrapped.user.id: null;
+	    self.userId = self.userId || options.userId || null;
+	
+	    /** the (optional) console to emit logs to */
+	    self.consoleLogger = options.consoleLogger || null;
+	
+	    self._init( options );
+	    return self;
+	}
+	
+	//----------------------------------------------------------------------------- defaults and constants
+	// see: python std lib, logging
+	MetricsLogger.ALL   =  0;
+	MetricsLogger.LOG   =  0;
+	MetricsLogger.DEBUG = 10;
+	MetricsLogger.INFO  = 20;
+	MetricsLogger.WARN  = 30;
+	MetricsLogger.ERROR = 40;
+	// metrics levels here?
+	//MetricsLogger.MinorEvent  = 45;
+	//MetricsLogger.MajorEvent  = 50;
+	MetricsLogger.METRIC = 50;
+	MetricsLogger.NONE = 100;
+	
+	/** default options - override these through the constructor */
+	MetricsLogger.defaultOptions = {
+	    /** if an incoming message has a level >= this, it will be cached - can also be a string (e.g. 'debug') */
+	    logLevel            : MetricsLogger.NONE,
+	    /** if an incoming message has a level >= this, it will be output to the console */
+	    consoleLevel        : MetricsLogger.NONE,
+	    /** the default 'namespace' or label associated with an incoming message (if none is passed) */
+	    defaultNamespace    : 'Galaxy',
+	    /** the namespaces output to the console (all namespaces will be output if this is falsy)
+	     *  note: applies only to the console (not the event/metrics log/cache)
+	     */
+	    consoleNamespaceWhitelist : null,
+	    /** the prefix attached to client-side logs to distinguish them in the metrics db */
+	    clientPrefix        : 'client.',
+	
+	    /** the maximum number of messages the cache should hold; if exceeded older messages are removed first */
+	    maxCacheSize        : 3000,
+	    /** the number of messages accumulate before posting to the server; should be <= maxCacheSize */
+	    postSize            : 1000,
+	    /** T/F whether to add a timestamp to incoming cached messages */
+	    addTime             : true,
+	    /** string to prefix to userid for cache web storage */
+	    cacheKeyPrefix      : 'logs-',
+	
+	    /** the relative url to post messages to */
+	    postUrl             : '/api/metrics',
+	    /** delay before trying post again after two failures */
+	    delayPostInMs       : 1000 * 60 * 10,
+	
+	    /** an (optional) function that should return an object; used to send additional data with the metrics */
+	    getPingData         : undefined,
+	    /** an (optional) function that will handle the servers response after successfully posting messages */
+	    onServerResponse    : undefined
+	};
+	
+	//----------------------------------------------------------------------------- set up
+	/** initialize the logger with options, set up instance vars and cache, and add onpageunload to window */
+	MetricsLogger.prototype._init = function _init( options ){
+	    var self = this;
+	    self.options = {};
+	    for( var k in MetricsLogger.defaultOptions ){
+	        if( MetricsLogger.defaultOptions.hasOwnProperty( k ) ){
+	            self.options[ k ] = ( options.hasOwnProperty( k ) )?( options[ k ] ):( MetricsLogger.defaultOptions[ k ] );
+	        }
+	    }
+	    self.options.logLevel = self._parseLevel( self.options.logLevel );
+	    self.options.consoleLevel = self._parseLevel( self.options.consoleLevel );
+	    //self._emitToConsole( 'debug', 'MetricsLogger', 'MetricsLogger.options:', self.options );
+	
+	    /** is the logger currently sending? */
+	    self._sending = false;
+	    /** the setTimeout id if the logger POST has failed more than once */
+	    self._waiting = null;
+	    /** the current number of entries to send in a POST */
+	    self._postSize = self.options.postSize;
+	
+	    self._initCache();
+	
+	    return self;
+	};
+	
+	/** initialize the cache */
+	MetricsLogger.prototype._initCache = function _initCache(){
+	    try {
+	        this.cache = new LoggingCache({
+	            maxSize : this.options.maxCacheSize,
+	            key     : this.options.cacheKeyPrefix + this.userId
+	        });
+	    } catch( err ){
+	        this._emitToConsole( 'warn', 'MetricsLogger', [ 'Could not intitialize logging cache:', err ] );
+	        this.options.logLevel = MetricsLogger.NONE;
+	    }
+	};
+	
+	/** return the numeric log level if level in 'none, debug, log, info, warn, error' */
+	MetricsLogger.prototype._parseLevel = function _parseLevel( level ){
+	    var type = typeof level;
+	    if( type === 'number' ){ return level; }
+	    if( type === 'string' ){
+	        var upper = level.toUpperCase();
+	        if( MetricsLogger.hasOwnProperty( upper ) ){
+	            return MetricsLogger[ upper ];
+	        }
+	    }
+	    throw new Error( 'Unknown log level: ' + level );
+	};
+	
+	
+	//----------------------------------------------------------------------------- main entry point
+	/** record a log/message's arguments to the cache and/or the console based on level and namespace */
+	MetricsLogger.prototype.emit = function emit( level, namespace, logArguments ){
+	    //this._emitToConsole( 'debug', 'MetricsLogger', [ 'emit:', level, namespace, logArguments ]);
+	    var self = this;
+	    namespace = namespace || self.options.defaultNamespace;
+	    if( !level || !logArguments ){
+	        return self;
+	    }
+	    // add to cache if proper level
+	    //TODO: respect do not track?
+	    //if( !navigator.doNotTrack && level >= self.options.logLevel ){
+	    level = self._parseLevel( level );
+	    if( level >= self.options.logLevel ){
+	        self._addToCache( level, namespace, logArguments );
+	    }
+	    // also emit to consoleLogger if proper level for that
+	    if( self.consoleLogger && level >= self.options.consoleLevel ){
+	        self._emitToConsole( level, namespace, logArguments );
+	    }
+	    return self;
+	};
+	
+	//----------------------------------------------------------------------------- cache
+	/** add a message to the cache and if messages.length is high enough post them to the server */
+	MetricsLogger.prototype._addToCache = function _addToCache( level, namespace, logArguments ){
+	    this._emitToConsole( 'debug', 'MetricsLogger',
+	        [ '_addToCache:', arguments, this.options.addTime, this.cache.length() ]);
+	    //this._emitToConsole( 'debug', 'MetricsLogger', [ '\t logArguments:', logArguments ]);
+	    var self = this;
+	    // try add to the cache and if we've got _postSize number of entries, attempt to post them to the server
+	    try {
+	        var newLength = self.cache.add( self._buildEntry( level, namespace, logArguments ) );
+	        if( newLength >= self._postSize ){
+	            self._postCache();
+	        }
+	    // discard entry if an error occurs, but warn if level set to do so
+	    } catch( err ){
+	        self._emitToConsole( 'warn', 'MetricsLogger',
+	            [ 'Metrics logger could not stringify logArguments:', namespace, logArguments ] );
+	        self._emitToConsole( 'error', 'MetricsLogger', [ err ] );
+	
+	    }
+	    return self;
+	};
+	
+	/** build a log cache entry object from the given level, namespace, and arguments (optionally adding timestamp */
+	MetricsLogger.prototype._buildEntry = function _buildEntry( level, namespace, logArguments ){
+	    this._emitToConsole( 'debug', 'MetricsLogger', [ '_buildEntry:', arguments ]);
+	    var entry = {
+	            level       : level,
+	            namespace   : this.options.clientPrefix + namespace,
+	            args        : logArguments
+	        };
+	    if( this.options.addTime ){
+	        entry.time = new Date().toISOString();
+	    }
+	    return entry;
+	};
+	
+	/** post _postSize messages from the cache to the server, removing them if successful
+	 *      if the post fails, wait until maxCacheSize is accumulated instead and try again then
+	 *      in addition to the messages from the cache ('metrics'), any info from getPingData (if set) will be sent
+	 *      onServerResponse will be called (if set) with any response from the server
+	 */
+	MetricsLogger.prototype._postCache = function _postCache( options ){
+	    options = options || {};
+	    this._emitToConsole( 'info', 'MetricsLogger', [ '_postCache', options, this._postSize ]);
+	
+	    // short circuit if we're already sending
+	    if( !this.options.postUrl || this._sending ){
+	        return jQuery.when({});
+	    }
+	
+	    var self = this,
+	        postSize = options.count || self._postSize,
+	        // do not splice - remove after *successful* post
+	        entries = self.cache.get( postSize ),
+	        entriesLength = entries.length,
+	        // use the optional getPingData to add any extra info we may want to send
+	        postData = ( typeof self.options.getPingData === 'function' )?( self.options.getPingData() ):( {} );
+	    //console.debug( postSize, entriesLength );
+	
+	    // add the metrics and send
+	    postData.metrics = JSON.stringify( entries );
+	    //console.debug( postData.metrics );
+	    self._sending = true;
+	    return jQuery.post( self.options.postUrl, postData )
+	        .always( function(){
+	            self._sending = false;
+	        })
+	        .fail( function( xhr, status, message ){
+	            // if we failed the previous time, set the next post target to the max num of entries
+	            self._postSize = self.options.maxCacheSize;
+	//TODO:??
+	            // log this failure to explain any gap in metrics
+	            this.emit( 'error', 'MetricsLogger', [ '_postCache error:',
+	                xhr.readyState, xhr.status, xhr.responseJSON || xhr.responseText ]);
+	//TODO: still doesn't solve the problem that when cache == max, post will be tried on every emit
+	//TODO: see _delayPost
+	        })
+	        .done( function( response ){
+	            if( typeof self.options.onServerResponse === 'function' ){
+	                self.options.onServerResponse( response );
+	            }
+	            // only remove if post successful
+	            self.cache.remove( entriesLength );
+	            //console.debug( 'removed entries:', entriesLength, 'size now:', self.cache.length() );
+	            // if we succeeded, reset the post target to the normal num of entries
+	            self._postSize = self.options.postSize;
+	        });
+	    // return the xhr promise
+	};
+	
+	/** set _waiting to true and, after delayPostInMs, set it back to false */
+	MetricsLogger.prototype._delayPost = function _delayPost(){
+	//TODO: this won't work between pages
+	    var self = this;
+	    self._waiting = setTimeout( function(){
+	        self._waiting = null;
+	    }, self.options.delayPostInMs );
+	};
+	
+	
+	//----------------------------------------------------------------------------- console
+	/** output message to console based on level and consoleLogger type */
+	MetricsLogger.prototype._emitToConsole = function _emitToConsole( level, namespace, logArguments ){
+	    //console.debug( '_emitToConsole:', level, namespace, logArguments );
+	    var self = this,
+	        whitelist = self.options.consoleNamespaceWhitelist;
+	    if( !self.consoleLogger ){ return self; }
+	    // if a whitelist for namespaces is set, bail if this namespace is not in the list
+	    if( whitelist && whitelist.indexOf( namespace ) === -1 ){
+	        return self;
+	    }
+	
+	    var args = Array.prototype.slice.call( logArguments, 0 );
+	    args.unshift( namespace );
+	//TODO: script location and/or source maps?
+	//TODO: branch on navigator.userAgent == AIIEEE - it only has log
+	    if(        level >= MetricsLogger.METRIC && typeof( self.consoleLogger.info ) === 'function' ){
+	        return self.consoleLogger.info.apply( self.consoleLogger, args );
+	
+	    } else if( level >= MetricsLogger.ERROR && typeof( self.consoleLogger.error ) === 'function' ){
+	        return self.consoleLogger.error.apply( self.consoleLogger, args );
+	    } else if( level >= MetricsLogger.WARN && typeof( self.consoleLogger.warn ) === 'function' ){
+	        self.consoleLogger.warn.apply( self.consoleLogger, args );
+	    } else if( level >= MetricsLogger.INFO && typeof( self.consoleLogger.info ) === 'function' ){
+	        self.consoleLogger.info.apply( self.consoleLogger, args );
+	    } else if( level >= MetricsLogger.DEBUG && typeof( self.consoleLogger.debug ) === 'function' ){
+	        self.consoleLogger.debug.apply( self.consoleLogger, args );
+	    } else if( typeof( self.consoleLogger.log ) === 'function' ){
+	        self.consoleLogger.log.apply( self.consoleLogger, args );
+	    }
+	    return self;
+	};
+	
+	//----------------------------------------------------------------------------- shortcuts
+	// generic functions when logging from non-namespaced object (e.g. templates)
+	/** log to default namespace */
+	MetricsLogger.prototype.log = function log(){
+	    this.emit( 1, this.options.defaultNamespace,
+	        Array.prototype.slice.call( arguments, 0 ) );
+	};
+	
+	/** debug to default namespace */
+	MetricsLogger.prototype.debug = function debug(){
+	    this.emit( MetricsLogger.DEBUG, this.options.defaultNamespace,
+	        Array.prototype.slice.call( arguments, 0 ) );
+	};
+	
+	/** info to default namespace */
+	MetricsLogger.prototype.info = function info(){
+	    this.emit( MetricsLogger.INFO, this.options.defaultNamespace,
+	        Array.prototype.slice.call( arguments, 0 ) );
+	};
+	
+	/** warn to default namespace */
+	MetricsLogger.prototype.warn = function warn(){
+	    this.emit( MetricsLogger.WARN, this.options.defaultNamespace,
+	        Array.prototype.slice.call( arguments, 0 ) );
+	};
+	
+	/** error to default namespace */
+	MetricsLogger.prototype.error = function error(){
+	    this.emit( MetricsLogger.ERROR, this.options.defaultNamespace,
+	        Array.prototype.slice.call( arguments, 0 ) );
+	};
+	
+	/** metric to default namespace */
+	MetricsLogger.prototype.metric = function metric(){
+	    this.emit( MetricsLogger.METRIC, this.options.defaultNamespace,
+	        Array.prototype.slice.call( arguments, 0 ) );
+	};
+	
+	
+	/* ============================================================================
+	TODO:
+	    need a performance pass - the JSON un/parsing is a bit much
+	
+	============================================================================ */
+	/** @class LoggingCache
+	 *  Simple implementation of cache wrapping an array.
+	 *
+	 *  Formats an entry before it's cached and only keeps options.maxSize number
+	 *  of entries. Older entries are deleted first.
+	 */
+	function LoggingCache( options ){
+	    var self = this;
+	    return self._init( options || {} );
+	}
+	
+	/** default options */
+	LoggingCache.defaultOptions = {
+	    /** maximum number of entries to keep before discarding oldest */
+	    maxSize     : 5000
+	};
+	
+	/** initialize with options */
+	LoggingCache.prototype._init = function _init( options ){
+	    if( !this._hasStorage() ){
+	        //TODO: fall back to jstorage
+	        throw new Error( 'LoggingCache needs localStorage' );
+	    }
+	    if( !options.key ){
+	        throw new Error( 'LoggingCache needs key for localStorage' );
+	    }
+	    this.key = options.key;
+	    this._initStorage();
+	
+	    this.maxSize = options.maxSize || LoggingCache.defaultOptions.maxSize;
+	    return this;
+	};
+	
+	/** tests for localStorage fns */
+	LoggingCache.prototype._hasStorage = function _hasStorage(){
+	//TODO: modernizr
+	    var test = 'test';
+	    try {
+	        localStorage.setItem( test, test );
+	        localStorage.removeItem( test );
+	        return true;
+	    } catch( e ){
+	        return false;
+	    }
+	};
+	
+	/** if no localStorage set for key, initialize to empty array */
+	LoggingCache.prototype._initStorage = function _initStorage(){
+	    if( localStorage.getItem( this.key ) === null ){
+	        return this.empty();
+	    }
+	    return this;
+	};
+	
+	/** add an entry to the cache, removing the oldest beforehand if size >= maxSize */
+	LoggingCache.prototype.add = function add( entry ){
+	    var self = this,
+	        _cache = self._fetchAndParse(),
+	        overage = ( _cache.length + 1 ) - self.maxSize;
+	    if( overage > 0 ){
+	        _cache.splice( 0, overage );
+	    }
+	    _cache.push( entry );
+	    self._unparseAndStore( _cache );
+	    return _cache.length;
+	};
+	
+	/** get the entries from localStorage and parse them */
+	LoggingCache.prototype._fetchAndParse = function _fetchAndParse(){
+	    var self = this;
+	    return JSON.parse( localStorage.getItem( self.key ) );
+	};
+	
+	/** stringify the entries and put them in localStorage */
+	LoggingCache.prototype._unparseAndStore = function _unparseAndStore( entries ){
+	    var self = this;
+	    return localStorage.setItem( self.key, JSON.stringify( entries ) );
+	};
+	
+	///** process the entry before caching */
+	//LoggingCache.prototype._preprocessEntry = function _preprocessEntry( entry ){
+	//    return JSON.stringify( entry );
+	//};
+	
+	/** return the length --- oh, getters where are you? */
+	LoggingCache.prototype.length = function length(){
+	    return this._fetchAndParse().length;
+	};
+	
+	/** get count number of entries starting with the oldest */
+	LoggingCache.prototype.get = function get( count ){
+	    return this._fetchAndParse().slice( 0, count );
+	};
+	
+	/** remove count number of entries starting with the oldest */
+	LoggingCache.prototype.remove = function remove( count ){
+	    var _cache = this._fetchAndParse(),
+	        removed = _cache.splice( 0, count );
+	    this._unparseAndStore( _cache );
+	    return removed;
+	};
+	
+	/** empty/clear the entire cache */
+	LoggingCache.prototype.empty = function empty(){
+	    localStorage.setItem( this.key, '[]' );
+	    return this;
+	};
+	
+	/** stringify count number of entries (but do not remove) */
+	LoggingCache.prototype.stringify = function stringify( count ){
+	    return JSON.stringify( this.get( count ) );
+	};
+	
+	/** outputs entire cache to console */
+	LoggingCache.prototype.print = function print(){
+	    // popup? (really, carl? a popup?) - easier to copy/paste
+	    console.log( JSON.stringify( this._fetchAndParse(), null, '  ' ) );
+	};
+	
+	
+	//=============================================================================
+	    return {
+	        MetricsLogger  : MetricsLogger,
+	        LoggingCache   : LoggingCache
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 2)))
+
+/***/ }
+
+});
 //# sourceMappingURL=galaxy.bundled.js.map

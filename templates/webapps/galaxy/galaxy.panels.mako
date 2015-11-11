@@ -59,9 +59,9 @@
         'bundled/libs.bundled',
     )}
     ${h.js(
-       'libs/jquery/jquery-ui',
-       'libs/d3',
-       'libs/require',
+        'libs/jquery/jquery-ui',
+        'libs/d3',
+        'libs/require',
     )}
 
     ## send errors to Sntry server if configured
@@ -149,13 +149,13 @@
 
         ## configure left panel
         %if self.galaxy_config['left_panel']:
-            var lp = new Panel( { panel: $("#left"), center: $("#center"), drag: $("#left > .unified-panel-footer > .drag" ), toggle: $("#left > .unified-panel-footer > .panel-collapse" ) } );
+            var lp = new panels.LeftPanel({});
             force_left_panel = function( x ) { lp.force_panel( x ) };
         %endif
 
         ## configure right panel
         %if self.galaxy_config['right_panel']:
-            var rp = new Panel( { panel: $("#right"), center: $("#center"), drag: $("#right > .unified-panel-footer > .drag" ), toggle: $("#right > .unified-panel-footer > .panel-collapse" ), right: true } );
+            var rp = new panels.RightPanel({});
             window.handle_minwidth_hint = function( x ) { rp.handle_minwidth_hint( x ) };
             force_right_panel = function( x ) { rp.force_panel( x ) };
         %endif

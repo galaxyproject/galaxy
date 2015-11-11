@@ -12,7 +12,6 @@
     "templates/compiled/panel_section",
     "templates/compiled/tool_search",
 ], function(_, util, data, ToolsForm, tool_form, tool_link, panel_section, tool_search) {
-console.debug( tool_form, tool_link, panel_section, tool_search );
 
 // TODO: certainly not the way to do this
 var _templates = {

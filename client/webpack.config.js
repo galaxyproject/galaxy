@@ -9,6 +9,7 @@ var webpack = require( 'webpack' ),
         // jquery et al
         'jquery',
         'libs/jquery/jquery.migrate',
+        // jquery plugins
         'libs/jquery/select2',
         'libs/jquery/jquery.event.hover',
         'libs/jquery/jquery.form',
@@ -21,9 +22,9 @@ var webpack = require( 'webpack' ),
         'libs/handlebars.runtime',
         // all pages get these
         'polyfills',
-        'layout/panel',
         'modal',
         'ui/autocom_tagging',
+        'layout/panel',
         'onload',
     ];
 

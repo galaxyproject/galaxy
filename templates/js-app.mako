@@ -31,7 +31,19 @@
     </head>
 
     <body scroll="no" class="full-content">
-        ${ body_template( panels=panels, masthead=masthead ) }
+        <div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+            ## TODO: needed?
+            <div id="background"></div>
+
+            %if masthead:
+            <div id="masthead" class="navbar navbar-fixed-top navbar-inverse"></div>
+            <div id="messagebox" style="display: none;"></div>
+            <div id="inactivebox" class="panel-warning-message" style="display: none;"></div>
+            %endif
+
+        </div><!--end everything-->
+        <div id='DD-helper' style="display: none;"></div>
+        ${ js_disabled_warning() }
 
         ## ${ h.js( 'bundled/libs.bundled', 'bundled/galaxy.bundled' ) }
         <script type="text/javascript" src="/static/scripts/bundled/libs.bundled.js"></script>
@@ -106,41 +118,7 @@
 </%def>
 
 ## ============================================================================
-<%def name="body_template( panels=None, masthead=True )">
-    <%
-        panels = panels or [ 'center', 'right' ]
-        if 'left' in panels or 'right' in panels and 'center' not in panels:
-            panels.append( 'center' )
-    %>
-
-    <div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
-        ## TODO: needed?
-        <div id="background"></div>
-
-        %if masthead:
-        <div id="masthead" class="navbar navbar-fixed-top navbar-inverse"></div>
-        ## TODO: needed?
-        <div id="messagebox" style="display: none;"></div>
-        ## TODO: needed?
-        <div id="inactivebox" class="panel-warning-message" style="display: none;"></div>
-        %endif
-
-        <!-- content sections -->
-        %if 'left' in panels:
-        ${ side_panel( 'left' ) }
-        %endif
-
-        %if 'center' in panels:
-        <div id="center" class="inbound" style="background: aliceblue"></div>
-        %endif
-
-        %if 'right' in panels:
-        ${ side_panel( 'right' ) }
-        %endif
-
-    </div><!--end everything-->
-    <div id='DD-helper' style="display: none;"></div>
-
+<%def name="js_disabled_warning()">
     <noscript>
         <div class="overlay overlay-background noscript-overlay">
             <div>
@@ -152,20 +130,4 @@
             </div>
         </div>
     </noscript>
-
-</%def>
-
-<%def name="side_panel( side )">
-    <div id="${side}">
-        <div class="unified-panel-header" unselectable="on">
-            <div class='unified-panel-header-inner'></div>
-        </div>
-        <div class="unified-panel-body">
-        </div>
-        <div class="unified-panel-footer">
-            ## TODO: use child selector and remove the side class here
-            <div class="panel-collapse ${side}"></div>
-            <div class="drag"></div>
-        </div>
-    </div>
 </%def>

@@ -19,7 +19,6 @@ define([
  *          user        : the current user (as a mvc/user/user-model)
  */
 function GalaxyApp( options, bootstrapped ){
-    console.debug( 'GalaxyApp:', options, bootstrapped );
     var self = this;
     return self._init( options || {}, bootstrapped || {} );
 }
@@ -43,19 +42,20 @@ GalaxyApp.prototype._init = function __init( options, bootstrapped ){
     _.extend( self, Backbone.Events );
     if( localDebugging ){
         self.logger = console;
+        console.debug( 'debugging galaxy:', 'options:', options, 'bootstrapped:', bootstrapped );
     }
 
     self._processOptions( options );
-    self.debug( 'GalaxyApp.options: ', self.options );
     // special case for root
     self.root = options.root || '/';
 
     self._initConfig( options.config || bootstrapped.config || {} );
-    self.debug( 'GalaxyApp.config: ', self.config );
-
     self._patchGalaxy( window.Galaxy );
 
     self._initLogger( self.options.loggerOptions || {} );
+    // at this point, either logging or not and namespaces are enabled - chat it up
+    self.debug( 'GalaxyApp.options: ', self.options );
+    self.debug( 'GalaxyApp.config: ', self.config );
     self.debug( 'GalaxyApp.logger: ', self.logger );
 
     self._initLocale();
@@ -86,7 +86,6 @@ GalaxyApp.prototype.defaultOptions = {
 GalaxyApp.prototype._processOptions = function _processOptions( options ){
     var self = this,
         defaults = self.defaultOptions;
-    self.debug( '_processOptions: ', options );
 
     self.options = {};
     for( var k in defaults ){
@@ -100,7 +99,6 @@ GalaxyApp.prototype._processOptions = function _processOptions( options ){
 /** parse the config and any extra info derived from it */
 GalaxyApp.prototype._initConfig = function _initConfig( config ){
     var self = this;
-    self.debug( '_initConfig: ', config );
     self.config = config;
 
     // give precendence to localdebugging for this setting
@@ -114,12 +112,12 @@ GalaxyApp.prototype._patchGalaxy = function _patchGalaxy( patchWith ){
     var self = this;
     // in case req or plain script tag order has created a prev. version of the Galaxy obj...
     if( self.options.patchExisting && patchWith ){
-        self.debug( 'found existing Galaxy object:', patchWith );
+        // self.debug( 'found existing Galaxy object:', patchWith );
         // ...(for now) monkey patch any added attributes that the previous Galaxy may have had
         //TODO: move those attributes to more formal assignment in GalaxyApp
         for( var k in patchWith ){
             if( patchWith.hasOwnProperty( k ) ){
-                self.debug( '\t patching in ' + k + ' to Galaxy' );
+                // self.debug( '\t patching in ' + k + ' to Galaxy:', self[ k ] );
                 self[ k ] = patchWith[ k ];
             }
         }
@@ -138,7 +136,6 @@ GalaxyApp.prototype._initLogger = function _initLogger( loggerOptions ){
             loggerOptions.consoleNamespaceWhitelist = localStorage.getItem( NAMESPACE_KEY ).split( ',' );
         } catch( storageErr ){}
     }
-    self.debug( '_initLogger:', loggerOptions );
     self.logger = new metricsLogger.MetricsLogger( loggerOptions );
 
     if( self.config.debug ){
