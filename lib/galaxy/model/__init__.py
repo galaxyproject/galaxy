@@ -135,11 +135,11 @@ class JobLike:
         stderr = galaxy.util.unicodify( stderr )
         if ( len( stdout ) > galaxy.util.DATABASE_MAX_STRING_SIZE ):
             stdout = galaxy.util.shrink_string_by_size( stdout, galaxy.util.DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
-            log.info( "stdout for %s %d is greater than %s, only a portion will be logged to database" % ( type(self), self.id, galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY ) )
+            log.info( "stdout for %s %d is greater than %s, only a portion will be logged to database", type(self), self.id, galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY )
         self.stdout = stdout
         if ( len( stderr ) > galaxy.util.DATABASE_MAX_STRING_SIZE ):
             stderr = galaxy.util.shrink_string_by_size( stderr, galaxy.util.DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
-            log.info( "stderr for %s %d is greater than %s, only a portion will be logged to database" % ( type(self), self.id, galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY ) )
+            log.info( "stderr for %s %d is greater than %s, only a portion will be logged to database", type(self), self.id, galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY )
         self.stderr = stderr
 
 

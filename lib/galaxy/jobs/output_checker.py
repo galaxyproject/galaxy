@@ -133,7 +133,7 @@ def check_output( tool, stdout, stderr, tool_exit_code, job ):
         success = True
 
     # Store the modified stdout and stderr in the job:
-    if None is not job:
+    if job is not None:
         job.set_streams( stdout, stderr )
 
     return success
