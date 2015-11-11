@@ -1,4 +1,5 @@
 import os
+import yaml
 from markupsafe import escape
 from sqlalchemy import and_, desc, false, true
 
@@ -10,17 +11,6 @@ from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesVisualizationMixin
 from galaxy.web.framework.helpers import time_ago, grids
 
-import json
-
-try:
-    eggs.require('PyYAML')
-except Exception:
-    # If not in Galaxy, ignore this.
-    pass
-try:
-    import yaml
-except ImportError:
-    yaml = None
 
 def format_bool( b ):
     if b:
@@ -352,14 +342,6 @@ class PageController( BaseUIController, SharableMixin,
         return trans.fill_template( "page/index.mako", embedded_grid=grid, shared_by_others=shared_by_others )
 
     @web.expose
-    def get_tutorial_content( self, trans, tutorial_config_file ):
-        """
-        Reads a yaml file with intro.js configurations.
-        """
-        conf = yaml.load( open( os.path.join(trans.app.config.introduction_tutorials_config_dir, tutorial_config_file )) )
-        return json.dumps( conf )
-
-    @web.expose
     def list_tutorials( self, trans, *args, **kwargs ):
 
         from galaxy.util import bunch
@@ -383,10 +365,9 @@ class PageController( BaseUIController, SharableMixin,
                         description=conf.get('description', tutorial),
                         icon=os.path.abspath(icon_path),
                         filename=tutorial
-                        )
                     )
+                )
         return trans.fill_template( "page/list_tutorials.mako", tutorials=tutorials )
-
 
     @web.expose
     def list_published( self, trans, *args, **kwargs ):
