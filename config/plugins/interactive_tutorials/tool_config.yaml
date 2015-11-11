@@ -1,0 +1,93 @@
+  steps:
+    -
+      intro: "Welcome to the interactive tool config tutorial."
+    -
+      element: "#left"
+      intro: "This is your <b>Toolbar</b>."
+      position: "right"
+    -
+      element: "#tool-search-query"
+      intro: "Use the search field to search for Tools."
+      position: "right"
+    -
+      element: ".upload-button"
+      intro: "Use this button to upload your data."
+      position: "right"
+    -
+      element: "#title_filter a"
+      intro: "Tools are grouped into categories to make them easier to find."
+      position: "right"
+      preclick: "#title_filter a"
+    -
+      element: 'a[href$="tool_runner?tool_id=Filter1"]'
+      intro: "Tools are grouped into categories to make them easier to find."
+      position: "right"
+      preclick: 'a[href$="tool_runner?tool_id=Filter1"]'
+      postclick: "#title_filter a"
+    -
+      element: '#center-panel'
+      intro: "This is your Filter tool."
+      position: "right"
+      preclick: '#center-panel'
+    -
+      element: '#uid-0'
+      intro: "Your tool parameters."
+      position: "right"
+    -
+      element: 'div.toolHelp'
+      intro: "Your tool parameters."
+      position: "right"
+
+    -
+      element: 'a.select2-choice'
+      intro: "Select your input files."
+      position: "right"
+    -
+      element: 'label.btn.btn-default.ui-option.active'
+      intro: "Singel file option, but you can also use dataset collections."
+      position: "right"
+    -
+      element: 'input#field-uid-10.ui-input'
+      intro: "Select your input files."
+      position: "right"
+    -
+      element: 'input#text.ui-form-slider-text'
+      intro: "Do you want to skip header lines? You can skip as many header lines as you want."
+      position: "right"
+    -
+      element: '#execute'
+      intro: "Execute your tool and submit it to the Compute Cluster."
+      position: "right"
+      postclick: '#execute'
+    -
+      element: "#right"
+      intro: "This is your history! All anylysis steps will be recorded and can be redone at any time."
+      position: "left"
+    -
+      element: "#masthead"
+      intro: "Your top panel will give you access to a lot of usefull things."
+      position: "bottom"
+    -
+      element: "#analysis"
+      intro: "Start your <b>analysis</b> from here."
+      position: "bottom"
+    -
+      element: "#workflow"
+      intro: "Manage, Import, Export and Share your <b>Workflows</b>."
+      position: "bottom"
+    -
+      element: "#shared"
+      intro: "Get access to all <b>Workflows, <b>Histories</b>, <b>Pages</b>, <b>Visualizations</b> and you <b>Data Library</b> that are shared with you."
+      position: "bottom"
+    -
+      element: "#visualization"
+      intro: "Want to start visualize your data in Trackster? Start here!"
+      position: "bottom"
+    -
+      element: "#help"
+      intro: "Here you get more help from the Galaxy <b>Community</b> with Videos and a QA board."
+      position: "bottom"
+    -
+      element: "#user"
+      intro: "Login and start your analysis!"
+      position: "bottom"

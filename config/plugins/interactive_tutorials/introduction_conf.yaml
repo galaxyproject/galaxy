@@ -1,0 +1,54 @@
+  description: RNA Workbench example
+  icon: 1.jpg
+  steps:
+    -
+      intro: "Welcome to the <b>Galaxy RNA Workbench</b>."
+    -
+      element: "#left"
+      intro: "This is your <b>Toolbar</b>."
+      position: "right"
+      #window.location.href = 'second.html?multipage=true';
+    -
+      element: "#tool-search-query"
+      intro: "Use the search field to search for Tools."
+      position: "right"
+    -
+      element: ".upload-button"
+      intro: "Use this button to upload your data."
+      position: "right"
+    -
+      element: "#center"
+      intro: "<i>Main</i> panel. Here you can configure your Tools and can inpect results."
+      position: "right"
+    -
+      element: "#right"
+      intro: "This is your history! All anylysis steps will be recorded and can be redone at any time."
+      position: "left"
+    -
+      element: "#masthead"
+      intro: "Your top panel will give you access to a lot of usefull things."
+      position: "bottom"
+    -
+      element: "#analysis"
+      intro: "Start your <b>analysis</b> from here."
+      position: "bottom"
+    -
+      element: "#workflow"
+      intro: "Manage, Import, Export and Share your <b>Workflows</b>."
+      position: "bottom"
+    -
+      element: "#shared"
+      intro: "Get access to all <b>Workflows, <b>Histories</b>, <b>Pages</b>, <b>Visualizations</b> and you <b>Data Library</b> that are shared with you."
+      position: "bottom"
+    -
+      element: "#visualization"
+      intro: "Want to start visualize your data in Trackster? Start here!"
+      position: "bottom"
+    -
+      element: "#help"
+      intro: "Here you get more help from the Galaxy <b>Community</b> with Videos and a QA board."
+      position: "bottom"
+    -
+      element: "#user"
+      intro: "Login and start your analysis!"
+      position: "bottom"
