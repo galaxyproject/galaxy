@@ -3,6 +3,8 @@ from os import chmod
 from os.path import join
 from os.path import abspath
 
+from galaxy import util
+
 from logging import getLogger
 log = getLogger( __name__ )
 
@@ -158,7 +160,8 @@ class CommandsBuilder(object):
     def __init__(self, initial_command):
         # Remove trailing semi-colon so we can start hacking up this command.
         # TODO: Refactor to compose a list and join with ';', would be more clean.
-        commands = initial_command.rstrip("; ")
+        initial_command = util.unicodify(initial_command)
+        commands = initial_command.rstrip(u"; ")
         self.commands = commands
 
         # Coping work dir outputs or setting metadata will mask return code of
@@ -167,17 +170,19 @@ class CommandsBuilder(object):
         self.return_code_captured = False
 
     def prepend_command(self, command):
-        self.commands = "%s; %s" % (command, self.commands)
+        self.commands = u"%s; %s" % (command,
+                                     self.commands)
         return self
 
     def prepend_commands(self, commands):
-        return self.prepend_command("; ".join(commands))
+        return self.prepend_command(u"; ".join(commands))
 
     def append_command(self, command):
-        self.commands = "%s; %s" % (self.commands, command)
+        self.commands = u"%s; %s" % (self.commands,
+                                     command)
 
     def append_commands(self, commands):
-        self.append_command("; ".join(commands))
+        self.append_command(u"; ".join(commands))
 
     def capture_return_code(self):
         if not self.return_code_captured:

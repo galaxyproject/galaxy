@@ -1,5 +1,6 @@
 from string import Template
 from pkg_resources import resource_string
+from galaxy.util import unicodify
 
 DEFAULT_JOB_FILE_TEMPLATE = Template(
     resource_string(__name__, 'DEFAULT_JOB_FILE_TEMPLATE.sh').decode('UTF-8')
@@ -61,6 +62,8 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     template_params.update(**kwds)
     env_setup_commands_str = "\n".join(template_params["env_setup_commands"])
     template_params["env_setup_commands"] = env_setup_commands_str
+    for key, value in template_params.items():
+        template_params[key] = unicodify(value)
     if not isinstance(template, Template):
         template = Template(template)
     return template.safe_substitute(template_params)

@@ -99,7 +99,7 @@ class HasName:
         return name
 
 
-class HasJobMetrics:
+class JobLike:
 
     def _init_metrics( self ):
         self.text_metrics = []
@@ -129,6 +129,18 @@ class HasJobMetrics:
     def metrics( self ):
         # TODO: Make iterable, concatenate with chain
         return self.text_metrics + self.numeric_metrics
+
+    def set_streams( self, stdout, stderr ):
+        stdout = galaxy.util.unicodify( stdout )
+        stderr = galaxy.util.unicodify( stderr )
+        if ( len( stdout ) > galaxy.util.DATABASE_MAX_STRING_SIZE ):
+            stdout = galaxy.util.shrink_string_by_size( stdout, galaxy.util.DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+            log.info( "stdout for %s %d is greater than %s, only a portion will be logged to database", type(self), self.id, galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY )
+        self.stdout = stdout
+        if ( len( stderr ) > galaxy.util.DATABASE_MAX_STRING_SIZE ):
+            stderr = galaxy.util.shrink_string_by_size( stderr, galaxy.util.DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+            log.info( "stderr for %s %d is greater than %s, only a portion will be logged to database", type(self), self.id, galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY )
+        self.stderr = stderr
 
 
 class User( object, Dictifiable ):
@@ -307,7 +319,7 @@ class TaskMetricNumeric( BaseJobMetric ):
     pass
 
 
-class Job( object, HasJobMetrics, Dictifiable ):
+class Job( object, JobLike, Dictifiable ):
     dict_collection_visible_keys = [ 'id', 'state', 'exit_code', 'update_time', 'create_time' ]
     dict_element_visible_keys = [ 'id', 'state', 'exit_code', 'update_time', 'create_time'  ]
 
@@ -356,6 +368,7 @@ class Job( object, HasJobMetrics, Dictifiable ):
         self.destination_id = None
         self.destination_params = None
         self.post_job_actions = []
+        self.state_history = []
         self.imported = False
         self.handler = None
         self.exit_code = None
@@ -657,7 +670,7 @@ class Job( object, HasJobMetrics, Dictifiable ):
             self.workflow_invocation_step.update()
 
 
-class Task( object, HasJobMetrics ):
+class Task( object, JobLike ):
     """
     A task represents a single component of a job.
     """
