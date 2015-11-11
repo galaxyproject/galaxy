@@ -16,9 +16,6 @@ from galaxy import util
 from galaxy.util import odict
 from galaxy.util import bunch
 
-import pkg_resources
-pkg_resources.require( 'MarkupSafe' )
-pkg_resources.require( 'Mako' )
 import mako.lookup
 import logging
 log = logging.getLogger( __name__ )

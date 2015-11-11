@@ -32,7 +32,7 @@ def template_macro_params(root):
     """
     param_dict = {}
     macro_dict = _macros_of_type(root, 'template', lambda el: el.text)
-    for key, value in macro_dict.iteritems():
+    for key, value in macro_dict.items():
         param_dict[key] = value
     return param_dict
 

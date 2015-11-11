@@ -7,8 +7,6 @@ from tool_shed.util.shed_util_common import get_repository_by_name_and_owner
 from tool_shed.util.hg_util import update_repository
 from tool_shed.metadata import repository_metadata_manager
 
-from galaxy import eggs
-eggs.require('mercurial')
 import mercurial.__version__
 from mercurial.hgweb.hgwebdir_mod import hgwebdir
 from mercurial.hgweb.request import wsgiapplication

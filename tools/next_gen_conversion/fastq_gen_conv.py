@@ -11,15 +11,17 @@ usage: %prog [options]
 usage: %prog input_file oroutput_file
 """
 
-import math, sys
-from galaxy import eggs
-import pkg_resources; pkg_resources.require( "bx-python" )
+import math
+import sys
+
 from bx.cookbook import doc_optparse
+
 
 def stop_err( msg ):
     sys.stderr.write( "%s\n" % msg )
     sys.exit()
-    
+
+
 def all_bases_valid(seq):
     """Confirm that the sequence contains only bases"""
     valid_bases = ['a', 'A', 'c', 'C', 'g', 'G', 't', 'T', 'N']
@@ -28,8 +30,9 @@ def all_bases_valid(seq):
             return False
     return True
 
+
 def __main__():
-    #Parse Command Line
+    # Parse Command Line
     options, args = doc_optparse.parse( __doc__ )
     orig_type = options.origType
     if orig_type == 'sanger' and options.allOrNot == 'not':
@@ -124,8 +127,8 @@ def __main__():
                                     lines = []
                                     break
                                 else:
-                                    p = 10.0**( ( ord(c) - 64 ) / -10.0 ) / ( 1 + 10.0**( ( ord(c) - 64 ) / -10.0 ) )
-                                    qualities.append( chr( int( -10.0*math.log10( p ) ) + 33 ) )
+                                    p = 10.0 ** ( ( ord(c) - 64 ) / -10.0 ) / ( 1 + 10.0 ** ( ( ord(c) - 64 ) / -10.0 ) )
+                                    qualities.append( chr( int( -10.0 * math.log10( p ) ) + 33 ) )
                             quals = ''.join(qualities)
                         else:  # 'sanger'
                             for c in line.strip():
@@ -147,7 +150,7 @@ def __main__():
                             for l in lines:
                                 fout.write(l)
                             # print out quality line
-                            fout.write(quals+'\n')
+                            fout.write(quals + '\n')
                         # reset
                         lines = []
                         base_len = -1
@@ -169,4 +172,5 @@ def __main__():
         outmsg += '\nThere were %s bad blocks skipped' % (bad_blocks)
     sys.stdout.write(outmsg)
 
-if __name__=="__main__": __main__() 
+if __name__ == "__main__":
+    __main__()

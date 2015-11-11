@@ -207,7 +207,7 @@ class InputSource(object):
         return self.get("label")
 
     def parse_help(self):
-        return self.get("label")
+        return self.get("help")
 
     def parse_sanitizer_elem(self):
         """ Return an XML description of sanitizers. This is a stop gap

@@ -1,3 +1,5 @@
+import re
+
 
 def lint_top_level(tree, lint_ctx):
     root = tree.getroot()
@@ -15,3 +17,7 @@ def lint_top_level(tree, lint_ctx):
         lint_ctx.error("Tool does not define an id attribute.")
     else:
         lint_ctx.valid("Tool defines an id name.")
+
+    id = root.attrib["id"]
+    if re.search(r"\s", id):
+        lint_ctx.warn("Tool id contains a space - this is discouraged.")

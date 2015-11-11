@@ -4,8 +4,6 @@ from json import dumps
 from logging import getLogger
 from StringIO import StringIO
 
-from galaxy import eggs
-eggs.require( "requests" )
 from requests import get, post
 
 from galaxy import util
@@ -219,7 +217,7 @@ class GalaxyInteractorApi( object ):
                 jobs=submit_response_object[ 'jobs' ],
             )
         except KeyError:
-            message = "Error creating a job for these tool inputs - %s" % submit_response_object[ 'message' ]
+            message = "Error creating a job for these tool inputs - %s" % submit_response_object[ 'err_msg' ]
             raise RunToolException( message, inputs_tree )
 
     def _create_collection( self, history_id, collection_def ):
@@ -308,7 +306,11 @@ class GalaxyInteractorApi( object ):
         except Exception:
             print "*TEST FRAMEWORK FAILED TO FETCH HISTORY DETAILS*"
 
-        for dataset in history_contents:
+        for history_content in history_contents:
+            if history_content[ 'history_content_type'] != 'dataset':
+                continue
+
+            dataset = history_content
             if dataset[ 'state' ] != 'error':
                 continue
 

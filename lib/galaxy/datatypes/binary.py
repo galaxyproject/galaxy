@@ -8,22 +8,16 @@ import shutil
 import struct
 import subprocess
 import tempfile
-import warnings
 import zipfile
 
-from galaxy import eggs
-eggs.require( "bx-python" )
+import pysam
+
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
 
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter, ListParameter, DictParameter
 from galaxy.datatypes import metadata
 from galaxy.util import nice_size, sqlite
 from . import data, dataproviders
-
-with warnings.catch_warnings():
-    warnings.simplefilter( "ignore" )
-    eggs.require( "pysam" )
-    from pysam import csamtools
 
 
 log = logging.getLogger(__name__)
@@ -39,11 +33,11 @@ class Binary( data.Data ):
 
     @staticmethod
     def register_sniffable_binary_format(data_type, ext, type_class):
-        Binary.sniffable_binary_formats.append({"type": data_type, "ext": ext, "class": type_class})
+        Binary.sniffable_binary_formats.append({"type": data_type, "ext": ext.lower(), "class": type_class})
 
     @staticmethod
     def register_unsniffable_binary_ext(ext):
-        Binary.unsniffable_binary_formats.append(ext)
+        Binary.unsniffable_binary_formats.append(ext.lower())
 
     @staticmethod
     def is_sniffable_binary( filename ):
@@ -114,9 +108,6 @@ Binary.register_unsniffable_binary_ext("ab1")
 class Idat( Binary ):
     """Binary data in idat format"""
     file_ext = "idat"
-
-    def __init__( self, **kwd ):
-        Binary.__init__( self, **kwd )
 
     def sniff( self, filename ):
         try:
@@ -315,8 +306,7 @@ class Bam( Binary ):
         # Usage: samtools index <in.bam> [<out.index>]
         stderr_name = tempfile.NamedTemporaryFile( prefix="bam_index_stderr" ).name
         command = [ 'samtools', 'index', dataset.file_name, index_file.file_name ]
-        proc = subprocess.Popen( args=command, stderr=open( stderr_name, 'wb' ) )
-        exit_code = proc.wait()
+        exit_code = subprocess.call( args=command, stderr=open( stderr_name, 'wb' ) )
         # Did index succeed?
         if exit_code == -6:
             # SIGABRT, most likely samtools 1.0+ which does not accept the index name parameter.
@@ -329,6 +319,7 @@ class Bam( Binary ):
                 shutil.move( dataset_symlink + '.bai', index_file.file_name )
             except Exception as e:
                 open( stderr_name, 'ab+' ).write( 'Galaxy attempted to build the BAM index with samtools 1.0+ but failed: %s\n' % e)
+                exit_code = 1  # Make sure an exception raised by shutil.move() is re-raised below
             finally:
                 os.unlink( dataset_symlink )
         stderr = open( stderr_name ).read().strip()
@@ -343,7 +334,7 @@ class Bam( Binary ):
         os.unlink( stderr_name )
         # Now use pysam with BAI index to determine additional metadata
         try:
-            bam_file = csamtools.Samfile( filename=dataset.file_name, mode='rb', index_filename=index_file.file_name )
+            bam_file = pysam.AlignmentFile( filename=dataset.file_name, mode='rb', index_filename=index_file.file_name )
             dataset.metadata.reference_names = list( bam_file.references )
             dataset.metadata.reference_lengths = list( bam_file.lengths )
             dataset.metadata.bam_header = bam_file.header
@@ -351,6 +342,8 @@ class Bam( Binary ):
             dataset.metadata.sort_order = dataset.metadata.bam_header.get( 'HD', {} ).get( 'SO', None )
             dataset.metadata.bam_version = dataset.metadata.bam_header.get( 'HD', {} ).get( 'VN', None )
         except:
+            # Per Dan, don't log here because doing so will cause datasets that
+            # fail metadata to end in the error state
             pass
 
     def sniff( self, filename ):
@@ -497,20 +490,17 @@ class Bcf( Binary):
 
         stderr_name = tempfile.NamedTemporaryFile( prefix="bcf_index_stderr" ).name
         command = [ 'bcftools', 'index', dataset_symlink ]
-        proc = subprocess.Popen( args=command, stderr=open( stderr_name, 'wb' ) )
-        exit_code = proc.wait()
-        shutil.move( dataset_symlink + '.csi', index_file.file_name )
-
-        stderr = open( stderr_name ).read().strip()
-        if stderr:
-            if exit_code != 0:
-                os.unlink( stderr_name )  # clean up
-                raise Exception( "Error Setting BCF Metadata: %s" % stderr )
-            else:
-                print stderr
+        try:
+            subprocess.check_call( args=command, stderr=open( stderr_name, 'wb' ) )
+            shutil.move( dataset_symlink + '.csi', index_file.file_name )  # this will fail if bcftools < 1.0 is used, because it creates a .bci index file instead of .csi
+        except Exception as e:
+            stderr = open( stderr_name ).read().strip()
+            raise Exception('Error setting BCF metadata: %s' % (stderr or str(e)))
+        finally:
+            # Remove temp file and symlink
+            os.remove( stderr_name )
+            os.remove( dataset_symlink )
         dataset.metadata.bcf_index = index_file
-        # Remove temp file
-        os.unlink( stderr_name )
 
 Binary.register_sniffable_binary_format("bcf", "bcf", Bcf)
 
@@ -562,9 +552,6 @@ class Sff( Binary ):
     """ Standard Flowgram Format (SFF) """
     edam_format = "format_3284"
     file_ext = "sff"
-
-    def __init__( self, **kwd ):
-        Binary.__init__( self, **kwd )
 
     def sniff( self, filename ):
         # The first 4 bytes of any sff file is '.sff', and the file is binary. For details
@@ -854,9 +841,6 @@ class Sra( Binary ):
     """ Sequence Read Archive (SRA) datatype originally from mdshw5/sra-tools-galaxy"""
     file_ext = 'sra'
 
-    def __init__( self, **kwd ):
-        Binary.__init__( self, **kwd )
-
     def sniff( self, filename ):
         """ The first 8 bytes of any NCBI sra file is 'NCBI.sra', and the file is binary.
         For details about the format, see http://www.ncbi.nlm.nih.gov/books/n/helpsra/SRA_Overview_BK/#SRA_Overview_BK.4_SRA_Data_Structure
@@ -891,9 +875,6 @@ class RData( Binary ):
     """Generic R Data file datatype implementation"""
     file_ext = 'RData'
 
-    def __init__( self, **kwd ):
-        Binary.__init__( self, **kwd )
-
     def sniff( self, filename ):
         rdata_header = binascii.hexlify('RDX2\nX\n')
         try:
@@ -908,3 +889,216 @@ class RData( Binary ):
             return False
 
 Binary.register_sniffable_binary_format('RData', 'RData', RData)
+
+
+class OxliBinary(Binary):
+
+    @staticmethod
+    def _sniff(filename, oxlitype):
+        try:
+            with open(filename) as fileobj:
+                header = fileobj.read(4)
+                if binascii.b2a_hex(header) == binascii.hexlify('OXLI'):
+                    fileobj.read(1)  # skip the version number
+                    ftype = fileobj.read(1)
+                    if binascii.b2a_hex(ftype) == oxlitype:
+                        return True
+            return False
+        except IOError:
+            return False
+
+
+class OxliCountGraph(OxliBinary):
+    """
+    OxliCountGraph starts with "OXLI" + one byte version number +
+    8-bit binary '1'
+    Test file generated via `load-into-counting.py --n_tables 1 \
+            --max-tablesize 1 oxli_countgraph.oxlicg \
+            khmer/tests/test-data/100-reads.fq.bz2`
+    using khmer 2.0
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'sequence.csfasta' )
+    >>> OxliCountGraph().sniff( fname )
+    False
+    >>> fname = get_test_fname( "oxli_countgraph.oxlicg" )
+    >>> OxliCountGraph().sniff( fname )
+    True
+    """
+
+    def sniff(self, filename):
+        return OxliBinary._sniff(filename, "01")
+
+Binary.register_sniffable_binary_format("oxli.countgraph", "oxlicg",
+                                        OxliCountGraph)
+
+
+class OxliNodeGraph(OxliBinary):
+    """
+    OxliNodeGraph starts with "OXLI" + one byte version number +
+    8-bit binary '2'
+    Test file generated via `load-graph.py --n_tables 1 \
+            --max-tablesize 1 oxli_nodegraph.oxling \
+            khmer/tests/test-data/100-reads.fq.bz2`
+    using khmer 2.0
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'sequence.csfasta' )
+    >>> OxliNodeGraph().sniff( fname )
+    False
+    >>> fname = get_test_fname( "oxli_nodegraph.oxling" )
+    >>> OxliNodeGraph().sniff( fname )
+    True
+    """
+
+    def sniff(self, filename):
+        return OxliBinary._sniff(filename, "02")
+
+Binary.register_sniffable_binary_format("oxli.nodegraph", "oxling",
+                                        OxliNodeGraph)
+
+
+class OxliTagSet(OxliBinary):
+    """
+    OxliTagSet starts with "OXLI" + one byte version number +
+    8-bit binary '3'
+    Test file generated via `load-graph.py --n_tables 1 \
+            --max-tablesize 1 oxli_nodegraph.oxling \
+            khmer/tests/test-data/100-reads.fq.bz2; \
+            mv oxli_nodegraph.oxling.tagset oxli_tagset.oxlits`
+    using khmer 2.0
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'sequence.csfasta' )
+    >>> OxliTagSet().sniff( fname )
+    False
+    >>> fname = get_test_fname( "oxli_tagset.oxlits" )
+    >>> OxliTagSet().sniff( fname )
+    True
+    """
+
+    def sniff(self, filename):
+        return OxliBinary._sniff(filename, "03")
+
+Binary.register_sniffable_binary_format("oxli.tagset", "oxlits", OxliTagSet)
+
+
+class OxliStopTags(OxliBinary):
+    """
+    OxliStopTags starts with "OXLI" + one byte version number +
+    8-bit binary '4'
+    Test file adapted from khmer 2.0's
+    "khmer/tests/test-data/goodversion-k32.stoptags"
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'sequence.csfasta' )
+    >>> OxliStopTags().sniff( fname )
+    False
+    >>> fname = get_test_fname( "oxli_stoptags.oxlist" )
+    >>> OxliStopTags().sniff( fname )
+    True
+    """
+
+    def sniff(self, filename):
+        return OxliBinary._sniff(filename, "04")
+
+Binary.register_sniffable_binary_format("oxli.stoptags", "oxlist",
+                                        OxliStopTags)
+
+
+class OxliSubset(OxliBinary):
+    """
+    OxliSubset starts with "OXLI" + one byte version number +
+    8-bit binary '5'
+    Test file generated via `load-graph.py -k 20 example \
+            tests/test-data/random-20-a.fa; \
+            partition-graph.py example; \
+            mv example.subset.0.pmap oxli_subset.oxliss`
+    using khmer 2.0
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'sequence.csfasta' )
+    >>> OxliSubset().sniff( fname )
+    False
+    >>> fname = get_test_fname( "oxli_subset.oxliss" )
+    >>> OxliSubset().sniff( fname )
+    True
+    """
+
+    def sniff(self, filename):
+        return OxliBinary._sniff(filename, "05")
+
+Binary.register_sniffable_binary_format("oxli.subset", "oxliss", OxliSubset)
+
+
+class OxliGraphLabels(OxliBinary):
+    """
+    OxliGraphLabels starts with "OXLI" + one byte version number +
+    8-bit binary '6'
+    Test file generated via `python -c "from khmer import GraphLabels; \
+        gl = GraphLabels(20, 1e7, 4); gl.consume_fasta_and_tag_with_labels(
+            'tests/test-data/test-labels.fa'); \
+        gl.save_labels_and_tags('oxli_graphlabels.oxligl')"`
+    using khmer 2.0
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'sequence.csfasta' )
+    >>> OxliGraphLabels().sniff( fname )
+    False
+    >>> fname = get_test_fname( "oxli_graphlabels.oxligl" )
+    >>> OxliGraphLabels().sniff( fname )
+    True
+    """
+
+    def sniff(self, filename):
+        return OxliBinary._sniff(filename, "06")
+
+Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
+                                        OxliGraphLabels)
+
+
+class SearchGuiArchive ( CompressedArchive ):
+    """Class describing a SearchGUI archive """
+    MetadataElement( name="searchgui_version", default='1.28.0' , param=MetadataParameter, desc="SearchGui Version",
+                     readonly=True, visible=True, no_value=None )
+    MetadataElement( name="searchgui_major_version", default='1' , param=MetadataParameter, desc="SearchGui Major Version",
+                     readonly=True, visible=True, no_value=None )
+    file_ext = "searchgui_archive"
+
+    def set_meta( self, dataset, overwrite=True, **kwd ):
+        super( SearchGuiArchive, self ).set_meta( dataset, overwrite=overwrite, **kwd )
+        try:
+            if dataset and zipfile.is_zipfile( dataset.file_name ):
+                tempzip = zipfile.ZipFile( dataset.file_name )
+                if 'searchgui.properties' in tempzip.namelist():
+                    fh = tempzip.open('searchgui.properties')
+                    for line in fh:
+                        if line.startswith('searchgui.version'):
+                            version = line.split('=')[1].strip()
+                            dataset.metadata.searchgui_version = version
+                            dataset.metadata.searchgui_major_version = version.split('.')[0]
+                    fh.close()
+                tempzip.close()
+        except Exception as e:
+            log.warn( '%s, set_meta Exception: %s', self, e )
+
+    def sniff( self, filename ):
+        try:
+            if filename and zipfile.is_zipfile( filename ):
+                tempzip = zipfile.ZipFile( filename, 'r' )
+                is_searchgui = 'searchgui.properties' in tempzip.namelist()
+                tempzip.close()
+                return is_searchgui
+        except Exception as e:
+            log.warn( '%s, sniff Exception: %s', self, e )
+        return False
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = "SearchGUI Archive, version %s" % ( dataset.metadata.searchgui_version or 'unknown' )
+            dataset.blurb = nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek( self, dataset ):
+        try:
+            return dataset.peek
+        except:
+            return "SearchGUI Archive, version %s" % ( dataset.metadata.searchgui_version or 'unknown' )
+
+Binary.register_sniffable_binary_format("searchgui_archive", "searchgui_archive", SearchGuiArchive)

@@ -215,4 +215,7 @@ For **SRMA**::
                                 8192. This option can be set to 'null' to clear the default value. 
 
   </help>
+  <citations>
+    <citation type="doi">10.1093/bioinformatics/bts286</citation>
+  </citations>
 </tool>

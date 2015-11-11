@@ -3,16 +3,13 @@ Migration script to add 'total_size' column to the dataset table, 'purged'
 column to the HDA table, and 'disk_usage' column to the User and GalaxySession
 tables.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Boolean, Column, MetaData, Numeric, Table
+
+log = logging.getLogger( __name__ )
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -55,6 +52,7 @@ def upgrade(migrate_engine):
     except Exception, e:
         print "Adding disk_usage column to galaxy_session table failed: %s" % str( e )
         log.debug( "Adding disk_usage column to galaxy_session table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

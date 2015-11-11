@@ -6,19 +6,16 @@ the reverse complement for each block in the source file.
 
 usage: %prog input_maf_file output_maf_file
 """
-#Dan Blankenberg
-from galaxy import eggs
-import pkg_resources
-pkg_resources.require( "bx-python" )
-import bx.align.maf
-from galaxy.tools.util import maf_utilities
+# Dan Blankenberg
 import sys
 
-assert sys.version_info[:2] >= ( 2, 4 )
+import bx.align.maf
+
+from galaxy.tools.util import maf_utilities
 
 
 def __main__():
-    #Parse Command Line
+    # Parse Command Line
     input_file = sys.argv.pop( 1 )
     output_file = sys.argv.pop( 1 )
     species = maf_utilities.parse_species_option( sys.argv.pop( 1 ) )

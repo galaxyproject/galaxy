@@ -1,79 +1,14 @@
 define([
     "mvc/history/history-model",
     "mvc/history/history-panel-edit",
+    "mvc/history/copy-dialog",
     "mvc/base-mvc",
     "utils/ajax-queue",
     "ui/mode-button",
     "ui/search-input"
-], function( HISTORY_MODEL, HPANEL_EDIT, baseMVC, ajaxQueue ){
-//==============================================================================
-/**  */
-function historyCopyDialog( history, options ){
-    options = options || {};
-    // fall back to un-notifying copy
-    if( !( Galaxy && Galaxy.modal ) ){
-        return history.copy();
-    }
+], function( HISTORY_MODEL, HPANEL_EDIT, historyCopyDialog, baseMVC, ajaxQueue ){
 
-    // maybe better as multiselect dialog?
-    var historyName = history.get( 'name' ),
-        defaultCopyName = "Copy of '" + historyName + "'";
-
-    function validateName( name ){
-        if( !name ){
-            if( !Galaxy.modal.$( '#invalid-title' ).size() ){
-                var $invalidTitle = $( '<p/>' ).attr( 'id', 'invalid-title' )
-                    .css({ color: 'red', 'margin-top': '8px' })
-                    .addClass( 'bg-danger' ).text( _l( 'Please enter a valid history title' ) );
-                Galaxy.modal.$( '.modal-body' ).append( $invalidTitle );
-            }
-            return false;
-        }
-        return name;
-    }
-
-    function copyHistory( name ){
-        var $copyIndicator = $( '<p><span class="fa fa-spinner fa-spin"></span> Copying history...</p>' )
-            .css( 'margin-top', '8px' );
-        Galaxy.modal.$( '.modal-body' ).append( $copyIndicator );
-        history.copy( true, name )
-            //TODO: make this unneccessary with pub-sub error
-            .fail( function(){
-                alert( _l( 'History could not be copied. Please contact a Galaxy administrator' ) );
-            })
-            .always( function(){
-                Galaxy.modal.hide();
-            });
-    }
-    function checkNameAndCopy(){
-        var name = Galaxy.modal.$( '#copy-modal-title' ).val();
-        if( !validateName( name ) ){ return; }
-        copyHistory( name );
-    }
-
-    Galaxy.modal.show( _.extend({
-        title   : _l( 'Copying history' ) + ' "' + historyName + '"',
-        body    : $([
-                '<label for="copy-modal-title">',
-                    _l( 'Enter a title for the copied history' ), ':',
-                '</label><br />',
-                '<input id="copy-modal-title" class="form-control" style="width: 100%" value="',
-                    defaultCopyName, '" />'
-            ].join('')),
-        buttons : {
-            'Cancel' : function(){ Galaxy.modal.hide(); },
-            'Copy'   : checkNameAndCopy
-        }
-    }, options ));
-    $( '#copy-modal-title' ).focus().select();
-    $( '#copy-modal-title' ).on( 'keydown', function( ev ){
-        if( ev.keyCode === 13 ){
-            checkNameAndCopy();
-        }
-    });
-}
-
-
+var logNamespace = 'history';
 /* ==============================================================================
 TODO:
     rendering/delayed rendering is a mess
@@ -108,8 +43,7 @@ TODO:
  */
 var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 //TODO: extend from panel? (instead of aggregating)
-
-    //logger : console,
+    _logNamespace : logNamespace,
 
     tagName     : 'div',
     className   : 'history-column flex-column flex-row-container',
@@ -151,29 +85,28 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
             // a more useful attribute, but does not account for collections (for some reason)
             // hdaCount = _.chain( this.model.get( 'state_ids' ) ).values().flatten().value().length,
             empty = panel.model.get( 'empty' ),
-            newMsg,
+            newMsg = panel.emptyMsg,
             $emptyMsg = panel.$emptyMessage( $whereTo );
 
         if( !_.isEmpty( panel.hdaViews ) ){
             return $emptyMsg.hide();
         }
 
-        if( empty ){
-            newMsg = panel.emptyMsg;
+        if( !empty ){
+            if( !this.model.contents.length ){
+                newMsg = '<span class="fa fa-spinner fa-spin"></span> <i>' + _l( 'loading datasets' ) + '...</i>';
 
-        } else if( !this.model.contents.length ){
-            newMsg = '<span class="fa fa-spinner fa-spin"></span> <i>' + _l( 'loading datasets' ) + '...</i>';
+            } if( panel.searchFor ){
+                // this is a hack until HDCAs implement searching and haveDetails entirely
+                var mixed = !!panel.model.contents.find( function( c ){
+                    return c.get( 'model_class' ) !== 'HistoryDatasetAssociation';
+                });
+                if( !mixed && !panel.model.contents.haveDetails() ){
+                    newMsg = '<span class="fa fa-spinner fa-spin"></span> <i>' + _l( 'searching' ) + '...</i>';
 
-        } if( panel.searchFor ){
-            // this is a hack until HDCAs implement searching and haveDetails entirely
-            var mixed = !!panel.model.contents.find( function( c ){
-                return c.get( 'model_class' ) !== 'HistoryDatasetAssociation';
-            });
-            if( !mixed && !panel.model.contents.haveDetails() ){
-                newMsg = '<span class="fa fa-spinner fa-spin"></span> <i>' + _l( 'searching' ) + '...</i>';
-
-            } else {
-                newMsg = panel.noneFoundMsg;
+                } else {
+                    newMsg = panel.noneFoundMsg;
+                }
             }
         }
         return $emptyMsg.empty().append( newMsg ).show();
@@ -375,8 +308,8 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 /** @class A view of a HistoryCollection and displays histories similarly to the current history panel.
  */
 var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
+    _logNamespace : logNamespace,
 
-    //logger : console,
     className : 'multi-panel-history',
 
     // ------------------------------------------------------------------------ set up
@@ -656,7 +589,9 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
                 multipanel._dropData = null;
 
                 var queue = new ajaxQueue.NamedAjaxQueue();
-                toCopy.forEach( function( content ){
+                // need to reverse to better match expected order
+                // TODO: reconsider order in list-panel._setUpItemViewListeners, dragstart (instead of here)
+                toCopy.reverse().forEach( function( content ){
                     queue.add({
                         name : 'copy-' + content.id,
                         fn : function(){

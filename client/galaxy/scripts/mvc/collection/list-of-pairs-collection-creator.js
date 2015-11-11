@@ -6,6 +6,8 @@ define([
     "utils/localization",
     "ui/hoverhighlight"
 ], function( levenshteinDistance, naturalSort, LIST_COLLECTION_CREATOR, baseMVC, _l ){
+
+var logNamespace = 'collections';
 /* ============================================================================
 TODO:
 
@@ -21,6 +23,7 @@ currPanel.once( 'rendered', function(){
 /** A view for paired datasets in the collections creator.
  */
 var PairView = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
+    _logNamespace : logNamespace,
 
     tagName     : 'li',
     className   : 'dataset paired',
@@ -185,6 +188,7 @@ function autoPairFnBuilder( options ){
 /** An interface for building collections of paired datasets.
  */
 var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
+    _logNamespace : logNamespace,
 
     className: 'list-of-pairs-collection-creator collection-creator flex-row-container',
 
@@ -389,8 +393,8 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         strategy = strategy || this.strategy;
         split = this._splitByFilters();
         paired = paired.concat( this[ strategy ].call( this, {
-                listA : split[0],
-                listB : split[1]
+            listA : split[0],
+            listB : split[1]
         }));
         return paired;
     },
@@ -502,8 +506,8 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         var fwdName = fwd.name,
             revName = rev.name,
             lcs = this._naiveStartingAndEndingLCS(
-                fwdName.replace( this.filters[0], '' ),
-                revName.replace( this.filters[1], '' )
+                fwdName.replace( new RegExp( this.filters[0] ), '' ),
+                revName.replace( new RegExp( this.filters[1] ), '' )
             );
         if( removeExtensions ){
             var lastDotIndex = lcs.lastIndexOf( '.' );

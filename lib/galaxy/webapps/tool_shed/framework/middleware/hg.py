@@ -15,8 +15,6 @@ from tool_shed.util import hg_util
 from tool_shed.util import commit_util
 import tool_shed.repository_types.util as rt_util
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
 import mercurial.__version__
 
 log = logging.getLogger(__name__)
@@ -27,7 +25,7 @@ CHUNK_SIZE = 65536
 class Hg( object ):
 
     def __init__( self, app, config ):
-        print "mercurial version is:", mercurial.__version__.version
+        log.debug( "mercurial version is: %s", mercurial.__version__.version )
         self.app = app
         self.config = config
         # Authenticate this mercurial request using basic authentication

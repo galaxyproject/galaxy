@@ -1,0 +1,13 @@
+# These dependencies are only required when certain config options are set
+psycopg2==2.6.1
+WebError==0.10.3
+Pygments==2.0.2
+importlib==1.0.3
+ordereddict==1.1
+python-openid
+MySQL-python
+fluent-logger
+raven
+pbs_python
+drmaa
+# PyRods not in PyPI

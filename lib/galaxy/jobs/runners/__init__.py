@@ -12,7 +12,6 @@ import subprocess
 
 from Queue import Queue, Empty
 
-import galaxy.eggs
 import galaxy.jobs
 from galaxy.jobs.command_factory import build_command
 from galaxy import model
@@ -36,6 +35,7 @@ JOB_RUNNER_PARAMETER_MAP_PROBLEM_MESSAGE = "Job runner parameter '%s' value '%s'
 JOB_RUNNER_PARAMETER_VALIDATION_FAILED_MESSAGE = "Job runner parameter %s failed validation"
 
 GALAXY_LIB_ADJUST_TEMPLATE = """GALAXY_LIB="%s"; if [ "$GALAXY_LIB" != "None" ]; then if [ -n "$PYTHONPATH" ]; then PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"; else PYTHONPATH="$GALAXY_LIB"; fi; export PYTHONPATH; fi;"""
+GALAXY_VENV_TEMPLATE = """GALAXY_VIRTUAL_ENV="%s"; if [ "$GALAXY_VIRTUAL_ENV" != "None" -a -z "$VIRTUAL_ENV" -a -f "$GALAXY_VIRTUAL_ENV/bin/activate" ]; then . "$GALAXY_VIRTUAL_ENV/bin/activate"; fi;"""
 
 
 class RunnerParams( ParamsWithSpecs ):
@@ -188,8 +188,6 @@ class BaseJobRunner( object ):
         raise NotImplementedError()
 
     def build_command_line( self, job_wrapper, include_metadata=False, include_work_dir_outputs=True ):
-        # TODO: Eliminate extra kwds no longer used (since LWR skips
-        # abstraction and calls build_command directly).
         container = self._find_container( job_wrapper )
         return build_command(
             self,
@@ -248,20 +246,21 @@ class BaseJobRunner( object ):
 
     def _handle_metadata_externally( self, job_wrapper, resolve_requirements=False ):
         """
-        Set metadata externally. Used by the local and lwr job runners where this
-        shouldn't be attached to command-line to execute.
+        Set metadata externally. Used by the Pulsar job runner where this
+        shouldn't be attached to command line to execute.
         """
         # run the metadata setting script here
         # this is terminate-able when output dataset/job is deleted
         # so that long running set_meta()s can be canceled without having to reboot the server
         if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ] and job_wrapper.output_paths:
             lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
+            venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
             external_metadata_script = job_wrapper.setup_external_metadata( output_fnames=job_wrapper.get_output_fnames(),
                                                                             set_extension=True,
                                                                             tmp_dir=job_wrapper.working_directory,
                                                                             # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
                                                                             kwds={ 'overwrite' : False } )
-            external_metadata_script = "%s %s" % (lib_adjust, external_metadata_script)
+            external_metadata_script = "%s %s %s" % (lib_adjust, venv, external_metadata_script)
             if resolve_requirements:
                 dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands()
                 if dependency_shell_commands:
@@ -277,20 +276,12 @@ class BaseJobRunner( object ):
             external_metadata_proc.wait()
             log.debug( 'execution of external set_meta for job %d finished' % job_wrapper.job_id )
 
-    def _get_egg_env_opts(self):
-        env = []
-        crate = galaxy.eggs.Crate()
-        for opt in ('enable_egg_fetch', 'enable_eggs', 'try_dependencies_from_env'):
-            env.append('GALAXY_%s="%s"; export GALAXY_%s' % (opt.upper(), getattr(crate, opt), opt.upper()))
-        return env
-
     def get_job_file(self, job_wrapper, **kwds):
         job_metrics = job_wrapper.app.job_metrics
         job_instrumenter = job_metrics.job_instrumenters[ job_wrapper.job_destination.id ]
 
         env_setup_commands = kwds.get( 'env_setup_commands', [] )
         env_setup_commands.append( job_wrapper.get_env_setup_clause() or '' )
-        env_setup_commands.extend( self._get_egg_env_opts() or [] )
         destination = job_wrapper.job_destination or {}
         envs = destination.get( "env", [] )
         envs.extend( job_wrapper.environment_variables )
@@ -300,6 +291,7 @@ class BaseJobRunner( object ):
         options = dict(
             job_instrumenter=job_instrumenter,
             galaxy_lib=job_wrapper.galaxy_lib_dir,
+            galaxy_virtual_env=job_wrapper.galaxy_virtual_env,
             env_setup_commands=env_setup_commands,
             working_directory=os.path.abspath( job_wrapper.working_directory ),
             command=command_line,
@@ -310,6 +302,41 @@ class BaseJobRunner( object ):
         log.debug( '(%s) command is: %s' % ( job_id, command_line ) )
         options.update(**kwds)
         return job_script(**options)
+
+    def write_executable_script( self, path, contents, mode=0o755 ):
+        with open( path, 'w' ) as f:
+            f.write( contents )
+        os.chmod( path, mode )
+        self._handle_script_integrity( path )
+
+    def _handle_script_integrity( self, path ):
+        if not getattr( self.app.config, "check_job_script_integrity", True ):
+            return
+
+        script_integrity_verified = False
+        for i in range(5):
+            try:
+                proc = subprocess.Popen( [path], shell=True, env={"ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ": "1"} )
+                proc.wait()
+                if proc.returncode == 42:
+                    script_integrity_verified = True
+                    break
+
+                # Else we will sync and wait to see if the script becomes
+                # executable.
+                try:
+                    # sync file system to avoid "Text file busy" problems.
+                    # These have occurred both in Docker containers and on EC2 clusters
+                    # under high load.
+                    subprocess.check_call(["/bin/sync"])
+                except Exception:
+                    pass
+                time.sleep( .1 )
+            except Exception:
+                pass
+
+        if not script_integrity_verified:
+            raise Exception("Failed to write job script, could not verify job script integrity.")
 
     def _complete_terminal_job( self, ajs, **kwargs ):
         if ajs.job_wrapper.get_state() != model.Job.states.DELETED:

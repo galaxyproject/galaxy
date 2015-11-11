@@ -11,10 +11,7 @@ import urllib
 
 from datetime import datetime, timedelta
 
-from galaxy import eggs
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
-eggs.require('sqlalchemy')
 from sqlalchemy import and_, or_, true, func
 
 from galaxy import model
@@ -48,7 +45,7 @@ PASSWORD_RESET_TEMPLATE = """
 To reset your Galaxy password for the instance at %s use the following link,
 which will expire %s.
 
-<a href="%s">%s</a>
+%s
 
 If you did not make this request, no action is necessary on your part, though
 you may want to notify an administrator.
@@ -1199,7 +1196,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                          action="change_password",
                                          token=prt.token, qualified=True)
                     body = PASSWORD_RESET_TEMPLATE % ( host, prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
-                                                       reset_url, reset_url )
+                                                       reset_url )
                     frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
                     subject = 'Galaxy Password Reset'
                     try:

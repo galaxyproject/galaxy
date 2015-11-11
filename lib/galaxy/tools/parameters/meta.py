@@ -35,7 +35,7 @@ def expand_meta_parameters( trans, tool, incoming ):
                 classification = permutations.input_classification.SINGLE
             if __collection_multirun_parameter( value ):
                 collection_value = value[ 'values' ][ 0 ]
-                values = __expand_collection_parameter( trans, input_key, collection_value, collections_to_match )
+                values = __expand_collection_parameter( trans, input_key, collection_value, collections_to_match, linked=is_linked )
             else:
                 values = value[ 'values' ]
         else:
@@ -102,7 +102,7 @@ def expand_meta_parameters( trans, tool, incoming ):
     return expanded_incomings, collection_info
 
 
-def __expand_collection_parameter( trans, input_key, incoming_val, collections_to_match ):
+def __expand_collection_parameter( trans, input_key, incoming_val, collections_to_match, linked=False ):
     # If subcollectin multirun of data_collection param - value will
     # be "hdca_id|subcollection_type" else it will just be hdca_id
     if "|" in incoming_val:
@@ -119,7 +119,7 @@ def __expand_collection_parameter( trans, input_key, incoming_val, collections_t
             subcollection_type = None
     hdc_id = trans.app.security.decode_id( encoded_hdc_id )
     hdc = trans.sa_session.query( model.HistoryDatasetCollectionAssociation ).get( hdc_id )
-    collections_to_match.add( input_key, hdc, subcollection_type=subcollection_type )
+    collections_to_match.add( input_key, hdc, subcollection_type=subcollection_type, linked=linked )
     if subcollection_type is not None:
         from galaxy.dataset_collections import subcollections
         subcollection_elements = subcollections.split_dataset_collection_instance( hdc, subcollection_type )

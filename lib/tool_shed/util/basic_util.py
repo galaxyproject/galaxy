@@ -4,8 +4,6 @@ import shutil
 import sys
 from string import Template
 
-from galaxy import eggs
-eggs.require( 'MarkupSafe' )
 import markupsafe
 
 from galaxy.util import nice_size, unicodify

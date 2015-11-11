@@ -3,12 +3,6 @@ from __future__ import absolute_import
 import logging
 
 try:
-    from galaxy import eggs
-    eggs.require("requests")
-except ImportError:
-    pass
-
-try:
     import requests
 except ImportError:
     requests = None

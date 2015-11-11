@@ -1,18 +1,15 @@
 """
 Migration script to enhance workflow step usability by adding labels and UUIDs.
 """
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-from galaxy.model.custom_types import *
-
 import datetime
-now = datetime.datetime.utcnow
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Column, MetaData, Table
+
+from galaxy.model.custom_types import TrimmedString, UUIDType
+
+now = datetime.datetime.utcnow
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 

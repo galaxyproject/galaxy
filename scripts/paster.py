@@ -19,14 +19,9 @@ new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] )  # remove scripts/ from the path
 sys.path = new_path
 
-from galaxy import eggs
-
 if 'LOG_TEMPFILES' in os.environ:
     from log_tempfile import TempFile
     _log_tempfile = TempFile()
-
-eggs.require( "Paste" )
-eggs.require( "PasteDeploy" )
 
 from galaxy.util.pastescript import serve
 serve.run()

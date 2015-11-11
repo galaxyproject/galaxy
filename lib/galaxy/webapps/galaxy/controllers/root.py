@@ -35,10 +35,16 @@ class RootController( BaseUIController, UsesAnnotations ):
         raise HTTPNotFound( 'This link may not be followed from within Galaxy.' )
 
     @web.expose
-    def index(self, trans, id=None, tool_id=None, mode=None, workflow_id=None, m_c=None, m_a=None, **kwd):
+    def index(self, trans, id=None, tool_id=None, mode=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd):
         """
         Called on the root url to display the main Galaxy page.
         """
+        if history_id is not None:
+            # Get history or throw exception.
+            unencoded_id = trans.security.decode_id( history_id )
+            history = self.history_manager.get_owned( unencoded_id, trans.user )
+            trans.set_history( history )
+
         return trans.fill_template( "root/index.mako",
                                     tool_id=tool_id,
                                     workflow_id=workflow_id,

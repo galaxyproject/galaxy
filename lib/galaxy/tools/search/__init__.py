@@ -2,19 +2,18 @@
 Module for building and searching the index of tools
 installed within this Galaxy.
 """
-from galaxy import eggs
 from galaxy.web.framework.helpers import to_unicode
 
-eggs.require( "Whoosh" )
 from whoosh.filedb.filestore import RamStorage
-from whoosh.fields import Schema, STORED, TEXT
+from whoosh.fields import KEYWORD, Schema, STORED, TEXT
 from whoosh.scoring import BM25F
 from whoosh.qparser import MultifieldParser
 schema = Schema( id=STORED,
                  name=TEXT,
                  description=TEXT,
                  section=TEXT,
-                 help=TEXT )
+                 help=TEXT,
+                 labels=KEYWORD )
 import logging
 log = logging.getLogger( __name__ )
 
@@ -48,6 +47,8 @@ class ToolBoxSearch( object ):
                 "section": to_unicode( tool.get_panel_section()[1] if len( tool.get_panel_section() ) == 2 else '' ),
                 "help": to_unicode( "" )
             }
+            if tool.labels:
+                add_doc_kwds['labels'] = to_unicode( " ".join( tool.labels ) )
             if index_help and tool.help:
                 try:
                     add_doc_kwds['help'] = to_unicode( tool.help.render( host_url="", static_path="" ) )
@@ -72,8 +73,8 @@ class ToolBoxSearch( object ):
                           'help_B': float( tool_help_boost ) }
             )
         )
-        # Set query to search name, description, section, and help.
-        parser = MultifieldParser( [ 'name', 'description', 'section', 'help' ], schema=schema )
+        # Set query to search name, description, section, help, and labels.
+        parser = MultifieldParser( [ 'name', 'description', 'section', 'help', 'labels' ], schema=schema )
         # Perform the search
         hits = searcher.search( parser.parse( '*' + q + '*' ), limit=float( tool_search_limit ) )
         return [ hit[ 'id' ] for hit in hits ]

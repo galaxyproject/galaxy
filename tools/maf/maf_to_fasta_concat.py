@@ -1,18 +1,16 @@
 #!/usr/bin/env python
-
 """
 Read a maf and output a single block fasta file, concatenating blocks
 
 usage %prog species1,species2 maf_file out_file
 """
-#Dan Blankenberg
+# Dan Blankenberg
 import sys
-from galaxy import eggs
-import pkg_resources; pkg_resources.require( "bx-python" )
+
 from bx.align import maf
+
 from galaxy.tools.util import maf_utilities
 
-assert sys.version_info[:2] >= ( 2, 4 )
 
 def __main__():
     try:
@@ -27,25 +25,25 @@ def __main__():
         file_out = open( sys.argv[3], 'w' )
     except Exception, e:
         maf_utilities.tool_fail( "Error opening file for output: %s" % e )
-    
+
     if species:
         print "Restricted to species: %s" % ', '.join( species )
     else:
         print "Not restricted to species."
-    
+
     if not species:
         try:
             species = maf_utilities.get_species_in_maf( input_filename )
         except Exception, e:
             maf_utilities.tool_fail( "Error determining species in input MAF: %s" % e )
-    
+
     for spec in species:
         file_out.write( ">" + spec + "\n" )
         try:
             for start_block in maf.Reader( open( input_filename, 'r' ) ):
                 for block in maf_utilities.iter_blocks_split_by_species( start_block ):
-                    block.remove_all_gap_columns() #remove extra gaps
-                    component = block.get_component_by_src_start( spec ) #blocks only have one occurrence of a particular species, so this is safe
+                    block.remove_all_gap_columns()  # remove extra gaps
+                    component = block.get_component_by_src_start( spec )  # blocks only have one occurrence of a particular species, so this is safe
                     if component:
                         file_out.write( component.text )
                     else:
@@ -56,4 +54,5 @@ def __main__():
     file_out.close()
 
 
-if __name__ == "__main__": __main__()
+if __name__ == "__main__":
+    __main__()

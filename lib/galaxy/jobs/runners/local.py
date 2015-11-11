@@ -68,8 +68,7 @@ class LocalJobRunner( BaseJobRunner ):
             'working_directory': job_wrapper.working_directory,
         }
         job_file_contents = self.get_job_file( job_wrapper, **job_script_props )
-        open( job_file, 'w' ).write( job_file_contents )
-        os.chmod( job_file, 0o755 )
+        self.write_executable_script( job_file, job_file_contents )
         return job_file, exit_code_path
 
     def queue_job( self, job_wrapper ):

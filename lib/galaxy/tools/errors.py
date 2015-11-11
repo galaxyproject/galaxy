@@ -11,9 +11,9 @@ GALAXY TOOL ERROR REPORT
 This error report was sent from the Galaxy instance hosted on the server
 "${host}"
 -----------------------------------------------------------------------------
-This is in reference to dataset id ${dataset_id} from history id ${history_id}
+This is in reference to dataset id ${dataset_id} (${dataset_id_encoded}) from history id ${history_id} (${history_id_encoded})
 -----------------------------------------------------------------------------
-You should be able to view the history containing the related history item
+You should be able to view the history containing the related history item (${hda_id_encoded})
 
 ${hid}: ${history_item_name}
 
@@ -26,7 +26,8 @@ The user ${email_str} provided the following information:
 
 ${message}
 -----------------------------------------------------------------------------
-job id: ${job_id}
+info url: ${hda_show_params_link}
+job id: ${job_id} (${job_id_encoded})
 tool id: ${job_tool_id}
 tool version: ${tool_version}
 job pid or drm id: ${job_runner_external_id}
@@ -60,7 +61,7 @@ class ErrorReporter( object ):
             try:
                 hda = sa_session.query( model.HistoryDatasetAssociation ).get( hda_id )
                 assert hda is not None, ValueError( "No HDA yet" )
-            except:
+            except Exception:
                 hda = sa_session.query( model.HistoryDatasetAssociation ).get( app.security.decode_id( hda_id ) )
         assert isinstance( hda, model.HistoryDatasetAssociation ), ValueError( "Bad value provided for HDA (%s)." % ( hda ) )
         self.hda = hda
@@ -81,7 +82,10 @@ class ErrorReporter( object ):
         hda = self.hda
         job = self.job
         host = web.url_for( '/', qualified=True )
-        history_view_link = web.url_for( controller="history", action="view", id=self.app.security.encode_id( hda.history_id ), qualified=True )
+        history_id_encoded = self.app.security.encode_id( hda.history_id )
+        history_view_link = web.url_for( controller="history", action="view", id=history_id_encoded, qualified=True )
+        hda_id_encoded = self.app.security.encode_id( hda.id )
+        hda_show_params_link = web.url_for( controller="dataset", action="show_params", dataset_id=hda_id_encoded, qualified=True )
         # Build the email message
         if user and user.email != email:
             email_str = "'%s' (providing preferred contact email '%s')" % (user.email, email)
@@ -89,11 +93,16 @@ class ErrorReporter( object ):
             email_str = "'%s'" % (email or 'anonymously')
         self.report = string.Template( error_report_template ) \
             .safe_substitute( host=host,
+                              dataset_id_encoded=self.app.security.encode_id( hda.dataset_id ),
                               dataset_id=hda.dataset_id,
+                              history_id_encoded=history_id_encoded,
                               history_id=hda.history_id,
+                              hda_id_encoded=hda_id_encoded,
                               hid=hda.hid,
                               history_item_name=hda.get_display_name(),
                               history_view_link=history_view_link,
+                              hda_show_params_link=hda_show_params_link,
+                              job_id_encoded=self.app.security.encode_id( job.id ),
                               job_id=job.id,
                               tool_version=job.tool_version,
                               job_tool_id=job.tool_id,
@@ -133,5 +142,9 @@ class EmailErrorReporter( ErrorReporter ):
         else:
             to = to_address
         subject = "Galaxy tool error report from %s" % email
+        try:
+            subject = "%s (%s)" % ( subject, self.app.toolbox.get_tool( self.job.tool_id, self.job.tool_version ).old_id )
+        except Exception:
+            pass
         # Send it
         return util.send_mail( frm, to, subject, self.report, self.app.config )

@@ -12,7 +12,7 @@ sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pard
 import galaxy.webapps.tool_shed.config as tool_shed_config
 from galaxy.web import security
 from galaxy.webapps.tool_shed.model import mapping
-from tool_shed.util import xml_util
+from .bootstrap_util import admin_user_info
 
 log = logging.getLogger( __name__ )
 
@@ -62,25 +62,7 @@ def create_api_key( app, user ):
 
 
 def create_user( app ):
-    user_info_config = os.path.abspath( os.path.join( app.config.root, 'lib/tool_shed/scripts/bootstrap_tool_shed', 'user_info.xml' ) )
-    email = None
-    password = None
-    username = None
-    tree, error_message = xml_util.parse_xml( user_info_config )
-    if tree is None:
-        print "The XML file ", user_info_config, " seems to be invalid, using defaults."
-        email = 'admin@test.org'
-        password = 'testuser'
-        username = 'admin'
-    else:
-        root = tree.getroot()
-        for elem in root:
-            if elem.tag == 'email':
-                email = elem.text
-            elif elem.tag == 'password':
-                password = elem.text
-            elif elem.tag == 'username':
-                username = elem.text
+    (username, email, password) = admin_user_info()
     if email and password and username:
         invalid_message = validate( email, password, username )
         if invalid_message:

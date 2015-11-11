@@ -5,6 +5,8 @@ define([
     "utils/localization",
     "ui/search-input"
 ], function( LIST_ITEM, LoadingIndicator, BASE_MVC, _l ){
+
+var logNamespace = 'list';
 /* ============================================================================
 TODO:
 
@@ -22,11 +24,8 @@ TODO:
  *      for dataset/dataset-choice
  *      as superclass of ModelListPanel
  */
-var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
-/** @lends ReadOnlyHistoryPanel.prototype */{
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
+var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends ReadOnlyHistoryPanel.prototype */{
+    _logNamespace : logNamespace,
 
     /** class to use for constructing the sub-views */
     viewClass           : LIST_ITEM.ListItemView,
@@ -636,8 +635,8 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         //this.log( 'onSearchClear', this );
         this.searchFor = '';
         this.trigger( 'search:clear', this );
-        this.renderItems();
         this.$( '> .controls .search-query' ).val( '' );
+        this.renderItems();
         return this;
     },
 

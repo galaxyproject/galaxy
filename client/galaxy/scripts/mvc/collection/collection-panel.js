@@ -5,6 +5,8 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( LIST_PANEL, DC_MODEL, DC_LI, BASE_MVC, _l ){
+
+var logNamespace = 'collections';
 /* =============================================================================
 TODO:
 
@@ -15,9 +17,7 @@ var _super = LIST_PANEL.ModelListPanel;
 var CollectionPanel = _super.extend(
 /** @lends CollectionPanel.prototype */{
     //MODEL is either a DatasetCollection (or subclass) or a DatasetCollectionElement (list of pairs)
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
+    _logNamespace : logNamespace,
 
     className           : _super.prototype.className + ' dataset-collection-panel',
 

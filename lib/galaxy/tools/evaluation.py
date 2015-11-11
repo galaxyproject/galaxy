@@ -316,7 +316,7 @@ class ToolEvaluator( object ):
                 try:
                     open( dataset_path.false_path, 'w' ).close()
                 except EnvironmentError:
-                    pass  # May well not exist - e.g. LWR.
+                    pass  # May well not exist - e.g. Pulsar.
             else:
                 param_dict[name] = DatasetFilenameWrapper( hda )
             # Provide access to a path to store additional files

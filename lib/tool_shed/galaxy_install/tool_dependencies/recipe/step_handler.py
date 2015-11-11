@@ -19,12 +19,6 @@ from tool_shed.util import tool_dependency_util
 from tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
 
 # TODO: eliminate the use of fabric here.
-from galaxy import eggs
-
-eggs.require( 'paramiko' )
-eggs.require( 'ssh' )
-eggs.require( 'Fabric' )
-
 from fabric.api import settings
 from fabric.api import lcd
 
@@ -53,7 +47,7 @@ class CompressedFile( object ):
     def extract( self, path ):
         '''Determine the path to which the archive should be extracted.'''
         contents = self.getmembers()
-        extraction_path = os.path.join( path )
+        extraction_path = path
         common_prefix = ''
         if len( contents ) == 1:
             # The archive contains a single file, return the extraction path.
@@ -84,8 +78,11 @@ class CompressedFile( object ):
                 external_attributes = self.archive.getinfo( filename ).external_attr
                 # The 2 least significant bytes are irrelevant, the next two contain unix permissions.
                 unix_permissions = external_attributes >> 16
-                if unix_permissions != 0 and os.path.exists( absolute_filepath ):
-                    os.chmod( absolute_filepath, unix_permissions )
+                if unix_permissions != 0:
+                    if os.path.exists( absolute_filepath ):
+                        os.chmod( absolute_filepath, unix_permissions )
+                    else:
+                        log.warn("Unable to change permission on extracted file '%s' as it does not exist" % absolute_filepath)
         return os.path.abspath( os.path.join( extraction_path, common_prefix ) )
 
     def getmembers_tar( self ):
@@ -463,7 +460,8 @@ class Autoconf( RecipeStep ):
             cmd = install_environment.build_command( basic_util.evaluate_template( pre_cmd, install_environment ) )
             install_environment.handle_command( tool_dependency=tool_dependency,
                                                 cmd=cmd,
-                                                return_output=False )
+                                                return_output=False,
+                                                job_name=package_name )
             # The caller should check the status of the returned tool_dependency since this function
             # does nothing with the return_code.
             return tool_dependency, None, None
@@ -819,7 +817,8 @@ class MakeInstall( RecipeStep ):
             cmd = install_environment.build_command( 'make %s && make install' % make_opts )
             install_environment.handle_command( tool_dependency=tool_dependency,
                                                 cmd=cmd,
-                                                return_output=False )
+                                                return_output=False,
+                                                job_name=package_name )
             # The caller should check the status of the returned tool_dependency since this function
             # does nothing with the return_code.
             return tool_dependency, None, None
@@ -998,6 +997,10 @@ class SetEnvironment( RecipeStep ):
         # Currently the only action supported in this category is "environment_variable".
         cmds = install_environment.environment_commands( 'set_environment' )
         env_var_dicts = action_dict.get( 'environment_variable', [] )
+        root_dir_dict = dict( action='set_to',
+                              name='%s_ROOT_DIR' % re.sub( r"[^A-Z0-9_]", "_", tool_dependency.name.upper() ),
+                              value=install_environment.install_dir )
+        env_var_dicts.append( root_dir_dict )
         for env_var_dict in env_var_dicts:
             # Check for the presence of the $ENV[] key string and populate it if possible.
             env_var_dict = self.handle_environment_variables( install_environment=install_environment,
@@ -1249,7 +1252,8 @@ class SetupPerlEnvironment( Download, RecipeStep ):
                             cmd = install_environment.build_command( basic_util.evaluate_template( cmd, install_environment ) )
                             return_code = install_environment.handle_command( tool_dependency=tool_dependency,
                                                                               cmd=cmd,
-                                                                              return_output=False )
+                                                                              return_output=False,
+                                                                              job_name=package_name)
                             if return_code:
                                 if initial_download:
                                     return tool_dependency, filtered_actions, dir
@@ -1261,7 +1265,8 @@ class SetupPerlEnvironment( Download, RecipeStep ):
                         cmd = install_environment.build_command( basic_util.evaluate_template( cmd, install_environment ) )
                         return_code = install_environment.handle_command( tool_dependency=tool_dependency,
                                                                           cmd=cmd,
-                                                                          return_output=False )
+                                                                          return_output=False,
+                                                                          job_name=package_name )
                         if return_code:
                             if initial_download:
                                 return tool_dependency, filtered_actions, dir
@@ -1368,12 +1373,13 @@ class SetupREnvironment( Download, RecipeStep ):
                     # Use raw strings so that python won't automatically unescape the quotes before passing the command
                     # to subprocess.Popen.
                     cmd = r'''PATH=$PATH:$R_HOME/bin; export PATH; R_LIBS=$INSTALL_DIR:$R_LIBS; export R_LIBS;
-                        Rscript -e "install.packages(c('%s'),lib='$INSTALL_DIR', repos=NULL, dependencies=FALSE)"''' % \
+                        Rscript -e "tryCatch( { install.packages(c('%s'), lib = '$INSTALL_DIR', repos = NULL, dependencies = FALSE) }, error = function(e) { print(e); quit(status = 1) }, warning = function(w) { if ( grepl('had non-zero exit status|is not writable|installation of one of more packages failed', as.character(w)) ) { print(w); quit(status = 1) } } )"''' % \
                         ( str( tarball_name ) )
                     cmd = install_environment.build_command( basic_util.evaluate_template( cmd, install_environment ) )
                     return_code = install_environment.handle_command( tool_dependency=tool_dependency,
                                                                       cmd=cmd,
-                                                                      return_output=False )
+                                                                      return_output=False,
+                                                                      job_name=package_name )
                     if return_code:
                         if initial_download:
                             return tool_dependency, filtered_actions, dir
@@ -1495,7 +1501,8 @@ class SetupRubyEnvironment( Download, RecipeStep ):
                     cmd = install_environment.build_command( basic_util.evaluate_template( cmd, install_environment ) )
                     return_code = install_environment.handle_command( tool_dependency=tool_dependency,
                                                                       cmd=cmd,
-                                                                      return_output=False )
+                                                                      return_output=False,
+                                                                      job_name=package_name )
                     if return_code:
                         if initial_download:
                             return tool_dependency, filtered_actions, dir
@@ -1577,8 +1584,6 @@ class SetupPythonEnvironment( Download, RecipeStep ):
         and returned and the installation directory (i.e., dir) will be defined and returned.  If we're not
         in the initial download stage, these actions will not occur, and None values will be returned for them.
 
-        Warning: easy_install is configured that it will not be install any dependency, the tool developer needs
-        to specify every dependency explicitly
         """
         # <action type="setup_python_environment">
         #       <repository name="package_python_2_7" owner="bgruening">
@@ -1611,30 +1616,32 @@ class SetupPythonEnvironment( Download, RecipeStep ):
                     package, package_version = python_package_tup
                     package_path = os.path.join( install_environment.tool_shed_repository_install_dir, package )
                     if os.path.isfile( package_path ):
-                        # we assume a local shipped python package
-
-                        cmd = r'''PATH=$PATH:$PYTHONHOME/bin; export PATH;
-                                export PYTHONPATH=$PYTHONPATH:$INSTALL_DIR;
-                                easy_install --no-deps --install-dir $INSTALL_DIR --script-dir $INSTALL_DIR/bin %s
-                        ''' % ( package_path )
+                        # We assume a local shipped python package.
+                        package_to_install = package_path
                     elif package.find( '://' ) != -1:
                         # We assume a URL to a python package.
                         url = package
                         package_name = url.split( '/' )[ -1 ]
                         checksums = python_package_tup_dict.get('checksums', {})
                         self.url_download( work_dir, package_name, url, extract=False, checksums=checksums )
-
-                        cmd = r'''PATH=$PATH:$PYTHONHOME/bin; export PATH;
-                                export PYTHONPATH=$PYTHONPATH:$INSTALL_DIR;
-                                easy_install --no-deps --install-dir $INSTALL_DIR --script-dir $INSTALL_DIR/bin %s
-                            ''' % ( package_name )
+                        package_to_install = os.path.join( work_dir, package_name )
                     else:
+                        # pypi support is currently not working - pip can not install wheels into user specified directories
                         pass
-                        # pypi can be implemented or for > python3.4 we can use the build-in system
+                    archive = CompressedFile(package_to_install)
+                    uncompressed_path = archive.extract( work_dir )
+                    cmd = r'''PATH=$PYTHONHOME/bin:$PATH; export PATH;
+                            mkdir -p $INSTALL_DIR/lib/python;
+                            export PYTHONPATH=$INSTALL_DIR/lib/python:$PYTHONPATH;
+                            cd %s;
+                            python setup.py install --install-lib $INSTALL_DIR/lib/python --install-scripts $INSTALL_DIR/bin
+                        ''' % ( uncompressed_path )
+
                     cmd = install_environment.build_command( basic_util.evaluate_template( cmd, install_environment ) )
                     return_code = install_environment.handle_command( tool_dependency=tool_dependency,
                                                                       cmd=cmd,
-                                                                      return_output=False )
+                                                                      return_output=False,
+                                                                      job_name=package_name )
                     if return_code:
                         if initial_download:
                             return tool_dependency, filtered_actions, dir
@@ -1644,6 +1651,9 @@ class SetupPythonEnvironment( Download, RecipeStep ):
                 env_file_builder.append_line( name="PYTHONPATH",
                                               action="prepend_to",
                                               value=os.path.join( install_environment.install_dir, 'lib', 'python') )
+                env_file_builder.append_line( name="PYTHONPATH",
+                                              action="prepend_to",
+                                              value=os.path.join( install_environment.install_dir) )
                 env_file_builder.append_line( name="PATH",
                                               action="prepend_to",
                                               value=os.path.join( install_environment.install_dir, 'bin' ) )
@@ -1760,7 +1770,8 @@ class SetupVirtualEnv( Download, RecipeStep ):
         full_setup_command = "%s; %s; %s" % ( setup_command, activate_command, install_command )
         return_code = install_environment.handle_command( tool_dependency=tool_dependency,
                                                           cmd=full_setup_command,
-                                                          return_output=False )
+                                                          return_output=False,
+                                                          job_name=package_name)
         if return_code:
             log.error( "Failed to do setup_virtualenv install, exit code='%s'", return_code )
             # would it be better to try to set env variables anway, instead of returning here?
@@ -1832,7 +1843,8 @@ class SetupVirtualEnv( Download, RecipeStep ):
                                        os.path.join( venv_directory, "bin", "python" ) ]:
             output = install_environment.handle_command( tool_dependency=tool_dependency,
                                                          cmd=site_packages_command,
-                                                         return_output=True )
+                                                         return_output=True,
+                                                         job_name='_get_site_packages' )
             site_packages_directory_list.append( output.stdout )
             if not output.return_code and os.path.exists( output.stdout ):
                 return ( output.stdout, site_packages_directory_list )
@@ -1868,7 +1880,8 @@ class ShellCommand( RecipeStep ):
             # does nothing with return_code.
             install_environment.handle_command( tool_dependency=tool_dependency,
                                                 cmd=cmd,
-                                                return_output=False )
+                                                return_output=False,
+                                                job_name=package_name )
             if initial_download:
                 return tool_dependency, filtered_actions, dir
             return tool_dependency, None, None
@@ -1907,7 +1920,8 @@ class TemplateCommand( RecipeStep ):
                 # does nothing with return_code.
                 install_environment.handle_command( tool_dependency=tool_dependency,
                                                     cmd=cmd,
-                                                    return_output=False )
+                                                    return_output=False,
+                                                    job_name=package_name )
             return tool_dependency, None, None
 
     def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):

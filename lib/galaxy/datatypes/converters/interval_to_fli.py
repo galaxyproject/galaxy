@@ -14,10 +14,10 @@ where location is formatted as:
 and symbols are sorted in lexigraphical order.
 '''
 import optparse
-import pkg_resources
-pkg_resources.require( "bx-python" )
+
 from bx.tabular.io import Comment
-from galaxy.datatypes.util.gff_util import GFFReaderWrapper, read_unordered_gtf, convert_gff_coords_to_bed
+
+from galaxy.datatypes.util.gff_util import convert_gff_coords_to_bed, GFFReaderWrapper, read_unordered_gtf
 
 
 def main():

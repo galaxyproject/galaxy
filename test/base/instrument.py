@@ -9,13 +9,6 @@ types in a different way.
 import json
 import threading
 
-try:
-    from galaxy import eggs
-    eggs.require( "nose" )
-except ImportError:
-    pass
-
-
 from nose.plugins import Plugin
 
 NO_JOB_DATA = object()

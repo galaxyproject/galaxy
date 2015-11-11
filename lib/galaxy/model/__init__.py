@@ -18,13 +18,14 @@ from itertools import ifilter
 from string import Template
 from uuid import UUID, uuid4
 
-from galaxy import eggs
-eggs.require("pexpect")
-import pexpect
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, func, not_, or_, true, join, select
 from sqlalchemy.orm import joinedload, object_session, aliased
 from sqlalchemy.ext import hybrid
+
+try:
+    import pexpect
+except ImportError:
+    pexpect = None
 
 import galaxy.datatypes
 import galaxy.datatypes.registry
@@ -56,6 +57,9 @@ datatypes_registry.load_datatypes()
 # are going to have different limits so it is likely best to not let
 # this be unlimited - filter in Python if over this limit.
 MAX_IN_FILTER_LENGTH = 100
+
+PEXPECT_IMPORT_MESSAGE = ('The Python pexpect package is required to use this '
+                          'feature, please install it')
 
 
 class NoConverterException(Exception):
@@ -198,6 +202,9 @@ class User( object, Dictifiable ):
 
     total_disk_usage = property( get_disk_usage, set_disk_usage )
 
+    def adjust_total_disk_usage( self, amount ):
+        self.disk_usage = func.coalesce(self.table.c.disk_usage, 0) + amount
+
     @property
     def nice_total_disk_usage( self ):
         """
@@ -322,6 +329,9 @@ class Job( object, HasJobMetrics, Dictifiable ):
                     PAUSED='paused',
                     DELETED='deleted',
                     DELETED_NEW='deleted_new' )
+    terminal_states = [ states.OK,
+                        states.ERROR,
+                        states.DELETED ]
 
     # Please include an accessor (get/set pair) for any new columns/members.
     def __init__( self ):
@@ -1094,7 +1104,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             if set_hid:
                 dataset.hid = self._next_hid()
         if quota and self.user:
-            self.user.total_disk_usage += dataset.quota_amount( self.user )
+            self.user.adjust_total_disk_usage(dataset.quota_amount(self.user))
         dataset.history = self
         if genome_build not in [None, '?']:
             self.genome_build = genome_build
@@ -1501,7 +1511,13 @@ class DefaultHistoryPermissions( object ):
         self.role = role
 
 
-class Dataset( object ):
+class StorableObject( object ):
+
+    def __init__( self, id, **kwargs):
+        self.id = id
+
+
+class Dataset( StorableObject ):
     states = Bunch( NEW='new',
                     UPLOAD='upload',
                     QUEUED='queued',
@@ -1538,7 +1554,7 @@ class Dataset( object ):
     engine = None
 
     def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True, uuid=None ):
-        self.id = id
+        super(Dataset, self).__init__(id=id)
         self.state = state
         self.deleted = False
         self.purged = False
@@ -2366,7 +2382,7 @@ class HistoryDatasetAssociationSubset( object ):
 class Library( object, Dictifiable, HasName ):
     permitted_actions = get_permitted_actions( filter='LIBRARY' )
     dict_collection_visible_keys = ( 'id', 'name' )
-    dict_element_visible_keys = ( 'id', 'deleted', 'name', 'description', 'synopsis', 'root_folder_id' )
+    dict_element_visible_keys = ( 'id', 'deleted', 'name', 'description', 'synopsis', 'root_folder_id', 'create_time' )
 
     def __init__( self, name=None, description=None, synopsis=None, root_folder=None ):
         self.name = name or "Unnamed library"
@@ -2911,7 +2927,7 @@ class ImplicitlyConvertedDatasetAssociation( object ):
             try:
                 os.unlink( self.file_name )
             except Exception, e:
-                print "Failed to purge associated file (%s) from disk: %s" % ( self.file_name, e )
+                log.error( "Failed to purge associated file (%s) from disk: %s" % ( self.file_name, e ) )
 
 
 DEFAULT_COLLECTION_NAME = "Unnamed Collection"
@@ -3038,6 +3054,9 @@ class DatasetCollectionInstance( object, HasName ):
             id=self.id,
             name=self.name,
             collection_type=self.collection.collection_type,
+            populated=self.collection.populated,
+            populated_state=self.collection.populated_state,
+            populated_state_message=self.collection.populated_state_message,
             type="collection",  # contents type (distinguished from file or folder (in case of library))
         )
 
@@ -3471,7 +3490,7 @@ class WorkflowInvocation( object, Dictifiable ):
     def active( self ):
         """ Indicates the workflow invocation is somehow active - and in
         particular valid actions may be performed on its
-        ``WorkflowInvocationStep``s.
+        WorkflowInvocationSteps.
         """
         states = WorkflowInvocation.states
         return self.state in [ states.NEW, states.READY ]
@@ -3665,9 +3684,10 @@ class WorkflowRequestToInputDatasetCollectionAssociation(object, Dictifiable):
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name' ]
 
 
-class MetadataFile( object ):
+class MetadataFile( StorableObject ):
 
     def __init__( self, dataset=None, name=None ):
+        super(MetadataFile, self).__init__(id=None)
         if isinstance( dataset, HistoryDatasetAssociation ):
             self.history_dataset = dataset
         elif isinstance( dataset, LibraryDatasetDatasetAssociation ):
@@ -4242,6 +4262,8 @@ class Sample( object, Dictifiable ):
     def get_untransferred_dataset_size( self, filepath, scp_configs ):
         def print_ticks( d ):
             pass
+        if pexpect is None:
+            return PEXPECT_IMPORT_MESSAGE
         error_msg = 'Error encountered in determining the file size of %s on the external_service.' % filepath
         if not scp_configs['host'] or not scp_configs['user_name'] or not scp_configs['password']:
             return error_msg

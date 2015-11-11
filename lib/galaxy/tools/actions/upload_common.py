@@ -5,8 +5,6 @@ import subprocess
 import tempfile
 from cgi import FieldStorage
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy.orm import eagerload_all
 
 from galaxy import datatypes, util

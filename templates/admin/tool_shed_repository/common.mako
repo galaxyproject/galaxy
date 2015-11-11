@@ -3,20 +3,14 @@
 <%def name="browse_files(title_text, directory_path)">
     <script type="text/javascript">
         $(function(){
-            $("#tree").ajaxComplete(function(event, XMLHttpRequest, ajaxOptions) {
-                _log("debug", "ajaxComplete: %o", this); // dom element listening
-            });
             // --- Initialize sample trees
             $("#tree").dynatree({
                 title: "${title_text|h}",
-                rootVisible: true,
-                minExpandLevel: 0, // 1: root node is not collapsible
+                minExpandLevel: 1,
                 persist: false,
                 checkbox: true,
                 selectMode: 3,
                 onPostInit: function(isReloading, isError) {
-                    //alert("reloading: "+isReloading+", error:"+isError);
-                    logMsg("onPostInit(%o, %o) - %o", isReloading, isError, this);
                     // Re-fire onActivate, so the text is updated
                     this.reactivate();
                 }, 

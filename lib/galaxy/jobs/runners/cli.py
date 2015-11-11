@@ -72,9 +72,7 @@ class ShellJobRunner( AsynchronousJobRunner ):
         )
 
         try:
-            fh = file(ajs.job_file, "w")
-            fh.write(script)
-            fh.close()
+            self.write_executable_script( ajs.job_file, script )
         except:
             log.exception("(%s) failure writing job script" % galaxy_id_tag )
             job_wrapper.fail("failure preparing job script", exception=True)

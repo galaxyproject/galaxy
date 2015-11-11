@@ -1,5 +1,3 @@
-import pkg_resources
-pkg_resources.require( "pycrypto" )
 from Crypto.Cipher import Blowfish
 
 

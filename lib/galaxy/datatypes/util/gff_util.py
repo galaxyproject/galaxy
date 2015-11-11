@@ -1,12 +1,11 @@
 """
 Provides utilities for working with GFF files.
 """
-
 import copy
-import pkg_resources
-pkg_resources.require( "bx-python" )
+
 from bx.intervals.io import GenomicInterval, MissingFieldError, NiceReaderWrapper, ParseError, GenomicIntervalReader
 from bx.tabular.io import Header, Comment
+
 from galaxy.util.odict import odict
 
 

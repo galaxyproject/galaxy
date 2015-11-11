@@ -56,12 +56,14 @@ class ConfigSerializer( base.ModelSerializer ):
             'remote_user_logout_href'   : _defaults_to( '' ),
             'datatypes_disable_auto'    : _defaults_to( False ),
             'allow_user_dataset_purge'  : _defaults_to( False ),
+            'ga_code'                   : _defaults_to( None ),
             'enable_unique_workflow_defaults' : _defaults_to( False ),
 
             'nginx_upload_path'         : _defaults_to( self.url_for( controller='api', action='tools' ) ),
             'ftp_upload_dir'            : _defaults_to( None ),
             'ftp_upload_site'           : _defaults_to( None ),
             'version_major'             : _defaults_to( None ),
+            'require_login'             : _defaults_to( None )
         }
 
 

@@ -7,8 +7,6 @@ import operator
 import socket
 from datetime import datetime, timedelta
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false, or_, not_
 from sqlalchemy.orm import eagerload_all
 
@@ -186,15 +184,21 @@ class GalaxyRBACAgent( RBACAgent ):
         intermed.sort()
         return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )
 
+    def _get_npns_roles( self, trans ):
+        """
+        non-private, non-sharing roles
+        """
+        return trans.sa_session.query( trans.app.model.Role ) \
+                    .filter( and_( self.model.Role.table.c.deleted == false(),
+                        self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
+                        self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
+                    .order_by( self.model.Role.table.c.name )
+
     def get_all_roles( self, trans, cntrller ):
         admin_controller = cntrller in [ 'library_admin' ]
         roles = set()
         if not trans.user:
-            return trans.sa_session.query( trans.app.model.Role ) \
-                                   .filter( and_( self.model.Role.table.c.deleted == false(),
-                                                  self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
-                                                  self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
-                                   .order_by( self.model.Role.table.c.name )
+            return self._get_npns_roles( trans )
         if admin_controller:
             # The library is public and the user is an admin, so all roles are legitimate
             for role in trans.sa_session.query( trans.app.model.Role ) \
@@ -208,11 +212,7 @@ class GalaxyRBACAgent( RBACAgent ):
             for role in self.get_sharing_roles( trans.user ):
                 roles.add( role )
             # Add all remaining non-private, non-sharing roles
-            for role in trans.sa_session.query( trans.app.model.Role ) \
-                                        .filter( and_( self.model.Role.table.c.deleted == false(),
-                                                       self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
-                                                       self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
-                                        .order_by( self.model.Role.table.c.name ):
+            for role in self._get_npns_roles( trans):
                 roles.add( role )
         return self.sort_by_attr( [ role for role in roles ], 'name' )
 
@@ -290,11 +290,7 @@ class GalaxyRBACAgent( RBACAgent ):
             for role in self.get_sharing_roles( trans.user ):
                 roles.append( role )
             # Add all remaining non-private, non-sharing roles
-            for role in trans.sa_session.query( trans.app.model.Role ) \
-                                        .filter( and_( self.model.Role.table.c.deleted == false(),
-                                                       self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
-                                                       self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
-                                        .order_by( self.model.Role.table.c.name ):
+            for role in self._get_npns_roles( trans ):
                 roles.append( role )
         #  User is not admin and item is not public
         #  User will see all the roles derived from the access roles on the item

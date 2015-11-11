@@ -6,8 +6,6 @@ import tempfile
 from datetime import datetime
 from time import gmtime
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
 from mercurial import cmdutil, commands, hg, ui
 from mercurial.changegroup import readexactly
 from mercurial.exchange import readbundle
@@ -438,7 +436,7 @@ def unpack_patches( hg_unbundle10_obj, remaining ):
                 'blocklen': blocklen,
                 'block': block.encode( 'string_escape' ) }
     if remaining > 0:
-        print remaining
+        log.error("Unexpected end of patch stream, %s remaining", remaining)
         raise Exception( "unexpected end of patch stream" )
 
 

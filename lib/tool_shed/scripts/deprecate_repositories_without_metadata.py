@@ -13,8 +13,6 @@ from optparse import OptionParser
 
 sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
 
-from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
 from sqlalchemy import and_, distinct, false, not_
 

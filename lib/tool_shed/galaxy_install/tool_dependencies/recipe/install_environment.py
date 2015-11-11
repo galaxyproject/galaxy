@@ -9,12 +9,6 @@ import time
 from contextlib import contextmanager
 
 # TODO: eliminate the use of fabric here.
-from galaxy import eggs
-
-eggs.require( 'paramiko' )
-eggs.require( 'ssh' )
-eggs.require( 'Fabric' )
-
 from fabric.operations import _AttributeString
 from fabric import state
 
@@ -117,19 +111,19 @@ class InstallEnvironment( object ):
                 log.debug( 'Invalid file %s specified, ignoring template_command action.' % str( env_shell_file_path ) )
         return env_vars
 
-    def handle_command( self, tool_dependency, cmd, return_output=False ):
+    def handle_command( self, tool_dependency, cmd, return_output=False, job_name="" ):
         """Handle a command and log the results."""
         context = self.app.install_model.context
         command = str( cmd )
-        output = self.handle_complex_command( command )
+        output = self.handle_complex_command( command, job_name=job_name )
         self.log_results( cmd, output, os.path.join( self.install_dir, basic_util.INSTALLATION_LOG ) )
         stdout = output.stdout
         stderr = output.stderr
         if len( stdout ) > DATABASE_MAX_STRING_SIZE:
-            print "Length of stdout > %s, so only a portion will be saved in the database." % str( DATABASE_MAX_STRING_SIZE_PRETTY )
+            log.warn( "Length of stdout > %s, so only a portion will be saved in the database." % str( DATABASE_MAX_STRING_SIZE_PRETTY ) )
             stdout = shrink_string_by_size( stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
         if len( stderr ) > DATABASE_MAX_STRING_SIZE:
-            print "Length of stderr > %s, so only a portion will be saved in the database." % str( DATABASE_MAX_STRING_SIZE_PRETTY )
+            log.warn( "Length of stderr > %s, so only a portion will be saved in the database." % str( DATABASE_MAX_STRING_SIZE_PRETTY ) )
             stderr = shrink_string_by_size( stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
         if output.return_code not in [ 0 ]:
             tool_dependency.status = self.app.install_model.ToolDependency.installation_status.ERROR
@@ -147,13 +141,21 @@ class InstallEnvironment( object ):
             return output
         return output.return_code
 
-    def handle_complex_command( self, command ):
+    def handle_complex_command( self, command, job_name="" ):
         """
         Wrap subprocess.Popen in such a way that the stderr and stdout from running a shell command will
         be captured and logged in nearly real time.  This is similar to fabric.local, but allows us to
         retain control over the process.  This method is named "complex" because it uses queues and
         threads to execute a command while capturing and displaying the output.
         """
+        # We define a "local logger" here such that we can give it a slightly
+        # different name. We use the package name as part of the logger to
+        # allow admins to easily distinguish between which package is currently
+        # being installed.
+        llog_name = __name__
+        if len( job_name ) > 0:
+            llog_name += ':' + job_name
+        llog = logging.getLogger( llog_name )
         # Launch the command as subprocess.  A bufsize of 1 means line buffered.
         process_handle = subprocess.Popen( str( command ),
                                            stdout=subprocess.PIPE,
@@ -191,7 +193,7 @@ class InstallEnvironment( object ):
                     line = None
                     break
                 if line:
-                    print line
+                    llog.debug(line)
                     start_timer = time.time()
                 else:
                     break
@@ -203,7 +205,7 @@ class InstallEnvironment( object ):
                     line = None
                     break
                 if line:
-                    print line
+                    llog.debug(line)
                     start_timer = time.time()
                 else:
                     stderr_queue.task_done()

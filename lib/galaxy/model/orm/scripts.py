@@ -4,19 +4,8 @@ Code to support database helper scripts (create_db.py, manage_db.py, etc...).
 import logging
 import os.path
 
-from galaxy import eggs
-
-eggs.require( "decorator" )
-eggs.require( "Tempita" )
-eggs.require( "SQLAlchemy" )
-eggs.require( "six" )  # required by sqlalchemy-migrate
-eggs.require( "sqlparse" )  # required by sqlalchemy-migrate
-eggs.require( "sqlalchemy_migrate" )
-
 from galaxy.util.properties import load_app_properties
-from galaxy.model.orm import dialect_to_egg
 
-import pkg_resources
 
 log = logging.getLogger( __name__ )
 
@@ -48,21 +37,6 @@ DATABASE = {
 }
 
 
-def require_dialect_egg( db_url ):
-    dialect = ( db_url.split( ':', 1 ) )[0]
-    try:
-        egg = dialect_to_egg[dialect]
-        try:
-            pkg_resources.require( egg )
-            log.debug( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
-        except:
-            # If the module is in the path elsewhere (i.e. non-egg), it'll still load.
-            log.warning( "%s egg not found, but an attempt will be made to use %s anyway" % ( egg, dialect ) )
-    except KeyError:
-        # Let this go, it could possibly work with db's we don't support
-        log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
-
-
 def read_config_file_arg( argv, default, old_default ):
     if '-c' in argv:
         pos = argv.index( '-c' )
@@ -71,8 +45,10 @@ def read_config_file_arg( argv, default, old_default ):
     else:
         if not os.path.exists( default ) and os.path.exists( old_default ):
             config_file = old_default
-        else:
+        elif os.path.exists( default ):
             config_file = default
+        else:
+            config_file = default + ".sample"
     return config_file
 
 
@@ -130,5 +106,4 @@ def get_config( argv, cwd=None ):
     else:
         db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % default_sqlite_file
 
-    require_dialect_egg( db_url )
     return dict(db_url=db_url, repo=repo, config_file=config_file, database=database)

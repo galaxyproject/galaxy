@@ -22,10 +22,6 @@ sys.path = new_path
 
 from galaxy.model.orm.scripts import get_config
 
-from galaxy import eggs
-eggs.require( "decorator" )
-eggs.require( "Tempita" )
-eggs.require( "SQLAlchemy" )
 
 db_url = get_config( sys.argv )['db_url']
 

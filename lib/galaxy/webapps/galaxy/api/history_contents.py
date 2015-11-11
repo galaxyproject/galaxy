@@ -142,7 +142,9 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
     def __show_dataset( self, trans, id, **kwd ):
         hda = self.hda_manager.get_accessible( self.decode_id( id ), trans.user )
         return self.hda_serializer.serialize_to_view( hda,
-                                                      user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+                                                      user=trans.user,
+                                                      trans=trans,
+                                                      **self._parse_serialization_params( kwd, 'detailed' ) )
 
     def __show_dataset_collection( self, trans, id, history_id, **kwd ):
         try:

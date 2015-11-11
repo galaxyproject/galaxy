@@ -33,15 +33,11 @@ from os.path import relpath
 from hashlib import md5
 from itertools import izip
 
-from galaxy import eggs
-
-eggs.require( 'docutils' )
 import docutils.core
 import docutils.writers.html4css1
 
 from xml.etree import ElementTree, ElementInclude
 
-eggs.require( "wchartype" )
 import wchartype
 
 from .inflection import Inflector, English
@@ -351,7 +347,10 @@ def pretty_print_time_interval( time=False, precise=False ):
         diff = now - datetime.fromtimestamp( time )
     elif isinstance( time, datetime ):
         diff = now - time
-    elif not time:
+    elif isinstance( time, basestring ):
+        time = datetime.strptime( time, "%Y-%m-%dT%H:%M:%S.%f" )
+        diff = now - time
+    else:
         diff = now - now
     second_diff = diff.seconds
     day_diff = diff.days
@@ -951,7 +950,7 @@ def read_dbnames(filename):
         man_builds = [(build, name) for name, build in man_builds]
         db_names = DBNames( db_names + man_builds )
     except Exception, e:
-        print "ERROR: Unable to read builds file:", e
+        log.error( "ERROR: Unable to read builds file: %s", e )
     if len(db_names) < 1:
         db_names = DBNames( [( db_names.default_value, db_names.default_name )] )
     return db_names
@@ -977,7 +976,7 @@ def read_build_sites( filename, check_builds=True ):
             except:
                 continue
     except:
-        print "ERROR: Unable to read builds for site file %s" % filename
+        log.error( "ERROR: Unable to read builds for site file %s", filename )
     return build_sites
 
 

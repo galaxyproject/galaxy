@@ -2,15 +2,11 @@
 Migration script to create column and table for importing histories from
 file archives.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, MetaData, Table, TEXT
+
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 # Columns to add.
@@ -24,8 +20,8 @@ JobImportHistoryArchive_table = Table( "job_import_history_archive", metadata,
                                        Column( "id", Integer, primary_key=True ),
                                        Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
                                        Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
-                                       Column( "archive_dir", TEXT )
-    )
+                                       Column( "archive_dir", TEXT ) )
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -39,7 +35,7 @@ def upgrade(migrate_engine):
         assert importing_col is History_table.c.importing
 
         # Initialize column to false.
-        if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
+        if migrate_engine.name in ['mysql', 'sqlite']:
             default_false = "0"
         elif migrate_engine.name in ['postgres', 'postgresql']:
             default_false = "false"
@@ -53,6 +49,7 @@ def upgrade(migrate_engine):
         JobImportHistoryArchive_table.create()
     except Exception, e:
         log.debug( "Creating job_import_history_archive table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

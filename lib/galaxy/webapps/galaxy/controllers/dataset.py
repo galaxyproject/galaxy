@@ -2,12 +2,8 @@ import logging
 import os
 import urllib
 
-from galaxy import eggs
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
-eggs.require( "Paste" )
 import paste.httpexceptions
-eggs.require('SQLAlchemy')
 from sqlalchemy import false, true
 
 from galaxy import datatypes, model, util, web
@@ -899,7 +895,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             # HDA is purgeable
             # Decrease disk usage first
             if user:
-                user.total_disk_usage -= hda.quota_amount( user )
+                user.adjust_total_disk_usage(-hda.quota_amount(user))
             # Mark purged
             hda.purged = True
             trans.sa_session.add( hda )

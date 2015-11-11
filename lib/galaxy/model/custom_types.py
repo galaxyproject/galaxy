@@ -8,8 +8,6 @@ from sys import getsizeof
 from itertools import chain
 from collections import deque
 
-from galaxy import eggs
-eggs.require("SQLAlchemy")
 import sqlalchemy
 
 from galaxy import app

@@ -1,15 +1,11 @@
 """
 Migration script to create table for exporting histories to archives.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, MetaData, Table, TEXT
+
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 # Table to add.
@@ -22,8 +18,8 @@ JobExportHistoryArchive_table = Table( "job_export_history_archive", metadata,
                                        Column( "compressed", Boolean, index=True, default=False ),
                                        Column( "history_attrs_filename", TEXT ),
                                        Column( "datasets_attrs_filename", TEXT ),
-                                       Column( "jobs_attrs_filename", TEXT )
-    )
+                                       Column( "jobs_attrs_filename", TEXT ) )
+
 
 def upgrade(migrate_engine):
     print __doc__
@@ -36,6 +32,7 @@ def upgrade(migrate_engine):
     except Exception, e:
         print str(e)
         log.debug( "Creating job_export_history_archive table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

@@ -3,8 +3,6 @@ import os
 from datetime import datetime, timedelta
 from string import punctuation as PUNCTUATION
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false, func, or_
 
 import galaxy.queue_worker

@@ -38,6 +38,12 @@ Contents
 
    Developer Documentation <dev/index>
 
+   Special topics in Administration <admin/index>
+
+   Project Governance <project/organization>
+
+   Issue Management <project/issues>
+
 Indices and tables
 ==================
 

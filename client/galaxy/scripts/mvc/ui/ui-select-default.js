@@ -7,8 +7,8 @@ var View = Backbone.View.extend({
     optionsDefault: {
         id          : Utils.uid(),
         cls         : 'ui-select',
-        error_text  : 'No data available',
-        empty_text  : 'No selection',
+        error_text  : 'No options available',
+        empty_text  : 'Nothing selected',
         visible     : true,
         wait        : false,
         multiple    : false,
@@ -29,8 +29,20 @@ var View = Backbone.View.extend({
 
         // link elements
         this.$select = this.$el.find('.select');
-        this.$icon = this.$el.find('.icon');
-        this.$button = this.$el.find('.button');
+        this.$icon_dropdown = this.$el.find('.icon-dropdown');
+
+        // allow regular multi-select field to be resized
+        var minHeight = null;
+        this.$('.icon-resize').on('mousedown', function(event) {
+            var currentY = event.pageY;
+            var currentHeight = self.$select.height();
+            minHeight = minHeight || currentHeight;
+            $('#dd-helper').show().on('mousemove', function(event) {
+                self.$select.height(Math.max(currentHeight + (event.pageY - currentY), minHeight));
+            }).on('mouseup mouseleave', function() {
+                $('#dd-helper').hide().off();
+            });
+        });
 
         // multiple select fields have an additional button and other custom properties
         if (this.options.multiple) {
@@ -47,11 +59,11 @@ var View = Backbone.View.extend({
                     }
                 });
                 this.$el.prepend(this.all_button.$el);
+            } else {
+                this.$el.addClass('ui-select-multiple');
             }
-            // customize style and content
-            this.$el.addClass('ui-select-multiple');
             this.$select.prop('multiple', true);
-            this.$button.remove();
+            this.$icon_dropdown.remove();
         }
 
         // update initial options
@@ -142,15 +154,15 @@ var View = Backbone.View.extend({
     /** Show a spinner indicating that the select options are currently loaded
     */
     wait: function() {
-        this.$icon.removeClass();
-        this.$icon.addClass('fa fa-spinner fa-spin');
+        this.$icon_dropdown.removeClass();
+        this.$icon_dropdown.addClass('icon-dropdown fa fa-spinner fa-spin');
     },
 
     /** Hide spinner indicating that the request has been completed
     */
     unwait: function() {
-        this.$icon.removeClass();
-        this.$icon.addClass('fa fa-caret-down');
+        this.$icon_dropdown.removeClass();
+        this.$icon_dropdown.addClass('icon-dropdown fa fa-caret-down');
     },
 
     /** Returns true if the field is disabled
@@ -205,7 +217,7 @@ var View = Backbone.View.extend({
         // update to searchable field (in this case select2)
         if (this.options.searchable) {
             this.$select.select2('destroy');
-            this.$select.select2();
+            this.$select.select2({ closeOnSelect: !this.options.multiple });
             this.$( '.select2-container .select2-search input' ).off( 'blur' );
         }
 
@@ -267,8 +279,9 @@ var View = Backbone.View.extend({
     _template: function(options) {
         return  '<div id="' + options.id + '" class="' + options.cls + '">' +
                     '<select id="' + options.id + '_select" class="select"/>' +
-                    '<div class="button">' +
-                        '<i class="icon"/>' +
+                    '<div class="icon-dropdown"/>' +
+                    '<div class="icon-resize">' +
+                         '<i class="fa fa-angle-double-right fa-rotate-45"/>' +
                     '</div>' +
                 '</div>';
     }

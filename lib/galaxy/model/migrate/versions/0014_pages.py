@@ -3,17 +3,13 @@ Migration script to add support for "Pages".
   1) Creates Page and PageRevision tables
   2) Adds username column to User table
 """
-
-from sqlalchemy import *
-from migrate import *
-from migrate.changeset import *
-
 import datetime
-now = datetime.datetime.utcnow
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, MetaData, String, Table, TEXT
+
+now = datetime.datetime.utcnow
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 Page_table = Table( "page", metadata,
@@ -24,8 +20,7 @@ Page_table = Table( "page", metadata,
                     Column( "latest_revision_id", Integer,
                             ForeignKey( "page_revision.id", use_alter=True, name='page_latest_revision_id_fk' ), index=True ),
                     Column( "title", TEXT ),
-                    Column( "slug", TEXT, unique=True, index=True ),
-    )
+                    Column( "slug", TEXT, unique=True, index=True ) )
 
 PageRevision_table = Table( "page_revision", metadata,
                             Column( "id", Integer, primary_key=True ),
@@ -33,8 +28,8 @@ PageRevision_table = Table( "page_revision", metadata,
                             Column( "update_time", DateTime, default=now, onupdate=now ),
                             Column( "page_id", Integer, ForeignKey( "page.id" ), index=True, nullable=False ),
                             Column( "title", TEXT ),
-                            Column( "content", TEXT )
-    )
+                            Column( "content", TEXT ) )
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -51,7 +46,7 @@ def upgrade(migrate_engine):
         Page_table.create()
         if migrate_engine.name == 'mysql':
             # Create slug index manually afterward.
-            i = Index( "ix_page_slug", Page_table.c.slug, mysql_length = 200)
+            i = Index( "ix_page_slug", Page_table.c.slug, mysql_length=200)
             i.create()
     except Exception, ex:
         log.debug(ex)
@@ -66,6 +61,7 @@ def upgrade(migrate_engine):
     col = Column( 'username', String(255), index=True, unique=True, default=False )
     col.create( User_table, index_name='ix_user_username', unique_name='username' )
     assert col is User_table.c.username
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

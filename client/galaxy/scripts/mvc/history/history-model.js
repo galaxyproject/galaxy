@@ -1,24 +1,22 @@
+
 define([
     "mvc/history/history-contents",
     "utils/utils",
     "mvc/base-mvc",
     "utils/localization"
 ], function( HISTORY_CONTENTS, UTILS, BASE_MVC, _l ){
+
+var logNamespace = 'history';
 //==============================================================================
 /** @class Model for a Galaxy history resource - both a record of user
  *      tool use and a collection of the datasets those tools produced.
  *  @name History
- *
  *  @augments Backbone.Model
- *  @borrows LoggableMixin#logger as #logger
- *  @borrows LoggableMixin#log as #log
- *  @constructs
  */
-var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
-        BASE_MVC.mixin( BASE_MVC.SearchableModelMixin, /** @lends History.prototype */{
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
+var History = Backbone.Model
+        .extend( BASE_MVC.LoggableMixin )
+        .extend( BASE_MVC.mixin( BASE_MVC.SearchableModelMixin, /** @lends History.prototype */{
+    _logNamespace : logNamespace,
 
     // values from api (may need more)
     defaults : {
@@ -243,7 +241,7 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
      *  @fires copied               passed this history and the response JSON from the copy
      *  @returns {xhr}
      */
-    copy : function( current, name ){
+    copy : function( current, name, allDatasets ){
         current = ( current !== undefined )?( current ):( true );
         if( !this.id ){
             throw new Error( 'You must set the history ID before copying it.' );
@@ -256,8 +254,9 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
         if( name ){
             postData.name = name;
         }
-
-        //TODO:?? all datasets?
+        if( !allDatasets ){
+            postData.all_datasets = false;
+        }
 
         var history = this,
             copy = jQuery.post( this.urlRoot, postData );
@@ -441,12 +440,13 @@ var ControlledFetchMixin = {
 /** @class A collection of histories (per user).
  *      (stub) currently unused.
  */
-var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend( ControlledFetchMixin ).extend(
-/** @lends HistoryCollection.prototype */{
-    model   : History,
+var HistoryCollection = Backbone.Collection
+        .extend( BASE_MVC.LoggableMixin )
+        .extend( ControlledFetchMixin )
+        .extend(/** @lends HistoryCollection.prototype */{
+    _logNamespace : logNamespace,
 
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
+    model   : History,
 
     /** @type {String} the default sortOrders key for sorting */
     DEFAULT_ORDER : 'update_time',
@@ -531,11 +531,9 @@ var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).ext
                     this.remove( history );
                 }
             },
-            // listen for a history copy, adding it to the beginning of the collection
+            // listen for a history copy, setting it to current
             'copied' : function( original, newData ){
-                var history = new History( newData, [] );
-                this.unshift( history );
-                this.trigger( 'new-current', history, this );
+                this.setCurrent( new History( newData, [] ) );
             },
             // when a history is made current, track the id in the collection
             'set-as-current' : function( history ){
@@ -582,10 +580,8 @@ var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).ext
      *  and set allFetched/fire 'all-fetched' when xhr returns
      */
     fetch : function( options ){
-        console.debug( 'fetch', this.allFetched );
         options = options || {};
         if( this.allFetched ){ return jQuery.when({}); }
-        console.debug( 'fetching' );
         var collection = this,
             fetchOptions = _.defaults( options, {
                 remove : false,
@@ -615,11 +611,23 @@ var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).ext
         var collection = this,
             xhr = jQuery.getJSON( galaxy_config.root + 'history/create_new_current'  );
         return xhr.done( function( newData ){
-            var history = new History( newData, [], historyOptions || {} );
-            // new histories go in the front
-            collection.unshift( history );
-            collection.trigger( 'new-current', history, this );
+            collection.setCurrent( new History( newData, [], historyOptions || {} ) );
         });
+    },
+
+    /** set the current history to the given history, placing it first in the collection.
+     *  Pass standard bbone options for use in unshift.
+     *  @triggers new-current passed history and this collection
+     */
+    setCurrent : function( history, options ){
+        options = options || {};
+        // new histories go in the front
+        this.unshift( history, options );
+        this.currentHistoryId = history.get( 'id' );
+        if( !options.silent ){
+            this.trigger( 'new-current', history, this );
+        }
+        return this;
     },
 
     /** override to reset allFetched flag to false */

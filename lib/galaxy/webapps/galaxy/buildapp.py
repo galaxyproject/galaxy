@@ -19,12 +19,11 @@ import galaxy.model.mapping
 import galaxy.datatypes.registry
 import galaxy.web.framework
 import galaxy.web.framework.webapp
+from galaxy.webapps.util import build_template_error_formatters
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
 
-from galaxy import eggs
-eggs.require('Paste')
 from paste import httpexceptions
 
 import logging
@@ -486,6 +485,18 @@ def populate_api_routes( webapp, app ):
                            action='create',
                            conditions=dict( method=[ "POST" ] ) )
 
+    webapp.mapper.connect( 'delete_folder',
+                           '/api/folders/{encoded_folder_id}',
+                           controller='folders',
+                           action='delete',
+                           conditions=dict( method=[ "DELETE" ] ) )
+
+    webapp.mapper.connect( 'update_folder',
+                           '/api/folders/{encoded_folder_id}',
+                           controller='folders',
+                           action='update',
+                           conditions=dict( method=[ "PATCH", "PUT" ] ) )
+
     webapp.mapper.resource( 'folder',
                             'folders',
                             path_prefix='/api' )
@@ -516,6 +527,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.connect( 'job_search', '/api/jobs/search', controller='jobs', action='search', conditions=dict( method=['POST'] ) )
     webapp.mapper.connect( 'job_inputs', '/api/jobs/{id}/inputs', controller='jobs', action='inputs', conditions=dict( method=['GET'] ) )
     webapp.mapper.connect( 'job_outputs', '/api/jobs/{id}/outputs', controller='jobs', action='outputs', conditions=dict( method=['GET'] ) )
+    webapp.mapper.connect( 'build_for_rerun', '/api/jobs/{id}/build_for_rerun', controller='jobs', action='build_for_rerun', conditions=dict( method=['GET'] ) )
 
     # Job files controllers. Only for consumption by remote job runners.
     webapp.mapper.resource( 'file',
@@ -669,7 +681,6 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         # Interactive exception debugging, scary dangerous if publicly
         # accessible, if not enabled we'll use the regular error printing
         # middleware.
-        eggs.require( "WebError" )
         from weberror import evalexception
         app = evalexception.EvalException( app, conf,
                                            templating_formatters=build_template_error_formatters() )
@@ -687,6 +698,13 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         from galaxy.web.framework.middleware.translogger import TransLogger
         app = TransLogger( app )
         log.debug( "Enabling 'trans logger' middleware" )
+    # Statsd request timing and profiling
+    statsd_host = conf.get('statsd_host', None)
+    if statsd_host:
+        from galaxy.web.framework.middleware.statsd import StatsdMiddleware
+        app = StatsdMiddleware( app, statsd_host, conf.get('statsd_port'))
+        log.debug( "Enabling 'statsd' middleware" )
+
     # X-Forwarded-Host handling
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = XForwardedHostMiddleware( app )
@@ -713,22 +731,3 @@ def wrap_in_static( app, global_conf, plugin_frameworks=None, **local_conf ):
 
     # URL mapper becomes the root webapp
     return urlmap
-
-
-def build_template_error_formatters():
-    """
-    Build a list of template error formatters for WebError. When an error
-    occurs, WebError pass the exception to each function in this list until
-    one returns a value, which will be displayed on the error page.
-    """
-    formatters = []
-    # Formatter for mako
-    import mako.exceptions
-
-    def mako_html_data( exc_value ):
-        if isinstance( exc_value, ( mako.exceptions.CompileException, mako.exceptions.SyntaxException ) ):
-            return mako.exceptions.html_error_template().render( full=False, css=False )
-        if isinstance( exc_value, AttributeError ) and exc_value.args[0].startswith( "'Undefined' object has no attribute" ):
-            return mako.exceptions.html_error_template().render( full=False, css=False )
-    formatters.append( mako_html_data )
-    return formatters

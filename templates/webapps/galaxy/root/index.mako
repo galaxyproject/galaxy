@@ -3,6 +3,7 @@
 ${h.js("libs/bibtex", "libs/jquery/jquery-ui")}
 ${h.css("jquery-ui/smoothness/jquery-ui")}
 ${h.css("base")}
+<%def name="title()">Galaxy</%def>
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.templates("tool_link", "panel_section", "tool_search")}
@@ -60,14 +61,14 @@ ${h.css("base")}
         } );
     });
 
-        // is the configuration file enabled and available
-        //%if trans.webapp.name == 'galaxy' and app.config.introduction_config:
-            // is the user __not__ logged in
-        //%if not trans.user or trans.user.active is False:
-                // If we have a left and a right panel we assume we are on the main page and not
-                // redirected from anywhere else. For example after logout.
-alert('begin tour');
-
+    %if app.config.ga_code:
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+          ga('create', '${app.config.ga_code}', 'auto');
+          ga('send', 'pageview');
+    %endif
                 var tech = getUrlParameter('tutorial_url');
                 if (tech) {
                     window.onload = function startIntro(){

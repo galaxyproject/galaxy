@@ -163,12 +163,22 @@ class GenomeGraphs( Tabular ):
     def sniff( self, filename ):
         """
         Determines whether the file is in gg format
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'test_space.txt' )
+        >>> GenomeGraphs().sniff( fname )
+        False
+        >>> fname = get_test_fname( '1.gg' )
+        >>> GenomeGraphs().sniff( fname )
+        True
         """
         f = open(filename, 'r')
         f.readline()  # header
-        rows = [f.readline().split()[1:] for x in range(3)]  # small sample
-        # headers = get_headers( filename, '\t' )
+        rows = [f.readline().split()[1:] for x in range(3)]  # small sample, trimming first column
         for row in rows:
+            if len(row) < 1:
+                # Must actually have at least one value
+                return False
             try:
                 [float(x) for x in row]  # first col has been removed
             except:
