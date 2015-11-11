@@ -2,20 +2,14 @@
 API operations on tutorials.
 """
 import os
+import yaml
 
-from galaxy import util
-from galaxy import exceptions
-from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 
 import logging
 log = logging.getLogger( __name__ )
 
-try:
-    import yaml
-except ImportError:
-    log.debug('unable to import yaml')
 
 class TutorialsController( BaseAPIController ):
 
@@ -32,4 +26,4 @@ class TutorialsController( BaseAPIController ):
         :returns:   introjs tutorial conf
         :rtype:     dictionary
         """
-        return  yaml.load( open( os.path.join(trans.app.config.introduction_tutorials_config_dir, tutorial_config_file ) ) )
+        return yaml.load( open( os.path.join(trans.app.config.introduction_tutorials_config_dir, tutorial_config_file ) ) )
