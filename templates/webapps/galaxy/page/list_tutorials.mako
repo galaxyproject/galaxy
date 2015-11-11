@@ -7,7 +7,7 @@
                         <tr>
                             <td>
                                 <a href="/?tutorial_url=${tutorial.filename}" target="_parent">
-                                    <div class="icon fa-car" href="#"> ${tutorial.description}</div>
+                                    <div class="fa fa-car" href="#"> ${tutorial.description}</div>
                                 </a>
                             </td>
                             <!--td>
