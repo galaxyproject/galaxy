@@ -63,6 +63,7 @@
   <tool file="collection_creates_dynamic_nested.xml" />
   <tool file="collection_creates_dynamic_list_of_pairs.xml" />
   <tool file="cheetah_casting.xml" />
+  <tool file="compare_bcfs.xml" />
 
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v02.xml" />
