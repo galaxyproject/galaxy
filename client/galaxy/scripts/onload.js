@@ -13,7 +13,8 @@ window.Handlebars = Handlebars;
 
 // these are galaxy globals not defined in the provider (although they could be - but why encourage that?)
 window.panels = require( 'layout/panel' );
-_.extend( window, require( 'modal' ) );
+// using extend bc there are multiple fns/objs to decorate the window with
+_.extend( window, require( 'layout/modal' ) );
 window.async_save_text = require( 'utils/async-save-text' );
 var POPUPMENU = require( 'ui/popupmenu' );
 window.make_popupmenu = POPUPMENU.make_popupmenu;

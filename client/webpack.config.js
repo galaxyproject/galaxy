@@ -22,7 +22,7 @@ var webpack = require( 'webpack' ),
         'libs/handlebars.runtime',
         // all pages get these
         'polyfills',
-        'modal',
+        'layout/modal',
         'ui/autocom_tagging',
         'layout/panel',
         'onload',

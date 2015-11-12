@@ -4,7 +4,7 @@ define([
 
 "use strict";
 // ============================================================================
-//TODO: unify with ui-modal
+//TODO: (the older version) unify with ui-modal (the newer version)
 var $ = jQuery;
 
 // Modal dialog boxes
