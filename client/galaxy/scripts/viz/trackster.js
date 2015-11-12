@@ -32,12 +32,28 @@ require(
 });
 
 // trackster viewer
-define( ["libs/underscore", "base", "viz/trackster/tracks", "viz/visualization", "mvc/ui/icon-button", "utils/query-string-parsing" ],
-        function(_, base, tracks, visualization, mod_icon_btn, query_string ) {
+define([
+    "libs/underscore",
+    "viz/trackster/tracks",
+    "viz/visualization",
+    "mvc/ui/icon-button",
+    "utils/query-string-parsing"
+], function(_, tracks, visualization, mod_icon_btn, query_string) {
+
+/**
+ * Base Object/Model for inhertiance.
+ */
+var Base = function() {
+    if( this.initialize ) {
+        this.initialize.apply(this, arguments);
+    }
+};
+Base.extend = Backbone.Model.extend;
+
 /**
  * User interface controls for trackster
  */
-var TracksterUI = base.Base.extend({
+var TracksterUI = Base.extend({
     initialize: function( baseURL ) {
         this.baseURL = baseURL;
     },
