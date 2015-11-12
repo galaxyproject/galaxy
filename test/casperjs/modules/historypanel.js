@@ -414,7 +414,7 @@ HistoryPanel.prototype.data = {
                 annoIcon : 'Edit history annotation'
             },
             newName  : 'Unnamed history',
-            newSize  : '0 bytes',
+            newSize  : '0 b',
             emptyMsg : "This history is empty. You can load your own data or get data from an external source"
         },
         hda : {
