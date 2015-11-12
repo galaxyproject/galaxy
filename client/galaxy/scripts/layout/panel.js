@@ -101,7 +101,7 @@ var SidePanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
 
         // this is a page wide overlay that assists in capturing the move and release of the mouse
         // if not provided, progress and end wouldn't fire if the mouse moved out of the drag button area
-        $( '#DD-helper' )
+        $( '#dd-helper' )
             .show()
             .on( 'mousemove', move )
             .one( 'mouseup', function( e ){

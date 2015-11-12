@@ -131,7 +131,7 @@ $(document).ready( function() {
     var $dropdowns = $("#masthead ul.nav > li.dropdown > .dropdown-menu");
     $("body").on( "click.nav_popups", function( e ) {
         $dropdowns.hide();
-        $("#DD-helper").hide();
+        $("#dd-helper").hide();
         // If the target is in the menu, treat normally
         if ( $(e.target).closest( "#masthead ul.nav > li.dropdown > .dropdown-menu" ).length ) {
             return;
@@ -139,7 +139,7 @@ $(document).ready( function() {
         // Otherwise, was the click in a tab
         var $clicked = $(e.target).closest( "#masthead ul.nav > li.dropdown" );
         if ( $clicked.length ) {
-            $("#DD-helper").show();
+            $("#dd-helper").show();
             $clicked.children( ".dropdown-menu" ).show();
             e.preventDefault();
         }

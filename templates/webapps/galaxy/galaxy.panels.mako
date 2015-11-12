@@ -242,7 +242,7 @@
                 </div>
             %endif
         </div>
-        <div id='DD-helper' style="display: none;"></div>
+        <div id='dd-helper' style="display: none;"></div>
         ## Scripts can be loaded later since they progressively add features to
         ## the panels, but do not change layout
         ${self.late_javascripts()}

@@ -42,7 +42,7 @@
             %endif
 
         </div><!--end everything-->
-        <div id='DD-helper' style="display: none;"></div>
+        <div id='dd-helper' style="display: none;"></div>
         ${ js_disabled_warning() }
 
         ## ${ h.js( 'bundled/libs.bundled', 'bundled/galaxy.bundled' ) }

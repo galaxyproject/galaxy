@@ -114,7 +114,7 @@ var PageLayoutView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
                 this.right?  '<div id="right"/>' : '',
             '</div>',
             // a dropdown overlay for capturing clicks/drags
-            '<div id="DD-helper" style="display: none;"></div>',
+            '<div id="dd-helper" style="display: none;"></div>',
             // display message when js is disabled
             '<noscript>',
                 '<div class="overlay overlay-background noscript-overlay">',

@@ -250,7 +250,7 @@
                 </div><!--end right-->
             %endif
         </div><!--end everything-->
-        <div id='DD-helper' style="display: none;"></div>
+        <div id='dd-helper' style="display: none;"></div>
         ## Allow other body level elements
         ## Scripts can be loaded later since they progressively add features to
         ## the panels, but do not change layout

@@ -3995,8 +3995,20 @@ webpackJsonp([0],[
 	
 	        // link elements
 	        this.$select = this.$el.find('.select');
-	        this.$icon = this.$el.find('.icon');
-	        this.$button = this.$el.find('.button');
+	        this.$icon_dropdown = this.$el.find('.icon-dropdown');
+	
+	        // allow regular multi-select field to be resized
+	        var minHeight = null;
+	        this.$('.icon-resize').on('mousedown', function(event) {
+	            var currentY = event.pageY;
+	            var currentHeight = self.$select.height();
+	            minHeight = minHeight || currentHeight;
+	            $('#dd-helper').show().on('mousemove', function(event) {
+	                self.$select.height(Math.max(currentHeight + (event.pageY - currentY), minHeight));
+	            }).on('mouseup mouseleave', function() {
+	                $('#dd-helper').hide().off();
+	            });
+	        });
 	
 	        // multiple select fields have an additional button and other custom properties
 	        if (this.options.multiple) {
@@ -4013,11 +4025,11 @@ webpackJsonp([0],[
 	                    }
 	                });
 	                this.$el.prepend(this.all_button.$el);
+	            } else {
+	                this.$el.addClass('ui-select-multiple');
 	            }
-	            // customize style and content
-	            this.$el.addClass('ui-select-multiple');
 	            this.$select.prop('multiple', true);
-	            this.$button.remove();
+	            this.$icon_dropdown.remove();
 	        }
 	
 	        // update initial options
@@ -4108,15 +4120,15 @@ webpackJsonp([0],[
 	    /** Show a spinner indicating that the select options are currently loaded
 	    */
 	    wait: function() {
-	        this.$icon.removeClass();
-	        this.$icon.addClass('fa fa-spinner fa-spin');
+	        this.$icon_dropdown.removeClass();
+	        this.$icon_dropdown.addClass('icon-dropdown fa fa-spinner fa-spin');
 	    },
 	
 	    /** Hide spinner indicating that the request has been completed
 	    */
 	    unwait: function() {
-	        this.$icon.removeClass();
-	        this.$icon.addClass('fa fa-caret-down');
+	        this.$icon_dropdown.removeClass();
+	        this.$icon_dropdown.addClass('icon-dropdown fa fa-caret-down');
 	    },
 	
 	    /** Returns true if the field is disabled
@@ -4171,7 +4183,7 @@ webpackJsonp([0],[
 	        // update to searchable field (in this case select2)
 	        if (this.options.searchable) {
 	            this.$select.select2('destroy');
-	            this.$select.select2();
+	            this.$select.select2({ closeOnSelect: !this.options.multiple });
 	            this.$( '.select2-container .select2-search input' ).off( 'blur' );
 	        }
 	
@@ -4233,8 +4245,9 @@ webpackJsonp([0],[
 	    _template: function(options) {
 	        return  '<div id="' + options.id + '" class="' + options.cls + '">' +
 	                    '<select id="' + options.id + '_select" class="select"/>' +
-	                    '<div class="button">' +
-	                        '<i class="icon"/>' +
+	                    '<div class="icon-dropdown"/>' +
+	                    '<div class="icon-resize">' +
+	                         '<i class="fa fa-angle-double-right fa-rotate-45"/>' +
 	                    '</div>' +
 	                '</div>';
 	    }
@@ -5300,7 +5313,7 @@ webpackJsonp([0],[
 	            this.$el.hide();
 	            this.deferred.execute(function(){
 	                Backbone.View.prototype.remove.call(self);
-	                console.debug('tools-form-base::remove() - Destroy view.');
+	                Galaxy.emit.debug('tools-form-base::remove()', 'Destroy view.');
 	            });
 	        },
 	
@@ -5369,8 +5382,7 @@ webpackJsonp([0],[
 	                        message     : 'Now you are using \'' + self.options.name + '\' version ' + self.options.version + '.',
 	                        persistent  : false
 	                    });
-	                    console.debug('tools-form::initialize() - Initial tool model ready.');
-	                    console.debug(new_model);
+	                    Galaxy.emit.debug('tools-form-base::initialize()', 'Initial tool model ready.', new_model);
 	                    process.resolve();
 	
 	                },
@@ -5394,8 +5406,7 @@ webpackJsonp([0],[
 	                            }
 	                        });
 	                    }
-	                    console.debug('tools-form::initialize() - Initial tool model request failed.');
-	                    console.debug(response);
+	                    Galaxy.emit.debug('tools-form::initialize()', 'Initial tool model request failed.', response);
 	                    process.reject();
 	                }
 	            });
@@ -5424,8 +5435,7 @@ webpackJsonp([0],[
 	            form.wait(true);
 	
 	            // log tool state
-	            console.debug('tools-form-base::_updateModel() - Sending current state (see below).');
-	            console.debug(current_state);
+	            Galaxy.emit.debug('tools-form-base::_updateModel()', 'Sending current state.', current_state);
 	
 	            // post job
 	            Utils.request({
@@ -5436,13 +5446,11 @@ webpackJsonp([0],[
 	                    self.form.update(new_model['tool_model'] || new_model);
 	                    self.options.update && self.options.update(new_model);
 	                    form.wait(false);
-	                    console.debug('tools-form-base::_updateModel() - Received new model (see below).');
-	                    console.debug(new_model);
+	                    Galaxy.emit.debug('tools-form-base::_updateModel()', 'Received new model.', new_model);
 	                    process.resolve();
 	                },
 	                error   : function(response) {
-	                    console.debug('tools-form-base::_updateModel() - Refresh request failed.');
-	                    console.debug(response);
+	                    Galaxy.emit.debug('tools-form-base::_updateModel()', 'Refresh request failed.', response);
 	                    process.reject();
 	                }
 	            });
@@ -5638,13 +5646,13 @@ webpackJsonp([0],[
 	        var process = $.Deferred();
 	        process.promise().always(function() {
 	            delete self.active[ id ];
-	            has_deferred && console.debug( 'Deferred::execute() - ' + this.state() + ' ' + id );
+	            has_deferred && Galaxy.emit.debug( 'deferred::execute()', this.state().charAt(0).toUpperCase() + this.state().slice(1) + ' ' + id );
 	        });
 	
 	        // deferred queue
 	        $.when( this.last ).always(function() {
 	            if ( self.active[ id ] ) {
-	                has_deferred && console.debug( 'Deferred::execute() - running ' + id );
+	                has_deferred && Galaxy.emit.debug( 'deferred::execute()', 'Running ' + id );
 	                callback( process );
 	                !has_deferred && process.resolve();
 	            } else {
@@ -5657,7 +5665,7 @@ webpackJsonp([0],[
 	    /** Resets the promise queue. All currently queued but unexecuted callbacks/promises will be rejected.
 	    */
 	    reset: function() {
-	        console.debug('Deferred::execute() - reset');
+	        Galaxy.emit.debug('deferred::execute()', 'Reset');
 	        for ( var i in this.active ) {
 	            this.active[ i ] = false;
 	        }
@@ -5704,7 +5712,7 @@ webpackJsonp([0],[
 	            this.options = Utils.merge(options, this.optionsDefault);
 	
 	            // log options
-	            console.debug(this.options);
+	            Galaxy.emit.debug('form-view::initialize()', 'Ready to build form.', this.options);
 	
 	            // link galaxy modal or create one
 	            var galaxy = parent.Galaxy;
@@ -5750,7 +5758,7 @@ webpackJsonp([0],[
 	                            }
 	                            field.update(new_options);
 	                            field.trigger('change');
-	                            console.debug('Updating options for ' + input_id);
+	                            Galaxy.emit.debug('form-view::update()', 'Updating options for ' + input_id);
 	                        }
 	                    }
 	                }
@@ -5912,7 +5920,7 @@ webpackJsonp([0],[
 	            }
 	
 	            // log
-	            console.debug('tools-form-base::initialize() - Completed.');
+	            Galaxy.emit.debug('form-view::initialize()', 'Completed');
 	        }
 	    });
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
@@ -6806,7 +6814,7 @@ webpackJsonp([0],[
 	    add: function(options) {
 	        // repeat block already exists
 	        if (!options.id || this.list[options.id]) {
-	            console.debug('form-repeat::add - Duplicate repeat block id.');
+	            Galaxy.emit.debug('form-repeat::add()', 'Duplicate repeat block id.');
 	            return;
 	        }
 	
@@ -6862,7 +6870,7 @@ webpackJsonp([0],[
 	    del: function(id) {
 	        // could not find element
 	        if (!this.list[id]) {
-	            console.debug('form-repeat::del - Invalid repeat block id.');
+	            Galaxy.emit.debug('form-repeat::del()', 'Invalid repeat block id.');
 	            return;
 	        }
 	
@@ -7125,7 +7133,7 @@ webpackJsonp([0],[
 	                }
 	
 	                // log
-	                console.debug('tools-form::_addRow() : Auto matched field type (' + input_def.type + ').');
+	                Galaxy.emit.debug('form-parameters::_addRow()', 'Auto matched field type (' + input_def.type + ').');
 	            }
 	
 	            // set field value
@@ -7597,7 +7605,7 @@ webpackJsonp([0],[
 	                        }
 	                    }
 	                } catch (err) {
-	                    console.debug('tools-select-content::value() - Skipped.');
+	                    Galaxy.emit.debug('tools-select-content::value()', 'Skipped.');
 	                }
 	            } else {
 	                for (var i in this.list) {
@@ -9261,13 +9269,13 @@ webpackJsonp([0],[
 	
 	        // validate job definition
 	        if (!this._validation(form, job_def)) {
-	            console.debug('tools-jobs::submit - Submission canceled. Validation failed.');
+	            Galaxy.emit.debug('tools-jobs::submit()', 'Submission canceled. Validation failed.');
 	            callback && callback();
 	            return;
 	        }
 	
 	        // debug
-	        console.debug(job_def);
+	        Galaxy.emit.debug('tools-jobs::submit()', 'Validation complete.', job_def);
 	
 	        // post job
 	        Utils.request({
@@ -9282,7 +9290,7 @@ webpackJsonp([0],[
 	            },
 	            error   : function(response) {
 	                callback && callback();
-	                console.debug(response);
+	                Galaxy.emit.debug('tools-jobs::submit', 'Submission failed.', response);
 	                if (response && response.err_data) {
 	                    var error_messages = form.data.matchResponse(response.err_data);
 	                    for (var input_id in error_messages) {
@@ -9326,7 +9334,7 @@ webpackJsonp([0],[
 	
 	            // check if objects where properly identified
 	            if (!input_id || !input_def || !input_field) {
-	                console.debug('tools-jobs::_validation - Retrieving input objects failed.');
+	                Galaxy.emit.debug('tools-jobs::_validation()', 'Retrieving input objects failed.');
 	                continue;
 	            }
 	
@@ -9830,11 +9838,9 @@ webpackJsonp([0],[
 	    _template: function() {
 	        return  '<div class="upload-button">' +
 	                    '<div class="progress">' +
-	                        '<div class="progress-bar"></div>' +
-	                    '</div>' +
-	                    '<div id="label" class="label">' +
+	                        '<div class="progress-bar"/>' +
 	                        '<a class="panel-header-button" href="javascript:void(0)">' +
-	                            '<span class="fa fa-upload"></span>' +
+	                            '<span class="fa fa-upload"/>' +
 	                        '</a>' +
 	                    '</div>' +
 	                '</div>';
@@ -11663,8 +11669,7 @@ webpackJsonp([0],[
 	        }, false);
 	
 	        // send request
-	        console.debug('uploadbox::uploadpost() - Posting following data:');
-	        console.debug(cnf);
+	        Galaxy.emit.debug('uploadbox::uploadpost()', 'Posting following data.', cnf);
 	        xhr.send(form);
 	    }
 	
@@ -23258,8 +23263,8 @@ webpackJsonp([0],[
 	        strategy = strategy || this.strategy;
 	        split = this._splitByFilters();
 	        paired = paired.concat( this[ strategy ].call( this, {
-	                listA : split[0],
-	                listB : split[1]
+	            listA : split[0],
+	            listB : split[1]
 	        }));
 	        return paired;
 	    },
@@ -23371,8 +23376,8 @@ webpackJsonp([0],[
 	        var fwdName = fwd.name,
 	            revName = rev.name,
 	            lcs = this._naiveStartingAndEndingLCS(
-	                fwdName.replace( this.filters[0], '' ),
-	                revName.replace( this.filters[1], '' )
+	                fwdName.replace( new RegExp( this.filters[0] ), '' ),
+	                revName.replace( new RegExp( this.filters[1] ), '' )
 	            );
 	        if( removeExtensions ){
 	            var lastDotIndex = lcs.lastIndexOf( '.' );
@@ -24778,7 +24783,7 @@ webpackJsonp([0],[
 	                this.right?  '<div id="right"/>' : '',
 	            '</div>',
 	            // a dropdown overlay for capturing clicks/drags
-	            '<div id="DD-helper" style="display: none;"></div>',
+	            '<div id="dd-helper" style="display: none;"></div>',
 	            // display message when js is disabled
 	            '<noscript>',
 	                '<div class="overlay overlay-background noscript-overlay">',
