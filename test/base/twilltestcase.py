@@ -2302,6 +2302,9 @@ class TwillTestCase( unittest.TestCase ):
                 if attributes.get( 'ftype', None ) == 'bam':
                     local_fh, temp_name = self._bam_to_sam( local_name, temp_name )
                     local_name = local_fh.name
+                if attributes.get( 'ftype', None ) == 'bcf':
+                    local_fh, temp_name = self._bcf_to_vcf( local_name, temp_name )
+                    local_name = local_fh.name
                 extra_files = attributes.get( 'extra_files', None )
                 if compare == 'diff':
                     self.files_diff( local_name, temp_name, attributes=attributes )
@@ -2485,6 +2488,17 @@ class TwillTestCase( unittest.TestCase ):
         self._check_command( command, 'Converting local (test-data) bam to sam' )
         command = 'samtools view -h -o "%s" "%s"' % ( temp_temp, temp_name  )
         self._check_command( command, 'Converting history bam to sam ' )
+        os.remove( temp_name )
+        return temp_local, temp_temp
+
+    def _bcf_to_vcf( self, local_name, temp_name ):
+        temp_local = tempfile.NamedTemporaryFile( suffix='.vcf', prefix='local_bcf_converted_to_vcf_' )
+        fd, temp_temp = tempfile.mkstemp( suffix='.vcf', prefix='history_bcf_converted_to_vcf_' )
+        os.close( fd )
+        command = 'bcftools view -H -o "%s" "%s"' % ( temp_local.name, local_name  )
+        self._check_command( command, 'Converting local (test-data) bcf to vcf' )
+        command = 'bcftools view -H -o "%s" "%s"' % ( temp_temp, temp_name  )
+        self._check_command( command, 'Converting history bcf to vcf ' )
         os.remove( temp_name )
         return temp_local, temp_temp
 
