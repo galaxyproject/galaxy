@@ -7,14 +7,14 @@ webpackJsonp([3],{
 /***/ function(module, exports, __webpack_require__) {
 
 	//TODO: remove this
-	var GalaxyApp = __webpack_require__( /*! ../galaxy-app-base */ 139 ).GalaxyApp;
+	var GalaxyApp = __webpack_require__( /*! ../galaxy-app-base */ 140 ).GalaxyApp;
 	window.GalaxyApp = GalaxyApp;
 	exports = GalaxyApp;
 
 
 /***/ },
 
-/***/ 139:
+/***/ 140:
 /*!*******************************************!*\
   !*** ./galaxy/scripts/galaxy-app-base.js ***!
   \*******************************************/
@@ -24,8 +24,8 @@ webpackJsonp([3],{
 	    __webpack_require__(/*! libs/underscore */ 1),
 	    __webpack_require__(/*! libs/backbone */ 4),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! mvc/user/user-model */ 95),
-	    __webpack_require__(/*! utils/metrics-logger */ 140),
+	    __webpack_require__(/*! mvc/user/user-model */ 96),
+	    __webpack_require__(/*! utils/metrics-logger */ 141),
 	    __webpack_require__(/*! utils/add-logging */ 6),
 	    __webpack_require__(/*! utils/localization */ 7)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( _, Backbone, BASE_MVC, userModel, metricsLogger, addLogging, localize ){
@@ -280,7 +280,7 @@ webpackJsonp([3],{
 
 /***/ },
 
-/***/ 140:
+/***/ 141:
 /*!************************************************!*\
   !*** ./galaxy/scripts/utils/metrics-logger.js ***!
   \************************************************/

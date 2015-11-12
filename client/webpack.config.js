@@ -4,8 +4,10 @@ var webpack = require( 'webpack' ),
     scriptsBase = path.join( __dirname, 'galaxy/scripts' ),
     libsBase = path.join( scriptsBase, 'libs' ),
     // libraries used on almost every page
+
     // TODO: reduce
     commonLibs = [
+        'polyfills',
         // jquery et al
         'jquery',
         'libs/jquery/jquery.migrate',
@@ -15,15 +17,15 @@ var webpack = require( 'webpack' ),
         'libs/jquery/jquery.form',
         'libs/jquery/jquery.rating',
         'libs/jquery.sparklines',
+        'libs/jquery/jquery-ui',
         'libs/bootstrap',
         // mvc
         'libs/underscore',
         'libs/backbone',
         'libs/handlebars.runtime',
         // all pages get these
-        'polyfills',
-        'layout/modal',
         'ui/autocom_tagging',
+        'layout/modal',
         'layout/panel',
         'onload',
     ];
