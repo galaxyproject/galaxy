@@ -482,6 +482,73 @@ class InputParameterModule( WorkflowModule ):
         return job
 
 
+# TODO: Implementation of this was for older framework - need to redo it now
+# that everything is treated like a tool.
+class ExpressionModule( WorkflowModule ):
+    default_expression = "true"
+    default_inputs = []
+    type = "expression"
+    expression = default_expression
+    inputs = default_inputs
+    state_fields = [
+        "expression",
+        "inputs",
+    ]
+
+    @classmethod
+    def default_state( Class ):
+        return dict(
+            expression=Class.default_expression,
+            inputs=Class.default_inputs[:],
+        )
+
+    def _abstract_config_form( self ):
+        # TODO: Redo this with the new framework.
+        # TODO: add ability to specify input...
+        return None
+
+    def get_runtime_inputs( self, **kwds ):
+        input_defs = odict.odict()
+        for input in self.state.get("inputs", self.default_inputs):
+            name = input.get( "name" )
+            label = input.get( "label", name )
+            parameter_type = input.get("parameter_type" )
+            optional = input.get("optional", False)
+            if parameter_type not in ["text", "boolean", "integer", "float", "color"]:
+                raise ValueError("Invalid parameter type for workflow parameters encountered.")
+            parameter_class = parameter_types[parameter_type]
+            parameter_kwds = {}
+            if parameter_type in ["integer", "float"]:
+                parameter_kwds["value"] = str(0)
+
+            # TODO: Use a dict-based description from YAML tool source
+            element = Element("param", name=name, label=label, type=parameter_type, optional=str(optional), **parameter_kwds )
+            input_def = parameter_class( None, element )
+            input_defs[name] = input_def
+        input_defs
+
+    def get_runtime_state( self ):
+        state = DefaultToolState()
+
+        state.inputs = odict.odict( )
+        for input in self.state.get("inputs", self.default_inputs):
+            name = input.get( "name" )
+            state.inputs[name] = None
+
+        return state
+
+    def get_runtime_input_dicts( self, step_annotation ):
+        return [ dict( description=step_annotation ) ]
+
+    def get_data_inputs( self ):
+        return []
+
+    def execute( self, trans, progress, invocation, step ):
+        job, step_outputs = None, dict( output=step.state.inputs['input'])
+        progress.set_outputs_for_input( step, step_outputs )
+        return job
+
+
 class PauseModule( WorkflowModule ):
     """ Initially this module will unconditionally pause a workflow - will aim
     to allow conditional pausing later on.

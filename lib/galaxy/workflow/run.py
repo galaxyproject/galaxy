@@ -1,3 +1,4 @@
+import json
 import logging
 import uuid
 
@@ -314,6 +315,17 @@ class WorkflowProgress( object ):
                     raise modules.CancelWorkflowEvaluation()
 
                 raise modules.DelayedWorkflowEvaluation()
+
+        is_hda = isinstance( replacement, model.HistoryDatasetAssociation )
+        if not is_data and is_hda:
+            if replacement.is_ok:
+                with open( replacement.file_name, 'r' ) as f:
+                    replacement = json.load( f )
+            elif replacement.is_pending:
+                raise modules.DelayedWorkflowEvaluation()
+            else:
+                raise modules.CancelWorkflowEvaluation()
+
         return replacement
 
     def get_replacement_workflow_output( self, workflow_output ):

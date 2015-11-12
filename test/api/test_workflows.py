@@ -1188,7 +1188,7 @@ test_data:
     type: raw
 """, history_id=history_id, wait=True, assert_ok=False )
 
-    def test_run_with_text_connection( self ):
+    def test_run_with_text_input_connection( self ):
         history_id = self.dataset_populator.new_history()
         self._run_jobs("""
 class: GalaxyWorkflow
@@ -1220,6 +1220,27 @@ test_data:
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         content = self.dataset_populator.get_history_dataset_content( history_id )
         self.assertEqual("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
+
+    def test_run_with_numeric_input_connection( self ):
+        history_id = self.dataset_populator.new_history()
+        self._run_jobs("""
+class: GalaxyWorkflow
+steps:
+- label: forty_two
+  tool_id: expression_forty_two
+  state: {}
+- label: consume_expression_parameter
+  tool_id: cheetah_casting
+  state:
+    floattest: 3.14
+    inttest:
+      $link: forty_two#out1
+test_data: {}
+""", history_id=history_id)
+
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        content = self.dataset_populator.get_history_dataset_content( history_id )
+        self.assertEquals("43\n4.14\n", content)
 
     def wait_for_invocation_and_jobs( self, history_id, workflow_id, invocation_id, assert_ok=True ):
         self.workflow_populator.wait_for_invocation( workflow_id, invocation_id )
