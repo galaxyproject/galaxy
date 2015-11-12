@@ -8,8 +8,7 @@ import hashlib
 # Sets ID and sets up a lot of other variables
 ie_request.load_deploy_config()
 ie_request.attr.docker_port = 6789
-# Create tempdir in galaxy
-temp_dir = ie_request.temp_dir
+ie_request.attr.import_volume = False
 
 if ie_request.attr.PASSWORD_AUTH:
     m = hashlib.sha1()
@@ -19,23 +18,15 @@ else:
     PASSWORD = "none"
 
 ## IPython Specific
-# Prepare an empty notebook
-notebook_id = ie_request.generate_hex(64)
-with open( os.path.join( ie_request.attr.our_template_dir, 'notebook.ipynb' ), 'r') as nb_handle:
-    empty_nb = nb_handle.read()
-empty_nb = empty_nb % notebook_id
-# Copy over default notebook, unless the dataset this viz is running on is a notebook
-empty_nb_path = os.path.join(temp_dir, 'ipython_galaxy_notebook.ipynb')
-
-if hda.datatype.__class__.__name__ != "Ipynb":
-    with open( empty_nb_path, 'w+' ) as handle:
-        handle.write( empty_nb )
+if hda.datatype.__class__.__name__ == "Ipynb":
+    DATASET_HID = hda.hid
 else:
-    shutil.copy( hda.file_name, empty_nb_path )
+    DATASET_HID = None
 
 # Add all environment variables collected from Galaxy's IE infrastructure
 ie_request.launch(env_override={
     'notebook_password': PASSWORD,
+    'dataset_hid': DATASET_HID,
 })
 
 ## General IE specific
