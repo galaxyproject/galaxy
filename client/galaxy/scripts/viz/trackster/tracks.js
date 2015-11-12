@@ -6,7 +6,7 @@ define([
     "viz/trackster/slotting",
     "viz/trackster/painters",
     "viz/trackster/filters",
-    "mvc/data",
+    "mvc/dataset/data",
     "mvc/tools/tools",
     "utils/config",
     "ui/editable-text",

@@ -77,7 +77,7 @@ var GalaxyFrame = Backbone.View.extend({
      */
     add_dataset: function(dataset_id) {
         var self = this;
-        require(['mvc/data'], function(DATA) {
+        require(['mvc/dataset/data'], function(DATA) {
             var dataset = new DATA.Dataset({ id: dataset_id });
             $.when( dataset.fetch() ).then( function() {
                 // Construct frame config based on dataset's type.

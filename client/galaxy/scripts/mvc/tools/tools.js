@@ -5,7 +5,7 @@
  define([
     "libs/underscore",
     "viz/trackster/util",
-    "mvc/data",
+    "mvc/dataset/data",
     "mvc/tools/tools-form",
     "templates/tool_form.handlebars",
     "templates/tool_link.handlebars",
