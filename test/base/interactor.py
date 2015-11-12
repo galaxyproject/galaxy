@@ -421,7 +421,7 @@ class GalaxyInteractorApi( object ):
         if not anon:
             if not key:
                 key = self.api_key if not admin else self.master_api_key
-            params=dict( key=key )
+            params = dict( key=key )
             data = data.copy()
             data['key'] = key
         else:
