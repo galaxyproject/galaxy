@@ -52,6 +52,12 @@ module.exports = {
             'utils/localization' : path.join( scriptsBase, 'utils/webpack-localization' ),
         }
     },
+    module : {
+        loaders : [
+            { test : /\.handlebars$/, loader : 'handlebars-loader' },
+            { test : /\.merpo$/, loader : 'zhaodelerma' },
+        ],
+    },
     plugins : [
         new webpack.optimize.CommonsChunkPlugin( 'libs', 'libs.bundled.js' ),
         // this plugin allows using the following keys/globals in scripts (w/o req'ing them first)
@@ -65,5 +71,5 @@ module.exports = {
             Handlebars:         'libs/handlebars.runtime'
         }),
         // new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 })
-    ]
+    ],
 };
