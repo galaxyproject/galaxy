@@ -7,7 +7,7 @@ define([
     "viz/trackster/painters",
     "viz/trackster/filters",
     "mvc/data",
-    "mvc/tools",
+    "mvc/tools/tools",
     "utils/config",
     "ui/editable-text",
 ], function(_, visualization, viz_views, util, slotting, painters, filters_mod, data, tools_mod, config_mod) {

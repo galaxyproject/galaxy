@@ -1,5 +1,8 @@
 // dependencies
-define([ "libs/underscore", "mvc/tools" ], function( _, Tools ) {
+define([
+    "libs/underscore",
+    "mvc/tools/tools"
+], function( _, Tools ) {
 
     var checkUncheckAll = function( name, check ) {
         $("input[name='" + name + "'][type='checkbox']").attr('checked', !!check);
@@ -61,7 +64,7 @@ define([ "libs/underscore", "mvc/tools" ], function( _, Tools ) {
         'select_map_over_collections': {
             'icon_class': 'fa-folder-o',
             'select_by': 'Map tool over compontents of nested collection',
-            'allow_remap': false,            
+            'allow_remap': false,
         }
     };
 

@@ -3,8 +3,17 @@
  * genomic visualization.
  */
 
-define(["libs/underscore", "libs/d3", "viz/trackster/util", "viz/visualization", "viz/trackster/tracks", "mvc/tools", "mvc/data", "utils/config", "mvc/ui/icon-button"],
-       function(_, d3, util, visualization, tracks, tools, data, config, mod_icon_btn) {
+define([
+    "libs/underscore",
+    "libs/d3",
+    "viz/trackster/util",
+    "viz/visualization",
+    "viz/trackster/tracks",
+    "mvc/tools/tools",
+    "mvc/data",
+    "utils/config",
+    "mvc/ui/icon-button"
+], function(_, d3, util, visualization, tracks, tools, data, config, mod_icon_btn) {
 
 /**
  * A collection of tool input settings. Object is useful for keeping a list of settings

@@ -1,6 +1,6 @@
 define([
     'utils/utils',
-    'mvc/tools',
+    'mvc/tools/tools',
     'mvc/upload/upload-view',
     'mvc/ui/ui-misc',
     'mvc/history/options-menu',
