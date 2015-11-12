@@ -348,7 +348,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         :type   history_id: str
         :param  history_id: encoded id string of the HDA's History
         :type   id:         str
-        :param  id:         the encoded id of the history to undelete
+        :param  id:         the encoded id of the history to update
         :type   payload:    dict
         :param  payload:    a dictionary containing any or all the
             fields in :func:`galaxy.model.HistoryDatasetAssociation.to_dict`
