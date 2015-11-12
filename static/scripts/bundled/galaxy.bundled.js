@@ -24,7 +24,7 @@ webpackJsonp([3],{
 	    __webpack_require__(/*! libs/underscore */ 1),
 	    __webpack_require__(/*! libs/backbone */ 4),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! mvc/user/user-model */ 96),
+	    __webpack_require__(/*! mvc/user/user-model */ 106),
 	    __webpack_require__(/*! utils/metrics-logger */ 141),
 	    __webpack_require__(/*! utils/add-logging */ 6),
 	    __webpack_require__(/*! utils/localization */ 7)

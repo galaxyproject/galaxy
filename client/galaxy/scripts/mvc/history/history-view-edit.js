@@ -1,5 +1,5 @@
 define([
-    "mvc/history/history-panel",
+    "mvc/history/history-view",
     "mvc/history/history-contents",
     "mvc/dataset/states",
     "mvc/history/hda-model",
@@ -15,7 +15,7 @@ define([
     "utils/localization",
     "ui/editable-text",
 ], function(
-    HPANEL,
+    HISTORY_VIEW,
     HISTORY_CONTENTS,
     STATES,
     HDA_MODEL,
@@ -34,18 +34,18 @@ define([
 TODO:
 
 ============================================================================= */
-var _super = HPANEL.HistoryPanel;
-// base class for current-history-panel and used as-is in history/view.mako
+var _super = HISTORY_VIEW.HistoryView;
+// base class for history-view-edit-current and used as-is in history/view.mako
 /** @class Editable View/Controller for the history model.
  *
  *  Allows:
- *      (everything HistoryPanel allows)
+ *      (everything HistoryView allows)
  *      changing the name
  *      displaying and editing tags and annotations
  *      multi-selection and operations on mulitple content items
  */
-var HistoryPanelEdit = _super.extend(
-/** @lends HistoryPanelEdit.prototype */{
+var HistoryViewEdit = _super.extend(
+/** @lends HistoryViewEdit.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
@@ -207,7 +207,7 @@ var HistoryPanelEdit = _super.extend(
         });
     },
 
-    /** Set up HistoryPanelEdit js/widget behaviours
+    /** Set up HistoryViewEdit js/widget behaviours
      *  In this override, make the name editable
      */
     _setUpBehaviors : function( $where ){
@@ -530,12 +530,12 @@ var HistoryPanelEdit = _super.extend(
     // ........................................................................ misc
     /** Return a string rep of the history */
     toString    : function(){
-        return 'HistoryPanelEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+        return 'HistoryViewEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });
 
 //==============================================================================
     return {
-        HistoryPanelEdit : HistoryPanelEdit
+        HistoryViewEdit : HistoryViewEdit
     };
 });

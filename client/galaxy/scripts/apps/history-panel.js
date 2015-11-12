@@ -1,7 +1,7 @@
 var RightPanel = require( 'layout/panel' ).RightPanel,
     Ui = require( 'mvc/ui/ui-misc' ),
     historyOptionsMenu = require( 'mvc/history/options-menu' );
-    CurrentHistoryView = require( 'mvc/history/history-panel-edit-current' ).CurrentHistoryPanel;
+    CurrentHistoryView = require( 'mvc/history/history-view-edit-current' ).CurrentHistoryView;
 
 //TODO: localize
 // rename other {history,list}-panels to {history,list}-views

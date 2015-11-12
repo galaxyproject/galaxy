@@ -4,9 +4,9 @@ define([
     'mvc/upload/upload-view',
     'mvc/ui/ui-misc',
     'mvc/history/options-menu',
-    'mvc/history/history-panel-edit-current',
+    'mvc/history/history-view-edit-current',
     'mvc/tools/tools-form'
-], function( Utils, Tools, Upload, Ui, optionsMenu, HistoryPanel, ToolsForm ) {
+], function( Utils, Tools, Upload, Ui, optionsMenu, HistoryView, ToolsForm ) {
 
     /* Builds the center panel */
     var CenterPanel = Backbone.View.extend({
@@ -158,7 +158,7 @@ define([
                 cls     : 'panel-header-button',
                 icon    : 'fa fa-refresh',
                 onclick : function() {
-                    if( top.Galaxy && top.Galaxy.currHistoryPanel ) {
+                    if( top.Galaxy && top.Galaxy.currHistoryView ) {
                         top.Galaxy.currHistoryPanel.loadCurrentHistory();
                     }
                 }
@@ -208,7 +208,7 @@ define([
             });
 
             // load current history
-            Galaxy.currHistoryPanel = new HistoryPanel.CurrentHistoryPanel({
+            Galaxy.currHistoryPanel = new HistoryView.CurrentHistoryView({
                 el              : this.$el,
                 purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
                 linkTarget      : 'galaxy_main',

@@ -1,25 +1,25 @@
 define([
-    "mvc/history/history-panel",
+    "mvc/history/history-view",
     "mvc/history/hda-li",
     "mvc/history/hdca-li",
     "mvc/base-mvc",
     "utils/localization"
-], function( HPANEL, HDA_LI, HDCA_LI, BASE_MVC, _l ){
+], function( HISTORY_VIEW, HDA_LI, HDCA_LI, BASE_MVC, _l ){
 /* =============================================================================
 TODO:
 
 ============================================================================= */
-var _super = HPANEL.HistoryPanel;
+var _super = HISTORY_VIEW.HistoryView;
 // used in history/display.mako and history/embed.mako
 /** @class View/Controller for a tabular view of the history model.
  *
- *  As ReadOnlyHistoryPanel, but with:
+ *  As ReadOnlyHistoryView, but with:
  *      history annotation always shown
  *      datasets displayed in a table:
  *          datasets in left cells, dataset annotations in the right
  */
-var AnnotatedHistoryPanel = _super.extend(
-/** @lends AnnotatedHistoryPanel.prototype */{
+var AnnotatedHistoryView = _super.extend(
+/** @lends AnnotatedHistoryView.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
@@ -108,13 +108,13 @@ var AnnotatedHistoryPanel = _super.extend(
     // ........................................................................ misc
     /** Return a string rep of the history */
     toString    : function(){
-        return 'AnnotatedHistoryPanel(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+        return 'AnnotatedHistoryView(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });
 
 
 //==============================================================================
     return {
-        AnnotatedHistoryPanel        : AnnotatedHistoryPanel
+        AnnotatedHistoryView        : AnnotatedHistoryView
     };
 });

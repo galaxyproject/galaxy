@@ -1,3 +1,4 @@
+
 <%inherit file="/webapps/galaxy/base_panels.mako"/>
 <%namespace file="/galaxy_client_app.mako" name="galaxy_client"/>
 
@@ -27,7 +28,7 @@ define( 'app', function(){
     require([
         'mvc/history/history-model',
         'mvc/history/multi-panel'
-    ], function( HISTORY_MODEL, MULTI_PANEL ){
+    ], function( HISTORY_MODEL, MULTI_HISTORY ){
         $(function(){
             histories = new HISTORY_MODEL.HistoryCollection( bootstrapped.histories, {
                 includeDeleted  : bootstrapped.includingDeleted,
@@ -35,7 +36,7 @@ define( 'app', function(){
                 currentHistoryId: '${histories[0][ "id" ]}'
             });
 
-            multipanel = new MULTI_PANEL.MultiPanelColumns({
+            multipanel = new MULTI_HISTORY.MultiPanelColumns({
                 el                          : $( '#center' ).get(0),
                 histories                   : histories,
                 perPage                     : bootstrapped.limit

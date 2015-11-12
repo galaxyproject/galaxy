@@ -1,12 +1,12 @@
 define([
     "mvc/history/history-model",
-    "mvc/history/history-panel-edit",
+    "mvc/history/history-view-edit",
     "mvc/history/copy-dialog",
     "mvc/base-mvc",
     "utils/ajax-queue",
     "ui/mode-button",
     "ui/search-input"
-], function( HISTORY_MODEL, HPANEL_EDIT, historyCopyDialog, baseMVC, ajaxQueue ){
+], function( HISTORY_MODEL, HISTORY_VIEW_EDIT, historyCopyDialog, baseMVC, ajaxQueue ){
 
 var logNamespace = 'history';
 /* ==============================================================================
@@ -41,7 +41,7 @@ TODO:
 ============================================================================== */
 /** @class A container for a history panel that renders controls for that history (delete, copy, etc.)
  */
-var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
+var HistoryViewColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 //TODO: extend from panel? (instead of aggregating)
     _logNamespace : logNamespace,
 
@@ -73,7 +73,7 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         }, panelOptions );
         //this.log( 'panelOptions:', panelOptions );
 //TODO: use current-history-panel for current
-        var panel = new HPANEL_EDIT.HistoryPanelEdit( panelOptions );
+        var panel = new HISTORY_VIEW_EDIT.HistoryViewEdit( panelOptions );
         panel._renderEmptyMessage = this.__patch_renderEmptyMessage;
         return panel;
     },
@@ -299,7 +299,7 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     // ------------------------------------------------------------------------ misc
     /** String rep */
     toString : function(){
-        return 'HistoryPanelColumn(' + ( this.panel? this.panel : '' ) + ')';
+        return 'HistoryViewColumn(' + ( this.panel? this.panel : '' ) + ')';
     }
 });
 
@@ -505,7 +505,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
             model       : history,
             purgeAllowed: Galaxy.config.allow_user_dataset_purge
         });
-        var column = new HistoryPanelColumn( options );
+        var column = new HistoryViewColumn( options );
         if( history.id === this.collection.currentHistoryId ){ column.currentHistory = true; }
         this.setUpColumnListeners( column );
         if( this.datasetSearch ){
@@ -1018,7 +1018,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     currentColumnDropTargetOff : function(){
         var currentColumn = this.columnMap[ this.collection.currentHistoryId ];
         if( !currentColumn ){ return; }
-        currentColumn.panel.dataDropped = HPANEL_EDIT.HistoryPanelEdit.prototype.dataDrop;
+        currentColumn.panel.dataDropped = HISTORY_VIEW_EDIT.HistoryViewEdit.prototype.dataDrop;
         // slight override of dropTargetOff to not erase drop-target-help
         currentColumn.panel.dropTarget = false;
         currentColumn.panel.$( '.history-drop-target' ).remove();

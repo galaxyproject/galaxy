@@ -1,15 +1,14 @@
 define([
     "mvc/history/history-model",
-    "mvc/history/history-panel-edit",
-    "mvc/collection/collection-panel",
+    "mvc/history/history-view-edit",
     "mvc/base-mvc",
     "utils/localization"
-], function( HISTORY_MODEL, HPANEL_EDIT, DC_PANEL, BASE_MVC, _l ){
+], function( HISTORY_MODEL, HISTORY_VIEW_EDIT, BASE_MVC, _l ){
 // ============================================================================
 /** session storage for history panel preferences (and to maintain state)
  */
-var HistoryPanelPrefs = BASE_MVC.SessionStorageModel.extend(
-/** @lends HistoryPanelPrefs.prototype */{
+var HistoryViewPrefs = BASE_MVC.SessionStorageModel.extend(
+/** @lends HistoryViewPrefs.prototype */{
     defaults : {
         /** should the tags editor be shown or hidden initially? */
         tagsEditorShown : false,
@@ -23,12 +22,12 @@ var HistoryPanelPrefs = BASE_MVC.SessionStorageModel.extend(
         scrollPosition : 0
     },
     toString : function(){
-        return 'HistoryPanelPrefs(' + JSON.stringify( this.toJSON() ) + ')';
+        return 'HistoryViewPrefs(' + JSON.stringify( this.toJSON() ) + ')';
     }
 });
 
 /** key string to store panel prefs (made accessible on class so you can access sessionStorage directly) */
-HistoryPanelPrefs.storageKey = function storageKey(){
+HistoryViewPrefs.storageKey = function storageKey(){
     return ( 'history-panel' );
 };
 
@@ -36,7 +35,7 @@ HistoryPanelPrefs.storageKey = function storageKey(){
 TODO:
 
 ============================================================================= */
-var _super = HPANEL_EDIT.HistoryPanelEdit;
+var _super = HISTORY_VIEW_EDIT.HistoryViewEdit;
 // used in root/index.mako
 /** @class View/Controller for the user's current history model as used in the history
  *      panel (current right hand panel) of the analysis page.
@@ -45,8 +44,8 @@ var _super = HPANEL_EDIT.HistoryPanelEdit;
  *      will poll for updates.
  *      displays datasets in reverse hid order.
  */
-var CurrentHistoryPanel = _super.extend(
-/** @lends CurrentHistoryPanel.prototype */{
+var CurrentHistoryView = _super.extend(
+/** @lends CurrentHistoryView.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
@@ -68,9 +67,9 @@ var CurrentHistoryPanel = _super.extend(
 
         // ---- persistent preferences
         /** maintain state / preferences over page loads */
-        this.preferences = new HistoryPanelPrefs( _.extend({
-            id : HistoryPanelPrefs.storageKey()
-        }, _.pick( attributes, _.keys( HistoryPanelPrefs.prototype.defaults ) )));
+        this.preferences = new HistoryViewPrefs( _.extend({
+            id : HistoryViewPrefs.storageKey()
+        }, _.pick( attributes, _.keys( HistoryViewPrefs.prototype.defaults ) )));
 
         _super.prototype.initialize.call( this, attributes );
 
@@ -156,7 +155,7 @@ var CurrentHistoryPanel = _super.extend(
     _setUpCollectionListeners : function(){
         _super.prototype._setUpCollectionListeners.call( this );
 
-        //TODO:?? may not be needed? see history-panel-edit, 369
+        //TODO:?? may not be needed? see history-view-edit, 369
         // if a hidden item is created (gen. by a workflow), moves thru the updater to the ready state,
         //  then: remove it from the collection if the panel is set to NOT show hidden datasets
         this.collection.on( 'state:ready', function( model, newState, oldState ){
@@ -460,13 +459,13 @@ var CurrentHistoryPanel = _super.extend(
     /** Return a string rep of the history
      */
     toString    : function(){
-        return 'CurrentHistoryPanel(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+        return 'CurrentHistoryView(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });
 
 
 //------------------------------------------------------------------------------ TEMPLATES
-CurrentHistoryPanel.prototype.templates = (function(){
+CurrentHistoryView.prototype.templates = (function(){
 
     var quotaMsgTemplate = BASE_MVC.wrapTemplate([
         '<div class="quota-message errormessage">',
@@ -483,6 +482,6 @@ CurrentHistoryPanel.prototype.templates = (function(){
 
 //==============================================================================
     return {
-        CurrentHistoryPanel        : CurrentHistoryPanel
+        CurrentHistoryView        : CurrentHistoryView
     };
 });

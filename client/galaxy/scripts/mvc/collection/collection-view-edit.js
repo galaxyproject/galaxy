@@ -1,20 +1,20 @@
 define([
-    "mvc/collection/collection-panel",
+    "mvc/collection/collection-view",
     "mvc/collection/collection-model",
     "mvc/collection/collection-li-edit",
     "mvc/base-mvc",
     "utils/localization",
     "ui/editable-text",
-], function( DC_PANEL, DC_MODEL, DC_EDIT, BASE_MVC, _l ){
+], function( DC_VIEW, DC_MODEL, DC_EDIT, BASE_MVC, _l ){
 /* =============================================================================
 TODO:
 
 ============================================================================= */
 /** @class editable View/Controller for a dataset collection.
  */
-var _super = DC_PANEL.CollectionPanel;
-var CollectionPanelEdit = _super.extend(
-/** @lends CollectionPanel.prototype */{
+var _super = DC_VIEW.CollectionView;
+var CollectionViewEdit = _super.extend(
+/** @lends CollectionView.prototype */{
     //MODEL is either a DatasetCollection (or subclass) or a DatasetCollectionElement (list of pairs)
 
     /** logger used to record this.log messages, commonly set to console */
@@ -70,37 +70,37 @@ var CollectionPanelEdit = _super.extend(
     // ........................................................................ misc
     /** string rep */
     toString    : function(){
-        return 'CollectionPanelEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+        return 'CollectionViewEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });
 
 
 // =============================================================================
 /** @class non-editable, read-only View/Controller for a dataset collection. */
-var ListCollectionPanelEdit = CollectionPanelEdit.extend(
-/** @lends ListCollectionPanel.prototype */{
+var ListCollectionViewEdit = CollectionViewEdit.extend(
+/** @lends ListCollectionView.prototype */{
 
-    //TODO: not strictly needed - due to switch in CollectionPanel._getContentClass
+    //TODO: not strictly needed - due to switch in CollectionView._getContentClass
     /** sub view class used for datasets */
     DatasetDCEViewClass : DC_EDIT.DatasetDCEListItemEdit,
 
     // ........................................................................ misc
     /** string rep */
     toString    : function(){
-        return 'ListCollectionPanelEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+        return 'ListCollectionViewEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });
 
 
 // =============================================================================
 /** @class Editable, read-only View/Controller for a dataset collection. */
-var PairCollectionPanelEdit = ListCollectionPanelEdit.extend(
-/** @lends PairCollectionPanelEdit.prototype */{
+var PairCollectionViewEdit = ListCollectionViewEdit.extend(
+/** @lends PairCollectionViewEdit.prototype */{
 
     // ........................................................................ misc
     /** string rep */
     toString    : function(){
-        return 'PairCollectionPanelEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+        return 'PairCollectionViewEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });
 
@@ -109,8 +109,8 @@ var PairCollectionPanelEdit = ListCollectionPanelEdit.extend(
 /** @class Editable (roughly since these collections are immutable),
  *  View/Controller for a dataset collection.
  */
-var NestedPairCollectionPanelEdit = PairCollectionPanelEdit.extend(
-/** @lends NestedPairCollectionPanelEdit.prototype */{
+var NestedPairCollectionViewEdit = PairCollectionViewEdit.extend(
+/** @lends NestedPairCollectionViewEdit.prototype */{
 
     /** Override to remove the editable text from the name/identifier - these collections are considered immutable */
     _setUpBehaviors : function( $where ){
@@ -120,35 +120,35 @@ var NestedPairCollectionPanelEdit = PairCollectionPanelEdit.extend(
     // ........................................................................ misc
     /** string rep */
     toString    : function(){
-        return 'NestedPairCollectionPanelEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+        return 'NestedPairCollectionViewEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });
 
 
 // =============================================================================
 /** @class non-editable, read-only View/Controller for a dataset collection. */
-var ListOfPairsCollectionPanelEdit = CollectionPanelEdit.extend(
-/** @lends ListOfPairsCollectionPanel.prototype */{
+var ListOfPairsCollectionViewEdit = CollectionViewEdit.extend(
+/** @lends ListOfPairsCollectionView.prototype */{
 
-    //TODO: not strictly needed - due to switch in CollectionPanel._getContentClass
+    //TODO: not strictly needed - due to switch in CollectionView._getContentClass
     /** sub view class used for nested collections */
     NestedDCDCEViewClass : DC_EDIT.NestedDCDCEListItemEdit.extend({
-        foldoutPanelClass : NestedPairCollectionPanelEdit
+        foldoutPanelClass : NestedPairCollectionViewEdit
     }),
 
     // ........................................................................ misc
     /** string rep */
     toString    : function(){
-        return 'ListOfPairsCollectionPanelEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+        return 'ListOfPairsCollectionViewEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });
 
 
 //==============================================================================
     return {
-        CollectionPanelEdit             : CollectionPanelEdit,
-        ListCollectionPanelEdit         : ListCollectionPanelEdit,
-        PairCollectionPanelEdit         : PairCollectionPanelEdit,
-        ListOfPairsCollectionPanelEdit  : ListOfPairsCollectionPanelEdit
+        CollectionViewEdit              : CollectionViewEdit,
+        ListCollectionViewEdit          : ListCollectionViewEdit,
+        PairCollectionViewEdit          : PairCollectionViewEdit,
+        ListOfPairsCollectionViewEdit   : ListOfPairsCollectionViewEdit
     };
 });

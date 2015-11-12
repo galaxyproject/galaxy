@@ -15592,7 +15592,7 @@ webpackJsonp([0],[
 	var RightPanel = __webpack_require__( /*! layout/panel */ 3 ).RightPanel,
 	    Ui = __webpack_require__( /*! mvc/ui/ui-misc */ 17 ),
 	    historyOptionsMenu = __webpack_require__( /*! mvc/history/options-menu */ 80 );
-	    CurrentHistoryView = __webpack_require__( /*! mvc/history/history-panel-edit-current */ 82 ).CurrentHistoryPanel;
+	    CurrentHistoryView = __webpack_require__( /*! mvc/history/history-view-edit-current */ 82 ).CurrentHistoryView;
 	
 	//TODO: localize
 	// rename other {history,list}-panels to {history,list}-views
@@ -16196,23 +16196,22 @@ webpackJsonp([0],[
 
 /***/ },
 /* 82 */
-/*!******************************************************************!*\
-  !*** ./galaxy/scripts/mvc/history/history-panel-edit-current.js ***!
-  \******************************************************************/
+/*!*****************************************************************!*\
+  !*** ./galaxy/scripts/mvc/history/history-view-edit-current.js ***!
+  \*****************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, jQuery, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! mvc/history/history-model */ 83),
-	    __webpack_require__(/*! mvc/history/history-panel-edit */ 91),
-	    __webpack_require__(/*! mvc/collection/collection-panel */ 106),
+	    __webpack_require__(/*! mvc/history/history-view-edit */ 91),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7)
-	], __WEBPACK_AMD_DEFINE_RESULT__ = function( HISTORY_MODEL, HPANEL_EDIT, DC_PANEL, BASE_MVC, _l ){
+	], __WEBPACK_AMD_DEFINE_RESULT__ = function( HISTORY_MODEL, HISTORY_VIEW_EDIT, BASE_MVC, _l ){
 	// ============================================================================
 	/** session storage for history panel preferences (and to maintain state)
 	 */
-	var HistoryPanelPrefs = BASE_MVC.SessionStorageModel.extend(
-	/** @lends HistoryPanelPrefs.prototype */{
+	var HistoryViewPrefs = BASE_MVC.SessionStorageModel.extend(
+	/** @lends HistoryViewPrefs.prototype */{
 	    defaults : {
 	        /** should the tags editor be shown or hidden initially? */
 	        tagsEditorShown : false,
@@ -16226,12 +16225,12 @@ webpackJsonp([0],[
 	        scrollPosition : 0
 	    },
 	    toString : function(){
-	        return 'HistoryPanelPrefs(' + JSON.stringify( this.toJSON() ) + ')';
+	        return 'HistoryViewPrefs(' + JSON.stringify( this.toJSON() ) + ')';
 	    }
 	});
 	
 	/** key string to store panel prefs (made accessible on class so you can access sessionStorage directly) */
-	HistoryPanelPrefs.storageKey = function storageKey(){
+	HistoryViewPrefs.storageKey = function storageKey(){
 	    return ( 'history-panel' );
 	};
 	
@@ -16239,7 +16238,7 @@ webpackJsonp([0],[
 	TODO:
 	
 	============================================================================= */
-	var _super = HPANEL_EDIT.HistoryPanelEdit;
+	var _super = HISTORY_VIEW_EDIT.HistoryViewEdit;
 	// used in root/index.mako
 	/** @class View/Controller for the user's current history model as used in the history
 	 *      panel (current right hand panel) of the analysis page.
@@ -16248,8 +16247,8 @@ webpackJsonp([0],[
 	 *      will poll for updates.
 	 *      displays datasets in reverse hid order.
 	 */
-	var CurrentHistoryPanel = _super.extend(
-	/** @lends CurrentHistoryPanel.prototype */{
+	var CurrentHistoryView = _super.extend(
+	/** @lends CurrentHistoryView.prototype */{
 	
 	    /** logger used to record this.log messages, commonly set to console */
 	    //logger              : console,
@@ -16271,9 +16270,9 @@ webpackJsonp([0],[
 	
 	        // ---- persistent preferences
 	        /** maintain state / preferences over page loads */
-	        this.preferences = new HistoryPanelPrefs( _.extend({
-	            id : HistoryPanelPrefs.storageKey()
-	        }, _.pick( attributes, _.keys( HistoryPanelPrefs.prototype.defaults ) )));
+	        this.preferences = new HistoryViewPrefs( _.extend({
+	            id : HistoryViewPrefs.storageKey()
+	        }, _.pick( attributes, _.keys( HistoryViewPrefs.prototype.defaults ) )));
 	
 	        _super.prototype.initialize.call( this, attributes );
 	
@@ -16359,7 +16358,7 @@ webpackJsonp([0],[
 	    _setUpCollectionListeners : function(){
 	        _super.prototype._setUpCollectionListeners.call( this );
 	
-	        //TODO:?? may not be needed? see history-panel-edit, 369
+	        //TODO:?? may not be needed? see history-view-edit, 369
 	        // if a hidden item is created (gen. by a workflow), moves thru the updater to the ready state,
 	        //  then: remove it from the collection if the panel is set to NOT show hidden datasets
 	        this.collection.on( 'state:ready', function( model, newState, oldState ){
@@ -16663,13 +16662,13 @@ webpackJsonp([0],[
 	    /** Return a string rep of the history
 	     */
 	    toString    : function(){
-	        return 'CurrentHistoryPanel(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+	        return 'CurrentHistoryView(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
 	    }
 	});
 	
 	
 	//------------------------------------------------------------------------------ TEMPLATES
-	CurrentHistoryPanel.prototype.templates = (function(){
+	CurrentHistoryView.prototype.templates = (function(){
 	
 	    var quotaMsgTemplate = BASE_MVC.wrapTemplate([
 	        '<div class="quota-message errormessage">',
@@ -16686,7 +16685,7 @@ webpackJsonp([0],[
 	
 	//==============================================================================
 	    return {
-	        CurrentHistoryPanel        : CurrentHistoryPanel
+	        CurrentHistoryView        : CurrentHistoryView
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
@@ -18988,13 +18987,13 @@ webpackJsonp([0],[
 
 /***/ },
 /* 91 */
-/*!**********************************************************!*\
-  !*** ./galaxy/scripts/mvc/history/history-panel-edit.js ***!
-  \**********************************************************/
+/*!*********************************************************!*\
+  !*** ./galaxy/scripts/mvc/history/history-view-edit.js ***!
+  \*********************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, $, jQuery) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/history/history-panel */ 95),
+	    __webpack_require__(/*! mvc/history/history-view */ 95),
 	    __webpack_require__(/*! mvc/history/history-contents */ 84),
 	    __webpack_require__(/*! mvc/dataset/states */ 86),
 	    __webpack_require__(/*! mvc/history/hda-model */ 87),
@@ -19005,12 +19004,12 @@ webpackJsonp([0],[
 	    __webpack_require__(/*! mvc/collection/list-collection-creator */ 92),
 	    __webpack_require__(/*! mvc/collection/pair-collection-creator */ 115),
 	    __webpack_require__(/*! mvc/collection/list-of-pairs-collection-creator */ 116),
-	    __webpack_require__(/*! ui/fa-icon-button */ 103),
+	    __webpack_require__(/*! ui/fa-icon-button */ 96),
 	    __webpack_require__(/*! mvc/ui/popup-menu */ 81),
 	    __webpack_require__(/*! utils/localization */ 7),
 	    __webpack_require__(/*! ui/editable-text */ 111),
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function(
-	    HPANEL,
+	    HISTORY_VIEW,
 	    HISTORY_CONTENTS,
 	    STATES,
 	    HDA_MODEL,
@@ -19029,18 +19028,18 @@ webpackJsonp([0],[
 	TODO:
 	
 	============================================================================= */
-	var _super = HPANEL.HistoryPanel;
-	// base class for current-history-panel and used as-is in history/view.mako
+	var _super = HISTORY_VIEW.HistoryView;
+	// base class for history-view-edit-current and used as-is in history/view.mako
 	/** @class Editable View/Controller for the history model.
 	 *
 	 *  Allows:
-	 *      (everything HistoryPanel allows)
+	 *      (everything HistoryView allows)
 	 *      changing the name
 	 *      displaying and editing tags and annotations
 	 *      multi-selection and operations on mulitple content items
 	 */
-	var HistoryPanelEdit = _super.extend(
-	/** @lends HistoryPanelEdit.prototype */{
+	var HistoryViewEdit = _super.extend(
+	/** @lends HistoryViewEdit.prototype */{
 	
 	    /** logger used to record this.log messages, commonly set to console */
 	    //logger              : console,
@@ -19202,7 +19201,7 @@ webpackJsonp([0],[
 	        });
 	    },
 	
-	    /** Set up HistoryPanelEdit js/widget behaviours
+	    /** Set up HistoryViewEdit js/widget behaviours
 	     *  In this override, make the name editable
 	     */
 	    _setUpBehaviors : function( $where ){
@@ -19525,13 +19524,13 @@ webpackJsonp([0],[
 	    // ........................................................................ misc
 	    /** Return a string rep of the history */
 	    toString    : function(){
-	        return 'HistoryPanelEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+	        return 'HistoryViewEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
 	    }
 	});
 	
 	//==============================================================================
 	    return {
-	        HistoryPanelEdit : HistoryPanelEdit
+	        HistoryViewEdit : HistoryViewEdit
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
@@ -20695,9 +20694,9 @@ webpackJsonp([0],[
 
 /***/ },
 /* 95 */
-/*!*****************************************************!*\
-  !*** ./galaxy/scripts/mvc/history/history-panel.js ***!
-  \*****************************************************/
+/*!****************************************************!*\
+  !*** ./galaxy/scripts/mvc/history/history-view.js ***!
+  \****************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
@@ -20705,10 +20704,9 @@ webpackJsonp([0],[
 	    __webpack_require__(/*! mvc/history/history-model */ 83),
 	    __webpack_require__(/*! mvc/history/history-contents */ 84),
 	    __webpack_require__(/*! mvc/history/hda-li */ 101),
-	    __webpack_require__(/*! mvc/history/hdca-li */ 104),
-	    __webpack_require__(/*! mvc/collection/collection-panel */ 106),
-	    __webpack_require__(/*! mvc/user/user-model */ 96),
-	    __webpack_require__(/*! ui/fa-icon-button */ 103),
+	    __webpack_require__(/*! mvc/history/hdca-li */ 103),
+	    __webpack_require__(/*! mvc/user/user-model */ 106),
+	    __webpack_require__(/*! ui/fa-icon-button */ 96),
 	    __webpack_require__(/*! mvc/ui/popup-menu */ 81),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7),
@@ -20719,7 +20717,6 @@ webpackJsonp([0],[
 	    HISTORY_CONTENTS,
 	    HDA_LI,
 	    HDCA_LI,
-	    COLLECTION_PANEL,
 	    USER,
 	    faIconButton,
 	    PopupMenu,
@@ -20728,6 +20725,7 @@ webpackJsonp([0],[
 	){
 	
 	var logNamespace = 'history';
+	
 	// ============================================================================
 	/** session storage for individual history preferences */
 	var HistoryPrefs = BASE_MVC.SessionStorageModel.extend(
@@ -20794,8 +20792,8 @@ webpackJsonp([0],[
 	 *      changing the name
 	 */
 	var _super = LIST_PANEL.ModelListPanel;
-	var HistoryPanel = _super.extend(
-	/** @lends HistoryPanel.prototype */{
+	var HistoryView = _super.extend(
+	/** @lends HistoryView.prototype */{
 	    _logNamespace : logNamespace,
 	
 	    /** class to use for constructing the HDA views */
@@ -20956,7 +20954,7 @@ webpackJsonp([0],[
 	    },
 	
 	    // ------------------------------------------------------------------------ browser stored prefs
-	    /** Set up client side storage. Currently PersistanStorage keyed under 'HistoryPanel.<id>'
+	    /** Set up client side storage. Currently PersistanStorage keyed under 'history:<id>'
 	     *  @param {Object} initiallyExpanded
 	     *  @param {Boolean} show_deleted whether to show deleted contents (overrides stored)
 	     *  @param {Boolean} show_hidden
@@ -21311,7 +21309,7 @@ webpackJsonp([0],[
 	    // ........................................................................ scrolling
 	    /** Scrolls the panel to show the content sub-view with the given hid.
 	     *  @param {Integer} hid    the hid of item to scroll into view
-	     *  @returns {HistoryPanel} the panel
+	     *  @returns {HistoryView} the panel
 	     */
 	    scrollToHid : function( hid ){
 	        return this.scrollToItem( _.first( this.viewsWhereModel({ hid: hid }) ) );
@@ -21320,13 +21318,13 @@ webpackJsonp([0],[
 	    // ........................................................................ misc
 	    /** Return a string rep of the history */
 	    toString : function(){
-	        return 'HistoryPanel(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+	        return 'HistoryView(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
 	    }
 	});
 	
 	
 	//------------------------------------------------------------------------------ TEMPLATES
-	HistoryPanel.prototype.templates = (function(){
+	HistoryView.prototype.templates = (function(){
 	
 	    var controlsTemplate = BASE_MVC.wrapTemplate([
 	        '<div class="controls">',
@@ -21390,14 +21388,71 @@ webpackJsonp([0],[
 	
 	//==============================================================================
 	    return {
-	        HistoryPanel: HistoryPanel
+	        HistoryView: HistoryView
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2)))
 
 /***/ },
-/* 96 */,
+/* 96 */
+/*!*********************************************!*\
+  !*** ./galaxy/scripts/ui/fa-icon-button.js ***!
+  \*********************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function($, _) {(function (root, factory) {
+	    if (true) {
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	    } else {
+	        root.faIconButton = factory();
+	    }
+	
+	}(this, function () {
+	//============================================================================
+	    /** Returns a jQuery object containing a clickable font-awesome button.
+	     *      options:
+	     *          tooltipConfig   : option map for bootstrap tool tip
+	     *          classes         : array of class names (will always be classed as icon-btn)
+	     *          disabled        : T/F - add the 'disabled' class?
+	     *          title           : tooltip/title string
+	     *          target          : optional href target
+	     *          href            : optional href
+	     *          faIcon          : which font awesome icon to use
+	     *          onclick         : function to call when the button is clicked
+	     */
+	    var faIconButton = function( options ){
+	        options = options || {};
+	        options.tooltipConfig = options.tooltipConfig || { placement: 'bottom' };
+	
+	        options.classes = [ 'icon-btn' ].concat( options.classes || [] );
+	        if( options.disabled ){
+	            options.classes.push( 'disabled' );
+	        }
+	
+	        var html = [
+	            '<a class="', options.classes.join( ' ' ), '"',
+	                    (( options.title )?( ' title="' + options.title + '"' ):( '' )),
+	                    (( !options.disabled && options.target )?  ( ' target="' + options.target + '"' ):( '' )),
+	                    ' href="', (( !options.disabled && options.href )?( options.href ):( 'javascript:void(0);' )), '">',
+	                // could go with something less specific here - like 'html'
+	                '<span class="fa ', options.faIcon, '"></span>',
+	            '</a>'
+	        ].join( '' );
+	        var $button = $( html ).tooltip( options.tooltipConfig );
+	        if( _.isFunction( options.onclick ) ){
+	            $button.click( options.onclick );
+	        }
+	        return $button;
+	    };
+	
+	//============================================================================
+	    return faIconButton;
+	}));
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! underscore */ 1)))
+
+/***/ },
 /* 97 */
 /*!***********************************************!*\
   !*** ./galaxy/scripts/mvc/list/list-panel.js ***!
@@ -21430,7 +21485,7 @@ webpackJsonp([0],[
 	 *      for dataset/dataset-choice
 	 *      as superclass of ModelListPanel
 	 */
-	var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends ReadOnlyHistoryPanel.prototype */{
+	var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends ListPanel.prototype */{
 	    _logNamespace : logNamespace,
 	
 	    /** class to use for constructing the sub-views */
@@ -23277,7 +23332,7 @@ webpackJsonp([0],[
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(jQuery, Backbone, $, _) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! mvc/list/list-item */ 98),
 	    __webpack_require__(/*! mvc/dataset/states */ 86),
-	    __webpack_require__(/*! ui/fa-icon-button */ 103),
+	    __webpack_require__(/*! ui/fa-icon-button */ 96),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( LIST_ITEM, STATES, faIconButton, BASE_MVC, _l ){
@@ -23777,64 +23832,6 @@ webpackJsonp([0],[
 
 /***/ },
 /* 103 */
-/*!*********************************************!*\
-  !*** ./galaxy/scripts/ui/fa-icon-button.js ***!
-  \*********************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function($, _) {(function (root, factory) {
-	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-	    } else {
-	        root.faIconButton = factory();
-	    }
-	
-	}(this, function () {
-	//============================================================================
-	    /** Returns a jQuery object containing a clickable font-awesome button.
-	     *      options:
-	     *          tooltipConfig   : option map for bootstrap tool tip
-	     *          classes         : array of class names (will always be classed as icon-btn)
-	     *          disabled        : T/F - add the 'disabled' class?
-	     *          title           : tooltip/title string
-	     *          target          : optional href target
-	     *          href            : optional href
-	     *          faIcon          : which font awesome icon to use
-	     *          onclick         : function to call when the button is clicked
-	     */
-	    var faIconButton = function( options ){
-	        options = options || {};
-	        options.tooltipConfig = options.tooltipConfig || { placement: 'bottom' };
-	
-	        options.classes = [ 'icon-btn' ].concat( options.classes || [] );
-	        if( options.disabled ){
-	            options.classes.push( 'disabled' );
-	        }
-	
-	        var html = [
-	            '<a class="', options.classes.join( ' ' ), '"',
-	                    (( options.title )?( ' title="' + options.title + '"' ):( '' )),
-	                    (( !options.disabled && options.target )?  ( ' target="' + options.target + '"' ):( '' )),
-	                    ' href="', (( !options.disabled && options.href )?( options.href ):( 'javascript:void(0);' )), '">',
-	                // could go with something less specific here - like 'html'
-	                '<span class="fa ', options.faIcon, '"></span>',
-	            '</a>'
-	        ].join( '' );
-	        var $button = $( html ).tooltip( options.tooltipConfig );
-	        if( _.isFunction( options.onclick ) ){
-	            $button.click( options.onclick );
-	        }
-	        return $button;
-	    };
-	
-	//============================================================================
-	    return faIconButton;
-	}));
-	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! underscore */ 1)))
-
-/***/ },
-/* 104 */
 /*!***********************************************!*\
   !*** ./galaxy/scripts/mvc/history/hdca-li.js ***!
   \***********************************************/
@@ -23842,11 +23839,11 @@ webpackJsonp([0],[
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! mvc/dataset/states */ 86),
-	    __webpack_require__(/*! mvc/collection/collection-li */ 105),
-	    __webpack_require__(/*! mvc/collection/collection-panel */ 106),
+	    __webpack_require__(/*! mvc/collection/collection-li */ 104),
+	    __webpack_require__(/*! mvc/collection/collection-view */ 105),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7)
-	], __WEBPACK_AMD_DEFINE_RESULT__ = function( STATES, DC_LI, DC_PANEL, BASE_MVC, _l ){
+	], __WEBPACK_AMD_DEFINE_RESULT__ = function( STATES, DC_LI, DC_VIEW, BASE_MVC, _l ){
 	/* global Backbone */
 	//==============================================================================
 	var _super = DC_LI.DCListItemView;
@@ -23873,11 +23870,11 @@ webpackJsonp([0],[
 	    _getFoldoutPanelClass : function(){
 	        switch( this.model.get( 'collection_type' ) ){
 	            case 'list':
-	                return DC_PANEL.ListCollectionPanel;
+	                return DC_VIEW.ListCollectionView;
 	            case 'paired':
-	                return DC_PANEL.PairCollectionPanel;
+	                return DC_VIEW.PairCollectionView;
 	            case 'list:paired':
-	                return DC_PANEL.ListOfPairsCollectionPanel;
+	                return DC_VIEW.ListOfPairsCollectionView;
 	        }
 	        throw new TypeError( 'Uknown collection_type: ' + this.model.get( 'collection_type' ) );
 	    },
@@ -23945,7 +23942,7 @@ webpackJsonp([0],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 105 */
+/* 104 */
 /*!********************************************************!*\
   !*** ./galaxy/scripts/mvc/collection/collection-li.js ***!
   \********************************************************/
@@ -24233,16 +24230,16 @@ webpackJsonp([0],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! jquery */ 2)))
 
 /***/ },
-/* 106 */
-/*!***********************************************************!*\
-  !*** ./galaxy/scripts/mvc/collection/collection-panel.js ***!
-  \***********************************************************/
+/* 105 */
+/*!**********************************************************!*\
+  !*** ./galaxy/scripts/mvc/collection/collection-view.js ***!
+  \**********************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! mvc/list/list-panel */ 97),
 	    __webpack_require__(/*! mvc/collection/collection-model */ 90),
-	    __webpack_require__(/*! mvc/collection/collection-li */ 105),
+	    __webpack_require__(/*! mvc/collection/collection-li */ 104),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( LIST_PANEL, DC_MODEL, DC_LI, BASE_MVC, _l ){
@@ -24255,8 +24252,8 @@ webpackJsonp([0],[
 	/** @class non-editable, read-only View/Controller for a dataset collection.
 	 */
 	var _super = LIST_PANEL.ModelListPanel;
-	var CollectionPanel = _super.extend(
-	/** @lends CollectionPanel.prototype */{
+	var CollectionView = _super.extend(
+	/** @lends CollectionView.prototype */{
 	    //MODEL is either a DatasetCollection (or subclass) or a DatasetCollectionElement (list of pairs)
 	    _logNamespace : logNamespace,
 	
@@ -24363,13 +24360,13 @@ webpackJsonp([0],[
 	    // ........................................................................ misc
 	    /** string rep */
 	    toString    : function(){
-	        return 'CollectionPanel(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+	        return 'CollectionView(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
 	    }
 	});
 	
 	
 	//------------------------------------------------------------------------------ TEMPLATES
-	CollectionPanel.prototype.templates = (function(){
+	CollectionView.prototype.templates = (function(){
 	
 	    var controlsTemplate = BASE_MVC.wrapTemplate([
 	        '<div class="controls">',
@@ -24405,65 +24402,66 @@ webpackJsonp([0],[
 	
 	// =============================================================================
 	/** @class non-editable, read-only View/Controller for a dataset collection. */
-	var ListCollectionPanel = CollectionPanel.extend(
-	/** @lends ListCollectionPanel.prototype */{
+	var ListCollectionView = CollectionView.extend(
+	/** @lends ListCollectionView.prototype */{
 	
-	    //TODO: not strictly needed - due to switch in CollectionPanel._getContentClass
+	    //TODO: not strictly needed - due to switch in CollectionView._getContentClass
 	    /** sub view class used for datasets */
 	    DatasetDCEViewClass : DC_LI.DatasetDCEListItemView,
 	
 	    // ........................................................................ misc
 	    /** string rep */
 	    toString    : function(){
-	        return 'ListCollectionPanel(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+	        return 'ListCollectionView(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
 	    }
 	});
 	
 	
 	// =============================================================================
 	/** @class non-editable, read-only View/Controller for a dataset collection. */
-	var PairCollectionPanel = ListCollectionPanel.extend(
-	/** @lends PairCollectionPanel.prototype */{
+	var PairCollectionView = ListCollectionView.extend(
+	/** @lends PairCollectionView.prototype */{
 	
 	    // ........................................................................ misc
 	    /** string rep */
 	    toString    : function(){
-	        return 'PairCollectionPanel(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+	        return 'PairCollectionView(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
 	    }
 	});
 	
 	
 	// =============================================================================
 	/** @class non-editable, read-only View/Controller for a dataset collection. */
-	var ListOfPairsCollectionPanel = CollectionPanel.extend(
-	/** @lends ListOfPairsCollectionPanel.prototype */{
+	var ListOfPairsCollectionView = CollectionView.extend(
+	/** @lends ListOfPairsCollectionView.prototype */{
 	
-	    //TODO: not strictly needed - due to switch in CollectionPanel._getContentClass
+	    //TODO: not strictly needed - due to switch in CollectionView._getContentClass
 	    /** sub view class used for nested collections */
 	    NestedDCDCEViewClass : DC_LI.NestedDCDCEListItemView.extend({
-	        foldoutPanelClass : PairCollectionPanel
+	        foldoutPanelClass : PairCollectionView
 	    }),
 	
 	    // ........................................................................ misc
 	    /** string rep */
 	    toString    : function(){
-	        return 'ListOfPairsCollectionPanel(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+	        return 'ListOfPairsCollectionView(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
 	    }
 	});
 	
 	
 	//==============================================================================
 	    return {
-	        CollectionPanel             : CollectionPanel,
-	        ListCollectionPanel         : ListCollectionPanel,
-	        PairCollectionPanel         : PairCollectionPanel,
-	        ListOfPairsCollectionPanel  : ListOfPairsCollectionPanel
+	        CollectionView              : CollectionView,
+	        ListCollectionView          : ListCollectionView,
+	        PairCollectionView          : PairCollectionView,
+	        ListOfPairsCollectionView   : ListOfPairsCollectionView
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
+/* 106 */,
 /* 107 */
 /*!***************************************************!*\
   !*** ./galaxy/scripts/mvc/history/hda-li-edit.js ***!
@@ -24565,7 +24563,7 @@ webpackJsonp([0],[
 	    __webpack_require__(/*! mvc/dataset/dataset-li */ 102),
 	    __webpack_require__(/*! mvc/tags */ 109),
 	    __webpack_require__(/*! mvc/annotations */ 110),
-	    __webpack_require__(/*! ui/fa-icon-button */ 103),
+	    __webpack_require__(/*! ui/fa-icon-button */ 96),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( STATES, DATASET_LI, TAGS, ANNOTATIONS, faIconButton, BASE_MVC, _l ){
@@ -25306,11 +25304,11 @@ webpackJsonp([0],[
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/history/hdca-li */ 104),
-	    __webpack_require__(/*! mvc/collection/collection-panel-edit */ 113),
-	    __webpack_require__(/*! ui/fa-icon-button */ 103),
+	    __webpack_require__(/*! mvc/history/hdca-li */ 103),
+	    __webpack_require__(/*! mvc/collection/collection-view-edit */ 113),
+	    __webpack_require__(/*! ui/fa-icon-button */ 96),
 	    __webpack_require__(/*! utils/localization */ 7)
-	], __WEBPACK_AMD_DEFINE_RESULT__ = function( HDCA_LI, DC_PANEL_EDIT, faIconButton, _l ){
+	], __WEBPACK_AMD_DEFINE_RESULT__ = function( HDCA_LI, DC_VIEW_EDIT, faIconButton, _l ){
 	//==============================================================================
 	var _super = HDCA_LI.HDCAListItemView;
 	/** @class Editing view for HistoryDatasetCollectionAssociation.
@@ -25325,11 +25323,11 @@ webpackJsonp([0],[
 	    _getFoldoutPanelClass : function(){
 	        switch( this.model.get( 'collection_type' ) ){
 	            case 'list':
-	                return DC_PANEL_EDIT.ListCollectionPanelEdit;
+	                return DC_VIEW_EDIT.ListCollectionViewEdit;
 	            case 'paired':
-	                return DC_PANEL_EDIT.PairCollectionPanelEdit;
+	                return DC_VIEW_EDIT.PairCollectionViewEdit;
 	            case 'list:paired':
-	                return DC_PANEL_EDIT.ListOfPairsCollectionPanelEdit;
+	                return DC_VIEW_EDIT.ListOfPairsCollectionViewEdit;
 	        }
 	        throw new TypeError( 'Uknown collection_type: ' + this.model.get( 'collection_type' ) );
 	    },
@@ -25379,28 +25377,28 @@ webpackJsonp([0],[
 
 /***/ },
 /* 113 */
-/*!****************************************************************!*\
-  !*** ./galaxy/scripts/mvc/collection/collection-panel-edit.js ***!
-  \****************************************************************/
+/*!***************************************************************!*\
+  !*** ./galaxy/scripts/mvc/collection/collection-view-edit.js ***!
+  \***************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/collection/collection-panel */ 106),
+	    __webpack_require__(/*! mvc/collection/collection-view */ 105),
 	    __webpack_require__(/*! mvc/collection/collection-model */ 90),
 	    __webpack_require__(/*! mvc/collection/collection-li-edit */ 114),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7),
 	    __webpack_require__(/*! ui/editable-text */ 111),
-	], __WEBPACK_AMD_DEFINE_RESULT__ = function( DC_PANEL, DC_MODEL, DC_EDIT, BASE_MVC, _l ){
+	], __WEBPACK_AMD_DEFINE_RESULT__ = function( DC_VIEW, DC_MODEL, DC_EDIT, BASE_MVC, _l ){
 	/* =============================================================================
 	TODO:
 	
 	============================================================================= */
 	/** @class editable View/Controller for a dataset collection.
 	 */
-	var _super = DC_PANEL.CollectionPanel;
-	var CollectionPanelEdit = _super.extend(
-	/** @lends CollectionPanel.prototype */{
+	var _super = DC_VIEW.CollectionView;
+	var CollectionViewEdit = _super.extend(
+	/** @lends CollectionView.prototype */{
 	    //MODEL is either a DatasetCollection (or subclass) or a DatasetCollectionElement (list of pairs)
 	
 	    /** logger used to record this.log messages, commonly set to console */
@@ -25456,37 +25454,37 @@ webpackJsonp([0],[
 	    // ........................................................................ misc
 	    /** string rep */
 	    toString    : function(){
-	        return 'CollectionPanelEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+	        return 'CollectionViewEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
 	    }
 	});
 	
 	
 	// =============================================================================
 	/** @class non-editable, read-only View/Controller for a dataset collection. */
-	var ListCollectionPanelEdit = CollectionPanelEdit.extend(
-	/** @lends ListCollectionPanel.prototype */{
+	var ListCollectionViewEdit = CollectionViewEdit.extend(
+	/** @lends ListCollectionView.prototype */{
 	
-	    //TODO: not strictly needed - due to switch in CollectionPanel._getContentClass
+	    //TODO: not strictly needed - due to switch in CollectionView._getContentClass
 	    /** sub view class used for datasets */
 	    DatasetDCEViewClass : DC_EDIT.DatasetDCEListItemEdit,
 	
 	    // ........................................................................ misc
 	    /** string rep */
 	    toString    : function(){
-	        return 'ListCollectionPanelEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+	        return 'ListCollectionViewEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
 	    }
 	});
 	
 	
 	// =============================================================================
 	/** @class Editable, read-only View/Controller for a dataset collection. */
-	var PairCollectionPanelEdit = ListCollectionPanelEdit.extend(
-	/** @lends PairCollectionPanelEdit.prototype */{
+	var PairCollectionViewEdit = ListCollectionViewEdit.extend(
+	/** @lends PairCollectionViewEdit.prototype */{
 	
 	    // ........................................................................ misc
 	    /** string rep */
 	    toString    : function(){
-	        return 'PairCollectionPanelEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+	        return 'PairCollectionViewEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
 	    }
 	});
 	
@@ -25495,8 +25493,8 @@ webpackJsonp([0],[
 	/** @class Editable (roughly since these collections are immutable),
 	 *  View/Controller for a dataset collection.
 	 */
-	var NestedPairCollectionPanelEdit = PairCollectionPanelEdit.extend(
-	/** @lends NestedPairCollectionPanelEdit.prototype */{
+	var NestedPairCollectionViewEdit = PairCollectionViewEdit.extend(
+	/** @lends NestedPairCollectionViewEdit.prototype */{
 	
 	    /** Override to remove the editable text from the name/identifier - these collections are considered immutable */
 	    _setUpBehaviors : function( $where ){
@@ -25506,36 +25504,36 @@ webpackJsonp([0],[
 	    // ........................................................................ misc
 	    /** string rep */
 	    toString    : function(){
-	        return 'NestedPairCollectionPanelEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+	        return 'NestedPairCollectionViewEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
 	    }
 	});
 	
 	
 	// =============================================================================
 	/** @class non-editable, read-only View/Controller for a dataset collection. */
-	var ListOfPairsCollectionPanelEdit = CollectionPanelEdit.extend(
-	/** @lends ListOfPairsCollectionPanel.prototype */{
+	var ListOfPairsCollectionViewEdit = CollectionViewEdit.extend(
+	/** @lends ListOfPairsCollectionView.prototype */{
 	
-	    //TODO: not strictly needed - due to switch in CollectionPanel._getContentClass
+	    //TODO: not strictly needed - due to switch in CollectionView._getContentClass
 	    /** sub view class used for nested collections */
 	    NestedDCDCEViewClass : DC_EDIT.NestedDCDCEListItemEdit.extend({
-	        foldoutPanelClass : NestedPairCollectionPanelEdit
+	        foldoutPanelClass : NestedPairCollectionViewEdit
 	    }),
 	
 	    // ........................................................................ misc
 	    /** string rep */
 	    toString    : function(){
-	        return 'ListOfPairsCollectionPanelEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+	        return 'ListOfPairsCollectionViewEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
 	    }
 	});
 	
 	
 	//==============================================================================
 	    return {
-	        CollectionPanelEdit             : CollectionPanelEdit,
-	        ListCollectionPanelEdit         : ListCollectionPanelEdit,
-	        PairCollectionPanelEdit         : PairCollectionPanelEdit,
-	        ListOfPairsCollectionPanelEdit  : ListOfPairsCollectionPanelEdit
+	        CollectionViewEdit              : CollectionViewEdit,
+	        ListCollectionViewEdit          : ListCollectionViewEdit,
+	        PairCollectionViewEdit          : PairCollectionViewEdit,
+	        ListOfPairsCollectionViewEdit   : ListOfPairsCollectionViewEdit
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
@@ -25548,7 +25546,7 @@ webpackJsonp([0],[
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(jQuery, _) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/collection/collection-li */ 105),
+	    __webpack_require__(/*! mvc/collection/collection-li */ 104),
 	    __webpack_require__(/*! mvc/dataset/dataset-li-edit */ 108),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7)

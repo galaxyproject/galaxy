@@ -24,7 +24,7 @@ TODO:
  *      for dataset/dataset-choice
  *      as superclass of ModelListPanel
  */
-var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends ReadOnlyHistoryPanel.prototype */{
+var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends ListPanel.prototype */{
     _logNamespace : logNamespace,
 
     /** class to use for constructing the sub-views */

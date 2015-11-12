@@ -14,8 +14,8 @@ TODO:
 /** @class non-editable, read-only View/Controller for a dataset collection.
  */
 var _super = LIST_PANEL.ModelListPanel;
-var CollectionPanel = _super.extend(
-/** @lends CollectionPanel.prototype */{
+var CollectionView = _super.extend(
+/** @lends CollectionView.prototype */{
     //MODEL is either a DatasetCollection (or subclass) or a DatasetCollectionElement (list of pairs)
     _logNamespace : logNamespace,
 
@@ -122,13 +122,13 @@ var CollectionPanel = _super.extend(
     // ........................................................................ misc
     /** string rep */
     toString    : function(){
-        return 'CollectionPanel(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+        return 'CollectionView(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });
 
 
 //------------------------------------------------------------------------------ TEMPLATES
-CollectionPanel.prototype.templates = (function(){
+CollectionView.prototype.templates = (function(){
 
     var controlsTemplate = BASE_MVC.wrapTemplate([
         '<div class="controls">',
@@ -164,58 +164,58 @@ CollectionPanel.prototype.templates = (function(){
 
 // =============================================================================
 /** @class non-editable, read-only View/Controller for a dataset collection. */
-var ListCollectionPanel = CollectionPanel.extend(
-/** @lends ListCollectionPanel.prototype */{
+var ListCollectionView = CollectionView.extend(
+/** @lends ListCollectionView.prototype */{
 
-    //TODO: not strictly needed - due to switch in CollectionPanel._getContentClass
+    //TODO: not strictly needed - due to switch in CollectionView._getContentClass
     /** sub view class used for datasets */
     DatasetDCEViewClass : DC_LI.DatasetDCEListItemView,
 
     // ........................................................................ misc
     /** string rep */
     toString    : function(){
-        return 'ListCollectionPanel(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+        return 'ListCollectionView(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });
 
 
 // =============================================================================
 /** @class non-editable, read-only View/Controller for a dataset collection. */
-var PairCollectionPanel = ListCollectionPanel.extend(
-/** @lends PairCollectionPanel.prototype */{
+var PairCollectionView = ListCollectionView.extend(
+/** @lends PairCollectionView.prototype */{
 
     // ........................................................................ misc
     /** string rep */
     toString    : function(){
-        return 'PairCollectionPanel(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+        return 'PairCollectionView(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });
 
 
 // =============================================================================
 /** @class non-editable, read-only View/Controller for a dataset collection. */
-var ListOfPairsCollectionPanel = CollectionPanel.extend(
-/** @lends ListOfPairsCollectionPanel.prototype */{
+var ListOfPairsCollectionView = CollectionView.extend(
+/** @lends ListOfPairsCollectionView.prototype */{
 
-    //TODO: not strictly needed - due to switch in CollectionPanel._getContentClass
+    //TODO: not strictly needed - due to switch in CollectionView._getContentClass
     /** sub view class used for nested collections */
     NestedDCDCEViewClass : DC_LI.NestedDCDCEListItemView.extend({
-        foldoutPanelClass : PairCollectionPanel
+        foldoutPanelClass : PairCollectionView
     }),
 
     // ........................................................................ misc
     /** string rep */
     toString    : function(){
-        return 'ListOfPairsCollectionPanel(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+        return 'ListOfPairsCollectionView(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });
 
 
 //==============================================================================
     return {
-        CollectionPanel             : CollectionPanel,
-        ListCollectionPanel         : ListCollectionPanel,
-        PairCollectionPanel         : PairCollectionPanel,
-        ListOfPairsCollectionPanel  : ListOfPairsCollectionPanel
+        CollectionView              : CollectionView,
+        ListCollectionView          : ListCollectionView,
+        PairCollectionView          : PairCollectionView,
+        ListOfPairsCollectionView   : ListOfPairsCollectionView
     };
 });

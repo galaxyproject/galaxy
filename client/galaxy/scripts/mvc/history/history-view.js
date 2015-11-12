@@ -4,7 +4,6 @@ define([
     "mvc/history/history-contents",
     "mvc/history/hda-li",
     "mvc/history/hdca-li",
-    "mvc/collection/collection-panel",
     "mvc/user/user-model",
     "ui/fa-icon-button",
     "mvc/ui/popup-menu",
@@ -17,7 +16,6 @@ define([
     HISTORY_CONTENTS,
     HDA_LI,
     HDCA_LI,
-    COLLECTION_PANEL,
     USER,
     faIconButton,
     PopupMenu,
@@ -26,6 +24,7 @@ define([
 ){
 
 var logNamespace = 'history';
+
 // ============================================================================
 /** session storage for individual history preferences */
 var HistoryPrefs = BASE_MVC.SessionStorageModel.extend(
@@ -92,8 +91,8 @@ TODO:
  *      changing the name
  */
 var _super = LIST_PANEL.ModelListPanel;
-var HistoryPanel = _super.extend(
-/** @lends HistoryPanel.prototype */{
+var HistoryView = _super.extend(
+/** @lends HistoryView.prototype */{
     _logNamespace : logNamespace,
 
     /** class to use for constructing the HDA views */
@@ -254,7 +253,7 @@ var HistoryPanel = _super.extend(
     },
 
     // ------------------------------------------------------------------------ browser stored prefs
-    /** Set up client side storage. Currently PersistanStorage keyed under 'HistoryPanel.<id>'
+    /** Set up client side storage. Currently PersistanStorage keyed under 'history:<id>'
      *  @param {Object} initiallyExpanded
      *  @param {Boolean} show_deleted whether to show deleted contents (overrides stored)
      *  @param {Boolean} show_hidden
@@ -609,7 +608,7 @@ var HistoryPanel = _super.extend(
     // ........................................................................ scrolling
     /** Scrolls the panel to show the content sub-view with the given hid.
      *  @param {Integer} hid    the hid of item to scroll into view
-     *  @returns {HistoryPanel} the panel
+     *  @returns {HistoryView} the panel
      */
     scrollToHid : function( hid ){
         return this.scrollToItem( _.first( this.viewsWhereModel({ hid: hid }) ) );
@@ -618,13 +617,13 @@ var HistoryPanel = _super.extend(
     // ........................................................................ misc
     /** Return a string rep of the history */
     toString : function(){
-        return 'HistoryPanel(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+        return 'HistoryView(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });
 
 
 //------------------------------------------------------------------------------ TEMPLATES
-HistoryPanel.prototype.templates = (function(){
+HistoryView.prototype.templates = (function(){
 
     var controlsTemplate = BASE_MVC.wrapTemplate([
         '<div class="controls">',
@@ -688,6 +687,6 @@ HistoryPanel.prototype.templates = (function(){
 
 //==============================================================================
     return {
-        HistoryPanel: HistoryPanel
+        HistoryView: HistoryView
     };
 });

@@ -1,8 +1,8 @@
 define([
     'libs/underscore',
     'libs/backbone',
-    "mvc/base-mvc",
-    "utils/localization"
+    'mvc/base-mvc',
+    'utils/localization'
 ], function( _, Backbone, baseMVC, _l ){
 
 var logNamespace = 'user';

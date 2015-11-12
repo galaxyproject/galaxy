@@ -168,7 +168,7 @@ function mixin( mixinHash1, /* mixinHash2, etc: ... variadic */ propsHash ){
  * @example:
  *      see hda-model for searchAttribute and searchAliases definition examples.
  *      see history-contents.matches for how collections are filtered
- *      and see readonly-history-panel.searchHdas for how user input is connected to the filtering
+ *      and see readonly-history-view.searchHdas for how user input is connected to the filtering
  */
 var SearchableModelMixin = {
 
