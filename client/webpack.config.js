@@ -3,8 +3,8 @@ var webpack = require( 'webpack' ),
     path = require( 'path' ),
     scriptsBase = path.join( __dirname, 'galaxy/scripts' ),
     libsBase = path.join( scriptsBase, 'libs' ),
-    // libraries used on almost every page
 
+    // libraries used on almost every page
     // TODO: reduce
     commonLibs = [
         'polyfills',
@@ -46,7 +46,7 @@ module.exports = {
         root  : scriptsBase,
         alias : {
             //TODO: correct our imports and remove these rules
-            // Backbone looks for these in the same directory
+            // Backbone looks for these in the same root directory
             jquery      : path.join( libsBase, 'jquery/jquery' ),
             underscore  : path.join( libsBase, 'underscore.js' ),
             // requirejs' i18n doesn't play well with webpack
