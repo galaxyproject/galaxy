@@ -32,6 +32,7 @@ The following individuals have contributed code to Galaxy:
 * Ira Cooke <iracooke@gmail.com>
 * Nate Coraor <nate@bx.psu.edu>
 * Michael Cotterell <mepcotterell@gmail.com>
+* Michael R. Crusoe <crusoe@ucdavis.edu>
 * Gianmauro Cuccuru <gmauro@crs4.it>
 * Frederik Delaere <frederik.delaere@gmail.com>
 * Olivia Doppelt <olivia.doppelt@pasteur.fr>
