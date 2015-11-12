@@ -1,5 +1,5 @@
 define([
-    "galaxy.masthead",
+    "layout/masthead",
     "mvc/base-mvc",
     "utils/utils",
     "libs/toastr",
@@ -29,7 +29,7 @@ var LibraryListView = Backbone.View.extend({
     },
 
     /**
-     * Initialize and fetch the libraries from server. 
+     * Initialize and fetch the libraries from server.
      * Async render afterwards.
      * @param  {object} options an object with options
      */
@@ -53,10 +53,10 @@ var LibraryListView = Backbone.View.extend({
         });
     },
 
-    /** 
-     * Render the libraries table either from the object's own collection, 
+    /**
+     * Render the libraries table either from the object's own collection,
      * or from a given array of library models,
-     * or render an empty list in case no data is given. 
+     * or render an empty list in case no data is given.
      */
     render: function ( options ) {
         this.options = _.extend( this.options, options );
@@ -119,7 +119,7 @@ var LibraryListView = Backbone.View.extend({
         $( "#center" ).css( 'overflow','auto' );
     },
 
-    /** 
+    /**
      * Render all given models as rows in the library list
      * @param  {array} libraries_to_render array of library models to render
      */
@@ -155,7 +155,7 @@ var LibraryListView = Backbone.View.extend({
 
     /**
      * Sort the underlying collection according to the parameters received.
-     * Currently supports only sorting by name. 
+     * Currently supports only sorting by name.
      */
     sortLibraries: function(){
         if (Galaxy.libraries.preferences.get('sort_by') === 'name'){

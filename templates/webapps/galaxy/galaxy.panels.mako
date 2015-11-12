@@ -149,13 +149,13 @@
 
         ## configure left panel
         %if self.galaxy_config['left_panel']:
-            var lp = new panels.LeftPanel({});
+            var lp = new panels.LeftPanel({ el: '#left' });
             force_left_panel = function( x ) { lp.force_panel( x ) };
         %endif
 
         ## configure right panel
         %if self.galaxy_config['right_panel']:
-            var rp = new panels.RightPanel({});
+            var rp = new panels.RightPanel({ el: '#right' });
             window.handle_minwidth_hint = function( x ) { rp.handle_minwidth_hint( x ) };
             force_right_panel = function( x ) { rp.force_panel( x ) };
         %endif
