@@ -305,6 +305,8 @@ class BaseJobRunner( object ):
 
     def write_executable_script( self, path, contents, mode=0o755 ):
         with open( path, 'w' ) as f:
+            if isinstance(contents, unicode):
+                contents = contents.encode("UTF-8")
             f.write( contents )
         os.chmod( path, mode )
         self._handle_script_integrity( path )

@@ -1,5 +1,4 @@
 # packages with C extensions
-Cheetah==2.4.4
 bx-python==0.7.3
 MarkupSafe==0.23
 PyYAML==3.11
@@ -26,14 +25,15 @@ pytz==2015.4
 Babel==2.0
 Beaker==1.7.0
 
+# Cheetah and dependencies
+Cheetah==2.4.4
+Markdown==2.6.3
+
 # BioBlend and dependencies
 bioblend==0.6.1
 boto==2.38.0
 requests==2.8.1
-
-# WebError and dependences
-WebError==0.11
-Pygments==2.0.2
+requests-toolbelt==0.4.0
 
 # kombu and dependencies
 kombu==3.0.26

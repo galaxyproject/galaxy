@@ -19,13 +19,13 @@ return {
 
         // validate job definition
         if (!this._validation(form, job_def)) {
-            console.debug('tools-jobs::submit - Submission canceled. Validation failed.');
+            Galaxy.emit.debug('tools-jobs::submit()', 'Submission canceled. Validation failed.');
             callback && callback();
             return;
         }
 
         // debug
-        console.debug(job_def);
+        Galaxy.emit.debug('tools-jobs::submit()', 'Validation complete.', job_def);
 
         // post job
         Utils.request({
@@ -40,7 +40,7 @@ return {
             },
             error   : function(response) {
                 callback && callback();
-                console.debug(response);
+                Galaxy.emit.debug('tools-jobs::submit', 'Submission failed.', response);
                 if (response && response.err_data) {
                     var error_messages = form.data.matchResponse(response.err_data);
                     for (var input_id in error_messages) {
@@ -84,7 +84,7 @@ return {
 
             // check if objects where properly identified
             if (!input_id || !input_def || !input_field) {
-                console.debug('tools-jobs::_validation - Retrieving input objects failed.');
+                Galaxy.emit.debug('tools-jobs::_validation()', 'Retrieving input objects failed.');
                 continue;
             }
 

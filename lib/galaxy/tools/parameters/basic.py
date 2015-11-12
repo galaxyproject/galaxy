@@ -273,9 +273,10 @@ class TextToolParameter( ToolParameter ):
     def to_string( self, value, app ):
         """Convert a value to a string representation suitable for persisting"""
         if value is None:
-            return ''
+            rval = ''
         else:
-            return str( value )
+            rval = util.smart_str( value )
+        return rval
 
     def to_html_value( self, value, app ):
         if value is None:

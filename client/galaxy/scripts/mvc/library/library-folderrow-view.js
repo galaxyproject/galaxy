@@ -37,7 +37,7 @@ var FolderRowView = Backbone.View.extend({
       } else{
         template = this.templateRowFolder();
       }
-    } else if (folder_item.get('type') === 'file' || folder_item.get('model_class') === 'LibraryDataset'){
+    } else if (folder_item.get('type') === 'file' || folder_item.get('model_class') === 'LibraryDatasetDatasetAssociation'){
       this.options.type = 'file';
       if (folder_item.get('deleted')){
         template = this.templateRowDeletedFile();

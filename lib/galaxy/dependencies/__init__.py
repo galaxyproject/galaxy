@@ -3,6 +3,7 @@ Determine what optional dependencies are needed.
 """
 import pkg_resources
 
+from sys import version_info
 from os.path import dirname, join
 from xml.etree import ElementTree
 
@@ -25,8 +26,9 @@ class ConditionalDependencies( object ):
             "job_config_file",
             join( dirname( self.config_file ), 'job_conf.xml' ) )
         try:
-            for plugin in ElementTree.parse( job_conf_xml ).findall( './plugins/plugin[@load]' ):
-                self.job_runners.append( plugin.attrib['load'] )
+            for plugin in ElementTree.parse( job_conf_xml ).find( 'plugins' ).findall( 'plugin' ):
+                if 'load' in plugin.attrib:
+                    self.job_runners.append( plugin.attrib['load'] )
         except (OSError, IOError):
             pass
 
@@ -67,6 +69,16 @@ class ConditionalDependencies( object ):
     def check_weberror( self ):
         return ( asbool( self.config["debug"] ) and
                  asbool( self.config["use_interactive"] ) )
+
+    def check_pygments( self ):
+        # pygments is a dependency of weberror and only weberror
+        return self.check_weberror()
+
+    def check_importlib( self ):
+        return version_info < (2, 7)
+
+    def check_ordereddict( self ):
+        return version_info < (2, 7)
 
 
 def optional( config_file ):
