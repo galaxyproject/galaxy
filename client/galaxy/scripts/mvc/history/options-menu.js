@@ -175,8 +175,7 @@ var create = function( $button, options ){
     options = options || {};
     var isAnon = options.anonymous === undefined? true : options.anonymous,
         purgeAllowed = options.purgeAllowed || false,
-        root = options.root || ( ( Galaxy && Galaxy.options )? Galaxy.options.root: '/' ),
-        menu = buildMenu( isAnon, purgeAllowed, root );
+        menu = buildMenu( isAnon, purgeAllowed, Galaxy.root );
     //console.debug( 'menu:', menu );
     return new PopupMenu( $button, menu );
 };

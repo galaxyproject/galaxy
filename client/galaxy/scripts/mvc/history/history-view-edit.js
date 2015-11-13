@@ -121,7 +121,7 @@ var HistoryViewEdit = _super.extend(
         var $newRender = _super.prototype._buildNewRender.call( this );
         if( !this.model ){ return $newRender; }
 
-        if( Galaxy && Galaxy.currUser && Galaxy.currUser.id && Galaxy.currUser.id === this.model.get( 'user_id' ) ){
+        if( Galaxy && Galaxy.user && Galaxy.user.id && Galaxy.user.id === this.model.get( 'user_id' ) ){
             this._renderTags( $newRender );
             this._renderAnnotation( $newRender );
         }
@@ -216,8 +216,8 @@ var HistoryViewEdit = _super.extend(
         if( !this.model ){ return; }
 
         // anon users shouldn't have access to any of the following
-        if( ( !Galaxy.currUser || Galaxy.currUser.isAnonymous() )
-        ||  ( Galaxy.currUser.id !== this.model.get( 'user_id' ) ) ){
+        if( ( !Galaxy.user || Galaxy.user.isAnonymous() )
+        ||  ( Galaxy.user.id !== this.model.get( 'user_id' ) ) ){
             return;
         }
 

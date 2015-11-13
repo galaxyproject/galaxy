@@ -220,13 +220,13 @@ function reset_tool_search( initValue ) {
 
             // get available datatypes for post job action options
             this.datatypes = JSON.parse($.ajax({
-                url     : galaxy_config.root + 'api/datatypes',
+                url     : Galaxy.root + 'api/datatypes',
                 async   : false
             }).responseText);
 
             // get datatype mapping options
             this.datatypes_mapping = JSON.parse($.ajax({
-                url     : galaxy_config.root + 'api/datatypes/mapping',
+                url     : Galaxy.root + 'api/datatypes/mapping',
                 async   : false
             }).responseText);
 
@@ -700,7 +700,7 @@ function reset_tool_search( initValue ) {
             f.append( title );
             f.css( "left", $(window).scrollLeft() + 20 ); f.css( "top", $(window).scrollTop() + 20 );
             var b = $("<div class='toolFormBody'></div>");
-            var tmp = "<div><img height='16' align='middle' src='" + galaxy_config.root + "static/images/loading_small_white_bg.gif'/> loading tool info...</div>";
+            var tmp = "<div><img height='16' align='middle' src='" + Galaxy.root + "static/images/loading_small_white_bg.gif'/> loading tool info...</div>";
             b.append( tmp );
             node.form_html = tmp;
             f.append( b );

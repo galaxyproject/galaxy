@@ -53,8 +53,6 @@
                 ${ h.dumps( options ) },
                 ${ h.dumps( bootstrapped ) }
             );
-            // TODO: find and replace with Galaxy.root
-            window.galaxy_config = { root: Galaxy.options.root };
         </script>
         ${ h.js( js_app_name + '.bundled' ) }
         <script type="text/javascript" src="/static/scripts/bundled/${js_app_name}.bundled.js"></script>

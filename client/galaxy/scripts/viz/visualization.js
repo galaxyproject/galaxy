@@ -115,7 +115,7 @@ _.extend( CanvasManager.prototype, {
         var patterns = this.patterns,
             dummy_context = this.dummy_context,
             image = new Image();
-        image.src = galaxy_config.root + "static/images" + path;
+        image.src = Galaxy.root + "static/images" + path;
         image.onload = function() {
             patterns[key] = dummy_context.createPattern( image, "repeat" );
         };
@@ -958,7 +958,7 @@ var Visualization = Backbone.Model.extend({
         type: ''
     },
 
-    urlRoot: galaxy_config.root + "api/visualizations",
+    urlRoot: Galaxy.root + "api/visualizations",
 
     /**
      * POSTs visualization's JSON to its URL using the parameter 'vis_json'

@@ -71,7 +71,7 @@ var TagsEditor = Backbone.View
     /** @returns {String[]} all tags used by the current user */
     _getTagsUsed : function(){
 //TODO: global
-        return Galaxy.currUser.get( 'tags_used' );
+        return Galaxy.user.get( 'tags_used' );
     },
 
     /** set up any event listeners on the view's DOM (mostly handled by select2) */
@@ -94,11 +94,11 @@ var TagsEditor = Backbone.View
      */
     _addNewTagToTagsUsed : function( newTag ){
 //TODO: global
-        var tagsUsed = Galaxy.currUser.get( 'tags_used' );
+        var tagsUsed = Galaxy.user.get( 'tags_used' );
         if( !_.contains( tagsUsed, newTag ) ){
             tagsUsed.push( newTag );
             tagsUsed.sort();
-            Galaxy.currUser.set( 'tags_used', tagsUsed );
+            Galaxy.user.set( 'tags_used', tagsUsed );
         }
     },
 

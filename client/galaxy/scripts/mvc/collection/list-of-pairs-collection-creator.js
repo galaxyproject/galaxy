@@ -572,8 +572,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
      */
     createList : function( name ){
         var creator = this,
-            root = ( window.Galaxy && Galaxy.options.root )? Galaxy.options.root : '/',
-            url = root + 'api/histories/' + this.historyId + '/contents/dataset_collections';
+            url = Galaxy.root + 'api/histories/' + this.historyId + '/contents/dataset_collections';
 
         //TODO: use ListPairedCollection.create()
         var ajaxData = {

@@ -350,7 +350,7 @@ var GalaxyMastheadTab = Backbone.View.extend({
 
         // update url
         if ( this.options.content !== undefined && this.options.content.indexOf( '//' ) === -1 ){
-            this.options.content = galaxy_config.root + this.options.content;
+            this.options.content = Galaxy.root + this.options.content;
         }
 
         // add template for tab
@@ -397,7 +397,7 @@ var GalaxyMastheadTab = Backbone.View.extend({
 
         // update url
         if (menuOptions.content && menuOptions.content.indexOf('//') === -1)
-            menuOptions.content = galaxy_config.root + menuOptions.content;
+            menuOptions.content = Galaxy.root + menuOptions.content;
 
         // check if submenu element is available
         if (!this.$menu){
@@ -455,7 +455,7 @@ var GalaxyMastheadTab = Backbone.View.extend({
         var $popover_element = $(this.el).find('.head');
         $popover_element.popover({
             html: true,
-            content: 'Please <a href="' + galaxy_config.root + 'user/login?use_panels=True">log in</a> or <a href="' + galaxy_config.root + 'user/create?use_panels=True">register</a> to use this feature.',
+            content: 'Please <a href="' + Galaxy.root + 'user/login?use_panels=True">log in</a> or <a href="' + Galaxy.root + 'user/create?use_panels=True">register</a> to use this feature.',
             placement: 'bottom'
         }).on('shown.bs.popover', function() { // hooking on bootstrap event to automatically hide popovers after delay
             setTimeout(function() {

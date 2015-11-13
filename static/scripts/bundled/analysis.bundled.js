@@ -362,7 +362,7 @@ webpackJsonp([0],[
 	        outputs: []
 	    },
 	
-	    urlRoot: galaxy_config.root + 'api/tools',
+	    urlRoot: Galaxy.root + 'api/tools',
 	
 	    initialize: function(options) {
 	
@@ -592,7 +592,7 @@ webpackJsonp([0],[
 	        clear_key: 27
 	    },
 	
-	    urlRoot: galaxy_config.root + 'api/tools',
+	    urlRoot: Galaxy.root + 'api/tools',
 	
 	    initialize: function() {
 	        this.on("change:query", this.do_search);
@@ -623,7 +623,7 @@ webpackJsonp([0],[
 	        this.timer = setTimeout(function () {
 	            // log the search to analytics if present
 	            if ( typeof ga !== 'undefined' ) {
-	                ga( 'send', 'pageview', galaxy_config.root + '?q=' + q );
+	                ga( 'send', 'pageview', Galaxy.root + '?q=' + q );
 	            }
 	            $.get( self.urlRoot, { q: q }, function (data) {
 	                self.set("results", data);
@@ -1243,7 +1243,7 @@ webpackJsonp([0],[
 	        return this.attributes.metadata.get(attribute);
 	    },
 	
-	    urlRoot: galaxy_config.root + "api/datasets"
+	    urlRoot: Galaxy.root + "api/datasets"
 	});
 	
 	/**
@@ -1262,8 +1262,8 @@ webpackJsonp([0],[
 	
 	        // If first data chunk is available, next chunk is 1.
 	        this.attributes.chunk_index = (this.attributes.first_data_chunk ? 1 : 0);
-	        this.attributes.chunk_url = galaxy_config.root + 'dataset/display?dataset_id=' + this.id;
-	        this.attributes.url_viz = galaxy_config.root + 'visualization';
+	        this.attributes.chunk_url = Galaxy.root + 'dataset/display?dataset_id=' + this.id;
+	        this.attributes.url_viz = Galaxy.root + 'visualization';
 	    },
 	
 	    /**
@@ -3562,7 +3562,7 @@ webpackJsonp([0],[
 	 */
 	function cssLoadFile (url) {
 	    if (!$('link[href^="' + url + '"]').length) {
-	        $('<link href="' + galaxy_config.root + url + '" rel="stylesheet">').appendTo('head');
+	        $('<link href="' + Galaxy.root + url + '" rel="stylesheet">').appendTo('head');
 	    }
 	};
 	
@@ -8103,7 +8103,7 @@ webpackJsonp([0],[
 	
 	// collection of libraries
 	var Libraries = Backbone.Collection.extend({
-	    url: galaxy_config.root + 'api/libraries?deleted=false'
+	    url: Galaxy.root + 'api/libraries?deleted=false'
 	});
 	
 	// collection of dataset
@@ -8116,7 +8116,7 @@ webpackJsonp([0],[
 	        });
 	    },
 	    url: function() {
-	        return galaxy_config.root + 'api/libraries/' + this.config.get('library_id') + '/contents'
+	        return Galaxy.root + 'api/libraries/' + this.config.get('library_id') + '/contents';
 	    }
 	});
 	
@@ -8428,7 +8428,7 @@ webpackJsonp([0],[
 	
 	        // initial fetch of ftps
 	        Utils.get({
-	            url     : galaxy_config.root + 'api/remote_files',
+	            url     : Galaxy.root + 'api/remote_files',
 	            success : function(response) {
 	                var data = [];
 	                for (var i in response) {
@@ -9006,7 +9006,7 @@ webpackJsonp([0],[
 	    _logNamespace : logNamespace,
 	
 	    /** root api url */
-	    urlRoot : galaxy_config.root + 'api',
+	    urlRoot : Galaxy.root + 'api',
 	    partial : true, // Assume some tools in history/workflow may not be properly annotated yet.
 	    model : Citation,
 	} );
@@ -11149,7 +11149,7 @@ webpackJsonp([0],[
 	        // post job
 	        Utils.request({
 	            type    : 'POST',
-	            url     : galaxy_config.root + 'api/tools',
+	            url     : Galaxy.root + 'api/tools',
 	            data    : job_def,
 	            success : function(response) {
 	                callback && callback();
@@ -12686,7 +12686,7 @@ webpackJsonp([0],[
 	        // load extensions
 	        var self = this;
 	        Utils.get({
-	            url     : galaxy_config.root + 'api/datatypes?extension_only=False',
+	            url     : Galaxy.root + 'api/datatypes?extension_only=False',
 	            success : function( datatypes ) {
 	                for ( key in datatypes ) {
 	                    self.list_extensions.push({
@@ -12710,7 +12710,7 @@ webpackJsonp([0],[
 	
 	        // load genomes
 	        Utils.get({
-	            url     : galaxy_config.root + 'api/genomes',
+	            url     : Galaxy.root + 'api/genomes',
 	            success : function( genomes ) {
 	                for ( key in genomes ) {
 	                    self.list_genomes.push({
@@ -14473,7 +14473,7 @@ webpackJsonp([0],[
 	
 	        // load extension
 	        Utils.get({
-	            url     : galaxy_config.root + 'api/remote_files',
+	            url     : Galaxy.root + 'api/remote_files',
 	            success : function(ftp_files) { self._fill(ftp_files); },
 	            error   : function() { self._fill(); }
 	        });
@@ -15858,8 +15858,7 @@ webpackJsonp([0],[
 	    options = options || {};
 	    var isAnon = options.anonymous === undefined? true : options.anonymous,
 	        purgeAllowed = options.purgeAllowed || false,
-	        root = options.root || ( ( Galaxy && Galaxy.options )? Galaxy.options.root: '/' ),
-	        menu = buildMenu( isAnon, purgeAllowed, root );
+	        menu = buildMenu( isAnon, purgeAllowed, Galaxy.root );
 	    //console.debug( 'menu:', menu );
 	    return new PopupMenu( $button, menu );
 	};
@@ -16314,7 +16313,7 @@ webpackJsonp([0],[
 	        var panel = this,
 	            historyFn = function(){
 	                // make this current and get history data with one call
-	                return jQuery.getJSON( galaxy_config.root + 'history/set_as_current?id=' + historyId  );
+	                return jQuery.getJSON( Galaxy.root + 'history/set_as_current?id=' + historyId  );
 	                //    method  : 'PUT'
 	                //});
 	            };
@@ -16326,14 +16325,14 @@ webpackJsonp([0],[
 	
 	    /** creates a new history on the server and sets it as the user's current history */
 	    createNewHistory : function( attributes ){
-	        if( !Galaxy || !Galaxy.currUser || Galaxy.currUser.isAnonymous() ){
+	        if( !Galaxy || !Galaxy.user || Galaxy.user.isAnonymous() ){
 	            this.displayMessage( 'error', _l( 'You must be logged in to create histories' ) );
 	            return $.when();
 	        }
 	        var panel = this,
 	            historyFn = function(){
 	                // create a new history and save: the server will return the proper JSON
-	                return jQuery.getJSON( galaxy_config.root + 'history/create_new_current'  );
+	                return jQuery.getJSON( Galaxy.root + 'history/create_new_current'  );
 	            };
 	
 	        // id undefined bc there is no historyId yet - the server will provide
@@ -16731,7 +16730,7 @@ webpackJsonp([0],[
 	    },
 	
 	    // ........................................................................ urls
-	    urlRoot: galaxy_config.root + 'api/histories',
+	    urlRoot: Galaxy.root + 'api/histories',
 	
 	    // ........................................................................ set up/tear down
 	    /** Set up the model
@@ -16817,16 +16816,16 @@ webpackJsonp([0],[
 	    },
 	
 	    // ........................................................................ common queries
-	    /** T/F is this history owned by the current user (Galaxy.currUser)
+	    /** T/F is this history owned by the current user (Galaxy.user)
 	     *      Note: that this will return false for an anon user even if the history is theirs.
 	     */
 	    ownedByCurrUser : function(){
 	        // no currUser
-	        if( !Galaxy || !Galaxy.currUser ){
+	        if( !Galaxy || !Galaxy.user ){
 	            return false;
 	        }
 	        // user is anon or history isn't owned
-	        if( Galaxy.currUser.isAnonymous() || Galaxy.currUser.id !== this.get( 'user_id' ) ){
+	        if( Galaxy.user.isAnonymous() || Galaxy.user.id !== this.get( 'user_id' ) ){
 	            return false;
 	        }
 	        return true;
@@ -16978,7 +16977,7 @@ webpackJsonp([0],[
 	
 	    setAsCurrent : function(){
 	        var history = this,
-	            xhr = jQuery.getJSON( galaxy_config.root + 'history/set_as_current?id=' + this.id );
+	            xhr = jQuery.getJSON( Galaxy.root + 'history/set_as_current?id=' + this.id );
 	
 	        xhr.done( function(){
 	            history.trigger( 'set-as-current', history );
@@ -17011,9 +17010,9 @@ webpackJsonp([0],[
 	    function getHistory( id ){
 	        // get the history data
 	        if( historyId === 'current' ){
-	            return jQuery.getJSON( galaxy_config.root + 'history/current_history_json' );
+	            return jQuery.getJSON( Galaxy.root + 'history/current_history_json' );
 	        }
-	        return jQuery.ajax( galaxy_config.root + 'api/histories/' + historyId );
+	        return jQuery.ajax( Galaxy.root + 'api/histories/' + historyId );
 	    }
 	    function isEmpty( historyData ){
 	        // get the number of hdas accrd. to the history
@@ -17039,7 +17038,7 @@ webpackJsonp([0],[
 	            // by frontend.
 	            data.dataset_collection_details = hdcaDetailIds.join( ',' );
 	        }
-	        return jQuery.ajax( galaxy_config.root + 'api/histories/' + historyData.id + '/contents', { data: data });
+	        return jQuery.ajax( Galaxy.root + 'api/histories/' + historyData.id + '/contents', { data: data });
 	    }
 	
 	    // getting these concurrently is 400% slower (sqlite, local, vanilla) - so:
@@ -17202,7 +17201,7 @@ webpackJsonp([0],[
 	        this.setUpListeners();
 	    },
 	
-	    urlRoot : ( window.galaxy_config? galaxy_config.root : '/' ) + 'api/histories',
+	    urlRoot : Galaxy.root + 'api/histories',
 	    url     : function(){ return this.urlRoot; },
 	
 	    /** returns map of default filters and settings for fetching from the API */
@@ -17310,7 +17309,7 @@ webpackJsonp([0],[
 	    create : function create( data, hdas, historyOptions, xhrOptions ){
 	        //TODO: .create is actually a collection function that's overridden here
 	        var collection = this,
-	            xhr = jQuery.getJSON( galaxy_config.root + 'history/create_new_current'  );
+	            xhr = jQuery.getJSON( Galaxy.root + 'history/create_new_current'  );
 	        return xhr.done( function( newData ){
 	            collection.setCurrent( new History( newData, [], historyOptions || {} ) );
 	        });
@@ -17430,7 +17429,7 @@ webpackJsonp([0],[
 	    },
 	
 	    /** root api url */
-	    urlRoot : galaxy_config.root + 'api/histories',
+	    urlRoot : Galaxy.root + 'api/histories',
 	    /** complete api url */
 	    url : function(){
 	        return this.urlRoot + '/' + this.historyId + '/contents';
@@ -17787,7 +17786,7 @@ webpackJsonp([0],[
 	//TODO: global
 	//TODO: these are probably better done on the leaf classes
 	    /** history content goes through the 'api/histories' API */
-	    urlRoot: ( window.Galaxy? Galaxy.options.root : '/' ) + 'api/histories/',
+	    urlRoot: Galaxy.root + 'api/histories/',
 	
 	    /** full url spec. for this content */
 	    url : function(){
@@ -18059,9 +18058,8 @@ webpackJsonp([0],[
 	            'meta_download' : 'dataset/get_metadata_file?hda_id=' + id + '&metadata_name='
 	        };
 	//TODO: global
-	        var root = ( window.galaxy_config && galaxy_config.root )?( galaxy_config.root ):( '/' );
 	        _.each( urls, function( value, key ){
-	            urls[ key ] = root + value;
+	            urls[ key ] = Galaxy.root + value;
 	        });
 	        this.urls = urls;
 	        return urls;
@@ -18231,12 +18229,11 @@ webpackJsonp([0],[
 	    model : DatasetAssociation,
 	
 	    /** root api url */
-	    urlRoot : (( window.galaxy_config && galaxy_config.root )?( galaxy_config.root ):( '/' ))
-	        + 'api/datasets',
+	    urlRoot : Galaxy.root + 'api/datasets',
 	
 	    /** url fn */
 	    url : function(){
-	        return this.urlRoot
+	        return this.urlRoot;
 	    },
 	
 	    // ........................................................................ common queries
@@ -18606,14 +18603,13 @@ webpackJsonp([0],[
 	
 	    /** url fn */
 	    url : function(){
-	        var galaxyRoot = (( window.galaxy_config && galaxy_config.root )?( galaxy_config.root ):( '/' ));
 	        // won't always be an hda
 	        if( !this.has( 'history_id' ) ){
 	            console.warn( 'no endpoint for non-hdas within a collection yet' );
 	            // (a little silly since this api endpoint *also* points at hdas)
-	            return galaxyRoot + 'api/datasets';
+	            return Galaxy.root + 'api/datasets';
 	        }
-	        return galaxyRoot + 'api/histories/' + this.get( 'history_id' ) + '/contents/' + this.get( 'id' );
+	        return Galaxy.root + 'api/histories/' + this.get( 'history_id' ) + '/contents/' + this.get( 'id' );
 	    },
 	
 	    defaults : _.extend( {},
@@ -19116,7 +19112,7 @@ webpackJsonp([0],[
 	        var $newRender = _super.prototype._buildNewRender.call( this );
 	        if( !this.model ){ return $newRender; }
 	
-	        if( Galaxy && Galaxy.currUser && Galaxy.currUser.id && Galaxy.currUser.id === this.model.get( 'user_id' ) ){
+	        if( Galaxy && Galaxy.user && Galaxy.user.id && Galaxy.user.id === this.model.get( 'user_id' ) ){
 	            this._renderTags( $newRender );
 	            this._renderAnnotation( $newRender );
 	        }
@@ -19211,8 +19207,8 @@ webpackJsonp([0],[
 	        if( !this.model ){ return; }
 	
 	        // anon users shouldn't have access to any of the following
-	        if( ( !Galaxy.currUser || Galaxy.currUser.isAnonymous() )
-	        ||  ( Galaxy.currUser.id !== this.model.get( 'user_id' ) ) ){
+	        if( ( !Galaxy.user || Galaxy.user.isAnonymous() )
+	        ||  ( Galaxy.user.id !== this.model.get( 'user_id' ) ) ){
 	            return;
 	        }
 	
@@ -21204,7 +21200,7 @@ webpackJsonp([0],[
 	        //if( xhr.responseText ){
 	        //    xhr.responseText = _.escape( xhr.responseText );
 	        //}
-	        var user = Galaxy.currUser,
+	        var user = Galaxy.user,
 	            // add the args (w/ some extra info) into an obj
 	            parsed = {
 	                message : this._bePolite( msg ),
@@ -25025,7 +25021,7 @@ webpackJsonp([0],[
 	    /** @returns {String[]} all tags used by the current user */
 	    _getTagsUsed : function(){
 	//TODO: global
-	        return Galaxy.currUser.get( 'tags_used' );
+	        return Galaxy.user.get( 'tags_used' );
 	    },
 	
 	    /** set up any event listeners on the view's DOM (mostly handled by select2) */
@@ -25048,11 +25044,11 @@ webpackJsonp([0],[
 	     */
 	    _addNewTagToTagsUsed : function( newTag ){
 	//TODO: global
-	        var tagsUsed = Galaxy.currUser.get( 'tags_used' );
+	        var tagsUsed = Galaxy.user.get( 'tags_used' );
 	        if( !_.contains( tagsUsed, newTag ) ){
 	            tagsUsed.push( newTag );
 	            tagsUsed.sort();
-	            Galaxy.currUser.set( 'tags_used', tagsUsed );
+	            Galaxy.user.set( 'tags_used', tagsUsed );
 	        }
 	    },
 	
@@ -25426,7 +25422,7 @@ webpackJsonp([0],[
 	        if( !this.model ){ return; }
 	
 	        // anon users shouldn't have access to any of the following
-	        if( !Galaxy.currUser || Galaxy.currUser.isAnonymous() ){
+	        if( !Galaxy.user || Galaxy.user.isAnonymous() ){
 	            return;
 	        }
 	
@@ -26529,8 +26525,7 @@ webpackJsonp([0],[
 	     */
 	    createList : function( name ){
 	        var creator = this,
-	            root = ( window.Galaxy && Galaxy.options.root )? Galaxy.options.root : '/',
-	            url = root + 'api/histories/' + this.historyId + '/contents/dataset_collections';
+	            url = Galaxy.root + 'api/histories/' + this.historyId + '/contents/dataset_collections';
 	
 	        //TODO: use ListPairedCollection.create()
 	        var ajaxData = {
@@ -28065,7 +28060,7 @@ webpackJsonp([0],[
 	                    '</div>' +
 	                   '<div class="navbar-brand">' +
 	                        '<a href="' + options.logo_url + '">' +
-	                            '<img style="margin-left: 0.35em;" border="0" src="' + galaxy_config.root + 'static/images/galaxyIcon_noText.png">' +
+	                            '<img style="margin-left: 0.35em;" border="0" src="' + Galaxy.root + 'static/images/galaxyIcon_noText.png">' +
 	                            '<span id="brand"> Galaxy ' + brand_text + '</span>' +
 	                        '</a>' +
 	                    '</div>' +
@@ -28445,7 +28440,7 @@ webpackJsonp([0],[
 	
 	        // update url
 	        if ( this.options.content !== undefined && this.options.content.indexOf( '//' ) === -1 ){
-	            this.options.content = galaxy_config.root + this.options.content;
+	            this.options.content = Galaxy.root + this.options.content;
 	        }
 	
 	        // add template for tab
@@ -28492,7 +28487,7 @@ webpackJsonp([0],[
 	
 	        // update url
 	        if (menuOptions.content && menuOptions.content.indexOf('//') === -1)
-	            menuOptions.content = galaxy_config.root + menuOptions.content;
+	            menuOptions.content = Galaxy.root + menuOptions.content;
 	
 	        // check if submenu element is available
 	        if (!this.$menu){
@@ -28550,7 +28545,7 @@ webpackJsonp([0],[
 	        var $popover_element = $(this.el).find('.head');
 	        $popover_element.popover({
 	            html: true,
-	            content: 'Please <a href="' + galaxy_config.root + 'user/login?use_panels=True">log in</a> or <a href="' + galaxy_config.root + 'user/create?use_panels=True">register</a> to use this feature.',
+	            content: 'Please <a href="' + Galaxy.root + 'user/login?use_panels=True">log in</a> or <a href="' + Galaxy.root + 'user/create?use_panels=True">register</a> to use this feature.',
 	            placement: 'bottom'
 	        }).on('shown.bs.popover', function() { // hooking on bootstrap event to automatically hide popovers after delay
 	            setTimeout(function() {
@@ -28717,7 +28712,7 @@ webpackJsonp([0],[
 	                else {
 	                    _.extend(frame_config, {
 	                        type: 'url',
-	                        content: galaxy_config.root + 'datasets/' +
+	                        content: Galaxy.root + 'datasets/' +
 	                                 dataset.id + '/display/?preview=True'
 	                    });
 	                }
@@ -28738,7 +28733,7 @@ webpackJsonp([0],[
 	        __webpack_require__.e/* require */(1, function(__webpack_require__) { /* WEBPACK VAR INJECTION */(function($, _) {var __WEBPACK_AMD_REQUIRE_ARRAY__ = [__webpack_require__(/*! viz/visualization */ 123), __webpack_require__(/*! viz/trackster */ 125)]; (function(visualization, trackster) {
 	            var viz = new visualization.Visualization({id: viz_id});
 	            $.when( viz.fetch() ).then( function() {
-	                var ui = new trackster.TracksterUI(galaxy_config.root);
+	                var ui = new trackster.TracksterUI(Galaxy.root);
 	
 	                // Construct frame config based on dataset's type.
 	                var frame_config = {

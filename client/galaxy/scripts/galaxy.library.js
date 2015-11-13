@@ -83,7 +83,7 @@ var LibraryRouter = Backbone.Router.extend({
       url = "/" + url;
     }
     if ( typeof ga !== 'undefined' ) {
-      ga( 'send', 'pageview', galaxy_config.root + 'library/list' + url );
+      ga( 'send', 'pageview', Galaxy.root + 'library/list' + url );
     }
   }
 });

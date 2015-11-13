@@ -132,7 +132,7 @@ var Tool = Backbone.Model.extend({
         outputs: []
     },
 
-    urlRoot: galaxy_config.root + 'api/tools',
+    urlRoot: Galaxy.root + 'api/tools',
 
     initialize: function(options) {
 
@@ -362,7 +362,7 @@ var ToolSearch = Backbone.Model.extend({
         clear_key: 27
     },
 
-    urlRoot: galaxy_config.root + 'api/tools',
+    urlRoot: Galaxy.root + 'api/tools',
 
     initialize: function() {
         this.on("change:query", this.do_search);
@@ -393,7 +393,7 @@ var ToolSearch = Backbone.Model.extend({
         this.timer = setTimeout(function () {
             // log the search to analytics if present
             if ( typeof ga !== 'undefined' ) {
-                ga( 'send', 'pageview', galaxy_config.root + '?q=' + q );
+                ga( 'send', 'pageview', Galaxy.root + '?q=' + q );
             }
             $.get( self.urlRoot, { q: q }, function (data) {
                 self.set("results", data);

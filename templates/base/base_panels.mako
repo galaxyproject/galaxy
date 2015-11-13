@@ -58,14 +58,10 @@
 
     <script type="text/javascript">
         ## global configuration object
-        var galaxy_config =
-        {
-            root: '${h.url_for( "/" )}'
-        };
 
         //## load additional style sheet
         //if (window != window.top)
-        //    $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
+        //    $('<link href="' + Galaxy.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
 
         // console protection
         window.console = window.console || {

@@ -41,7 +41,7 @@ var CollectionViewEdit = _super.extend(
         if( !this.model ){ return; }
 
         // anon users shouldn't have access to any of the following
-        if( !Galaxy.currUser || Galaxy.currUser.isAnonymous() ){
+        if( !Galaxy.user || Galaxy.user.isAnonymous() ){
             return;
         }
 

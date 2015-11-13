@@ -42,7 +42,7 @@
 
         ## load additional style sheet
         if (window != window.top){
-            $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">')
+            $('<link href="' + Galaxy.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">')
                 .appendTo('head');
         }
 
@@ -53,12 +53,10 @@
             'mvc/upload/upload-view',
             'mvc/user/user-model'
         ], function( mod_masthead, mod_modal, GalaxyUpload, user ){
-            if( !Galaxy.currUser ){
+            if( !Galaxy.user ){
                 // this doesn't need to wait for the page being readied
-                Galaxy.currUser = new user.User(${ h.dumps( masthead_config[ 'user_json' ], indent=2 ) });
+                Galaxy.user = new user.User(${ h.dumps( masthead_config[ 'user_json' ], indent=2 ) });
             }
-            // TODO: reduce to one attribute (currUser used more than user)
-            Galaxy.user = Galaxy.currUser;
 
             $(function() {
                 // check if masthead is available

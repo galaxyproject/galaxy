@@ -30,7 +30,7 @@ return {
         // post job
         Utils.request({
             type    : 'POST',
-            url     : galaxy_config.root + 'api/tools',
+            url     : Galaxy.root + 'api/tools',
             data    : job_def,
             success : function(response) {
                 callback && callback();

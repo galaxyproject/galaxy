@@ -779,13 +779,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
     close : function( ev ){
         //TODO: switch to pushState/router
-        var destination = '/';
-        if( Galaxy && Galaxy.options && Galaxy.options.root ){
-            destination = Galaxy.options.root;
-        } else if( galaxy_config && galaxy_config.root ){
-            destination = galaxy_config.root;
-        }
-        window.location = destination;
+        window.location = Galaxy.root;
     },
 
     _clickToggleDeletedHistories : function( ev ){
@@ -795,9 +789,9 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     /** Include deleted histories in the collection */
     toggleDeletedHistories : function( show ){
         if( show ){
-            window.location = Galaxy.options.root + 'history/view_multiple?include_deleted_histories=True';
+            window.location = Galaxy.root + 'history/view_multiple?include_deleted_histories=True';
         } else {
-            window.location = Galaxy.options.root + 'history/view_multiple';
+            window.location = Galaxy.root + 'history/view_multiple';
         }
     },
 

@@ -188,8 +188,6 @@ webpackJsonp([3],{
 	    self.debug( '_initUser:', userJSON );
 	    self.user = new userModel.User( userJSON );
 	    self.user.logger = self.logger;
-	    //TODO: temp - old alias
-	    self.currUser = self.user;
 	    return self;
 	};
 	

@@ -502,7 +502,7 @@ var HistoryView = _super.extend(
         //if( xhr.responseText ){
         //    xhr.responseText = _.escape( xhr.responseText );
         //}
-        var user = Galaxy.currUser,
+        var user = Galaxy.user,
             // add the args (w/ some extra info) into an obj
             parsed = {
                 message : this._bePolite( msg ),

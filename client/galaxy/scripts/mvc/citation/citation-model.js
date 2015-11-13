@@ -41,7 +41,7 @@ var BaseCitationCollection = Backbone.Collection.extend( baseMVC.LoggableMixin )
     _logNamespace : logNamespace,
 
     /** root api url */
-    urlRoot : galaxy_config.root + 'api',
+    urlRoot : Galaxy.root + 'api',
     partial : true, // Assume some tools in history/workflow may not be properly annotated yet.
     model : Citation,
 } );

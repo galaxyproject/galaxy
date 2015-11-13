@@ -110,7 +110,7 @@ var CurrentHistoryView = _super.extend(
         var panel = this,
             historyFn = function(){
                 // make this current and get history data with one call
-                return jQuery.getJSON( galaxy_config.root + 'history/set_as_current?id=' + historyId  );
+                return jQuery.getJSON( Galaxy.root + 'history/set_as_current?id=' + historyId  );
                 //    method  : 'PUT'
                 //});
             };
@@ -122,14 +122,14 @@ var CurrentHistoryView = _super.extend(
 
     /** creates a new history on the server and sets it as the user's current history */
     createNewHistory : function( attributes ){
-        if( !Galaxy || !Galaxy.currUser || Galaxy.currUser.isAnonymous() ){
+        if( !Galaxy || !Galaxy.user || Galaxy.user.isAnonymous() ){
             this.displayMessage( 'error', _l( 'You must be logged in to create histories' ) );
             return $.when();
         }
         var panel = this,
             historyFn = function(){
                 // create a new history and save: the server will return the proper JSON
-                return jQuery.getJSON( galaxy_config.root + 'history/create_new_current'  );
+                return jQuery.getJSON( Galaxy.root + 'history/create_new_current'  );
             };
 
         // id undefined bc there is no historyId yet - the server will provide

@@ -30,7 +30,7 @@ var History = Backbone.Model
     },
 
     // ........................................................................ urls
-    urlRoot: galaxy_config.root + 'api/histories',
+    urlRoot: Galaxy.root + 'api/histories',
 
     // ........................................................................ set up/tear down
     /** Set up the model
@@ -116,16 +116,16 @@ var History = Backbone.Model
     },
 
     // ........................................................................ common queries
-    /** T/F is this history owned by the current user (Galaxy.currUser)
+    /** T/F is this history owned by the current user (Galaxy.user)
      *      Note: that this will return false for an anon user even if the history is theirs.
      */
     ownedByCurrUser : function(){
         // no currUser
-        if( !Galaxy || !Galaxy.currUser ){
+        if( !Galaxy || !Galaxy.user ){
             return false;
         }
         // user is anon or history isn't owned
-        if( Galaxy.currUser.isAnonymous() || Galaxy.currUser.id !== this.get( 'user_id' ) ){
+        if( Galaxy.user.isAnonymous() || Galaxy.user.id !== this.get( 'user_id' ) ){
             return false;
         }
         return true;
@@ -277,7 +277,7 @@ var History = Backbone.Model
 
     setAsCurrent : function(){
         var history = this,
-            xhr = jQuery.getJSON( galaxy_config.root + 'history/set_as_current?id=' + this.id );
+            xhr = jQuery.getJSON( Galaxy.root + 'history/set_as_current?id=' + this.id );
 
         xhr.done( function(){
             history.trigger( 'set-as-current', history );
@@ -310,9 +310,9 @@ History.getHistoryData = function getHistoryData( historyId, options ){
     function getHistory( id ){
         // get the history data
         if( historyId === 'current' ){
-            return jQuery.getJSON( galaxy_config.root + 'history/current_history_json' );
+            return jQuery.getJSON( Galaxy.root + 'history/current_history_json' );
         }
-        return jQuery.ajax( galaxy_config.root + 'api/histories/' + historyId );
+        return jQuery.ajax( Galaxy.root + 'api/histories/' + historyId );
     }
     function isEmpty( historyData ){
         // get the number of hdas accrd. to the history
@@ -338,7 +338,7 @@ History.getHistoryData = function getHistoryData( historyId, options ){
             // by frontend.
             data.dataset_collection_details = hdcaDetailIds.join( ',' );
         }
-        return jQuery.ajax( galaxy_config.root + 'api/histories/' + historyData.id + '/contents', { data: data });
+        return jQuery.ajax( Galaxy.root + 'api/histories/' + historyData.id + '/contents', { data: data });
     }
 
     // getting these concurrently is 400% slower (sqlite, local, vanilla) - so:
@@ -501,7 +501,7 @@ var HistoryCollection = Backbone.Collection
         this.setUpListeners();
     },
 
-    urlRoot : ( window.galaxy_config? galaxy_config.root : '/' ) + 'api/histories',
+    urlRoot : Galaxy.root + 'api/histories',
     url     : function(){ return this.urlRoot; },
 
     /** returns map of default filters and settings for fetching from the API */
@@ -609,7 +609,7 @@ var HistoryCollection = Backbone.Collection
     create : function create( data, hdas, historyOptions, xhrOptions ){
         //TODO: .create is actually a collection function that's overridden here
         var collection = this,
-            xhr = jQuery.getJSON( galaxy_config.root + 'history/create_new_current'  );
+            xhr = jQuery.getJSON( Galaxy.root + 'history/create_new_current'  );
         return xhr.done( function( newData ){
             collection.setCurrent( new History( newData, [], historyOptions || {} ) );
         });

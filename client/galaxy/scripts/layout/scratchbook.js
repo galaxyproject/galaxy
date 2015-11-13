@@ -109,7 +109,7 @@ var GalaxyFrame = Backbone.View.extend({
                 else {
                     _.extend(frame_config, {
                         type: 'url',
-                        content: galaxy_config.root + 'datasets/' +
+                        content: Galaxy.root + 'datasets/' +
                                  dataset.id + '/display/?preview=True'
                     });
                 }
@@ -129,7 +129,7 @@ var GalaxyFrame = Backbone.View.extend({
         require(['viz/visualization', 'viz/trackster'], function(visualization, trackster) {
             var viz = new visualization.Visualization({id: viz_id});
             $.when( viz.fetch() ).then( function() {
-                var ui = new trackster.TracksterUI(galaxy_config.root);
+                var ui = new trackster.TracksterUI(Galaxy.root);
 
                 // Construct frame config based on dataset's type.
                 var frame_config = {

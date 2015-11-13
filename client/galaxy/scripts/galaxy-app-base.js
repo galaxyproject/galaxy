@@ -166,8 +166,6 @@ GalaxyApp.prototype._initUser = function _initUser( userJSON ){
     self.debug( '_initUser:', userJSON );
     self.user = new userModel.User( userJSON );
     self.user.logger = self.logger;
-    //TODO: temp - old alias
-    self.currUser = self.user;
     return self;
 };
 

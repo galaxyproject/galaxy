@@ -54,7 +54,7 @@ var Dataset = Backbone.Model.extend({
         return this.attributes.metadata.get(attribute);
     },
 
-    urlRoot: galaxy_config.root + "api/datasets"
+    urlRoot: Galaxy.root + "api/datasets"
 });
 
 /**
@@ -73,8 +73,8 @@ var TabularDataset = Dataset.extend({
 
         // If first data chunk is available, next chunk is 1.
         this.attributes.chunk_index = (this.attributes.first_data_chunk ? 1 : 0);
-        this.attributes.chunk_url = galaxy_config.root + 'dataset/display?dataset_id=' + this.id;
-        this.attributes.url_viz = galaxy_config.root + 'visualization';
+        this.attributes.chunk_url = Galaxy.root + 'dataset/display?dataset_id=' + this.id;
+        this.attributes.url_viz = Galaxy.root + 'visualization';
     },
 
     /**
