@@ -118,7 +118,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
     _setUpListeners : function(){
         this.off();
 
-        //TODO: move errorHandler down into list-panel from history-panel or
+        //TODO: move errorHandler down into list-view from history-view or
         //  pass to global error handler (Galaxy)
         this.on( 'error', function( model, xhr, options, msg, details ){
             //this.errorHandler( model, xhr, options, msg, details );

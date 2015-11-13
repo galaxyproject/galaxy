@@ -1,10 +1,10 @@
 define([
-    "mvc/list/list-panel",
+    "mvc/list/list-view",
     "mvc/collection/collection-model",
     "mvc/collection/collection-li",
     "mvc/base-mvc",
     "utils/localization"
-], function( LIST_PANEL, DC_MODEL, DC_LI, BASE_MVC, _l ){
+], function( LIST_VIEW, DC_MODEL, DC_LI, BASE_MVC, _l ){
 
 var logNamespace = 'collections';
 /* =============================================================================
@@ -13,7 +13,7 @@ TODO:
 ============================================================================= */
 /** @class non-editable, read-only View/Controller for a dataset collection.
  */
-var _super = LIST_PANEL.ModelListPanel;
+var _super = LIST_VIEW.ModelListPanel;
 var CollectionView = _super.extend(
 /** @lends CollectionView.prototype */{
     //MODEL is either a DatasetCollection (or subclass) or a DatasetCollectionElement (list of pairs)

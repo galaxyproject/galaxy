@@ -1,5 +1,5 @@
 define([
-    "mvc/list/list-panel",
+    "mvc/list/list-view",
     "mvc/history/history-model",
     "mvc/history/history-contents",
     "mvc/history/hda-li",
@@ -11,7 +11,7 @@ define([
     "utils/localization",
     "ui/search-input"
 ], function(
-    LIST_PANEL,
+    LIST_VIEW,
     HISTORY_MODEL,
     HISTORY_CONTENTS,
     HDA_LI,
@@ -90,7 +90,7 @@ TODO:
  *  Does not allow:
  *      changing the name
  */
-var _super = LIST_PANEL.ModelListPanel;
+var _super = LIST_VIEW.ModelListPanel;
 var HistoryView = _super.extend(
 /** @lends HistoryView.prototype */{
     _logNamespace : logNamespace,

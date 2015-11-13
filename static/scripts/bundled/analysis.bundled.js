@@ -20701,7 +20701,7 @@ webpackJsonp([0],[
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/list/list-panel */ 98),
+	    __webpack_require__(/*! mvc/list/list-view */ 98),
 	    __webpack_require__(/*! mvc/history/history-model */ 84),
 	    __webpack_require__(/*! mvc/history/history-contents */ 85),
 	    __webpack_require__(/*! mvc/history/hda-li */ 102),
@@ -20713,7 +20713,7 @@ webpackJsonp([0],[
 	    __webpack_require__(/*! utils/localization */ 7),
 	    __webpack_require__(/*! ui/search-input */ 101)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function(
-	    LIST_PANEL,
+	    LIST_VIEW,
 	    HISTORY_MODEL,
 	    HISTORY_CONTENTS,
 	    HDA_LI,
@@ -20792,7 +20792,7 @@ webpackJsonp([0],[
 	 *  Does not allow:
 	 *      changing the name
 	 */
-	var _super = LIST_PANEL.ModelListPanel;
+	var _super = LIST_VIEW.ModelListPanel;
 	var HistoryView = _super.extend(
 	/** @lends HistoryView.prototype */{
 	    _logNamespace : logNamespace,
@@ -21455,9 +21455,9 @@ webpackJsonp([0],[
 
 /***/ },
 /* 98 */
-/*!***********************************************!*\
-  !*** ./galaxy/scripts/mvc/list/list-panel.js ***!
-  \***********************************************/
+/*!**********************************************!*\
+  !*** ./galaxy/scripts/mvc/list/list-view.js ***!
+  \**********************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
@@ -21580,7 +21580,7 @@ webpackJsonp([0],[
 	    _setUpListeners : function(){
 	        this.off();
 	
-	        //TODO: move errorHandler down into list-panel from history-panel or
+	        //TODO: move errorHandler down into list-view from history-view or
 	        //  pass to global error handler (Galaxy)
 	        this.on( 'error', function( model, xhr, options, msg, details ){
 	            //this.errorHandler( model, xhr, options, msg, details );
@@ -24238,12 +24238,12 @@ webpackJsonp([0],[
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/list/list-panel */ 98),
+	    __webpack_require__(/*! mvc/list/list-view */ 98),
 	    __webpack_require__(/*! mvc/collection/collection-model */ 91),
 	    __webpack_require__(/*! mvc/collection/collection-li */ 105),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7)
-	], __WEBPACK_AMD_DEFINE_RESULT__ = function( LIST_PANEL, DC_MODEL, DC_LI, BASE_MVC, _l ){
+	], __WEBPACK_AMD_DEFINE_RESULT__ = function( LIST_VIEW, DC_MODEL, DC_LI, BASE_MVC, _l ){
 	
 	var logNamespace = 'collections';
 	/* =============================================================================
@@ -24252,7 +24252,7 @@ webpackJsonp([0],[
 	============================================================================= */
 	/** @class non-editable, read-only View/Controller for a dataset collection.
 	 */
-	var _super = LIST_PANEL.ModelListPanel;
+	var _super = LIST_VIEW.ModelListPanel;
 	var CollectionView = _super.extend(
 	/** @lends CollectionView.prototype */{
 	    //MODEL is either a DatasetCollection (or subclass) or a DatasetCollectionElement (list of pairs)
