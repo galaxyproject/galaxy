@@ -7,14 +7,14 @@ webpackJsonp([3],{
 /***/ function(module, exports, __webpack_require__) {
 
 	//TODO: remove this
-	var GalaxyApp = __webpack_require__( /*! ../galaxy-app-base */ 140 ).GalaxyApp;
+	var GalaxyApp = __webpack_require__( /*! ../galaxy-app-base */ 141 ).GalaxyApp;
 	window.GalaxyApp = GalaxyApp;
 	exports = GalaxyApp;
 
 
 /***/ },
 
-/***/ 140:
+/***/ 141:
 /*!*******************************************!*\
   !*** ./galaxy/scripts/galaxy-app-base.js ***!
   \*******************************************/
@@ -24,8 +24,8 @@ webpackJsonp([3],{
 	    __webpack_require__(/*! libs/underscore */ 1),
 	    __webpack_require__(/*! libs/backbone */ 4),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! mvc/user/user-model */ 106),
-	    __webpack_require__(/*! utils/metrics-logger */ 141),
+	    __webpack_require__(/*! mvc/user/user-model */ 107),
+	    __webpack_require__(/*! utils/metrics-logger */ 142),
 	    __webpack_require__(/*! utils/add-logging */ 6),
 	    __webpack_require__(/*! utils/localization */ 7)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( _, Backbone, BASE_MVC, userModel, metricsLogger, addLogging, localize ){
@@ -177,6 +177,7 @@ webpackJsonp([3],{
 	    self.debug( '_initLocale:', options );
 	    self.localize = localize;
 	    // add to window as global shortened alias
+	    // TODO: temporary - remove when can require for plugins
 	    window._l = self.localize;
 	    return self;
 	};
@@ -280,7 +281,7 @@ webpackJsonp([3],{
 
 /***/ },
 
-/***/ 141:
+/***/ 142:
 /*!************************************************!*\
   !*** ./galaxy/scripts/utils/metrics-logger.js ***!
   \************************************************/

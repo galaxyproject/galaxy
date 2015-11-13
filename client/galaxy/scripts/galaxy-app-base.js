@@ -155,6 +155,7 @@ GalaxyApp.prototype._initLocale = function _initLocale( options ){
     self.debug( '_initLocale:', options );
     self.localize = localize;
     // add to window as global shortened alias
+    // TODO: temporary - remove when can require for plugins
     window._l = self.localize;
     return self;
 };

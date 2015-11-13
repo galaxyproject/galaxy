@@ -49,16 +49,19 @@ module.exports = {
             // Backbone looks for these in the same root directory
             jquery      : path.join( libsBase, 'jquery/jquery' ),
             underscore  : path.join( libsBase, 'underscore.js' ),
-            // requirejs' i18n doesn't play well with webpack
-            // note: strangely, order does matter here - this must come before utils below
-            'utils/localization' : path.join( scriptsBase, 'utils/webpack-localization' ),
         }
     },
     module : {
         loaders : [
             { test : /\.handlebars$/, loader : 'handlebars-loader' },
-            { test : /\.merpo$/, loader : 'zhaodelerma' },
         ],
+    },
+    resolveLoader : {
+        alias : {
+            // since we support both requirejs i18n and non-requirejs and both use a similar syntax,
+            // use an alias so we can just use one file
+            i18n : 'amdi18n'
+        }
     },
     plugins : [
         new webpack.optimize.CommonsChunkPlugin( 'libs', 'libs.bundled.js' ),
