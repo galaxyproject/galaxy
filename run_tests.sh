@@ -71,7 +71,7 @@ ensure_grunt() {
 }
 
 
-DOCKER_DEFAULT_IMAGE='galaxy/testing-base:15.10.1'
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:15.10.2'
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
