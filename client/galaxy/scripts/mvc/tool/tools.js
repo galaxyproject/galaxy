@@ -6,7 +6,7 @@
     "libs/underscore",
     "viz/trackster/util",
     "mvc/dataset/data",
-    "mvc/tools/tools-form",
+    "mvc/tool/tools-form",
     "templates/tool_form.handlebars",
     "templates/tool_link.handlebars",
     "templates/panel_section.handlebars",

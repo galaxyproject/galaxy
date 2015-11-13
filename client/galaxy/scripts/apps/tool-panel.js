@@ -1,5 +1,5 @@
 var LeftPanel = require( 'layout/panel' ).LeftPanel,
-    Tools = require( 'mvc/tools/tools' ),
+    Tools = require( 'mvc/tool/tools' ),
     Upload = require( 'mvc/upload/upload-view' );
 //TODO: localize
 

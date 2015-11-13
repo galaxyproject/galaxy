@@ -5,7 +5,7 @@ define([
     'mvc/workflow/workflow-manager',
     'mvc/workflow/workflow-canvas',
     'mvc/workflow/workflow-node',
-    'mvc/tools/tools-form-workflow',
+    'mvc/tool/tools-form-workflow',
     'utils/async-save-text',
 ], function( Utils, Globals, Workflow, WorkflowCanvas, Node, ToolsForm, async_save_text ){
 

@@ -5,7 +5,7 @@ var jQuery = require( 'jquery' ),
     ToolPanel = require( './tool-panel' ),
     HistoryPanel = require( './history-panel' ),
     PAGE = require( 'layout/page' ),
-    ToolsForm = require( 'mvc/tools/tools-form' );
+    ToolsForm = require( 'mvc/tool/tools-form' );
 
 window.app = function app( options, bootstrapped ){
     Galaxy.debug( 'building app:', options, bootstrapped );

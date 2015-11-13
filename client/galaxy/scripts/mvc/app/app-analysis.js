@@ -1,11 +1,11 @@
 define([
     'utils/utils',
-    'mvc/tools/tools',
+    'mvc/tool/tools',
     'mvc/upload/upload-view',
     'mvc/ui/ui-misc',
     'mvc/history/options-menu',
     'mvc/history/history-view-edit-current',
-    'mvc/tools/tools-form'
+    'mvc/tool/tools-form'
 ], function( Utils, Tools, Upload, Ui, optionsMenu, HistoryView, ToolsForm ) {
 
     /* Builds the center panel */

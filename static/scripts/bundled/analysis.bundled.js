@@ -12,7 +12,7 @@ webpackJsonp([0],[
 	    ToolPanel = __webpack_require__( /*! ./tool-panel */ 9 ),
 	    HistoryPanel = __webpack_require__( /*! ./history-panel */ 80 ),
 	    PAGE = __webpack_require__( /*! layout/page */ 119 ),
-	    ToolsForm = __webpack_require__( /*! mvc/tools/tools-form */ 16 );
+	    ToolsForm = __webpack_require__( /*! mvc/tool/tools-form */ 16 );
 	
 	window.app = function app( options, bootstrapped ){
 	    Galaxy.debug( 'building app:', options, bootstrapped );
@@ -112,7 +112,7 @@ webpackJsonp([0],[
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function($, _) {var LeftPanel = __webpack_require__( /*! layout/panel */ 3 ).LeftPanel,
-	    Tools = __webpack_require__( /*! mvc/tools/tools */ 10 ),
+	    Tools = __webpack_require__( /*! mvc/tool/tools */ 10 ),
 	    Upload = __webpack_require__( /*! mvc/upload/upload-view */ 68 );
 	//TODO: localize
 	
@@ -223,9 +223,9 @@ webpackJsonp([0],[
 
 /***/ },
 /* 10 */
-/*!*******************************************!*\
-  !*** ./galaxy/scripts/mvc/tools/tools.js ***!
-  \*******************************************/
+/*!******************************************!*\
+  !*** ./galaxy/scripts/mvc/tool/tools.js ***!
+  \******************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $) {/**
@@ -236,7 +236,7 @@ webpackJsonp([0],[
 	    __webpack_require__(/*! libs/underscore */ 1),
 	    __webpack_require__(/*! viz/trackster/util */ 11),
 	    __webpack_require__(/*! mvc/dataset/data */ 12),
-	    __webpack_require__(/*! mvc/tools/tools-form */ 16),
+	    __webpack_require__(/*! mvc/tool/tools-form */ 16),
 	    __webpack_require__(/*! templates/tool_form.handlebars */ 45),
 	    __webpack_require__(/*! templates/tool_link.handlebars */ 65),
 	    __webpack_require__(/*! templates/panel_section.handlebars */ 66),
@@ -3321,15 +3321,15 @@ webpackJsonp([0],[
 
 /***/ },
 /* 16 */
-/*!************************************************!*\
-  !*** ./galaxy/scripts/mvc/tools/tools-form.js ***!
-  \************************************************/
+/*!***********************************************!*\
+  !*** ./galaxy/scripts/mvc/tool/tools-form.js ***!
+  \***********************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/**
 	    This is the regular tool form.
 	*/
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17), __webpack_require__(/*! mvc/ui/ui-misc */ 18), __webpack_require__(/*! mvc/tools/tools-form-base */ 24), __webpack_require__(/*! mvc/tools/tools-jobs */ 44)], __WEBPACK_AMD_DEFINE_RESULT__ = function( Utils, Ui, ToolFormBase, ToolJobs ) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17), __webpack_require__(/*! mvc/ui/ui-misc */ 18), __webpack_require__(/*! mvc/tool/tools-form-base */ 24), __webpack_require__(/*! mvc/tool/tools-jobs */ 44)], __WEBPACK_AMD_DEFINE_RESULT__ = function( Utils, Ui, ToolFormBase, ToolJobs ) {
 	    var View = ToolFormBase.extend({
 	        initialize: function( options ) {
 	            var self = this;
@@ -5266,16 +5266,16 @@ webpackJsonp([0],[
 
 /***/ },
 /* 24 */
-/*!*****************************************************!*\
-  !*** ./galaxy/scripts/mvc/tools/tools-form-base.js ***!
-  \*****************************************************/
+/*!****************************************************!*\
+  !*** ./galaxy/scripts/mvc/tool/tools-form-base.js ***!
+  \****************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $) {/**
 	    This is the base class of the tool form plugin. This class is e.g. inherited by the regular and the workflow tool form.
 	*/
 	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17), __webpack_require__(/*! utils/deferred */ 25), __webpack_require__(/*! mvc/ui/ui-misc */ 18), __webpack_require__(/*! mvc/form/form-view */ 26),
-	        __webpack_require__(/*! mvc/tools/tools-template */ 35), __webpack_require__(/*! mvc/citation/citation-model */ 41), __webpack_require__(/*! mvc/citation/citation-view */ 43)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Deferred, Ui, Form, ToolTemplate, CitationModel, CitationView) {
+	        __webpack_require__(/*! mvc/tool/tools-template */ 35), __webpack_require__(/*! mvc/citation/citation-model */ 41), __webpack_require__(/*! mvc/citation/citation-view */ 43)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Deferred, Ui, Form, ToolTemplate, CitationModel, CitationView) {
 	
 	    // create form view
 	    return Backbone.View.extend({
@@ -7360,7 +7360,7 @@ webpackJsonp([0],[
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $, _) {// dependencies
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17), __webpack_require__(/*! mvc/ui/ui-misc */ 18), __webpack_require__(/*! mvc/ui/ui-tabs */ 34), __webpack_require__(/*! mvc/tools/tools-template */ 35)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Ui, Tabs, ToolTemplate) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17), __webpack_require__(/*! mvc/ui/ui-misc */ 18), __webpack_require__(/*! mvc/ui/ui-tabs */ 34), __webpack_require__(/*! mvc/tool/tools-template */ 35)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Ui, Tabs, ToolTemplate) {
 	
 	// hda/hdca content selector ui element
 	var View = Backbone.View.extend({
@@ -7582,7 +7582,7 @@ webpackJsonp([0],[
 	                    for (var i in new_value.values) {
 	                        list.push(new_value.values[i].id);
 	                    }
-	                    
+	
 	                    // identify suitable select field
 	                    if (new_value && new_value.values.length > 0 && new_value.values[0].src == 'hdca') {
 	                        this.current = 'collection';
@@ -8011,9 +8011,9 @@ webpackJsonp([0],[
 
 /***/ },
 /* 35 */
-/*!****************************************************!*\
-  !*** ./galaxy/scripts/mvc/tools/tools-template.js ***!
-  \****************************************************/
+/*!***************************************************!*\
+  !*** ./galaxy/scripts/mvc/tool/tools-template.js ***!
+  \***************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function($) {// dependencies
@@ -11112,15 +11112,15 @@ webpackJsonp([0],[
 
 /***/ },
 /* 44 */
-/*!************************************************!*\
-  !*** ./galaxy/scripts/mvc/tools/tools-jobs.js ***!
-  \************************************************/
+/*!***********************************************!*\
+  !*** ./galaxy/scripts/mvc/tool/tools-jobs.js ***!
+  \***********************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/**
 	    This class handles job submissions and validations.
 	*/
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17), __webpack_require__(/*! mvc/tools/tools-template */ 35)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, ToolTemplate) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17), __webpack_require__(/*! mvc/tool/tools-template */ 35)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, ToolTemplate) {
 	return {
 	    submit: function(form, options, callback) {
 	        // link this
@@ -19000,8 +19000,8 @@ webpackJsonp([0],[
 	    __webpack_require__(/*! mvc/history/hda-model */ 88),
 	    __webpack_require__(/*! mvc/history/hda-li-edit */ 108),
 	    __webpack_require__(/*! mvc/history/hdca-li-edit */ 113),
-	    __webpack_require__(/*! mvc/tags */ 110),
-	    __webpack_require__(/*! mvc/annotations */ 111),
+	    __webpack_require__(/*! mvc/tag */ 110),
+	    __webpack_require__(/*! mvc/annotation */ 111),
 	    __webpack_require__(/*! mvc/collection/list-collection-creator */ 93),
 	    __webpack_require__(/*! mvc/collection/pair-collection-creator */ 116),
 	    __webpack_require__(/*! mvc/collection/list-of-pairs-collection-creator */ 117),
@@ -24562,8 +24562,8 @@ webpackJsonp([0],[
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! mvc/dataset/states */ 87),
 	    __webpack_require__(/*! mvc/dataset/dataset-li */ 103),
-	    __webpack_require__(/*! mvc/tags */ 110),
-	    __webpack_require__(/*! mvc/annotations */ 111),
+	    __webpack_require__(/*! mvc/tag */ 110),
+	    __webpack_require__(/*! mvc/annotation */ 111),
 	    __webpack_require__(/*! ui/fa-icon-button */ 97),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7)
@@ -24730,7 +24730,7 @@ webpackJsonp([0],[
 	                    ev.preventDefault();
 	                    // create webpack split point in order to load the tool form async
 	                    // TODO: split not working (tool loads fine)
-	                    !/* require */(/* empty */function() { var __WEBPACK_AMD_REQUIRE_ARRAY__ = [ __webpack_require__(/*! mvc/tools/tools-form */ 16) ]; (function( ToolsForm ){
+	                    !/* require */(/* empty */function() { var __WEBPACK_AMD_REQUIRE_ARRAY__ = [ __webpack_require__(/*! mvc/tool/tools-form */ 16) ]; (function( ToolsForm ){
 	                        var form = new ToolsForm.View({ 'job_id' : creating_job });
 	                        form.deferred.execute( function(){
 	                            Galaxy.app.display( form );
@@ -24947,9 +24947,9 @@ webpackJsonp([0],[
 
 /***/ },
 /* 110 */
-/*!************************************!*\
-  !*** ./galaxy/scripts/mvc/tags.js ***!
-  \************************************/
+/*!***********************************!*\
+  !*** ./galaxy/scripts/mvc/tag.js ***!
+  \***********************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
@@ -25077,9 +25077,9 @@ webpackJsonp([0],[
 
 /***/ },
 /* 111 */
-/*!*******************************************!*\
-  !*** ./galaxy/scripts/mvc/annotations.js ***!
-  \*******************************************/
+/*!******************************************!*\
+  !*** ./galaxy/scripts/mvc/annotation.js ***!
+  \******************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [

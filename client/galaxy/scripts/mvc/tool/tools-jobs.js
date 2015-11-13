@@ -1,7 +1,7 @@
 /**
     This class handles job submissions and validations.
 */
-define(['utils/utils', 'mvc/tools/tools-template'], function(Utils, ToolTemplate) {
+define(['utils/utils', 'mvc/tool/tools-template'], function(Utils, ToolTemplate) {
 return {
     submit: function(form, options, callback) {
         // link this

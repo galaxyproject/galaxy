@@ -1,7 +1,7 @@
 /**
     This is the workflow tool form.
 */
-define(['utils/utils', 'mvc/tools/tools-form-base'],
+define(['utils/utils', 'mvc/tool/tools-form-base'],
     function(Utils, ToolFormBase) {
 
     // create form view
