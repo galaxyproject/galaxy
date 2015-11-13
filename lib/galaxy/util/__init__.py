@@ -335,19 +335,6 @@ def shrink_string_by_size( value, size, join_by="..", left_larger=True, beginnin
     return value
 
 
-def parse_query_string( query_string ):
-    if '=' not in query_string:
-        return {}
-    retval = {}
-    arguments = query_string.split( '&' )
-    for argument in arguments:
-        if '=' not in argument:
-            continue
-        key, value = argument.split( '=' )
-        retval[ key ] = value
-    return retval
-
-
 def pretty_print_time_interval( time=False, precise=False ):
     """
     Get a datetime object or a int() Epoch timestamp and return a
