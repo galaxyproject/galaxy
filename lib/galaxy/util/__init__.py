@@ -341,6 +341,8 @@ def parse_query_string( query_string ):
     retval = {}
     arguments = query_string.split( '&' )
     for argument in arguments:
+        if '=' not in argument:
+            continue
         key, value = argument.split( '=' )
         retval[ key ] = value
     return retval
