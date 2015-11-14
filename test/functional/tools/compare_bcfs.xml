@@ -1,8 +1,8 @@
 <tool id="compare_bcfs" name="Compare BCFs" version ="0.0.1">
   <description>Compare body of two BCF files</description>
-        <requirements>
-                <requirement type="package" version="1.2">bcftools</requirement>
-        </requirements>
+    <requirements>
+      <requirement type="package" version="1.2">bcftools</requirement>
+    </requirements>
   <command>
 
         cp $input_bcf $output_bcf
@@ -22,7 +22,6 @@
   </tests>
 
   <help>
-Comparing bcfs is what this test tool does.
+    Comparing bcfs is what this test tool does.
   </help>
-
 </tool>
