@@ -106,6 +106,7 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
         step = model.WorkflowStep()
         step.type = 'tool'
         step.tool_id = job.tool_id
+        step.tool_version = job.tool_version
         step.tool_inputs = tool_inputs
         # NOTE: We shouldn't need to do two passes here since only
         #       an earlier job can be used as an input to a later
