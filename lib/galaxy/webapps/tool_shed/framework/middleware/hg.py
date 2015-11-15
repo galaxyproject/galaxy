@@ -5,6 +5,7 @@ import os
 import sqlalchemy
 import sys
 import tempfile
+import urlparse
 from paste.auth.basic import AuthBasicAuthenticator
 from paste.httpheaders import AUTH_TYPE
 from paste.httpheaders import REMOTE_USER
@@ -51,11 +52,11 @@ class Hg( object ):
         # a clone or a pull.  However, we do not want to increment the times_downloaded count if we're only setting repository
         # metadata.
         if cmd == 'getbundle' and not self.setting_repository_metadata:
-            common, _ = environ[ 'HTTP_X_HGARG_1' ].split( '&' )
+            hg_args = urlparse.parse_qs( environ[ 'HTTP_X_HGARG_1' ] )
             # The 'common' parameter indicates the full sha-1 hash of the changeset the client currently has checked out. If
             # this is 0000000000000000000000000000000000000000, then the client is performing a fresh checkout. If it has any
             # other value, the client is getting updates to an existing checkout.
-            if common == 'common=0000000000000000000000000000000000000000':
+            if 'common' in hg_args and hg_args[ 'common' ][-1] == '0000000000000000000000000000000000000000':
                 # Increment the value of the times_downloaded column in the repository table for the cloned repository.
                 if 'PATH_INFO' in environ:
                     # Instantiate a database connection
