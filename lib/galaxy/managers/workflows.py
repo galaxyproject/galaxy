@@ -124,6 +124,9 @@ CreatedWorkflow = namedtuple("CreatedWorkflow", ["stored_workflow", "missing_too
 
 class WorkflowContentsManager(UsesAnnotations):
 
+    def __init__(self, app):
+        self.app = app
+
     def build_workflow_from_dict(
         self,
         trans,
