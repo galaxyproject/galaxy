@@ -38,6 +38,9 @@ require.config({
         "underscore": {
             exports: "_"
         },
+        "libs/underscore": {
+            exports: "_"
+        },
         "backbone": {
             deps: [ 'libs/underscore', 'jquery' ],
             exports: "Backbone"
@@ -90,7 +93,7 @@ function bridge_phantomjs( QUnit ) {
         var args = [].slice.call(arguments);
         alert(JSON.stringify(args));
       }
-      
+
       // These methods connect QUnit to PhantomJS.
       QUnit.log(function(obj) {
         // What is this I don’t even
