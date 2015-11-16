@@ -195,6 +195,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
 
     def queue_job( self, job_wrapper ):
         """Create PBS script for a job and submit it to the PBS queue"""
+        log.debug("Got the the queue_job function")
         # prepare the job
         if not self.prepare_job( job_wrapper, include_metadata=not( self.app.config.pbs_stage_path ) ):
             return
@@ -307,6 +308,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
         while tries < 5:
             job_id = pbs.pbs_submit(c, job_attrs, job_file, pbs_queue_name, None)
             tries += 1
+            log.debug("(%s " % ( job_id ) )
             if job_id:
                 pbs.pbs_disconnect(c)
                 break

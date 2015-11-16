@@ -143,9 +143,10 @@ class ProvidesUserContext( object ):
         base_dir = self.app.config.ftp_upload_dir
         if base_dir is None:
             return None
+        elif self.app.config.ftp_upload_subdir is None:
+            return os.path.join( base_dir, getattr(self.user, identifier) )
         else:
-            return os.path.join( base_dir, getattr( self.user, identifier ) )
-
+            return os.path.join( base_dir, getattr(self.user, identifier), self.app.config.ftp_upload_subdir)
 
 class ProvidesHistoryContext( object ):
     """ For transaction-like objects to provide Galaxy convience layer for

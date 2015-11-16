@@ -1,0 +1,1 @@
+/N/u/trinity/Mason/dev/shed_tools/toolshed.g2.bx.psu.edu/repos/bhaas/trinityrnaseq/177bb1b443db/Trinity_CTAT_galaxy/lib/galaxy/datatypes/fusioninspectordata.py
