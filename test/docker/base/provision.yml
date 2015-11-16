@@ -11,5 +11,6 @@
     - role: galaxyprojectdotorg.galaxy
       sudo: yes
       tags: galaxy
-
-
+    - role: galaxyprojectdotorg.galaxy-toolshed
+      sudo: yes
+      tags: toolshed

@@ -16,6 +16,7 @@ from galaxy.webapps.util import build_template_error_formatters
 from galaxy.webapps.tool_shed.framework.middleware import hg
 from galaxy import util
 from galaxy.config import process_is_uwsgi
+from galaxy.util.properties import load_app_properties
 
 log = logging.getLogger( __name__ )
 
@@ -49,6 +50,10 @@ def add_ui_controllers( webapp, app ):
 def app_factory( global_conf, **kwargs ):
     """Return a wsgi application serving the root object"""
     # Create the Galaxy tool shed application unless passed in
+    kwargs = load_app_properties(
+        kwds=kwargs,
+        config_prefix='TOOL_SHED_CONFIG_'
+    )
     if 'app' in kwargs:
         app = kwargs.pop( 'app' )
     else:

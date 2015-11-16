@@ -104,7 +104,7 @@ def main():
     f.write('<div>%s\n<ol>' % (s))
     for i, data in enumerate( flist ):
         f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1], os.path.split(data)[-1]))
-    f.write("</div></body></html>")
+    f.write("</ol></div></div></body></html>")
     f.close()
 
 
