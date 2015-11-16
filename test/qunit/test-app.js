@@ -22,7 +22,7 @@ define([
             window.Galaxy.currHistoryPanel = { model: new Backbone.Model() }
             window.fakeserver = sinon.fakeServer.create();
             for (var route in serverdata) {
-                window.fakeserver.respondWith('GET', galaxy_config.root + route, [ 200, { 'Content-Type': 'application/json' }, serverdata[ route ].data ]);
+                window.fakeserver.respondWith('GET', Galaxy.root + route, [ 200, { 'Content-Type': 'application/json' }, serverdata[ route ].data ]);
             }
         },
         destroy: function() {
