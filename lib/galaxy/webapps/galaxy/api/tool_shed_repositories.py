@@ -250,8 +250,10 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                                               action='show',
                                                               id=trans.security.encode_id( tool_shed_repository.id ) )
             return tool_shed_repository_dict
-
-        return map( to_dict, installed_tool_shed_repositories )
+        if installed_tool_shed_repositories:
+            return map( to_dict, installed_tool_shed_repositories )
+        message = "No repositories were installed, possibly because the selected repository has already been installed."
+        return dict( status="ok", message=message )
 
     @expose_api
     def install_repository_revisions( self, trans, payload, **kwd ):
