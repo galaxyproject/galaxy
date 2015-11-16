@@ -31,14 +31,11 @@ indicated with the optional parameter (test_path).  A few examples are:
 Run all TestUserInfo functional tests:
     ./run_tests.sh test/functional/test_user_info.py:TestUserInfo
 
-Run a specific API test requiring the framework test tools:
-    ./run_tests.sh -with_framework_test_tools -api test/api/test_tools.py:ToolsTestCase.test_map_over_with_output_format_actions
+Run a specific API test:
+    ./run_tests.sh -api test/api/test_tools.py:ToolsTestCase.test_map_over_with_output_format_actions
 
 
 Extra options:
-
-
-
  --verbose_errors      Force some tests produce more verbose error reporting.
  --no_cleanup          Do not delete temp files for Python functional tests (-toolshed, -framework, etc...)
  --debug               On python test error or failure invoke a pdb shell for interactive debugging of the test
