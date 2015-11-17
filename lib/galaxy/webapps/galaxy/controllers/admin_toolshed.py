@@ -4,6 +4,7 @@ import shutil
 
 from sqlalchemy import false, or_
 
+import tool_shed.grids.repository_grids as repository_grids
 import tool_shed.repository_types.util as rt_util
 from admin import AdminGalaxy
 from galaxy import web
@@ -188,8 +189,9 @@ class AdminToolshed( AdminGalaxy ):
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
         params = dict( galaxy_url=web.url_for( '/', qualified=True ) )
-        url = common_util.url_join( tool_shed_url, pathspec=[ 'repository', 'browse_valid_categories' ], params=params )
-        return trans.response.send_redirect( url )
+        url = common_util.url_join( tool_shed_url, pathspec=[ 'api', 'categories' ] )
+        json_data = common_util.tool_shed_get( trans.app, url )
+        return trans.fill_template( '/admin/tool_shed_repository/browse_categories.mako', categories=json_data )
 
     @web.expose
     @web.require_admin

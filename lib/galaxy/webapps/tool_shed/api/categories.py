@@ -15,8 +15,11 @@ log = logging.getLogger( __name__ )
 class CategoriesController( BaseAPIController ):
     """RESTful controller for interactions with categories in the Tool Shed."""
 
+    def __get_repository_count( self, trans, category_name ):
+        return trans.app.repository_registry.viewable_repositories_and_suites_by_category.get( category_name, 0 )
+
     def __get_value_mapper( self, trans ):
-        value_mapper = { 'id' : trans.security.encode_id }
+        value_mapper = { 'id': trans.security.encode_id }
         return value_mapper
 
     @expose_api
@@ -80,6 +83,7 @@ class CategoriesController( BaseAPIController ):
             category_dict[ 'url' ] = web.url_for( controller='categories',
                                                   action='show',
                                                   id=trans.security.encode_id( category.id ) )
+            category_dict[ 'repositories' ] = trans.app.repository_registry.viewable_repositories_and_suites_by_category.get( category.name, 0 )
             category_dicts.append( category_dict )
         return category_dicts
 
