@@ -457,12 +457,16 @@ def wait_on_state( state_func, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
     return wait_on( get_state, desc="state", timeout=timeout)
 
 
-def wait_on( function, desc, timeout=5 ):
+def wait_on( function, desc, timeout=DEFAULT_TIMEOUT ):
     delta = .25
     iteration = 0
     while True:
-        if (delta * iteration) > timeout:
-            assert False, "Timed out waiting on %s." % desc
+        total_wait = delta * iteration
+        if total_wait > timeout:
+            timeout_message = "Timed out after %s seconds waiting on %s." % (
+                total_wait, desc
+            )
+            assert False, timeout_message
         iteration += 1
         value = function()
         if value is not None:

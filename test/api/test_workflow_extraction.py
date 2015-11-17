@@ -357,7 +357,7 @@ test_data:
         run_workflow_response = self._post( "workflows", data=workflow_request )
         self._assert_status_code_is( run_workflow_response, 200 )
 
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True, timeout=10 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         return self.__cat_job_id( history_id )
 
     def _assert_first_step_is_paired_input( self, downloaded_workflow ):
