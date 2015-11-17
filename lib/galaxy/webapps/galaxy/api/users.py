@@ -38,8 +38,8 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         rval = []
         query = trans.sa_session.query( trans.app.model.User )
         deleted = util.string_as_bool( deleted )
-        if f_email:
-            query = query.filter(trans.app.model.User.email.like("%%%s%%" % f_email))
+        if f_email and ( trans.app.config.expose_user_email or trans.user_is_admin() ):
+            query = query.filter( trans.app.model.User.email.like("%%%s%%" % f_email) )
         if deleted:
             query = query.filter( trans.app.model.User.table.c.deleted == true() )
             # only admins can see deleted users
