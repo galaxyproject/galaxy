@@ -34,6 +34,25 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         GET /api/users
         GET /api/users/deleted
         Displays a collection (list) of users.
+
+        :param deleted: (optional) If true, show deleted users
+        :type  deleted: bool
+
+        :param f_email: (optional) An email address to filter on. (Non-admin
+                        users can only use this if ``expose_user_email`` is ``True`` in
+                        galaxy.ini)
+        :type  f_email: str
+
+        :param f_name: (optional) A username to filter on. (Non-admin users
+                       can only use this if ``expose_user_name`` is ``True`` in
+                       galaxy.ini)
+        :type  f_name: str
+
+        :param f_any: (optional) Filter on username OR email. (Non-admin users
+                       can use this, the email filter and username filter will
+                       only be active if their corresponding ``expose_user_*`` is
+                       ``True`` in galaxy.ini)
+        :type  f_any: str
         """
         rval = []
         query = trans.sa_session.query( trans.app.model.User )
