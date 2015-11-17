@@ -2006,41 +2006,8 @@ class AdminToolshed( AdminGalaxy ):
 
     @web.expose
     @web.require_admin
-    def update_tool_shed_status_for_installed_repository( self, trans, all_installed_repositories=False, **kwd ):
-        message = escape( kwd.get( 'message', '' ) )
-        status = kwd.get( 'status', 'done' )
-        if all_installed_repositories:
-            success_count = 0
-            repository_names_not_updated = []
-            updated_count = 0
-            for repository in trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
-                                                         .filter( trans.install_model.ToolShedRepository.table.c.deleted == false() ):
-                ok, updated = \
-                    repository_util.check_or_update_tool_shed_status_for_installed_repository( trans.app, repository )
-                if ok:
-                    success_count += 1
-                else:
-                    repository_names_not_updated.append( '<b>%s</b>' % escape( str( repository.name ) ) )
-                if updated:
-                    updated_count += 1
-            message = "Checked the status in the tool shed for %d repositories.  " % success_count
-            message += "Updated the tool shed status for %d repositories.  " % updated_count
-            if repository_names_not_updated:
-                message += "Unable to retrieve status from the tool shed for the following repositories:\n"
-                message += ", ".join( repository_names_not_updated )
-        else:
-            repository_id = kwd.get( 'id', None )
-            repository = suc.get_tool_shed_repository_by_id( trans.app, repository_id )
-            ok, updated = \
-                repository_util.check_or_update_tool_shed_status_for_installed_repository( trans.app, repository )
-            if ok:
-                if updated:
-                    message = "The tool shed status for repository <b>%s</b> has been updated." % escape( str( repository.name ) )
-                else:
-                    message = "The status has not changed in the tool shed for repository <b>%s</b>." % escape( str( repository.name ) )
-            else:
-                message = "Unable to retrieve status from the tool shed for repository <b>%s</b>." % escape( str( repository.name ) )
-                status = 'error'
+    def update_tool_shed_status_for_installed_repository( self, trans, **kwd ):
+        message, status = repository_util.check_for_updates( trans.app, trans.install_model, kwd.get( 'id', None ) )
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                           action='browse_repositories',
                                                           message=message,

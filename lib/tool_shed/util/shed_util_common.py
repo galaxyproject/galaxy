@@ -414,8 +414,8 @@ def get_repo_info_tuple_contents( repo_info_tuple ):
 
 def get_repositories_by_category( app, category_id ):
     sa_session = app.model.context.current
-    repositories = sa_session.query( app.model.Category ).get( category_id )
-    return [ repo.repository.to_dict() for repo in foo.repositories ]
+    resultset = sa_session.query( app.model.Category ).get( category_id )
+    return [ repo.repository.to_dict() for repo in resultset.repositories ]
 
 
 def get_repository_and_repository_dependencies_from_repo_info_dict( app, repo_info_dict ):

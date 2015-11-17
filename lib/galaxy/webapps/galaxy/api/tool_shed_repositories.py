@@ -19,6 +19,7 @@ from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
 from tool_shed.util import workflow_util
 from tool_shed.util import tool_util
+from tool_shed.util import repository_util
 
 import tool_shed.util.shed_util_common as suc
 
@@ -48,6 +49,21 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
         if not trans.user_is_admin():
             raise exceptions.AdminRequiredException( 'You are not authorized to request the latest installable revision for a repository in this Galaxy instance.' )
+
+    @expose_api
+    def check_for_updates( self, trans, repository_id ):
+        '''
+        POST /api/tool_shed_repositories/check_for_updates/{id}
+        Check for updates to the specified repository, or all installed repositories.
+
+        :param key: the current Galaxy admin user's API key
+
+        The following parameters are included in the payload.
+        :param repository_id: the galaxy-side encoded repository ID
+        '''
+        message, status = repository_util.check_for_updates( trans.app, trans.install_model, repository_id )
+        return { 'status': status, 'message': message }
+        # Get the information about the repository to be updated from the payload.
 
     @expose_api
     def exported_workflows( self, trans, id, **kwd ):
@@ -378,20 +394,20 @@ class ToolShedRepositoriesController( BaseAPIController ):
 
     def __parse_repository_from_payload( self, payload, include_changeset=False ):
         # Get the information about the repository to be installed from the payload.
-        tool_shed_url = payload.get( 'tool_shed_url', '' )
-        if not tool_shed_url:
+        tool_shed_url = payload.get( 'tool_shed_url', None )
+        name = payload.get( 'name', None )
+        owner = payload.get( 'owner', None )
+        if tool_shed_url is None:
             raise exceptions.RequestParameterMissingException( "Missing required parameter 'tool_shed_url'." )
-        name = payload.get( 'name', '' )
-        if not name:
+        if name is None:
             raise exceptions.RequestParameterMissingException( "Missing required parameter 'name'." )
-        owner = payload.get( 'owner', '' )
-        if not owner:
+        if owner is None:
             raise exceptions.RequestParameterMissingException( "Missing required parameter 'owner'." )
         if not include_changeset:
             return tool_shed_url, name, owner
 
-        changeset_revision = payload.get( 'changeset_revision', '' )
-        if not changeset_revision:
+        changeset_revision = payload.get( 'changeset_revision', None )
+        if changeset_revision is None:
             raise HTTPBadRequest( detail="Missing required parameter 'changeset_revision'." )
 
         return tool_shed_url, name, owner, changeset_revision
