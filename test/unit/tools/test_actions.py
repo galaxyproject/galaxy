@@ -152,6 +152,15 @@ def test_determine_output_format():
     input_based_output = quick_output("txt", format_source="i1")
     __assert_output_format_is("fasta", input_based_output, [("i1", "fasta"), ("i2", "fastq")])
 
+    input_based_output = quick_output("fastq", format_source="hdcai[0]")
+    __assert_output_format_is("txt", input_based_output, [("i1", "fasta"), ("i2", "fastq")], add_collection=True)
+
+    input_based_output = quick_output("fastq", format_source="""hdcai["forward"]""")
+    __assert_output_format_is("txt", input_based_output, [("i1", "fasta"), ("i2", "fastq")], add_collection=True)
+
+    input_based_output = quick_output("fastq", format_source="""hdcai['forward']""")
+    __assert_output_format_is("txt", input_based_output, [("i1", "fasta"), ("i2", "fastq")], add_collection=True)
+
     input_based_output = quick_output("txt", format_source="i2")
     __assert_output_format_is("fastq", input_based_output, [("i1", "fasta"), ("i2", "fastq")])
 
@@ -181,7 +190,7 @@ def test_determine_output_format():
     __assert_output_format_is("fastqsolexa", change_on_metadata_output, [("i1", "txt"), ("i2", "txt")] )
 
 
-def __assert_output_format_is( expected, output, input_extensions=[], param_context=[] ):
+def __assert_output_format_is( expected, output, input_extensions=[], param_context=[], add_collection=False ):
     inputs = {}
     last_ext = "data"
     i = 1
@@ -192,7 +201,20 @@ def __assert_output_format_is( expected, output, input_extensions=[], param_cont
         last_ext = ext
         i += 1
 
-    actual_format = determine_output_format( output, param_context, inputs, last_ext )
+    input_collections = {}
+    if add_collection:
+        hda_forward = model.HistoryDatasetAssociation(extension="txt")
+        hda_reverse = model.HistoryDatasetAssociation(extension="txt")
+        c1 = model.DatasetCollection(collection_type="pair")
+        hc1 = model.HistoryDatasetCollectionAssociation(collection=c1, name="HistoryCollectionTest1")
+
+        dce1 = model.DatasetCollectionElement(collection=c1, element=hda_forward, element_identifier="forward", element_index=0)
+        dce2 = model.DatasetCollectionElement(collection=c1, element=hda_reverse, element_identifier="reverse", element_index=1)
+        c1.elements = [dce1, dce2]
+
+        input_collections["hdcai"] = hc1
+
+    actual_format = determine_output_format( output, param_context, inputs, input_collections, last_ext )
     assert actual_format == expected, "Actual format %s, does not match expected %s" % (actual_format, expected)
 
 
