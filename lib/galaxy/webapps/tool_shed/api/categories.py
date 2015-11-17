@@ -107,4 +107,6 @@ class CategoriesController( BaseAPIController ):
         category_dict[ 'url' ] = web.url_for( controller='categories',
                                               action='show',
                                               id=trans.security.encode_id( category.id ) )
+        if util.asbool( kwd.get( 'show_repositories', False ) ):
+            category_dict[ 'repositories' ] = suc.get_repositories_by_category( trans.app, category.id )
         return category_dict

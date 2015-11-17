@@ -412,6 +412,12 @@ def get_repo_info_tuple_contents( repo_info_tuple ):
     return description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies
 
 
+def get_repositories_by_category( app, category_id ):
+    sa_session = app.model.context.current
+    repositories = sa_session.query( app.model.Category ).get( category_id )
+    return [ repo.repository.to_dict() for repo in foo.repositories ]
+
+
 def get_repository_and_repository_dependencies_from_repo_info_dict( app, repo_info_dict ):
     """Return a tool_shed_repository or repository record defined by the information in the received repo_info_dict."""
     repository_name = repo_info_dict.keys()[ 0 ]
