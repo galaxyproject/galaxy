@@ -1322,7 +1322,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             referer = kwd['referer']
         else:
             referer = trans.request.referer
-        if referer is not "":
+        if referer:
             referer_message = "<a href='%s'>return to the previous page</a>" % escape(referer)
         else:
             referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )

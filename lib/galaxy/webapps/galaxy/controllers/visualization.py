@@ -457,7 +457,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         """ Import a visualization into user's workspace. """
         # Set referer message.
         referer = trans.request.referer
-        if referer is not "":
+        if referer:
             referer_message = "<a href='%s'>return to the previous page</a>" % escape(referer)
         else:
             referer_message = "<a href='%s'>go to Galaxy's start page</a>" % web.url_for( '/' )
