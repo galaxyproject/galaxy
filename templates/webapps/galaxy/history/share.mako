@@ -103,7 +103,7 @@
                     url: "${h.url_for(controller="/api/users", action="index")}",
                     data: function (term) {
                         return {
-                            f_email: term
+                            f_any: term,
                         };
                     },
                     dataType: 'json',

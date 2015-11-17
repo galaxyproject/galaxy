@@ -4,7 +4,7 @@ API operations on User objects.
 
 import logging
 
-from sqlalchemy import false, true
+from sqlalchemy import false, true, or_
 
 from galaxy import exceptions, util, web
 from galaxy.managers import users
@@ -29,7 +29,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         self.user_serializer = users.UserSerializer( app )
 
     @expose_api
-    def index( self, trans, deleted='False', f_email=None, **kwd ):
+    def index( self, trans, deleted='False', f_email=None, f_name=None, f_any=None, **kwd ):
         """
         GET /api/users
         GET /api/users/deleted
@@ -38,8 +38,30 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         rval = []
         query = trans.sa_session.query( trans.app.model.User )
         deleted = util.string_as_bool( deleted )
-        if f_email:
-            query = query.filter(trans.app.model.User.email.like("%%%s%%" % f_email))
+
+        if f_email and (trans.user_is_admin() or trans.app.config.expose_user_email):
+            query = query.filter( trans.app.model.User.email.like("%%%s%%" % f_email) )
+
+        if f_name and (trans.user_is_admin() or trans.app.config.expose_user_name):
+            query = query.filter( trans.app.model.User.username.like("%%%s%%" % f_name) )
+
+        if f_any:
+            if trans.user_is_admin():
+                query = query.filter(or_(
+                    trans.app.model.User.email.like("%%%s%%" % f_any),
+                    trans.app.model.User.username.like("%%%s%%" % f_any)
+                ))
+            else:
+                if trans.app.config.expose_user_email and trans.app.config.expose_user_name:
+                    query = query.filter(or_(
+                        trans.app.model.User.email.like("%%%s%%" % f_any),
+                        trans.app.model.User.username.like("%%%s%%" % f_any)
+                    ))
+                elif trans.app.config.expose_user_email:
+                    query = query.filter( trans.app.model.User.email.like("%%%s%%" % f_any) )
+                elif trans.app.config.expose_user_name:
+                    query = query.filter( trans.app.model.User.username.like("%%%s%%" % f_any) )
+
         if deleted:
             query = query.filter( trans.app.model.User.table.c.deleted == true() )
             # only admins can see deleted users
