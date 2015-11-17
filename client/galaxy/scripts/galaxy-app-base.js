@@ -78,7 +78,6 @@ GalaxyApp.prototype.defaultOptions = {
     /** monkey patch attributes from existing window.Galaxy object? */
     patchExisting   : true,
     /** root url of this app */
-    // move to self.root?
     root            : '/',
     /** options for the logger */
     loggerOptions   : {}
