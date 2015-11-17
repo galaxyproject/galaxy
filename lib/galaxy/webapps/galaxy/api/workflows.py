@@ -300,8 +300,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         stored_workflow = self.__get_stored_workflow( trans, id )
         if 'workflow' in payload:
-            workflow_contents_manager = workflows.WorkflowContentsManager()
-            workflow, errors = workflow_contents_manager.update_workflow_from_dict(
+            workflow, errors = self.workflow_contents_manager.update_workflow_from_dict(
                 trans,
                 stored_workflow,
                 payload['workflow'],
