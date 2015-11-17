@@ -1,2 +1,2 @@
-define(["i18n!nls/locale"],function(a){if(a.hasOwnProperty("__root")){var b="undefined"==typeof navigator?"__root":(navigator.language||navigator.userLanguage||"__root").toLowerCase();a=a["__"+b]||a.__root,console.debug("amdi18n+webpack localization for "+b+" loaded")}else console.debug("i18n+requirejs localization for "+b+" loaded");var c=function(b){return a[b]||b};return c.cacheNonLocalized=!1,c});
+define(["i18n!nls/locale"],function(a){if(a.hasOwnProperty("__root")){var b="undefined"==typeof navigator?"__root":(navigator.language||navigator.userLanguage||"__root").toLowerCase();a=a["__"+b]||a.__root}var c=function(b){return a[b]||b};return c.cacheNonLocalized=!1,c});
 //# sourceMappingURL=../../maps/utils/localization.js.map

@@ -40,11 +40,22 @@
             Galaxy = {};
         }
 
-        ## load additional style sheet
-        if (window != window.top){
-            $('<link href="' + Galaxy.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">')
-                .appendTo('head');
+        // if we're in an iframe, create styles that hide masthead/messagebox, and reset top for panels
+        // note: don't use a link to avoid roundtrip request
+        // note: we can't select here because the page (incl. messgaebox, center, etc.) isn't fully rendered
+        // TODO: remove these when we no longer navigate with iframes
+        var in_iframe = window !== window.top;
+        if( in_iframe ){
+            var styleElement = document.createElement( 'style' );
+            document.head.appendChild( styleElement );
+            [
+                '#masthead, #messagebox { display: none; }',
+                '#center, #right, #left { top: 0 !important; }',
+             ].forEach( function( rule ){
+                styleElement.sheet.insertRule( rule, 0 );
+            });
         }
+        // TODO: ?? move above to base_panels.mako?
 
         ## load galaxy js-modules
         require([

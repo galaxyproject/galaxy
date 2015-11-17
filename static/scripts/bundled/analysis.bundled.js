@@ -141,7 +141,8 @@ webpackJsonp([0],[
 	                layout      : options.toolbox_in_panel
 	            });
 	            this.tool_panel_view = new Tools.ToolPanelView({ model: this.tool_panel });
-	            // add upload plugin
+	
+	            // add upload modal
 	            this.uploadButton = new Upload( options );
 	        }
 	    },
@@ -761,9 +762,7 @@ webpackJsonp([0],[
 	                Galaxy.upload.show();
 	            });
 	        }
-	
-	        // regular tools
-	        if ( this.model.id !== 'upload1' && this.model.get( 'model_class' ) === 'Tool' ) {
+	        else if ( this.model.get( 'model_class' ) === 'Tool' ) { // regular tools
 	            var self = this;
 	            $link.find('a').on('click', function(e) {
 	                e.preventDefault();
@@ -15651,7 +15650,7 @@ webpackJsonp([0],[
 	
 	    render : function(){
 	        RightPanel.prototype.render.call( this );
-	        this.debug( 'rendering:' );
+	        this.$( '.unified-panel-header' ).addClass( 'history-panel-header' );
 	        this.$( '.panel-header-buttons' ).append([
 	            this.refreshButton.$el,
 	            this.optionsButton.$el,
@@ -17938,7 +17937,7 @@ webpackJsonp([0],[
 	    constructor : function( attrs, options ){
 	        hcontentMixin.constructor.call( this, attrs, options );
 	    },
-	    
+	
 	    /** default attributes for a model */
 	    defaults : _.extend( {}, _super.prototype.defaults, hcontentMixin.defaults, {
 	        model_class         : 'HistoryDatasetAssociation'
@@ -27780,6 +27779,9 @@ webpackJsonp([0],[
 	        this.log( this + '.initialize:', options );
 	        _.extend( this, _.pick( options, this._panelIds ) );
 	        this.options = _.defaults( _.omit( options, this._panelIds ), this.defaultOptions );
+	
+	        // TODO: remove globals
+	        Galaxy.modal = this.modal = new MODAL.View();
 	    },
 	
 	    /**  */
@@ -27792,13 +27794,10 @@ webpackJsonp([0],[
 	        this.$el.attr( 'scroll', 'no' );
 	        this.$el.html( this.template( this.options ) );
 	
-	        this.modal = new MODAL.View();
 	        //TODO: no render on masthead, needs init each time
-	        this.masthead = new MASTHEAD.GalaxyMasthead( this.options.config );
-	
-	        // TODO: remove globals
-	        Galaxy.modal = this.modal;
-	        Galaxy.masthead = this.masthead;
+	        Galaxy.masthead = this.masthead = new MASTHEAD.GalaxyMasthead( _.extend( this.options.config, {
+	            el: this.$( '#masthead' ).get(0)
+	        }));
 	
 	        if( this.options.message_box_visible ){
 	            this.messageBox( this.options.message_box_content, this.options.message_box_class );
@@ -27856,6 +27855,7 @@ webpackJsonp([0],[
 	        return [
 	            '<div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">',
 	                '<div id="background"/>',
+	                '<div id="masthead" class="navbar navbar-fixed-top navbar-inverse"></div>',
 	                '<div id="messagebox" style="display: none;"></div>',
 	                '<div id="inactivebox" class="panel-warning-message" style="display: none;"></div>',
 	                // content here
@@ -27938,10 +27938,8 @@ webpackJsonp([0],[
 	        $("body").off();
 	
 	        // define this element
-	        this.setElement($(this._template(options)));
-	
-	        // append to masthead
-	        $(this.el_masthead).append($(this.el));
+	        this.$el.html(this._template(options));
+	        $(this.el_masthead).find('#masthead').replaceWith(this.$el);
 	
 	        // assign background
 	        this.$background = $(this.el).find('#masthead-background');

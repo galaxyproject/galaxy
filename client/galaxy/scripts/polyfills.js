@@ -1,3 +1,6 @@
+// phantomjs: does not have the native extend fn assign
+Object.assign = Object.assign || _.extend;
+
 (function() {
     'use strict';
     /*globals window, clearTimeout */

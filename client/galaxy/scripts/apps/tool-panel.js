@@ -28,7 +28,8 @@ var ToolPanel = LeftPanel.extend({
                 layout      : options.toolbox_in_panel
             });
             this.tool_panel_view = new Tools.ToolPanelView({ model: this.tool_panel });
-            // add upload plugin
+
+            // add upload modal
             this.uploadButton = new Upload( options );
         }
     },

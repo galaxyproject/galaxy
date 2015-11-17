@@ -29,6 +29,9 @@ var PageLayoutView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
         this.log( this + '.initialize:', options );
         _.extend( this, _.pick( options, this._panelIds ) );
         this.options = _.defaults( _.omit( options, this._panelIds ), this.defaultOptions );
+
+        // TODO: remove globals
+        Galaxy.modal = this.modal = new MODAL.View();
     },
 
     /**  */
@@ -41,13 +44,10 @@ var PageLayoutView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
         this.$el.attr( 'scroll', 'no' );
         this.$el.html( this.template( this.options ) );
 
-        this.modal = new MODAL.View();
         //TODO: no render on masthead, needs init each time
-        this.masthead = new MASTHEAD.GalaxyMasthead( this.options.config );
-
-        // TODO: remove globals
-        Galaxy.modal = this.modal;
-        Galaxy.masthead = this.masthead;
+        Galaxy.masthead = this.masthead = new MASTHEAD.GalaxyMasthead( _.extend( this.options.config, {
+            el: this.$( '#masthead' ).get(0)
+        }));
 
         if( this.options.message_box_visible ){
             this.messageBox( this.options.message_box_content, this.options.message_box_class );
@@ -105,6 +105,7 @@ var PageLayoutView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
         return [
             '<div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">',
                 '<div id="background"/>',
+                '<div id="masthead" class="navbar navbar-fixed-top navbar-inverse"></div>',
                 '<div id="messagebox" style="display: none;"></div>',
                 '<div id="inactivebox" class="panel-warning-message" style="display: none;"></div>',
                 // content here

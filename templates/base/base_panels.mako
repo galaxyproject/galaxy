@@ -59,10 +59,6 @@
     <script type="text/javascript">
         ## global configuration object
 
-        //## load additional style sheet
-        //if (window != window.top)
-        //    $('<link href="' + Galaxy.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
-
         // console protection
         window.console = window.console || {
             log     : function(){},

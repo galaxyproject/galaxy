@@ -8,15 +8,15 @@ define([
 // support both requirejs and webpack from the same file
 // if loaded via webpack, it will be a different format than via requirejs - convert
 if( localeStrings.hasOwnProperty( '__root' ) ){
+    //console.debug( 'amdi18n+webpack localization for ' + locale + ' loaded' );
     var locale = (
         typeof navigator === 'undefined' ? '__root'
             : ( navigator.language || navigator.userLanguage || '__root' ).toLowerCase()
     );
     localeStrings = localeStrings[ '__' + locale ] || localeStrings.__root;
-    console.debug( 'amdi18n+webpack localization for ' + locale + ' loaded' );
 
-} else {
-    console.debug( 'i18n+requirejs localization for ' + locale + ' loaded' );
+// } else {
+//     console.debug( 'i18n+requirejs localization for ' + locale + ' loaded' );
 }
 // TODO: when this is no longer necessary remove this, i18n.js, and the resolveModule in config
 

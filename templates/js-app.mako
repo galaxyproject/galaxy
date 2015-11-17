@@ -23,9 +23,10 @@
         <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
         ## TODO: use loaders to move everything but the essentials below the fold
         ${ h.css(
-            'base',
             'jquery.rating',
-            'jquery-ui/smoothness/jquery-ui'
+            'jquery-ui/smoothness/jquery-ui',
+            ## base needs to come after jquery-ui because of ui-button, ui- etc. name collision
+            'base',
         )}
         ${ page_setup() }
     </head>

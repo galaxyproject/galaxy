@@ -59,7 +59,7 @@ var HistoryPanel = RightPanel.extend({
 
     render : function(){
         RightPanel.prototype.render.call( this );
-        this.debug( 'rendering:' );
+        this.$( '.unified-panel-header' ).addClass( 'history-panel-header' );
         this.$( '.panel-header-buttons' ).append([
             this.refreshButton.$el,
             this.optionsButton.$el,

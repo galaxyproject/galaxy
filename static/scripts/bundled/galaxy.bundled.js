@@ -161,7 +161,9 @@ webpackJsonp([3],{
 	    self.logger = new metricsLogger.MetricsLogger( loggerOptions );
 	    self.emit = {};
 	    [ 'log', 'debug', 'info', 'warn', 'error', 'metric' ].map(function( i ) {
-	        self.emit[ i ] = function( data ) { self.logger.emit( i, arguments[ 0 ], Array.prototype.slice.call( arguments, 1 ) ) };
+	        self.emit[ i ] = function( data ){
+	            self.logger.emit( i, arguments[ 0 ], Array.prototype.slice.call( arguments, 1 ) );
+	        };
 	    });
 	
 	    if( self.config.debug ){
@@ -267,7 +269,6 @@ webpackJsonp([3],{
 	    var userEmail = this.user? ( this.user.get( 'email' ) || '(anonymous)' ) : 'uninitialized';
 	    return 'GalaxyApp(' + userEmail + ')';
 	};
-	
 	
 	// ============================================================================
 	    return {
