@@ -456,6 +456,40 @@ class Bam( Binary ):
 Binary.register_sniffable_binary_format("bam", "bam", Bam)
 
 
+class CRAM( Binary ):
+    file_ext = "cram"
+    edam_format = "format_3462"
+
+    MetadataElement( name="cram_version", default=None, desc="CRAM Version", param=MetadataParameter, readonly=True, visible=False, optional=False, no_value=None )
+
+    def set_meta( self, dataset, overwrite=True, **kwd ):
+        try:
+            with open(dataset.file_name, "r") as fh:
+                header = fh.read(6)
+                dataset.metadata.cram_version = str(ord(header[4])) + "." + str(ord(header[5]))
+        except Exception as exc:
+            log.warn( '%s, set_meta Exception: %s', self, exc )
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = 'CRAM binary alignment file'
+            dataset.blurb = 'binary data'
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def sniff( self, filename ):
+        try:
+            header = open( filename ).read(4)
+            if header[0:4] == "CRAM":
+                return True
+            return False
+        except:
+            return False
+
+Binary.register_sniffable_binary_format('cram', 'cram', CRAM)
+
+
 class Bcf( Binary):
     """Class describing a BCF file"""
     edam_format = "format_3020"
