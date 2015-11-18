@@ -28,11 +28,12 @@
 ## Default stylesheets
 <%def name="stylesheets()">
     ${h.css('base')}
+    ${h.css('introjs')}
 </%def>
 
 ## Default javascripts
 <%def name="javascripts()">
-    
+
     ## Send errors to Sntry server if configured
     %if app.config.sentry_dsn:
         ${h.js( "libs/tracekit", "libs/raven" )}
@@ -45,6 +46,7 @@
     %endif
 
     ${h.js(
+        'libs/intro',
         "libs/jquery/jquery",
         "libs/jquery/jquery.migrate",
         "libs/jquery/select2",

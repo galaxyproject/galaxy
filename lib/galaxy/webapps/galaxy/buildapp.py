@@ -390,6 +390,16 @@ def populate_api_routes( webapp, app ):
                            action='get_api_key',
                            conditions=dict( method=[ "GET" ] ) )
 
+    # =========================
+    # ===== TUTORIALS API =====
+    # =========================
+
+    webapp.mapper.connect( 'load_tutorial_config',
+                           '/api/tutorials/{tutorial_config_file}',
+                           controller='tutorials',
+                           action='load_config',
+                           conditions=dict( method=[ "GET" ] ) )
+
     # =======================
     # ===== LIBRARY API =====
     # =======================

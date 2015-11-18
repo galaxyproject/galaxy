@@ -22,6 +22,7 @@
 <%def name="stylesheets()">
     ${h.css(
         'base',
+        'introjs',
         'jquery.rating'
     )}
     <style type="text/css">
@@ -55,6 +56,7 @@
         'libs/jquery/jquery.migrate',
         'libs/jquery/select2',
         'libs/bootstrap',
+        'libs/intro',
         'libs/underscore',
         'libs/backbone/backbone',
         'libs/handlebars.runtime',
@@ -62,7 +64,6 @@
         'libs/require'
     )}
 
-    <script type="text/javascript">
         ## global configuration object
         var galaxy_config =
         {

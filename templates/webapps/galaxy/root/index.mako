@@ -69,4 +69,5 @@ ${h.css("base")}
           ga('create', '${app.config.ga_code}', 'auto');
           ga('send', 'pageview');
     %endif
+
 </script>
