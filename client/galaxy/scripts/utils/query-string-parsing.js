@@ -14,8 +14,20 @@ function get( key, queryString ){
     return matches;
 }
 
+function parse( queryString ){
+    if( !queryString ){ return {}; }
+    var parsed = {},
+        split = queryString.split( '&' );
+    split.forEach( function( pairString ){
+        var pair = pairString.split( '=' );
+        parsed[ pair[0] ] = decodeURI( pair[1] );
+    });
+    return parsed;
+}
+
 // ============================================================================
     return {
-        get : get
+        get     : get,
+        parse   : parse,
     };
 });

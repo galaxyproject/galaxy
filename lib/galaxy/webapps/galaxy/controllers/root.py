@@ -68,47 +68,34 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
 
     @web.expose
     def index( self, trans, id=None, tool_id=None, mode=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd ):
+        if trans.app.config.require_login and self.user_manager.is_anonymous( trans.user ):
+            # TODO: this doesn't properly redirect when login is done
+            # (see webapp __ensure_logged_in_user for the initial redirect - not sure why it doesn't redirect to login?)
+            login_url = web.url_for( controller="root", action="login" )
+            trans.response.send_redirect( login_url )
+
+        # if a history_id was sent, attempt to switch to that history
         history = trans.history
         if history_id:
             unencoded_id = trans.security.decode_id( history_id )
             history = self.history_manager.get_owned( unencoded_id, trans.user )
             trans.set_history( history )
 
+        # index/analysis needs an extended configuration
         js_options = self._get_js_options( trans )
         config = js_options[ 'config' ]
         config.update( self._get_extended_config( trans ) )
 
-        return self.template( trans, 'analysis', options=js_options, panels=[ 'left', 'center', 'right' ])
+        return self.template( trans, 'analysis', options=js_options )
 
-    # @web.expose
-    # def index(self, trans, id=None, tool_id=None, mode=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd):
-    #     """
-    #     Called on the root url to display the main Galaxy page.
-    #     """
-    #     if history_id is not None:
-    #         # Get history or throw exception.
-    #         unencoded_id = trans.security.decode_id( history_id )
-    #         history = self.history_manager.get_owned( unencoded_id, trans.user )
-    #         trans.set_history( history )
-
-    #     return trans.fill_template( "root/index.mako",
-    #                                 tool_id=tool_id,
-    #                                 workflow_id=workflow_id,
-    #                                 m_c=m_c, m_a=m_a,
-    #                                 params=kwd )
-
-    # @web.expose
-    # def history( self, trans ):
-    #     history = trans.history
-
-    #     bootstrapped = {}
-    #     if history:
-    #         bootstrapped = {
-    #             'history'   : self.history_serializer.serialize_to_view( history,
-    #                 view='detailed', user=trans.user, trans=trans ),
-    #             'contents'  : self.history_serializer.serialize_contents( history, 'contents', trans=trans )
-    #         }
-    #     return self.template( trans, 'history', bootstrapped_data=bootstrapped )
+    @web.expose
+    def login( self, trans, redirect=None, **kwd ):
+        return self.template( trans, 'login',
+            # TODO: move into config
+            openid_providers=[ p.name for p in trans.app.openid_providers ],
+            # an installation may have it's own welcome_url - show it here if they've set that
+            welcome_url=trans.app.config.welcome_url,
+            show_welcome_with_login=trans.app.config.show_welcome_with_login )
 
     # ---- Tool related -----------------------------------------------------
 

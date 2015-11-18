@@ -34,9 +34,10 @@ var webpack = require( 'webpack' ),
 module.exports = {
     devtool : 'source-map',
     entry   : {
+        libs    : commonLibs,
+        login   : './galaxy/scripts/apps/login.js',
         galaxy  : './galaxy/scripts/apps/galaxy.js',
         analysis: './galaxy/scripts/apps/analysis.js',
-        libs    : commonLibs
     },
     output  : {
         path        : '../static/scripts/bundled',

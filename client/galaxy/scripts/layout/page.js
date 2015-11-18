@@ -95,6 +95,12 @@ var PageLayoutView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
                 panelView.render();
             }
         });
+        if( !this.left ){
+            this.center.$el.css( 'left', 0 );
+        }
+        if( !this.right ){
+            this.center.$el.css( 'right', 0 );
+        }
         return this;
     },
 

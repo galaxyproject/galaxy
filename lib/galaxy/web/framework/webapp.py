@@ -447,10 +447,12 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
             # TODO: re-engineer to eliminate the use of allowed_paths
             # as maintenance overhead is far too high.
             allowed_paths = (
+                # TODO: when did root get added to all our urls? why is it /root/welcome and not /welcome?
+                url_for( controller='root', action='welcome' ),
+                url_for( controller='root', action='login' ),
                 url_for( controller='root', action='index' ),
                 url_for( controller='root', action='tool_menu' ),
                 url_for( controller='root', action='masthead' ),
-                url_for( controller='root', action='history' ),
                 url_for( controller='user', action='api_keys' ),
                 url_for( controller='user', action='create' ),
                 url_for( controller='user', action='index' ),
@@ -465,7 +467,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
                 url_for( controller='user', action='openid_associate' ),
                 url_for( controller='library', action='browse' ),
                 url_for( controller='history', action='list' ),
-                url_for( controller='dataset', action='list' )
+                url_for( controller='dataset', action='list' ),
             )
             display_as = url_for( controller='root', action='display_as' )
             if self.app.datatypes_registry.get_display_sites('ucsc') and self.request.path == display_as:

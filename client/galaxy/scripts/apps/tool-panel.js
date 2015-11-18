@@ -13,25 +13,22 @@ var ToolPanel = LeftPanel.extend({
         this.log( this + '.initialize:', options );
         this.stored_workflow_menu_entries = options.stored_workflow_menu_entries || [];
 
-        // TODO: this switch doesn't belong here?
-        if( options.userIsAnonymous || !options.require_login ){
-            // create tool search, tool panel, and tool panel view.
-            var tool_search = new Tools.ToolSearch({
-                spinner_url : options.spinner_url,
-                search_url  : options.search_url,
-                hidden      : false
-            });
-            var tools = new Tools.ToolCollection( options.toolbox );
-            this.tool_panel = new Tools.ToolPanel({
-                tool_search : tool_search,
-                tools       : tools,
-                layout      : options.toolbox_in_panel
-            });
-            this.tool_panel_view = new Tools.ToolPanelView({ model: this.tool_panel });
+        // create tool search, tool panel, and tool panel view.
+        var tool_search = new Tools.ToolSearch({
+            spinner_url : options.spinner_url,
+            search_url  : options.search_url,
+            hidden      : false
+        });
+        var tools = new Tools.ToolCollection( options.toolbox );
+        this.tool_panel = new Tools.ToolPanel({
+            tool_search : tool_search,
+            tools       : tools,
+            layout      : options.toolbox_in_panel
+        });
+        this.tool_panel_view = new Tools.ToolPanelView({ model: this.tool_panel });
 
-            // add upload modal
-            this.uploadButton = new Upload( options );
-        }
+        // add upload modal
+        this.uploadButton = new Upload( options );
     },
 
     render : function(){

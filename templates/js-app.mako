@@ -1,15 +1,3 @@
-<%
-    import pprint
-    print panels
-    print masthead
-    print js_app_name
-    print js_app_entry_fn
-    printable = dict( options[ 'config' ] )
-    printable.pop( 'toolbox', None )
-    printable.pop( 'toolbox_in_panel', None )
-    pprint.pprint( printable )
-    ## pprint.pprint( bootstrapped )
-%>
 
 <!DOCTYPE HTML>
 <html>

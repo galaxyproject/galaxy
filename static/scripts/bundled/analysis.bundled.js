@@ -1,4 +1,4 @@
-webpackJsonp([0],[
+webpackJsonp([0,1],[
 /* 0 */
 /*!*****************************************!*\
   !*** ./galaxy/scripts/apps/analysis.js ***!
@@ -6,13 +6,14 @@ webpackJsonp([0],[
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(_) {
-	var jQuery = __webpack_require__( /*! jquery */ 2 ),
+	var jQuery = __webpack_require__( /*! jquery */ 3 ),
 	    $ = jQuery,
-	    PANEL = __webpack_require__( /*! layout/panel */ 3 ),
-	    ToolPanel = __webpack_require__( /*! ./tool-panel */ 9 ),
-	    HistoryPanel = __webpack_require__( /*! ./history-panel */ 80 ),
-	    PAGE = __webpack_require__( /*! layout/page */ 119 ),
-	    ToolsForm = __webpack_require__( /*! mvc/tool/tools-form */ 16 );
+	    QUERY_STRING = __webpack_require__( /*! utils/query-string-parsing */ 4 ),
+	    PANEL = __webpack_require__( /*! layout/panel */ 5 ),
+	    ToolPanel = __webpack_require__( /*! ./tool-panel */ 10 ),
+	    HistoryPanel = __webpack_require__( /*! ./history-panel */ 81 ),
+	    PAGE = __webpack_require__( /*! layout/page */ 120 ),
+	    ToolsForm = __webpack_require__( /*! mvc/tool/tools-form */ 17 );
 	
 	window.app = function app( options, bootstrapped ){
 	    Galaxy.debug( 'building app:', options, bootstrapped );
@@ -47,10 +48,12 @@ webpackJsonp([0],[
 	    // .................................................... decorate the galaxy object
 	    // TODO: most of this is becoming unnecessary as we move to apps
 	    Galaxy.page = analysisPage;
+	    Galaxy.params = Galaxy.config.params;
 	
 	    // add tool panel to Galaxy object
 	    Galaxy.toolPanel = toolPanel.tool_panel;
 	    Galaxy.upload = toolPanel.uploadButton;
+	
 	
 	    Galaxy.currHistoryPanel = historyPanel.historyView;
 	    Galaxy.currHistoryPanel.connectToQuotaMeter( Galaxy.quotaMeter );
@@ -65,18 +68,30 @@ webpackJsonp([0],[
 	        },
 	    };
 	
+	    // var router = new ( Backbone.Router.extend({
+	    //     initialize : function( options ){
+	    //         this.options = options;
+	    //         this.route( /^$/, "blah", function __callback(){ console.debug( arguments ); });
+	    //     },
+	
+	    //     execute: function( callback, args, name ){
+	    //         args.push( QUERY_STRING.parse( args.pop() ) );
+	    //         if( callback ){
+	    //             callback.apply( this, args );
+	    //         }
+	    //     }
+	
+	    // }))( options );
+	    // Backbone.history.start({ pushState : true });
+	
 	    // .................................................... start up
 	    $(function(){
 	        analysisPage.render();
 	        Galaxy.currHistoryPanel.loadCurrentHistory();
 	
 	        // TODO: to router, remove Globals
-	        var params = $.extend( {}, options.config.params );
-	        if( params.tool_id && params.tool_id !== 'upload1' ){
-	            params.id = params.tool_id;
-	            centerPanel.display( new ToolsForm.View( params ) );
-	
-	        } else if( params.job_id ){
+	        var params = Galaxy.config.params;
+	        if( ( params.tool_id || params.job_id ) && params.tool_id !== 'upload1' ){
 	            params.id = params.tool_id;
 	            centerPanel.display( new ToolsForm.View( params ) );
 	
@@ -100,20 +115,62 @@ webpackJsonp([0],[
 /* 1 */,
 /* 2 */,
 /* 3 */,
-/* 4 */,
+/* 4 */
+/*!******************************************************!*\
+  !*** ./galaxy/scripts/utils/query-string-parsing.js ***!
+  \******************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function(){
+	// ============================================================================
+	function get( key, queryString ){
+	    queryString = queryString || window.location.search.substr( 1 );
+	    var keyRegex = new RegExp( key + '=([^&#$]+)' ),
+	        matches = queryString.match( keyRegex );
+	    if( !matches || !matches.length ){
+	        return undefined;
+	    }
+	    matches = matches.splice( 1 );
+	    if( matches.length === 1 ){
+	        return matches[0];
+	    }
+	    return matches;
+	}
+	
+	function parse( queryString ){
+	    if( !queryString ){ return {}; }
+	    var parsed = {},
+	        split = queryString.split( '&' );
+	    split.forEach( function( pairString ){
+	        var pair = pairString.split( '=' );
+	        parsed[ pair[0] ] = decodeURI( pair[1] );
+	    });
+	    return parsed;
+	}
+	
+	// ============================================================================
+	    return {
+	        get     : get,
+	        parse   : parse,
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
 /* 5 */,
 /* 6 */,
 /* 7 */,
 /* 8 */,
-/* 9 */
+/* 9 */,
+/* 10 */
 /*!*******************************************!*\
   !*** ./galaxy/scripts/apps/tool-panel.js ***!
   \*******************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function($, _) {var LeftPanel = __webpack_require__( /*! layout/panel */ 3 ).LeftPanel,
-	    Tools = __webpack_require__( /*! mvc/tool/tools */ 10 ),
-	    Upload = __webpack_require__( /*! mvc/upload/upload-view */ 68 );
+	/* WEBPACK VAR INJECTION */(function($, _) {var LeftPanel = __webpack_require__( /*! layout/panel */ 5 ).LeftPanel,
+	    Tools = __webpack_require__( /*! mvc/tool/tools */ 11 ),
+	    Upload = __webpack_require__( /*! mvc/upload/upload-view */ 69 );
 	//TODO: localize
 	
 	/* Builds the tool panel on the left */
@@ -126,25 +183,22 @@ webpackJsonp([0],[
 	        this.log( this + '.initialize:', options );
 	        this.stored_workflow_menu_entries = options.stored_workflow_menu_entries || [];
 	
-	        // TODO: this switch doesn't belong here?
-	        if( options.userIsAnonymous || !options.require_login ){
-	            // create tool search, tool panel, and tool panel view.
-	            var tool_search = new Tools.ToolSearch({
-	                spinner_url : options.spinner_url,
-	                search_url  : options.search_url,
-	                hidden      : false
-	            });
-	            var tools = new Tools.ToolCollection( options.toolbox );
-	            this.tool_panel = new Tools.ToolPanel({
-	                tool_search : tool_search,
-	                tools       : tools,
-	                layout      : options.toolbox_in_panel
-	            });
-	            this.tool_panel_view = new Tools.ToolPanelView({ model: this.tool_panel });
+	        // create tool search, tool panel, and tool panel view.
+	        var tool_search = new Tools.ToolSearch({
+	            spinner_url : options.spinner_url,
+	            search_url  : options.search_url,
+	            hidden      : false
+	        });
+	        var tools = new Tools.ToolCollection( options.toolbox );
+	        this.tool_panel = new Tools.ToolPanel({
+	            tool_search : tool_search,
+	            tools       : tools,
+	            layout      : options.toolbox_in_panel
+	        });
+	        this.tool_panel_view = new Tools.ToolPanelView({ model: this.tool_panel });
 	
-	            // add upload modal
-	            this.uploadButton = new Upload( options );
-	        }
+	        // add upload modal
+	        this.uploadButton = new Upload( options );
 	    },
 	
 	    render : function(){
@@ -220,10 +274,10 @@ webpackJsonp([0],[
 	});
 	
 	module.exports = ToolPanel;
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! underscore */ 1)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 10 */
+/* 11 */
 /*!******************************************!*\
   !*** ./galaxy/scripts/mvc/tool/tools.js ***!
   \******************************************/
@@ -235,13 +289,13 @@ webpackJsonp([0],[
 	
 	 !(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! libs/underscore */ 1),
-	    __webpack_require__(/*! viz/trackster/util */ 11),
-	    __webpack_require__(/*! mvc/dataset/data */ 12),
-	    __webpack_require__(/*! mvc/tool/tools-form */ 16),
-	    __webpack_require__(/*! templates/tool_form.handlebars */ 45),
-	    __webpack_require__(/*! templates/tool_link.handlebars */ 65),
-	    __webpack_require__(/*! templates/panel_section.handlebars */ 66),
-	    __webpack_require__(/*! templates/tool_search.handlebars */ 67),
+	    __webpack_require__(/*! viz/trackster/util */ 12),
+	    __webpack_require__(/*! mvc/dataset/data */ 13),
+	    __webpack_require__(/*! mvc/tool/tools-form */ 17),
+	    __webpack_require__(/*! templates/tool_form.handlebars */ 46),
+	    __webpack_require__(/*! templates/tool_link.handlebars */ 66),
+	    __webpack_require__(/*! templates/panel_section.handlebars */ 67),
+	    __webpack_require__(/*! templates/tool_search.handlebars */ 68),
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function(_, util, data, ToolsForm, tool_form_template, tool_link_template, panel_section_template, tool_search_template) {
 	
 	/**
@@ -1030,10 +1084,10 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 11 */
+/* 12 */
 /*!**********************************************!*\
   !*** ./galaxy/scripts/viz/trackster/util.js ***!
   \**********************************************/
@@ -1177,17 +1231,17 @@ webpackJsonp([0],[
 	
 	}.call(exports, __webpack_require__, exports, module), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 12 */
+/* 13 */
 /*!********************************************!*\
   !*** ./galaxy/scripts/mvc/dataset/data.js ***!
   \********************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _, $) {// Additional dependencies: jQuery, underscore.
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! mvc/ui/ui-modal */ 13), __webpack_require__(/*! mvc/ui/ui-frames */ 14), __webpack_require__(/*! mvc/ui/icon-button */ 15)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Modal, Frames, mod_icon_btn) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! mvc/ui/ui-modal */ 14), __webpack_require__(/*! mvc/ui/ui-frames */ 15), __webpack_require__(/*! mvc/ui/icon-button */ 16)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Modal, Frames, mod_icon_btn) {
 	
 	/**
 	 * Dataset metedata.
@@ -1862,10 +1916,10 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 13 */
+/* 14 */
 /*!*******************************************!*\
   !*** ./galaxy/scripts/mvc/ui/ui-modal.js ***!
   \*******************************************/
@@ -2076,10 +2130,10 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! underscore */ 1)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 14 */
+/* 15 */
 /*!********************************************!*\
   !*** ./galaxy/scripts/mvc/ui/ui-frames.js ***!
   \********************************************/
@@ -3123,10 +3177,10 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 15 */
+/* 16 */
 /*!**********************************************!*\
   !*** ./galaxy/scripts/mvc/ui/icon-button.js ***!
   \**********************************************/
@@ -3316,10 +3370,10 @@ webpackJsonp([0],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__))
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 16 */
+/* 17 */
 /*!***********************************************!*\
   !*** ./galaxy/scripts/mvc/tool/tools-form.js ***!
   \***********************************************/
@@ -3328,7 +3382,7 @@ webpackJsonp([0],[
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/**
 	    This is the regular tool form.
 	*/
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17), __webpack_require__(/*! mvc/ui/ui-misc */ 18), __webpack_require__(/*! mvc/tool/tools-form-base */ 24), __webpack_require__(/*! mvc/tool/tools-jobs */ 44)], __WEBPACK_AMD_DEFINE_RESULT__ = function( Utils, Ui, ToolFormBase, ToolJobs ) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18), __webpack_require__(/*! mvc/ui/ui-misc */ 19), __webpack_require__(/*! mvc/tool/tools-form-base */ 25), __webpack_require__(/*! mvc/tool/tools-jobs */ 45)], __WEBPACK_AMD_DEFINE_RESULT__ = function( Utils, Ui, ToolFormBase, ToolJobs ) {
 	    var View = ToolFormBase.extend({
 	        initialize: function( options ) {
 	            var self = this;
@@ -3378,7 +3432,7 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 17 */
+/* 18 */
 /*!***************************************!*\
   !*** ./galaxy/scripts/utils/utils.js ***!
   \***************************************/
@@ -3661,10 +3715,10 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! underscore */ 1)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 18 */
+/* 19 */
 /*!******************************************!*\
   !*** ./galaxy/scripts/mvc/ui/ui-misc.js ***!
   \******************************************/
@@ -3673,13 +3727,13 @@ webpackJsonp([0],[
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $) {/**
 	 *  This class contains backbone wrappers for basic ui elements such as Images, Labels, Buttons, Input fields etc.
 	 */
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17),
-	    __webpack_require__(/*! mvc/ui/ui-select-default */ 19),
-	    __webpack_require__(/*! mvc/ui/ui-slider */ 21),
-	    __webpack_require__(/*! mvc/ui/ui-options */ 22),
-	    __webpack_require__(/*! mvc/ui/ui-drilldown */ 23),
-	    __webpack_require__(/*! mvc/ui/ui-buttons */ 20),
-	    __webpack_require__(/*! mvc/ui/ui-modal */ 13)], __WEBPACK_AMD_DEFINE_RESULT__ = function( Utils, Select, Slider, Options, Drilldown, Buttons, Modal ) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18),
+	    __webpack_require__(/*! mvc/ui/ui-select-default */ 20),
+	    __webpack_require__(/*! mvc/ui/ui-slider */ 22),
+	    __webpack_require__(/*! mvc/ui/ui-options */ 23),
+	    __webpack_require__(/*! mvc/ui/ui-drilldown */ 24),
+	    __webpack_require__(/*! mvc/ui/ui-buttons */ 21),
+	    __webpack_require__(/*! mvc/ui/ui-modal */ 14)], __WEBPACK_AMD_DEFINE_RESULT__ = function( Utils, Select, Slider, Options, Drilldown, Buttons, Modal ) {
 	
 	    /** Image wrapper */
 	    var Image = Backbone.View.extend({
@@ -3946,10 +4000,10 @@ webpackJsonp([0],[
 	    }
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 19 */
+/* 20 */
 /*!****************************************************!*\
   !*** ./galaxy/scripts/mvc/ui/ui-select-default.js ***!
   \****************************************************/
@@ -3958,7 +4012,7 @@ webpackJsonp([0],[
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $) {/**
 	 *  This class creates/wraps a default html select field as backbone class.
 	 */
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17), __webpack_require__(/*! mvc/ui/ui-buttons */ 20)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Buttons) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18), __webpack_require__(/*! mvc/ui/ui-buttons */ 21)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Buttons) {
 	var View = Backbone.View.extend({
 	    // options
 	    optionsDefault: {
@@ -4250,10 +4304,10 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 20 */
+/* 21 */
 /*!*********************************************!*\
   !*** ./galaxy/scripts/mvc/ui/ui-buttons.js ***!
   \*********************************************/
@@ -4261,7 +4315,7 @@ webpackJsonp([0],[
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $) {/** This class contains all button views.
 	*/
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17)], __WEBPACK_AMD_DEFINE_RESULT__ = function( Utils ) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18)], __WEBPACK_AMD_DEFINE_RESULT__ = function( Utils ) {
 	    /** This renders the default button which is used e.g. at the bottom of the upload modal.
 	    */
 	    var ButtonBase = Backbone.View.extend({
@@ -4647,17 +4701,17 @@ webpackJsonp([0],[
 	    }
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 21 */
+/* 22 */
 /*!********************************************!*\
   !*** ./galaxy/scripts/mvc/ui/ui-slider.js ***!
   \********************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $) {// dependencies
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils) {
 	
 	// plugin
 	var View = Backbone.View.extend({
@@ -4780,17 +4834,17 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 22 */
+/* 23 */
 /*!*********************************************!*\
   !*** ./galaxy/scripts/mvc/ui/ui-options.js ***!
   \*********************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $) {// dependencies
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17), __webpack_require__(/*! mvc/ui/ui-buttons */ 20)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Buttons) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18), __webpack_require__(/*! mvc/ui/ui-buttons */ 21)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Buttons) {
 	
 	/** Base class for options based ui elements **/
 	var Base = Backbone.View.extend({
@@ -5112,17 +5166,17 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 23 */
+/* 24 */
 /*!***********************************************!*\
   !*** ./galaxy/scripts/mvc/ui/ui-drilldown.js ***!
   \***********************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function($) {// dependencies
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17), __webpack_require__(/*! mvc/ui/ui-options */ 22)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Options) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18), __webpack_require__(/*! mvc/ui/ui-options */ 23)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Options) {
 	
 	/**
 	 *  This class creates/wraps a drill down element.
@@ -5261,10 +5315,10 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 24 */
+/* 25 */
 /*!****************************************************!*\
   !*** ./galaxy/scripts/mvc/tool/tools-form-base.js ***!
   \****************************************************/
@@ -5273,8 +5327,8 @@ webpackJsonp([0],[
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $) {/**
 	    This is the base class of the tool form plugin. This class is e.g. inherited by the regular and the workflow tool form.
 	*/
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17), __webpack_require__(/*! utils/deferred */ 25), __webpack_require__(/*! mvc/ui/ui-misc */ 18), __webpack_require__(/*! mvc/form/form-view */ 26),
-	        __webpack_require__(/*! mvc/tool/tools-template */ 35), __webpack_require__(/*! mvc/citation/citation-model */ 41), __webpack_require__(/*! mvc/citation/citation-view */ 43)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Deferred, Ui, Form, ToolTemplate, CitationModel, CitationView) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18), __webpack_require__(/*! utils/deferred */ 26), __webpack_require__(/*! mvc/ui/ui-misc */ 19), __webpack_require__(/*! mvc/form/form-view */ 27),
+	        __webpack_require__(/*! mvc/tool/tools-template */ 36), __webpack_require__(/*! mvc/citation/citation-model */ 42), __webpack_require__(/*! mvc/citation/citation-view */ 44)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Deferred, Ui, Form, ToolTemplate, CitationModel, CitationView) {
 	
 	    // create form view
 	    return Backbone.View.extend({
@@ -5603,10 +5657,10 @@ webpackJsonp([0],[
 	        }
 	    });
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 25 */
+/* 26 */
 /*!******************************************!*\
   !*** ./galaxy/scripts/utils/deferred.js ***!
   \******************************************/
@@ -5615,7 +5669,7 @@ webpackJsonp([0],[
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $) {/**
 	 *  This class defines a queue to ensure that multiple deferred callbacks are executed sequentially.
 	 */
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17)], __WEBPACK_AMD_DEFINE_RESULT__ = function( Utils ) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18)], __WEBPACK_AMD_DEFINE_RESULT__ = function( Utils ) {
 	return Backbone.Model.extend({
 	    initialize: function(){
 	        this.active = {};
@@ -5670,10 +5724,10 @@ webpackJsonp([0],[
 	});
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 26 */
+/* 27 */
 /*!**********************************************!*\
   !*** ./galaxy/scripts/mvc/form/form-view.js ***!
   \**********************************************/
@@ -5682,8 +5736,8 @@ webpackJsonp([0],[
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _, $) {/**
 	    This is the main class of the form plugin. It is referenced as 'app' in all lower level modules.
 	*/
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17), __webpack_require__(/*! mvc/ui/ui-portlet */ 27), __webpack_require__(/*! mvc/ui/ui-misc */ 18),
-	        __webpack_require__(/*! mvc/form/form-section */ 28), __webpack_require__(/*! mvc/form/form-data */ 40)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Portlet, Ui, FormSection, FormData) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18), __webpack_require__(/*! mvc/ui/ui-portlet */ 28), __webpack_require__(/*! mvc/ui/ui-misc */ 19),
+	        __webpack_require__(/*! mvc/form/form-section */ 29), __webpack_require__(/*! mvc/form/form-data */ 41)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Portlet, Ui, FormSection, FormData) {
 	
 	    // create form view
 	    return Backbone.View.extend({
@@ -5915,17 +5969,17 @@ webpackJsonp([0],[
 	        }
 	    });
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 27 */
+/* 28 */
 /*!*********************************************!*\
   !*** ./galaxy/scripts/mvc/ui/ui-portlet.js ***!
   \*********************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $) {// dependencies
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils) {
 	
 	// portlet view class
 	var View = Backbone.View.extend({
@@ -6130,10 +6184,10 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 28 */
+/* 29 */
 /*!*************************************************!*\
   !*** ./galaxy/scripts/mvc/form/form-section.js ***!
   \*************************************************/
@@ -6142,13 +6196,13 @@ webpackJsonp([0],[
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, jQuery, _, $) {/**
 	    This class creates a form section and populates it with input elements. It also handles repeat blocks and conditionals by recursively creating new sub sections.
 	*/
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17),
-	        __webpack_require__(/*! mvc/ui/ui-table */ 29),
-	        __webpack_require__(/*! mvc/ui/ui-misc */ 18),
-	        __webpack_require__(/*! mvc/ui/ui-portlet */ 27),
-	        __webpack_require__(/*! mvc/form/form-repeat */ 30),
-	        __webpack_require__(/*! mvc/form/form-input */ 31),
-	        __webpack_require__(/*! mvc/form/form-parameters */ 32)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Table, Ui, Portlet, Repeat, InputElement, Parameters) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18),
+	        __webpack_require__(/*! mvc/ui/ui-table */ 30),
+	        __webpack_require__(/*! mvc/ui/ui-misc */ 19),
+	        __webpack_require__(/*! mvc/ui/ui-portlet */ 28),
+	        __webpack_require__(/*! mvc/form/form-repeat */ 31),
+	        __webpack_require__(/*! mvc/form/form-input */ 32),
+	        __webpack_require__(/*! mvc/form/form-parameters */ 33)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Table, Ui, Portlet, Repeat, InputElement, Parameters) {
 	
 	    // create form view
 	    var View = Backbone.View.extend({
@@ -6490,17 +6544,17 @@ webpackJsonp([0],[
 	        View: View
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 29 */
+/* 30 */
 /*!*******************************************!*\
   !*** ./galaxy/scripts/mvc/ui/ui-table.js ***!
   \*******************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $) {// dependencies
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils) {
 	
 	/**
 	 *  This class creates a ui table element.
@@ -6728,17 +6782,17 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 30 */
+/* 31 */
 /*!************************************************!*\
   !*** ./galaxy/scripts/mvc/form/form-repeat.js ***!
   \************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $) {// dependencies
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17), __webpack_require__(/*! mvc/ui/ui-table */ 29), __webpack_require__(/*! mvc/ui/ui-portlet */ 27), __webpack_require__(/*! mvc/ui/ui-misc */ 18)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Table, Portlet, Ui) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18), __webpack_require__(/*! mvc/ui/ui-table */ 30), __webpack_require__(/*! mvc/ui/ui-portlet */ 28), __webpack_require__(/*! mvc/ui/ui-misc */ 19)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Table, Portlet, Ui) {
 	
 	/** This class creates a ui component which enables the dynamic creation of portlets
 	*/
@@ -6904,10 +6958,10 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 31 */
+/* 32 */
 /*!***********************************************!*\
   !*** ./galaxy/scripts/mvc/form/form-input.js ***!
   \***********************************************/
@@ -7043,10 +7097,10 @@ webpackJsonp([0],[
 	        }
 	    });
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2)))
 
 /***/ },
-/* 32 */
+/* 33 */
 /*!****************************************************!*\
   !*** ./galaxy/scripts/mvc/form/form-parameters.js ***!
   \****************************************************/
@@ -7055,12 +7109,12 @@ webpackJsonp([0],[
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $) {/**
 	    This class creates input elements. New input parameter types should be added to the types dictionary.
 	*/
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17),
-	        __webpack_require__(/*! mvc/ui/ui-misc */ 18),
-	        __webpack_require__(/*! mvc/form/form-select-content */ 33),
-	        __webpack_require__(/*! mvc/ui/ui-select-library */ 36),
-	        __webpack_require__(/*! mvc/ui/ui-select-ftp */ 38),
-	        __webpack_require__(/*! mvc/ui/ui-color-picker */ 39)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Ui, SelectContent, SelectLibrary, SelectFtp, ColorPicker) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18),
+	        __webpack_require__(/*! mvc/ui/ui-misc */ 19),
+	        __webpack_require__(/*! mvc/form/form-select-content */ 34),
+	        __webpack_require__(/*! mvc/ui/ui-select-library */ 37),
+	        __webpack_require__(/*! mvc/ui/ui-select-ftp */ 39),
+	        __webpack_require__(/*! mvc/ui/ui-color-picker */ 40)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Ui, SelectContent, SelectLibrary, SelectFtp, ColorPicker) {
 	
 	    // create form view
 	    return Backbone.Model.extend({
@@ -7349,17 +7403,17 @@ webpackJsonp([0],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 33 */
+/* 34 */
 /*!********************************************************!*\
   !*** ./galaxy/scripts/mvc/form/form-select-content.js ***!
   \********************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $, _) {// dependencies
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17), __webpack_require__(/*! mvc/ui/ui-misc */ 18), __webpack_require__(/*! mvc/ui/ui-tabs */ 34), __webpack_require__(/*! mvc/tool/tools-template */ 35)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Ui, Tabs, ToolTemplate) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18), __webpack_require__(/*! mvc/ui/ui-misc */ 19), __webpack_require__(/*! mvc/ui/ui-tabs */ 35), __webpack_require__(/*! mvc/tool/tools-template */ 36)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Ui, Tabs, ToolTemplate) {
 	
 	// hda/hdca content selector ui element
 	var View = Backbone.View.extend({
@@ -7703,17 +7757,17 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! underscore */ 1)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 34 */
+/* 35 */
 /*!******************************************!*\
   !*** ./galaxy/scripts/mvc/ui/ui-tabs.js ***!
   \******************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $, _) {// dependencies
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils) {
 	
 	// return
 	var View = Backbone.View.extend({
@@ -8006,10 +8060,10 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! underscore */ 1)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 35 */
+/* 36 */
 /*!***************************************************!*\
   !*** ./galaxy/scripts/mvc/tool/tools-template.js ***!
   \***************************************************/
@@ -8088,17 +8142,17 @@ webpackJsonp([0],[
 	};
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 36 */
+/* 37 */
 /*!****************************************************!*\
   !*** ./galaxy/scripts/mvc/ui/ui-select-library.js ***!
   \****************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone) {// dependencies
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17), __webpack_require__(/*! mvc/ui/ui-misc */ 18), __webpack_require__(/*! mvc/ui/ui-table */ 29), __webpack_require__(/*! mvc/ui/ui-list */ 37)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Ui, Table, List) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18), __webpack_require__(/*! mvc/ui/ui-misc */ 19), __webpack_require__(/*! mvc/ui/ui-table */ 30), __webpack_require__(/*! mvc/ui/ui-list */ 38)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Ui, Table, List) {
 	
 	// collection of libraries
 	var Libraries = Backbone.Collection.extend({
@@ -8224,17 +8278,17 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2)))
 
 /***/ },
-/* 37 */
+/* 38 */
 /*!******************************************!*\
   !*** ./galaxy/scripts/mvc/ui/ui-list.js ***!
   \******************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $) {// dependencies
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17), __webpack_require__(/*! mvc/ui/ui-portlet */ 27), __webpack_require__(/*! mvc/ui/ui-misc */ 18)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Portlet, Ui) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18), __webpack_require__(/*! mvc/ui/ui-portlet */ 28), __webpack_require__(/*! mvc/ui/ui-misc */ 19)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Portlet, Ui) {
 	
 	// ui list element
 	var View = Backbone.View.extend({
@@ -8391,17 +8445,17 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 38 */
+/* 39 */
 /*!************************************************!*\
   !*** ./galaxy/scripts/mvc/ui/ui-select-ftp.js ***!
   \************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone) {// dependencies
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17), __webpack_require__(/*! mvc/ui/ui-list */ 37)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, List) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18), __webpack_require__(/*! mvc/ui/ui-list */ 38)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, List) {
 	
 	/**
 	 * FTP file selector
@@ -8453,17 +8507,17 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2)))
 
 /***/ },
-/* 39 */
+/* 40 */
 /*!**************************************************!*\
   !*** ./galaxy/scripts/mvc/ui/ui-color-picker.js ***!
   \**************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $) {/** Renders the color picker used e.g. in the tool form **/
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17)], __WEBPACK_AMD_DEFINE_RESULT__ = function( Utils ) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18)], __WEBPACK_AMD_DEFINE_RESULT__ = function( Utils ) {
 	    return Backbone.View.extend({
 	        colors: {
 	            standard: ['c00000','ff0000','ffc000','ffff00','92d050','00b050','00b0f0','0070c0','002060','7030a0'],
@@ -8649,10 +8703,10 @@ webpackJsonp([0],[
 	        }
 	    });
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 40 */
+/* 41 */
 /*!**********************************************!*\
   !*** ./galaxy/scripts/mvc/form/form-data.js ***!
   \**********************************************/
@@ -8661,7 +8715,7 @@ webpackJsonp([0],[
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $) {/*
 	    This class maps the form dom to an api compatible javascript dictionary.
 	*/
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils) {
 	return Backbone.Model.extend({
 	    // initialize
 	    initialize: function(app) {
@@ -8953,19 +9007,19 @@ webpackJsonp([0],[
 	});
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 41 */
+/* 42 */
 /*!*******************************************************!*\
   !*** ./galaxy/scripts/mvc/citation/citation-model.js ***!
   \*******************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! libs/bibtex */ 42),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! libs/bibtex */ 43),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( bibtex, baseMVC, _l ){
 	/* global Backbone */
 	
@@ -9033,10 +9087,10 @@ webpackJsonp([0],[
 	};
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2)))
 
 /***/ },
-/* 42 */
+/* 43 */
 /*!***************************************!*\
   !*** ./galaxy/scripts/libs/bibtex.js ***!
   \***************************************/
@@ -10912,16 +10966,16 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 43 */
+/* 44 */
 /*!******************************************************!*\
   !*** ./galaxy/scripts/mvc/citation/citation-view.js ***!
   \******************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! mvc/citation/citation-model */ 41),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! mvc/citation/citation-model */ 42),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( baseMVC, citationModel, _l ){
 	
 	var CitationView = Backbone.View.extend({
@@ -11107,10 +11161,10 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2)))
 
 /***/ },
-/* 44 */
+/* 45 */
 /*!***********************************************!*\
   !*** ./galaxy/scripts/mvc/tool/tools-jobs.js ***!
   \***********************************************/
@@ -11119,7 +11173,7 @@ webpackJsonp([0],[
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/**
 	    This class handles job submissions and validations.
 	*/
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17), __webpack_require__(/*! mvc/tool/tools-template */ 35)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, ToolTemplate) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18), __webpack_require__(/*! mvc/tool/tools-template */ 36)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, ToolTemplate) {
 	return {
 	    submit: function(form, options, callback) {
 	        // link this
@@ -11264,13 +11318,13 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 45 */
+/* 46 */
 /*!*******************************************************!*\
   !*** ./galaxy/scripts/templates/tool_form.handlebars ***!
   \*******************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	var Handlebars = __webpack_require__(/*! ./~/handlebars/runtime.js */ 46);
+	var Handlebars = __webpack_require__(/*! ./~/handlebars/runtime.js */ 47);
 	module.exports = (Handlebars["default"] || Handlebars).template({"1":function(container,depth0,helpers,partials,data) {
 	    var stack1, helper, alias1=depth0 != null ? depth0 : {}, alias2=helpers.helperMissing, alias3="function", alias4=container.escapeExpression;
 	
@@ -11298,7 +11352,7 @@ webpackJsonp([0],[
 	},"useData":true});
 
 /***/ },
-/* 46 */
+/* 47 */
 /*!*********************************!*\
   !*** ./~/handlebars/runtime.js ***!
   \*********************************/
@@ -11306,11 +11360,11 @@ webpackJsonp([0],[
 
 	// Create a simple path alias to allow browserify to resolve
 	// the runtime on a supported path.
-	module.exports = __webpack_require__(/*! ./dist/cjs/handlebars.runtime */ 47)['default'];
+	module.exports = __webpack_require__(/*! ./dist/cjs/handlebars.runtime */ 48)['default'];
 
 
 /***/ },
-/* 47 */
+/* 48 */
 /*!*****************************************************!*\
   !*** ./~/handlebars/dist/cjs/handlebars.runtime.js ***!
   \*****************************************************/
@@ -11327,30 +11381,30 @@ webpackJsonp([0],[
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
 	
-	var _handlebarsBase = __webpack_require__(/*! ./handlebars/base */ 48);
+	var _handlebarsBase = __webpack_require__(/*! ./handlebars/base */ 49);
 	
 	// Each of these augment the Handlebars object. No need to setup here.
 	// (This is done to easily share code between commonjs and browse envs)
 	
 	var base = _interopRequireWildcard(_handlebarsBase);
 	
-	var _handlebarsSafeString = __webpack_require__(/*! ./handlebars/safe-string */ 62);
+	var _handlebarsSafeString = __webpack_require__(/*! ./handlebars/safe-string */ 63);
 	
 	var _handlebarsSafeString2 = _interopRequireDefault(_handlebarsSafeString);
 	
-	var _handlebarsException = __webpack_require__(/*! ./handlebars/exception */ 50);
+	var _handlebarsException = __webpack_require__(/*! ./handlebars/exception */ 51);
 	
 	var _handlebarsException2 = _interopRequireDefault(_handlebarsException);
 	
-	var _handlebarsUtils = __webpack_require__(/*! ./handlebars/utils */ 49);
+	var _handlebarsUtils = __webpack_require__(/*! ./handlebars/utils */ 50);
 	
 	var Utils = _interopRequireWildcard(_handlebarsUtils);
 	
-	var _handlebarsRuntime = __webpack_require__(/*! ./handlebars/runtime */ 63);
+	var _handlebarsRuntime = __webpack_require__(/*! ./handlebars/runtime */ 64);
 	
 	var runtime = _interopRequireWildcard(_handlebarsRuntime);
 	
-	var _handlebarsNoConflict = __webpack_require__(/*! ./handlebars/no-conflict */ 64);
+	var _handlebarsNoConflict = __webpack_require__(/*! ./handlebars/no-conflict */ 65);
 	
 	// For compatibility and usage outside of module systems, make the Handlebars object a namespace
 	
@@ -11386,7 +11440,7 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 48 */
+/* 49 */
 /*!**************************************************!*\
   !*** ./~/handlebars/dist/cjs/handlebars/base.js ***!
   \**************************************************/
@@ -11400,17 +11454,17 @@ webpackJsonp([0],[
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 	
-	var _utils = __webpack_require__(/*! ./utils */ 49);
+	var _utils = __webpack_require__(/*! ./utils */ 50);
 	
-	var _exception = __webpack_require__(/*! ./exception */ 50);
+	var _exception = __webpack_require__(/*! ./exception */ 51);
 	
 	var _exception2 = _interopRequireDefault(_exception);
 	
-	var _helpers = __webpack_require__(/*! ./helpers */ 51);
+	var _helpers = __webpack_require__(/*! ./helpers */ 52);
 	
-	var _decorators = __webpack_require__(/*! ./decorators */ 59);
+	var _decorators = __webpack_require__(/*! ./decorators */ 60);
 	
-	var _logger = __webpack_require__(/*! ./logger */ 61);
+	var _logger = __webpack_require__(/*! ./logger */ 62);
 	
 	var _logger2 = _interopRequireDefault(_logger);
 	
@@ -11499,7 +11553,7 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 49 */
+/* 50 */
 /*!***************************************************!*\
   !*** ./~/handlebars/dist/cjs/handlebars/utils.js ***!
   \***************************************************/
@@ -11632,7 +11686,7 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 50 */
+/* 51 */
 /*!*******************************************************!*\
   !*** ./~/handlebars/dist/cjs/handlebars/exception.js ***!
   \*******************************************************/
@@ -11681,7 +11735,7 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 51 */
+/* 52 */
 /*!*****************************************************!*\
   !*** ./~/handlebars/dist/cjs/handlebars/helpers.js ***!
   \*****************************************************/
@@ -11695,31 +11749,31 @@ webpackJsonp([0],[
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 	
-	var _helpersBlockHelperMissing = __webpack_require__(/*! ./helpers/block-helper-missing */ 52);
+	var _helpersBlockHelperMissing = __webpack_require__(/*! ./helpers/block-helper-missing */ 53);
 	
 	var _helpersBlockHelperMissing2 = _interopRequireDefault(_helpersBlockHelperMissing);
 	
-	var _helpersEach = __webpack_require__(/*! ./helpers/each */ 53);
+	var _helpersEach = __webpack_require__(/*! ./helpers/each */ 54);
 	
 	var _helpersEach2 = _interopRequireDefault(_helpersEach);
 	
-	var _helpersHelperMissing = __webpack_require__(/*! ./helpers/helper-missing */ 54);
+	var _helpersHelperMissing = __webpack_require__(/*! ./helpers/helper-missing */ 55);
 	
 	var _helpersHelperMissing2 = _interopRequireDefault(_helpersHelperMissing);
 	
-	var _helpersIf = __webpack_require__(/*! ./helpers/if */ 55);
+	var _helpersIf = __webpack_require__(/*! ./helpers/if */ 56);
 	
 	var _helpersIf2 = _interopRequireDefault(_helpersIf);
 	
-	var _helpersLog = __webpack_require__(/*! ./helpers/log */ 56);
+	var _helpersLog = __webpack_require__(/*! ./helpers/log */ 57);
 	
 	var _helpersLog2 = _interopRequireDefault(_helpersLog);
 	
-	var _helpersLookup = __webpack_require__(/*! ./helpers/lookup */ 57);
+	var _helpersLookup = __webpack_require__(/*! ./helpers/lookup */ 58);
 	
 	var _helpersLookup2 = _interopRequireDefault(_helpersLookup);
 	
-	var _helpersWith = __webpack_require__(/*! ./helpers/with */ 58);
+	var _helpersWith = __webpack_require__(/*! ./helpers/with */ 59);
 	
 	var _helpersWith2 = _interopRequireDefault(_helpersWith);
 	
@@ -11736,7 +11790,7 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 52 */
+/* 53 */
 /*!**************************************************************************!*\
   !*** ./~/handlebars/dist/cjs/handlebars/helpers/block-helper-missing.js ***!
   \**************************************************************************/
@@ -11746,7 +11800,7 @@ webpackJsonp([0],[
 	
 	exports.__esModule = true;
 	
-	var _utils = __webpack_require__(/*! ../utils */ 49);
+	var _utils = __webpack_require__(/*! ../utils */ 50);
 	
 	exports['default'] = function (instance) {
 	  instance.registerHelper('blockHelperMissing', function (context, options) {
@@ -11784,7 +11838,7 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 53 */
+/* 54 */
 /*!**********************************************************!*\
   !*** ./~/handlebars/dist/cjs/handlebars/helpers/each.js ***!
   \**********************************************************/
@@ -11797,9 +11851,9 @@ webpackJsonp([0],[
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 	
-	var _utils = __webpack_require__(/*! ../utils */ 49);
+	var _utils = __webpack_require__(/*! ../utils */ 50);
 	
-	var _exception = __webpack_require__(/*! ../exception */ 50);
+	var _exception = __webpack_require__(/*! ../exception */ 51);
 	
 	var _exception2 = _interopRequireDefault(_exception);
 	
@@ -11887,7 +11941,7 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 54 */
+/* 55 */
 /*!********************************************************************!*\
   !*** ./~/handlebars/dist/cjs/handlebars/helpers/helper-missing.js ***!
   \********************************************************************/
@@ -11900,7 +11954,7 @@ webpackJsonp([0],[
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 	
-	var _exception = __webpack_require__(/*! ../exception */ 50);
+	var _exception = __webpack_require__(/*! ../exception */ 51);
 	
 	var _exception2 = _interopRequireDefault(_exception);
 	
@@ -11921,7 +11975,7 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 55 */
+/* 56 */
 /*!********************************************************!*\
   !*** ./~/handlebars/dist/cjs/handlebars/helpers/if.js ***!
   \********************************************************/
@@ -11931,7 +11985,7 @@ webpackJsonp([0],[
 	
 	exports.__esModule = true;
 	
-	var _utils = __webpack_require__(/*! ../utils */ 49);
+	var _utils = __webpack_require__(/*! ../utils */ 50);
 	
 	exports['default'] = function (instance) {
 	  instance.registerHelper('if', function (conditional, options) {
@@ -11959,7 +12013,7 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 56 */
+/* 57 */
 /*!*********************************************************!*\
   !*** ./~/handlebars/dist/cjs/handlebars/helpers/log.js ***!
   \*********************************************************/
@@ -11994,7 +12048,7 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 57 */
+/* 58 */
 /*!************************************************************!*\
   !*** ./~/handlebars/dist/cjs/handlebars/helpers/lookup.js ***!
   \************************************************************/
@@ -12015,7 +12069,7 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 58 */
+/* 59 */
 /*!**********************************************************!*\
   !*** ./~/handlebars/dist/cjs/handlebars/helpers/with.js ***!
   \**********************************************************/
@@ -12025,7 +12079,7 @@ webpackJsonp([0],[
 	
 	exports.__esModule = true;
 	
-	var _utils = __webpack_require__(/*! ../utils */ 49);
+	var _utils = __webpack_require__(/*! ../utils */ 50);
 	
 	exports['default'] = function (instance) {
 	  instance.registerHelper('with', function (context, options) {
@@ -12057,7 +12111,7 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 59 */
+/* 60 */
 /*!********************************************************!*\
   !*** ./~/handlebars/dist/cjs/handlebars/decorators.js ***!
   \********************************************************/
@@ -12071,7 +12125,7 @@ webpackJsonp([0],[
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 	
-	var _decoratorsInline = __webpack_require__(/*! ./decorators/inline */ 60);
+	var _decoratorsInline = __webpack_require__(/*! ./decorators/inline */ 61);
 	
 	var _decoratorsInline2 = _interopRequireDefault(_decoratorsInline);
 	
@@ -12082,7 +12136,7 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 60 */
+/* 61 */
 /*!***************************************************************!*\
   !*** ./~/handlebars/dist/cjs/handlebars/decorators/inline.js ***!
   \***************************************************************/
@@ -12092,7 +12146,7 @@ webpackJsonp([0],[
 	
 	exports.__esModule = true;
 	
-	var _utils = __webpack_require__(/*! ../utils */ 49);
+	var _utils = __webpack_require__(/*! ../utils */ 50);
 	
 	exports['default'] = function (instance) {
 	  instance.registerDecorator('inline', function (fn, props, container, options) {
@@ -12120,7 +12174,7 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 61 */
+/* 62 */
 /*!****************************************************!*\
   !*** ./~/handlebars/dist/cjs/handlebars/logger.js ***!
   \****************************************************/
@@ -12130,7 +12184,7 @@ webpackJsonp([0],[
 	
 	exports.__esModule = true;
 	
-	var _utils = __webpack_require__(/*! ./utils */ 49);
+	var _utils = __webpack_require__(/*! ./utils */ 50);
 	
 	var logger = {
 	  methodMap: ['debug', 'info', 'warn', 'error'],
@@ -12176,7 +12230,7 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 62 */
+/* 63 */
 /*!*********************************************************!*\
   !*** ./~/handlebars/dist/cjs/handlebars/safe-string.js ***!
   \*********************************************************/
@@ -12200,7 +12254,7 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 63 */
+/* 64 */
 /*!*****************************************************!*\
   !*** ./~/handlebars/dist/cjs/handlebars/runtime.js ***!
   \*****************************************************/
@@ -12223,15 +12277,15 @@ webpackJsonp([0],[
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
 	
-	var _utils = __webpack_require__(/*! ./utils */ 49);
+	var _utils = __webpack_require__(/*! ./utils */ 50);
 	
 	var Utils = _interopRequireWildcard(_utils);
 	
-	var _exception = __webpack_require__(/*! ./exception */ 50);
+	var _exception = __webpack_require__(/*! ./exception */ 51);
 	
 	var _exception2 = _interopRequireDefault(_exception);
 	
-	var _base = __webpack_require__(/*! ./base */ 48);
+	var _base = __webpack_require__(/*! ./base */ 49);
 	
 	function checkRevision(compilerInfo) {
 	  var compilerRevision = compilerInfo && compilerInfo[0] || 1,
@@ -12501,7 +12555,7 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 64 */
+/* 65 */
 /*!*********************************************************!*\
   !*** ./~/handlebars/dist/cjs/handlebars/no-conflict.js ***!
   \*********************************************************/
@@ -12530,13 +12584,13 @@ webpackJsonp([0],[
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 65 */
+/* 66 */
 /*!*******************************************************!*\
   !*** ./galaxy/scripts/templates/tool_link.handlebars ***!
   \*******************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	var Handlebars = __webpack_require__(/*! ./~/handlebars/runtime.js */ 46);
+	var Handlebars = __webpack_require__(/*! ./~/handlebars/runtime.js */ 47);
 	module.exports = (Handlebars["default"] || Handlebars).template({"1":function(container,depth0,helpers,partials,data) {
 	    var alias1=container.lambda, alias2=container.escapeExpression;
 	
@@ -12566,13 +12620,13 @@ webpackJsonp([0],[
 	},"useData":true});
 
 /***/ },
-/* 66 */
+/* 67 */
 /*!***********************************************************!*\
   !*** ./galaxy/scripts/templates/panel_section.handlebars ***!
   \***********************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	var Handlebars = __webpack_require__(/*! ./~/handlebars/runtime.js */ 46);
+	var Handlebars = __webpack_require__(/*! ./~/handlebars/runtime.js */ 47);
 	module.exports = (Handlebars["default"] || Handlebars).template({"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
 	    var helper, alias1=depth0 != null ? depth0 : {}, alias2=helpers.helperMissing, alias3="function", alias4=container.escapeExpression;
 	
@@ -12586,13 +12640,13 @@ webpackJsonp([0],[
 	},"useData":true});
 
 /***/ },
-/* 67 */
+/* 68 */
 /*!*********************************************************!*\
   !*** ./galaxy/scripts/templates/tool_search.handlebars ***!
   \*********************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	var Handlebars = __webpack_require__(/*! ./~/handlebars/runtime.js */ 46);
+	var Handlebars = __webpack_require__(/*! ./~/handlebars/runtime.js */ 47);
 	module.exports = (Handlebars["default"] || Handlebars).template({"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
 	    var helper, alias1=depth0 != null ? depth0 : {}, alias2=helpers.helperMissing, alias3="function", alias4=container.escapeExpression;
 	
@@ -12604,19 +12658,19 @@ webpackJsonp([0],[
 	},"useData":true});
 
 /***/ },
-/* 68 */
+/* 69 */
 /*!**************************************************!*\
   !*** ./galaxy/scripts/mvc/upload/upload-view.js ***!
   \**************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone) {/** Upload app contains the upload progress button and upload modal, compiles model data for API request **/
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17),
-	        __webpack_require__(/*! mvc/ui/ui-modal */ 13),
-	        __webpack_require__(/*! mvc/ui/ui-tabs */ 34),
-	        __webpack_require__(/*! mvc/upload/upload-button */ 69),
-	        __webpack_require__(/*! mvc/upload/default/default-view */ 70),
-	        __webpack_require__(/*! mvc/upload/composite/composite-view */ 78)], __WEBPACK_AMD_DEFINE_RESULT__ = function(   Utils,
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18),
+	        __webpack_require__(/*! mvc/ui/ui-modal */ 14),
+	        __webpack_require__(/*! mvc/ui/ui-tabs */ 35),
+	        __webpack_require__(/*! mvc/upload/upload-button */ 70),
+	        __webpack_require__(/*! mvc/upload/default/default-view */ 71),
+	        __webpack_require__(/*! mvc/upload/composite/composite-view */ 79)], __WEBPACK_AMD_DEFINE_RESULT__ = function(   Utils,
 	                    Modal,
 	                    Tabs,
 	                    UploadButton,
@@ -12839,10 +12893,10 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2)))
 
 /***/ },
-/* 69 */
+/* 70 */
 /*!****************************************************!*\
   !*** ./galaxy/scripts/mvc/upload/upload-button.js ***!
   \****************************************************/
@@ -12942,24 +12996,24 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 70 */
+/* 71 */
 /*!***********************************************************!*\
   !*** ./galaxy/scripts/mvc/upload/default/default-view.js ***!
   \***********************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _, $) {/** Renders contents of the default uploader */
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17),
-	        __webpack_require__(/*! mvc/upload/upload-model */ 71),
-	        __webpack_require__(/*! mvc/upload/default/default-row */ 72),
-	        __webpack_require__(/*! mvc/upload/upload-ftp */ 76),
-	        __webpack_require__(/*! mvc/ui/ui-popover */ 74),
-	        __webpack_require__(/*! mvc/ui/ui-select */ 75),
-	        __webpack_require__(/*! mvc/ui/ui-misc */ 18),
-	        __webpack_require__(/*! utils/uploadbox */ 77)], __WEBPACK_AMD_DEFINE_RESULT__ = function(   Utils,
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18),
+	        __webpack_require__(/*! mvc/upload/upload-model */ 72),
+	        __webpack_require__(/*! mvc/upload/default/default-row */ 73),
+	        __webpack_require__(/*! mvc/upload/upload-ftp */ 77),
+	        __webpack_require__(/*! mvc/ui/ui-popover */ 75),
+	        __webpack_require__(/*! mvc/ui/ui-select */ 76),
+	        __webpack_require__(/*! mvc/ui/ui-misc */ 19),
+	        __webpack_require__(/*! utils/uploadbox */ 78)], __WEBPACK_AMD_DEFINE_RESULT__ = function(   Utils,
 	                    UploadModel,
 	                    UploadRow,
 	                    UploadFtp,
@@ -13518,10 +13572,10 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 71 */
+/* 72 */
 /*!***************************************************!*\
   !*** ./galaxy/scripts/mvc/upload/upload-model.js ***!
   \***************************************************/
@@ -13567,21 +13621,21 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2)))
 
 /***/ },
-/* 72 */
+/* 73 */
 /*!**********************************************************!*\
   !*** ./galaxy/scripts/mvc/upload/default/default-row.js ***!
   \**********************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $) {// dependencies
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17),
-	        __webpack_require__(/*! mvc/upload/upload-model */ 71),
-	        __webpack_require__(/*! mvc/upload/upload-settings */ 73),
-	        __webpack_require__(/*! mvc/ui/ui-popover */ 74),
-	        __webpack_require__(/*! mvc/ui/ui-select */ 75)], __WEBPACK_AMD_DEFINE_RESULT__ = function(   Utils,
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18),
+	        __webpack_require__(/*! mvc/upload/upload-model */ 72),
+	        __webpack_require__(/*! mvc/upload/upload-settings */ 74),
+	        __webpack_require__(/*! mvc/ui/ui-popover */ 75),
+	        __webpack_require__(/*! mvc/ui/ui-select */ 76)], __WEBPACK_AMD_DEFINE_RESULT__ = function(   Utils,
 	                    UploadModel,
 	                    UploadSettings,
 	                    Popover,
@@ -13917,17 +13971,17 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 73 */
+/* 74 */
 /*!******************************************************!*\
   !*** ./galaxy/scripts/mvc/upload/upload-settings.js ***!
   \******************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone) {/** This renders the content of the settings popup, allowing users to specify flags i.e. for space-to-tab conversion **/
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils) {
 	return Backbone.View.extend({
 	    // options
 	    options: {
@@ -14025,17 +14079,17 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2)))
 
 /***/ },
-/* 74 */
+/* 75 */
 /*!*********************************************!*\
   !*** ./galaxy/scripts/mvc/ui/ui-popover.js ***!
   \*********************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _, $) {// dependencies
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils) {
 	
 	var View = Backbone.View.extend({
 	
@@ -14203,17 +14257,17 @@ webpackJsonp([0],[
 	}
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 75 */
+/* 76 */
 /*!********************************************!*\
   !*** ./galaxy/scripts/mvc/ui/ui-select.js ***!
   \********************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone) {// dependencies
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils) {
 	
 	/**
 	 * A plugin for initializing select2 input items.
@@ -14433,17 +14487,17 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2)))
 
 /***/ },
-/* 76 */
+/* 77 */
 /*!*************************************************!*\
   !*** ./galaxy/scripts/mvc/upload/upload-ftp.js ***!
   \*************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $) {/** This renders the content of the ftp popup **/
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils) {
 	return Backbone.View.extend({
 	    // render
 	    initialize: function(options) {
@@ -14649,10 +14703,10 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 77 */
+/* 78 */
 /*!*******************************************!*\
   !*** ./galaxy/scripts/utils/uploadbox.js ***!
   \*******************************************/
@@ -14953,22 +15007,22 @@ webpackJsonp([0],[
 	})(jQuery);
 	
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 78 */
+/* 79 */
 /*!***************************************************************!*\
   !*** ./galaxy/scripts/mvc/upload/composite/composite-view.js ***!
   \***************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _, $) {/** Renders contents of the composite uploader */
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17),
-	        __webpack_require__(/*! mvc/upload/upload-model */ 71),
-	        __webpack_require__(/*! mvc/upload/composite/composite-row */ 79),
-	        __webpack_require__(/*! mvc/ui/ui-popover */ 74),
-	        __webpack_require__(/*! mvc/ui/ui-select */ 75),
-	        __webpack_require__(/*! mvc/ui/ui-misc */ 18)], __WEBPACK_AMD_DEFINE_RESULT__ = function(   Utils,
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18),
+	        __webpack_require__(/*! mvc/upload/upload-model */ 72),
+	        __webpack_require__(/*! mvc/upload/composite/composite-row */ 80),
+	        __webpack_require__(/*! mvc/ui/ui-popover */ 75),
+	        __webpack_require__(/*! mvc/ui/ui-select */ 76),
+	        __webpack_require__(/*! mvc/ui/ui-misc */ 19)], __WEBPACK_AMD_DEFINE_RESULT__ = function(   Utils,
 	                    UploadModel,
 	                    UploadRow,
 	                    Popover,
@@ -15218,23 +15272,23 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 79 */
+/* 80 */
 /*!**************************************************************!*\
   !*** ./galaxy/scripts/mvc/upload/composite/composite-row.js ***!
   \**************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $) {// dependencies
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 17),
-	        __webpack_require__(/*! mvc/upload/upload-settings */ 73),
-	        __webpack_require__(/*! mvc/upload/upload-ftp */ 76),
-	        __webpack_require__(/*! mvc/ui/ui-popover */ 74),
-	        __webpack_require__(/*! mvc/ui/ui-misc */ 18),
-	        __webpack_require__(/*! mvc/ui/ui-select */ 75),
-	        __webpack_require__(/*! utils/uploadbox */ 77)], __WEBPACK_AMD_DEFINE_RESULT__ = function(   Utils,
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! utils/utils */ 18),
+	        __webpack_require__(/*! mvc/upload/upload-settings */ 74),
+	        __webpack_require__(/*! mvc/upload/upload-ftp */ 77),
+	        __webpack_require__(/*! mvc/ui/ui-popover */ 75),
+	        __webpack_require__(/*! mvc/ui/ui-misc */ 19),
+	        __webpack_require__(/*! mvc/ui/ui-select */ 76),
+	        __webpack_require__(/*! utils/uploadbox */ 78)], __WEBPACK_AMD_DEFINE_RESULT__ = function(   Utils,
 	                    UploadSettings,
 	                    UploadFtp,
 	                    Popover,
@@ -15580,19 +15634,19 @@ webpackJsonp([0],[
 	});
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 80 */
+/* 81 */
 /*!**********************************************!*\
   !*** ./galaxy/scripts/apps/history-panel.js ***!
   \**********************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	var RightPanel = __webpack_require__( /*! layout/panel */ 3 ).RightPanel,
-	    Ui = __webpack_require__( /*! mvc/ui/ui-misc */ 18 ),
-	    historyOptionsMenu = __webpack_require__( /*! mvc/history/options-menu */ 81 );
-	    CurrentHistoryView = __webpack_require__( /*! mvc/history/history-view-edit-current */ 83 ).CurrentHistoryView;
+	var RightPanel = __webpack_require__( /*! layout/panel */ 5 ).RightPanel,
+	    Ui = __webpack_require__( /*! mvc/ui/ui-misc */ 19 ),
+	    historyOptionsMenu = __webpack_require__( /*! mvc/history/options-menu */ 82 );
+	    CurrentHistoryView = __webpack_require__( /*! mvc/history/history-view-edit-current */ 84 ).CurrentHistoryView;
 	
 	//TODO: localize
 	// rename other {history,list}-panels to {history,list}-views
@@ -15674,16 +15728,16 @@ webpackJsonp([0],[
 	module.exports = HistoryPanel;
 
 /***/ },
-/* 81 */
+/* 82 */
 /*!****************************************************!*\
   !*** ./galaxy/scripts/mvc/history/options-menu.js ***!
   \****************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/ui/popup-menu */ 82),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/ui/popup-menu */ 83),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( PopupMenu, BASE_MVC, _l ){
 	// ============================================================================
 	var menu = [
@@ -15867,10 +15921,10 @@ webpackJsonp([0],[
 	    return create;
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! underscore */ 1)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 82 */
+/* 83 */
 /*!*********************************************!*\
   !*** ./galaxy/scripts/mvc/ui/popup-menu.js ***!
   \*********************************************/
@@ -16191,20 +16245,20 @@ webpackJsonp([0],[
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 83 */
+/* 84 */
 /*!*****************************************************************!*\
   !*** ./galaxy/scripts/mvc/history/history-view-edit-current.js ***!
   \*****************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, jQuery, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/history/history-model */ 84),
-	    __webpack_require__(/*! mvc/history/history-view-edit */ 92),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/history/history-model */ 85),
+	    __webpack_require__(/*! mvc/history/history-view-edit */ 93),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( HISTORY_MODEL, HISTORY_VIEW_EDIT, BASE_MVC, _l ){
 	// ============================================================================
 	/** session storage for history panel preferences (and to maintain state)
@@ -16688,10 +16742,10 @@ webpackJsonp([0],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 84 */
+/* 85 */
 /*!*****************************************************!*\
   !*** ./galaxy/scripts/mvc/history/history-model.js ***!
   \*****************************************************/
@@ -16699,10 +16753,10 @@ webpackJsonp([0],[
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, jQuery, _) {
 	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/history/history-contents */ 85),
-	    __webpack_require__(/*! utils/utils */ 17),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/history/history-contents */ 86),
+	    __webpack_require__(/*! utils/utils */ 18),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( HISTORY_CONTENTS, UTILS, BASE_MVC, _l ){
 	
 	var logNamespace = 'history';
@@ -17346,21 +17400,21 @@ webpackJsonp([0],[
 	    HistoryCollection : HistoryCollection
 	};}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! underscore */ 1)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 85 */
+/* 86 */
 /*!********************************************************!*\
   !*** ./galaxy/scripts/mvc/history/history-contents.js ***!
   \********************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _, jQuery) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/history/history-content-model */ 86),
-	    __webpack_require__(/*! mvc/history/hda-model */ 88),
-	    __webpack_require__(/*! mvc/history/hdca-model */ 90),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/history/history-content-model */ 87),
+	    __webpack_require__(/*! mvc/history/hda-model */ 89),
+	    __webpack_require__(/*! mvc/history/hdca-model */ 91),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( HISTORY_CONTENT, HDA_MODEL, HDCA_MODEL, BASE_MVC, _l ){
 	
 	var logNamespace = 'history';
@@ -17680,19 +17734,19 @@ webpackJsonp([0],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 86 */
+/* 87 */
 /*!*************************************************************!*\
   !*** ./galaxy/scripts/mvc/history/history-content-model.js ***!
   \*************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, jQuery) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/dataset/states */ 87),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/dataset/states */ 88),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( STATES, BASE_MVC, _l ){
 	
 	var logNamespace = 'history';
@@ -17835,10 +17889,10 @@ webpackJsonp([0],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 87 */
+/* 88 */
 /*!**********************************************!*\
   !*** ./galaxy/scripts/mvc/dataset/states.js ***!
   \**********************************************/
@@ -17907,17 +17961,17 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 88 */
+/* 89 */
 /*!*************************************************!*\
   !*** ./galaxy/scripts/mvc/history/hda-model.js ***!
   \*************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/dataset/dataset-model */ 89),
-	    __webpack_require__(/*! mvc/history/history-content-model */ 86),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/dataset/dataset-model */ 90),
+	    __webpack_require__(/*! mvc/history/history-content-model */ 87),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( DATASET, HISTORY_CONTENT, BASE_MVC, _l ){
 	//==============================================================================
 	var _super = DATASET.DatasetAssociation,
@@ -17970,16 +18024,16 @@ webpackJsonp([0],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 89 */
+/* 90 */
 /*!*****************************************************!*\
   !*** ./galaxy/scripts/mvc/dataset/dataset-model.js ***!
   \*****************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _, jQuery) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/dataset/states */ 87),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/dataset/states */ 88),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( STATES, BASE_MVC, _l ){
 	
 	var logNamespace = 'dataset';
@@ -18324,19 +18378,19 @@ webpackJsonp([0],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 90 */
+/* 91 */
 /*!**************************************************!*\
   !*** ./galaxy/scripts/mvc/history/hdca-model.js ***!
   \**************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/collection/collection-model */ 91),
-	    __webpack_require__(/*! mvc/history/history-content-model */ 86),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/collection/collection-model */ 92),
+	    __webpack_require__(/*! mvc/history/history-content-model */ 87),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( DC_MODEL, HISTORY_CONTENT, _l ){
 	/*==============================================================================
 	
@@ -18461,16 +18515,16 @@ webpackJsonp([0],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 91 */
+/* 92 */
 /*!***********************************************************!*\
   !*** ./galaxy/scripts/mvc/collection/collection-model.js ***!
   \***********************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, Backbone, jQuery) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/dataset/dataset-model */ 89),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/dataset/dataset-model */ 90),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( DATASET_MODEL, BASE_MVC, _l ){
 	
 	var logNamespace = 'collections';
@@ -18979,31 +19033,31 @@ webpackJsonp([0],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 92 */
+/* 93 */
 /*!*********************************************************!*\
   !*** ./galaxy/scripts/mvc/history/history-view-edit.js ***!
   \*********************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, $, jQuery) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/history/history-view */ 96),
-	    __webpack_require__(/*! mvc/history/history-contents */ 85),
-	    __webpack_require__(/*! mvc/dataset/states */ 87),
-	    __webpack_require__(/*! mvc/history/hda-model */ 88),
-	    __webpack_require__(/*! mvc/history/hda-li-edit */ 108),
-	    __webpack_require__(/*! mvc/history/hdca-li-edit */ 113),
-	    __webpack_require__(/*! mvc/tag */ 110),
-	    __webpack_require__(/*! mvc/annotation */ 111),
-	    __webpack_require__(/*! mvc/collection/list-collection-creator */ 93),
-	    __webpack_require__(/*! mvc/collection/pair-collection-creator */ 116),
-	    __webpack_require__(/*! mvc/collection/list-of-pairs-collection-creator */ 117),
-	    __webpack_require__(/*! ui/fa-icon-button */ 97),
-	    __webpack_require__(/*! mvc/ui/popup-menu */ 82),
-	    __webpack_require__(/*! utils/localization */ 7),
-	    __webpack_require__(/*! ui/editable-text */ 112),
+	    __webpack_require__(/*! mvc/history/history-view */ 97),
+	    __webpack_require__(/*! mvc/history/history-contents */ 86),
+	    __webpack_require__(/*! mvc/dataset/states */ 88),
+	    __webpack_require__(/*! mvc/history/hda-model */ 89),
+	    __webpack_require__(/*! mvc/history/hda-li-edit */ 109),
+	    __webpack_require__(/*! mvc/history/hdca-li-edit */ 114),
+	    __webpack_require__(/*! mvc/tag */ 111),
+	    __webpack_require__(/*! mvc/annotation */ 112),
+	    __webpack_require__(/*! mvc/collection/list-collection-creator */ 94),
+	    __webpack_require__(/*! mvc/collection/pair-collection-creator */ 117),
+	    __webpack_require__(/*! mvc/collection/list-of-pairs-collection-creator */ 118),
+	    __webpack_require__(/*! ui/fa-icon-button */ 98),
+	    __webpack_require__(/*! mvc/ui/popup-menu */ 83),
+	    __webpack_require__(/*! utils/localization */ 8),
+	    __webpack_require__(/*! ui/editable-text */ 113),
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function(
 	    HISTORY_VIEW,
 	    HISTORY_CONTENTS,
@@ -19530,10 +19584,10 @@ webpackJsonp([0],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 93 */
+/* 94 */
 /*!******************************************************************!*\
   !*** ./galaxy/scripts/mvc/collection/list-collection-creator.js ***!
   \******************************************************************/
@@ -19541,13 +19595,13 @@ webpackJsonp([0],[
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _, $, jQuery) {
 	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/history/hdca-model */ 90),
-	    __webpack_require__(/*! mvc/dataset/states */ 87),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! mvc/ui/ui-modal */ 13),
-	    __webpack_require__(/*! utils/natural-sort */ 94),
-	    __webpack_require__(/*! utils/localization */ 7),
-	    __webpack_require__(/*! ui/hoverhighlight */ 95)
+	    __webpack_require__(/*! mvc/history/hdca-model */ 91),
+	    __webpack_require__(/*! mvc/dataset/states */ 88),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! mvc/ui/ui-modal */ 14),
+	    __webpack_require__(/*! utils/natural-sort */ 95),
+	    __webpack_require__(/*! utils/localization */ 8),
+	    __webpack_require__(/*! ui/hoverhighlight */ 96)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( HDCA, STATES, BASE_MVC, UI_MODAL, naturalSort, _l ){
 	
 	var logNamespace = 'collections';
@@ -20600,10 +20654,10 @@ webpackJsonp([0],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 94 */
+/* 95 */
 /*!**********************************************!*\
   !*** ./galaxy/scripts/utils/natural-sort.js ***!
   \**********************************************/
@@ -20642,7 +20696,7 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 95 */
+/* 96 */
 /*!*********************************************!*\
   !*** ./galaxy/scripts/ui/hoverhighlight.js ***!
   \*********************************************/
@@ -20686,27 +20740,27 @@ webpackJsonp([0],[
 	    });
 	}));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 96 */
+/* 97 */
 /*!****************************************************!*\
   !*** ./galaxy/scripts/mvc/history/history-view.js ***!
   \****************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/list/list-view */ 98),
-	    __webpack_require__(/*! mvc/history/history-model */ 84),
-	    __webpack_require__(/*! mvc/history/history-contents */ 85),
-	    __webpack_require__(/*! mvc/history/hda-li */ 102),
-	    __webpack_require__(/*! mvc/history/hdca-li */ 104),
-	    __webpack_require__(/*! mvc/user/user-model */ 107),
-	    __webpack_require__(/*! ui/fa-icon-button */ 97),
-	    __webpack_require__(/*! mvc/ui/popup-menu */ 82),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7),
-	    __webpack_require__(/*! ui/search-input */ 101)
+	    __webpack_require__(/*! mvc/list/list-view */ 99),
+	    __webpack_require__(/*! mvc/history/history-model */ 85),
+	    __webpack_require__(/*! mvc/history/history-contents */ 86),
+	    __webpack_require__(/*! mvc/history/hda-li */ 103),
+	    __webpack_require__(/*! mvc/history/hdca-li */ 105),
+	    __webpack_require__(/*! mvc/user/user-model */ 108),
+	    __webpack_require__(/*! ui/fa-icon-button */ 98),
+	    __webpack_require__(/*! mvc/ui/popup-menu */ 83),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8),
+	    __webpack_require__(/*! ui/search-input */ 102)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function(
 	    LIST_VIEW,
 	    HISTORY_MODEL,
@@ -21388,10 +21442,10 @@ webpackJsonp([0],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 97 */
+/* 98 */
 /*!*********************************************!*\
   !*** ./galaxy/scripts/ui/fa-icon-button.js ***!
   \*********************************************/
@@ -21446,21 +21500,21 @@ webpackJsonp([0],[
 	    return faIconButton;
 	}));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! underscore */ 1)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 98 */
+/* 99 */
 /*!**********************************************!*\
   !*** ./galaxy/scripts/mvc/list/list-view.js ***!
   \**********************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/list/list-item */ 99),
-	    __webpack_require__(/*! ui/loading-indicator */ 100),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7),
-	    __webpack_require__(/*! ui/search-input */ 101)
+	    __webpack_require__(/*! mvc/list/list-item */ 100),
+	    __webpack_require__(/*! ui/loading-indicator */ 101),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8),
+	    __webpack_require__(/*! ui/search-input */ 102)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( LIST_ITEM, LoadingIndicator, BASE_MVC, _l ){
 	
 	var logNamespace = 'list';
@@ -22435,18 +22489,18 @@ webpackJsonp([0],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 99 */
+/* 100 */
 /*!**********************************************!*\
   !*** ./galaxy/scripts/mvc/list/list-item.js ***!
   \**********************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $, _, jQuery) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( BASE_MVC, _l ){
 	
 	var logNamespace = 'list';
@@ -22955,10 +23009,10 @@ webpackJsonp([0],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 100 */
+/* 101 */
 /*!************************************************!*\
   !*** ./galaxy/scripts/ui/loading-indicator.js ***!
   \************************************************/
@@ -23063,10 +23117,10 @@ webpackJsonp([0],[
 	    return LoadingIndicator;
 	}));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 101 */
+/* 102 */
 /*!*******************************************!*\
   !*** ./galaxy/scripts/ui/search-input.js ***!
   \*******************************************/
@@ -23232,19 +23286,19 @@ webpackJsonp([0],[
 	    });
 	}));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 102 */
+/* 103 */
 /*!**********************************************!*\
   !*** ./galaxy/scripts/mvc/history/hda-li.js ***!
   \**********************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/dataset/dataset-li */ 103),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/dataset/dataset-li */ 104),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( DATASET_LI, BASE_MVC, _l ){
 	/* global Backbone */
 	//==============================================================================
@@ -23319,18 +23373,18 @@ webpackJsonp([0],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 103 */
+/* 104 */
 /*!**************************************************!*\
   !*** ./galaxy/scripts/mvc/dataset/dataset-li.js ***!
   \**************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(jQuery, Backbone, $, _) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/list/list-item */ 99),
-	    __webpack_require__(/*! mvc/dataset/states */ 87),
-	    __webpack_require__(/*! ui/fa-icon-button */ 97),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/list/list-item */ 100),
+	    __webpack_require__(/*! mvc/dataset/states */ 88),
+	    __webpack_require__(/*! ui/fa-icon-button */ 98),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( LIST_ITEM, STATES, faIconButton, BASE_MVC, _l ){
 	/* global Backbone */
 	
@@ -23824,21 +23878,21 @@ webpackJsonp([0],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! underscore */ 1)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 104 */
+/* 105 */
 /*!***********************************************!*\
   !*** ./galaxy/scripts/mvc/history/hdca-li.js ***!
   \***********************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/dataset/states */ 87),
-	    __webpack_require__(/*! mvc/collection/collection-li */ 105),
-	    __webpack_require__(/*! mvc/collection/collection-view */ 106),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/dataset/states */ 88),
+	    __webpack_require__(/*! mvc/collection/collection-li */ 106),
+	    __webpack_require__(/*! mvc/collection/collection-view */ 107),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( STATES, DC_LI, DC_VIEW, BASE_MVC, _l ){
 	/* global Backbone */
 	//==============================================================================
@@ -23938,17 +23992,17 @@ webpackJsonp([0],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 105 */
+/* 106 */
 /*!********************************************************!*\
   !*** ./galaxy/scripts/mvc/collection/collection-li.js ***!
   \********************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, $, jQuery) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/list/list-item */ 99),
-	    __webpack_require__(/*! mvc/dataset/dataset-li */ 103),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/list/list-item */ 100),
+	    __webpack_require__(/*! mvc/dataset/dataset-li */ 104),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( LIST_ITEM, DATASET_LI, BASE_MVC, _l ){
 	/* global Backbone */
 	//==============================================================================
@@ -24223,21 +24277,21 @@ webpackJsonp([0],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 106 */
+/* 107 */
 /*!**********************************************************!*\
   !*** ./galaxy/scripts/mvc/collection/collection-view.js ***!
   \**********************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/list/list-view */ 98),
-	    __webpack_require__(/*! mvc/collection/collection-model */ 91),
-	    __webpack_require__(/*! mvc/collection/collection-li */ 105),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/list/list-view */ 99),
+	    __webpack_require__(/*! mvc/collection/collection-model */ 92),
+	    __webpack_require__(/*! mvc/collection/collection-li */ 106),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( LIST_VIEW, DC_MODEL, DC_LI, BASE_MVC, _l ){
 	
 	var logNamespace = 'collections';
@@ -24457,18 +24511,152 @@ webpackJsonp([0],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 107 */,
 /* 108 */
+/*!***********************************************!*\
+  !*** ./galaxy/scripts/mvc/user/user-model.js ***!
+  \***********************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
+	    __webpack_require__(/*! libs/underscore */ 1),
+	    __webpack_require__(/*! libs/backbone */ 2),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
+	], __WEBPACK_AMD_DEFINE_RESULT__ = function( _, Backbone, baseMVC, _l ){
+	
+	var logNamespace = 'user';
+	//==============================================================================
+	/** @class Model for a Galaxy user (including anonymous users).
+	 *  @name User
+	 */
+	var User = Backbone.Model.extend( baseMVC.LoggableMixin ).extend(
+	/** @lends User.prototype */{
+	    _logNamespace : logNamespace,
+	
+	    /** API location for this resource */
+	    urlRoot : function(){ return Galaxy.root + 'api/users'; },
+	
+	    /** Model defaults
+	     *  Note: don't check for anon-users with the username as the default is '(anonymous user)'
+	     *      a safer method is if( !user.get( 'email' ) ) -> anon user
+	     */
+	    defaults : /** @lends User.prototype */{
+	        id                      : null,
+	        username                : '(' + _l( "anonymous user" ) + ')',
+	        email                   : "",
+	        total_disk_usage        : 0,
+	        nice_total_disk_usage   : "",
+	        quota_percent           : null,
+	        is_admin                : false
+	    },
+	
+	    /** Set up and bind events
+	     *  @param {Object} data Initial model data.
+	     */
+	    initialize : function( data ){
+	        this.log( 'User.initialize:', data );
+	
+	        this.on( 'loaded', function( model, resp ){ this.log( this + ' has loaded:', model, resp ); });
+	        this.on( 'change', function( model, data ){ this.log( this + ' has changed:', model, data.changes ); });
+	    },
+	
+	    isAnonymous : function(){
+	        return ( !this.get( 'email' ) );
+	    },
+	
+	    isAdmin : function(){
+	        return ( this.get( 'is_admin' ) );
+	    },
+	
+	    /** Load a user with the API using an id.
+	     *      If getting an anonymous user or no access to a user id, pass the User.CURRENT_ID_STR
+	     *      (e.g. 'current') and the API will return the current transaction's user data.
+	     *  @param {String} idOrCurrent encoded user id or the User.CURRENT_ID_STR
+	     *  @param {Object} options hash to pass to Backbone.Model.fetch. Can contain success, error fns.
+	     *  @fires loaded when the model has been loaded from the API, passing the newModel and AJAX response.
+	     */
+	    loadFromApi : function( idOrCurrent, options ){
+	        idOrCurrent = idOrCurrent || User.CURRENT_ID_STR;
+	
+	        options = options || {};
+	        var model = this,
+	            userFn = options.success;
+	
+	        /** @ignore */
+	        options.success = function( newModel, response ){
+	            model.trigger( 'loaded', newModel, response );
+	            if( userFn ){ userFn( newModel, response ); }
+	        };
+	
+	        // requests for the current user must have a sep. constructed url (fetch don't work, ma)
+	        if( idOrCurrent === User.CURRENT_ID_STR ){
+	            options.url = this.urlRoot + '/' + User.CURRENT_ID_STR;
+	        }
+	        return Backbone.Model.prototype.fetch.call( this, options );
+	    },
+	
+	    /** Clears all data from the sessionStorage.
+	     */
+	    clearSessionStorage : function(){
+	        for( var key in sessionStorage ){
+	            //TODO: store these under the user key so we don't have to do this
+	            // currently only history
+	            if( key.indexOf( 'history:' ) === 0 ){
+	                sessionStorage.removeItem( key );
+	
+	            } else if( key === 'history-panel' ){
+	                sessionStorage.removeItem( key );
+	            }
+	        }
+	    },
+	
+	    /** string representation */
+	    toString : function(){
+	        var userInfo = [ this.get( 'username' ) ];
+	        if( this.get( 'id' ) ){
+	            userInfo.unshift( this.get( 'id' ) );
+	            userInfo.push( this.get( 'email' ) );
+	        }
+	        return 'User(' + userInfo.join( ':' ) + ')';
+	    }
+	});
+	
+	// string to send to tell server to return this transaction's user (see api/users.py)
+	User.CURRENT_ID_STR = 'current';
+	
+	// class method to load the current user via the api and return that model
+	User.getCurrentUserFromApi = function( options ){
+	    var currentUser = new User();
+	    currentUser.loadFromApi( User.CURRENT_ID_STR, options );
+	    return currentUser;
+	};
+	
+	// (stub) collection for users (shouldn't be common unless admin UI)
+	var UserCollection = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend({
+	    model   : User,
+	    urlRoot : function(){ return Galaxy.root + 'api/users'; },
+	    //logger  : console,
+	});
+	
+	
+	//==============================================================================
+	return {
+	    User : User
+	};}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 109 */
 /*!***************************************************!*\
   !*** ./galaxy/scripts/mvc/history/hda-li-edit.js ***!
   \***************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(jQuery, _) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/dataset/dataset-li-edit */ 109),
-	    __webpack_require__(/*! mvc/history/hda-li */ 102),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/dataset/dataset-li-edit */ 110),
+	    __webpack_require__(/*! mvc/history/hda-li */ 103),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( DATASET_LI_EDIT, HDA_LI, BASE_MVC, _l ){
 	//==============================================================================
 	var _super = DATASET_LI_EDIT.DatasetListItemEdit;
@@ -24545,23 +24733,23 @@ webpackJsonp([0],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! underscore */ 1)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 109 */
+/* 110 */
 /*!*******************************************************!*\
   !*** ./galaxy/scripts/mvc/dataset/dataset-li-edit.js ***!
   \*******************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/dataset/states */ 87),
-	    __webpack_require__(/*! mvc/dataset/dataset-li */ 103),
-	    __webpack_require__(/*! mvc/tag */ 110),
-	    __webpack_require__(/*! mvc/annotation */ 111),
-	    __webpack_require__(/*! ui/fa-icon-button */ 97),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/dataset/states */ 88),
+	    __webpack_require__(/*! mvc/dataset/dataset-li */ 104),
+	    __webpack_require__(/*! mvc/tag */ 111),
+	    __webpack_require__(/*! mvc/annotation */ 112),
+	    __webpack_require__(/*! ui/fa-icon-button */ 98),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( STATES, DATASET_LI, TAGS, ANNOTATIONS, faIconButton, BASE_MVC, _l ){
 	//==============================================================================
 	var _super = DATASET_LI.DatasetListItemView;
@@ -24725,7 +24913,7 @@ webpackJsonp([0],[
 	                    ev.preventDefault();
 	                    // create webpack split point in order to load the tool form async
 	                    // TODO: split not working (tool loads fine)
-	                    !/* require */(/* empty */function() { var __WEBPACK_AMD_REQUIRE_ARRAY__ = [ __webpack_require__(/*! mvc/tool/tools-form */ 16) ]; (function( ToolsForm ){
+	                    !/* require */(/* empty */function() { var __WEBPACK_AMD_REQUIRE_ARRAY__ = [ __webpack_require__(/*! mvc/tool/tools-form */ 17) ]; (function( ToolsForm ){
 	                        var form = new ToolsForm.View({ 'job_id' : creating_job });
 	                        form.deferred.execute( function(){
 	                            Galaxy.app.display( form );
@@ -24938,18 +25126,18 @@ webpackJsonp([0],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 110 */
+/* 111 */
 /*!***********************************!*\
   !*** ./galaxy/scripts/mvc/tag.js ***!
   \***********************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( baseMVC, _l ){
 	// =============================================================================
 	/** A view on any model that has a 'tags' attribute (a list of tag strings)
@@ -25068,19 +25256,19 @@ webpackJsonp([0],[
 	};
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! underscore */ 1)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 111 */
+/* 112 */
 /*!******************************************!*\
   !*** ./galaxy/scripts/mvc/annotation.js ***!
   \******************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7),
-	    __webpack_require__(/*! ui/editable-text */ 112),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8),
+	    __webpack_require__(/*! ui/editable-text */ 113),
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( baseMVC, _l ){
 	// =============================================================================
 	/** A view on any model that has a 'annotation' attribute
@@ -25162,10 +25350,10 @@ webpackJsonp([0],[
 	};
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! underscore */ 1)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 112 */
+/* 113 */
 /*!********************************************!*\
   !*** ./galaxy/scripts/ui/editable-text.js ***!
   \********************************************/
@@ -25178,7 +25366,7 @@ webpackJsonp([0],[
 	        //TODO: So...this turns out to be an all or nothing thing. If I load jQuery in the define below, it will
 	        //  (of course) wipe the old jquery *and all the plugins loaded into it*. So the define below *is still
 	        //  relying on jquery being loaded globally* in order to preserve plugins.
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(/*! jquery */ 2) ], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [ __webpack_require__(/*! jquery */ 3) ], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	    } else {
 	        // Browser globals
 	        factory(jQuery);
@@ -25293,17 +25481,17 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 113 */
+/* 114 */
 /*!****************************************************!*\
   !*** ./galaxy/scripts/mvc/history/hdca-li-edit.js ***!
   \****************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/history/hdca-li */ 104),
-	    __webpack_require__(/*! mvc/collection/collection-view-edit */ 114),
-	    __webpack_require__(/*! ui/fa-icon-button */ 97),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/history/hdca-li */ 105),
+	    __webpack_require__(/*! mvc/collection/collection-view-edit */ 115),
+	    __webpack_require__(/*! ui/fa-icon-button */ 98),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( HDCA_LI, DC_VIEW_EDIT, faIconButton, _l ){
 	//==============================================================================
 	var _super = HDCA_LI.HDCAListItemView;
@@ -25372,19 +25560,19 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 114 */
+/* 115 */
 /*!***************************************************************!*\
   !*** ./galaxy/scripts/mvc/collection/collection-view-edit.js ***!
   \***************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/collection/collection-view */ 106),
-	    __webpack_require__(/*! mvc/collection/collection-model */ 91),
-	    __webpack_require__(/*! mvc/collection/collection-li-edit */ 115),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7),
-	    __webpack_require__(/*! ui/editable-text */ 112),
+	    __webpack_require__(/*! mvc/collection/collection-view */ 107),
+	    __webpack_require__(/*! mvc/collection/collection-model */ 92),
+	    __webpack_require__(/*! mvc/collection/collection-li-edit */ 116),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8),
+	    __webpack_require__(/*! ui/editable-text */ 113),
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( DC_VIEW, DC_MODEL, DC_EDIT, BASE_MVC, _l ){
 	/* =============================================================================
 	TODO:
@@ -25535,17 +25723,17 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 115 */
+/* 116 */
 /*!*************************************************************!*\
   !*** ./galaxy/scripts/mvc/collection/collection-li-edit.js ***!
   \*************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(jQuery, _) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/collection/collection-li */ 105),
-	    __webpack_require__(/*! mvc/dataset/dataset-li-edit */ 109),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/collection/collection-li */ 106),
+	    __webpack_require__(/*! mvc/dataset/dataset-li-edit */ 110),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( DC_LI, DATASET_LI_EDIT, BASE_MVC, _l ){
 	/* global Backbone */
 	//==============================================================================
@@ -25680,20 +25868,20 @@ webpackJsonp([0],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! underscore */ 1)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 116 */
+/* 117 */
 /*!******************************************************************!*\
   !*** ./galaxy/scripts/mvc/collection/pair-collection-creator.js ***!
   \******************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _, jQuery) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/collection/list-collection-creator */ 93),
-	    __webpack_require__(/*! mvc/history/hdca-model */ 90),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/collection/list-collection-creator */ 94),
+	    __webpack_require__(/*! mvc/history/hdca-model */ 91),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( LIST_CREATOR, HDCA, BASE_MVC, _l ){
 	
 	var logNamespace = 'collections';
@@ -25941,22 +26129,22 @@ webpackJsonp([0],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 117 */
+/* 118 */
 /*!***************************************************************************!*\
   !*** ./galaxy/scripts/mvc/collection/list-of-pairs-collection-creator.js ***!
   \***************************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _, jQuery, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! utils/levenshtein */ 118),
-	    __webpack_require__(/*! utils/natural-sort */ 94),
-	    __webpack_require__(/*! mvc/collection/list-collection-creator */ 93),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7),
-	    __webpack_require__(/*! ui/hoverhighlight */ 95)
+	    __webpack_require__(/*! utils/levenshtein */ 119),
+	    __webpack_require__(/*! utils/natural-sort */ 95),
+	    __webpack_require__(/*! mvc/collection/list-collection-creator */ 94),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8),
+	    __webpack_require__(/*! ui/hoverhighlight */ 96)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( levenshteinDistance, naturalSort, LIST_COLLECTION_CREATOR, baseMVC, _l ){
 	
 	var logNamespace = 'collections';
@@ -27670,10 +27858,10 @@ webpackJsonp([0],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 118 */
+/* 119 */
 /*!*********************************************!*\
   !*** ./galaxy/scripts/utils/levenshtein.js ***!
   \*********************************************/
@@ -27742,17 +27930,17 @@ webpackJsonp([0],[
 
 
 /***/ },
-/* 119 */
+/* 120 */
 /*!***************************************!*\
   !*** ./galaxy/scripts/layout/page.js ***!
   \***************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! layout/masthead */ 120),
-	    __webpack_require__(/*! layout/panel */ 3),
-	    __webpack_require__(/*! mvc/ui/ui-modal */ 13),
-	    __webpack_require__(/*! mvc/base-mvc */ 5)
+	    __webpack_require__(/*! layout/masthead */ 121),
+	    __webpack_require__(/*! layout/panel */ 5),
+	    __webpack_require__(/*! mvc/ui/ui-modal */ 14),
+	    __webpack_require__(/*! mvc/base-mvc */ 6)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( MASTHEAD, PANEL, MODAL, BASE_MVC ) {
 	
 	// ============================================================================
@@ -27845,6 +28033,12 @@ webpackJsonp([0],[
 	                panelView.render();
 	            }
 	        });
+	        if( !this.left ){
+	            this.center.$el.css( 'left', 0 );
+	        }
+	        if( !this.right ){
+	            this.center.$el.css( 'right', 0 );
+	        }
 	        return this;
 	    },
 	
@@ -27899,19 +28093,19 @@ webpackJsonp([0],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 120 */
+/* 121 */
 /*!*******************************************!*\
   !*** ./galaxy/scripts/layout/masthead.js ***!
   \*******************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! utils/utils */ 17),
-	    __webpack_require__(/*! layout/menu */ 121),
-	    __webpack_require__(/*! layout/scratchbook */ 122),
+	    __webpack_require__(/*! utils/utils */ 18),
+	    __webpack_require__(/*! layout/menu */ 122),
+	    __webpack_require__(/*! layout/scratchbook */ 123),
 	    __webpack_require__(/*! mvc/user/user-quotameter */ 140),
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function(Utils, Menu, Scratchbook, QuotaMeter) {
 	
@@ -27938,8 +28132,9 @@ webpackJsonp([0],[
 	        $("body").off();
 	
 	        // define this element
-	        this.$el.html(this._template(options));
-	        $(this.el_masthead).find('#masthead').replaceWith(this.$el);
+	        this.setElement($(this._template(options)));
+	        // add to page
+	        $( '#masthead' ).replaceWith( this.$el );
 	
 	        // assign background
 	        this.$background = $(this.el).find('#masthead-background');
@@ -28077,10 +28272,10 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 121 */
+/* 122 */
 /*!***************************************!*\
   !*** ./galaxy/scripts/layout/menu.js ***!
   \***************************************/
@@ -28590,17 +28785,17 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 122 */
+/* 123 */
 /*!**********************************************!*\
   !*** ./galaxy/scripts/layout/scratchbook.js ***!
   \**********************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $, _) {// dependencies
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! mvc/ui/ui-frames */ 14)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Frames) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! mvc/ui/ui-frames */ 15)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Frames) {
 	
 	/** Frame manager uses the ui-frames to create the scratch book masthead icon and functionality **/
 	var GalaxyFrame = Backbone.View.extend({
@@ -28678,7 +28873,7 @@ webpackJsonp([0],[
 	     */
 	    add_dataset: function(dataset_id) {
 	        var self = this;
-	        !/* require */(/* empty */function() { /* WEBPACK VAR INJECTION */(function($, _) {var __WEBPACK_AMD_REQUIRE_ARRAY__ = [__webpack_require__(/*! mvc/dataset/data */ 12)]; (function(DATA) {
+	        __webpack_require__.e/* require */(1, function(__webpack_require__) { /* WEBPACK VAR INJECTION */(function($, _) {var __WEBPACK_AMD_REQUIRE_ARRAY__ = [__webpack_require__(/*! mvc/dataset/data */ 13)]; (function(DATA) {
 	            var dataset = new DATA.Dataset({ id: dataset_id });
 	            $.when( dataset.fetch() ).then( function() {
 	                // Construct frame config based on dataset's type.
@@ -28719,7 +28914,7 @@ webpackJsonp([0],[
 	
 	            });
 	        }.apply(null, __WEBPACK_AMD_REQUIRE_ARRAY__));
-	/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! underscore */ 1)))}());
+	/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1)))});
 	
 	    },
 	
@@ -28728,7 +28923,7 @@ webpackJsonp([0],[
 	     */
 	    add_trackster_viz: function(viz_id) {
 	        var self = this;
-	        __webpack_require__.e/* require */(1, function(__webpack_require__) { /* WEBPACK VAR INJECTION */(function($, _) {var __WEBPACK_AMD_REQUIRE_ARRAY__ = [__webpack_require__(/*! viz/visualization */ 123), __webpack_require__(/*! viz/trackster */ 125)]; (function(visualization, trackster) {
+	        __webpack_require__.e/* require */(2, function(__webpack_require__) { /* WEBPACK VAR INJECTION */(function($, _) {var __WEBPACK_AMD_REQUIRE_ARRAY__ = [__webpack_require__(/*! viz/visualization */ 124), __webpack_require__(/*! viz/trackster */ 126)]; (function(visualization, trackster) {
 	            var viz = new visualization.Visualization({id: viz_id});
 	            $.when( viz.fetch() ).then( function() {
 	                var ui = new trackster.TracksterUI(Galaxy.root);
@@ -28769,7 +28964,7 @@ webpackJsonp([0],[
 	                self.add(frame_config);
 	            });
 	        }.apply(null, __WEBPACK_AMD_REQUIRE_ARRAY__));
-	/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! underscore */ 1)))});
+	/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1)))});
 	    },
 	
 	    /**
@@ -28947,10 +29142,9 @@ webpackJsonp([0],[
 	
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! jquery */ 2), __webpack_require__(/*! underscore */ 1)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 123 */,
 /* 124 */,
 /* 125 */,
 /* 126 */,
@@ -28974,8 +29168,8 @@ webpackJsonp([0],[
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( baseMVC, _l ){
 	
 	var logNamespace = 'user';
@@ -29131,7 +29325,7 @@ webpackJsonp([0],[
 	    UserQuotaMeter : UserQuotaMeter
 	};}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 4), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ }
 ]);

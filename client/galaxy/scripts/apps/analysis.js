@@ -1,6 +1,7 @@
 
 var jQuery = require( 'jquery' ),
     $ = jQuery,
+    QUERY_STRING = require( 'utils/query-string-parsing' ),
     PANEL = require( 'layout/panel' ),
     ToolPanel = require( './tool-panel' ),
     HistoryPanel = require( './history-panel' ),
@@ -40,10 +41,12 @@ window.app = function app( options, bootstrapped ){
     // .................................................... decorate the galaxy object
     // TODO: most of this is becoming unnecessary as we move to apps
     Galaxy.page = analysisPage;
+    Galaxy.params = Galaxy.config.params;
 
     // add tool panel to Galaxy object
     Galaxy.toolPanel = toolPanel.tool_panel;
     Galaxy.upload = toolPanel.uploadButton;
+
 
     Galaxy.currHistoryPanel = historyPanel.historyView;
     Galaxy.currHistoryPanel.connectToQuotaMeter( Galaxy.quotaMeter );
@@ -58,18 +61,30 @@ window.app = function app( options, bootstrapped ){
         },
     };
 
+    // var router = new ( Backbone.Router.extend({
+    //     initialize : function( options ){
+    //         this.options = options;
+    //         this.route( /^$/, "blah", function __callback(){ console.debug( arguments ); });
+    //     },
+
+    //     execute: function( callback, args, name ){
+    //         args.push( QUERY_STRING.parse( args.pop() ) );
+    //         if( callback ){
+    //             callback.apply( this, args );
+    //         }
+    //     }
+
+    // }))( options );
+    // Backbone.history.start({ pushState : true });
+
     // .................................................... start up
     $(function(){
         analysisPage.render();
         Galaxy.currHistoryPanel.loadCurrentHistory();
 
         // TODO: to router, remove Globals
-        var params = $.extend( {}, options.config.params );
-        if( params.tool_id && params.tool_id !== 'upload1' ){
-            params.id = params.tool_id;
-            centerPanel.display( new ToolsForm.View( params ) );
-
-        } else if( params.job_id ){
+        var params = Galaxy.config.params;
+        if( ( params.tool_id || params.job_id ) && params.tool_id !== 'upload1' ){
             params.id = params.tool_id;
             centerPanel.display( new ToolsForm.View( params ) );
 

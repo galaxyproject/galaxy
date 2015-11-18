@@ -28,8 +28,9 @@ var GalaxyMasthead = Backbone.View.extend({
         $("body").off();
 
         // define this element
-        this.$el.html(this._template(options));
-        $(this.el_masthead).find('#masthead').replaceWith(this.$el);
+        this.setElement($(this._template(options)));
+        // add to page
+        $( '#masthead' ).replaceWith( this.$el );
 
         // assign background
         this.$background = $(this.el).find('#masthead-background');

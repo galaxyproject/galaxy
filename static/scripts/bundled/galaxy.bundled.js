@@ -1,4 +1,4 @@
-webpackJsonp([3],{
+webpackJsonp([4],{
 
 /***/ 0:
 /*!***************************************!*\
@@ -14,6 +14,142 @@ webpackJsonp([3],{
 
 /***/ },
 
+/***/ 108:
+/*!***********************************************!*\
+  !*** ./galaxy/scripts/mvc/user/user-model.js ***!
+  \***********************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
+	    __webpack_require__(/*! libs/underscore */ 1),
+	    __webpack_require__(/*! libs/backbone */ 2),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! utils/localization */ 8)
+	], __WEBPACK_AMD_DEFINE_RESULT__ = function( _, Backbone, baseMVC, _l ){
+	
+	var logNamespace = 'user';
+	//==============================================================================
+	/** @class Model for a Galaxy user (including anonymous users).
+	 *  @name User
+	 */
+	var User = Backbone.Model.extend( baseMVC.LoggableMixin ).extend(
+	/** @lends User.prototype */{
+	    _logNamespace : logNamespace,
+	
+	    /** API location for this resource */
+	    urlRoot : function(){ return Galaxy.root + 'api/users'; },
+	
+	    /** Model defaults
+	     *  Note: don't check for anon-users with the username as the default is '(anonymous user)'
+	     *      a safer method is if( !user.get( 'email' ) ) -> anon user
+	     */
+	    defaults : /** @lends User.prototype */{
+	        id                      : null,
+	        username                : '(' + _l( "anonymous user" ) + ')',
+	        email                   : "",
+	        total_disk_usage        : 0,
+	        nice_total_disk_usage   : "",
+	        quota_percent           : null,
+	        is_admin                : false
+	    },
+	
+	    /** Set up and bind events
+	     *  @param {Object} data Initial model data.
+	     */
+	    initialize : function( data ){
+	        this.log( 'User.initialize:', data );
+	
+	        this.on( 'loaded', function( model, resp ){ this.log( this + ' has loaded:', model, resp ); });
+	        this.on( 'change', function( model, data ){ this.log( this + ' has changed:', model, data.changes ); });
+	    },
+	
+	    isAnonymous : function(){
+	        return ( !this.get( 'email' ) );
+	    },
+	
+	    isAdmin : function(){
+	        return ( this.get( 'is_admin' ) );
+	    },
+	
+	    /** Load a user with the API using an id.
+	     *      If getting an anonymous user or no access to a user id, pass the User.CURRENT_ID_STR
+	     *      (e.g. 'current') and the API will return the current transaction's user data.
+	     *  @param {String} idOrCurrent encoded user id or the User.CURRENT_ID_STR
+	     *  @param {Object} options hash to pass to Backbone.Model.fetch. Can contain success, error fns.
+	     *  @fires loaded when the model has been loaded from the API, passing the newModel and AJAX response.
+	     */
+	    loadFromApi : function( idOrCurrent, options ){
+	        idOrCurrent = idOrCurrent || User.CURRENT_ID_STR;
+	
+	        options = options || {};
+	        var model = this,
+	            userFn = options.success;
+	
+	        /** @ignore */
+	        options.success = function( newModel, response ){
+	            model.trigger( 'loaded', newModel, response );
+	            if( userFn ){ userFn( newModel, response ); }
+	        };
+	
+	        // requests for the current user must have a sep. constructed url (fetch don't work, ma)
+	        if( idOrCurrent === User.CURRENT_ID_STR ){
+	            options.url = this.urlRoot + '/' + User.CURRENT_ID_STR;
+	        }
+	        return Backbone.Model.prototype.fetch.call( this, options );
+	    },
+	
+	    /** Clears all data from the sessionStorage.
+	     */
+	    clearSessionStorage : function(){
+	        for( var key in sessionStorage ){
+	            //TODO: store these under the user key so we don't have to do this
+	            // currently only history
+	            if( key.indexOf( 'history:' ) === 0 ){
+	                sessionStorage.removeItem( key );
+	
+	            } else if( key === 'history-panel' ){
+	                sessionStorage.removeItem( key );
+	            }
+	        }
+	    },
+	
+	    /** string representation */
+	    toString : function(){
+	        var userInfo = [ this.get( 'username' ) ];
+	        if( this.get( 'id' ) ){
+	            userInfo.unshift( this.get( 'id' ) );
+	            userInfo.push( this.get( 'email' ) );
+	        }
+	        return 'User(' + userInfo.join( ':' ) + ')';
+	    }
+	});
+	
+	// string to send to tell server to return this transaction's user (see api/users.py)
+	User.CURRENT_ID_STR = 'current';
+	
+	// class method to load the current user via the api and return that model
+	User.getCurrentUserFromApi = function( options ){
+	    var currentUser = new User();
+	    currentUser.loadFromApi( User.CURRENT_ID_STR, options );
+	    return currentUser;
+	};
+	
+	// (stub) collection for users (shouldn't be common unless admin UI)
+	var UserCollection = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend({
+	    model   : User,
+	    urlRoot : function(){ return Galaxy.root + 'api/users'; },
+	    //logger  : console,
+	});
+	
+	
+	//==============================================================================
+	return {
+	    User : User
+	};}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+
 /***/ 141:
 /*!*******************************************!*\
   !*** ./galaxy/scripts/galaxy-app-base.js ***!
@@ -22,12 +158,12 @@ webpackJsonp([3],{
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function($) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! libs/underscore */ 1),
-	    __webpack_require__(/*! libs/backbone */ 4),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! mvc/user/user-model */ 107),
+	    __webpack_require__(/*! libs/backbone */ 2),
+	    __webpack_require__(/*! mvc/base-mvc */ 6),
+	    __webpack_require__(/*! mvc/user/user-model */ 108),
 	    __webpack_require__(/*! utils/metrics-logger */ 142),
-	    __webpack_require__(/*! utils/add-logging */ 6),
-	    __webpack_require__(/*! utils/localization */ 7)
+	    __webpack_require__(/*! utils/add-logging */ 7),
+	    __webpack_require__(/*! utils/localization */ 8)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( _, Backbone, BASE_MVC, userModel, metricsLogger, addLogging, localize ){
 	
 	// TODO: move into a singleton pattern and have dependents import Galaxy
@@ -276,7 +412,7 @@ webpackJsonp([3],{
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
 
@@ -762,7 +898,7 @@ webpackJsonp([3],{
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 2)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3)))
 
 /***/ }
 
