@@ -16,8 +16,8 @@
   </outputs>
   <tests>
     <test>
-      <param name="input_bcf" value="input.bcf" />
-      <output name="output_bcf" file="output.vcf"/>
+      <param name="input_bcf" value="input.bcf" ftype="bcf" />
+      <output name="output_bcf" file="output.bcf" ftype="bcf" />
     </test>
   </tests>
 

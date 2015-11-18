@@ -13,6 +13,7 @@ import time
 import unittest
 import urllib
 import zipfile
+import sys
 from json import loads
 from urlparse import urlparse
 from xml.etree import ElementTree
@@ -2495,9 +2496,9 @@ class TwillTestCase( unittest.TestCase ):
         temp_local = tempfile.NamedTemporaryFile( suffix='.vcf', prefix='local_bcf_converted_to_vcf_' )
         fd, temp_temp = tempfile.mkstemp( suffix='.vcf', prefix='history_bcf_converted_to_vcf_' )
         os.close( fd )
-        command = 'bcftools view -H -o "%s" "%s"' % ( temp_local.name, local_name  )
+        command = 'bcftools view -H %s -o %s -O v' % ( local_name, temp_local.name  )
         self._check_command( command, 'Converting local (test-data) bcf to vcf' )
-        command = 'bcftools view -H -o "%s" "%s"' % ( temp_temp, temp_name  )
+        command = 'bcftools view -H %s -o %s -O v' % ( temp_name, temp_temp  )
         self._check_command( command, 'Converting history bcf to vcf ' )
         os.remove( temp_name )
         return temp_local, temp_temp
