@@ -1,6 +1,6 @@
 // dependencies
-define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'mvc/tools/tools-template'],
-        function(Utils, Ui, Tabs, ToolTemplate) {
+define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
+        function(Utils, Ui, Tabs) {
 
 // hda/hdca content selector ui element
 var View = Backbone.View.extend({

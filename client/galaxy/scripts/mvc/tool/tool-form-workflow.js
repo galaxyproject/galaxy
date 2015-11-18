@@ -1,7 +1,7 @@
 /**
     This is the workflow tool form.
 */
-define(['utils/utils', 'mvc/tools/tools-form-base'],
+define(['utils/utils', 'mvc/tool/tool-form-base'],
     function(Utils, ToolFormBase) {
 
     // create form view
@@ -13,7 +13,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             // link with node representation in workflow module
             this.node = options.node;
             if (!this.node) {
-                Galaxy.emit.debug('tools-form-workflow::initialize()', 'Node not found in workflow.');
+                Galaxy.emit.debug('tool-form-workflow::initialize()', 'Node not found in workflow.');
                 return;
             }
 
