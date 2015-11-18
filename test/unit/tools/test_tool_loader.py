@@ -216,6 +216,22 @@ def test_loader():
         value = tag_el.get('value')
         assert value == "The value.", value
 
+    with TestToolDirectory() as tool_dir:
+        tool_dir.write('''
+<tool>
+    <macros>
+        <token name="@TAG_VAL@"><![CDATA[]]></token>
+    </macros>
+    <another>
+        <tag value="@TAG_VAL@" />
+    </another>
+</tool>
+''')
+        xml = tool_dir.load()
+        tag_el = xml.find("another").find("tag")
+        value = tag_el.get('value')
+        assert value == "", value
+
     # Test macros XML macros with $$ expansions in attributes
     with TestToolDirectory() as tool_dir:
         tool_dir.write('''
