@@ -14,7 +14,7 @@ log = logging.getLogger( __name__ )
 DEFAULT_FTYPE = 'auto'
 DEFAULT_DBKEY = 'hg17'
 DEFAULT_INTERACTOR = "api"  # Default mechanism test code uses for interacting with Galaxy instance.
-DEFAULT_MAX_SECS = 120
+DEFAULT_MAX_SECS = None
 
 
 @nottest
@@ -42,7 +42,9 @@ class ToolTestBuilder( object ):
 
     def __init__( self, tool, test_dict, i, default_interactor ):
         name = test_dict.get( 'name', 'Test-%d' % (i + 1) )
-        maxseconds = int( test_dict.get( 'maxseconds', DEFAULT_MAX_SECS ) )
+        maxseconds = test_dict.get( 'maxseconds', DEFAULT_MAX_SECS )
+        if maxseconds is not None:
+            maxseconds = int( maxseconds )
 
         self.tool = tool
         self.name = name
