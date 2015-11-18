@@ -202,6 +202,7 @@
 
             ## master header
             %if self.galaxy_config['master']:
+                <div id="masthead" class="navbar navbar-fixed-top navbar-inverse"></div>
                 ${masthead.load()}
             %endif
 
