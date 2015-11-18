@@ -21,11 +21,12 @@ define([], function() {
             this.setElement(this._template(options));
 
             // link elements
-            this.$field = this.$el.find('.ui-table-form-field');
-            this.$optional = this.$el.find('.ui-table-form-optional');
-            this.$optional_icon = this.$el.find('.ui-table-form-optional').find('.icon');
-            this.$error_text = this.$el.find('.ui-table-form-error-text');
-            this.$error = this.$el.find('.ui-table-form-error');
+            this.$field = this.$('.ui-table-form-field');
+            this.$optional = this.$('.ui-table-form-optional');
+            this.$optional_icon = this.$('.ui-table-form-optional').find('.icon');
+            this.$error_text = this.$('.ui-table-form-error-text');
+            this.$error = this.$('.ui-table-form-error');
+            this.$backdrop = this.$('.ui-table-form-backdrop');
 
             // add field element
             this.$field.prepend(this.field.$el);
@@ -40,15 +41,20 @@ define([], function() {
             // add optional hide/show
             var self = this;
             this.$optional.on('click', function() {
-                // flip flag
                 self.field.collapsed = !self.field.collapsed;
-
-                // refresh view
                 self._refresh();
-
-                // refresh state
                 self.app.trigger('change');
             });
+
+            // disable input element
+            options.disabled && this.$backdrop.show();
+        },
+
+        /** Disable input element
+        */
+        disable: function( silent ) {
+            this.$backdrop.show();
+            silent && this.$backdrop.css({ 'opacity': 0, 'cursor': 'default' } );
         },
 
         /** Set error text
@@ -69,17 +75,12 @@ define([], function() {
         /** Refresh element
         */
         _refresh: function() {
-            // reset optional button
             this.$optional_icon.removeClass().addClass('icon');
-
-            // identify state
             if (!this.field.collapsed) {
-                // enable input field
                 this.$field.fadeIn('fast');
                 this._tooltip(this.text_disable, this.cls_disable);
                 this.app.trigger('change');
             } else {
-                // disable input field
                 this.$field.hide();
                 this._tooltip(this.text_enable, this.cls_enable);
                 this.field.value && this.field.value(this.default_value);
@@ -121,8 +122,9 @@ define([], function() {
                     tmp += ' (' + options.argument + ')';
                 }
             }
-            tmp +=              '</div>';
-            tmp +=          '</div>' +
+            tmp +=              '</div>' +
+                                '<div class="ui-table-form-backdrop"/>' +
+                            '</div>' +
                         '</div>';
             return tmp;
         }

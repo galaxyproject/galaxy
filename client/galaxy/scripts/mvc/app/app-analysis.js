@@ -1,6 +1,6 @@
 define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
-        'mvc/history/options-menu', 'mvc/history/history-panel-edit-current', 'mvc/tools/tools-form'],
-    function( Utils, Tools, Upload, Ui, optionsMenu, HistoryPanel, ToolsForm ) {
+        'mvc/history/options-menu', 'mvc/history/history-panel-edit-current', 'mvc/tool/tool-form'],
+    function( Utils, Tools, Upload, Ui, optionsMenu, HistoryPanel, ToolForm ) {
 
     /* Builds the center panel */
     var CenterPanel = Backbone.View.extend({
@@ -25,7 +25,7 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
             var params = $.extend( {}, Galaxy.params );
             if ( params.tool_id !== 'upload1' && ( params.tool_id || params.job_id ) ) {
                 params.tool_id && ( params.id = params.tool_id );
-                this.display( new ToolsForm.View( params ) );
+                this.display( new ToolForm.View( params ) );
             } else {
                 this.$( '#galaxy_main' ).prop( 'src', Galaxy.root + (
                     ( params.workflow_id && ( 'workflow/run?id=' + params.workflow_id ) ) ||

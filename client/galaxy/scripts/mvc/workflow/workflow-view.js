@@ -1,6 +1,6 @@
 define('mvc/workflow/workflow-globals', {});
-define(['utils/utils', 'mvc/workflow/workflow-globals', 'mvc/workflow/workflow-manager', 'mvc/workflow/workflow-canvas', 'mvc/workflow/workflow-node', 'mvc/tools/tools-form-workflow'],
-    function( Utils, Globals, Workflow, WorkflowCanvas, Node, ToolsForm ){
+define(['utils/utils', 'mvc/workflow/workflow-globals', 'mvc/workflow/workflow-manager', 'mvc/workflow/workflow-canvas', 'mvc/workflow/workflow-node', 'mvc/tool/tool-form-workflow'],
+    function( Utils, Globals, Workflow, WorkflowCanvas, Node, ToolForm ){
     // create form view
     return Backbone.View.extend({
         initialize: function(options) {
@@ -569,7 +569,7 @@ define(['utils/utils', 'mvc/workflow/workflow-globals', 'mvc/workflow/workflow-m
                     var options = JSON.parse(text);
                     options.node = node;
                     options.datatypes = this.datatypes;
-                    $el.append((new ToolsForm.View(options)).$el);
+                    $el.append((new ToolForm.View(options)).$el);
                 } else {
                     $el.append(this._genericFormTemplate( text, node ));
                 }

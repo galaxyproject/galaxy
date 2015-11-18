@@ -2238,8 +2238,10 @@ class Tool( object, Dictifiable ):
         def check_state(trans, input, value, context):
             error = 'State validation failed.'
 
-            # do not check unvalidated values
-            if isinstance(value, galaxy.tools.parameters.basic.RuntimeValue):
+            # handle unvalidated values
+            if isinstance(value, galaxy.tools.parameters.basic.DummyDataset):
+                return [ None, None ]
+            elif isinstance(value, galaxy.tools.parameters.basic.RuntimeValue):
                 return [ { '__class__' : 'RuntimeValue' }, None ]
             elif isinstance( value, dict ):
                 if value.get('__class__') == 'RuntimeValue':

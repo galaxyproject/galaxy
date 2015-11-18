@@ -205,12 +205,6 @@ class ToolParameter( object, Dictifiable ):
     def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         """ to_dict tool parameter. This can be overridden by subclasses. """
         tool_dict = super( ToolParameter, self ).to_dict()
-        # TODO: wrapping html as it causes a lot of errors on subclasses - needs histories, etc.
-        try:
-            tool_dict[ 'html' ] = urllib.quote( util.smart_str( self.get_html( trans ) ) )
-        except AssertionError:
-            pass  # HACK for assert trans.history, 'requires a history'
-
         tool_dict[ 'model_class' ] = self.__class__.__name__
         tool_dict[ 'optional' ] = self.optional
         tool_dict[ 'hidden' ] = self.hidden
@@ -347,7 +341,10 @@ class IntegerToolParameter( TextToolParameter ):
         try:
             return int( value )
         except:
-            if not value and self.optional:
+            if isinstance( value, basestring ):
+                if value.startswith( "$" ):
+                    return value
+            elif not value and self.optional:
                 return ""
             raise ValueError( "An integer is required" )
 
@@ -355,7 +352,10 @@ class IntegerToolParameter( TextToolParameter ):
         try:
             return int( value )
         except Exception, err:
-            if not value and self.optional:
+            if isinstance( value, basestring ):
+                if value.startswith( "$" ):
+                    return value
+            elif not value and self.optional:
                 return None
             raise err
 
@@ -419,7 +419,10 @@ class FloatToolParameter( TextToolParameter ):
         try:
             return float( value )
         except:
-            if not value and self.optional:
+            if isinstance( value, basestring ):
+                if value.startswith( "$" ):
+                    return value
+            elif not value and self.optional:
                 return ""
             raise ValueError( "A real number is required" )
 
@@ -427,7 +430,10 @@ class FloatToolParameter( TextToolParameter ):
         try:
             return float( value )
         except Exception, err:
-            if not value and self.optional:
+            if isinstance( value, basestring ):
+                if value.startswith( "$" ):
+                    return value
+            elif not value and self.optional:
                 return None
             raise err
 
@@ -2141,7 +2147,7 @@ class DataToolParameter( BaseDataToolParameter ):
             ref = ref()
         return ref
 
-    def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         # create dictionary and fill default parameters
         d = super( DataToolParameter, self ).to_dict( trans )
         extensions = self.extensions
@@ -2156,10 +2162,6 @@ class DataToolParameter( BaseDataToolParameter ):
             d['min'] = self.min
             d['max'] = self.max
         d['options'] = {'hda': [], 'hdca': []}
-
-        # return default content if context is not available
-        if other_values is None:
-            return d
 
         # prepare dataset/collection matching
         dataset_matcher = DatasetMatcher( trans, self, None, other_values )

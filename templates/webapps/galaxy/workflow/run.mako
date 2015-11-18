@@ -1,5 +1,76 @@
 <%inherit file="/base.mako"/>
 
+## TEMPORARY SWITCH FOR THE NEW TOOL FORM
+%if util.string_as_bool(trans.app.config.get('run_workflow_toolform_upgrade',  True)):
+    ${h.js("libs/bibtex", "libs/jquery/jquery-ui")}
+    ${h.css('jquery-ui/smoothness/jquery-ui')}
+    <%
+        from galaxy.tools.parameters import params_to_incoming
+        from galaxy.jobs.actions.post import ActionBox
+        step_models = []
+        for i, step in enumerate( steps ):
+            step_model = None
+            if step.type in [ 'data_input', 'data_collection_input' ]:
+                type_filter = []
+                for oc in step.output_connections:
+                    for ic in oc.input_step.module.get_data_inputs():
+                        if 'extensions' in ic and ic[ 'name' ] == oc.input_name:
+                            type_filter += ic[ 'extensions' ]
+                if not type_filter:
+                    type_filter = [ 'data' ]
+                d = step.module.get_runtime_inputs( type_filter )
+                input = d[ 'input' ].to_dict( trans );
+                step_model = {
+                    'name'   : input[ 'label' ],
+                    'inputs' : [ input ]
+                }
+            elif step.type == 'tool':
+                incoming = {}
+                tool = trans.app.toolbox.get_tool( step.tool_id )
+                params_to_incoming( incoming, tool.inputs, step.state.inputs, trans.app, to_html=False )
+                step_model = tool.to_json( trans, incoming, is_workflow=True )
+                step_model[ 'input_connections_by_name' ] = {}
+                for key, conns in step.input_connections_by_name.iteritems():
+                    if not isinstance( conns, list ):
+                        conns = [ conns ]
+                    step_model[ 'input_connections_by_name' ][ key ] = [{
+                        'output_name'       : elem.output_name,
+                        'order_index'       : int( elem.output_step.order_index ) + 1
+                    } for elem in conns ]
+                step_model[ 'post_job_actions' ] = [{
+                    'short_str'         : ActionBox.get_short_str( pja ),
+                    'action_type'       : pja.action_type,
+                    'output_name'       : pja.output_name,
+                    'action_arguments'  : pja.action_arguments
+                } for pja in step.post_job_actions ]
+            step_model[ 'step_id' ] = step.id
+            step_model[ 'step_type' ] = step.type
+            step_model[ 'order_index' ] = step.order_index
+            step_model[ 'output_connections' ] = [ {
+                'input_step_id'     : oc.input_step_id,
+                'output_step_id'    : oc.output_step_id,
+                'input_name'        : oc.input_name,
+                'output_name'       : oc.output_name
+            } for oc in step.output_connections ]
+            if step.annotations:
+                step_model[ 'annotation' ] = step.annotations[0].annotation
+            step_models.append( step_model )
+        self.form_config = {
+            'id'                : app.security.encode_id( workflow.id ),
+            'name'              : workflow.name,
+            'history_id'        : history_id,
+            'steps'             : step_models
+        }
+    %>
+    <script>
+        require(['mvc/tool/tool-form-composite'], function( ToolForm ) {
+            $(function() {
+                var form = new ToolForm.View(${ h.dumps( self.form_config ) });
+            });
+        });
+    </script>
+%else:
+
 <%def name="javascripts()">
     ${parent.javascripts()}
     <script type="text/javascript">
@@ -625,3 +696,4 @@ if wf_parms:
 %endif
 <input type="submit" class="btn btn-primary" name="run_workflow" value="Run workflow" />
 </form>
+%endif

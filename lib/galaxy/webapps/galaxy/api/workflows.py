@@ -136,12 +136,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'from_history_id',
             'shared_workflow_id',
             'workflow',
-        ] ).intersection( payload )
-        if len( ways_to_create ) == 0:
+        ] )
+        if len( ways_to_create.intersection( payload ) ) == 0:
             message = "One parameter among - %s - must be specified" % ", ".join( ways_to_create )
             raise exceptions.RequestParameterMissingException( message )
 
-        if len( ways_to_create ) > 1:
+        if len( ways_to_create.intersection( payload ) ) > 1:
             message = "Only one parameter among - %s - must be specified" % ", ".join( ways_to_create )
             raise exceptions.RequestParameterInvalidException( message )
 

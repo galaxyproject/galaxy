@@ -28,8 +28,9 @@ define(['utils/utils',
     var Label = Backbone.View.extend({
         initialize : function(options) {
             this.options = Utils.merge(options, {
-                title  : '',
-                cls    : ''
+                title   : '',
+                cls     : '',
+                tagname : 'label'
             });
             this.setElement(this._template(this.options));
         },
@@ -40,7 +41,7 @@ define(['utils/utils',
             return options.title;
         },
         _template: function(options) {
-            return '<label class="ui-label ' + options.cls + '">' + options.title + '</label>';
+            return $( '<' + options.tagname + '/>' ).addClass( 'ui-label' ).addClass( options.cls ).html( options.title );
         }
     });
 

@@ -1,26 +1,16 @@
 /**
     This is the main class of the form plugin. It is referenced as 'app' in all lower level modules.
 */
-define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
-        'mvc/form/form-section', 'mvc/form/form-data'],
+define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-section', 'mvc/form/form-data'],
     function(Utils, Portlet, Ui, FormSection, FormData) {
-
-    // create form view
     return Backbone.View.extend({
-        // initialize
         initialize: function(options) {
-            // options
-            this.optionsDefault = {
-                // uses workflow editor mode i.e. text instead of select fields
-                is_workflow     : false,
+            this.options = Utils.merge(options, {
                 // shows errors on start
                 initial_errors  : false,
-                // portlet style
-                cls             : 'ui-portlet-limited'
-            };
-
-            // configure options
-            this.options = Utils.merge(options, this.optionsDefault);
+                cls             : 'ui-portlet-limited',
+                icon            : ''
+            });
 
             // log options
             Galaxy.emit.debug('form-view::initialize()', 'Ready to build form.', this.options);
@@ -157,7 +147,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             this.element_list = {};
 
             // creates a json data structure from the input form
-            this.data = new FormData(this);
+            this.data = new FormData.Manager(this);
 
             // create ui elements
             this._renderForm();
@@ -204,11 +194,13 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
 
             // create portlet
             this.portlet = new Portlet.View({
-                icon        : 'fa-wrench',
+                icon        : this.options.icon,
                 title       : this.options.title,
                 cls         : this.options.cls,
                 operations  : this.options.operations,
-                buttons     : this.options.buttons
+                buttons     : this.options.buttons,
+                collapsible : this.options.collapsible,
+                collapsed   : this.options.collapsed
             });
 
             // append message
