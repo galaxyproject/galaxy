@@ -135,8 +135,8 @@ def uwsgi_app_factory():
     root = os.path.abspath(uwsgi.opt.get('galaxy_root', os.getcwd()))
     config_file = uwsgi.opt.get('galaxy_config_file', os.path.join(root, 'config', 'galaxy.ini'))
     global_conf = {
-        '__file__' : config_file if os.path.exists(__file__) else None,
-        'here' : root }
+        '__file__': config_file if os.path.exists(__file__) else None,
+        'here': root }
     parser = configparser.ConfigParser()
     parser.read(config_file)
     try:
@@ -560,18 +560,13 @@ def populate_api_routes( webapp, app ):
                                      'import_workflow': 'POST',
                                      'import_workflows': 'POST' },
                             collection={ 'get_latest_installable_revision': 'POST',
+                                         'check_for_updates': 'GET',
                                          'reset_metadata_on_installed_repositories': 'POST' },
                             controller='tool_shed_repositories',
                             name_prefix='tool_shed_repository_',
                             path_prefix='/api',
                             new={ 'install_repository_revision': 'POST' },
                             parent_resources=dict( member_name='tool_shed_repository', collection_name='tool_shed_repositories' ) )
-
-    webapp.mapper.connect( 'repository_update',
-                           '/api/tool_shed_repositories/check_for_updates/{repository_id}',
-                           controller='tool_shed_repositories',
-                           action='check_for_updates',
-                           repository_id=None )
 
     # ==== Trace/Metrics Logger
     # Connect logger from app

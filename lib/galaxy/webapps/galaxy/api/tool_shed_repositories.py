@@ -51,19 +51,17 @@ class ToolShedRepositoriesController( BaseAPIController ):
             raise exceptions.AdminRequiredException( 'You are not authorized to request the latest installable revision for a repository in this Galaxy instance.' )
 
     @expose_api
-    def check_for_updates( self, trans, repository_id ):
+    def check_for_updates( self, trans, **kwd ):
         '''
-        POST /api/tool_shed_repositories/check_for_updates/{id}
+        GET /api/tool_shed_repositories/check_for_updates
         Check for updates to the specified repository, or all installed repositories.
 
         :param key: the current Galaxy admin user's API key
-
-        The following parameters are included in the payload.
-        :param repository_id: the galaxy-side encoded repository ID
+        :param id: the galaxy-side encoded repository ID
         '''
+        repository_id = kwd.get( 'id', None )
         message, status = repository_util.check_for_updates( trans.app, trans.install_model, repository_id )
         return { 'status': status, 'message': message }
-        # Get the information about the repository to be updated from the payload.
 
     @expose_api
     def exported_workflows( self, trans, id, **kwd ):
