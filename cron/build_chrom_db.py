@@ -13,10 +13,12 @@ Usage:
 python build_chrom_db.py dbpath/ [builds_file]
 """
 
-import sys
-import parse_builds
-import urllib
 import fileinput
+import os
+import sys
+import urllib
+
+import parse_builds
 
 
 def getchrominfo(url, db):
@@ -38,8 +40,10 @@ def getchrominfo(url, db):
         if line.startswith("#"):
             continue
         fields = line.split("\t")
-        if len(fields) > 1:
+        if len(fields) > 1 and len(fields[0]) > 0 and int(fields[1]) > 0:
             yield [fields[0], fields[1]]
+        else:
+            raise Exception("Problem parsing line '%s'" % line)
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
@@ -57,15 +61,19 @@ if __name__ == "__main__":
             sys.exit("Bad input file.")
     else:
         try:
-            for build in parse_builds.getbuilds("http://genome-test.cse.ucsc.edu/cgi-bin/das/dsn"):
+            for build in parse_builds.getbuilds("http://genome.cse.ucsc.edu/cgi-bin/das/dsn"):
                 builds.append(build[0])
         except:
             sys.exit("Unable to retrieve builds.")
     for build in builds:
         if build == "?":
             continue  # no lengths for unspecified chrom
-        outfile = open(dbpath + build + ".len", "w")
         print "Retrieving " + build
-        for chrominfo in getchrominfo("http://genome-test.cse.ucsc.edu/cgi-bin/hgTables?", build):
-            print >> outfile, "\t".join(chrominfo)
-        outfile.close()
+        outfile_name = dbpath + build + ".len"
+        try:
+            with open(outfile_name, "w") as outfile:
+                for chrominfo in getchrominfo("http://genome-test.cse.ucsc.edu/cgi-bin/hgTables?", build):
+                    print >> outfile, "\t".join(chrominfo)
+        except Exception as e:
+            print "Failed to retrieve %s: %s" % (build, e)
+            os.remove(outfile_name)

@@ -316,7 +316,7 @@ class BaseJobRunner( object ):
             return
 
         script_integrity_verified = False
-        for i in range(5):
+        for i in range(10):
             try:
                 proc = subprocess.Popen( [path], shell=True, env={"ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ": "1"} )
                 proc.wait()
@@ -333,7 +333,7 @@ class BaseJobRunner( object ):
                     subprocess.check_call(["/bin/sync"])
                 except Exception:
                     pass
-                time.sleep( .1 )
+                time.sleep( .25 )
             except Exception:
                 pass
 

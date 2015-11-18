@@ -19,6 +19,7 @@ DATABASE = {
             'repo': 'lib/galaxy/model/migrate',
             'old_config_file': 'universe_wsgi.ini',
             'default_sqlite_file': './database/universe.sqlite',
+            'config_override': 'GALAXY_CONFIG_',
         },
     "tool_shed":
         {
@@ -26,6 +27,7 @@ DATABASE = {
             'config_file': 'config/tool_shed.ini',
             'old_config_file': 'tool_shed_wsgi.ini',
             'default_sqlite_file': './database/community.sqlite',
+            'config_override': 'TOOL_SHED_CONFIG_',
         },
     "install":
         {
@@ -33,6 +35,7 @@ DATABASE = {
             'old_config_file': 'universe_wsgi.ini',
             'config_prefix': 'install_',
             'default_sqlite_file': './database/install.sqlite',
+            'config_override': 'GALAXY_INSTALL_CONFIG_',
         },
 }
 
@@ -92,11 +95,12 @@ def get_config( argv, cwd=None ):
     config_file = read_config_file_arg( argv, default, old_default )
     repo = database_defaults[ 'repo' ]
     config_prefix = database_defaults.get( 'config_prefix', DEFAULT_CONFIG_PREFIX )
+    config_override = database_defaults.get( 'config_override', 'GALAXY_CONFIG_' )
     default_sqlite_file = database_defaults[ 'default_sqlite_file' ]
     if cwd:
         config_file = os.path.join( cwd, config_file )
 
-    properties = load_app_properties( ini_file=config_file )
+    properties = load_app_properties( ini_file=config_file, config_prefix=config_override )
 
     if ("%sdatabase_connection" % config_prefix) in properties:
         db_url = properties[ "%sdatabase_connection" % config_prefix ]

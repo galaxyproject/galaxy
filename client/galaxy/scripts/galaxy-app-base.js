@@ -60,6 +60,8 @@ GalaxyApp.prototype._init = function init( options ){
     self._initUser( options.user || bootstrapped.user || {} );
     self.debug( 'GalaxyApp.user: ', self.user );
 
+    self.root = options.root;
+    self.debug( 'GalaxyApp.root: ', self.root );
     //TODO: temp
     self.trigger( 'ready', self );
     //if( typeof options.onload === 'function' ){
@@ -76,7 +78,6 @@ GalaxyApp.prototype.defaultOptions = {
     /** monkey patch attributes from existing window.Galaxy object? */
     patchExisting   : true,
     /** root url of this app */
-    // move to self.root?
     root            : '/',
     /** options for the logger */
     loggerOptions   : {}
