@@ -2481,27 +2481,21 @@ class TwillTestCase( unittest.TestCase ):
             message = template % (command, stdout, stderr)
             raise AssertionError(message)
 
-    def _bam_to_sam( self, local_name, temp_name ):
-        temp_local = tempfile.NamedTemporaryFile( suffix='.sam', prefix='local_bam_converted_to_sam_' )
-        fd, temp_temp = tempfile.mkstemp( suffix='.sam', prefix='history_bam_converted_to_sam_' )
-        os.close( fd )
-        command = 'samtools view -h -o "%s" "%s"' % ( temp_local.name, local_name  )
-        self._check_command( command, 'Converting local (test-data) bam to sam' )
-        command = 'samtools view -h -o "%s" "%s"' % ( temp_temp, temp_name  )
-        self._check_command( command, 'Converting history bam to sam ' )
+    def _convert_file( self, local_name, temp_name, cmd ):
+        local = tempfile.NamedTemporaryFile( suffix='.dat', prefix='local_converted_' )
+        history = tempfile.NamedTemporaryFile( suffix='.dat', prefix='history_converted_' )
+        self._check_command( cmd.format( original=local_name, converted=local.name ), 'Converting local (test-data) file' )
+        self._check_command( cmd.format( original=temp_name, converted=history.name ), 'Converting history file' )
         os.remove( temp_name )
-        return temp_local, temp_temp
+        return temp_local, temp_history
+
+    def _bam_to_sam( self, local_name, temp_name ):
+        command_template = 'samtools view -h -o "{converted}" "{original}"'
+        return self._convert_file( local_name, temp_name, command_template )
 
     def _bcf_to_vcf( self, local_name, temp_name ):
-        temp_local = tempfile.NamedTemporaryFile( suffix='.vcf', prefix='local_bcf_converted_to_vcf_' )
-        fd, temp_temp = tempfile.mkstemp( suffix='.vcf', prefix='history_bcf_converted_to_vcf_' )
-        os.close( fd )
-        command = 'bcftools view -H %s -o %s -O v' % ( local_name, temp_local.name  )
-        self._check_command( command, 'Converting local (test-data) bcf to vcf' )
-        command = 'bcftools view -H %s -o %s -O v' % ( temp_name, temp_temp  )
-        self._check_command( command, 'Converting history bcf to vcf ' )
-        os.remove( temp_name )
-        return temp_local, temp_temp
+        command_template = 'bcftools view -H {original} -o {converted} -O v'
+        return self._convert_file( local_name, temp_name, command_template )
 
     def _format_stream( self, output, stream, format ):
         if format:
