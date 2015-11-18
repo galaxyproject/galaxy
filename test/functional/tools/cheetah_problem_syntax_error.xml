@@ -1,0 +1,17 @@
+<tool id="cheetah_problem_syntax_error" name="cheetah_problem_syntax_error" version="0.1.0">
+    <command>
+        #for i inx
+        moo
+    </command>
+    <inputs>
+    </inputs>
+    <outputs>
+        <data name="out_file1" />
+    </outputs>
+    <tests>
+        <test expect_failure="true">
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>
