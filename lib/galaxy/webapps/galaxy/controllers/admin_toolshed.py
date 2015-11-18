@@ -190,8 +190,18 @@ class AdminToolshed( AdminGalaxy ):
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
         params = dict( galaxy_url=web.url_for( '/', qualified=True ) )
         url = common_util.url_join( tool_shed_url, pathspec=[ 'api', 'categories' ] )
-        json_data = common_util.tool_shed_get( trans.app, url )
-        return trans.fill_template( '/admin/tool_shed_repository/browse_categories.mako', categories=json_data )
+        json_data = json.loads( common_util.tool_shed_get( trans.app, url ) )
+        return trans.fill_template( '/admin/tool_shed_repository/browse_categories.mako', tool_shed_url=tool_shed_url, categories=json_data )
+
+    @web.expose
+    @web.require_admin
+    def browse_tool_shed_category( self, trans, **kwd ):
+        tool_shed_url = kwd.get( 'tool_shed_url', '' )
+        category_id = kwd.get( 'category_id', '' )
+        url = common_util.url_join( tool_shed_url )
+        log.debug( url )
+        json_data = json.loads( common_util.tool_shed_get( trans.app, url, pathspec=[ 'api', 'categories', category_id ], params={ 'show_repositories': True } ) )
+        return trans.fill_template( '/admin/tool_shed_repository/browse_category.mako', tool_shed_url=tool_shed_url, category=json_data )
 
     @web.expose
     @web.require_admin
@@ -1219,6 +1229,15 @@ class AdminToolshed( AdminGalaxy ):
                                         tool_shed_url=tool_shed_url,
                                         message=message,
                                         status=status )
+
+    @web.expose
+    @web.require_admin
+    def preview_repository( self, trans, **kwd ):
+        toolshed_url = kwd.get( 'toolshed_url', '' )
+        tsr_id = kwd.get( 'tsr_id', '' )
+        json_data = common_util.tool_shed_get( trans.app, toolshed_url, pathspec=[ 'api', 'repositories', tsr_id ] )
+        return trans.fill_template( '/admin/tool_shed_repository/preview_repository.mako', repository=json.loads( json_data ) )
+
 
     @web.expose
     @web.require_admin

@@ -15,13 +15,13 @@
 %if message:
     ${render_msg( message, status )}
 %endif
+
 <table>
-%for category in categories:
-    <tr>
-        <td>
-            <a href="${h.url_for(controller='admin_toolshed', action='browse_tool_shed_category', category_id=category['id'], tool_shed_url=tool_shed_url)}">${category['name']}</a>
-        </td>
-        <td>${h.url_for(controller='admin_toolshed', action='browse_tool_shed_category', category_id=category['id'], tool_shed_url=tool_shed_url)}</td>
-    </tr>
+%for repository in category['repositories']:
+	<tr>
+		<td>
+			<a href="${h.url_for( controller='admin_toolshed', action='preview_repository', toolshed_url=tool_shed_url, tsr_id=repository['id'] )}">${repository['name']}</a>
+		</td>
+	</tr>
 %endfor
 </table>

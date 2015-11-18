@@ -15,13 +15,4 @@
 %if message:
     ${render_msg( message, status )}
 %endif
-<table>
-%for category in categories:
-    <tr>
-        <td>
-            <a href="${h.url_for(controller='admin_toolshed', action='browse_tool_shed_category', category_id=category['id'], tool_shed_url=tool_shed_url)}">${category['name']}</a>
-        </td>
-        <td>${h.url_for(controller='admin_toolshed', action='browse_tool_shed_category', category_id=category['id'], tool_shed_url=tool_shed_url)}</td>
-    </tr>
-%endfor
-</table>
+<pre>${repository}</pre>
