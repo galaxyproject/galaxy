@@ -110,7 +110,11 @@ class ToolEvaluator( object ):
         `to_param_dict_string` method of the associated input.
         """
         param_dict = dict()
-        param_dict["input"] = "<input undefined variable>"  # Don't let $input hang Python evaluation process.
+
+        def input():
+            raise SyntaxError("Unbound variable input.")  # Don't let $input hang Python evaluation process.
+
+        param_dict["input"] = input
 
         param_dict.update(self.tool.template_macro_params)
         # All parameters go into the param_dict
