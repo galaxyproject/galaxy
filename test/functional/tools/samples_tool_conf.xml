@@ -65,6 +65,10 @@
   <tool file="collection_creates_dynamic_list_of_pairs.xml" />
   <tool file="cheetah_casting.xml" />
 
+  <tool file="cheetah_problem_unbound_var.xml" />
+  <tool file="cheetah_problem_unbound_var_input.xml" />
+  <tool file="cheetah_problem_syntax_error.xml" />
+
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v02.xml" />
 
