@@ -1,7 +1,7 @@
 /**
     This is the regular tool form.
 */
-define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools/tools-jobs'],
+define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tool/tool-form-base', 'mvc/tool/tool-jobs'],
     function( Utils, Ui, ToolFormBase, ToolJobs ) {
     var View = ToolFormBase.extend({
         initialize: function( options ) {

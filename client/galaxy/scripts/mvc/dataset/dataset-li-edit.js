@@ -5,9 +5,9 @@ define([
     "mvc/annotations",
     "ui/fa-icon-button",
     "mvc/base-mvc",
-    "mvc/tools/tools-form",
+    "mvc/tool/tool-form",
     "utils/localization"
-], function( STATES, DATASET_LI, TAGS, ANNOTATIONS, faIconButton, BASE_MVC, ToolsForm, _l ){
+], function( STATES, DATASET_LI, TAGS, ANNOTATIONS, faIconButton, BASE_MVC, ToolForm, _l ){
 //==============================================================================
 var _super = DATASET_LI.DatasetListItemView;
 /** @class Editing view for DatasetAssociation.
@@ -168,7 +168,7 @@ var DatasetListItemEdit = _super.extend(
                 faIcon      : 'fa-refresh',
                 onclick     : function(ev) {
                     ev.preventDefault();
-                    var form = new ToolsForm.View({'job_id' : creating_job});
+                    var form = new ToolForm.View({'job_id' : creating_job});
                     form.deferred.execute(function(){
                         Galaxy.app.display(form);
                     });
