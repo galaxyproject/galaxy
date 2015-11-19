@@ -19,8 +19,6 @@ log = logging.getLogger(__name__)
 class InteractiveEnviornmentRequest(object):
 
     def __init__(self, trans, plugin):
-        plugin_config = plugin.config
-
         self.trans = trans
         self.log = log
 
