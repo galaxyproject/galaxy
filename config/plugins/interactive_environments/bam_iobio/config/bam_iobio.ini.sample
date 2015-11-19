@@ -16,7 +16,7 @@
 #command = docker {docker_args}
 
 # The docker image name that should be started.
-image = bgruening/docker-ipython-notebook:15.10.1
+image = qiaoy/iobio-bundle.bam-iobio:1.0-ondemand
 
 # Additional arguments that are passed to the `docker run` command.
 #command_inject = --sig-proxy=true -e DEBUG=false
