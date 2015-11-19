@@ -19,13 +19,11 @@ log = logging.getLogger(__name__)
 class InteractiveEnviornmentRequest(object):
 
     def __init__(self, trans, plugin):
-        plugin_config = plugin.config
-
         self.trans = trans
         self.log = log
 
         self.attr = Bunch()
-        self.attr.viz_id = plugin_config["name"].lower()
+        self.attr.viz_id = plugin.name
         self.attr.history_id = trans.security.encode_id( trans.history.id )
         self.attr.galaxy_config = trans.app.config
         self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
@@ -100,7 +98,6 @@ class InteractiveEnviornmentRequest(object):
         # we always assume use of Galaxy dynamic proxy? None of these need to be specified
         # if using the Galaxy dynamic proxy.
         self.attr.PASSWORD_AUTH = _boolean_option("password_auth")
-        self.attr.APACHE_URLS = _boolean_option("apache_urls")
         self.attr.SSL_URLS = _boolean_option("ssl")
 
     def get_conf_dict(self):

@@ -31,6 +31,11 @@ numerous services, you'll need to be a fairly competent SysAdmin to debug all
 of the possible problems that can occur during deployment. After the initial
 hurdle, most find that GIEs require little to no maintenance.
 
+An `Ansible <http://www.ansible.com/>`__ role for installing and managing GIEs
+can be found on
+`Github <https://github.com/galaxyproject/ansible-interactive-environments>`__
+and `Ansible Galaxy <https://galaxy.ansible.com/detail#/role/6056>`__.
+
 Setting up the Proxy
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -123,7 +128,7 @@ to Galaxy. You will need to add special upstream proxy configuration to handle
 this, and you'll need to use the same ``dynamic_proxy_prefix`` in your
 ``galaxy.ini`` that you use in your URL routes.
 
-Apache
+**Apache**
 
 .. code-block:: apache
 
@@ -140,12 +145,33 @@ Apache
 
 Please note you will need to be using apache2.4 with ``mod_proxy_wstunnel``.
 
-Nginx
+**Nginx**
 
-.. code-block::
+.. code-block:: nginx
 
-    # TODO, please PR / ping erasche on IRC if you have samples
+    # Global GIE configuration
+    location /galaxy/gie_proxy {
+        proxy_pass http://localhost:8800/galaxy/gie_proxy;
+        proxy_redirect off;
+    }
 
+    # IPython specific. Other IEs may require their own routes.
+    location /galaxy/gie_proxy/ipython/api/kernels {
+        proxy_pass http://localhost:8800/galaxy/gie_proxy/ipython/api/kernels;
+        proxy_redirect off;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+
+If you proxy static content, you may find the following rule useful for
+proxying to GIE and other visualization plugin static content.
+
+.. code-block:: nginx
+
+    location ~ ^/plugins/(?<plug_type>.+?)/(?<vis_name>.+?)/static/(?<static_file>.*?)$ {
+        alias /path/to/galaxy-dist/config/plugins/$plug_type/$vis_name/static/$static_file;
+    }
 
 Docker on Another Host
 ^^^^^^^^^^^^^^^^^^^^^^
