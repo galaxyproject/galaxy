@@ -334,7 +334,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         } )
 
         # create tool model and default tool state (if missing)
-        tool_model = module.tool.to_json(trans, tool_inputs, is_workflow=True)
+        tool_model = module.tool.to_json(trans, tool_inputs, workflow_mode=True)
         module.state.inputs = copy.deepcopy(tool_model['state_inputs'])
         return {
             'tool_model'        : tool_model,

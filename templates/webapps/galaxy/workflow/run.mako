@@ -28,7 +28,7 @@
                 incoming = {}
                 tool = trans.app.toolbox.get_tool( step.tool_id )
                 params_to_incoming( incoming, tool.inputs, step.state.inputs, trans.app, to_html=False )
-                step_model = tool.to_json( trans, incoming, is_workflow=True )
+                step_model = tool.to_json( trans, incoming, workflow_mode=True )
                 step_model[ 'input_connections_by_name' ] = {}
                 for key, conns in step.input_connections_by_name.iteritems():
                     if not isinstance( conns, list ):

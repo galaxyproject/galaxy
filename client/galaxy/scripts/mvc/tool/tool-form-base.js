@@ -118,9 +118,6 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
         /** Request a new model for an already created tool form and updates the form inputs
         */
         _updateModel: function(process) {
-            // model url for request
-            var model_url = this.options.update_url || Galaxy.root + 'api/tools/' + this.options.id + '/build';
-
             // link this
             var self = this;
             var model_url = this.options.update_url || Galaxy.root + 'api/tools/' + this.options.id + '/build';

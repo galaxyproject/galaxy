@@ -342,7 +342,7 @@ class IntegerToolParameter( TextToolParameter ):
             return int( value )
         except:
             if isinstance( value, basestring ):
-                if value.startswith( "$" ):
+                if value.startswith( "$" ) and (trans is None or trans.workflow_building_mode):
                     return value
             elif not value and self.optional:
                 return ""
@@ -353,7 +353,7 @@ class IntegerToolParameter( TextToolParameter ):
             return int( value )
         except Exception, err:
             if isinstance( value, basestring ):
-                if value.startswith( "$" ):
+                if value.startswith( "$" ) and (trans is None or trans.workflow_building_mode):
                     return value
             elif not value and self.optional:
                 return None
@@ -420,7 +420,7 @@ class FloatToolParameter( TextToolParameter ):
             return float( value )
         except:
             if isinstance( value, basestring ):
-                if value.startswith( "$" ):
+                if value.startswith( "$" ) and (trans is None or trans.workflow_building_mode):
                     return value
             elif not value and self.optional:
                 return ""
@@ -431,7 +431,7 @@ class FloatToolParameter( TextToolParameter ):
             return float( value )
         except Exception, err:
             if isinstance( value, basestring ):
-                if value.startswith( "$" ):
+                if value.startswith( "$" ) and (trans is None or trans.workflow_building_mode):
                     return value
             elif not value and self.optional:
                 return None

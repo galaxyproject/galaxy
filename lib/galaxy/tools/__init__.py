@@ -2138,7 +2138,7 @@ class Tool( object, Dictifiable ):
 
         return tool_dict
 
-    def to_json(self, trans, kwd={}, job=None, is_workflow=False):
+    def to_json(self, trans, kwd={}, job=None, workflow_mode=False):
         """
         Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
         """
@@ -2153,6 +2153,9 @@ class Tool( object, Dictifiable ):
                 raise exceptions.MessageException( 'History unavailable. Please specify a valid history id' )
         except Exception, e:
             raise exceptions.MessageException( '[history_id=%s] Failed to retrieve history. %s.' % ( history_id, str( e ) ) )
+
+        # set workflow mode ( TODO: Should be revised/parsed without trans to tool parameters (basic.py) )
+        trans.workflow_building_mode = workflow_mode;
 
         # load job parameters into incoming
         tool_message = ''
@@ -2246,10 +2249,6 @@ class Tool( object, Dictifiable ):
             elif isinstance( value, dict ):
                 if value.get('__class__') == 'RuntimeValue':
                     return [ value, None ]
-
-            # skip dynamic fields if deactivated
-            if is_workflow and input.is_dynamic:
-                return [value, None]
 
             # validate value content
             try:
