@@ -4,6 +4,9 @@ from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.model.orm import *
 from galaxy import model, util
+from galaxy import eggs
+eggs.require("MarkupSafe")
+from markupsafe import escape
 from galaxy.web.form_builder import *
 from .requests_common import invalid_id_redirect
 import logging, os
@@ -14,7 +17,7 @@ class ExternalServiceGrid( grids.Grid ):
     # Custom column types
     class NameColumn( grids.TextColumn ):
         def get_value(self, trans, grid, external_service):
-            return external_service.name
+            return escape(external_service.name)
     class ExternalServiceTypeColumn( grids.TextColumn ):
         def get_value(self, trans, grid, external_service):
             try:

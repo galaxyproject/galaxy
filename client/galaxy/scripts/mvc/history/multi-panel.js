@@ -16,7 +16,7 @@ function historyCopyDialog( history, options ){
     }
 
     // maybe better as multiselect dialog?
-    var historyName = history.get( 'name' ),
+    var historyName = _.escape(history.get( 'name' )),
         defaultCopyName = "Copy of '" + historyName + "'";
 
     function validateName( name ){
@@ -1075,13 +1075,13 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
             '<div class="order btn-group">',
                 '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
                     _l( 'Order histories by' ) + ' ',
-                    '<span class="current-order"><%= view.sortOrders[ view.order ].text %></span> ',
+                    '<span class="current-order"><%- view.sortOrders[ view.order ].text %></span> ',
                     '<span class="caret"></span>',
                 '</button>',
                 '<ul class="dropdown-menu" role="menu">',
                     '<% _.each( view.sortOrders, function( order, key ){ %>',
-                        '<li><a href="javascript:void(0);" class="set-order" data-order="<%= key %>">',
-                            '<%= order.text %>',
+                        '<li><a href="javascript:void(0);" class="set-order" data-order="<%- key %>">',
+                            '<%- order.text %>',
                         '</a></li>',
                     '<% }); %>',
                 '</ul>',

@@ -2,6 +2,9 @@ from galaxy.web.base.controller import *
 from galaxy.model.orm import *
 from galaxy.datatypes import sniff
 from galaxy import model, util
+from galaxy import eggs
+eggs.require("MarkupSafe")
+from markupsafe import escape
 import logging, os, sys
 from galaxy.web.form_builder import *
 from galaxy.tools.parameters.basic import parameter_types
@@ -18,10 +21,10 @@ class FormsGrid( grids.Grid ):
     # Custom column types
     class NameColumn( grids.TextColumn ):
         def get_value(self, trans, grid, form):
-            return form.latest_form.name
+            return escape(form.latest_form.name)
     class DescriptionColumn( grids.TextColumn ):
         def get_value(self, trans, grid, form):
-            return form.latest_form.desc
+            return escape(form.latest_form.desc)
     class TypeColumn( grids.TextColumn ):
         def get_value(self, trans, grid, form):
             return form.latest_form.type

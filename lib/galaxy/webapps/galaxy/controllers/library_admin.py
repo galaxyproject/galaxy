@@ -15,11 +15,11 @@ log = logging.getLogger( __name__ )
 class LibraryListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, library ):
-            return library.name
+            return escape(library.name)
     class DescriptionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, library ):
             if library.description:
-                return library.description
+                return escape(library.description)
             return ''
     class StatusColumn( grids.GridColumn ):
         def get_value( self, trans, grid, library ):

@@ -9,6 +9,10 @@ import tool_shed.util.shed_util_common as suc
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 
+from galaxy import eggs
+eggs.require("MarkupSafe")
+from markupsafe import escape
+
 log = logging.getLogger( __name__ )
 
 
@@ -18,13 +22,13 @@ class ComponentGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, component ):
-            return component.name
+            return escape(component.name)
 
 
     class DescriptionColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, component ):
-            return component.description
+            return escape(component.description)
 
     title = "Repository review components"
     model_class = model.Component
@@ -286,13 +290,13 @@ class RepositoryReviewsByUserGrid( grids.Grid ):
     class RepositoryNameColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, review ):
-            return review.repository.name
+            return escape(review.repository.name)
 
 
     class RepositoryDescriptionColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, review ):
-            return review.repository.description
+            return escape(review.repository.description)
 
 
     class RevisionColumn( grids.TextColumn ):

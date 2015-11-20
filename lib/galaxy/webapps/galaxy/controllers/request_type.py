@@ -3,10 +3,14 @@ from __future__ import absolute_import
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.model.orm import *
+from galaxy import eggs
+eggs.require("MarkupSafe")
+from markupsafe import escape
 from galaxy import model, util
 from galaxy.web.form_builder import *
 from .requests_common import invalid_id_redirect
 import logging, os
+
 
 log = logging.getLogger( __name__ )
 
@@ -14,16 +18,16 @@ class RequestTypeGrid( grids.Grid ):
     # Custom column types
     class NameColumn( grids.TextColumn ):
         def get_value(self, trans, grid, request_type):
-            return request_type.name
+            return escape(request_type.name)
     class DescriptionColumn( grids.TextColumn ):
         def get_value(self, trans, grid, request_type):
-            return request_type.desc
+            return escape(request_type.desc)
     class RequestFormColumn( grids.TextColumn ):
         def get_value(self, trans, grid, request_type):
-            return request_type.request_form.name
+            return escape(request_type.request_form.name)
     class SampleFormColumn( grids.TextColumn ):
         def get_value(self, trans, grid, request_type):
-            return request_type.sample_form.name
+            return escape(request_type.sample_form.name)
     class ExternalServiceColumn( grids.IntegerColumn ):
         def get_value(self, trans, grid, request_type):
             if request_type.external_services:

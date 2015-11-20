@@ -7,6 +7,8 @@ from galaxy import model, util
 from galaxy.web.form_builder import *
 from .requests_common import RequestsGrid, invalid_id_redirect
 from galaxy import eggs
+eggs.require( "MarkupSafe" )
+from markupsafe import escape
 eggs.require("amqp")
 import amqp
 import logging, os, pexpect, ConfigParser
@@ -16,7 +18,7 @@ log = logging.getLogger( __name__ )
 class AdminRequestsGrid( RequestsGrid ):
     class UserColumn( grids.TextColumn ):
         def get_value( self, trans, grid, request ):
-            return request.user.email
+            return escape(request.user.email)
     # Grid definition
     columns = [ col for col in RequestsGrid.columns ]
     columns.append( UserColumn( "User",
@@ -37,7 +39,7 @@ class DataTransferGrid( grids.Grid ):
     # Custom column types
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, sample_dataset ):
-            return sample_dataset.name
+            return escape(sample_dataset.name)
     class SizeColumn( grids.TextColumn ):
         def get_value( self, trans, grid, sample_dataset ):
             return sample_dataset.size
@@ -47,7 +49,7 @@ class DataTransferGrid( grids.Grid ):
     class ExternalServiceColumn( grids.TextColumn ):
         def get_value( self, trans, grid, sample_dataset ):
             try:
-                return sample_dataset.external_service.name
+                return escape(sample_dataset.external_service.name)
             except:
                 return 'None'
     # Grid definition

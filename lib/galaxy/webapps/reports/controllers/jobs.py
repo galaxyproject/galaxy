@@ -7,6 +7,9 @@ from galaxy.web.framework.helpers import grids
 from galaxy.model.orm import and_, not_, or_
 import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
+from galaxy import eggs
+eggs.require("MarkupSafe")
+from markupsafe import escape
 import sqlalchemy as sa
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 
@@ -89,7 +92,7 @@ class SpecifiedDateListGrid( grids.Grid ):
 
         def get_value( self, trans, grid, job ):
             if job.user:
-                return job.user.email
+                return escape(job.user.email)
             return 'anonymous'
 
     class EmailColumn( grids.GridColumn ):

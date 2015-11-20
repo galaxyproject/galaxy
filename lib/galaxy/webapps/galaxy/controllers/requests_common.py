@@ -2,6 +2,9 @@ import csv
 import logging
 import re
 from galaxy import model, util, web
+from galaxy import eggs
+eggs.require("MarkupSafe")
+from markupsafe import escape
 from galaxy.model.orm import and_, func, select
 from galaxy.security.validate_user_input import validate_email
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin
@@ -14,10 +17,10 @@ class RequestsGrid( grids.Grid ):
     # Custom column types
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, request ):
-            return request.name
+            return escape(request.name)
     class DescriptionColumn( grids.TextColumn ):
         def get_value(self, trans, grid, request):
-            return request.desc
+            return escape(request.desc)
     class SamplesColumn( grids.GridColumn ):
         def get_value(self, trans, grid, request):
             return str( len( request.samples ) )

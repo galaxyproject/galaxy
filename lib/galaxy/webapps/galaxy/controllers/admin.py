@@ -30,12 +30,12 @@ class UserListGrid( grids.Grid ):
 
     class EmailColumn( grids.TextColumn ):
         def get_value( self, trans, grid, user ):
-            return user.email
+            return escape(user.email)
 
     class UserNameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, user ):
             if user.username:
-                return user.username
+                return escape(user.username)
             return 'not set'
 
     class StatusColumn( grids.GridColumn ):
@@ -149,12 +149,12 @@ class RoleListGrid( grids.Grid ):
 
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, role ):
-            return role.name
+            return escape(role.name)
 
     class DescriptionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, role ):
             if role.description:
-                return role.description
+                return escape(role.description)
             return ''
 
     class TypeColumn( grids.TextColumn ):
@@ -248,7 +248,7 @@ class GroupListGrid( grids.Grid ):
 
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, group ):
-            return group.name
+            return escape(group.name)
 
     class StatusColumn( grids.GridColumn ):
         def get_value( self, trans, grid, group ):
@@ -324,12 +324,12 @@ class QuotaListGrid( grids.Grid ):
 
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, quota ):
-            return quota.name
+            return escape(quota.name)
 
     class DescriptionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, quota ):
             if quota.description:
-                return quota.description
+                return escape(quota.description)
             return ''
 
     class AmountColumn( grids.TextColumn ):

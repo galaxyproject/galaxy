@@ -6,6 +6,8 @@ from galaxy.model.orm import and_
 from galaxy.web.base.controller import BaseUIController, web
 from galaxy.web.framework.helpers import grids
 eggs.require( "SQLAlchemy >= 0.4" )
+eggs.require("MarkupSafe")
+from markupsafe import escape
 import sqlalchemy as sa
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 from galaxy.webapps.reports.controllers.jobs import sorter
@@ -19,7 +21,7 @@ class SpecifiedDateListGrid( grids.Grid ):
     class WorkflowNameColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, stored_workflow ):
-            return stored_workflow.name
+            return escape(stored_workflow.name)
 
     class CreateTimeColumn( grids.DateTimeColumn ):
 
@@ -30,7 +32,7 @@ class SpecifiedDateListGrid( grids.Grid ):
 
         def get_value( self, trans, grid, stored_workflow ):
             if stored_workflow.user:
-                return stored_workflow.user.email
+                return escape(stored_workflow.user.email)
             return 'unknown'
 
     class EmailColumn( grids.GridColumn ):
