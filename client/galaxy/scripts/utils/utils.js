@@ -6,6 +6,12 @@
 // dependencies
 define([], function() {
 
+/** Builds a basic iframe
+*/
+function iframe( src ) {
+    return '<iframe src="' + src + '" frameborder="0" style="width: 100%; height: 100%;"/>';
+}
+
 /** Traverse through json
 */
 function deepeach(dict, callback) {
@@ -262,6 +268,7 @@ return {
     cssGetAttribute: cssGetAttribute,
     get: get,
     merge: merge,
+    iframe: iframe,
     bytesToString: bytesToString,
     uid: uid,
     time: time,

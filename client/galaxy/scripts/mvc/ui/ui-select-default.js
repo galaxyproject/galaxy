@@ -271,7 +271,7 @@ var View = Backbone.View.extend({
     /** Template for select options
     */
     _templateOption: function(options) {
-        return '<option value="' + options.value + '">' + options.label + '</option>';
+        return '<option value="' + options.value + '">' + _.escape(options.label) + '</option>';
     },
 
     /** Template for select view

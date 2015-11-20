@@ -16,7 +16,7 @@ def load(path):
     _import_macros(root, path)
 
     # Collect tokens
-    tokens = _macros_of_type(root, 'token', lambda el: el.text)
+    tokens = _macros_of_type(root, 'token', lambda el: el.text or '')
 
     # Expand xml macros
     macro_dict = _macros_of_type(root, 'xml', lambda el: XmlMacroDef(el))

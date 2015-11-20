@@ -63,7 +63,11 @@ class ConfigSerializer( base.ModelSerializer ):
             'ftp_upload_dir'            : _defaults_to( None ),
             'ftp_upload_site'           : _defaults_to( None ),
             'version_major'             : _defaults_to( None ),
-            'require_login'             : _defaults_to( None )
+            'require_login'             : _defaults_to( None ),
+            'inactivity_box_content'    : _defaults_to( None ),
+            'message_box_content'       : _defaults_to( None ),
+            'message_box_visible'       : _defaults_to( False ),
+            'message_box_class'         : _defaults_to( 'info' ),
         }
 
 

@@ -33,7 +33,7 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
     # Custom columns for grid.
     class HistoryColumn( grids.GridColumn ):
         def get_value( self, trans, grid, hda):
-            return hda.history.name
+            return escape(hda.history.name)
 
     class StatusColumn( grids.GridColumn ):
         def get_value( self, trans, grid, hda ):
@@ -519,7 +519,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         """ Import another user's dataset via a shared URL; dataset is added to user's current history. """
         # Set referer message.
         referer = trans.request.referer
-        if referer is not "":
+        if referer:
             referer_message = "<a href='%s'>return to the previous page</a>" % escape(referer)
         else:
             referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
@@ -1106,7 +1106,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                 trans.sa_session.flush()
                 hist_names_str = ", ".join( ['<a href="%s" target="_top">%s</a>' %
                                             ( url_for( controller="history", action="switch_to_history",
-                                                       hist_id=trans.security.encode_id( hist.id ) ), hist.name )
+                                                       hist_id=trans.security.encode_id( hist.id ) ), escape(hist.name) )
                                             for hist in target_histories ] )
                 num_source = len( source_content_ids ) - invalid_contents
                 num_target = len(target_histories)

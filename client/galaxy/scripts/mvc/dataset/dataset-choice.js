@@ -250,7 +250,7 @@ var DatasetChoice = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
     _template : function( json ){
         return _.template([
             '<label>',
-                '<span class="prompt"><%= label %></span>',
+                '<span class="prompt"><%- label %></span>',
                 '<div class="selected"></div>',
             '</label>'
         ].join(''))( json );
@@ -262,11 +262,11 @@ var DatasetChoice = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
 //TODO: break out?
             return $( _.template([
                 '<div class="selected">',
-                    '<span class="title"><%= selected.hid %>: <%= selected.name %></span>',
+                    '<span class="title"><%- selected.hid %>: <%- selected.name %></span>',
                     '<span class="subtitle">',
-                        '<i><%= selected.misc_blurb %></i>',
-                        '<i>', _l( 'format' ) + ': ', '<%= selected.file_ext %></i>',
-                        '<i><%= selected.misc_info %></i>',
+                        '<i><%- selected.misc_blurb %></i>',
+                        '<i>', _l( 'format' ) + ': ', '<%- selected.file_ext %></i>',
+                        '<i><%- selected.misc_info %></i>',
                     '</span>',
                 '</div>'
             ].join( '' ), { variable : 'selected' })( json.selected[0] ));
@@ -389,7 +389,7 @@ var MultiDatasetChoice = DatasetChoice.extend({
                     '<% if( json.showHeaders ){ %>',
                         '<thead><tr>',
                             '<% _.map( json.cells, function( val, key ){ %>',
-                                '<th><%= val %></th>',
+                                '<th><%- val %></th>',
                             '<% }); %>',
                         '</tr></thead>',
                     '<% } %>',
@@ -397,7 +397,7 @@ var MultiDatasetChoice = DatasetChoice.extend({
                         '<% _.map( json.selected, function( selected ){ %>',
                             '<tr>',
                                 '<% _.map( json.cells, function( val, key ){ %>',
-                                    '<td class="cell-<%= key %>"><%= selected[ key ] %></td>',
+                                    '<td class="cell-<%- key %>"><%- selected[ key ] %></td>',
                                 '<% }) %>',
                             '</tr>',
                         '<% }); %>',

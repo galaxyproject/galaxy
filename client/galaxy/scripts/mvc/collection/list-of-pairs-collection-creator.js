@@ -33,11 +33,11 @@ var PairView = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     },
 
     template : _.template([
-        '<span class="forward-dataset-name flex-column"><%= pair.forward.name %></span>',
+        '<span class="forward-dataset-name flex-column"><%- pair.forward.name %></span>',
         '<span class="pair-name-column flex-column">',
-            '<span class="pair-name"><%= pair.name %></span>',
+            '<span class="pair-name"><%- pair.name %></span>',
         '</span>',
-        '<span class="reverse-dataset-name flex-column"><%= pair.reverse.name %></span>'
+        '<span class="reverse-dataset-name flex-column"><%- pair.reverse.name %></span>'
     ].join('')),
 
     render : function(){

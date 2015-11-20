@@ -31,14 +31,11 @@ indicated with the optional parameter (test_path).  A few examples are:
 Run all TestUserInfo functional tests:
     ./run_tests.sh test/functional/test_user_info.py:TestUserInfo
 
-Run a specific API test requiring the framework test tools:
-    ./run_tests.sh -with_framework_test_tools -api test/api/test_tools.py:ToolsTestCase.test_map_over_with_output_format_actions
+Run a specific API test:
+    ./run_tests.sh -api test/api/test_tools.py:ToolsTestCase.test_map_over_with_output_format_actions
 
 
 Extra options:
-
-
-
  --verbose_errors      Force some tests produce more verbose error reporting.
  --no_cleanup          Do not delete temp files for Python functional tests (-toolshed, -framework, etc...)
  --debug               On python test error or failure invoke a pdb shell for interactive debugging of the test
@@ -46,7 +43,7 @@ Extra options:
  --xunit_report_file   Path of XUnit report to produce (for Python Galaxy functional tests).
  --skip-venv           Do not create .venv (passes this flag to common_startup.sh)
  --dockerize           Run tests in a pre-configured Docker container (must be first argument if present).
- --db <type>           For use with --dockerize, run tests using partially migrated 'postgres', 'mysql', 
+ --db <type>           For use with --dockerize, run tests using partially migrated 'postgres', 'mysql',
                        or 'sqlite' databases.
 EOF
 }
@@ -71,7 +68,7 @@ ensure_grunt() {
 }
 
 
-DOCKER_DEFAULT_IMAGE='galaxy/testing-base:15.10.1'
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:15.10.2'
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
@@ -110,7 +107,7 @@ fi
 while :
 do
     case "$1" in
-      -h|--help|-\?) 
+      -h|--help|-\?)
           show_help
           exit 0
           ;;
@@ -122,19 +119,19 @@ do
           if [ $# -gt 1 ]; then
               test_id=$2;
               shift 2
-          else 
+          else
               echo "--id requires an argument" 1>&2
               exit 1
-          fi 
+          fi
           ;;
       -s|-sid|--sid)
           if [ $# -gt 1 ]; then
               section_id=$2
               shift 2
-          else 
+          else
               echo "--sid requires an argument" 1>&2
               exit 1
-          fi 
+          fi
           ;;
     -a|-api|--api)
           with_framework_test_tools_arg="-with_framework_test_tools"
@@ -168,7 +165,7 @@ do
               workflow_file=$2
               workflow_test=1
               shift 2
-          else 
+          else
               echo "--workflow requires an argument" 1>&2
               exit 1
           fi
@@ -207,7 +204,7 @@ do
           if [ $# -gt 1 ]; then
               report_file=$2
               shift 2
-          else 
+          else
               echo "--report_file requires an argument" 1>&2
               exit 1
           fi
@@ -254,13 +251,13 @@ do
           if [ $# -gt 1 ]; then
               unit_extra=$2
               shift 2
-          else 
+          else
               unit_extra='--exclude=functional --exclude="^get" --exclude=controllers --exclude=runners --exclude dictobj --exclude=jstree lib test/unit'
               shift 1
           fi
           ;;
       -q|-qunit|--qunit)
-          # Requires grunt installed and dependencies configured see 
+          # Requires grunt installed and dependencies configured see
           # test/qunit/README.txt for more information.
           driver="grunt"
           gruntfile="./test/qunit/Gruntfile.js"
@@ -297,11 +294,11 @@ do
           skip_common_startup=1
           shift
           ;;
-      --) 
+      --)
           shift
           break
           ;;
-      -*) 
+      -*)
           echo "invalid option: $1" 1>&2;
           show_help
           exit 1
@@ -350,7 +347,7 @@ elif [ -n "$casperjs_test" ]; then
         extra_args="test/casperjs/casperjs_runner.py"
     fi
 elif [ -n "$section_id" ]; then
-    extra_args=`python tool_list.py $section_id` 
+    extra_args=`python tool_list.py $section_id`
 elif [ -n "$test_id" ]; then
     class=":TestForTool_$test_id"
     extra_args="functional.test_toolbox$class"
