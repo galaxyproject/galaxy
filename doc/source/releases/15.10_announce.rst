@@ -20,7 +20,7 @@ Highlights
   improved styling.
 
 **Data Libraries**
-  Improved API and UI for data libraries - including support for library 
+  Improved API and UI for data libraries - including support for library
   folder management and search.
 
 `Github <https://github.com/galaxyproject/galaxy>`__
@@ -62,7 +62,8 @@ The Mercurial repository at https://bitbucket.org/galaxy/galaxy-dist is deprecat
 **We recommend deployers to switch their instances to git** and follow the `master`
 branch of GitHub repository https://github.com/galaxyproject/galaxy
 Details are available at https://wiki.galaxyproject.org/Develop/SourceCode
-*The Mercurial repository will be kept up to date for next few releases.*
+*The next few releases will still be available on Bitbucket, but they may be
+less up to date than the corresponding GitHub branches.*
 
 The **old UI of Data Libraries is deprecated** and will be removed in the
 next release of Galaxy. The current Data Libraries Beta will replace it.
