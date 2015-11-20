@@ -11,6 +11,7 @@
     "templates/tool_link.handlebars",
     "templates/panel_section.handlebars",
     "templates/tool_search.handlebars",
+
 ], function(_, util, data, ToolsForm, tool_form_template, tool_link_template, panel_section_template, tool_search_template) {
 
 /**

@@ -9,10 +9,11 @@ define([
     "viz/trackster/util",
     "viz/visualization",
     "viz/trackster/tracks",
-    "mvc/tools/tools",
+    "mvc/tool/tools",
     "mvc/dataset/data",
     "utils/config",
     "mvc/ui/icon-button"
+
 ], function(_, d3, util, visualization, tracks, tools, data, config, mod_icon_btn) {
 
 /**

@@ -137,7 +137,6 @@ var SidePanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
     },
 
     hide : function(){
-        console.debug( 'hide:', this, this.hidden );
         if( this.hidden ){ return; }
         var self = this,
             animation = {},
@@ -168,7 +167,6 @@ var SidePanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
     //TODO: only used in message.mako?
     /**   */
     handle_minwidth_hint: function( hint ){
-        console.debug( 'handle_minwidth_hint:', hint );
         var space = this.$center().width() - ( this.hidden ? this.savedSize : 0 );
         if( space < hint ){
             if( !this.hidden ){
@@ -186,7 +184,6 @@ var SidePanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
 
     /**   */
     force_panel : function( op ){
-        console.debug( 'force_panel:', op );
         if( op == 'show' ){ return this.show(); }
         if( op == 'hide' ){ return this.hide(); }
         return self;

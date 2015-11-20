@@ -106,21 +106,26 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
 
-    ${h.templates( "tool_link", "panel_section", "tool_search", "tool_form" )}
-    ${h.js( "libs/require", "libs/jquery/jquery-ui" )}
+    ## ${h.templates( "tool_link", "panel_section", "tool_search", "tool_form" )}
+    ${h.js( "libs/jquery/jquery-ui" )}
 
     <script type="text/javascript">
-        require.config({
-                baseUrl: "${h.url_for('/static/scripts')}",
-                shim: {
-                    "libs/underscore": { exports: "_" },
-                    "libs/d3": { exports: "d3" },
-                    "libs/backbone": { exports: "Backbone" },
-                },
-                urlArgs: 'v=${app.server_starttime}'
-        });
+        // require.config({
+        //     baseUrl: "${h.url_for('/static/scripts') }",
+        //     shim: {
+        //         "libs/underscore": { exports: "_" },
+        //         "libs/backbone": {
+        //             deps: [ 'jquery', 'libs/underscore' ],
+        //             exports: "Backbone"
+        //         },
+        //         "libs/d3": { exports: "d3" },
+        //         'handlebars' : { exports: 'Handlebars' },
+        //     },
+        //     // cache buster based on templated server (re)start time
+        //     urlArgs: 'v=${app.server_starttime}'
+        // });
 
-        require(["libs/d3", "viz/sweepster"], function(d3, sweepster) {
+        require(["viz/sweepster"], function(sweepster) {
 
             var viz;
             $(function() {
