@@ -2,7 +2,6 @@ import logging
 
 from sqlalchemy import and_
 
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
 
 from galaxy.web.framework.helpers import grids

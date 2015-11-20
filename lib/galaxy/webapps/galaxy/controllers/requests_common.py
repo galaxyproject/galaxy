@@ -3,7 +3,6 @@ import logging
 import re
 
 from sqlalchemy import and_, false, func, select
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
 
 from galaxy import model, util, web

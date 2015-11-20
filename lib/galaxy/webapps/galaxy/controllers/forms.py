@@ -2,8 +2,6 @@ import copy
 import logging
 import re
 
-from galaxy import eggs
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
 from galaxy import model, util
 from galaxy.web.base.controller import BaseUIController, web
