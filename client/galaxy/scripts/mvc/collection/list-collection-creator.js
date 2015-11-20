@@ -47,7 +47,7 @@ var DatasetCollectionElementView = Backbone.View.extend( BASE_MVC.LoggableMixin 
     //TODO: lots of unused space in the element - possibly load details and display them horiz.
     template : _.template([
         '<a class="name" title="', _l( 'Click to rename' ), '" href="javascript:void(0)">',
-            '<%= element.name %>',
+            '<%- element.name %>',
         '</a>',
         '<button class="discard btn btn-sm" title="', _l( 'Remove this dataset from the list' ), '">',
             _l( 'Discard' ),
@@ -930,7 +930,7 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
         invalidElements : _.template([
             _l( 'The following selections could not be included due to problems:' ),
             '<ul><% _.each( problems, function( problem ){ %>',
-                '<li><b><%= problem.element.name %></b>: <%= problem.text %></li>',
+                '<li><b><%- problem.element.name %></b>: <%- problem.text %></li>',
             '<% }); %></ul>'
         ].join('')),
 
@@ -950,7 +950,7 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
                         '<% if( _.size( problems ) ){ %>',
                             _l( 'The following selections could not be included due to problems' ), ':',
                             '<ul><% _.each( problems, function( problem ){ %>',
-                                '<li><b><%= problem.element.name %></b>: <%= problem.text %></li>',
+                                '<li><b><%- problem.element.name %></b>: <%- problem.text %></li>',
                             '<% }); %></ul>',
                         '<% } else if( _.size( elements ) < 1 ){ %>',
                             _l( 'No datasets were selected' ), '.',

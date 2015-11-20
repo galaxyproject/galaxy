@@ -3,6 +3,8 @@ import logging
 import re
 
 from sqlalchemy import and_, false, func, select
+eggs.require( "MarkupSafe" )
+from markupsafe import escape
 
 from galaxy import model, util, web
 from galaxy.security.validate_user_input import validate_email
@@ -17,11 +19,11 @@ class RequestsGrid( grids.Grid ):
     # Custom column types
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, request ):
-            return request.name
+            return escape(request.name)
 
     class DescriptionColumn( grids.TextColumn ):
         def get_value(self, trans, grid, request):
-            return request.desc
+            return escape(request.desc)
 
     class SamplesColumn( grids.GridColumn ):
         def get_value(self, trans, grid, request):

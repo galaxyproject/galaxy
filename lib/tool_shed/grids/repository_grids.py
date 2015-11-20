@@ -360,12 +360,12 @@ class MatchedRepositoryGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, repository_metadata ):
-            return repository_metadata.repository.name
+            return escape_html( repository_metadata.repository.name )
 
     class DescriptionColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, repository_metadata ):
-            return repository_metadata.repository.description
+            return escape_html( repository_metadata.repository.description )
 
     class RevisionColumn( grids.TextColumn ):
 
@@ -376,7 +376,7 @@ class MatchedRepositoryGrid( grids.Grid ):
 
         def get_value( self, trans, grid, repository_metadata ):
             if repository_metadata.repository.user:
-                return repository_metadata.repository.user.username
+                return escape_html( repository_metadata.repository.user.username )
             return 'no user'
 
     # Grid definition

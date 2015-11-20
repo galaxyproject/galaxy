@@ -36,8 +36,8 @@ var PairedDatasetCollectionElementView = Backbone.View.extend( BASE_MVC.Loggable
 
     //TODO: lots of unused space in the element - possibly load details and display them horiz.
     template : _.template([
-        '<span class="identifier"><%= identifier %></span>',
-        '<span class="name"><%= element.name %></span>',
+        '<span class="identifier"><%- identifier %></span>',
+        '<span class="name"><%- element.name %></span>',
     ].join('')),
 
     /** remove the DOM and any listeners */
@@ -180,15 +180,15 @@ var PairCollectionCreator = _super.extend({
                         '<% if( _.size( problems ) ){ %>',
                             _l( 'The following selections could not be included due to problems' ),
                             '<ul><% _.each( problems, function( problem ){ %>',
-                                '<li><b><%= problem.element.name %></b>: <%= problem.text %></li>',
+                                '<li><b><%- problem.element.name %></b>: <%- problem.text %></li>',
                             '<% }); %></ul>',
                         '<% } else if( _.size( elements ) === 0 ){ %>',
                             _l( 'No datasets were selected' ), '.',
                         '<% } else if( _.size( elements ) === 1 ){ %>',
-                            _l( 'Only one dataset was selected' ), ': <%= elements[0].name %>',
+                            _l( 'Only one dataset was selected' ), ': <%- elements[0].name %>',
                         '<% } else if( _.size( elements ) > 2 ){ %>',
                             _l( 'Too many datasets were selected' ),
-                            ': <%= _.pluck( elements, "name" ).join( ", ") %>',
+                            ': <%- _.pluck( elements, "name" ).join( ", ") %>',
                         '<% } %>',
                         '<br />',
                         _l( 'Two (and only two) elements are needed for the pair' ), '. ',
