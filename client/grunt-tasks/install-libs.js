@@ -23,6 +23,7 @@ module.exports = function( grunt ){
 
             'farbtastic':     [ 'src/farbtastic.js', 'farbtastic.js' ],
             'jQTouch':        [ 'src/reference/jqtouch.js', 'jquery/jqtouch.js' ],
+            'bootstrap-tour': [ 'build/js/bootstrap-tour.js', 'bootstrap-tour.js' ],
 
             // these need to be updated and tested
             //'jquery-form': [ 'jquery.form.js', 'jquery/jquery.form.js' ],

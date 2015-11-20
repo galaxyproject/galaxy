@@ -1,5 +1,5 @@
 // dependencies
-define([], function() {
+define(['mvc/tours'], function( Tours ) {
 
 /** GalaxyMenu uses the GalaxyMasthead class in order to add menu items and icons to the Masthead **/
 var GalaxyMenu = Backbone.Model.extend({
@@ -80,6 +80,7 @@ var GalaxyMenu = Backbone.Model.extend({
             title   : 'Published Pages',
             content : 'page/list_published'
         });
+
 
         this.masthead.append(tab_shared);
 
@@ -209,6 +210,13 @@ var GalaxyMenu = Backbone.Model.extend({
                 target  : '_blank'
             });
         }
+        tab_help.add({
+            title   : 'Interactive Tours',
+            onclick : function(c){
+                Galaxy.app.display(new Tours.ToursView());
+            },
+            target  : 'galaxy_main'
+        });
         this.masthead.append( tab_help );
 
         //
@@ -388,7 +396,8 @@ var GalaxyMastheadTab = Backbone.View.extend({
             type        : 'url',
             target      : '_parent',
             scratchbook : false,
-            divider     : false
+            divider     : false,
+            onclick     : undefined
         }
 
         // read in defaults
@@ -419,17 +428,26 @@ var GalaxyMastheadTab = Backbone.View.extend({
 
         // add events
         var self = this;
-        $item.on('click', function(e){
-            // prevent default
-            e.preventDefault();
 
-            // no modifications if new tab is requested
-            if (self.options.target === '_blank')
-                return true;
 
-            // load into frame
-            Galaxy.frame.add(options);
-        });
+        if (menuOptions.onclick !== undefined){
+            $item.on('click', function(e){
+                e.preventDefault();
+                menuOptions.onclick();
+            });
+        } else {
+            $item.on('click', function(e){
+                // prevent default
+                e.preventDefault();
+
+                // no modifications if new tab is requested
+                if (self.options.target === '_blank')
+                    return true;
+
+                // load into frame
+                Galaxy.frame.add(options);
+            });
+        }
 
         // append divider
         if (menuOptions.divider)

@@ -22,7 +22,7 @@
 <%def name="stylesheets()">
     ${h.css(
         'base',
-        'jquery.rating'
+        'jquery.rating',
     )}
     <style type="text/css">
     #center {

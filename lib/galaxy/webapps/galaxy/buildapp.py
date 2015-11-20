@@ -393,6 +393,22 @@ def populate_api_routes( webapp, app ):
                            action='get_api_key',
                            conditions=dict( method=[ "GET" ] ) )
 
+    # =====================
+    # ===== TOURS API =====
+    # =====================
+
+    webapp.mapper.connect( 'index',
+                           '/api/tours',
+                           controller='tours',
+                           action='index',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'show',
+                           '/api/tours/{tour_id}',
+                           controller='tours',
+                           action='show',
+                           conditions=dict( method=[ "GET" ] ) )
+
     # =======================
     # ===== LIBRARY API =====
     # =======================
