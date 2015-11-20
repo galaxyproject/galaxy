@@ -61,43 +61,74 @@ window.app = function app( options, bootstrapped ){
         },
     };
 
-    // var router = new ( Backbone.Router.extend({
-    //     initialize : function( options ){
-    //         this.options = options;
-    //         this.route( /^$/, "blah", function __callback(){ console.debug( arguments ); });
-    //     },
+    /**  */
+    var router = new ( Backbone.Router.extend({
+        /**  */
+        initialize : function( options ){
+            this.options = options;
+        },
 
-    //     execute: function( callback, args, name ){
-    //         args.push( QUERY_STRING.parse( args.pop() ) );
-    //         if( callback ){
-    //             callback.apply( this, args );
-    //         }
-    //     }
+        /**  */
+        execute: function( callback, args, name ){
+            Galaxy.debug( 'router execute:', callback, args, name );
+            var queryObj = QUERY_STRING.parse( args.pop() );
+            args.push( queryObj );
+            if( callback ){
+                callback.apply( this, args );
+            }
+        },
 
-    // }))( options );
-    // Backbone.history.start({ pushState : true });
+        /**  */
+        routes : {
+            '(/)' : 'home',
+            // TODO: remove annoying 'root' from root urls
+            '(/)root*' : 'home',
+            // '(/root)?m_c=:controller&m_a=:action*' : 'navigateCenter',
+            // '(/root)?tool_id=:id*' : 'toolForm',
 
-    // .................................................... start up
-    $(function(){
-        analysisPage.render();
-        Galaxy.currHistoryPanel.loadCurrentHistory();
+            // TODO: as we add client-based routes, add them here
+        },
 
-        // TODO: to router, remove Globals
-        var params = Galaxy.config.params;
-        if( ( params.tool_id || params.job_id ) && params.tool_id !== 'upload1' ){
+        /**  */
+        home : function( params ){
+            // TODO: to router, remove Globals
+            if( ( params.tool_id || params.job_id ) && params.tool_id !== 'upload1' ){
+                this._loadToolForm( params );
+
+            } else {
+                if( params.workflow_id ){
+                    this._loadCenterIframe( Galaxy.root + 'workflow/run?id=' + params.workflow_id );
+                } else if( params.m_c ){
+                    this._loadCenterIframe( Galaxy.root + params.m_c + '/' + params.m_a );
+                } else {
+                    this._loadCenterIframe( Galaxy.root + 'root/welcome' );
+                }
+            }
+        },
+
+        /**  */
+        _loadToolForm : function( params ){
+            //TODO: load tool form code async
             params.id = params.tool_id;
             centerPanel.display( new ToolsForm.View( params ) );
+        },
 
-        } else {
-            var iframeUrl = Galaxy.root;
-            if( params.workflow_id ){
-                iframeUrl += 'workflow/run?id=' + params.workflow_id;
-            } else if( params.m_c ){
-                iframeUrl += params.m_c + '/' + params.m_a;
-            } else {
-                iframeUrl += 'root/welcome';
-            }
-            centerPanel.$( '#galaxy_main' ).prop( 'src', iframeUrl );
-        }
+        /**  */
+        _loadCenterIframe : function( url ){
+            centerPanel.$( '#galaxy_main' ).prop( 'src', url );
+        },
+
+    }))( options );
+
+    $(function(){
+        analysisPage
+            .render()
+            .right.historyView.loadCurrentHistory();
+
+        // start the router - which will call any of the routes above
+        Backbone.history.start({
+            root        : Galaxy.root,
+            pushState   : true,
+        });
     });
 };

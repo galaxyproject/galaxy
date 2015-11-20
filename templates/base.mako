@@ -32,7 +32,6 @@
 
 ## Default javascripts
 <%def name="javascripts()">
-
     ## Send errors to Sntry server if configured
     %if app.config.sentry_dsn:
         ${h.js( "libs/tracekit", "libs/raven" )}
@@ -45,9 +44,9 @@
     %endif
 
     ${h.js(
-        'libs/require',
         ## TODO: remove when all libs are required directly in modules
         'bundled/libs.bundled',
+        'libs/require',
     )}
 
     <script type="text/javascript">
@@ -71,7 +70,7 @@
         // configure require
         // due to our using both script tags and require, we need to access the same jq in both for plugin retention
         // source http://www.manuel-strehl.de/dev/load_jquery_before_requirejs.en.html
-        define( 'jquery', [], function(){ console.debug( 'defining jQuery' ); return jQuery; })
+        define( 'jquery', [], function(){ return jQuery; })
         // TODO: use one system
 
         // shims and paths

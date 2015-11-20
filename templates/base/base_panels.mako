@@ -38,7 +38,6 @@
 
 ## Default javascripts
 <%def name="javascripts()">
-
     ## Send errors to Sntry server if configured
     %if app.config.sentry_dsn:
         ${h.js( "libs/tracekit", "libs/raven" )}
@@ -51,9 +50,9 @@
     %endif
 
     ${h.js(
-        'libs/require',
         ## TODO: remove when all libs are required directly in modules
-        'bundled/libs.bundled'
+        'bundled/libs.bundled',
+        'libs/require',
     )}
 
     <script type="text/javascript">

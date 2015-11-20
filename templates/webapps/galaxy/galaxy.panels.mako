@@ -57,8 +57,6 @@
     ${h.js(
         ## TODO: remove when all libs are required directly in modules
         'bundled/libs.bundled',
-    )}
-    ${h.js(
         'libs/jquery/jquery-ui',
         'libs/d3',
         'libs/require',
@@ -118,7 +116,6 @@
             urlArgs: 'v=${app.server_starttime}'
         });
         var galaxy_config = ${ h.dumps( self.galaxy_config ) };
-        console.debug( JSON.stringify( galaxy_config, null, '  ' ) );
 
     </script>
 
