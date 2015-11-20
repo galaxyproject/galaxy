@@ -613,10 +613,6 @@ class Tool( object, Dictifiable ):
         """
         Read tool configuration from the element `root` and fill in `self`.
         """
-        # Get the (user visible) name of the tool
-        self.name = tool_source.parse_name()
-        if not self.name:
-            raise Exception( "Missing tool 'name'" )
         # Get the UNIQUE id for the tool
         self.old_id = tool_source.parse_id()
         if guid is None:
@@ -625,6 +621,12 @@ class Tool( object, Dictifiable ):
             self.id = guid
         if not self.id:
             raise Exception( "Missing tool 'id'" )
+
+        # Get the (user visible) name of the tool
+        self.name = tool_source.parse_name()
+        if not self.name:
+            raise Exception( "Missing tool 'name'" )
+
         self.version = tool_source.parse_version()
         if not self.version:
             # For backward compatibility, some tools may not have versions yet.
