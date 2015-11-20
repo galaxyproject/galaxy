@@ -43,14 +43,15 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
             // mark values which can be determined at runtime
             Utils.deepeach (options.inputs, function( input ) {
                 if ( input.type ) {
-                    if ( ( [ 'data', 'data_collection' ] ).indexOf( input.type ) != -1 ) {
+                    if ( [ 'data', 'data_collection' ].indexOf( input.type ) != -1 ) {
                         input.type = 'hidden';
                         input.info = 'Data input \'' + input.name + '\' (' + Utils.textify( input.extensions && input.extensions.toString() ) + ')';
                         input.value = null;
                     } else {
-                        input.is_workflow = true;
                         input.collapsible = true;
                         input.collapsible_value = {'__class__': 'RuntimeValue'};
+                        input.is_workflow = ( input.type && input.options && input.options.length == 0 ) ||
+                                            ( [ 'integer', 'float' ].indexOf( input.type ) != -1 );
                     }
                 }
             });
