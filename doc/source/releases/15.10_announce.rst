@@ -62,7 +62,7 @@ The Mercurial repository at https://bitbucket.org/galaxy/galaxy-dist is deprecat
 **We recommend deployers to switch their instances to git** and follow the `master`
 branch of GitHub repository https://github.com/galaxyproject/galaxy
 Details are available at https://wiki.galaxyproject.org/Develop/SourceCode
-*The next few releases will still be released on Bitbucket, but they may be
+*The next few releases will still be available on Bitbucket, but they may be
 less up to date than the corresponding GitHub branches.*
 
 The **old UI of Data Libraries is deprecated** and will be removed in the
