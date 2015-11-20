@@ -338,9 +338,6 @@ var GalaxyMastheadTab = Backbone.View.extend({
                 // prevent default
                 e.preventDefault();
 
-                //self.options.click_fn()
-                return true;
-
                 // no modifications if new tab is requested
                 if (self.options.target === '_blank')
                     return true;
