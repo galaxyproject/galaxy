@@ -59,16 +59,16 @@ Deprecation Notices
 ===========================================================
 
 The Mercurial repository at https://bitbucket.org/galaxy/galaxy-dist is deprecated.
-We recommend deployers to switch their instances to git and follow the `master`
+**We recommend deployers to switch their instances to git** and follow the `master`
 branch of GitHub repository https://github.com/galaxyproject/galaxy
 Details are available at https://wiki.galaxyproject.org/Develop/SourceCode
 *The Mercurial repository will be kept up to date for next few releases.*
 
-The old UI of Data Libraries is deprecated and will be removed in the
+The **old UI of Data Libraries is deprecated** and will be removed in the
 next release of Galaxy. The current Data Libraries Beta will replace it.
 The Data Library menu items were renamed accordingly.
 
-The graphview visualization is deprecated and will be replaced in the next
+The **graphview visualization is deprecated** and will be replaced in the next
 release of Galaxy.
 
 
