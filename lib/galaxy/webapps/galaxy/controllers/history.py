@@ -30,7 +30,7 @@ log = logging.getLogger( __name__ )
 
 class NameColumn( grids.TextColumn ):
     def get_value( self, trans, grid, history ):
-        return history.get_display_name()
+        return escape(history.get_display_name())
 
 
 class HistoryListGrid( grids.Grid ):
@@ -144,7 +144,7 @@ class SharedHistoryListGrid( grids.Grid ):
 
     class SharedByColumn( grids.GridColumn ):
         def get_value( self, trans, grid, history ):
-            return history.user.email
+            return escape(history.user.email)
 
     # Grid definition
     title = "Histories shared with you by others"

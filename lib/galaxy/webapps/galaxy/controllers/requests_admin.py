@@ -7,7 +7,9 @@ from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixi
 from galaxy.web.form_builder import build_select_field
 from galaxy.web.framework.helpers import time_ago, grids
 from .requests_common import RequestsGrid, invalid_id_redirect
+from markupsafe import escape
 import amqp
+
 try:
     import pexpect
 except ImportError:
@@ -22,7 +24,7 @@ log = logging.getLogger( __name__ )
 class AdminRequestsGrid( RequestsGrid ):
     class UserColumn( grids.TextColumn ):
         def get_value( self, trans, grid, request ):
-            return request.user.email
+            return escape(request.user.email)
     # Grid definition
     columns = [ col for col in RequestsGrid.columns ]
     columns.append( UserColumn( "User",
@@ -44,7 +46,7 @@ class DataTransferGrid( grids.Grid ):
     # Custom column types
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, sample_dataset ):
-            return sample_dataset.name
+            return escape(sample_dataset.name)
 
     class SizeColumn( grids.TextColumn ):
         def get_value( self, trans, grid, sample_dataset ):
@@ -57,7 +59,7 @@ class DataTransferGrid( grids.Grid ):
     class ExternalServiceColumn( grids.TextColumn ):
         def get_value( self, trans, grid, sample_dataset ):
             try:
-                return sample_dataset.external_service.name
+                return escape(sample_dataset.external_service.name)
             except:
                 return 'None'
     # Grid definition

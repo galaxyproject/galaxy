@@ -2,6 +2,8 @@ import logging
 
 from sqlalchemy import and_, false, null, or_, true
 
+from markupsafe import escape
+
 from galaxy.web.framework.helpers import grids
 from galaxy.webapps.tool_shed import model
 from tool_shed.grids.repository_grids import RepositoryGrid
@@ -16,12 +18,12 @@ class ComponentGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, component ):
-            return component.name
+            return escape( component.name )
 
     class DescriptionColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, component ):
-            return component.description
+            return escape( component.description )
 
     title = "Repository review components"
     model_class = model.Component
@@ -279,12 +281,12 @@ class RepositoryReviewsByUserGrid( grids.Grid ):
     class RepositoryNameColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, review ):
-            return review.repository.name
+            return escape( review.repository.name )
 
     class RepositoryDescriptionColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, review ):
-            return review.repository.description
+            return escape( review.repository.description )
 
     class RevisionColumn( grids.TextColumn ):
 
