@@ -9,24 +9,26 @@ class WorkflowsFromYamlApiTestCase( BaseWorkflowsApiTestCase ):
 
     def test_simple_upload(self):
         workflow_id = self._upload_yaml_workflow("""
-- type: input
-- tool_id: cat1
-  state:
-    input1:
-      $link: 0
-- tool_id: cat1
-  state:
-    input1:
-      $link: 1#out_file1
-- tool_id: random_lines1
-  state:
-    num_lines: 10
-    input:
-      $link: 2#out_file1
-    seed_source:
-      seed_source_selector: set_seed
-      seed: asdf
-      __current_case__: 1
+class: GalaxyWorkflow
+steps:
+  - type: input
+  - tool_id: cat1
+    state:
+      input1:
+        $link: 0
+  - tool_id: cat1
+    state:
+      input1:
+        $link: 1#out_file1
+  - tool_id: random_lines1
+    state:
+      num_lines: 10
+      input:
+        $link: 2#out_file1
+      seed_source:
+        seed_source_selector: set_seed
+        seed: asdf
+        __current_case__: 1
 """)
         self._get("workflows/%s/download" % workflow_id).content
 
@@ -58,6 +60,7 @@ class WorkflowsFromYamlApiTestCase( BaseWorkflowsApiTestCase ):
     def test_simple_output_actions( self ):
         history_id = self.dataset_populator.new_history()
         self._run_jobs("""
+class: GalaxyWorkflow
 steps:
   - type: input
     label: input1
@@ -86,52 +89,56 @@ test_data:
 
     def test_pause( self ):
         workflow_id = self._upload_yaml_workflow("""
-- label: test_input
-  type: input
-- label: first_cat
-  tool_id: cat1
-  state:
-    input1:
-      $link: test_input
-- label: the_pause
-  type: pause
-  connect:
-    input:
-    - first_cat#out_file1
-- label: second_cat
-  tool_id: cat1
-  state:
-    input1:
-      $link: the_pause
+class: GalaxyWorkflow
+steps:
+  - label: test_input
+    type: input
+  - label: first_cat
+    tool_id: cat1
+    state:
+      input1:
+        $link: test_input
+  - label: the_pause
+    type: pause
+    connect:
+      input:
+      - first_cat#out_file1
+  - label: second_cat
+    tool_id: cat1
+    state:
+      input1:
+        $link: the_pause
 """)
         print self._get("workflows/%s/download" % workflow_id).json()
 
     def test_implicit_connections( self ):
         workflow_id = self._upload_yaml_workflow("""
-- label: test_input
-  type: input
-- label: first_cat
-  tool_id: cat1
-  state:
-    input1:
-      $link: test_input
-- label: the_pause
-  type: pause
-  connect:
-    input:
-    - first_cat#out_file1
-- label: second_cat
-  tool_id: cat1
-  state:
-    input1:
-      $link: the_pause
-- label: third_cat
-  tool_id: cat1
-  connect:
-    $step: second_cat
-  state:
-    input1:
-      $link: test_input
+class: GalaxyWorkflow
+steps:
+  - label: test_input
+    type: input
+  - label: first_cat
+    tool_id: cat1
+    state:
+      input1:
+        $link: test_input
+  - label: the_pause
+    type: pause
+    connect:
+      input:
+      - first_cat#out_file1
+  - label: second_cat
+    tool_id: cat1
+    state:
+      input1:
+        $link: the_pause
+  - label: third_cat
+    tool_id: cat1
+    connect:
+      $step: second_cat
+    state:
+      input1:
+        $link: test_input
 """)
         workflow = self._get("workflows/%s/download" % workflow_id).json()
         print workflow
