@@ -1,3 +1,6 @@
+import json
+import re
+
 from galaxy.exceptions import ObjectInvalid
 from galaxy.model import LibraryDatasetDatasetAssociation
 from galaxy import model
@@ -238,7 +241,13 @@ class DefaultToolAction( object ):
                 assert data is not None
                 out_data[name] = data
             else:
-                ext = determine_output_format( output, wrapped_params.params, inp_data, input_ext )
+                ext = determine_output_format(
+                    output,
+                    wrapped_params.params,
+                    inp_data,
+                    inp_dataset_collections,
+                    input_ext
+                )
                 data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, sa_session=trans.sa_session )
                 if output.hidden:
                     data.visible = False
@@ -562,7 +571,7 @@ def filter_output(output, incoming):
     return False
 
 
-def determine_output_format(output, parameter_context, input_datasets, random_input_ext):
+def determine_output_format(output, parameter_context, input_datasets, input_dataset_collections, random_input_ext):
     """ Determines the output format for a dataset based on an abstract
     description of the output (galaxy.tools.ToolOutput), the parameter
     wrappers, a map of the input datasets (name => HDA), and the last input
@@ -575,13 +584,30 @@ def determine_output_format(output, parameter_context, input_datasets, random_in
     ext = output.format
     if ext == "input":
         ext = random_input_ext
-    if output.format_source is not None and output.format_source in input_datasets:
+    format_source = output.format_source
+    if format_source is not None and format_source in input_datasets:
         try:
             input_dataset = input_datasets[output.format_source]
             input_extension = input_dataset.ext
             ext = input_extension
         except Exception:
             pass
+    elif format_source is not None:
+        if re.match(r"^[^\[\]]*\[[^\[\]]*\]$", format_source):
+            collection_name, element_index = format_source[0:-1].split("[")
+            # Treat as json to interpret "forward" vs 0 with type
+            # Make it feel more like Python, single quote better in XML also.
+            element_index = element_index.replace("'", '"')
+            element_index = json.loads(element_index)
+
+            if collection_name in input_dataset_collections:
+                try:
+                    input_collection = input_dataset_collections[collection_name]
+                    input_dataset = input_collection.collection[element_index].element_object
+                    input_extension = input_dataset.ext
+                    ext = input_extension
+                except Exception:
+                    pass
 
     # process change_format tags
     if output.change_format is not None:
