@@ -180,7 +180,7 @@ var FolderRowView = Backbone.View.extend({
   templateRowDeletedFolder: function(){
     tmpl_array = [];
 
-    tmpl_array.push('<tr class="active folder_row light library-row" id="<%- content_item.id %>">');
+    tmpl_array.push('<tr class="active deleted_folder light library-row" id="<%- content_item.id %>">');
     tmpl_array.push('  <td>');
     tmpl_array.push('    <span title="Folder" class="fa fa-folder-o"></span>');
     tmpl_array.push('  </td>');
