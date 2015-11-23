@@ -212,7 +212,7 @@ def __assert_output_format_is( expected, output, input_extensions=[], param_cont
         dce2 = model.DatasetCollectionElement(collection=c1, element=hda_reverse, element_identifier="reverse", element_index=1)
         c1.elements = [dce1, dce2]
 
-        input_collections["hdcai"] = hc1
+        input_collections["hdcai"] = (hc1, False)
 
     actual_format = determine_output_format( output, param_context, inputs, input_collections, last_ext )
     assert actual_format == expected, "Actual format %s, does not match expected %s" % (actual_format, expected)
