@@ -35,10 +35,17 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
             }
         },
         display: function( view ) {
-            this.prev && this.prev.remove();
-            this.prev = view;
-            this.$( '#galaxy_main' ).hide();
-            this.$( '#center-panel' ).scrollTop( 0 ).append( view.$el ).show();
+            var contentWindow = this.$( '#galaxy_main' )[ 0 ].contentWindow || {};
+            var message = contentWindow.onbeforeunload && contentWindow.onbeforeunload();
+            if ( !message || confirm( message ) ) {
+                contentWindow.onbeforeunload = undefined;
+                this.prev && this.prev.remove();
+                this.prev = view;
+                this.$( '#galaxy_main' ).attr( 'src', 'about:blank' ).hide();
+                this.$( '#center-panel' ).scrollTop( 0 ).append( view.$el ).show();
+            } else {
+                view && view.remove();
+            }
         },
         _template: function() {
             return  '<div style="position: absolute; width: 100%; height: 100%">' +
