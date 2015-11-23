@@ -163,7 +163,7 @@ var FolderToolbarView = Backbone.View.extend({
           var folder = new mod_library_model.FolderAsModel();
           url_items = Backbone.history.fragment.split('/');
           current_folder_id = url_items[url_items.length-1];
-          folder.url = folder.urlRoot + '/' + current_folder_id ;
+          folder.url = folder.urlRoot + current_folder_id ;
 
           folder.save(folderDetails, {
             success: function (folder) {
