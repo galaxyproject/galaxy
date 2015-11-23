@@ -908,7 +908,6 @@ class CSV( TabularData ):
             return 'str'
 
     def sniff( self, filename ):
-        log.info( "all csv sniff called" )
         """ Return True if if recognizes dialect and header. """
         if not csv.Sniffer().has_header(open(filename, 'r').read(self.peek_size)):
             return False
