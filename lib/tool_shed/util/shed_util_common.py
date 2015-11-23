@@ -512,6 +512,11 @@ def get_repository_for_dependency_relationship( app, tool_shed, name, owner, cha
                                                owner=owner,
                                                changeset_revision=changeset_revision )
     if not repository:
+        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed )
+        repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
+        repo_info_tuple = (None, repository_clone_url, changeset_revision, None, owner, None, None)
+        repository, pcr = repository_was_previously_installed( app, tool_shed_url, name, repo_info_tuple )
+    if not repository:
         # The received changeset_revision is no longer installable, so get the next changeset_revision
         # in the repository's changelog in the tool shed that is associated with repository_metadata.
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed )
