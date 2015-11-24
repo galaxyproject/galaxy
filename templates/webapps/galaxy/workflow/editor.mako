@@ -11,15 +11,6 @@
 
     ${parent.javascripts()}
 
-    <!--[if lt IE 9]>
-      <script type='text/javascript' src="${h.url_for('/static/scripts/libs/IE/excanvas.js')}"></script>
-    <![endif]-->
-    <!--[if lt IE 7]>
-      <script type='text/javascript'>
-        window.lt_ie_7 = true;
-      </script>
-    <![endif]-->
-
     ${h.js(
         "libs/jquery/jquery.event.drag",
         "libs/jquery/jquery.event.drop",

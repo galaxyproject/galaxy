@@ -1,9 +1,35 @@
-// phantomjs: does not have the native extend fn assign
-Object.assign = Object.assign || _.extend;
-
+/*
+    Perform feature inference and redirect if below some minimum (must have canvas, etc.)
+    and polyfill for non-standard features.
+ */
 (function() {
     'use strict';
     /*globals window, clearTimeout */
+
+    // ------------------------------------------------------------------ can't/won't polyfill
+    // TODO: move to modernizr or something besides us doing this...
+    var incompatibilities = [
+        { name: 'canvas',           compatible: function(){ return window.CanvasRenderingContext2D; } },
+        { name: 'sessionStorage',   compatible: function(){
+            try {
+                return Number.isInteger( sessionStorage.length );
+            } catch( err ){}
+            return false;
+        }},
+    ];
+    // build a list of feature names for features that were not found
+    incompatibilities = incompatibilities
+        .filter( function( feature ){ return !feature.compatible(); })
+        .map( function( feature ){ return feature.name; });
+
+    if( !!incompatibilities.length ){
+        window.location.href = Galaxy.root + 'static/incompatible-browser.html';
+        console.log( 'incompatible browser:\n' + incompatibilities.join( '\n' ) );
+    }
+
+    // ------------------------------------------------------------------ polyfills
+    // phantomjs: does not have the native extend fn assign
+    Object.assign = Object.assign || _.extend;
 
     // requestAnimationFrame polyfill
     var lastTime = 0;

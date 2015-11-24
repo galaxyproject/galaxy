@@ -135,14 +135,6 @@ function reset_tool_search( initValue ) {
                 }
             };
 
-            if ( window.lt_ie_7 ) {
-                    window.show_modal(
-                        "Browser not supported",
-                        "Sorry, the workflow editor is not supported for IE6 and below."
-                    );
-                    return;
-            }
-
             // Init searching.
             $("#tool-search-query").click( function (){
                 $(this).focus();

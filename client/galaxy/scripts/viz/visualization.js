@@ -89,8 +89,7 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
 // --------- Models ---------
 
 /**
- * Canvas manager is used to create canvases, for browsers, this deals with
- * backward comparibility using excanvas, as well as providing a pattern cache
+ * Canvas manager is used to create canvases for browsers as well as providing a pattern cache
  */
 var CanvasManager = function(default_font) {
     this.default_font = default_font !== undefined ? default_font : "9px Monaco, Lucida Console, monospace";
@@ -125,9 +124,6 @@ _.extend( CanvasManager.prototype, {
     },
     new_canvas: function() {
         var canvas = $("<canvas/>")[0];
-        // If using excanvas in IE, we need to explicately attach the canvas
-        // methods to the DOM element
-        if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); }
         // Keep a reference back to the manager
         canvas.manager = this;
         return canvas;
