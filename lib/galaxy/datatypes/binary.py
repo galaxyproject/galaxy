@@ -567,6 +567,20 @@ class H5( Binary ):
         except:
             return False
 
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary HDF5 file"
+            dataset.blurb = nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek( self, dataset ):
+        try:
+            return dataset.peek
+        except:
+            return "Binary HDF5 file (%s)" % ( nice_size( dataset.get_size() ) )
+
 Binary.register_sniffable_binary_format("h5", "h5", H5)
 
 
@@ -916,6 +930,20 @@ class IdpDB( SQlite ):
             except Exception, e:
                 log.warn( '%s, sniff Exception: %s', self, e )
         return False
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = "IDPickerDB SQLite file"
+            dataset.blurb = nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek( self, dataset ):
+        try:
+            return dataset.peek
+        except:
+            return "IDPickerDB SQLite file (%s)" % ( nice_size( dataset.get_size() ) )
 
 Binary.register_sniffable_binary_format( "gemini.sqlite", "gemini.sqlite", GeminiSQLite )
 Binary.register_sniffable_binary_format( "idpDB", "idpDB", IdpDB )
