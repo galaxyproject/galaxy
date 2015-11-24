@@ -901,7 +901,7 @@ class IdpDB( SQlite ):
         super( IdpDB, self ).set_meta( dataset, overwrite=overwrite, **kwd )
 
     def sniff( self, filename, original_name="" ):
-        if super( IdpDB, self ).sniff( filename, original_name ):
+        if super( IdpDB, self ).sniff( filename ):
             mz_table_names = ["About", "Analysis", "AnalysisParameter", "PeptideSpectrumMatch", "Spectrum", "SpectrumSource"]
             try:
                 conn = sqlite.connect( filename )
