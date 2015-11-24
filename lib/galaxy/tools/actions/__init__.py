@@ -289,6 +289,8 @@ class DefaultToolAction( object ):
                 output_action_params.update( incoming )
                 output.actions.apply_action( data, output_action_params )
             # Store all changes to database
+            # Updates at least state, blurb, and name. Does a query before
+            # hand I don't know why...
             trans.sa_session.flush()
             return data
 
@@ -377,7 +379,9 @@ class DefaultToolAction( object ):
             if name not in child_dataset_names and name not in incoming:  # don't add children; or already existing datasets, i.e. async created
                 data = out_data[ name ]
                 if set_output_history:
-                    history.add_dataset( data, set_hid=set_output_hid )
+                    # Set HID and add to history.
+                    # This is brand new and certainly empty so don't worry about quota.
+                    history.add_dataset( data, set_hid=set_output_hid, quota=False )
                 trans.sa_session.add( data )
                 trans.sa_session.flush()
         # Add all the children to their parents
