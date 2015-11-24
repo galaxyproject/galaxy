@@ -215,7 +215,8 @@ class User( object, Dictifiable ):
     total_disk_usage = property( get_disk_usage, set_disk_usage )
 
     def adjust_total_disk_usage( self, amount ):
-        self.disk_usage = func.coalesce(self.table.c.disk_usage, 0) + amount
+        if amount != 0:
+            self.disk_usage = func.coalesce(self.table.c.disk_usage, 0) + amount
 
     @property
     def nice_total_disk_usage( self ):
