@@ -248,13 +248,12 @@ class DefaultToolAction( object ):
                     inp_dataset_collections,
                     input_ext
                 )
-                data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, sa_session=trans.sa_session )
+                data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, flush=False )
                 if output.hidden:
                     data.visible = False
-                # Commit the dataset immediately so it gets database assigned unique id
                 trans.sa_session.add( data )
+                trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions, new=True )
                 trans.sa_session.flush()
-                trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions )
 
             object_store_populator.set_object_store_id( data )
 
