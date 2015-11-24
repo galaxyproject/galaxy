@@ -1531,7 +1531,7 @@ class ScIdx(Tabular):
                 # Skip first line.
                 if count > 0:
                     items = line.split('\t')
-                    if len(items) !=5:
+                    if len(items) != 5:
                         return False
                     index = items[1]
                     if not index.isdigit():
@@ -1552,7 +1552,7 @@ class ScIdx(Tabular):
                 count += 1
             if count < 100 and count > 0:
                 return True
-        except Exception, e:
+        except:
             return False
         finally:
             fh.close()
