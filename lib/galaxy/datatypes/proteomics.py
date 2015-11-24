@@ -6,11 +6,11 @@ import logging
 import re
 
 from galaxy.datatypes import data
-from galaxy.datatypes.binary import Binary, SQlite
+from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.xml import GenericXml
-from galaxy.util import nice_size, sqlite
+from galaxy.util import nice_size
 
 
 log = logging.getLogger(__name__)
