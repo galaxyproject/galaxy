@@ -1,12 +1,14 @@
 
 var jQuery = require( 'jquery' ),
     $ = jQuery,
+    GalaxyApp = require( '../galaxy-app-base' ).GalaxyApp,
     PANEL = require( 'layout/panel' ),
     _l = require( 'utils/localization' ),
     PAGE = require( 'layout/page' );
 
 window.app = function app( options, bootstrapped ){
-    console.debug( 'building app:', options, bootstrapped );
+    window.Galaxy = new GalaxyApp( options, bootstrapped );
+    Galaxy.debug( 'login app' );
 
     // TODO: remove iframe for user login (at least) and render login page from here
     // then remove this redirect

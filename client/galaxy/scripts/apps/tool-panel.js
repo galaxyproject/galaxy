@@ -1,16 +1,18 @@
 var LeftPanel = require( 'layout/panel' ).LeftPanel,
     Tools = require( 'mvc/tool/tools' ),
-    Upload = require( 'mvc/upload/upload-view' );
-//TODO: localize
+    Upload = require( 'mvc/upload/upload-view' ),
+    _l = require( 'utils/localization' );
 
-/* Builds the tool panel on the left */
+/* Builds the tool menu panel on the left of the analysis page */
 var ToolPanel = LeftPanel.extend({
 
-    title : 'Tools',
+    title : _l( 'Tools' ),
 
     initialize: function( options ){
         LeftPanel.prototype.initialize.call( this, options );
         this.log( this + '.initialize:', options );
+
+        /** @type {Object[]} descriptions of user's workflows to be shown in the tool menu */
         this.stored_workflow_menu_entries = options.stored_workflow_menu_entries || [];
 
         // create tool search, tool panel, and tool panel view.
@@ -54,11 +56,12 @@ var ToolPanel = LeftPanel.extend({
         });
     },
 
+    /** build the dom for the workflow portion of the tool menu */
     _renderWorkflowMenu : function(){
         var self = this;
         // add internal workflow list
         self.$( '#internal-workflows' ).append( self._templateTool({
-            title   : 'All workflows',
+            title   : _l( 'All workflows' ),
             href    : 'workflow/list_for_run'
         }));
         _.each( self.stored_workflow_menu_entries, function( menu_entry ){
@@ -69,6 +72,7 @@ var ToolPanel = LeftPanel.extend({
         });
     },
 
+    /** build a link to one tool */
     _templateTool: function( tool ) {
         return [
             '<div class="toolTitle">',
@@ -78,19 +82,20 @@ var ToolPanel = LeftPanel.extend({
         ].join('');
     },
 
+    /** override to include inital menu dom and workflow section */
     _templateBody : function(){
         return [
             '<div class="unified-panel-body unified-panel-body-background">',
                 '<div class="toolMenuContainer">',
                     '<div class="toolMenu" style="display: none">',
                         '<div id="search-no-results" style="display: none; padding-top: 5px">',
-                            '<em><strong>Search did not match any tools.</strong></em>',
+                            '<em><strong>', _l( 'Search did not match any tools.' ), '</strong></em>',
                         '</div>',
                     '</div>',
                     '<div class="toolSectionPad"/>',
                     '<div class="toolSectionPad"/>',
                     '<div class="toolSectionTitle" id="title_XXinternalXXworkflow">',
-                        '<span>Workflows</span>',
+                        '<span>', _l( 'Workflows' ), '</span>',
                     '</div>',
                     '<div id="internal-workflows" class="toolSectionBody">',
                         '<div class="toolSectionBg"/>',

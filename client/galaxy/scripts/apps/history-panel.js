@@ -1,13 +1,13 @@
 var RightPanel = require( 'layout/panel' ).RightPanel,
     Ui = require( 'mvc/ui/ui-misc' ),
     historyOptionsMenu = require( 'mvc/history/options-menu' );
-    CurrentHistoryView = require( 'mvc/history/history-view-edit-current' ).CurrentHistoryView;
+    CurrentHistoryView = require( 'mvc/history/history-view-edit-current' ).CurrentHistoryView,
+    _l = require( 'utils/localization' );
 
-//TODO: localize
-// rename other {history,list}-panels to {history,list}-views
+/** the right hand panel in the analysis page that shows the current history */
 var HistoryPanel = RightPanel.extend({
 
-    title : 'History',
+    title : _l( 'History' ),
 
     initialize : function( options ){
         RightPanel.prototype.initialize.call( this, options );
@@ -16,7 +16,7 @@ var HistoryPanel = RightPanel.extend({
         // this button re-fetches the history and contents and re-renders the history panel
         this.refreshButton = new Ui.ButtonLink({
             id      : 'history-refresh-button',
-            title   : 'Refresh history',
+            title   : _l( 'Refresh history' ),
             cls     : 'panel-header-button',
             icon    : 'fa fa-refresh',
             onclick : function() {
@@ -26,7 +26,7 @@ var HistoryPanel = RightPanel.extend({
         // opens a drop down menu with history related functions (like view all, delete, share, etc.)
         this.optionsButton = new Ui.ButtonLink({
             id      : 'history-options-button',
-            title   : 'History options',
+            title   : _l( 'History options' ),
             cls     : 'panel-header-button',
             icon    : 'fa fa-cog',
         });
@@ -35,7 +35,7 @@ var HistoryPanel = RightPanel.extend({
         if( !options.userIsAnonymous ){
             this.viewMultiButton = new Ui.ButtonLink({
                 id      : 'history-view-multi-button',
-                title   : 'View all histories',
+                title   : _l( 'View all histories' ),
                 cls     : 'panel-header-button',
                 icon    : 'fa fa-columns',
                 href    : options.galaxyRoot + 'history/view_multiple'
@@ -65,10 +65,12 @@ var HistoryPanel = RightPanel.extend({
             this.optionsButton.$el,
             this.viewMultiButton? this.viewMultiButton.$el : null,
         ]);
-        this.historyView.setElement( this.$( '.history-panel' ) );
+        this.historyView
+            .setElement( this.$( '.history-panel' ) );
+            // causes blink/flash due to loadCurrentHistory rendering as well
+            // .render();
     },
 
-    /** panel dom template. id is 'right' or 'left' */
     _templateBody : function( data ){
         return [
             '<div class="unified-panel-body unified-panel-body-background">',

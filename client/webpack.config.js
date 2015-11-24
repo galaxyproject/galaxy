@@ -36,7 +36,6 @@ module.exports = {
     entry   : {
         libs    : commonLibs,
         login   : './galaxy/scripts/apps/login.js',
-        galaxy  : './galaxy/scripts/apps/galaxy.js',
         analysis: './galaxy/scripts/apps/analysis.js',
     },
     output  : {

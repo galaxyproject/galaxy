@@ -49,7 +49,7 @@ GalaxyApp.prototype._init = function __init( options, bootstrapped ){
     // special case for root
     self.root = options.root || '/';
 
-    self._initConfig( options.config || bootstrapped.config || {} );
+    self._initConfig( options.config || {} );
     self._patchGalaxy( window.Galaxy );
 
     self._initLogger( self.options.loggerOptions || {} );
@@ -81,7 +81,7 @@ GalaxyApp.prototype.defaultOptions = {
     root            : '/'
 };
 
-/** add an option from options if the key matches an option in defaultOptions */
+/** filter to options present in defaultOptions (and default to them) */
 GalaxyApp.prototype._processOptions = function _processOptions( options ){
     var self = this,
         defaults = self.defaultOptions;
@@ -126,6 +126,7 @@ GalaxyApp.prototype._patchGalaxy = function _patchGalaxy( patchWith ){
 /** set up the metrics logger (utils/metrics-logger) and pass loggerOptions */
 GalaxyApp.prototype._initLogger = function _initLogger( loggerOptions ){
     var self = this;
+
     // default to console logging at the debug level if the debug flag is set
     if( self.config.debug ){
         loggerOptions.consoleLogger = loggerOptions.consoleLogger || console;
@@ -135,6 +136,7 @@ GalaxyApp.prototype._initLogger = function _initLogger( loggerOptions ){
             loggerOptions.consoleNamespaceWhitelist = localStorage.getItem( NAMESPACE_KEY ).split( ',' );
         } catch( storageErr ){}
     }
+
     self.logger = new metricsLogger.MetricsLogger( loggerOptions );
     self.emit = {};
     [ 'log', 'debug', 'info', 'warn', 'error', 'metric' ].map(function( i ) {

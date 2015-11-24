@@ -26,7 +26,9 @@
 
             %if masthead:
             <div id="masthead" class="navbar navbar-fixed-top navbar-inverse"></div>
+            ## a div below the masthead to show server messages set in galaxy.ini
             <div id="messagebox" style="display: none;"></div>
+            ## a message displayed when the user has been inactive and needs to reactivate their account
             <div id="inactivebox" class="panel-warning-message" style="display: none;"></div>
             %endif
 
@@ -34,19 +36,12 @@
         <div id='dd-helper' style="display: none;"></div>
         ${ js_disabled_warning() }
 
-        ## ${ h.js( 'bundled/libs.bundled', 'bundled/galaxy.bundled' ) }
-        <script type="text/javascript" src="/static/scripts/bundled/libs.bundled.js"></script>
-        <script type="text/javascript" src="/static/scripts/bundled/galaxy.bundled.js"></script>
+        ## js libraries and bundled js app
+        ${ h.js(
+            'bundled/libs.bundled',
+            'bundled/' + js_app_name + '.bundled'
+        )}
         <script type="text/javascript">
-            window.Galaxy = new GalaxyApp(
-                ${ h.dumps( options ) },
-                ${ h.dumps( bootstrapped ) }
-            );
-        </script>
-        ${ h.js( js_app_name + '.bundled' ) }
-        <script type="text/javascript" src="/static/scripts/bundled/${js_app_name}.bundled.js"></script>
-        <script type="text/javascript">
-            // TODO: should *inherit* from GalaxyApp - then remove above and galaxy.bundled.js
             ${js_app_entry_fn}(
                 ${ h.dumps( options ) },
                 ${ h.dumps( bootstrapped ) }
@@ -57,7 +52,7 @@
 
 ## ============================================================================
 <%def name="page_setup()">
-    ## Send errors to Sntry server if configured
+    ## Send js errors to Sentry server if configured
     %if app.config.sentry_dsn:
     ${h.js( "libs/tracekit", "libs/raven" )}
     <script>
@@ -68,8 +63,8 @@
     </script>
     %endif
 
+    ## console protection needed in some versions of IE
     <script type="text/javascript">
-        ## console protection
         window.console = window.console || {
             log     : function(){},
             debug   : function(){},
@@ -78,6 +73,10 @@
             error   : function(){},
             assert  : function(){}
         };
+
+        // this is needed *before* the app code is loaded - many MVC access Galaxy.root for their url
+        // TODO: change this by using a common Backbone.Model base class and url fn
+        window.Galaxy = { root: '${ options[ "root" ] }' };
     </script>
 
     %if not form_input_auto_focus is UNDEFINED and form_input_auto_focus:
@@ -91,6 +90,7 @@
     </script>
     %endif
 
+    ## google analytics
     %if app.config.ga_code:
     <script type="text/javascript">
         (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -112,7 +112,7 @@
                 <h3 class="title">Javascript Required for Galaxy</h3>
                 <div>
                     The Galaxy analysis interface requires a browser with Javascript enabled.<br>
-                    Please enable Javascript and refresh this page
+                    Please enable Javascript and refresh this page.
                 </div>
             </div>
         </div>

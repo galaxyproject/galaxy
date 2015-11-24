@@ -280,7 +280,7 @@ class JSAppLauncher( BaseUIController ):
             log.exception( exc )
             return {}
 
-    def template( self, trans, app_name, entry_fn='app', options=None, bootstrapped_data=None, panels=None, masthead=True, **additional_options ):
+    def template( self, trans, app_name, entry_fn='app', options=None, bootstrapped_data=None, masthead=True, **additional_options ):
         """
         Render and return the single page mako template that starts the app.
 
@@ -289,7 +289,9 @@ class JSAppLauncher( BaseUIController ):
             app. Defaults to 'app'.
         `bootstrapped_data` (dict): (optional) update containing any more data
             the app may need.
-        `additional_config` (dict): (optional) update to the config/options sent to the app.
+        `masthead` (boolean): (optional, default=True) include masthead elements in
+            the initial page dom.
+        `additional_options` (kwargs): update to the options sent to the app.
         """
         options = options or self._get_js_options( trans )
         options.update( additional_options )
@@ -299,7 +301,6 @@ class JSAppLauncher( BaseUIController ):
             js_app_entry_fn=( entry_fn or self.DEFAULT_ENTRY_FN ),
             options=( options or self._get_js_options( trans ) ),
             bootstrapped=( bootstrapped_data or {} ),
-            panels=panels,
             masthead=masthead
         )
 

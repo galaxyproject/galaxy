@@ -1,6 +1,7 @@
 
 var jQuery = require( 'jquery' ),
     $ = jQuery,
+    GalaxyApp = require( '../galaxy-app-base' ).GalaxyApp,
     QUERY_STRING = require( 'utils/query-string-parsing' ),
     PANEL = require( 'layout/panel' ),
     ToolPanel = require( './tool-panel' ),
@@ -8,19 +9,33 @@ var jQuery = require( 'jquery' ),
     PAGE = require( 'layout/page' ),
     ToolsForm = require( 'mvc/tool/tools-form' );
 
+/** define the 'Analyze Data'/analysis/main/home page for Galaxy
+ *  * has a masthead
+ *  * a left tool menu to allow the user to load tools in the center panel
+ *  * a right history menu that shows the user's current data
+ *  * a center panel
+ *  Both panels (generally) persist while the center panel shows any
+ *  UI needed for the current step of an analysis, like:
+ *      * tool forms to set tool parameters,
+ *      * tables showing the contents of datasets
+ *      * etc.
+ */
 window.app = function app( options, bootstrapped ){
-    Galaxy.debug( 'building app:', options, bootstrapped );
+    window.Galaxy = new GalaxyApp( options, bootstrapped );
+    Galaxy.debug( 'analysis app' );
+    // TODO: use router as App base (combining with Galaxy)
 
     // .................................................... panels and page
-    var toolPanel = new ToolPanel({
+    var config = options.config,
+        toolPanel = new ToolPanel({
             el              : '#left',
             userIsAnonymous : Galaxy.user.isAnonymous(),
-            require_login   : options.config.require_login,
-            spinner_url     : options.config.spinner_url,
-            search_url      : options.config.search_url,
-            toolbox         : options.config.toolbox,
-            toolbox_in_panel: options.config.toolbox_in_panel,
-            stored_workflow_menu_entries : options.config.stored_workflow_menu_entries,
+            require_login   : config.require_login,
+            spinner_url     : config.spinner_url,
+            search_url      : config.search_url,
+            toolbox         : config.toolbox,
+            toolbox_in_panel: config.toolbox_in_panel,
+            stored_workflow_menu_entries : config.stored_workflow_menu_entries,
         }),
         centerPanel = new PANEL.CenterPanel({
             el              : '#center'
@@ -29,7 +44,7 @@ window.app = function app( options, bootstrapped ){
             el              : '#right',
             galaxyRoot      : Galaxy.root,
             userIsAnonymous : Galaxy.user.isAnonymous(),
-            allow_user_dataset_purge: Galaxy.config.allow_user_dataset_purge,
+            allow_user_dataset_purge: config.allow_user_dataset_purge,
         }),
         analysisPage = new PAGE.PageLayoutView( _.extend( options, {
             el              : 'body',
@@ -47,12 +62,11 @@ window.app = function app( options, bootstrapped ){
     Galaxy.toolPanel = toolPanel.tool_panel;
     Galaxy.upload = toolPanel.uploadButton;
 
-
     Galaxy.currHistoryPanel = historyPanel.historyView;
     Galaxy.currHistoryPanel.connectToQuotaMeter( Galaxy.quotaMeter );
     Galaxy.currHistoryPanel.listenToGalaxy( Galaxy );
 
-    //HACK: move to router/App
+    //HACK: move there
     Galaxy.app = {
         display : function( view, target ){
             // TODO: Remove this line after select2 update
@@ -61,14 +75,16 @@ window.app = function app( options, bootstrapped ){
         },
     };
 
+    // .................................................... routes
     /**  */
     var router = new ( Backbone.Router.extend({
-        /**  */
+        // TODO: not many client routes at this point - fill and remove from server.
+        // since we're at root here, this may be the last to be routed entirely on the client.
         initialize : function( options ){
             this.options = options;
         },
 
-        /**  */
+        /** override to parse query string into obj and send to each route */
         execute: function( callback, args, name ){
             Galaxy.debug( 'router execute:', callback, args, name );
             var queryObj = QUERY_STRING.parse( args.pop() );
@@ -78,48 +94,51 @@ window.app = function app( options, bootstrapped ){
             }
         },
 
-        /**  */
         routes : {
             '(/)' : 'home',
             // TODO: remove annoying 'root' from root urls
             '(/)root*' : 'home',
-            // '(/root)?m_c=:controller&m_a=:action*' : 'navigateCenter',
-            // '(/root)?tool_id=:id*' : 'toolForm',
-
-            // TODO: as we add client-based routes, add them here
         },
 
         /**  */
         home : function( params ){
             // TODO: to router, remove Globals
+            // load a tool by id (tool_id) or rerun a previous tool execution (job_id)
             if( ( params.tool_id || params.job_id ) && params.tool_id !== 'upload1' ){
                 this._loadToolForm( params );
 
             } else {
+                // show the workflow run form
                 if( params.workflow_id ){
-                    this._loadCenterIframe( Galaxy.root + 'workflow/run?id=' + params.workflow_id );
+                    this._loadCenterIframe( 'workflow/run?id=' + params.workflow_id );
+                // load the center iframe with controller.action: galaxy.org/?m_c=history&m_a=list -> history/list
                 } else if( params.m_c ){
-                    this._loadCenterIframe( Galaxy.root + params.m_c + '/' + params.m_a );
+                    this._loadCenterIframe( params.m_c + '/' + params.m_a );
+                // show the workflow run form
                 } else {
-                    this._loadCenterIframe( Galaxy.root + 'root/welcome' );
+                    this._loadCenterIframe( 'welcome' );
                 }
             }
         },
 
-        /**  */
+        /** load the center panel with a tool form described by the given params obj */
         _loadToolForm : function( params ){
             //TODO: load tool form code async
             params.id = params.tool_id;
             centerPanel.display( new ToolsForm.View( params ) );
         },
 
-        /**  */
-        _loadCenterIframe : function( url ){
+        /** load the center panel iframe using the given url */
+        _loadCenterIframe : function( url, root ){
+            root = root || Galaxy.root;
+            url = root + url;
             centerPanel.$( '#galaxy_main' ).prop( 'src', url );
         },
 
     }))( options );
 
+    // .................................................... when the page is ready
+    // render and start the router
     $(function(){
         analysisPage
             .render()
