@@ -187,8 +187,27 @@ class User( object, Dictifiable ):
         """
         Return a unique list of Roles associated with this user or any of their groups.
         """
-        roles = [ ura.role for ura in self.roles ]
-        for group in [ uga.group for uga in self.groups ]:
+        try:
+            db_session = object_session( self )
+            user = db_session.query(
+                User
+            ).filter_by(  # don't use get, it will use session variant.
+                id=self.id
+            ).options(
+                joinedload("roles"),
+                joinedload("roles.role"),
+                joinedload("groups"),
+                joinedload("groups.group"),
+                joinedload("groups.group.roles"),
+                joinedload("groups.group.roles.role")
+            ).one()
+        except Exception:
+            # If not persistent user, just use models normaly and
+            # skip optimizations...
+            user = self
+
+        roles = [ ura.role for ura in user.roles ]
+        for group in [ uga.group for uga in user.groups ]:
             for role in [ gra.role for gra in group.roles ]:
                 if role not in roles:
                     roles.append( role )
