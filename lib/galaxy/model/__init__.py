@@ -1730,7 +1730,8 @@ class DatasetInstance( object ):
 
     def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None, extension=None,
                   dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
-                  parent_id=None, validation_errors=None, visible=True, create_dataset=False, sa_session=None, extended_metadata=None ):
+                  parent_id=None, validation_errors=None, visible=True, create_dataset=False, sa_session=None,
+                  extended_metadata=None, flush=True ):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.info = info
@@ -1751,8 +1752,9 @@ class DatasetInstance( object ):
         if not dataset and create_dataset:
             # Had to pass the sqlalchemy session in order to create a new dataset
             dataset = Dataset( state=Dataset.states.NEW )
-            sa_session.add( dataset )
-            sa_session.flush()
+            if flush:
+                sa_session.add( dataset )
+                sa_session.flush()
         self.dataset = dataset
         self.parent_id = parent_id
         self.validation_errors = validation_errors
