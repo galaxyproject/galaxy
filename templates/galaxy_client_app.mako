@@ -24,7 +24,7 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
     ## 1) bootstrap kwargs (as above), 2) build Galaxy global var, 3) load 'app' by AMD (optional)
     ${ self.bootstrap( **kwargs ) }
     <script type="text/javascript">
-        require([ 'require', 'galaxy-app-base' ], function( require, galaxy ){
+        require([ 'require', 'galaxy' ], function( require, galaxy ){
             //TODO: global...
             window.Galaxy = new galaxy.GalaxyApp({
                 root    : '${h.url_for( "/" )}',

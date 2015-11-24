@@ -1,7 +1,7 @@
 
 var jQuery = require( 'jquery' ),
     $ = jQuery,
-    GalaxyApp = require( '../galaxy-app-base' ).GalaxyApp,
+    GalaxyApp = require( 'galaxy' ).GalaxyApp,
     QUERY_STRING = require( 'utils/query-string-parsing' ),
     PANEL = require( 'layout/panel' ),
     ToolPanel = require( './tool-panel' ),

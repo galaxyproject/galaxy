@@ -1,7 +1,7 @@
 
 var jQuery = require( 'jquery' ),
     $ = jQuery,
-    GalaxyApp = require( '../galaxy-app-base' ).GalaxyApp,
+    GalaxyApp = require( 'galaxy' ).GalaxyApp,
     PANEL = require( 'layout/panel' ),
     _l = require( 'utils/localization' ),
     PAGE = require( 'layout/page' );
