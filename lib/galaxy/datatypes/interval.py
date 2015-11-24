@@ -1516,11 +1516,6 @@ class ScIdx(Tabular):
         """
         Checks for 'scidx-ness.'
         """
-
-        def is_scidx(fh, bool):
-            fh.close()
-            return bool
-
         try:
             count = 0
             fh = open(filename, "r")
@@ -1531,35 +1526,37 @@ class ScIdx(Tabular):
                     # EOF
                     if count > 1:
                         # We need at least the column labels and a data line.
-                        return is_scidx(fh, True)
-                    return is_scidx(fh, False)
+                        return True
+                    return False
                 # Skip first line.
                 if count > 0:
                     items = line.split('\t')
                     if len(items) !=5:
-                        return is_scidx(fh, False)
+                        return False
                     index = items[1]
                     if not index.isdigit():
-                        return is_scidx(fh, False)
+                        return False
                     forward = items[2]
                     if not forward.isdigit():
-                        return is_scidx(fh, False)
+                        return False
                     reverse = items[3]
                     if not reverse.isdigit():
-                        return is_scidx(fh, False)
+                        return False
                     value = items[4]
                     if not value.isdigit():
-                        return is_scidx(fh, False)
+                        return False
                     if int(forward) + int(reverse) != int(value):
-                        return is_scidx(fh, False)
+                        return False
                 if count == 100:
-                    return is_scidx(fh, True)
+                    return True
                 count += 1
             if count < 100 and count > 0:
-                return is_scidx(fh, True)
+                return True
         except Exception, e:
-            pass
-        return is_scidx(fh, False)
+            return False
+        finally:
+            fh.close()
+        return False
 
 
 if __name__ == '__main__':
