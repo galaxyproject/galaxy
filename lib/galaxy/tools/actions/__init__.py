@@ -254,7 +254,7 @@ class DefaultToolAction( object ):
                 # Commit the dataset immediately so it gets database assigned unique id
                 trans.sa_session.add( data )
                 trans.sa_session.flush()
-                trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions )
+                trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions, new=True )
 
             object_store_populator.set_object_store_id( data )
 
