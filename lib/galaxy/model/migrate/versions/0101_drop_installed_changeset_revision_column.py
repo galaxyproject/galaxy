@@ -1,16 +1,14 @@
 """
 Migration script to drop the installed_changeset_revision column from the tool_dependency table.
 """
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-import sys, logging
-from galaxy.model.custom_types import *
-from sqlalchemy.exc import *
 import datetime
-now = datetime.datetime.utcnow
+import logging
+import sys
 
+from sqlalchemy import MetaData, Table
+from sqlalchemy.exc import NoSuchTableError
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel( logging.DEBUG )
 handler = logging.StreamHandler( sys.stdout )
@@ -20,6 +18,7 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -36,6 +35,8 @@ def upgrade(migrate_engine):
             col.drop()
         except Exception, e:
             log.debug( "Dropping column 'installed_changeset_revision' from tool_dependency table failed: %s" % ( str( e ) ) )
+
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     pass

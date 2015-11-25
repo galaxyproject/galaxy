@@ -23,7 +23,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             this.options = Utils.merge(options, this.optionsDefault);
 
             // log options
-            console.debug(this.options);
+            Galaxy.emit.debug('form-view::initialize()', 'Ready to build form.', this.options);
 
             // link galaxy modal or create one
             var galaxy = parent.Galaxy;
@@ -69,7 +69,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                             }
                             field.update(new_options);
                             field.trigger('change');
-                            console.debug('Updating options for ' + input_id);
+                            Galaxy.emit.debug('form-view::update()', 'Updating options for ' + input_id);
                         }
                     }
                 }
@@ -89,13 +89,6 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     }
                 }
             }
-        },
-
-        /** Shows the final message (usually upon successful job submission)
-        */
-        reciept: function($el) {
-            this.$el.empty();
-            this.$el.append($el);
         },
 
         /** Highlight and scroll to input element (currently only used for error notifications)
@@ -206,12 +199,8 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 inputs : this.options.inputs
             });
 
-            // switch to classic tool form mako if the form definition is incompatible
-            if (this.incompatible) {
-                this.$el.hide();
-                $('#tool-form-classic').show();
-                return;
-            }
+            // remove tooltips
+            $( '.tooltip' ).remove();
 
             // create portlet
             this.portlet = new Portlet.View({
@@ -242,7 +231,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             }
 
             // log
-            console.debug('tools-form-base::initialize() - Completed.');
+            Galaxy.emit.debug('form-view::initialize()', 'Completed');
         }
     });
 });

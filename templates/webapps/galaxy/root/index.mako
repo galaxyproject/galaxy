@@ -3,6 +3,7 @@
 ${h.js("libs/bibtex", "libs/jquery/jquery-ui")}
 ${h.css("jquery-ui/smoothness/jquery-ui")}
 ${h.css("base")}
+<%def name="title()">Galaxy</%def>
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.templates("tool_link", "panel_section", "tool_search")}
@@ -32,7 +33,6 @@ ${h.css("base")}
         'allow_user_creation'           : app.config.allow_user_creation,
         'logo_url'                      : h.url_for(app.config.get( 'logo_url', '/')),
         'spinner_url'                   : h.url_for('/static/images/loading_small_white_bg.gif'),
-        'search_url'                    : h.url_for(controller='root', action='tool_search'),
         'is_admin_user'                 : trans.user_is_admin(),
         'ftp_upload_dir'                : app.config.get("ftp_upload_dir",  None),
         'ftp_upload_site'               : app.config.get("ftp_upload_site",  None),
@@ -59,4 +59,13 @@ ${h.css("base")}
             var app = new App( ${ h.dumps( app_config ) } );
         } );
     });
+
+    %if app.config.ga_code:
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+          ga('create', '${app.config.ga_code}', 'auto');
+          ga('send', 'pageview');
+    %endif
 </script>

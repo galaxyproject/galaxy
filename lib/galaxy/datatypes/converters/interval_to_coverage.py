@@ -6,14 +6,13 @@ usage: %prog bed_file out_file
     -1, --cols1=N,N,N,N: Columns for chrom, start, end, strand in interval file
     -2, --cols2=N,N,N,N: Columns for chrom, start, end, strand in coverage file
 """
-import pkg_resources
-pkg_resources.require( "bx-python" )
-from bx.intervals import io
-from bx.cookbook import doc_optparse
 import commands
-from os import environ
 import tempfile
 from bisect import bisect
+from os import environ
+
+from bx.cookbook import doc_optparse
+from bx.intervals import io
 
 INTERVAL_METADATA = ('chromCol',
                      'startCol',

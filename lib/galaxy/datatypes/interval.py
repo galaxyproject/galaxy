@@ -1,25 +1,25 @@
 """
 Interval datatypes
 """
-
-import pkg_resources
-pkg_resources.require( "bx-python" )
-
+import logging
+import math
 import os
 import sys
-import logging
 import tempfile
-import data
-from galaxy import util
-from galaxy.web import url_for
 import urllib
+
+import numpy
 from bx.intervals.io import GenomicIntervalReader, ParseError
+
+from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.sniff import get_headers
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.util.gff_util import parse_gff_attributes
-from galaxy.datatypes.sniff import get_headers
-import math
+from galaxy.web import url_for
+
+import data
 import dataproviders
 
 log = logging.getLogger(__name__)
@@ -1248,11 +1248,6 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         """
         Assumes we have a numpy file.
         """
-        # Maybe if we import here people will still be able to use Galaxy when numpy kills it
-        pkg_resources.require("numpy>=1.2.1")
-
-        import numpy
-
         range = end - start
         # Determine appropriate resolution to plot ~1000 points
         resolution = ( 10 ** math.ceil( math.log10( range / 1000 ) ) )

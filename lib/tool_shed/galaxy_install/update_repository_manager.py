@@ -4,8 +4,6 @@ Determine if installed tool shed repositories have updates available in their re
 import logging
 import threading
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import false
 
 import tool_shed.util.shed_util_common as suc

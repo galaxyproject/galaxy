@@ -160,7 +160,7 @@ class CasperJSTestCase( unittest.TestCase ):
         # as of casperjs 1.1, we always need to use the 'test' command
         command_line_list.append( 'test' )
 
-        # make rel_script_path an absolute path (when this is not run from its dir - i.e. run_functional_tests.sh)
+        # make rel_script_path an absolute path (when this is not run from its dir - i.e. run_tests.sh)
         curr_dir = os.path.dirname( __file__ )
         script_path = os.path.join( curr_dir, rel_script_path )
         command_line_list.append( script_path )

@@ -3,14 +3,13 @@
 """
 Convert from VCF file to interval index file.
 """
-
 from __future__ import division
 
 import optparse
-import pkg_resources
-pkg_resources.require( "bx-python" )
-import galaxy_utils.sequence.vcf
+
 from bx.interval_index_file import Indexes
+
+import galaxy_utils.sequence.vcf
 
 
 def main():

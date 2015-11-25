@@ -1,30 +1,27 @@
 """
 Add UUIDs to workflows
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-from galaxy.model.custom_types import UUIDType, TrimmedString
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Column, MetaData, Table
+
+from galaxy.model.custom_types import UUIDType
+
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 
-
 """
-Because both workflow and job requests can be determined 
+Because both workflow and job requests can be determined
 based the a fixed data structure, their IDs are based on
-hashing the data structure 
+hashing the data structure
 """
 workflow_uuid_column = Column( "uuid", UUIDType, nullable=True )
 
 
 def display_migration_details():
     print "This migration script adds a UUID column to workflows"
+
 
 def upgrade(migrate_engine):
     print __doc__
@@ -41,6 +38,7 @@ def upgrade(migrate_engine):
         log.error( "Adding column 'uuid' to workflow table failed: %s" % str( e ) )
         return
 
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
@@ -52,4 +50,3 @@ def downgrade(migrate_engine):
         workflow_uuid.drop()
     except Exception, e:
         log.debug( "Dropping 'uuid' column from workflow table failed: %s" % ( str( e ) ) )
-

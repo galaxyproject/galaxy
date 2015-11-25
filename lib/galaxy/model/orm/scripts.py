@@ -4,19 +4,8 @@ Code to support database helper scripts (create_db.py, manage_db.py, etc...).
 import logging
 import os.path
 
-from galaxy import eggs
-
-eggs.require( "decorator" )
-eggs.require( "Tempita" )
-eggs.require( "SQLAlchemy" )
-eggs.require( "six" )  # required by sqlalchemy-migrate
-eggs.require( "sqlparse" )  # required by sqlalchemy-migrate
-eggs.require( "sqlalchemy_migrate" )
-
 from galaxy.util.properties import load_app_properties
-from galaxy.model.orm import dialect_to_egg
 
-import pkg_resources
 
 log = logging.getLogger( __name__ )
 
@@ -30,6 +19,7 @@ DATABASE = {
             'repo': 'lib/galaxy/model/migrate',
             'old_config_file': 'universe_wsgi.ini',
             'default_sqlite_file': './database/universe.sqlite',
+            'config_override': 'GALAXY_CONFIG_',
         },
     "tool_shed":
         {
@@ -37,6 +27,7 @@ DATABASE = {
             'config_file': 'config/tool_shed.ini',
             'old_config_file': 'tool_shed_wsgi.ini',
             'default_sqlite_file': './database/community.sqlite',
+            'config_override': 'TOOL_SHED_CONFIG_',
         },
     "install":
         {
@@ -44,23 +35,9 @@ DATABASE = {
             'old_config_file': 'universe_wsgi.ini',
             'config_prefix': 'install_',
             'default_sqlite_file': './database/install.sqlite',
+            'config_override': 'GALAXY_INSTALL_CONFIG_',
         },
 }
-
-
-def require_dialect_egg( db_url ):
-    dialect = ( db_url.split( ':', 1 ) )[0]
-    try:
-        egg = dialect_to_egg[dialect]
-        try:
-            pkg_resources.require( egg )
-            log.debug( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
-        except:
-            # If the module is in the path elsewhere (i.e. non-egg), it'll still load.
-            log.warning( "%s egg not found, but an attempt will be made to use %s anyway" % ( egg, dialect ) )
-    except KeyError:
-        # Let this go, it could possibly work with db's we don't support
-        log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
 
 
 def read_config_file_arg( argv, default, old_default ):
@@ -71,8 +48,10 @@ def read_config_file_arg( argv, default, old_default ):
     else:
         if not os.path.exists( default ) and os.path.exists( old_default ):
             config_file = old_default
-        else:
+        elif os.path.exists( default ):
             config_file = default
+        else:
+            config_file = default + ".sample"
     return config_file
 
 
@@ -116,11 +95,12 @@ def get_config( argv, cwd=None ):
     config_file = read_config_file_arg( argv, default, old_default )
     repo = database_defaults[ 'repo' ]
     config_prefix = database_defaults.get( 'config_prefix', DEFAULT_CONFIG_PREFIX )
+    config_override = database_defaults.get( 'config_override', 'GALAXY_CONFIG_' )
     default_sqlite_file = database_defaults[ 'default_sqlite_file' ]
     if cwd:
         config_file = os.path.join( cwd, config_file )
 
-    properties = load_app_properties( ini_file=config_file )
+    properties = load_app_properties( ini_file=config_file, config_prefix=config_override )
 
     if ("%sdatabase_connection" % config_prefix) in properties:
         db_url = properties[ "%sdatabase_connection" % config_prefix ]
@@ -130,5 +110,4 @@ def get_config( argv, cwd=None ):
     else:
         db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % default_sqlite_file
 
-    require_dialect_egg( db_url )
     return dict(db_url=db_url, repo=repo, config_file=config_file, database=database)

@@ -1,14 +1,12 @@
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from sqlalchemy.exc import *
-from migrate import *
-from migrate.changeset import *
 import datetime
-now = datetime.datetime.utcnow
-import sys, logging
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
+import logging
+import sys
 
+from migrate import ForeignKeyConstraint
+from sqlalchemy import Column, ForeignKey, Index, Integer, MetaData, String, Table
+from sqlalchemy.exc import NoSuchTableError
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -18,6 +16,7 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData()
+
 
 def display_migration_details():
     print ""
@@ -34,6 +33,7 @@ JobToOutputLibraryDatasetAssociation_table = Table( "job_to_output_library_datas
                                                     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
                                                     Column( "ldda_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ),
                                                     Column( "name", String(255) ) )
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -66,7 +66,7 @@ def upgrade(migrate_engine):
             log.debug( "Failed loading table library_folder" )
         # Add 1 foreign key constraint to the job table
         if migrate_engine.name != 'sqlite':
-            #Sqlite can't alter-table-add-foreign-key
+            # Sqlite can't alter-table-add-foreign-key
             if Job_table is not None and LibraryFolder_table is not None:
                 try:
                     cons = ForeignKeyConstraint( [Job_table.c.library_folder_id],
@@ -88,6 +88,7 @@ def upgrade(migrate_engine):
     except Exception, e:
         print str(e)
         log.debug( "Adding index 'ix_dataset_state' to dataset table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

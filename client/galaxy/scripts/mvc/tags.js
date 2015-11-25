@@ -7,8 +7,10 @@ define([
  *      Incorporates the select2 jQuery plugin for tags display/editing:
  *      http://ivaynberg.github.io/select2/
  */
-var TagsEditor = Backbone.View.extend( baseMVC.LoggableMixin ).extend( baseMVC.HiddenUntilActivatedViewMixin ).extend({
-    
+var TagsEditor = Backbone.View
+        .extend( baseMVC.LoggableMixin )
+        .extend( baseMVC.HiddenUntilActivatedViewMixin ).extend({
+
     tagName     : 'div',
     className   : 'tags-display',
 

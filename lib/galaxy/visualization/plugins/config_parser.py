@@ -217,10 +217,8 @@ class DataSourceParser( object ):
         returned[ 'model_class' ] = model_class
 
         # tests (optional, 0 or more) - data for boolean test: 'is the visualization usable by this object?'
-        tests = self.parse_tests( xml_tree.findall( 'test' ) )
         # when no tests are given, default to isinstance( object, model_class )
-        if tests:
-            returned[ 'tests' ] = tests
+        returned[ 'tests' ] = self.parse_tests( xml_tree.findall( 'test' ) )
 
         # to_params (optional, 0 or more) - tells the registry to set certain params based on the model_clas, tests
         returned[ 'to_params' ] = {}

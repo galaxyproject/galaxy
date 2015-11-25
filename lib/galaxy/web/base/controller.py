@@ -5,9 +5,6 @@ import logging
 import operator
 import re
 
-import pkg_resources
-pkg_resources.require("SQLAlchemy >= 0.4")
-
 from sqlalchemy import true
 
 from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
@@ -1102,7 +1099,7 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         Creates a workflow from a dict. Created workflow is stored in the database and returned.
         """
         # TODO: replace this method with direct access to manager.
-        workflow_contents_manager = workflows.WorkflowContentsManager()
+        workflow_contents_manager = workflows.WorkflowContentsManager( self.app )
         created_workflow = workflow_contents_manager.build_workflow_from_dict(
             trans,
             data,

@@ -3,13 +3,13 @@ Manager and Serializer for libraries.
 """
 import logging
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false, not_, or_, true
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import exceptions
+from galaxy.managers import folders
+from galaxy.util import pretty_print_time_interval
 
 log = logging.getLogger( __name__ )
 
@@ -29,8 +29,8 @@ class LibraryManager( object ):
 
         :param  decoded_library_id:       decoded library id
         :type   decoded_library_id:       int
-        :param  check_accessible:        flag whether to check that user can access item
-        :type   check_accessible:        bool
+        :param  check_accessible:         flag whether to check that user can access item
+        :type   check_accessible:         bool
 
         :returns:   the requested library
         :rtype:     Library
@@ -72,6 +72,9 @@ class LibraryManager( object ):
         if name is not None:
             library.name = name
             changed = True
+            #  When library is renamed the root folder has to be renamed too.
+            folder_manager = folders.FolderManager()
+            folder_manager.update( trans, library.root_folder, name=name )
         if description is not None:
             library.description = description
             changed = True
@@ -181,6 +184,7 @@ class LibraryManager( object ):
         library_dict = library.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id, 'root_folder_id': trans.security.encode_id } )
         if trans.app.security_agent.library_is_public( library, contents=False ):
             library_dict[ 'public' ] = True
+        library_dict[ 'create_time_pretty'] = pretty_print_time_interval( library_dict[ 'create_time' ], precise=True )
         current_user_roles = trans.get_current_user_roles()
         if not trans.user_is_admin():
             library_dict[ 'can_user_add' ] = trans.app.security_agent.can_add_library_item( current_user_roles, library )

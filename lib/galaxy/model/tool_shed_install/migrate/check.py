@@ -2,14 +2,6 @@ import sys
 import os.path
 import logging
 
-from galaxy import eggs
-eggs.require( "SQLAlchemy" )
-eggs.require( "six" )  # Required by sqlalchemy-migrate
-eggs.require( "sqlparse" )  # Required by sqlalchemy-migrate
-eggs.require( "decorator" )  # Required by sqlalchemy-migrate
-eggs.require( "Tempita " )  # Required by sqlalchemy-migrate
-eggs.require( "sqlalchemy-migrate" )
-
 # from sqlalchemy import *
 from sqlalchemy import create_engine
 from sqlalchemy import MetaData
@@ -17,8 +9,6 @@ from sqlalchemy import Table
 
 from sqlalchemy.exc import NoSuchTableError
 from migrate.versioning import repository, schema
-
-from galaxy.model.orm import dialect_to_egg
 
 log = logging.getLogger( __name__ )
 
@@ -30,18 +20,6 @@ migrate_repository = repository.Repository( migrate_repository_directory )
 def create_or_verify_database( url, engine_options={}, app=None ):
     """
     """
-    dialect = ( url.split( ':', 1 ) )[0]
-    try:
-        egg = dialect_to_egg[dialect]
-        try:
-            eggs.require( egg )
-            log.debug( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
-        except:
-            # If the module is in the path elsewhere (i.e. non-egg), it'll still load.
-            log.warning( "%s egg not found, but an attempt will be made to use %s anyway" % ( egg, dialect ) )
-    except KeyError:
-        # Let this go, it could possibly work with db's we don't support
-        log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
     # Create engine and metadata
     engine = create_engine( url, **engine_options )
 

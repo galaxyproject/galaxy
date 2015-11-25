@@ -2,10 +2,11 @@
 This migration script changes certain values in the history_dataset_association.extension
 column, specifically 'qual' is chaged to be 'qual454'.
 """
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-import sys, logging
+import logging
+import sys
+
+from sqlalchemy import Index, MetaData, Table
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
@@ -16,6 +17,7 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData()
+
 
 def display_migration_details():
     print "========================================"
@@ -54,6 +56,7 @@ def upgrade(migrate_engine):
         i.drop()
     except Exception, e:
         log.debug( "Dropping index 'ix_hda_extension' to history_dataset_association table failed: %s" % ( str( e ) ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

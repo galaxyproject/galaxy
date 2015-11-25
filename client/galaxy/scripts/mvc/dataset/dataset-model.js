@@ -3,14 +3,18 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( STATES, BASE_MVC, _l ){
+
+var logNamespace = 'dataset';
 //==============================================================================
 var searchableMixin = BASE_MVC.SearchableModelMixin;
 /** @class base model for any DatasetAssociation (HDAs, LDDAs, DatasetCollectionDAs).
  *      No knowledge of what type (HDA/LDDA/DCDA) should be needed here.
  *  The DA's are made searchable (by attribute) by mixing in SearchableModelMixin.
  */
-var DatasetAssociation = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
-        BASE_MVC.mixin( searchableMixin, /** @lends DatasetAssociation.prototype */{
+var DatasetAssociation = Backbone.Model
+        .extend( BASE_MVC.LoggableMixin )
+        .extend( BASE_MVC.mixin( searchableMixin, /** @lends DatasetAssociation.prototype */{
+    _logNamespace : logNamespace,
 
     /** default attributes for a model */
     defaults : {
@@ -242,10 +246,9 @@ var DatasetAssociation = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
  */
 var DatasetAssociationCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend(
 /** @lends HistoryContents.prototype */{
-    model : DatasetAssociation,
+    _logNamespace : logNamespace,
 
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
+    model : DatasetAssociation,
 
     /** root api url */
     urlRoot : (( window.galaxy_config && galaxy_config.root )?( galaxy_config.root ):( '/' ))

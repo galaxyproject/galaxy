@@ -2,9 +2,8 @@ import csv
 import logging
 import re
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false, func, select
+from markupsafe import escape
 
 from galaxy import model, util, web
 from galaxy.security.validate_user_input import validate_email
@@ -19,11 +18,11 @@ class RequestsGrid( grids.Grid ):
     # Custom column types
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, request ):
-            return request.name
+            return escape(request.name)
 
     class DescriptionColumn( grids.TextColumn ):
         def get_value(self, trans, grid, request):
-            return request.desc
+            return escape(request.desc)
 
     class SamplesColumn( grids.GridColumn ):
         def get_value(self, trans, grid, request):
@@ -1214,8 +1213,8 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
             redirect_action = 'edit_samples'
         # Check for duplicate sample names within the request
         self.__validate_sample_names( trans, cntrller, request, sample_widgets, **kwd )
-        print "SAVING SAMPLES!"
-        print "saving_new_samples is %s" % saving_new_samples
+        log.debug( "SAVING SAMPLES!" )
+        log.debug( "saving_new_samples is %s" % saving_new_samples )
         if not saving_new_samples:
             library = None
             folder = None
@@ -1876,8 +1875,8 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
         empty_sample_fields = []
         for s in request.samples:
             for field in request.type.sample_form.fields:
-                print "field:", field
-                print "svc:", s.values.content
+                log.debug("field: %s", field)
+                log.debug("svc: %s", s.values.content)
                 if field['required'] == 'required' and s.values.content[field['name']] in ['', None]:
                     empty_sample_fields.append((s.name, field['label']))
         if empty_fields or empty_sample_fields:

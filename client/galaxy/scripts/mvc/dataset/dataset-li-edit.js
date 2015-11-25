@@ -5,8 +5,9 @@ define([
     "mvc/annotations",
     "ui/fa-icon-button",
     "mvc/base-mvc",
+    "mvc/tools/tools-form",
     "utils/localization"
-], function( STATES, DATASET_LI, TAGS, ANNOTATIONS, faIconButton, BASE_MVC, _l ){
+], function( STATES, DATASET_LI, TAGS, ANNOTATIONS, faIconButton, BASE_MVC, ToolsForm, _l ){
 //==============================================================================
 var _super = DATASET_LI.DatasetListItemView;
 /** @class Editing view for DatasetAssociation.
@@ -157,13 +158,23 @@ var DatasetListItemEdit = _super.extend(
 
     /** Render icon-button to re-run the job that created this dataset. */
     _renderRerunButton : function(){
-        return faIconButton({
-            title       : _l( 'Run this job again' ),
-            href        : this.model.urls.rerun,
-            classes     : 'rerun-btn',
-            target      : this.linkTarget,
-            faIcon      : 'fa-refresh'
-        });
+        var creating_job = this.model.get('creating_job');
+        if (this.model.get('rerunnable')){
+            return faIconButton({
+                title       : _l( 'Run this job again' ),
+                href        : this.model.urls.rerun,
+                classes     : 'rerun-btn',
+                target      : this.linkTarget,
+                faIcon      : 'fa-refresh',
+                onclick     : function(ev) {
+                    ev.preventDefault();
+                    var form = new ToolsForm.View({'job_id' : creating_job});
+                    form.deferred.execute(function(){
+                        Galaxy.app.display(form);
+                    });
+                }
+            });
+        }
     },
 
     /** Render an icon-button or popupmenu of links based on the applicable visualizations */
@@ -306,7 +317,7 @@ DatasetListItemEdit.prototype.templates = (function(){
             '<% if( dataset.state === "failed_metadata" ){ %>',
                 '<div class="failed_metadata-warning warningmessagesmall">',
                     _l( 'An error occurred setting the metadata for this dataset' ),
-                    '<br /><a href="<%= dataset.urls.edit %>" target="<%= view.linkTarget %>">',
+                    '<br /><a href="<%- dataset.urls.edit %>" target="<%- view.linkTarget %>">',
                         _l( 'Set it manually or retry auto-detection' ),
                     '</a>',
                 '</div>',
@@ -332,9 +343,9 @@ DatasetListItemEdit.prototype.templates = (function(){
 
     var visualizationsTemplate = BASE_MVC.wrapTemplate([
         '<% if( visualizations.length === 1 ){ %>',
-            '<a class="visualization-btn visualization-link icon-btn" href="<%= visualizations[0].href %>"',
-                    ' target="<%= visualizations[0].target %>" title="', _l( 'Visualize in' ),
-                    ' <%= visualizations[0].html %>">',
+            '<a class="visualization-btn visualization-link icon-btn" href="<%- visualizations[0].href %>"',
+                    ' target="<%- visualizations[0].target %>" title="', _l( 'Visualize in' ),
+                    ' <%- visualizations[0].html %>">',
                 '<span class="fa fa-bar-chart-o"></span>',
             '</a>',
 
@@ -345,9 +356,9 @@ DatasetListItemEdit.prototype.templates = (function(){
                 '</a>',
                 '<ul class="dropdown-menu" role="menu">',
                     '<% _.each( visualizations, function( visualization ){ %>',
-                        '<li><a class="visualization-link" href="<%= visualization.href %>"',
-                                ' target="<%= visualization.target %>">',
-                            '<%= visualization.html %>',
+                        '<li><a class="visualization-link" href="<%- visualization.href %>"',
+                                ' target="<%- visualization.target %>">',
+                            '<%- visualization.html %>',
                         '</a></li>',
                     '<% }); %>',
                 '</ul>',

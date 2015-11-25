@@ -132,8 +132,11 @@
         %if job:
             <tr><td>Tool Exit Code:</td><td>${ job.exit_code | h }</td></tr>
         %endif
-        <tr><td>API ID:</td><td>${encoded_hda_id}</td></tr>
-        <tr><td>History ID:</td><td>${encoded_history_id}</td></tr>
+        <tr><td>History Content API ID:</td><td>${encoded_hda_id}</td></tr>
+        %if job:
+            <tr><td>Job API ID:</td><td>${trans.security.encode_id( job.id )}</td></tr>
+        %endif
+        <tr><td>History API ID:</td><td>${encoded_history_id}</td></tr>
         %if hda.dataset.uuid:
         <tr><td>UUID:</td><td>${hda.dataset.uuid}</td></tr>
         %endif

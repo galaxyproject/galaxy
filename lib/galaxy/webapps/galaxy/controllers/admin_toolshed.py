@@ -2,8 +2,6 @@ import logging
 import os
 import shutil
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import false, or_
 
 import tool_shed.repository_types.util as rt_util

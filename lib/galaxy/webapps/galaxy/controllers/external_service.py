@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import logging
 
 from galaxy import model, util
+from markupsafe import escape
 from galaxy.web.base.controller import BaseUIController, web, UsesFormDefinitionsMixin
 from galaxy.web.form_builder import TextField, SelectField
 from galaxy.web.framework.helpers import time_ago, iff, grids
@@ -15,7 +16,7 @@ class ExternalServiceGrid( grids.Grid ):
     # Custom column types
     class NameColumn( grids.TextColumn ):
         def get_value(self, trans, grid, external_service):
-            return external_service.name
+            return escape(external_service.name)
 
     class ExternalServiceTypeColumn( grids.TextColumn ):
         def get_value(self, trans, grid, external_service):

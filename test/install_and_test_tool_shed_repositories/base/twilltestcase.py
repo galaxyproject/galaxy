@@ -3,8 +3,6 @@ import os
 import re
 import time
 
-from galaxy import eggs
-eggs.require( 'twill' )
 import twill.commands as tc
 
 import galaxy.model.tool_shed_install as install_model

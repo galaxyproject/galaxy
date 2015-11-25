@@ -3,13 +3,12 @@ This migration script adds a new column to 2 tables:
 1) a new boolean type column named 'submitted' to the 'request' table
 2) a new string type column named 'bar_code' to the 'sample' table
 """
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-import sys, logging
-from galaxy.model.custom_types import *
-from sqlalchemy.exc import *
+import logging
+import sys
+
+from sqlalchemy import Boolean, Column, MetaData, Table
+
+from galaxy.model.custom_types import TrimmedString
 
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
@@ -21,12 +20,14 @@ log.addHandler( handler )
 
 metadata = MetaData()
 
+
 def display_migration_details():
     print "========================================"
     print "This migration script adds a new column to 2 tables:"
     print "1) a new boolean type column named 'submitted' to the 'request' table"
     print "2) a new string type column named 'bar_code' to the 'sample' table"
     print "========================================"
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -40,7 +41,6 @@ def upgrade(migrate_engine):
         try:
             col = Column( 'submitted', Boolean, default=False )
             col.create( Request_table)
-            #col.create( Request_table, index_name='ix_request_submitted')
             assert col is Request_table.c.submitted
         except Exception, e:
             log.debug( "Adding column 'submitted' to request table failed: %s" % ( str( e ) ) )
@@ -53,6 +53,7 @@ def upgrade(migrate_engine):
             assert col is Sample_table.c.bar_code
         except Exception, e:
             log.debug( "Adding column 'bar_code' to sample table failed: %s" % ( str( e ) ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

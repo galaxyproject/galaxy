@@ -5,9 +5,6 @@ import copy
 import logging
 import os
 
-from galaxy import eggs
-from galaxy import util
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false, true
 
 from galaxy.util import xml_util

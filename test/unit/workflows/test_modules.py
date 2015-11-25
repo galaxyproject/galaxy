@@ -1,7 +1,5 @@
-from galaxy import eggs
-eggs.require( "mock" )
-
 import json
+
 import mock
 
 from galaxy import model

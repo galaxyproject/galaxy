@@ -863,37 +863,45 @@ var FolderToolbarView = Backbone.View.extend({
    * call them in chain. Update progress bar in between each.
    * @param  {array} lddas_set array of lddas to delete
    */
-  chainCallDeletingHdas: function( lddas_set ){
+  chainCallDeletingItems: function( items_to_delete ){
   var self = this;
-  this.deleted_lddas = new mod_library_model.Folder();
-  var popped_item = lddas_set.pop();
+  this.deleted_items = new mod_library_model.Folder();
+  var popped_item = items_to_delete.pop();
   if ( typeof popped_item === "undefined" ) {
     if ( this.options.chain_call_control.failed_number === 0 ){
-      mod_toastr.success( 'Selected datasets were deleted.' );
+      mod_toastr.success( 'Selected items were deleted.' );
     } else if ( this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number ){
-      mod_toastr.error( 'There was an error and no datasets were deleted. Please make sure you have sufficient permissions.' );
+      mod_toastr.error( 'There was an error and no items were deleted. Please make sure you have sufficient permissions.' );
     } else if ( this.options.chain_call_control.failed_number < this.options.chain_call_control.total_number ){
-      mod_toastr.warning( 'Some of the datasets could not be deleted. Please make sure you have sufficient permissions.' );
+      mod_toastr.warning( 'Some of the items could not be deleted. Please make sure you have sufficient permissions.' );
     }
     Galaxy.modal.hide();
-    return this.deleted_lddas;
+    return this.deleted_items;
   }
   var promise = $.when( popped_item.destroy() );
 
-  promise.done( function( dataset ){
+  promise.done( function( item ){
             Galaxy.libraries.folderListView.collection.remove( popped_item.id );
             self.updateProgress();
-            // add the deleted dataset to collection, triggers rendering
+            // add the deleted item to collection, triggers rendering
             if ( Galaxy.libraries.folderListView.options.include_deleted ){
-              var updated_dataset = new mod_library_model.Item( dataset );
-              Galaxy.libraries.folderListView.collection.add( updated_dataset );
+              var updated_item = null;
+              if (item.type === 'folder' || item.model_class === 'LibraryFolder'){
+                updated_item = new mod_library_model.FolderAsModel( item );
+              } else if (item.type === 'file' || item.model_class === 'LibraryDataset'){
+                updated_item = new mod_library_model.Item( item );
+              } else {
+                console.error('Unknown library item type found.');
+                console.error(item.type || item.model_class);
+              }
+              Galaxy.libraries.folderListView.collection.add( updated_item );
             }
-            self.chainCallDeletingHdas( lddas_set );
+            self.chainCallDeletingItems( items_to_delete );
           })
           .fail( function(){
             self.options.chain_call_control.failed_number += 1;
             self.updateProgress();
-            self.chainCallDeletingHdas( lddas_set );
+            self.chainCallDeletingItems( items_to_delete );
           });
   },
 
@@ -931,25 +939,35 @@ var FolderToolbarView = Backbone.View.extend({
       this.options.chain_call_control.failed_number = 0;
 
       var dataset_ids = [];
+      var folder_ids = [];
       checkedValues.each(function(){
           if (this.parentElement.parentElement.id !== '') {
-              dataset_ids.push(this.parentElement.parentElement.id);
+              if (this.parentElement.parentElement.id.substring(0,1) == 'F'){
+                folder_ids.push(this.parentElement.parentElement.id);
+              } else {
+                dataset_ids.push(this.parentElement.parentElement.id);
+              }
           }
       });
       // init the progress bar
-      this.progressStep = 100 / dataset_ids.length;
+      var items_total = dataset_ids.length + folder_ids.length
+      this.progressStep = 100 / items_total;
       this.progress = 0;
       
       // prepare the dataset items to be added
-      var lddas_to_delete = [];
+      var items_to_delete = [];
       for (var i = dataset_ids.length - 1; i >= 0; i--) {
           var dataset = new mod_library_model.Item({id:dataset_ids[i]});
-          lddas_to_delete.push(dataset);
+          items_to_delete.push(dataset);
+      }
+      for (var i = folder_ids.length - 1; i >= 0; i--) {
+          var folder = new mod_library_model.FolderAsModel({id:folder_ids[i]});
+          items_to_delete.push(folder);
       }
 
-      this.options.chain_call_control.total_number = dataset_ids.length;
+      this.options.chain_call_control.total_number = items_total.length;
       // call the recursive function to call ajax one after each other (request FIFO queue)
-      this.chainCallDeletingHdas(lddas_to_delete);
+      this.chainCallDeletingItems(items_to_delete);
     }
   },
 
@@ -1012,6 +1030,9 @@ var FolderToolbarView = Backbone.View.extend({
     }
   },
 
+  /**
+   * Show user the prompt to change the number of items shown on page.
+   */
   showPageSizePrompt: function(){
     var folder_page_size = prompt( 'How many items per page do you want to see?', Galaxy.libraries.preferences.get( 'folder_page_size' ) );
     if ( ( folder_page_size != null ) && ( folder_page_size == parseInt( folder_page_size ) ) ) {
@@ -1027,8 +1048,16 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('<div class="library_style_container">');
     // TOOLBAR START
     tmpl_array.push(' <div id="library_toolbar">');
+    tmpl_array.push('<form class="form-inline" role="form">');
     tmpl_array.push('   <span><strong>DATA LIBRARIES</strong></span>');
-    tmpl_array.push('   <span data-toggle="tooltip" data-placement="top" class="logged-dataset-manipulation" title="Include deleted datasets" style="display:none;"> | <input id="include_deleted_datasets_chk" style="margin: 0;" type="checkbox"> include deleted | </input></span>');
+    tmpl_array.push('          <span id="folder_paginator" class="library-paginator">');
+    // paginator will append here
+    tmpl_array.push('          </span>');
+    tmpl_array.push('<div class="checkbox toolbar-item logged-dataset-manipulation" style="height: 20px; display:none;">');
+    tmpl_array.push('<label>');
+    tmpl_array.push('<input id="include_deleted_datasets_chk" type="checkbox"> include deleted </input>');
+    tmpl_array.push('</label>');
+    tmpl_array.push('</div>');
     tmpl_array.push('   <button style="display:none;" data-toggle="tooltip" data-placement="top" title="Create New Folder" id="toolbtn_create_folder" class="btn btn-default primary-button add-library-items" type="button"><span class="fa fa-plus"></span> <span class="fa fa-folder"></span></button>');
 
     tmpl_array.push('<% if(mutiple_add_dataset_options) { %>');
@@ -1074,12 +1103,9 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Mark selected datasets deleted" id="toolbtn_bulk_delete" class="primary-button logged-dataset-manipulation" style="margin-left: 0.5em; display:none; " type="button"><span class="fa fa-times"></span> Delete</button>');
     tmpl_array.push('   <button data-id="<%- id %>" data-toggle="tooltip" data-placement="top" title="Show library information" id="toolbtn_show_libinfo" class="primary-button" style="margin-left: 0.5em;" type="button"><span class="fa fa-info-circle"></span> Library Info</button>');
     tmpl_array.push('   <span class="help-button" data-toggle="tooltip" data-placement="top" title="Visit Libraries Wiki"><a href="https://wiki.galaxyproject.org/DataLibraries/screen/FolderContents" target="_blank"><button class="primary-button" type="button"><span class="fa fa-question-circle"></span> Help</button></a></span>');
-
-    tmpl_array.push('          <span id="folder_paginator" class="library-paginator">');
-    // paginator will append here
-    tmpl_array.push('          </span>');
-
     tmpl_array.push(' </div>');
+    tmpl_array.push('</form>');
+
     // TOOLBAR END
     tmpl_array.push(' <div id="folder_items_element">');
     tmpl_array.push(' </div>');
@@ -1099,6 +1125,7 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('<p><%- library.get("description") %></p>');
     tmpl_array.push('<h3>Library synopsis:</h3>');
     tmpl_array.push('<p><%- library.get("synopsis") %></p>');
+    tmpl_array.push('<p data-toggle="tooltip" data-placement="top" title="<%- library.get("create_time") %>">created <%- library.get("create_time_pretty") %></p>');
 
     tmpl_array.push('</div>');
 

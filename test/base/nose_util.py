@@ -4,11 +4,6 @@ There was some duplication between Galaxy, Tool Shed, and Install/Test,
 trying to reduce that here.
 """
 
-try:
-    from galaxy import eggs
-    eggs.require( "nose" )
-except ImportError:
-    pass
 import nose
 
 

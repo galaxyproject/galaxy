@@ -3,6 +3,8 @@ from os import chmod
 from os.path import join
 from os.path import abspath
 
+from galaxy import util
+
 from logging import getLogger
 log = getLogger( __name__ )
 
@@ -73,9 +75,9 @@ def build_command(
 
 def __externalize_commands(job_wrapper, commands_builder, remote_command_params, script_name="tool_script.sh"):
     local_container_script = join( job_wrapper.working_directory, script_name )
-    fh = file( local_container_script, "w" )
-    fh.write( "#!%s\n%s" % (DEFAULT_SHELL, commands_builder.build()))
-    fh.close()
+    with open( local_container_script, "w" ) as f:
+        script_contents = "#!%s\n%s" % (DEFAULT_SHELL, commands_builder.build())
+        f.write( script_contents )
     chmod( local_container_script, 0755 )
 
     commands = local_container_script
@@ -158,7 +160,8 @@ class CommandsBuilder(object):
     def __init__(self, initial_command):
         # Remove trailing semi-colon so we can start hacking up this command.
         # TODO: Refactor to compose a list and join with ';', would be more clean.
-        commands = initial_command.rstrip("; ")
+        initial_command = util.unicodify(initial_command)
+        commands = initial_command.rstrip(u"; ")
         self.commands = commands
 
         # Coping work dir outputs or setting metadata will mask return code of
@@ -167,17 +170,19 @@ class CommandsBuilder(object):
         self.return_code_captured = False
 
     def prepend_command(self, command):
-        self.commands = "%s; %s" % (command, self.commands)
+        self.commands = u"%s; %s" % (command,
+                                     self.commands)
         return self
 
     def prepend_commands(self, commands):
-        return self.prepend_command("; ".join(commands))
+        return self.prepend_command(u"; ".join(commands))
 
     def append_command(self, command):
-        self.commands = "%s; %s" % (self.commands, command)
+        self.commands = u"%s; %s" % (self.commands,
+                                     command)
 
     def append_commands(self, commands):
-        self.append_command("; ".join(commands))
+        self.append_command(u"; ".join(commands))
 
     def capture_return_code(self):
         if not self.return_code_captured:
@@ -189,4 +194,4 @@ class CommandsBuilder(object):
             self.append_command(YIELD_CAPTURED_CODE)
         return self.commands
 
-__all__ = [build_command]
+__all__ = [ "build_command" ]

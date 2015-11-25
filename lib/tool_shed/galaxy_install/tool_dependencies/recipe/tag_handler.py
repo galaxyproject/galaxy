@@ -2,8 +2,6 @@ import logging
 import os
 import tempfile
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_
 
 from galaxy.tools.deps.resolvers import INDETERMINATE_DEPENDENCY
@@ -98,7 +96,7 @@ class SyncDatabase( object ):
                       str( basic_util.INSTALLATION_LOG ) )
                 error_message += ' is missing.  This indicates an installation error so the tool dependency is being'
                 error_message += ' prepared for re-installation.'
-                print error_message
+                log.error( error_message )
                 tool_dependency.status = app.install_model.ToolDependency.installation_status.NEVER_INSTALLED
                 basic_util.remove_dir( tool_dependency_install_dir )
                 can_install_tool_dependency = True
@@ -466,8 +464,12 @@ class Repository( RecipeTag, SyncDatabase ):
                 # required_repository.
                 if required_repository.is_deactivated_or_installed:
                     if not os.path.exists( required_repository_package_install_dir ):
-                        print 'Missing required tool dependency directory %s' % str( required_repository_package_install_dir )
+                        log.error( 'Missing required tool dependency directory %s' % str( required_repository_package_install_dir ) )
                     repo_files_dir = required_repository.repo_files_directory( self.app )
+                    if not repo_files_dir:
+                        message = "Unable to locate the repository directory for revision %s of installed repository %s owned by %s." % \
+                            ( str( required_repository.changeset_revision ), str( required_repository.name ), str( required_repository.owner ) )
+                        raise Exception( message )
                     tool_dependencies_config = suc.get_absolute_path_to_file_in_repository( repo_files_dir, 'tool_dependencies.xml' )
                     if tool_dependencies_config:
                         config_to_use = tool_dependencies_config
@@ -520,7 +522,7 @@ class Repository( RecipeTag, SyncDatabase ):
         for rd_tool_dependency in rd_tool_dependencies:
             if rd_tool_dependency.status == self.app.install_model.ToolDependency.installation_status.ERROR:
                 # We'll log the error here, but continue installing packages since some may not require this dependency.
-                print "Error installing tool dependency for required repository: %s" % str( rd_tool_dependency.error_message )
+                log.error( "Error installing tool dependency for required repository: %s" % str( rd_tool_dependency.error_message ) )
         return tool_dependency, proceed_with_install, action_elem_tuples
 
     def remove_file( self, file_name ):

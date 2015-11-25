@@ -75,7 +75,7 @@ class YamlToolSource(ToolSource):
         for output in output_defs:
             outputs[output.name] = output
         # TODO: parse outputs collections
-        return output_defs, odict()
+        return outputs, odict()
 
     def _parse_output(self, tool, name, output_dict):
         # TODO: handle filters, actions, change_format
@@ -156,6 +156,8 @@ def _parse_test(i, test_dict):
         _ensure_has(attributes, defaults)
 
     test_dict["outputs"] = new_outputs
+    # TODO: implement output collections for YAML tools.
+    test_dict["output_collections"] = []
     test_dict["command"] = __to_test_assert_list( test_dict.get( "command", [] ) )
     test_dict["stdout"] = __to_test_assert_list( test_dict.get( "stdout", [] ) )
     test_dict["stderr"] = __to_test_assert_list( test_dict.get( "stderr", [] ) )
@@ -248,6 +250,16 @@ class YamlInputSource(InputSource):
             case_page_source = YamlPageSource(block)
             sources.append((value, case_page_source))
         return sources
+
+    def parse_static_options(self):
+        static_options = list()
+        input_dict = self.input_dict
+        for index, option in enumerate(input_dict.get("options", {})):
+            value = option.get( "value" )
+            label = option.get( "label", value )
+            selected = option.get( "selected", False )
+            static_options.append( ( label, value, selected ) )
+        return static_options
 
 
 def _ensure_has(dict, defaults):

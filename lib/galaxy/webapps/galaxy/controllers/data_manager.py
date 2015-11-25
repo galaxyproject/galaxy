@@ -1,7 +1,4 @@
-from galaxy import eggs
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
-eggs.require( "Paste" )
 import paste.httpexceptions
 
 import galaxy.queue_worker

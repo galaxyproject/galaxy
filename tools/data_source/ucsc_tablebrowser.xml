@@ -39,4 +39,8 @@
         <data name="output" format="tabular" label="${tool.name} on ${organism}: ${table} (#if $description == 'range' then $getVar( 'position', 'unknown position' ) else $description#)"/>
     </outputs>
     <options sanitize="False" refresh="True"/>
+    <citations>
+        <citation type="doi">10.1093/database/bar011</citation>
+        <citation type="doi">10.1101/gr.229102</citation>
+    </citations>
 </tool>

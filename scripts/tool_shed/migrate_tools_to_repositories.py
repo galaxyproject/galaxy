@@ -27,9 +27,6 @@ new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] ) # remove scripts/ from the path
 sys.path = new_path
 
-from galaxy import eggs
-import pkg_resources
-pkg_resources.require( "psycopg2" )
 import psycopg2
 
 import galaxy.webapps.tool_shed.app

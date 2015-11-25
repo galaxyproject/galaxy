@@ -11,10 +11,7 @@ import urllib
 
 from datetime import datetime, timedelta
 
-from galaxy import eggs
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
-eggs.require('sqlalchemy')
 from sqlalchemy import and_, or_, true, func
 
 from galaxy import model
@@ -48,7 +45,7 @@ PASSWORD_RESET_TEMPLATE = """
 To reset your Galaxy password for the instance at %s use the following link,
 which will expire %s.
 
-<a href="%s">%s</a>
+%s
 
 If you did not make this request, no action is necessary on your part, though
 you may want to notify an administrator.
@@ -466,7 +463,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     @web.expose
     def login( self, trans, refresh_frames=[], **kwd ):
         '''Handle Galaxy Log in'''
-        redirect = self.__get_redirect_url( kwd.get( 'redirect', trans.request.referer ).strip() )
+        referer = trans.request.referer or ''
+        redirect = self.__get_redirect_url( kwd.get( 'redirect', referer ).strip() )
         redirect_url = ''  # always start with redirect_url being empty
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         message = kwd.get( 'message', '' )
@@ -519,7 +517,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         status = kwd.get( 'status', 'error' )
         login = kwd.get( 'login', '' )
         password = kwd.get( 'password', '' )
-        redirect = kwd.get( 'redirect', trans.request.referer ).strip()
+        referer = trans.request.referer or ''
+        redirect = kwd.get( 'redirect', referer ).strip()
         success = False
         user = trans.sa_session.query( trans.app.model.User ).filter(or_(
             trans.app.model.User.table.c.email == login,
@@ -674,7 +673,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         username = util.restore_text( params.get( 'username', '' ) )
         subscribe = params.get( 'subscribe', '' )
         subscribe_checked = CheckboxField.is_checked( subscribe )
-        redirect = kwd.get( 'redirect', trans.request.referer ).strip()
+        referer = trans.request.referer or ''
+        redirect = kwd.get( 'redirect', referer ).strip()
         is_admin = cntrller == 'admin' and trans.user_is_admin
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
             message = 'User registration is disabled.  Please contact your local Galaxy administrator for an account.'
@@ -1199,7 +1199,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                          action="change_password",
                                          token=prt.token, qualified=True)
                     body = PASSWORD_RESET_TEMPLATE % ( host, prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
-                                                       reset_url, reset_url )
+                                                       reset_url )
                     frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
                     subject = 'Galaxy Password Reset'
                     try:

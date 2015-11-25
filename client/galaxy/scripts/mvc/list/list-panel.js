@@ -5,6 +5,8 @@ define([
     "utils/localization",
     "ui/search-input"
 ], function( LIST_ITEM, LoadingIndicator, BASE_MVC, _l ){
+
+var logNamespace = 'list';
 /* ============================================================================
 TODO:
 
@@ -22,11 +24,8 @@ TODO:
  *      for dataset/dataset-choice
  *      as superclass of ModelListPanel
  */
-var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
-/** @lends ReadOnlyHistoryPanel.prototype */{
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
+var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends ReadOnlyHistoryPanel.prototype */{
+    _logNamespace : logNamespace,
 
     /** class to use for constructing the sub-views */
     viewClass           : LIST_ITEM.ListItemView,
@@ -636,17 +635,21 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         //this.log( 'onSearchClear', this );
         this.searchFor = '';
         this.trigger( 'search:clear', this );
-        this.renderItems();
         this.$( '> .controls .search-query' ).val( '' );
+        this.renderItems();
         return this;
     },
 
     // ------------------------------------------------------------------------ selection
+    /** @type Integer when the number of list item views is >= to this, don't animate selectors */
+    THROTTLE_SELECTORS_AT : 20,
+
     /** show selectors on all visible itemViews and associated controls */
     showSelectors : function( speed ){
         speed = ( speed !== undefined )?( speed ):( this.fxSpeed );
         this.selecting = true;
         this.$( '.list-actions' ).slideDown( speed );
+        speed = this.views.length >= this.THROTTLE_SELECTORS_AT? 0 : speed;
         _.each( this.views, function( view ){
             view.showSelector( speed );
         });
@@ -659,6 +662,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         speed = ( speed !== undefined )?( speed ):( this.fxSpeed );
         this.selecting = false;
         this.$( '.list-actions' ).slideUp( speed );
+        speed = this.views.length >= this.THROTTLE_SELECTORS_AT? 0 : speed;
         _.each( this.views, function( view ){
             view.hideSelector( speed );
         });
@@ -802,9 +806,9 @@ ListPanel.prototype.templates = (function(){
     var controlsTemplate = BASE_MVC.wrapTemplate([
         '<div class="controls">',
             '<div class="title">',
-                '<div class="name"><%= view.title %></div>',
+                '<div class="name"><%- view.title %></div>',
             '</div>',
-            '<div class="subtitle"><%= view.subtitle %></div>',
+            '<div class="subtitle"><%- view.subtitle %></div>',
             // buttons, controls go here
             '<div class="actions"></div>',
             // deleted msg, etc.
@@ -943,9 +947,9 @@ ModelListPanel.prototype.templates = (function(){
         '<div class="controls">',
             '<div class="title">',
 //TODO: this is really the only difference - consider factoring titlebar out
-                '<div class="name"><%= model.name %></div>',
+                '<div class="name"><%- model.name %></div>',
             '</div>',
-            '<div class="subtitle"><%= view.subtitle %></div>',
+            '<div class="subtitle"><%- view.subtitle %></div>',
             '<div class="actions"></div>',
             '<div class="messages"></div>',
 

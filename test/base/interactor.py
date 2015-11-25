@@ -4,9 +4,7 @@ from json import dumps
 from logging import getLogger
 from StringIO import StringIO
 
-from galaxy import eggs
-eggs.require( "requests" )
-from requests import get, post
+from requests import get, post, delete, patch
 
 from galaxy import util
 from galaxy.tools.parser.interface import TestCollectionDef
@@ -219,7 +217,7 @@ class GalaxyInteractorApi( object ):
                 jobs=submit_response_object[ 'jobs' ],
             )
         except KeyError:
-            message = "Error creating a job for these tool inputs - %s" % submit_response_object[ 'message' ]
+            message = "Error creating a job for these tool inputs - %s" % submit_response_object[ 'err_msg' ]
             raise RunToolException( message, inputs_tree )
 
     def _create_collection( self, history_id, collection_def ):
@@ -308,7 +306,11 @@ class GalaxyInteractorApi( object ):
         except Exception:
             print "*TEST FRAMEWORK FAILED TO FETCH HISTORY DETAILS*"
 
-        for dataset in history_contents:
+        for history_content in history_contents:
+            if history_content[ 'history_content_type'] != 'dataset':
+                continue
+
+            dataset = history_content
             if dataset[ 'state' ] != 'error':
                 continue
 
@@ -399,18 +401,39 @@ class GalaxyInteractorApi( object ):
 
         return fetcher
 
-    def _post( self, path, data={}, files=None, key=None, admin=False):
-        if not key:
-            key = self.api_key if not admin else self.master_api_key
-        data = data.copy()
-        data['key'] = key
+    def _post( self, path, data={}, files=None, key=None, admin=False, anon=False ):
+        if not anon:
+            if not key:
+                key = self.api_key if not admin else self.master_api_key
+            data = data.copy()
+            data['key'] = key
         return post( "%s/%s" % (self.api_url, path), data=data, files=files )
 
-    def _get( self, path, data={}, key=None, admin=False ):
-        if not key:
-            key = self.api_key if not admin else self.master_api_key
-        data = data.copy()
-        data['key'] = key
+    def _delete( self, path, data={}, key=None, admin=False, anon=False ):
+        if not anon:
+            if not key:
+                key = self.api_key if not admin else self.master_api_key
+            data = data.copy()
+            data['key'] = key
+        return delete( "%s/%s" % (self.api_url, path), params=data )
+
+    def _patch( self, path, data={}, key=None, admin=False, anon=False ):
+        if not anon:
+            if not key:
+                key = self.api_key if not admin else self.master_api_key
+            params = dict( key=key )
+            data = data.copy()
+            data['key'] = key
+        else:
+            params = {}
+        return patch( "%s/%s" % (self.api_url, path), params=params, data=data )
+
+    def _get( self, path, data={}, key=None, admin=False, anon=False ):
+        if not anon:
+            if not key:
+                key = self.api_key if not admin else self.master_api_key
+            data = data.copy()
+            data['key'] = key
         if path.startswith("/api"):
             path = path[ len("/api"): ]
         url = "%s/%s" % (self.api_url, path)

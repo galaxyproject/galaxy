@@ -16,7 +16,7 @@ def load(path):
     _import_macros(root, path)
 
     # Collect tokens
-    tokens = _macros_of_type(root, 'token', lambda el: el.text)
+    tokens = _macros_of_type(root, 'token', lambda el: el.text or '')
 
     # Expand xml macros
     macro_dict = _macros_of_type(root, 'xml', lambda el: XmlMacroDef(el))
@@ -32,7 +32,7 @@ def template_macro_params(root):
     """
     param_dict = {}
     macro_dict = _macros_of_type(root, 'template', lambda el: el.text)
-    for key, value in macro_dict.iteritems():
+    for key, value in macro_dict.items():
         param_dict[key] = value
     return param_dict
 

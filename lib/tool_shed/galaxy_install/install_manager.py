@@ -5,12 +5,7 @@ import sys
 import tempfile
 import traceback
 
-from galaxy import eggs
-eggs.require( 'paramiko' )
-eggs.require( 'ssh' )
-eggs.require( 'Fabric' )
 from fabric.api import lcd
-eggs.require('SQLAlchemy')
 from sqlalchemy import or_
 
 from galaxy import exceptions, util

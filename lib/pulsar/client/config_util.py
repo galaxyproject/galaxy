@@ -2,12 +2,6 @@
 """
 
 import codecs
-try:
-    from galaxy import eggs
-    eggs.require('PyYAML')
-except Exception:
-    # If not in Galaxy, ignore this.
-    pass
 
 try:
     import yaml

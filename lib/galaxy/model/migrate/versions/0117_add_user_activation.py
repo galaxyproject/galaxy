@@ -5,16 +5,13 @@ Created on Sep 10, 2013
 
 Adds 'active' and 'activation_token' columns to the galaxy_user table.
 '''
+import logging
 
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
+from sqlalchemy import Boolean, Column, MetaData, Table
+
 from galaxy.model.custom_types import TrimmedString
 
-import logging
 log = logging.getLogger( __name__ )
-
 user_active_column = Column( "active", Boolean, default=True, nullable=True )
 user_activation_token_column = Column( "activation_token", TrimmedString( 64 ), nullable=True )
 

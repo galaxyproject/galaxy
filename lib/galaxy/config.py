@@ -14,7 +14,6 @@ import string
 import sys
 import tempfile
 from datetime import timedelta
-from galaxy import eggs
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
 from galaxy.util import string_as_bool
@@ -172,6 +171,7 @@ class Configuration( object ):
         self.outputs_to_working_directory = string_as_bool( kwargs.get( 'outputs_to_working_directory', False ) )
         self.output_size_limit = int( kwargs.get( 'output_size_limit', 0 ) )
         self.retry_job_output_collection = int( kwargs.get( 'retry_job_output_collection', 0 ) )
+        self.check_job_script_integrity = string_as_bool( kwargs.get( "check_job_script_integrity", True ) )
         self.job_walltime = kwargs.get( 'job_walltime', None )
         self.job_walltime_delta = None
         if self.job_walltime is not None:
@@ -201,7 +201,7 @@ class Configuration( object ):
                 with open( self.blacklist_file ) as blacklist:
                     self.blacklist_content = [ line.rstrip() for line in blacklist.readlines() ]
             except IOError:
-                print ( "CONFIGURATION ERROR: Can't open supplied blacklist file from path: " + str( self.blacklist_file ) )
+                log.error( "CONFIGURATION ERROR: Can't open supplied blacklist file from path: " + str( self.blacklist_file ) )
         self.smtp_server = kwargs.get( 'smtp_server', None )
         self.smtp_username = kwargs.get( 'smtp_username', None )
         self.smtp_password = kwargs.get( 'smtp_password', None )
@@ -424,6 +424,9 @@ class Configuration( object ):
         self.new_lib_browse = string_as_bool( kwargs.get( 'new_lib_browse', False ) )
         # Error logging with sentry
         self.sentry_dsn = kwargs.get( 'sentry_dsn', None )
+        # Statistics and profiling with statsd
+        self.statsd_host = kwargs.get( 'statsd_host', '')
+        self.statsd_port = int( kwargs.get( 'statsd_port', 8125 ) )
         # Logging with fluentd
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
@@ -443,6 +446,7 @@ class Configuration( object ):
         self.dynamic_proxy_bind_port = int( kwargs.get( "dynamic_proxy_bind_port", "8800" ) )
         self.dynamic_proxy_bind_ip = kwargs.get( "dynamic_proxy_bind_ip", "0.0.0.0" )
         self.dynamic_proxy_external_proxy = string_as_bool( kwargs.get( "dynamic_proxy_external_proxy", "False" ) )
+        self.dynamic_proxy_prefix = kwargs.get( "dynamic_proxy_prefix", "gie_proxy" )
 
         # Default chunk size for chunkable datatypes -- 64k
         self.display_chunk_size = int( kwargs.get( 'display_chunk_size', 65536) )
@@ -697,7 +701,9 @@ def configure_logging( config ):
     # PasteScript will have already configured the logger if the
     # 'loggers' section was found in the config file, otherwise we do
     # some simple setup using the 'log_*' values from the config.
-    if not config.global_conf_parser.has_section( "loggers" ):
+    paste_configures_logging = config.global_conf_parser.has_section( "loggers" )
+    auto_configure_logging = not paste_configures_logging and string_as_bool( config.get( "auto_configure_logging", "True" ) )
+    if auto_configure_logging:
         format = config.get( "log_format", "%(name)s %(levelname)s %(asctime)s %(message)s" )
         level = logging._levelNames[ config.get( "log_level", "DEBUG" ) ]
         destination = config.get( "log_destination", "stdout" )
@@ -722,7 +728,6 @@ def configure_logging( config ):
         root.addHandler( handler )
     # If sentry is configured, also log to it
     if config.sentry_dsn:
-        eggs.require( "raven" )
         from raven.handlers.logging import SentryHandler
         sentry_handler = SentryHandler( config.sentry_dsn )
         sentry_handler.setLevel( logging.WARN )

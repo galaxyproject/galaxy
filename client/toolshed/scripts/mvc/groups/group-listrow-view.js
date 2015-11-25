@@ -19,7 +19,7 @@ var GroupListRowView = Backbone.View.extend({
     templateRow: function() {
         return _.template([
                 '<tr class="" data-id="<%- group.get("id") %>">',
-                '<td><a href="groups#/<%= group.get("id") %>"><%= group.get("name") %></a></td>',
+                '<td><a href="groups#/<%= group.get("id") %>"><%= _.escape(group.get("name")) %></a></td>',
                 // '<td>description</td>',
                 '<td><%= group.get("total_members") %></td>',
                 '<td><%= group.get("total_repos") %></td>',

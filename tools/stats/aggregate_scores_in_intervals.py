@@ -1,64 +1,65 @@
 #!/usr/bin/env python
 # Greg Von Kuster
 """
-usage: %prog score_file interval_file chrom start stop [out_file] [options] 
+usage: %prog score_file interval_file chrom start stop [out_file] [options]
     -b, --binned: 'score_file' is actually a directory of binned array files
     -m, --mask=FILE: bed file containing regions not to consider valid
     -c, --chrom_buffer=INT: number of chromosomes (default is 3) to keep in memory when using a user supplied score file
 """
 
 from __future__ import division
-from galaxy import eggs
-import pkg_resources 
-pkg_resources.require( "bx-python" )
-pkg_resources.require( "lrucache" )
-try:
-    pkg_resources.require( "python-lzo" )
-except:
-    pass
 
-import psyco_full
+import os
+import os.path
+import struct
 import sys
-import os, os.path
+import tempfile
+from math import isnan
 from UserDict import DictMixin
+
 import bx.wiggle
 from bx.binned_array import BinnedArray, FileBinnedArray
-from bx.bitset import *
-from bx.bitset_builders import *
-from math import isnan
+from bx.bitset_builders import binned_bitsets_from_file
 from bx.cookbook import doc_optparse
-from galaxy.tools.exception_handling import *
 
-assert sys.version_info[:2] >= ( 2, 4 )
+from galaxy.tools.exception_handling import UCSCLimitException, UCSCOutWrapper
 
-import tempfile, struct
+
 class PositionalScoresOnDisk:
     fmt = 'f'
     fmt_size = struct.calcsize( fmt )
     default_value = float( 'nan' )
-    
+
     def __init__( self ):
         self.file = tempfile.TemporaryFile( 'w+b' )
         self.length = 0
+
     def __getitem__( self, i ):
-        if i < 0: i = self.length + i
-        if i < 0 or i >= self.length: return self.default_value
+        if i < 0:
+            i = self.length + i
+        if i < 0 or i >= self.length:
+            return self.default_value
         try:
             self.file.seek( i * self.fmt_size )
             return struct.unpack( self.fmt, self.file.read( self.fmt_size ) )[0]
         except Exception, e:
-            raise IndexError, e
+            raise IndexError(e)
+
     def __setitem__( self, i, value ):
-        if i < 0: i = self.length + i
-        if i < 0: raise IndexError, 'Negative assignment index out of range'
+        if i < 0:
+            i = self.length + i
+        if i < 0:
+            raise IndexError('Negative assignment index out of range')
         if i >= self.length:
             self.file.seek( self.length * self.fmt_size )
             self.file.write( struct.pack( self.fmt, self.default_value ) * ( i - self.length ) )
             self.length = i + 1
         self.file.seek( i * self.fmt_size )
         self.file.write( struct.pack( self.fmt, value ) )
+
     def __len__( self ):
         return self.length
+
     def __repr__( self ):
         i = 0
         repr = "[ "
@@ -66,14 +67,16 @@ class PositionalScoresOnDisk:
             repr = "%s %s," % ( repr, self[i] )
         return "%s ]" % ( repr )
 
+
 class FileBinnedArrayDir( DictMixin ):
     """
     Adapter that makes a directory of FileBinnedArray files look like
-    a regular dict of BinnedArray objects. 
+    a regular dict of BinnedArray objects.
     """
     def __init__( self, dir ):
         self.dir = dir
         self.cache = dict()
+
     def __getitem__( self, key ):
         value = None
         if key in self.cache:
@@ -87,15 +90,17 @@ class FileBinnedArrayDir( DictMixin ):
             raise KeyError( "File does not exist: " + fname )
         return value
 
+
 def stop_err(msg):
     sys.stderr.write(msg)
     sys.exit()
-    
-def load_scores_wiggle( fname, chrom_buffer_size = 3 ):
+
+
+def load_scores_wiggle( fname, chrom_buffer_size=3 ):
     """
-    Read a wiggle file and return a dict of BinnedArray objects keyed 
+    Read a wiggle file and return a dict of BinnedArray objects keyed
     by chromosome.
-    """ 
+    """
     scores_by_chrom = dict()
     try:
         for chrom, pos, val in bx.wiggle.Reader( UCSCOutWrapper( open( fname ) ) ):
@@ -110,18 +115,20 @@ def load_scores_wiggle( fname, chrom_buffer_size = 3 ):
         # Wiggle data was truncated, at the very least need to warn the user.
         print 'Encountered message from UCSC: "Reached output limit of 100000 data values", so be aware your data was truncated.'
     except IndexError:
-        stop_err('Data error: one or more column data values is missing in "%s"' %fname)
+        stop_err('Data error: one or more column data values is missing in "%s"' % fname)
     except ValueError:
-        stop_err('Data error: invalid data type for one or more values in "%s".' %fname)
+        stop_err('Data error: invalid data type for one or more values in "%s".' % fname)
     return scores_by_chrom
+
 
 def load_scores_ba_dir( dir ):
     """
-    Return a dict-like object (keyed by chromosome) that returns 
+    Return a dict-like object (keyed by chromosome) that returns
     FileBinnedArray objects created from "key.ba" files in `dir`
     """
     return FileBinnedArrayDir( dir )
-    
+
+
 def main():
 
     # Parse command line
@@ -144,7 +151,7 @@ def main():
 
     if score_fname == 'None':
         stop_err( 'This tool works with data from genome builds hg16, hg17 or hg18.  Click the pencil icon in your history item to set the genome build if appropriate.' )
-    
+
     try:
         chrom_col = int(chrom_col) - 1
         start_col = int(start_col) - 1
@@ -154,7 +161,7 @@ def main():
 
     if chrom_col < 0 or start_col < 0 or stop_col < 0:
         stop_err( 'Chrom, start & end column not properly set, click the pencil icon in your history item to set these values.' )
-        
+
     if binned:
         scores_by_chrom = load_scores_ba_dir( score_fname )
     else:
@@ -178,7 +185,7 @@ def main():
         line = line.rstrip('\r\n')
         if line and not line.startswith( '#' ):
             fields = line.split()
-            
+
             try:
                 chrom, start, stop = fields[chrom_col], int( fields[start_col] ), int( fields[stop_col] )
             except:
@@ -209,12 +216,12 @@ def main():
                         except:
                             continue
                 if count > 0:
-                    avg = total/count
+                    avg = total / count
                 else:
                     avg = "nan"
                     min_score = "nan"
                     max_score = "nan"
-                
+
                 # Build the resulting line of data
                 out_line = []
                 for k in range(0, len(fields)):
@@ -222,7 +229,7 @@ def main():
                 out_line.append(avg)
                 out_line.append(min_score)
                 out_line.append(max_score)
-                
+
                 print >> out_file, "\t".join( map( str, out_line ) )
             else:
                 skipped_lines += 1
@@ -232,7 +239,7 @@ def main():
         elif line.startswith( '#' ):
             # We'll save the original comments
             print >> out_file, line
-            
+
     out_file.close()
 
     if skipped_lines > 0:
@@ -240,4 +247,5 @@ def main():
         if skipped_lines == i:
             print 'Consider changing the metadata for the input dataset by clicking on the pencil icon in the history item.'
 
-if __name__ == "__main__": main()
+if __name__ == "__main__":
+    main()

@@ -1,7 +1,5 @@
 import logging
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, func, false
 
 import tool_shed.grids.repository_review_grids as repository_review_grids

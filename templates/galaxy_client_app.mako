@@ -31,8 +31,6 @@
             //TODO: global...
             window.Galaxy = new galaxy.GalaxyApp({
                 root            : '${h.url_for( "/" )}',
-                //TODO: get these options from the server
-                loggerOptions   : {}
             });
 
             %if app:

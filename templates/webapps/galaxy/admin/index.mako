@@ -78,7 +78,7 @@
                     </div>
                 </div>
                 <div class="toolSectionPad"></div>
-                <div class="toolSectionTitle">Security</div>
+                <div class="toolSectionTitle">User Management</div>
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='users' )}" target="galaxy_main">Users</a></div>

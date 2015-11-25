@@ -1,23 +1,24 @@
 """
 Tabular datatype
-
 """
-import pkg_resources
-pkg_resources.require( "bx-python" )
+import csv
 import gzip
 import logging
 import os
-import csv
+import re
+import tempfile
+import subprocess
+
 from cgi import escape
+
 from galaxy import util
-from galaxy.datatypes import data
-from galaxy.datatypes import metadata
+from galaxy.datatypes import data, metadata
 from galaxy.datatypes.checkers import is_gzip
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers
 from galaxy.util.json import dumps
+
 import dataproviders
-import re
 
 log = logging.getLogger(__name__)
 
@@ -692,6 +693,19 @@ class Vcf( Tabular ):
         if line and line.startswith( '#' ):
             # Found header line, get sample names.
             dataset.metadata.sample_names = line.split()[ 9: ]
+
+    @staticmethod
+    def merge(split_files, output_file):
+        stderr_f = tempfile.NamedTemporaryFile(prefix="bam_merge_stderr")
+        stderr_name = stderr_f.name
+        command = ["bcftools", "concat"] + split_files + ["-o", output_file]
+        log.info("Merging vcf files with command [%s]" % " ".join(command))
+        exit_code = subprocess.call( args=command, stderr=open( stderr_name, 'wb' ) )
+        with open(stderr_name, "rb") as f:
+            stderr = f.read().strip()
+        # Did merge succeed?
+        if exit_code != 0:
+            raise Exception("Error merging VCF files: %s" % stderr)
 
     # Dataproviders
     @dataproviders.decorators.dataprovider_factory( 'genomic-region',

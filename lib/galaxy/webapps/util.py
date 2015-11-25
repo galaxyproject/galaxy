@@ -1,7 +1,5 @@
 from __future__ import absolute_import
 
-from galaxy import eggs
-eggs.require("Mako")
 import mako.exceptions
 
 

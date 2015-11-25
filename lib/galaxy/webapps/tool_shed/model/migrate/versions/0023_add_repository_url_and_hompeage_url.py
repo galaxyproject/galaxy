@@ -2,14 +2,12 @@
 Migration script to add the remote_repository_url and homepage_url
 columns to the repository table.
 """
+import logging
+import sys
 
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
+from sqlalchemy import Column, MetaData, Table
+
 from galaxy.model.custom_types import TrimmedString
-
-import sys, logging
 
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
@@ -20,6 +18,7 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData()
+
 
 def upgrade( migrate_engine ):
     print __doc__
@@ -36,6 +35,7 @@ def upgrade( migrate_engine ):
         assert c_homepage is Repository_table.c.homepage_url
     except Exception, e:
         print "Adding remote_repository_url and homepage_url columns to the repository table failed: %s" % str( e )
+
 
 def downgrade( migrate_engine ):
     metadata.bind = migrate_engine

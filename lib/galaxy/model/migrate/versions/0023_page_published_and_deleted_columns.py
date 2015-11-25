@@ -2,15 +2,13 @@
 Migration script to add columns for tracking whether pages are deleted and
 publicly accessible.
 """
-
-from sqlalchemy import *
-from migrate import *
-from migrate.changeset import *
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Boolean, Column, MetaData, Table
+
+log = logging.getLogger( __name__ )
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -21,12 +19,13 @@ def upgrade(migrate_engine):
     Page_table = Table( "page", metadata, autoload=True )
 
     c = Column( "published", Boolean, index=True, default=False )
-    c.create( Page_table, index_name = 'ix_page_published' )
+    c.create( Page_table, index_name='ix_page_published' )
     assert c is Page_table.c.published
 
     c = Column( "deleted", Boolean, index=True, default=False )
     c.create( Page_table, index_name='ix_page_deleted')
     assert c is Page_table.c.deleted
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

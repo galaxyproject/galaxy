@@ -7,8 +7,6 @@ from cgi import FieldStorage
 from collections import namedtuple
 from time import strftime
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false
 
 from galaxy import util
@@ -218,7 +216,8 @@ class RepositoriesController( BaseAPIController ):
                 repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                                  action='show',
                                                                  id=encoded_repository_metadata_id )
-                repository_metadata_dict[ 'valid_tools' ] = repository_metadata.metadata[ 'tools' ]
+                if 'tools' in repository_metadata.metadata:
+                    repository_metadata_dict[ 'valid_tools' ] = repository_metadata.metadata[ 'tools' ]
                 # Get the repo_info_dict for installing the repository.
                 repo_info_dict, \
                     includes_tools, \

@@ -56,6 +56,8 @@
                 // this doesn't need to wait for the page being readied
                 Galaxy.currUser = new user.User(${ h.dumps( masthead_config[ 'user_json' ], indent=2 ) });
             }
+            // TODO: reduce to one attribute (currUser used more than user)
+            Galaxy.user = Galaxy.currUser;
 
             $(function() {
                 // check if masthead is available
@@ -76,7 +78,7 @@
                     masthead: Galaxy.masthead,
                     config: masthead_config
                 });
-                
+
                 // add upload plugin
                 Galaxy.upload = new GalaxyUpload(masthead_config);
 

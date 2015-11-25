@@ -97,12 +97,11 @@ define(['utils/utils',
         // update
         update: function(options) {
             // get options
-            this.options = Utils.merge(options, this.optionsDefault);
+            this.options = Utils.merge(options, this.options);
 
             // show message
             if (options.message != '') {
                 this.$el.html(this._template(this.options));
-                this.$el.find('.alert').append(options.message);
                 this.$el.fadeIn();
 
                 // clear previous timeouts
@@ -128,7 +127,15 @@ define(['utils/utils',
 
         // template
         _template: function(options) {
-            return '<div class="ui-message alert alert-' + options.status + '"/>';
+            var cls_status = 'ui-message alert alert-' + options.status;
+            if (options.large) {
+                cls_status = ( ( options.status == 'success' && 'done' ) ||
+                               ( options.status == 'danger' && 'error' ) ||
+                                 options.status ) + 'messagelarge';
+            }
+            return  '<div class="' + cls_status + '" >' +
+                        options.message +
+                    '</div>';
         }
     });
 

@@ -10,18 +10,11 @@ import string
 import time
 from Cookie import CookieError
 
-from galaxy import eggs
-eggs.require( "Cheetah" )
 from Cheetah.Template import Template
-eggs.require( "Mako" )
 import mako.runtime
 import mako.lookup
-# pytz is used by Babel.
-eggs.require( "pytz" )
-eggs.require( "Babel" )
 from babel.support import Translations
 from babel import Locale
-eggs.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_, true
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import joinedload
@@ -397,9 +390,10 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
                     # No user, associate
                     galaxy_session.user = self.get_or_create_remote_user( remote_user_email )
                     galaxy_session_requires_flush = True
-                elif ((galaxy_session.user.email != remote_user_email) and
+                elif (not remote_user_email.startswith('(null)') and  # Apache does this, see remoteuser.py
+                      (galaxy_session.user.email != remote_user_email) and
                       ((not self.app.config.allow_user_impersonation) or
-                      (remote_user_email not in self.app.config.admin_users_list))):
+                       (remote_user_email not in self.app.config.admin_users_list))):
                     # Session exists but is not associated with the correct
                     # remote user, and the currently set remote_user is not a
                     # potentially impersonating admin.
@@ -465,6 +459,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
                 url_for( controller='user', action='manage_user_info' ),
                 url_for( controller='user', action='set_default_permissions' ),
                 url_for( controller='user', action='reset_password' ),
+                url_for( controller='user', action='change_password' ),
                 url_for( controller='user', action='openid_auth' ),
                 url_for( controller='user', action='openid_process' ),
                 url_for( controller='user', action='openid_associate' ),
@@ -602,7 +597,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
                     if prev_galaxy_session.user is None:
                         # Increase the user's disk usage by the amount of the previous history's datasets if they didn't already own it.
                         for hda in history.datasets:
-                            user.total_disk_usage += hda.quota_amount( user )
+                            user.adjust_total_disk_usage(hda.quota_amount(user))
             elif self.galaxy_session.current_history:
                 history = self.galaxy_session.current_history
             if (not history and users_last_session and

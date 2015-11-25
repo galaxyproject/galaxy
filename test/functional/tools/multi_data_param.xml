@@ -6,7 +6,7 @@
     cat ${" ".join(map(str, $f2))} >> $out2
   </command>
   <inputs>
-    <param name="f1" type="data" format="txt" multiple="true" label="Data 1" />
+    <param name="f1" type="data" format="txt" multiple="true" label="Data 1" min="1" max="1235" />
     <param name="f2" type="data" format="txt" multiple="true" label="Data 2" />
     <conditional name="advanced">
       <param name="full" type="select" label="Parameter Settings">

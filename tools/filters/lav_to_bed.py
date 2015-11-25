@@ -1,12 +1,8 @@
 #!/usr/bin/env python
-#Reads a LAV file and writes two BED files.
+# Reads a LAV file and writes two BED files.
 import sys
-from galaxy import eggs
-import pkg_resources
-pkg_resources.require( "bx-python" )
-import bx.align.lav
 
-assert sys.version_info[:2] >= ( 2, 4 )
+import bx.align.lav
 
 
 def stop_err( msg ):
@@ -49,7 +45,6 @@ def main():
     bed_file2.close()
 
     print "%d lav blocks read, %d regions written\n" % (lavsRead, bedsWritten)
-
 
 if __name__ == "__main__":
     main()

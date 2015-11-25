@@ -211,7 +211,7 @@ body.has-message-box.has-inactivity-box {
     height: @panel_footer_height;
     line-height: @panel_footer_height;
     width: 100%;
-    z-index: 1000; // Above #DD-helper
+    z-index: 1000; // Above #dd-helper
     border-top: solid @layout-border-color 1px;
     background: @navbar-default-bg;
 
@@ -290,7 +290,6 @@ div.unified-panel-body {
     top: @panel_header_height;
     bottom: 0;
     width: 100%;
-    overflow: auto;
     padding: 0px;
 }
 div.unified-panel-body-background {
@@ -299,6 +298,7 @@ div.unified-panel-body-background {
 
 #left > div.unified-panel-body, #right > div.unified-panel-body {
     bottom: @panel_footer_height;
+    overflow: auto;
 }
 
 .panel-header-button {
@@ -328,7 +328,7 @@ div.unified-panel-body-background {
 }
 
 // Used for dragging panels, popup menus, to deal with capturing clicks in iframes
-#DD-helper {
+#dd-helper {
     background: white;
     opacity: 0;
     z-index: 900; // Bootstrap elements start at 1000
@@ -1065,6 +1065,15 @@ div.odd_row {
 
 // Tool panel stuff
 
+// Extra label colors
+.label-beta {
+  .label-warning();
+}
+
+.label-new {
+  .label-info();
+}
+
 span.toolParameterExpandableCollapsable {
     font-weight: bold;
     cursor: pointer;
@@ -1163,7 +1172,9 @@ button {
     .btn();
     .btn-default();
 }
-
+a.btn {
+    text-decoration: none;
+}
 .action-button {
     .btn();
     .btn-default();
@@ -1219,7 +1230,7 @@ a.action-button {
         text-decoration: none;
     }
 
-    .label, > label {
+    .menubutton-label, > label {
         position: relative;
         display: inline-block;
         border-right: none;
@@ -1232,7 +1243,7 @@ a.action-button {
         text-overflow: ellipsis;
     }
 
-    &.popup .label {
+    &.popup .menubutton-label {
         border-right: solid @btn-default-border 1px;
         padding-right: 6px;
     }
@@ -1511,6 +1522,10 @@ div.toolTitle
   margin-right: 10px;
   display: list-item;
   list-style: square outside;
+  .labels {
+    float: right;
+    margin-left: 2px;
+  }
 }
 
 div.toolSectionBody div.toolPanelLabel

@@ -2,8 +2,6 @@ import logging
 import os
 import shutil
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_
 
 from galaxy import util

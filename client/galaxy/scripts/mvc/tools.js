@@ -523,15 +523,13 @@ var ToolLinkView = BaseView.extend({
                 Galaxy.upload.show();
             });
         }
-
-        // regular tools
-        if (this.model.get('model_class') === 'Tool') {
+        else if ( this.model.get( 'model_class' ) === 'Tool' ) { // regular tools
             var self = this;
             $link.find('a').on('click', function(e) {
                 e.preventDefault();
                 var form = new ToolsForm.View( { id : self.model.id, version : self.model.get('version') } );
                 form.deferred.execute(function() {
-                    Galaxy.app.display( form.$el );
+                    Galaxy.app.display( form );
                 });
             });
         }

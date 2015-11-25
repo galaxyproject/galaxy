@@ -122,6 +122,46 @@ class Ipynb( Json ):
         pass
 
 
+class Biom1(Json):
+    file_ext = "biom1"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        super(Biom1, self).set_peek(dataset, is_multi_byte)
+        if not dataset.dataset.purged:
+            dataset.blurb = "Biological Observation Matrix v1"
+
+    def sniff(self, filename):
+        is_biom = False
+        if self._looks_like_json( filename ):
+            is_biom = self._looks_like_biom(filename)
+        return is_biom
+
+    def _looks_like_biom(self, filepath, load_size=50000):
+        """
+        @param filepath: [str] The path to the evaluated file.
+        @param load_size: [int] The size of the file block load in RAM (in
+                          bytes).
+        """
+        is_biom = False
+        segment_size = int(load_size / 2)
+        try:
+            with open(filepath, "r") as fh:
+                prev_str = ""
+                segment_str = fh.read(segment_size)
+                if segment_str.strip().startswith('{'):
+                    while segment_str and not is_biom:
+                        current_str = prev_str + segment_str
+                        if '"format"' in current_str:
+                            current_str = re.sub(r'\s', '', current_str)
+                            if '"format":"BiologicalObservationMatrix' in current_str:
+                                is_biom = True
+                        prev_str = segment_str
+                        segment_str = fh.read(segment_size)
+        except:
+            pass
+        return is_biom
+
+
 class Obo( Text ):
     """
         OBO file format description

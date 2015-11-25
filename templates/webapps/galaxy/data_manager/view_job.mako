@@ -21,7 +21,7 @@
 <table class="tabletip">
     <thead>
         <tr><th colspan="2" style="font-size: 120%;">
-            Data Manager: <a href="${ h.url_for( controller='tool_runner', action='index', tool_id=data_manager.tool.id ) }">${ data_manager.name | h }</a> - ${ data_manager.description | h } <a class="icon-btn" href="${ h.url_for( controller="tool_runner", action="rerun", job_id=trans.security.encode_id( job.id ) ) }" title="Rerun" data-placement="bottom"><span class="fa fa-refresh"></span></a>
+            Data Manager: <a href="${ h.url_for( controller='root', tool_id=data_manager.tool.id ) }" target="_blank">${ data_manager.name | h }</a> - ${ data_manager.description | h } <a class="icon-btn" href="${ h.url_for( controller="tool_runner", action="rerun", job_id=trans.security.encode_id( job.id ) ) }" title="Rerun" data-placement="bottom"><span class="fa fa-refresh"></span></a>
         </th></tr>
     </thead>
     <tbody>

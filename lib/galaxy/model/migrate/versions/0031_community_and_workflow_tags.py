@@ -5,15 +5,11 @@ Migration script to (a) add and populate necessary columns for doing community t
 SQLite does not support 'ALTER TABLE ADD FOREIGN KEY', so this script will generate error messages when run against \
 SQLite; however, script does execute successfully against SQLite.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table, Unicode
+
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 StoredWorkflowTagAssociation_table = Table( "stored_workflow_tag_association", metadata,
@@ -33,6 +29,7 @@ WorkflowTagAssociation_table = Table( "workflow_tag_association", metadata,
                                       Column( "user_tname", Unicode(255), index=True),
                                       Column( "value", Unicode(255), index=True),
                                       Column( "user_value", Unicode(255), index=True) )
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -63,8 +60,7 @@ def upgrade(migrate_engine):
     # Populate column so that user_id is the id of the user who owns the history (and, up to now, was the only person able to tag the history).
     if c is HistoryTagAssociation_table.c.user_id:
         migrate_engine.execute(
-            "UPDATE history_tag_association SET user_id=( SELECT user_id FROM history WHERE history_tag_association.history_id = history.id )"
-                            )
+            "UPDATE history_tag_association SET user_id=( SELECT user_id FROM history WHERE history_tag_association.history_id = history.id )" )
 
     if migrate_engine.name != 'sqlite':
         # Create user_id column in history_dataset_association_tag_association table.
@@ -78,7 +74,7 @@ def upgrade(migrate_engine):
             print str(e)
             log.debug( "Adding user_id column to history_dataset_association_tag_association table failed: %s" % str( e ) )
     else:
-        #In sqlite, we can no longer quietly fail to add foreign key.
+        # In sqlite, we can no longer quietly fail to add foreign key.
         # Create user_id column in history_dataset_association_tag_association table.
         HistoryDatasetAssociationTagAssociation_table = Table( "history_dataset_association_tag_association", metadata, autoload=True )
         c = Column( "user_id", Integer)
@@ -93,8 +89,7 @@ def upgrade(migrate_engine):
     # Populate column so that user_id is the id of the user who owns the history_dataset_association (and, up to now, was the only person able to tag the page).
     if c is HistoryDatasetAssociationTagAssociation_table.c.user_id:
         migrate_engine.execute(
-            "UPDATE history_dataset_association_tag_association SET user_id=( SELECT history.user_id FROM history, history_dataset_association WHERE history_dataset_association.history_id = history.id AND history_dataset_association.id = history_dataset_association_tag_association.history_dataset_association_id)"
-                            )
+            "UPDATE history_dataset_association_tag_association SET user_id=( SELECT history.user_id FROM history, history_dataset_association WHERE history_dataset_association.history_id = history.id AND history_dataset_association.id = history_dataset_association_tag_association.history_dataset_association_id)" )
     if migrate_engine.name != 'sqlite':
         # Create user_id column in page_tag_association table.
         PageTagAssociation_table = Table( "page_tag_association", metadata, autoload=True )
@@ -121,8 +116,7 @@ def upgrade(migrate_engine):
     # Populate column so that user_id is the id of the user who owns the page (and, up to now, was the only person able to tag the page).
     if c is PageTagAssociation_table.c.user_id:
         migrate_engine.execute(
-            "UPDATE page_tag_association SET user_id=( SELECT user_id FROM page WHERE page_tag_association.page_id = page.id )"
-                            )
+            "UPDATE page_tag_association SET user_id=( SELECT user_id FROM page WHERE page_tag_association.page_id = page.id )" )
 
     # Create stored_workflow_tag_association table.
     try:
@@ -138,6 +132,7 @@ def upgrade(migrate_engine):
         print str(e)
         log.debug( "Creating workflow_tag_association table failed: %s" % str( e ) )
 
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
@@ -149,7 +144,6 @@ def downgrade(migrate_engine):
     except Exception, e:
         print str(e)
         log.debug( "Dropping column user_id from history_tag_association table failed: %s" % str( e ) )
-
 
     # Drop user_id column from history_dataset_association_tag_association table.
     HistoryDatasetAssociationTagAssociation_table = Table( "history_dataset_association_tag_association", metadata, autoload=True )

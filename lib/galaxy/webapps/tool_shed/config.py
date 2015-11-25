@@ -7,8 +7,8 @@ import sys
 import logging
 import logging.config
 import ConfigParser
-from galaxy import eggs
 from galaxy.util import string_as_bool, listify
+from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.version import VERSION, VERSION_MAJOR
 
 log = logging.getLogger( __name__ )
@@ -113,6 +113,7 @@ class Configuration( object ):
         self.nginx_upload_path = kwargs.get( 'nginx_upload_path', False )
         self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )
         self.brand = kwargs.get( 'brand', None )
+        self.pretty_datetime_format = expand_pretty_datetime_format( kwargs.get( 'pretty_datetime_format', '$locale (UTC)' ) )
         # Configuration for the message box directly below the masthead.
         self.message_box_visible = kwargs.get( 'message_box_visible', False )
         self.message_box_content = kwargs.get( 'message_box_content', None )
@@ -313,7 +314,6 @@ def configure_logging( config ):
     root.addHandler( handler )
     # If sentry is configured, also log to it
     if config.sentry_dsn:
-        eggs.require( "raven" )
         from raven.handlers.logging import SentryHandler
         sentry_handler = SentryHandler( config.sentry_dsn )
         sentry_handler.setLevel( logging.WARN )

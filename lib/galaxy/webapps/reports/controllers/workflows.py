@@ -2,16 +2,14 @@ import calendar
 from datetime import datetime, date, timedelta
 import logging
 from collections import namedtuple
-from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
 from sqlalchemy import and_
+from markupsafe import escape
 
 from galaxy import model, util
 from math import floor
 from galaxy.web.base.controller import BaseUIController, web
 from galaxy.web.framework.helpers import grids
-eggs.require( "SQLAlchemy >= 0.4" )
 import re
 from math import ceil
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
@@ -25,7 +23,7 @@ class SpecifiedDateListGrid( grids.Grid ):
     class WorkflowNameColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, stored_workflow ):
-            return stored_workflow.name
+            return escape(stored_workflow.name)
 
     class CreateTimeColumn( grids.DateTimeColumn ):
 
@@ -36,7 +34,7 @@ class SpecifiedDateListGrid( grids.Grid ):
 
         def get_value( self, trans, grid, stored_workflow ):
             if stored_workflow.user:
-                return stored_workflow.user.email
+                return escape(stored_workflow.user.email)
             return 'unknown'
 
     class EmailColumn( grids.GridColumn ):

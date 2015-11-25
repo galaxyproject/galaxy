@@ -115,29 +115,20 @@ return Backbone.View.extend({
         
         // loading
         this.chart.state('wait', 'Loading metadata...');
-        
-        // register process
-        var process_id = this.app.deferred.register();
-        
-        // request dictionary
-        var request_dictionary = {
-            id      : dataset_id,
-            success : function(dataset) {
-                // update select fields
-                for (var id in select_list) {
-                    self._addRow(id, dataset, select_list, chart_definition.columns[id])
-                }
-                
-                // loading
-                self.chart.state('ok', 'Metadata initialized...');
-                
-                // unregister
-                self.app.deferred.done(process_id);
-            }
-        };
-        
+
         // get dataset
-        this.app.datasets.request(request_dictionary);
+        this.app.deferred.execute(function(process) {
+            self.app.datasets.request({
+                id      : dataset_id,
+                success : function(dataset) {
+                    for (var id in select_list) {
+                        self._addRow(id, dataset, select_list, chart_definition.columns[id])
+                    }
+                    self.chart.state('ok', 'Metadata initialized...');
+                    process.resolve();
+                }
+            });
+        });
     },
     
     // add row

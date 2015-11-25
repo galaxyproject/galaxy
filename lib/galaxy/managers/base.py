@@ -25,12 +25,7 @@ attribute change to a model object.
 #   instead of the three separate classes. With no 'apparent' perfect scheme
 #   I'm opting to just keep them separate.
 
-import pkg_resources
-pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy
-
-pkg_resources.require("repoze.lru")  # used by Routes
-pkg_resources.require("Routes")
 import routes
 
 from galaxy import exceptions

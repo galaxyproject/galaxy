@@ -376,4 +376,9 @@ For **postprocess**::
       <output name="output" ftype="sam" file="bfast_out3.sam" lines_diff="2" /><!-- MD:Z:11T38 instead of MD:Z:50 on one line-->
     </test>
   </tests>
+
+  <citations>
+    <citation type="doi">10.1371/journal.pone.0007767</citation>
+  </citations>
+
 </tool>

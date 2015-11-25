@@ -25,17 +25,6 @@ os.environ[ 'TOOL_SHED_TEST_TMP_DIR' ] = tool_shed_test_tmp_dir
 # Need to remove this directory from sys.path
 sys.path[0:1] = [ os.path.join( galaxy_root, "lib" ), os.path.join( galaxy_root, "test" ) ]
 
-from galaxy import eggs
-eggs.require( "nose" )
-eggs.require( "NoseHTML" )
-eggs.require( "NoseTestDiff" )
-eggs.require( "Paste" )
-eggs.require( "PasteDeploy" )
-eggs.require( "Cheetah" )
-
-# This should not be required, but it is under certain conditions, thanks to this bug: http://code.google.com/p/python-nose/issues/detail?id=284
-eggs.require( "pysqlite" )
-
 from paste import httpserver
 import nose.config
 import nose.core

@@ -1,8 +1,19 @@
+from __future__ import absolute_import
+
 import os
 import logging
 import time
 import traceback
 from datetime import timedelta
+
+try:
+    import pbs
+    PBS_IMPORT_MESSAGE = None
+except ImportError as exc:
+    pbs = None
+    PBS_IMPORT_MESSAGE = ('The Python pbs-python package is required to use '
+                          'this feature, please install it or correct the '
+                          'following error:\nImportError %s' % str(exc))
 
 from galaxy import model
 from galaxy import util
@@ -11,25 +22,6 @@ from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
 from galaxy.jobs import JobDestination
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 
-import pkg_resources
-
-egg_message = """
-
-The 'pbs' runner depends on 'pbs_python' which is not installed or not
-configured properly.  Galaxy's "scramble" system should make this installation
-simple, please follow the instructions found at:
-
-    http://wiki.galaxyproject.org/Admin/Config/Performance/Cluster
-
-Additional errors may follow:
-%s
-"""
-
-try:
-    pkg_resources.require( "pbs_python" )
-    pbs = __import__( "pbs" )
-except Exception as e:
-    raise Exception( egg_message % str( e ) )
 
 log = logging.getLogger( __name__ )
 
@@ -99,8 +91,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
     def __init__( self, app, nworkers ):
         """Start the job runner """
         # Check if PBS was importable, fail if not
-        if pbs is None:
-            raise Exception( "PBSJobRunner requires pbs_python which was not found" )
+        assert pbs is not None, PBS_IMPORT_MESSAGE
         if app.config.pbs_application_server and app.config.outputs_to_working_directory:
             raise Exception( "pbs_application_server (file staging) and outputs_to_working_directory options are mutually exclusive" )
 
@@ -296,10 +287,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
         env_setup_commands = [ stage_commands ]
         script = self.get_job_file(job_wrapper, exit_code_path=ecfile, env_setup_commands=env_setup_commands)
         job_file = "%s/%s.sh" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
-        fh = file(job_file, "w")
-        fh.write(script)
-        fh.close()
-
+        self.write_executable_script( job_file, script )
         # job was deleted while we were preparing it
         if job_wrapper.get_state() == model.Job.states.DELETED:
             log.debug( "Job %s deleted by user before it entered the PBS queue" % job_wrapper.job_id )

@@ -262,6 +262,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # used for the cache
 #template_cache_path = database/compiled_templates
 
+# Set to false to disable various checks Galaxy will do to ensure it
+# can run job scripts before attempting to execute or submit them.
+#check_job_script_integrity = True
+
 # Citation related caching.  Tool citations information maybe fetched from
 # external sources such as http://dx.doi.org/ by Galaxy - the following
 # parameters can be used to control the caching used to store this information.
@@ -291,44 +295,6 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Configuration file for the object store
 # If this is set and exists, it overrides any other objectstore settings.
 # object_store_config_file = config/object_store_conf.xml
-
-# Object store backend module (valid options are: disk, s3, swift, irods,
-# distributed, hierarchical)
-#object_store = disk
-
-# *Extremely* old Galaxy instances created datasets at the root of the
-# `file_path` defined above.  If your Galaxy instance has datasets at the root
-# (instead of in directories composed by hashing the dataset id), you should
-# enable this option to allow Galaxy to find them.
-#object_store_check_old_style = False
-
-# Credentials used by certain (s3, swift) object store backends
-#os_access_key = <your cloud object store access key>
-#os_secret_key = <your cloud object store secret key>
-#os_bucket_name = <name of an existing object store bucket or container>
-
-# If using 'swift' object store, you must specify the following connection
-# properties
-#os_host = swift.rc.nectar.org.au
-#os_port = 8888
-#os_is_secure = False
-#os_conn_path = /
-
-# Reduced redundancy can be used only with the 's3' object store
-#os_use_reduced_redundancy = False
-
-# Path to cache directory for object store backends that utilize a cache (s3,
-# swift, irods)
-#object_store_cache_path = database/files/
-
-# Size (in GB) that the cache used by object store should be limited to.
-# If the value is not specified, the cache size will be limited only by the
-# file system size.
-#object_store_cache_size = 100
-
-# Configuration file for the distributed object store, if object_store =
-# distributed.  See the sample at distributed_object_store_conf.xml.sample
-#distributed_object_store_config_file = None
 
 
 # -- Mail and notification
@@ -612,7 +578,17 @@ nglims_config_file = tool-data/nglims.yaml
 # nodejs to wrap connections in SSL).
 #dynamic_proxy_external_proxy=False
 
+# Additionally, when the dynamic proxy is proxied by an upstream server, you'll
+# want to specify a prefixed URL so both Galaxy and the proxy reside under the
+# same path that your cookies are under. This will result in a url like
+# https://FQDN/galaxy-prefix/gie_proxy for proxying
+#dynamic_proxy_prefix=gie_proxy
+
 # -- Logging and Debugging
+
+# If True, Galaxy will attempt to configure a simple root logger if a
+# "loggers" section does not appear in this configuration file.
+#auto_configure_logging = True
 
 # Verbosity of console log messages.  Acceptable values can be found here:
 # https://docs.python.org/2/library/logging.html#logging-levels
@@ -660,9 +636,8 @@ nglims_config_file = tool-data/nglims.yaml
 # Debug enables access to various config options useful for development and
 # debugging: use_lint, use_profile, use_printdebug and use_interactive.  It
 # also causes the files used by PBS/SGE (submission script, output, and error)
-# to remain on disk after the job is complete.  Debug mode is disabled if
-# commented, but is uncommented by default in the sample config.
-debug = True
+# to remain on disk after the job is complete.
+#debug = False
 
 # Check for WSGI compliance.
 #use_lint = False
@@ -681,6 +656,20 @@ use_interactive = True
 # space rapidly!).  Useful to determine why your processes may be consuming a
 # lot of CPU.
 #use_heartbeat = False
+
+# Log to Sentry
+# Sentry is an open source logging and error aggregation platform.  Setting
+# sentry_dsn will enable the Sentry middleware and errors will be sent to the
+# indicated sentry instance.  This connection string is available in your
+# sentry instance under <project_name> -> Settings -> API Keys.
+#sentry_dsn = None
+
+# Log to statsd
+# Statsd is an external statistics aggregator (https://github.com/etsy/statsd)
+# Enabling the following options will cause galaxy to log request timing and
+# other statistics to the configured statsd instance.
+#statsd_host=
+#statsd_port=8125
 
 # -- Data Libraries
 

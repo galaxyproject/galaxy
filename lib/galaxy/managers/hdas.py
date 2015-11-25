@@ -160,7 +160,7 @@ class HDAManager( datasets.DatasetAssociationManager,
         super( HDAManager, self ).purge( hda, flush=flush )
         # decrease the user's space used
         if quota_amount_reduction:
-            user.total_disk_usage -= quota_amount_reduction
+            user.adjust_total_disk_usage(-quota_amount_reduction)
         return hda
 
     # .... states
@@ -279,6 +279,9 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'metadata', 'meta_files', 'data_type',
             'peek',
 
+            'creating_job',
+            'rerunnable',
+
             'uuid',
             'permissions',
             'file_name',
@@ -325,7 +328,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'file_path'     : self._remap_from( 'file_name' ),
 
             'resubmitted'   : lambda i, k, **c: self.hda_manager.has_been_resubmitted( i ),
-
             'display_apps'  : self.serialize_display_apps,
             'display_types' : self.serialize_old_display_applications,
             'visualizations': self.serialize_visualization_links,

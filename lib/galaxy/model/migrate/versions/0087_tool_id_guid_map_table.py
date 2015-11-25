@@ -1,18 +1,16 @@
 """
 Migration script to create the tool_id_guid_map table.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import datetime
-now = datetime.datetime.utcnow
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
+import logging
+import sys
 
-import sys, logging
+from sqlalchemy import Column, DateTime, Integer, MetaData, String, Table, TEXT
+
+# Need our custom types, but don't import anything else from model
+from galaxy.model.custom_types import TrimmedString
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -34,6 +32,7 @@ ToolIdGuidMap_table = Table( "tool_id_guid_map", metadata,
                              Column( "repository_name", TrimmedString( 255 ) ),
                              Column( "guid", TEXT, index=True, unique=True ) )
 
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
@@ -42,6 +41,7 @@ def upgrade(migrate_engine):
         ToolIdGuidMap_table.create()
     except Exception, e:
         log.debug( "Creating tool_id_guid_map table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
