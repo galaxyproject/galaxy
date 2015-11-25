@@ -23,11 +23,9 @@ def test_loader():
 
         def load(self, name="tool.xml", preprocess=True):
             if preprocess:
-                loader = load_tool
-                return loader(os.path.join(self.temp_directory, name))
+                return load_tool(os.path.join(self.temp_directory, name))
             else:
-                loader = xml_util.parse_xml
-                tree, error = loader(os.path.join(self.temp_directory, name))
+                tree, error = xml_util.parse_xml(os.path.join(self.temp_directory, name))
                 return tree
 
     # Test simple macro replacement.
