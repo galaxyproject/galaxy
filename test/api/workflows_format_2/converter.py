@@ -1,3 +1,4 @@
+import os
 import sys
 
 import yaml
@@ -16,12 +17,15 @@ STEP_TYPE_ALIASES = {
 }
 
 
-def yaml_to_workflow(has_yaml):
+def yaml_to_workflow(has_yaml, galaxy_interface, workflow_directory):
     as_python = yaml.load(has_yaml)
-    return python_to_workflow(as_python)
+    return python_to_workflow(as_python, galaxy_interface, workflow_directory)
 
 
-def python_to_workflow(as_python):
+def python_to_workflow(as_python, galaxy_interface, workflow_directory):
+    if workflow_directory is None:
+        workflow_directory = os.path.abspath(".")
+
     if not isinstance(as_python, dict):
         raise Exception("This is not a not a valid Galaxy workflow definition.")
 

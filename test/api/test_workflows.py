@@ -49,8 +49,8 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
         self._assert_status_code_is( upload_response, 200 )
         return upload_response.json()
 
-    def _upload_yaml_workflow(self, has_yaml):
-        workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self)
+    def _upload_yaml_workflow(self, has_yaml, source_type=None):
+        workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, source_type=source_type)
         return workflow[ "id" ]
 
     def _setup_workflow_run( self, workflow, inputs_by='step_id', history_id=None ):
@@ -118,13 +118,16 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
         invocation_details = invocation_details_response.json()
         return invocation_details
 
-    def _run_jobs( self, jobs_yaml, history_id=None, wait=True ):
+    def _run_jobs( self, has_workflow, history_id=None, wait=True, source_type=None, jobs_descriptions=None ):
         if history_id is None:
             history_id = self.history_id
         workflow_id = self._upload_yaml_workflow(
-            jobs_yaml
+            has_workflow, source_type=source_type
         )
-        jobs_descriptions = yaml.load( jobs_yaml )
+        if jobs_descriptions is None:
+            assert source_type != "path"
+            jobs_descriptions = yaml.load( has_workflow )
+
         test_data = jobs_descriptions["test_data"]
 
         label_map = {}
