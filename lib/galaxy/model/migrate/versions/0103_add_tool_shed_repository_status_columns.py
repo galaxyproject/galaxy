@@ -1,16 +1,14 @@
 """Migration script to add status and error_message columns to the tool_shed_repository table."""
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import datetime
-now = datetime.datetime.utcnow
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
 
+from sqlalchemy import Column, MetaData, Table, TEXT
+
+# Need our custom types, but don't import anything else from model
+from galaxy.model.custom_types import TrimmedString
+
+now = datetime.datetime.utcnow
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -55,6 +53,8 @@ def upgrade(migrate_engine):
         print "Exception executing sql command: "
         print cmd
         print str( e )
+
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()

@@ -54,15 +54,20 @@ class ConfigSerializer( base.ModelSerializer ):
             'allow_user_creation'       : lambda i, k, **c: i.allow_user_creation,
             'use_remote_user'           : _defaults_to( None ),
             'remote_user_logout_href'   : _defaults_to( '' ),
-            'enable_cloud_launch'       : _defaults_to( False ),
             'datatypes_disable_auto'    : _defaults_to( False ),
             'allow_user_dataset_purge'  : _defaults_to( False ),
+            'ga_code'                   : _defaults_to( None ),
             'enable_unique_workflow_defaults' : _defaults_to( False ),
 
             'nginx_upload_path'         : _defaults_to( self.url_for( controller='api', action='tools' ) ),
             'ftp_upload_dir'            : _defaults_to( None ),
             'ftp_upload_site'           : _defaults_to( None ),
             'version_major'             : _defaults_to( None ),
+            'require_login'             : _defaults_to( None ),
+            'inactivity_box_content'    : _defaults_to( None ),
+            'message_box_content'       : _defaults_to( None ),
+            'message_box_visible'       : _defaults_to( False ),
+            'message_box_class'         : _defaults_to( 'info' ),
         }
 
 

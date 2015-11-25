@@ -37,9 +37,6 @@ from .datasets import DatasetPath
 
 log = logging.getLogger( __name__ )
 
-DATABASE_MAX_STRING_SIZE = util.DATABASE_MAX_STRING_SIZE
-DATABASE_MAX_STRING_SIZE_PRETTY = util.DATABASE_MAX_STRING_SIZE_PRETTY
-
 # This file, if created in the job's working directory, will be used for
 # setting advanced metadata properties on the job and its associated outputs.
 # This interface is currently experimental, is only used by the upload tool,
@@ -289,9 +286,8 @@ class JobConfiguration( object ):
         """
         log.debug('Loading job configuration from %s' % self.app.config.config_file)
 
-        # Always load local and lwr
-        self.runner_plugins = [dict(id='local', load='local', workers=self.app.config.local_job_queue_workers),
-                               dict(id='lwr', load='lwr', workers=self.app.config.cluster_job_queue_workers)]
+        # Always load local
+        self.runner_plugins = [dict(id='local', load='local', workers=self.app.config.local_job_queue_workers)]
         # Load tasks if configured
         if self.app.config.use_tasked_jobs:
             self.runner_plugins.append(dict(id='tasks', load='tasks', workers=self.app.config.local_task_queue_workers))
@@ -799,6 +795,10 @@ class JobWrapper( object ):
             self.__galaxy_lib_dir = os.path.abspath( "lib" )  # cwd = galaxy root
         return self.__galaxy_lib_dir
 
+    @property
+    def galaxy_virtual_env(self):
+        return os.environ.get('VIRTUAL_ENV', None)
+
     # legacy naming
     get_job_runner = get_job_runner_url
 
@@ -866,7 +866,7 @@ class JobWrapper( object ):
         self.dependency_shell_commands = self.tool.build_dependency_shell_commands()
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
         # if the server was stopped and restarted before the job finished
-        job.command_line = self.command_line
+        job.command_line = unicodify(self.command_line)
         self.sa_session.add( job )
         self.sa_session.flush()
         # Return list of all extra files
@@ -987,18 +987,11 @@ class JobWrapper( object ):
                 self.sa_session.add( dataset )
                 self.sa_session.flush()
             job.set_final_state( job.states.ERROR )
-            job.command_line = self.command_line
+            job.command_line = unicodify(self.command_line)
             job.info = message
             # TODO: Put setting the stdout, stderr, and exit code in one place
             # (not duplicated with the finish method).
-            if ( len( stdout ) > DATABASE_MAX_STRING_SIZE ):
-                stdout = util.shrink_string_by_size( stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
-                log.info( "stdout for job %d is greater than %s, only a portion will be logged to database" % ( job.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
-            job.stdout = stdout
-            if ( len( stderr ) > DATABASE_MAX_STRING_SIZE ):
-                stderr = util.shrink_string_by_size( stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
-                log.info( "stderr for job %d is greater than %s, only a portion will be logged to database" % ( job.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
-            job.stderr = stderr
+            job.set_streams( stdout, stderr )
             # Let the exit code be Null if one is not provided:
             if ( exit_code is not None ):
                 job.exit_code = exit_code
@@ -1039,6 +1032,10 @@ class JobWrapper( object ):
     def change_state( self, state, info=False ):
         job = self.get_job()
         self.sa_session.refresh( job )
+        if job.state in model.Job.terminal_states:
+            log.warning( "(%s) Ignoring state change from '%s' to '%s' for job "
+                         "that is already terminal", job.id, job.state, state )
+            return
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             dataset = dataset_assoc.dataset
             self.sa_session.refresh( dataset )
@@ -1086,8 +1083,6 @@ class JobWrapper( object ):
         the contents of the output files.
         """
         finish_timer = util.ExecutionTimer()
-        stdout = unicodify( stdout )
-        stderr = unicodify( stderr )
 
         # default post job setup
         self.sa_session.expunge_all()
@@ -1265,13 +1260,10 @@ class JobWrapper( object ):
         # Flush all the dataset and job changes above.  Dataset state changes
         # will now be seen by the user.
         self.sa_session.flush()
-        # Save stdout and stderr
-        if len( job.stdout ) > DATABASE_MAX_STRING_SIZE:
-            log.info( "stdout for job %d is greater than %s, only a portion will be logged to database" % ( job.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
-        job.stdout = util.shrink_string_by_size( job.stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
-        if len( job.stderr ) > DATABASE_MAX_STRING_SIZE:
-            log.info( "stderr for job %d is greater than %s, only a portion will be logged to database" % ( job.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
-        job.stderr = util.shrink_string_by_size( job.stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+
+        # Shrink streams and ensure unicode.
+        job.set_streams( job.stdout, job.stderr )
+
         # The exit code will be null if there is no exit code to be set.
         # This is so that we don't assign an exit code, such as 0, that
         # is either incorrect or has the wrong semantics.
@@ -1317,16 +1309,16 @@ class JobWrapper( object ):
         self.tool.call_hook( 'exec_after_process', self.queue.app, inp_data=inp_data,
                              out_data=out_data, param_dict=param_dict,
                              tool=self.tool, stdout=job.stdout, stderr=job.stderr )
-        job.command_line = self.command_line
+        job.command_line = unicodify(self.command_line)
 
-        bytes = 0
+        collected_bytes = 0
         # Once datasets are collected, set the total dataset size (includes extra files)
         for dataset_assoc in job.output_datasets:
             dataset_assoc.dataset.dataset.set_total_size()
-            bytes += dataset_assoc.dataset.dataset.get_total_size()
+            collected_bytes += dataset_assoc.dataset.dataset.get_total_size()
 
         if job.user:
-            job.user.total_disk_usage += bytes
+            job.user.adjust_total_disk_usage(collected_bytes)
 
         # Empirically, we need to update job.user and
         # job.workflow_invocation_step.workflow_invocation in separate
@@ -1398,7 +1390,7 @@ class JobWrapper( object ):
         job = has_metrics.get_job()
         per_plugin_properties = self.app.job_metrics.collect_properties( job.destination_id, self.job_id, self.working_directory )
         if per_plugin_properties:
-            log.info( "Collecting job metrics for %s" % has_metrics )
+            log.info( "Collecting metrics for %s %s" % ( type(has_metrics).__name__, getattr( has_metrics, 'id', None ) ) )
         for plugin, properties in per_plugin_properties.iteritems():
             for metric_name, metric_value in properties.iteritems():
                 if metric_value is not None:
@@ -1803,8 +1795,6 @@ class TaskWrapper(JobWrapper):
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files.
         """
-        stdout = unicodify( stdout )
-        stderr = unicodify( stderr )
 
         # This may have ended too soon
         log.debug( 'task %s for job %d ended; exit code: %d'
@@ -1832,13 +1822,8 @@ class TaskWrapper(JobWrapper):
             task.state = task.states.ERROR
 
         # Save stdout and stderr
-        if len( stdout ) > DATABASE_MAX_STRING_SIZE:
-            log.error( "stdout for task %d is greater than %s, only a portion will be logged to database" % ( task.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
-        task.stdout = util.shrink_string_by_size( stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
-        if len( stderr ) > DATABASE_MAX_STRING_SIZE:
-            log.error( "stderr for task %d is greater than %s, only a portion will be logged to database" % ( task.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
+        task.set_streams( stdout, stderr )
         self._collect_metrics( task )
-        task.stderr = util.shrink_string_by_size( stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
         task.exit_code = tool_exit_code
         task.command_line = self.command_line
         self.sa_session.flush()

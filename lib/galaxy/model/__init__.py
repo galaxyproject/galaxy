@@ -18,13 +18,14 @@ from itertools import ifilter
 from string import Template
 from uuid import UUID, uuid4
 
-from galaxy import eggs
-eggs.require("pexpect")
-import pexpect
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, func, not_, or_, true, join, select
 from sqlalchemy.orm import joinedload, object_session, aliased
 from sqlalchemy.ext import hybrid
+
+try:
+    import pexpect
+except ImportError:
+    pexpect = None
 
 import galaxy.datatypes
 import galaxy.datatypes.registry
@@ -56,6 +57,9 @@ datatypes_registry.load_datatypes()
 # are going to have different limits so it is likely best to not let
 # this be unlimited - filter in Python if over this limit.
 MAX_IN_FILTER_LENGTH = 100
+
+PEXPECT_IMPORT_MESSAGE = ('The Python pexpect package is required to use this '
+                          'feature, please install it')
 
 
 class NoConverterException(Exception):
@@ -95,7 +99,7 @@ class HasName:
         return name
 
 
-class HasJobMetrics:
+class JobLike:
 
     def _init_metrics( self ):
         self.text_metrics = []
@@ -125,6 +129,18 @@ class HasJobMetrics:
     def metrics( self ):
         # TODO: Make iterable, concatenate with chain
         return self.text_metrics + self.numeric_metrics
+
+    def set_streams( self, stdout, stderr ):
+        stdout = galaxy.util.unicodify( stdout )
+        stderr = galaxy.util.unicodify( stderr )
+        if ( len( stdout ) > galaxy.util.DATABASE_MAX_STRING_SIZE ):
+            stdout = galaxy.util.shrink_string_by_size( stdout, galaxy.util.DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+            log.info( "stdout for %s %d is greater than %s, only a portion will be logged to database", type(self), self.id, galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY )
+        self.stdout = stdout
+        if ( len( stderr ) > galaxy.util.DATABASE_MAX_STRING_SIZE ):
+            stderr = galaxy.util.shrink_string_by_size( stderr, galaxy.util.DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+            log.info( "stderr for %s %d is greater than %s, only a portion will be logged to database", type(self), self.id, galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY )
+        self.stderr = stderr
 
 
 class User( object, Dictifiable ):
@@ -171,8 +187,27 @@ class User( object, Dictifiable ):
         """
         Return a unique list of Roles associated with this user or any of their groups.
         """
-        roles = [ ura.role for ura in self.roles ]
-        for group in [ uga.group for uga in self.groups ]:
+        try:
+            db_session = object_session( self )
+            user = db_session.query(
+                User
+            ).filter_by(  # don't use get, it will use session variant.
+                id=self.id
+            ).options(
+                joinedload("roles"),
+                joinedload("roles.role"),
+                joinedload("groups"),
+                joinedload("groups.group"),
+                joinedload("groups.group.roles"),
+                joinedload("groups.group.roles.role")
+            ).one()
+        except Exception:
+            # If not persistent user, just use models normaly and
+            # skip optimizations...
+            user = self
+
+        roles = [ ura.role for ura in user.roles ]
+        for group in [ uga.group for uga in user.groups ]:
             for role in [ gra.role for gra in group.roles ]:
                 if role not in roles:
                     roles.append( role )
@@ -197,6 +232,10 @@ class User( object, Dictifiable ):
         self.disk_usage = bytes
 
     total_disk_usage = property( get_disk_usage, set_disk_usage )
+
+    def adjust_total_disk_usage( self, amount ):
+        if amount != 0:
+            self.disk_usage = func.coalesce(self.table.c.disk_usage, 0) + amount
 
     @property
     def nice_total_disk_usage( self ):
@@ -273,7 +312,7 @@ class PasswordResetToken( object ):
         else:
             self.token = unique_id()
         self.user = user
-        self.expiration_time = datetime.now() + timedelta(hours=24)
+        self.expiration_time = galaxy.model.orm.now.now() + timedelta(hours=24)
 
 
 class BaseJobMetric( object ):
@@ -300,7 +339,7 @@ class TaskMetricNumeric( BaseJobMetric ):
     pass
 
 
-class Job( object, HasJobMetrics, Dictifiable ):
+class Job( object, JobLike, Dictifiable ):
     dict_collection_visible_keys = [ 'id', 'state', 'exit_code', 'update_time', 'create_time' ]
     dict_element_visible_keys = [ 'id', 'state', 'exit_code', 'update_time', 'create_time'  ]
 
@@ -322,6 +361,9 @@ class Job( object, HasJobMetrics, Dictifiable ):
                     PAUSED='paused',
                     DELETED='deleted',
                     DELETED_NEW='deleted_new' )
+    terminal_states = [ states.OK,
+                        states.ERROR,
+                        states.DELETED ]
 
     # Please include an accessor (get/set pair) for any new columns/members.
     def __init__( self ):
@@ -346,6 +388,7 @@ class Job( object, HasJobMetrics, Dictifiable ):
         self.destination_id = None
         self.destination_params = None
         self.post_job_actions = []
+        self.state_history = []
         self.imported = False
         self.handler = None
         self.exit_code = None
@@ -647,7 +690,7 @@ class Job( object, HasJobMetrics, Dictifiable ):
             self.workflow_invocation_step.update()
 
 
-class Task( object, HasJobMetrics ):
+class Task( object, JobLike ):
     """
     A task represents a single component of a job.
     """
@@ -1094,7 +1137,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             if set_hid:
                 dataset.hid = self._next_hid()
         if quota and self.user:
-            self.user.total_disk_usage += dataset.quota_amount( self.user )
+            self.user.adjust_total_disk_usage(dataset.quota_amount(self.user))
         dataset.history = self
         if genome_build not in [None, '?']:
             self.genome_build = genome_build
@@ -1187,7 +1230,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         rval[ 'tags' ] = tags_str_list
 
         if view == 'element':
-            rval[ 'size' ] = int( self.get_disk_size() )
+            rval[ 'size' ] = int( self.disk_size )
 
         return rval
 
@@ -1195,10 +1238,6 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
     def latest_export( self ):
         exports = self.exports
         return exports and exports[ 0 ]
-
-    @property
-    def get_disk_size_bytes( self ):
-        return self.get_disk_size( nice_size=False )
 
     def unhide_datasets( self ):
         for dataset in self.datasets:
@@ -1209,21 +1248,6 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             job = dataset.creating_job
             if job is not None and job.state == Job.states.PAUSED:
                 job.set_state(Job.states.NEW)
-
-    def get_disk_size( self, nice_size=False ):
-        # unique datasets only
-        db_session = object_session( self )
-        rval = db_session.query(
-            func.sum( db_session.query( HistoryDatasetAssociation.dataset_id, Dataset.total_size ).join( Dataset )
-                    .filter( HistoryDatasetAssociation.table.c.history_id == self.id )
-                    .filter( HistoryDatasetAssociation.purged != true() )
-                    .filter( Dataset.purged != true() )
-                    .distinct().subquery().c.total_size ) ).first()[0]
-        if rval is None:
-            rval = 0
-        if nice_size:
-            rval = galaxy.util.nice_size( rval )
-        return rval
 
     @hybrid.hybrid_property
     def disk_size( self ):
@@ -1279,6 +1303,11 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         )
         # label creates a scalar
         return size_query.label( 'disk_size' )
+
+    @property
+    def disk_nice_size( self ):
+        """Returns human readable size of history on disk."""
+        return galaxy.util.nice_size( self.disk_size )
 
     @property
     def active_datasets_children_and_roles( self ):
@@ -1515,7 +1544,13 @@ class DefaultHistoryPermissions( object ):
         self.role = role
 
 
-class Dataset( object ):
+class StorableObject( object ):
+
+    def __init__( self, id, **kwargs):
+        self.id = id
+
+
+class Dataset( StorableObject ):
     states = Bunch( NEW='new',
                     UPLOAD='upload',
                     QUEUED='queued',
@@ -1552,7 +1587,7 @@ class Dataset( object ):
     engine = None
 
     def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True, uuid=None ):
-        self.id = id
+        super(Dataset, self).__init__(id=id)
         self.state = state
         self.deleted = False
         self.purged = False
@@ -1633,13 +1668,11 @@ class Dataset( object ):
     def get_total_size( self ):
         if self.total_size is not None:
             return self.total_size
-        if self.file_size:
-            # for backwards compatibility, set if unset
-            self.set_total_size()
-            db_session = object_session( self )
-            db_session.flush()
-            return self.total_size
-        return 0
+        # for backwards compatibility, set if unset
+        self.set_total_size()
+        db_session = object_session( self )
+        db_session.flush()
+        return self.total_size
 
     def set_total_size( self ):
         if self.file_size is None:
@@ -1716,7 +1749,8 @@ class DatasetInstance( object ):
 
     def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None, extension=None,
                   dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
-                  parent_id=None, validation_errors=None, visible=True, create_dataset=False, sa_session=None, extended_metadata=None ):
+                  parent_id=None, validation_errors=None, visible=True, create_dataset=False, sa_session=None,
+                  extended_metadata=None, flush=True ):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.info = info
@@ -1737,8 +1771,9 @@ class DatasetInstance( object ):
         if not dataset and create_dataset:
             # Had to pass the sqlalchemy session in order to create a new dataset
             dataset = Dataset( state=Dataset.states.NEW )
-            sa_session.add( dataset )
-            sa_session.flush()
+            if flush:
+                sa_session.add( dataset )
+                sa_session.flush()
         self.dataset = dataset
         self.parent_id = parent_id
         self.validation_errors = validation_errors
@@ -2382,7 +2417,7 @@ class HistoryDatasetAssociationSubset( object ):
 class Library( object, Dictifiable, HasName ):
     permitted_actions = get_permitted_actions( filter='LIBRARY' )
     dict_collection_visible_keys = ( 'id', 'name' )
-    dict_element_visible_keys = ( 'id', 'deleted', 'name', 'description', 'synopsis', 'root_folder_id' )
+    dict_element_visible_keys = ( 'id', 'deleted', 'name', 'description', 'synopsis', 'root_folder_id', 'create_time' )
 
     def __init__( self, name=None, description=None, synopsis=None, root_folder=None ):
         self.name = name or "Unnamed library"
@@ -2927,7 +2962,7 @@ class ImplicitlyConvertedDatasetAssociation( object ):
             try:
                 os.unlink( self.file_name )
             except Exception, e:
-                print "Failed to purge associated file (%s) from disk: %s" % ( self.file_name, e )
+                log.error( "Failed to purge associated file (%s) from disk: %s" % ( self.file_name, e ) )
 
 
 DEFAULT_COLLECTION_NAME = "Unnamed Collection"
@@ -3054,6 +3089,9 @@ class DatasetCollectionInstance( object, HasName ):
             id=self.id,
             name=self.name,
             collection_type=self.collection.collection_type,
+            populated=self.collection.populated,
+            populated_state=self.collection.populated_state,
+            populated_state_message=self.collection.populated_state_message,
             type="collection",  # contents type (distinguished from file or folder (in case of library))
         )
 
@@ -3487,7 +3525,7 @@ class WorkflowInvocation( object, Dictifiable ):
     def active( self ):
         """ Indicates the workflow invocation is somehow active - and in
         particular valid actions may be performed on its
-        ``WorkflowInvocationStep``s.
+        WorkflowInvocationSteps.
         """
         states = WorkflowInvocation.states
         return self.state in [ states.NEW, states.READY ]
@@ -3681,9 +3719,10 @@ class WorkflowRequestToInputDatasetCollectionAssociation(object, Dictifiable):
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name' ]
 
 
-class MetadataFile( object ):
+class MetadataFile( StorableObject ):
 
     def __init__( self, dataset=None, name=None ):
+        super(MetadataFile, self).__init__(id=None)
         if isinstance( dataset, HistoryDatasetAssociation ):
             self.history_dataset = dataset
         elif isinstance( dataset, LibraryDatasetDatasetAssociation ):
@@ -4258,6 +4297,8 @@ class Sample( object, Dictifiable ):
     def get_untransferred_dataset_size( self, filepath, scp_configs ):
         def print_ticks( d ):
             pass
+        if pexpect is None:
+            return PEXPECT_IMPORT_MESSAGE
         error_msg = 'Error encountered in determining the file size of %s on the external_service.' % filepath
         if not scp_configs['host'] or not scp_configs['user_name'] or not scp_configs['password']:
             return error_msg

@@ -30,7 +30,7 @@ app = None
 class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
     """Encapsulates the state of a Universe application"""
     def __init__( self, **kwargs ):
-        print >> sys.stderr, "python path is: " + ", ".join( sys.path )
+        log.debug( "python path is: %s", ", ".join( sys.path ) )
         self.name = 'galaxy'
         self.new_installation = False
         # Read config file and check for errors

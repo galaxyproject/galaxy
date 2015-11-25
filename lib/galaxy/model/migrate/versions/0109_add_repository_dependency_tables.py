@@ -1,16 +1,13 @@
 """
 Migration script to add the repository_dependency and repository_repository_dependency_association tables.
 """
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-import sys, logging
-from galaxy.model.custom_types import *
-from sqlalchemy.exc import *
 import datetime
-now = datetime.datetime.utcnow
+import logging
+import sys
 
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel( logging.DEBUG )
 handler = logging.StreamHandler( sys.stdout )
@@ -34,6 +31,7 @@ RepositoryRepositoryDependencyAssociation_table = Table( "repository_repository_
                                                          Column( "tool_shed_repository_id", Integer, ForeignKey( "tool_shed_repository.id" ), index=True ),
                                                          Column( "repository_dependency_id", Integer, ForeignKey( "repository_dependency.id" ), index=True ) )
 
+
 def upgrade(migrate_engine):
     print __doc__
     metadata.bind = migrate_engine
@@ -46,6 +44,7 @@ def upgrade(migrate_engine):
         RepositoryRepositoryDependencyAssociation_table.create()
     except Exception, e:
         log.debug( "Creating repository_repository_dependency_association table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

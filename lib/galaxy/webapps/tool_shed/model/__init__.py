@@ -9,8 +9,6 @@ from galaxy.util.hash_util import new_secure_hash
 from galaxy.model.item_attrs import Dictifiable
 import tool_shed.repository_types.util as rt_util
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
 from mercurial import hg
 from mercurial import ui
 

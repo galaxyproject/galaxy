@@ -4,7 +4,6 @@
 // Following three are for older-style IE proxies, newer dynamic Galaxy proxy
 // does not use these.
 ie_password_auth = ${ ie_request.javascript_boolean(ie_request.attr.PASSWORD_AUTH) };
-ie_apache_urls = ${ ie_request.javascript_boolean(ie_request.attr.APACHE_URLS) };
 ie_password = '${ ie_request.notebook_pw }';
 
 

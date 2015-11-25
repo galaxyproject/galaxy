@@ -18,10 +18,48 @@ class LibrariesApiTestCase( api.ApiTestCase, TestsDatasets ):
         self._assert_has_keys( library, "name" )
         assert library[ "name" ] == "CreateTestLibrary"
 
+    def test_delete( self ):
+        library = self.library_populator.new_library( "DeleteTestLibrary" )
+        create_response = self._delete( "libraries/%s" % library[ "id" ], admin=True )
+        self._assert_status_code_is( create_response, 200 )
+        library = create_response.json()
+        self._assert_has_keys( library, "deleted" )
+        assert library[ "deleted" ] is True
+        # Test undeleting
+        data = dict( undelete='true' )
+        create_response = self._delete( "libraries/%s" % library[ "id" ], data=data, admin=True )
+        library = create_response.json()
+        self._assert_status_code_is( create_response, 200 )
+        assert library[ "deleted" ] is False
+
+    def test_nonadmin( self ):
+        # Anons can't create libs
+        data = dict( name="CreateTestLibrary" )
+        create_response = self._post( "libraries", data=data, admin=False, anon=True )
+        self._assert_status_code_is( create_response, 403 )
+        # Anons can't delete libs
+        library = self.library_populator.new_library( "AnonDeleteTestLibrary" )
+        create_response = self._delete( "libraries/%s" % library[ "id" ], admin=False, anon=True )
+        self._assert_status_code_is( create_response, 403 )
+        # Anons can't update libs
+        data = dict( name="ChangedName", description="ChangedDescription", synopsis='ChangedSynopsis' )
+        create_response = self._patch( "libraries/%s" % library[ "id" ], data=data, admin=False, anon=True )
+        self._assert_status_code_is( create_response, 403 )
+
+    def test_update( self ):
+        library = self.library_populator.new_library( "UpdateTestLibrary" )
+        data = dict( name='ChangedName', description='ChangedDescription', synopsis='ChangedSynopsis' )
+        create_response = self._patch( "libraries/%s" % library[ "id" ], data=data, admin=True )
+        self._assert_status_code_is( create_response, 200 )
+        library = create_response.json()
+        self._assert_has_keys( library, 'name', 'description', 'synopsis' )
+        assert library['name'] == 'ChangedName'
+        assert library['description'] == 'ChangedDescription'
+        assert library['synopsis'] == 'ChangedSynopsis'
+
     def test_create_private_library_permissions( self ):
         library = self.library_populator.new_library( "PermissionTestLibrary" )
         library_id = library[ "id" ]
-
         role_id = self.library_populator.user_private_role_id()
         self.library_populator.set_permissions( library_id, role_id )
         create_response = self._create_folder( library )

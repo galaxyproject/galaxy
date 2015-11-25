@@ -1,17 +1,13 @@
 """
 Migration script to create the genome_index_tool_data table.
 """
-
-from sqlalchemy import *
-from migrate import *
-
 import datetime
+import logging
+import sys
+
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, String, Table
+
 now = datetime.datetime.utcnow
-
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
-
-import sys, logging
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -33,8 +29,8 @@ GenomeIndexToolData_table = Table( "genome_index_tool_data", metadata,
                                    Column( "created_time", DateTime, default=now ),
                                    Column( "modified_time", DateTime, default=now, onupdate=now ),
                                    Column( "indexer", String( 64 ) ),
-                                   Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    )
+                                   Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ) )
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -45,6 +41,7 @@ def upgrade(migrate_engine):
         GenomeIndexToolData_table.create()
     except Exception, e:
         log.debug( "Creating genome_index_tool_data table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

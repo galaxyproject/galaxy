@@ -2,8 +2,8 @@
  * Model, view, and controller objects for Galaxy tools and tool panel.
  */
 
- define( ["libs/underscore", "viz/trackster/util", "mvc/data" ],
-         function(_, util, data) {
+ define( ["libs/underscore", "viz/trackster/util", "mvc/data", "mvc/tools/tools-form" ],
+         function(_, util, data, ToolsForm) {
 
 /**
  * Mixin for tracking model visibility.
@@ -521,6 +521,16 @@ var ToolLinkView = BaseView.extend({
             $link.find('a').on('click', function(e) {
                 e.preventDefault();
                 Galaxy.upload.show();
+            });
+        }
+        else if ( this.model.get( 'model_class' ) === 'Tool' ) { // regular tools
+            var self = this;
+            $link.find('a').on('click', function(e) {
+                e.preventDefault();
+                var form = new ToolsForm.View( { id : self.model.id, version : self.model.get('version') } );
+                form.deferred.execute(function() {
+                    Galaxy.app.display( form );
+                });
             });
         }
 

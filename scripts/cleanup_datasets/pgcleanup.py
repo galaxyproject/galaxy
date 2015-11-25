@@ -17,10 +17,7 @@ from optparse import OptionParser
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 sys.path.insert(0, os.path.join(galaxy_root, 'lib'))
 
-from galaxy import eggs
-eggs.require('psycopg2')
 import psycopg2
-eggs.require('SQLAlchemy')
 from sqlalchemy.engine.url import make_url
 
 import galaxy.config

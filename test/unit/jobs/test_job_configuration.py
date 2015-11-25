@@ -119,7 +119,7 @@ class JobConfXmlParserTestCase( unittest.TestCase ):
         env_dest = self.job_config.destinations[ "java_cluster" ][ 0 ]
         assert len( env_dest.env ) == 4, len( env_dest.env )
         assert env_dest.env[ 0 ][ "name" ] == "_JAVA_OPTIONS"
-        assert env_dest.env[ 0 ][ "value" ] == '-Xmx=6GB'
+        assert env_dest.env[ 0 ][ "value" ] == '-Xmx6G'
 
         assert env_dest.env[ 1 ][ "name" ] == "ANOTHER_OPTION"
         assert env_dest.env[ 1 ][ "raw" ] is True

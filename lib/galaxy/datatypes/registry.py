@@ -634,32 +634,9 @@ class Registry( object ):
     def load_external_metadata_tool( self, toolbox ):
         """Adds a tool which is used to set external metadata"""
         # We need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated
-        # tool.  We'll create a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
-        # Properly building a tool without relying on parsing an XML file is near impossible...so we'll create a temporary file
-        tool_xml_text = """
-            <tool id="__SET_METADATA__" name="Set External Metadata" version="1.0.1" tool_type="set_metadata">
-              <type class="SetMetadataTool" module="galaxy.tools"/>
-              <requirements>
-                  <requirement type="package">samtools</requirement>
-              </requirements>
-              <action module="galaxy.tools.actions.metadata" class="SetMetadataToolAction"/>
-              <command>python "${set_metadata}" ${__SET_EXTERNAL_METADATA_COMMAND_LINE__}</command>
-              <inputs>
-                <param format="data" name="input1" type="data" label="File to set metadata on."/>
-                <param name="__ORIGINAL_DATASET_STATE__" type="hidden" value=""/>
-                <param name="__SET_EXTERNAL_METADATA_COMMAND_LINE__" type="hidden" value="">
-                  <sanitizer sanitize="False"/>
-                </param>
-              </inputs>
-              <configfiles>
-                <configfile name="set_metadata">from galaxy_ext.metadata.set_metadata import set_metadata; set_metadata()</configfile>
-              </configfiles>
-            </tool>
-            """
-        tmp_name = tempfile.NamedTemporaryFile()
-        tmp_name.write( tool_xml_text )
-        tmp_name.flush()
-        set_meta_tool = toolbox.load_hidden_tool( tmp_name.name )
+        # tool.  We'll load a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
+        # Properly building a tool without relying on parsing an XML file is near difficult...so we bundle with Galaxy.
+        set_meta_tool = toolbox.load_hidden_lib_tool( "galaxy/datatypes/set_metadata_tool.xml" )
         self.set_external_metadata_tool = set_meta_tool
         self.log.debug( "Loaded external metadata tool: %s", self.set_external_metadata_tool.id )
 

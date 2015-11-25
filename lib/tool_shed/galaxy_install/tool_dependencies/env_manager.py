@@ -1,8 +1,8 @@
 import logging
 import os
-import sys
-from tool_shed.util import common_util
+
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import common_util
 
 log = logging.getLogger( __name__ )
 
@@ -42,7 +42,7 @@ class EnvManager( object ):
             # </environment_variable>
             return dict( name=env_var_name, action=env_var_action, value=elem.text)
         return None
-    
+
     def get_env_shell_file_path( self, installation_directory ):
         env_shell_file_name = 'env.sh'
         default_location = os.path.abspath( os.path.join( installation_directory, env_shell_file_name ) )
@@ -53,7 +53,7 @@ class EnvManager( object ):
                 if name == env_shell_file_name:
                     return os.path.abspath( os.path.join( root, name ) )
         return None
-    
+
     def get_env_shell_file_paths( self, elem ):
         # Currently only the following tag set is supported.
         #    <repository toolshed="http://localhost:9009/" name="package_numpy_1_7" owner="test" changeset_revision="c84c6a8be056">
@@ -65,7 +65,7 @@ class EnvManager( object ):
         repository_owner = elem.get( 'owner', None )
         changeset_revision = elem.get( 'changeset_revision', None )
         if toolshed and repository_name and repository_owner and changeset_revision:
-             # The protocol is not stored, but the port is if it exists.
+            # The protocol is not stored, but the port is if it exists.
             toolshed = common_util.remove_protocol_from_tool_shed_url( toolshed )
             repository = suc.get_repository_for_dependency_relationship( self.app,
                                                                          toolshed,
@@ -82,11 +82,10 @@ class EnvManager( object ):
                         tool_dependency = None
                         for tool_dependency in repository.tool_dependencies:
                             if tool_dependency.type == tool_dependency_type and \
-                                tool_dependency.name == tool_dependency_name and \
-                                tool_dependency.version == tool_dependency_version:
+                                    tool_dependency.name == tool_dependency_name and \
+                                    tool_dependency.version == tool_dependency_version:
                                 break
                         if tool_dependency:
-                            tool_dependency_key = '%s/%s' % ( tool_dependency_name, tool_dependency_version )
                             installation_directory = tool_dependency.installation_directory( self.app )
                             env_shell_file_path = self.get_env_shell_file_path( installation_directory )
                             if env_shell_file_path:
@@ -118,7 +117,7 @@ class EnvManager( object ):
                 ( str( toolshed ), str( repository_name ), str( repository_owner ), str( changeset_revision ) )
             log.debug( error_message )
         return env_shell_file_paths
-    
+
     def get_env_shell_file_paths_from_setup_environment_elem( self, all_env_shell_file_paths, elem, action_dict ):
         """
         Parse an XML tag set to discover all child repository dependency tags and define the path to an env.sh file associated

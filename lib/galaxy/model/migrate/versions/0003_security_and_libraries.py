@@ -1,13 +1,15 @@
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from sqlalchemy.exc import *
-from migrate import *
-from migrate.changeset import *
-
 import datetime
-now = datetime.datetime.utcnow
+import logging
+import sys
 
-import sys, logging
+from migrate import ForeignKeyConstraint
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, MetaData, String, Table, TEXT
+from sqlalchemy.exc import NoSuchTableError
+
+# Need our custom types, but don't import anything else from model
+from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -15,9 +17,6 @@ format = "%(name)s %(levelname)s %(asctime)s %(message)s"
 formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
-
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
 
 metadata = MetaData()
 
@@ -131,13 +130,13 @@ DefaultHistoryPermissions_table = Table( "default_history_permissions", metadata
 
 LibraryDataset_table = Table( "library_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id", use_alter=True, name="library_dataset_dataset_association_id_fk" ), nullable=True, index=True ),#current version of dataset, if null, there is not a current version selected
+    Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id", use_alter=True, name="library_dataset_dataset_association_id_fk" ), nullable=True, index=True ),  # current version of dataset, if null, there is not a current version selected
     Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
     Column( "order_id", Integer ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "name", TrimmedString( 255 ), key="_name" ), #when not None/null this will supercede display in library (but not when imported into user's history?)
-    Column( "info", TrimmedString( 255 ),  key="_info" ), #when not None/null this will supercede display in library (but not when imported into user's history?)
+    Column( "name", TrimmedString( 255 ), key="_name" ),  # when not None/null this will supercede display in library (but not when imported into user's history?)
+    Column( "info", TrimmedString( 255 ), key="_info" ),  # when not None/null this will supercede display in library (but not when imported into user's history?)
     Column( "deleted", Boolean, index=True, default=False ) )
 
 LibraryDatasetDatasetAssociation_table = Table( "library_dataset_dataset_association", metadata,
@@ -173,7 +172,7 @@ Library_table = Table( "library", metadata,
 
 LibraryFolder_table = Table( "library_folder", metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "parent_id", Integer, ForeignKey( "library_folder.id" ), nullable = True, index=True ),
+    Column( "parent_id", Integer, ForeignKey( "library_folder.id" ), nullable=True, index=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", TEXT ),
@@ -304,35 +303,35 @@ JobExternalOutputMetadata_table = Table( "job_external_output_metadata", metadat
     Column( "job_runner_external_pid", String( 255 ) ) )
 Index( "ix_jeom_library_dataset_dataset_association_id", JobExternalOutputMetadata_table.c.library_dataset_dataset_association_id )
 
+
 def upgrade(migrate_engine):
-    db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
     metadata.bind = migrate_engine
     # Load existing tables
     metadata.reflect()
 
     def nextval( table, col='id' ):
-        if migrate_engine.name == 'postgres':
+        if migrate_engine.name in ['postgres', 'postgresql']:
             return "nextval('%s_%s_seq')" % ( table, col )
-        elif migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
+        elif migrate_engine.name in ['mysql', 'sqlite']:
             return "null"
         else:
             raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
 
     def localtimestamp():
-       if migrate_engine.name == 'postgres' or migrate_engine.name == 'mysql':
-           return "LOCALTIMESTAMP"
-       elif migrate_engine.name == 'sqlite':
-           return "current_date || ' ' || current_time"
-       else:
-           raise Exception( 'Unable to convert data for unknown database type: %s' % db )
+        if migrate_engine.name in ['mysql', 'postgres', 'postgresql']:
+            return "LOCALTIMESTAMP"
+        elif migrate_engine.name == 'sqlite':
+            return "current_date || ' ' || current_time"
+        else:
+            raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
 
     def boolean_false():
-       if migrate_engine.name == 'postgres' or migrate_engine.name == 'mysql':
-           return False
-       elif migrate_engine.name == 'sqlite':
-           return 0
-       else:
-           raise Exception( 'Unable to convert data for unknown database type: %s' % db )
+        if migrate_engine.name in ['mysql', 'postgres', 'postgresql']:
+            return False
+        elif migrate_engine.name == 'sqlite':
+            return 0
+        else:
+            raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
 
     # Add 2 new columns to the galaxy_user table
     try:
@@ -441,7 +440,7 @@ def upgrade(migrate_engine):
         LibraryDatasetDatasetAssociation_table = None
         log.debug( "Failed loading table library_dataset_dataset_association" )
     if migrate_engine.name != 'sqlite':
-        #Sqlite can't alter table add foreign key.
+        # Sqlite can't alter table add foreign key.
         if MetadataFile_table is not None and LibraryDatasetDatasetAssociation_table is not None:
             try:
                 cons = ForeignKeyConstraint( [MetadataFile_table.c.lda_id],
@@ -453,10 +452,10 @@ def upgrade(migrate_engine):
                 log.debug( "Adding foreign key constraint 'metadata_file_lda_id_fkey' to table 'metadata_file' failed: %s" % ( str( e ) ) )
     # Make sure we have at least 1 user
     cmd = "SELECT * FROM galaxy_user;"
-    users = db_session.execute( cmd ).fetchall()
+    users = migrate_engine.execute( cmd ).fetchall()
     if users:
         cmd = "SELECT * FROM role;"
-        roles = db_session.execute( cmd ).fetchall()
+        roles = migrate_engine.execute( cmd ).fetchall()
         if not roles:
             # Create private roles for each user - pass 1
             cmd = \
@@ -471,13 +470,13 @@ def upgrade(migrate_engine):
                 "FROM galaxy_user " + \
                 "ORDER BY id;"
             cmd = cmd % ( nextval('role'), localtimestamp(), localtimestamp(), boolean_false() )
-            db_session.execute( cmd )
+            migrate_engine.execute( cmd )
             # Create private roles for each user - pass 2
-            if migrate_engine.name == 'postgres' or migrate_engine.name == 'sqlite':
+            if migrate_engine.name in ['postgres', 'postgresql', 'sqlite']:
                 cmd = "UPDATE role SET description = 'Private role for ' || description;"
             elif migrate_engine.name == 'mysql':
                 cmd = "UPDATE role SET description = CONCAT( 'Private role for ', description );"
-            db_session.execute( cmd )
+            migrate_engine.execute( cmd )
             # Create private roles for each user - pass 3
             cmd = \
                 "INSERT INTO user_role_association " + \
@@ -490,7 +489,7 @@ def upgrade(migrate_engine):
                 "WHERE galaxy_user.email = role.name " + \
                 "ORDER BY galaxy_user.id;"
             cmd = cmd % ( nextval('user_role_association'), localtimestamp(), localtimestamp() )
-            db_session.execute( cmd )
+            migrate_engine.execute( cmd )
             # Create default permissions for each user
             cmd = \
                 "INSERT INTO default_user_permissions " + \
@@ -502,7 +501,7 @@ def upgrade(migrate_engine):
                 "JOIN user_role_association ON user_role_association.user_id = galaxy_user.id " + \
                 "ORDER BY galaxy_user.id;"
             cmd = cmd % nextval('default_user_permissions')
-            db_session.execute( cmd )
+            migrate_engine.execute( cmd )
             # Create default history permissions for each active history associated with a user
 
             cmd = \
@@ -515,7 +514,7 @@ def upgrade(migrate_engine):
                 "JOIN user_role_association ON user_role_association.user_id = history.user_id " + \
                 "WHERE history.purged = %s AND history.user_id IS NOT NULL;"
             cmd = cmd % ( nextval('default_history_permissions'), boolean_false() )
-            db_session.execute( cmd )
+            migrate_engine.execute( cmd )
             # Create "manage permissions" dataset_permissions for all activate-able datasets
             cmd = \
                 "INSERT INTO dataset_permissions " + \
@@ -531,23 +530,11 @@ def upgrade(migrate_engine):
                 "JOIN user_role_association ON user_role_association.user_id = history.user_id " + \
                 "WHERE dataset.purged = %s AND history.user_id IS NOT NULL;"
             cmd = cmd % ( nextval('dataset_permissions'), localtimestamp(), localtimestamp(), boolean_false() )
-            db_session.execute( cmd )
+            migrate_engine.execute( cmd )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
-    if migrate_engine.name == 'postgres':
-        # http://blog.pythonisito.com/2008/01/cascading-drop-table-with-sqlalchemy.html
-        from sqlalchemy.databases import postgres
-        class PGCascadeSchemaDropper(postgres.PGSchemaDropper):
-            def visit_table(self, table):
-                for column in table.columns:
-                    if column.default is not None:
-                        self.traverse_single(column.default)
-                self.append("\nDROP TABLE " +
-                            self.preparer.format_table(table) +
-                            " CASCADE")
-                self.execute()
-        postgres.dialect.schemadropper = PGCascadeSchemaDropper
     # Load existing tables
     metadata.reflect()
     # NOTE: all new data added in the upgrade method is eliminated here via table drops

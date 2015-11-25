@@ -3,7 +3,6 @@ import os
 import threading
 
 from tool_shed.galaxy_install.tools import tool_panel_manager
-
 from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
@@ -61,8 +60,8 @@ class DataManagerHandler( object ):
                 if elem.tag == 'data_manager':
                     data_manager_id = elem.get( 'id', None )
                     if data_manager_id is None:
-                        log.error( "A data manager was defined that does not have an id and will not be installed:\n%s" % \
-                                    xml_util.xml_to_string( elem ) )
+                        log.error( "A data manager was defined that does not have an id and will not be installed:\n%s" %
+                                   xml_util.xml_to_string( elem ) )
                         continue
                     data_manager_dict = metadata_dict['data_manager'].get( 'data_managers', {} ).get( data_manager_id, None )
                     if data_manager_dict is None:
@@ -79,12 +78,12 @@ class DataManagerHandler( object ):
                         continue
                     tool_dict = repository_tools_by_guid.get( tool_guid, None )
                     if tool_dict is None:
-                        log.error( "Data manager tool guid '%s' could not be found for '%s'. Perhaps the tool is invalid?" % \
-                                    ( tool_guid, data_manager_id ) )
+                        log.error( "Data manager tool guid '%s' could not be found for '%s'. Perhaps the tool is invalid?" %
+                                   ( tool_guid, data_manager_id ) )
                         continue
                     tool = tool_dict.get( 'tool', None )
                     if tool is None:
-                        log.error( "Data manager tool with guid '%s' could not be found for '%s'. Perhaps the tool is invalid?" % \
+                        log.error( "Data manager tool with guid '%s' could not be found for '%s'. Perhaps the tool is invalid?" %
                                    ( tool_guid, data_manager_id ) )
                         continue
                     tool_config_filename = tool_dict.get( 'tool_config_filename', None )
@@ -93,7 +92,7 @@ class DataManagerHandler( object ):
                         continue
                     elem.set( 'shed_conf_file', shed_config_dict['config_filename'] )
                     if elem.get( 'tool_file', None ) is not None:
-                        del elem.attrib[ 'tool_file' ] #remove old tool_file info
+                        del elem.attrib[ 'tool_file' ]  # remove old tool_file info
                     tool_elem = tpm.generate_tool_elem( repository.tool_shed,
                                                         repository.name,
                                                         repository.installed_changeset_revision,

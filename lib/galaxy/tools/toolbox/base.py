@@ -5,10 +5,7 @@ import string
 import tarfile
 import tempfile
 
-from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
 
 from galaxy.model.item_attrs import Dictifiable
@@ -108,13 +105,14 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
         .. raw:: xml
 
             <toolbox>
-                <tool file="data_source/upload.xml"/>            # tools outside sections
-                <label text="Basic Tools" id="basic_tools" />    # labels outside sections
-                <workflow id="529fd61ab1c6cc36" />               # workflows outside sections
-                <section name="Get Data" id="getext">            # sections
-                    <tool file="data_source/biomart.xml" />      # tools inside sections
-                    <label text="In Section" id="in_section" />  # labels inside sections
-                    <workflow id="adb5f5c93f827949" />           # workflows inside sections
+                <tool file="data_source/upload.xml"/>                 # tools outside sections
+                <label text="Basic Tools" id="basic_tools" />         # labels outside sections
+                <workflow id="529fd61ab1c6cc36" />                    # workflows outside sections
+                <section name="Get Data" id="getext">                 # sections
+                    <tool file="data_source/biomart.xml" />           # tools inside sections
+                    <label text="In Section" id="in_section" />       # labels inside sections
+                    <workflow id="adb5f5c93f827949" />                # workflows inside sections
+                    <tool file="data_source/foo.xml" labels="beta" /> # label for a single tool
                 </section>
             </toolbox>
 
@@ -619,6 +617,10 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                 self.__add_tool( tool, load_panel_dict, panel_dict )
             # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
             integrated_panel_dict.update_or_append( index, key, tool )
+            # If labels were specified in the toolbox config, attach them to
+            # the tool.
+            if "labels" in elem.attrib:
+                tool.labels = [ label.strip() for label in elem.attrib["labels"].split( "," ) ]
         except IOError:
             log.error( "Error reading tool configuration file from path: %s." % path )
         except Exception:
@@ -740,6 +742,10 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
             # to monitor such a large directory.
             self._tool_watcher.watch_file( config_file, tool.id )
         return tool
+
+    def load_hidden_lib_tool( self, path ):
+        tool_xml = os.path.join( os.getcwd(), "lib", path )
+        return self.load_hidden_tool( tool_xml )
 
     def load_hidden_tool( self, config_file, **kwds ):
         """ Load a hidden tool (in this context meaning one that does not
@@ -912,9 +918,9 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
             #  _tools_by_id and _tool_versions_by_id
             self.register_tool( new_tool )
             message = "Reloaded the tool:<br/>"
-            message += "<b>name:</b> %s<br/>" % old_tool.name
-            message += "<b>id:</b> %s<br/>" % old_tool.id
-            message += "<b>version:</b> %s" % old_tool.version
+            message += "<b>name:</b> %s<br/>" % escape( old_tool.name )
+            message += "<b>id:</b> %s<br/>" % escape( old_tool.id )
+            message += "<b>version:</b> %s" % escape( old_tool.version )
             status = 'done'
         return message, status
 
@@ -946,9 +952,9 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                     del self.data_manager_tools[ tool_id ]
             # TODO: do we need to manually remove from the integrated panel here?
             message = "Removed the tool:<br/>"
-            message += "<b>name:</b> %s<br/>" % tool.name
-            message += "<b>id:</b> %s<br/>" % tool.id
-            message += "<b>version:</b> %s" % tool.version
+            message += "<b>name:</b> %s<br/>" % escape( tool.name )
+            message += "<b>id:</b> %s<br/>" % escape( tool.id )
+            message += "<b>version:</b> %s" % escape( tool.version )
             status = 'done'
         return message, status
 

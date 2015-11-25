@@ -1,3 +1,6 @@
+import json
+import re
+
 from galaxy.exceptions import ObjectInvalid
 from galaxy.model import LibraryDatasetDatasetAssociation
 from galaxy import model
@@ -238,14 +241,19 @@ class DefaultToolAction( object ):
                 assert data is not None
                 out_data[name] = data
             else:
-                ext = determine_output_format( output, wrapped_params.params, inp_data, input_ext )
-                data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, sa_session=trans.sa_session )
+                ext = determine_output_format(
+                    output,
+                    wrapped_params.params,
+                    inp_data,
+                    inp_dataset_collections,
+                    input_ext
+                )
+                data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, flush=False )
                 if output.hidden:
                     data.visible = False
-                # Commit the dataset immediately so it gets database assigned unique id
                 trans.sa_session.add( data )
+                trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions, new=True )
                 trans.sa_session.flush()
-                trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions )
 
             object_store_populator.set_object_store_id( data )
 
@@ -280,6 +288,8 @@ class DefaultToolAction( object ):
                 output_action_params.update( incoming )
                 output.actions.apply_action( data, output_action_params )
             # Store all changes to database
+            # Updates at least state, blurb, and name. Does a query before
+            # hand I don't know why...
             trans.sa_session.flush()
             return data
 
@@ -368,7 +378,9 @@ class DefaultToolAction( object ):
             if name not in child_dataset_names and name not in incoming:  # don't add children; or already existing datasets, i.e. async created
                 data = out_data[ name ]
                 if set_output_history:
-                    history.add_dataset( data, set_hid=set_output_hid )
+                    # Set HID and add to history.
+                    # This is brand new and certainly empty so don't worry about quota.
+                    history.add_dataset( data, set_hid=set_output_hid, quota=False )
                 trans.sa_session.add( data )
                 trans.sa_session.flush()
         # Add all the children to their parents
@@ -441,6 +453,9 @@ class DefaultToolAction( object ):
                     assert old_job.session_id == galaxy_session.id, '(%s/%s): Old session id (%s) does not match rerun session id (%s)' % (old_job.id, job.id, old_job.session_id, galaxy_session.id)
                 else:
                     raise Exception('(%s/%s): Remapping via the API is not (yet) supported' % (old_job.id, job.id))
+                # Duplicate PJAs before remap.
+                for pjaa in old_job.post_job_actions:
+                    job.add_post_job_action(pjaa.post_job_action)
                 for jtod in old_job.output_datasets:
                     for (job_to_remap, jtid) in [(jtid.job, jtid) for jtid in jtod.dataset.dependent_jobs]:
                         if (trans.user is not None and job_to_remap.user_id == trans.user.id) or (trans.user is None and job_to_remap.session_id == galaxy_session.id):
@@ -559,7 +574,7 @@ def filter_output(output, incoming):
     return False
 
 
-def determine_output_format(output, parameter_context, input_datasets, random_input_ext):
+def determine_output_format(output, parameter_context, input_datasets, input_dataset_collections, random_input_ext):
     """ Determines the output format for a dataset based on an abstract
     description of the output (galaxy.tools.ToolOutput), the parameter
     wrappers, a map of the input datasets (name => HDA), and the last input
@@ -572,13 +587,31 @@ def determine_output_format(output, parameter_context, input_datasets, random_in
     ext = output.format
     if ext == "input":
         ext = random_input_ext
-    if output.format_source is not None and output.format_source in input_datasets:
+    format_source = output.format_source
+    if format_source is not None and format_source in input_datasets:
         try:
             input_dataset = input_datasets[output.format_source]
             input_extension = input_dataset.ext
             ext = input_extension
         except Exception:
             pass
+    elif format_source is not None:
+        if re.match(r"^[^\[\]]*\[[^\[\]]*\]$", format_source):
+            collection_name, element_index = format_source[0:-1].split("[")
+            # Treat as json to interpret "forward" vs 0 with type
+            # Make it feel more like Python, single quote better in XML also.
+            element_index = element_index.replace("'", '"')
+            element_index = json.loads(element_index)
+
+            if collection_name in input_dataset_collections:
+                try:
+                    input_collection = input_dataset_collections[collection_name][0]
+                    input_dataset = input_collection.collection[element_index].element_object
+                    input_extension = input_dataset.ext
+                    ext = input_extension
+                except Exception, e:
+                    log.debug("Exception while trying to determine format_source: %s", e)
+                    pass
 
     # process change_format tags
     if output.change_format is not None:

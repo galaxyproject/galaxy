@@ -2,9 +2,8 @@ from __future__ import absolute_import
 
 import logging
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import false
+from markupsafe import escape
 
 from galaxy import model, util
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, web
@@ -19,19 +18,19 @@ class RequestTypeGrid( grids.Grid ):
     # Custom column types
     class NameColumn( grids.TextColumn ):
         def get_value(self, trans, grid, request_type):
-            return request_type.name
+            return escape(request_type.name)
 
     class DescriptionColumn( grids.TextColumn ):
         def get_value(self, trans, grid, request_type):
-            return request_type.desc
+            return escape(request_type.desc)
 
     class RequestFormColumn( grids.TextColumn ):
         def get_value(self, trans, grid, request_type):
-            return request_type.request_form.name
+            return escape(request_type.request_form.name)
 
     class SampleFormColumn( grids.TextColumn ):
         def get_value(self, trans, grid, request_type):
-            return request_type.sample_form.name
+            return escape(request_type.sample_form.name)
 
     class ExternalServiceColumn( grids.IntegerColumn ):
         def get_value(self, trans, grid, request_type):

@@ -142,7 +142,9 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
     def __show_dataset( self, trans, id, **kwd ):
         hda = self.hda_manager.get_accessible( self.decode_id( id ), trans.user )
         return self.hda_serializer.serialize_to_view( hda,
-                                                      user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+                                                      user=trans.user,
+                                                      trans=trans,
+                                                      **self._parse_serialization_params( kwd, 'detailed' ) )
 
     def __show_dataset_collection( self, trans, id, history_id, **kwd ):
         try:
@@ -346,7 +348,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         :type   history_id: str
         :param  history_id: encoded id string of the HDA's History
         :type   id:         str
-        :param  id:         the encoded id of the history to undelete
+        :param  id:         the encoded id of the history to update
         :type   payload:    dict
         :param  payload:    a dictionary containing any or all the
             fields in :func:`galaxy.model.HistoryDatasetAssociation.to_dict`

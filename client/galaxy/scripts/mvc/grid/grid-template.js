@@ -213,7 +213,7 @@ return {
                         } else {
                             label_class = 'use-outbound';
                         }
-                        tmpl += '<a class="label ' + label_class + '" href="' + link + '" onclick="return false;">' + value + '</a>';
+                        tmpl += '<a class="menubutton-label ' + label_class + '" href="' + link + '" onclick="return false;">' + value + '</a>';
                         if (options.operations.length != 0) {
                             tmpl += '</div>';
                         }

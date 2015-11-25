@@ -100,11 +100,10 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
         if not trans.user_is_admin():
             raise exceptions.AdminRequiredException( 'You are not authorized to request the latest installable revision for a repository in this Galaxy instance.' )
-        params = '?name=%s&owner=%s' % ( name, owner )
-        url = common_util.url_join( tool_shed_url,
-                                    'api/repositories/get_ordered_installable_revisions%s' % params )
+        params = dict(name=name, owner=owner)
+        pathspec = ['api', 'repositories', 'get_ordered_installable_revisions']
         try:
-            raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
+            raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, pathspec, params )
         except Exception, e:
             message = "Error attempting to retrieve the latest installable revision from tool shed %s for repository %s owned by %s: %s" % \
                 ( str( tool_shed_url ), str( name ), str( owner ), str( e ) )
@@ -251,8 +250,10 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                                               action='show',
                                                               id=trans.security.encode_id( tool_shed_repository.id ) )
             return tool_shed_repository_dict
-
-        return map( to_dict, installed_tool_shed_repositories )
+        if installed_tool_shed_repositories:
+            return map( to_dict, installed_tool_shed_repositories )
+        message = "No repositories were installed, possibly because the selected repository has already been installed."
+        return dict( status="ok", message=message )
 
     @expose_api
     def install_repository_revisions( self, trans, payload, **kwd ):
@@ -313,17 +314,16 @@ class ToolShedRepositoriesController( BaseAPIController ):
         shed_tool_conf = payload.get( 'shed_tool_conf', None )
         tool_panel_section_id = payload.get( 'tool_panel_section_id', '' )
         all_installed_tool_shed_repositories = []
-        for index, tool_shed_url in enumerate( tool_shed_urls ):
-            current_payload = {}
-            current_payload[ 'tool_shed_url' ] = tool_shed_url
-            current_payload[ 'name' ] = names[ index ]
-            current_payload[ 'owner' ] = owners[ index ]
-            current_payload[ 'changeset_revision' ] = changeset_revisions[ index ]
-            current_payload[ 'new_tool_panel_section_label' ] = new_tool_panel_section_label
-            current_payload[ 'tool_panel_section_id' ] = tool_panel_section_id
-            current_payload[ 'install_repository_dependencies' ] = install_repository_dependencies
-            current_payload[ 'install_tool_dependencies' ] = install_tool_dependencies
-            current_payload[ 'shed_tool_conf' ] = shed_tool_conf
+        for tool_shed_url, name, owner, changeset_revision in zip( tool_shed_urls, names, owners, changeset_revisions ):
+            current_payload = dict( tool_shed_url=tool_shed_url,
+                                    name=name,
+                                    owner=owner,
+                                    changeset_revision=changeset_revision,
+                                    new_tool_panel_section_label=new_tool_panel_section_label,
+                                    tool_panel_section_id=tool_panel_section_id,
+                                    install_repository_dependencies=install_repository_dependencies,
+                                    install_tool_dependencies=install_tool_dependencies,
+                                    shed_tool_conf=shed_tool_conf )
             installed_tool_shed_repositories = self.install_repository_revision( trans, **current_payload )
             if isinstance( installed_tool_shed_repositories, dict ):
                 # We encountered an error.
@@ -349,11 +349,11 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Get the information about the repository to be installed from the payload.
         tool_shed_url, name, owner, changeset_revision = self.__parse_repository_from_payload( payload, include_changeset=True )
         tool_shed_repositories = []
-        tool_shed_repository = suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( trans.app,
-                                                                                                   tool_shed_url,
-                                                                                                   name,
-                                                                                                   owner,
-                                                                                                   changeset_revision )
+        tool_shed_repository = suc.get_installed_repository( trans.app,
+                                                             tool_shed=tool_shed_url,
+                                                             name=name,
+                                                             owner=owner,
+                                                             changeset_revision=changeset_revision )
         rrm = RepairRepositoryManager( trans.app )
         repair_dict = rrm.get_repair_dict( tool_shed_repository )
         ordered_tsr_ids = repair_dict.get( 'ordered_tsr_ids', [] )

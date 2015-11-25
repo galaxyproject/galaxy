@@ -1,17 +1,15 @@
 """
 Migration script to add 'object_store_id' column to various tables
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import logging
-log = logging.getLogger( __name__ )
+
+from sqlalchemy import Column, MetaData, Table
+
 from galaxy.model.custom_types import TrimmedString
 
+log = logging.getLogger( __name__ )
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -26,6 +24,7 @@ def upgrade(migrate_engine):
         except Exception, e:
             print "Adding object_store_id column to %s table failed: %s" % ( t_name, str( e ) )
             log.debug( "Adding object_store_id column to %s table failed: %s" % ( t_name, str( e ) ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

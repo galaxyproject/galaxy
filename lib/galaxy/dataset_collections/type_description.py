@@ -102,6 +102,10 @@ class CollectionTypeDescription( object ):
     def rank_type_plugin( self ):
         return self.collection_type_description_factory.type_registry.get( self.rank_collection_type() )
 
+    def multiply( self, other_collection_type ):
+        collection_type = map_over_collection_type( self, other_collection_type )
+        return self.collection_type_description_factory.for_collection_type( collection_type )
+
     def __str__( self ):
         return "CollectionTypeDescription[%s]" % self.collection_type
 

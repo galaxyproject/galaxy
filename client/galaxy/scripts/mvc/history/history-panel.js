@@ -24,6 +24,8 @@ define([
     BASE_MVC,
     _l
 ){
+
+var logNamespace = 'history';
 // ============================================================================
 /** session storage for individual history preferences */
 var HistoryPrefs = BASE_MVC.SessionStorageModel.extend(
@@ -92,9 +94,7 @@ TODO:
 var _super = LIST_PANEL.ModelListPanel;
 var HistoryPanel = _super.extend(
 /** @lends HistoryPanel.prototype */{
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
+    _logNamespace : logNamespace,
 
     /** class to use for constructing the HDA views */
     HDAViewClass        : HDA_LI.HDAListItemView,
@@ -457,7 +457,7 @@ var HistoryPanel = _super.extend(
                 panel.$el.find( inputSelector ).searchInput( 'toggle-loading' );
             })
             .done( function(){
-                panel.searchItems( searchFor );
+                panel.searchItems( panel.searchFor );
             });
     },
 
@@ -629,10 +629,10 @@ HistoryPanel.prototype.templates = (function(){
     var controlsTemplate = BASE_MVC.wrapTemplate([
         '<div class="controls">',
             '<div class="title">',
-                '<div class="name"><%= history.name %></div>',
+                '<div class="name"><%- history.name %></div>',
             '</div>',
             '<div class="subtitle"></div>',
-            '<div class="history-size"><%= history.nice_size %></div>',
+            '<div class="history-size"><%- history.nice_size %></div>',
 
             '<div class="actions"></div>',
 

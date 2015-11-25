@@ -1,5 +1,6 @@
 from string import Template
 from pkg_resources import resource_string
+from galaxy.util import unicodify
 
 DEFAULT_JOB_FILE_TEMPLATE = Template(
     resource_string(__name__, 'DEFAULT_JOB_FILE_TEMPLATE.sh').decode('UTF-8')
@@ -15,6 +16,7 @@ GALAXY_SLOTS="1"
 REQUIRED_TEMPLATE_PARAMS = ['working_directory', 'command', 'exit_code_path']
 OPTIONAL_TEMPLATE_PARAMS = {
     'galaxy_lib': None,
+    'galaxy_virtual_env': None,
     'headers': '',
     'env_setup_commands': [],
     'slots_statement': SLOTS_STATEMENT_CLUSTER_DEFAULT,
@@ -60,6 +62,8 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     template_params.update(**kwds)
     env_setup_commands_str = "\n".join(template_params["env_setup_commands"])
     template_params["env_setup_commands"] = env_setup_commands_str
+    for key, value in template_params.items():
+        template_params[key] = unicodify(value)
     if not isinstance(template, Template):
         template = Template(template)
     return template.safe_substitute(template_params)

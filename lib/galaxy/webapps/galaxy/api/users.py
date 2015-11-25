@@ -4,13 +4,10 @@ API operations on User objects.
 
 import logging
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import false, true
 
-from galaxy import exceptions
-from galaxy import util
-from galaxy import web
+from galaxy import exceptions, util, web
+from galaxy.managers import users
 from galaxy.security.validate_user_input import validate_email
 from galaxy.security.validate_user_input import validate_password
 from galaxy.security.validate_user_input import validate_publicname
@@ -25,6 +22,11 @@ log = logging.getLogger( __name__ )
 
 
 class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, CreatesApiKeysMixin ):
+
+    def __init__(self, app):
+        super(UserAPIController, self).__init__(app)
+        self.user_manager = users.UserManager(app)
+        self.user_serializer = users.UserSerializer( app )
 
     @expose_api
     def index( self, trans, deleted='False', f_email=None, **kwd ):
@@ -91,16 +93,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                 assert not user.deleted
         except:
             raise exceptions.RequestParameterInvalidException( 'Invalid user id specified', id=id )
-
-        item = user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
-                                                            'total_disk_usage': float } )
-        # add a list of tags used by the user (as strings)
-        item[ 'tags_used' ] = self.get_user_tags_used( trans, user=user )
-        # TODO: move into api_values (needs trans, tho - can we do that with api_keys/@property??)
-        # TODO: works with other users (from admin)??
-        item[ 'quota_percent' ] = trans.app.quota_agent.get_percent( trans=trans )
-        item[ 'is_admin' ] = trans.user_is_admin()
-        return item
+        return self.user_serializer.serialize_to_view(user, view='detailed')
 
     @expose_api
     def create( self, trans, payload, **kwd ):
@@ -145,10 +138,29 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         raise exceptions.NotImplemented()
 
     @expose_api
-    def delete( self, trans, **kwd ):
-        raise exceptions.NotImplemented()
+    @web.require_admin
+    def delete( self, trans, id, **kwd ):
+        """
+        DELETE /api/users/{id}
+        delete the user with the given ``id``
+
+        :param id: the encoded id of the user to delete
+        :type  id: str
+
+        :param purge: (optional) if True, purge the user
+        :type  purge: bool
+        """
+        if not trans.app.config.allow_user_deletion:
+            raise exceptions.ConfigDoesNotAllowException( 'The configuration of this Galaxy instance does not allow admins to delete users.' )
+        purge = util.string_as_bool(kwd.get('purge', False))
+        if purge:
+            raise exceptions.NotImplemented('Purge option has not been implemented yet')
+        user = self.get_user(trans, id)
+        self.user_manager.delete(user)
+        return self.user_serializer.serialize_to_view(user, view='detailed')
 
     @expose_api
+    @web.require_admin
     def undelete( self, trans, **kwd ):
         raise exceptions.NotImplemented()
 

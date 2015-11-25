@@ -20,11 +20,8 @@ new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] ) # remove scripts/ from the path
 sys.path = new_path
 
-from galaxy import eggs
 import galaxy.model.mapping
 from galaxy import config, model
-import pkg_resources
-pkg_resources.require( "SQLAlchemy >= 0.4" )
 
 def main( ini_file ):
     sa_session, gconfig = get_sa_session( ini_file )

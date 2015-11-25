@@ -1,14 +1,15 @@
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from sqlalchemy.exc import *
-from migrate import *
-from migrate.changeset import *
 import datetime
-now = datetime.datetime.utcnow
-import sys, logging
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
+import logging
+import sys
 
+from migrate import ForeignKeyConstraint
+from sqlalchemy import Column, Integer, MetaData, Table
+from sqlalchemy.exc import NoSuchTableError
+
+# Need our custom types, but don't import anything else from model
+from galaxy.model.custom_types import JSONType, TrimmedString
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -16,8 +17,8 @@ format = "%(name)s %(levelname)s %(asctime)s %(message)s"
 formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
-
 metadata = MetaData()
+
 
 def display_migration_details():
     print "========================================"
@@ -25,6 +26,7 @@ def display_migration_details():
 key to the library_folder table. This also adds a 'type' and 'layout' column
 to the form_definition table."""
     print "========================================"
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine

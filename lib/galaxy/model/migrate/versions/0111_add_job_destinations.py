@@ -1,19 +1,19 @@
 """
 Add support for job destinations to the job table
 """
+import logging
 
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
+from sqlalchemy import Column, MetaData, String, Table
+
 from galaxy.model.custom_types import JSONType
 
-import logging
 log = logging.getLogger( __name__ )
+
 
 def display_migration_details():
     print ""
     print "This migration script adds 'destination_id' and 'destination_params' columns to the Job table."
+
 
 def upgrade(migrate_engine):
     print __doc__
@@ -35,6 +35,7 @@ def upgrade(migrate_engine):
         assert c is Job_table.c.destination_params
     except Exception, e:
         log.error( "Adding column 'destination_params' to job table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata = MetaData()

@@ -2,9 +2,6 @@
 Custom exceptions for Galaxy
 """
 
-from galaxy import eggs
-eggs.require( "Paste" )
-
 from ..exceptions import error_codes
 
 

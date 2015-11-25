@@ -1,0 +1,64 @@
+# packages with C extensions
+bx-python==0.7.3
+MarkupSafe==0.23
+PyYAML==3.11
+SQLAlchemy==1.0.8
+mercurial==3.5
+numpy==1.9.2
+pycrypto==2.6.1
+python_lzo==1.8
+
+# extra functionality from Dannon
+pysam==0.8.3+gx1
+
+# pure Python packages
+Paste==1.7.5.1
+PasteDeploy==1.5.2
+docutils==0.12
+wchartype==0.1
+repoze.lru==0.6
+Routes==2.2
+WebOb==1.4.1
+WebHelpers==1.3
+Mako==1.0.2
+pytz==2015.4
+Babel==2.0
+Beaker==1.7.0
+
+# Cheetah and dependencies
+Cheetah==2.4.4
+Markdown==2.6.3
+
+# BioBlend and dependencies
+bioblend==0.6.1
+boto==2.38.0
+requests==2.8.1
+requests-toolbelt==0.4.0
+
+# kombu and dependencies
+kombu==3.0.26
+amqp==1.4.6
+anyjson==0.3.3
+
+# sqlalchemy-migrate and dependencies
+sqlalchemy-migrate==0.10.0
+decorator==4.0.2
+Tempita==0.5.3dev
+sqlparse==0.1.16
+pbr==1.8.0
+six==1.9.0 # six is also a Pulsar client dep
+Parsley==1.3
+nose==1.3.7
+SVGFig==1.1.6
+
+# Fabric and dependencies
+Fabric==1.10.2
+paramiko==1.15.2
+ecdsa==0.13
+# pycrypto, but it is a direct Galaxy dependency as well
+
+# Can't use Whoosh latest due to a bug but need to backport a bugfix from a
+# newer release.
+#
+# https://bitbucket.org/mchaput/whoosh/pull-requests/50/fix-lru-thread-safety/diff
+Whoosh==2.4.1+gx1

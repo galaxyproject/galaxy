@@ -1,23 +1,24 @@
 """
 Tabular datatype
-
 """
-import pkg_resources
-pkg_resources.require( "bx-python" )
+import csv
 import gzip
 import logging
 import os
-import csv
+import re
+import tempfile
+import subprocess
+
 from cgi import escape
+
 from galaxy import util
-from galaxy.datatypes import data
-from galaxy.datatypes import metadata
+from galaxy.datatypes import data, metadata
 from galaxy.datatypes.checkers import is_gzip
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers
 from galaxy.util.json import dumps
+
 import dataproviders
-import re
 
 log = logging.getLogger(__name__)
 
@@ -37,8 +38,8 @@ class TabularData( data.Text ):
     MetadataElement( name="column_names", default=[], desc="Column names", readonly=True, visible=False, optional=True, no_value=[] )
     MetadataElement( name="delimiter", default='\t', desc="Data delimiter", readonly=True, visible=False, optional=True, no_value=[] )
 
-    def set_peek( self, dataset, line_count=None, is_multi_byte=False):
-        super(TabularData, self).set_peek( dataset, line_count=line_count, is_multi_byte=is_multi_byte)
+    def set_peek( self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None ):
+        super(TabularData, self).set_peek( dataset, line_count=line_count, is_multi_byte=is_multi_byte, WIDTH=WIDTH, skipchars=skipchars)
         if dataset.metadata.comment_lines:
             dataset.blurb = "%s, %s comments" % ( dataset.blurb, util.commaify( str( dataset.metadata.comment_lines ) ) )
 
@@ -273,7 +274,7 @@ class Tabular( TabularData ):
                 if column_type2 == column_type:
                     return False
             # neither column type was found in our ordered list, this cannot happen
-            raise "Tried to compare unknown column types"
+            raise ValueError( "Tried to compare unknown column types: %s and %s" % ( column_type1, column_type2 ) )
 
         def is_int( column_text ):
             try:
@@ -693,6 +694,19 @@ class Vcf( Tabular ):
             # Found header line, get sample names.
             dataset.metadata.sample_names = line.split()[ 9: ]
 
+    @staticmethod
+    def merge(split_files, output_file):
+        stderr_f = tempfile.NamedTemporaryFile(prefix="bam_merge_stderr")
+        stderr_name = stderr_f.name
+        command = ["bcftools", "concat"] + split_files + ["-o", output_file]
+        log.info("Merging vcf files with command [%s]" % " ".join(command))
+        exit_code = subprocess.call( args=command, stderr=open( stderr_name, 'wb' ) )
+        with open(stderr_name, "rb") as f:
+            stderr = f.read().strip()
+        # Did merge succeed?
+        if exit_code != 0:
+            raise Exception("Error merging VCF files: %s" % stderr)
+
     # Dataproviders
     @dataproviders.decorators.dataprovider_factory( 'genomic-region',
                                                     dataproviders.dataset.GenomicRegionDataProvider.settings )
@@ -915,8 +929,6 @@ class CSV( TabularData ):
                 raise Exception('CSV reader error - line %d: %s' % (reader.line_num, e))
 
             # Guess column types
-            if len(header_row) != len(data_row):
-                raise ('mismatching number of columns in header and data')
             column_types = []
             for cell in data_row:
                 column_types.append(self.guess_type(cell))
@@ -925,7 +937,7 @@ class CSV( TabularData ):
             dataset.metadata.data_lines = reader.line_num - 1
             dataset.metadata.comment_lines = 1
             dataset.metadata.column_types = column_types
-            dataset.metadata.columns = len(header_row)
+            dataset.metadata.columns = max( len( header_row ), len( data_row ) )
             dataset.metadata.column_names = header_row
             dataset.metadata.delimiter = reader.dialect.delimiter
 

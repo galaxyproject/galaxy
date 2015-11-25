@@ -51,6 +51,14 @@ galaxy.datatypes.chrominfo module
     :undoc-members:
     :show-inheritance:
 
+galaxy.datatypes.constructive_solid_geometry module
+---------------------------------------------------
+
+.. automodule:: galaxy.datatypes.constructive_solid_geometry
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.datatypes.coverage module
 --------------------------------
 

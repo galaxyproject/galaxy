@@ -1,16 +1,16 @@
 """
 Migration script to add the tool_shed_repository table.
 """
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-import sys, logging
-from galaxy.model.custom_types import *
-from sqlalchemy.exc import *
 import datetime
-now = datetime.datetime.utcnow
+import logging
+import sys
 
+from sqlalchemy import Boolean, Column, DateTime, Integer, MetaData, Table, TEXT
+
+# Need our custom types, but don't import anything else from model
+from galaxy.model.custom_types import TrimmedString
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -33,6 +33,7 @@ ToolShedRepository_table = Table( "tool_shed_repository", metadata,
                                   Column( "changeset_revision", TrimmedString( 255 ), index=True ),
                                   Column( "deleted", Boolean, index=True, default=False ) )
 
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
@@ -41,6 +42,7 @@ def upgrade(migrate_engine):
         ToolShedRepository_table.create()
     except Exception, e:
         log.debug( "Creating tool_shed_repository table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

@@ -3,8 +3,6 @@ import os
 from datetime import datetime, timedelta
 from string import punctuation as PUNCTUATION
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false, func, or_
 
 import galaxy.queue_worker
@@ -100,7 +98,7 @@ class Admin( object ):
         toolbox = self.app.toolbox
         tool_id = None
         if params.get( 'reload_tool_button', False ):
-            tool_id = params.get('tool_id', None)
+            tool_id = kwd.get( 'tool_id', None )
             galaxy.queue_worker.send_control_task(trans.app, 'reload_tool', noop_self=True, kwargs={'tool_id': tool_id} )
             message, status = trans.app.toolbox.reload_tool_by_id( tool_id)
         return trans.fill_template( '/admin/reload_tool.mako',
@@ -315,7 +313,7 @@ class Admin( object ):
             else:
                 out_groups.append( ( group.id, group.name ) )
         library_dataset_actions = {}
-        if trans.webapp.name == 'galaxy':
+        if trans.webapp.name == 'galaxy' and len(role.dataset_actions) < 25:
             # Build a list of tuples that are LibraryDatasetDatasetAssociationss followed by a list of actions
             # whose DatasetPermissions is associated with the Role
             # [ ( LibraryDatasetDatasetAssociation [ action, action ] ) ]
@@ -341,6 +339,9 @@ class Admin( object ):
                         library_dataset_actions[ library ][ folder_path ].append( dp.action )
                     except:
                         library_dataset_actions[ library ][ folder_path ] = [ dp.action ]
+        else:
+            message = "Not showing associated datasets, there are too many."
+            status = 'info'
         return trans.fill_template( '/admin/dataset_security/role/role.mako',
                                     role=role,
                                     in_users=in_users,

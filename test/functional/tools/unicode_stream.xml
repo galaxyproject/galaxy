@@ -1,0 +1,41 @@
+<tool id="unicode_stream" name="unicode_stream" version="0.1.0">
+    <description>
+    </description>
+    <configfiles>
+        <configfile name="cf">ვეპხის ტყაოსანი შოთა რუსთაველი
+</configfile>
+    </configfiles>
+    <command detect_errors="exit_code">
+        echo '$input1' > $out_file1;
+        cat $cf;
+        >&amp;2 cat $cf;
+        sh -c "exit $exit"
+    </command>
+    <inputs>
+        <param name="input1" type="text" label="Input">
+            <sanitizer sanitize="False">
+            </sanitizer>
+        </param>
+        <param name="exit" type="integer" value="0" label="Exit Code" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test expect_exit_code="0" expect_failure="false">
+            <param name="input1" value="This is a line of text."/>
+            <param name="exit" value="0" />
+            <output name="out_file1" file="simple_line.txt" />
+        </test>
+        <test expect_exit_code="1" expect_failure="true">
+            <param name="input1" value="This is a line of text."/>
+            <param name="exit" value="1" />
+        </test>
+        <test expect_exit_code="0" expect_failure="false">
+            <param name="input1" value="ვვვვვ"/>
+            <param name="exit" value="0" />
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

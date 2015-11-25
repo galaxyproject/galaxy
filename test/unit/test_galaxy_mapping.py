@@ -230,6 +230,17 @@ class MappingTests( unittest.TestCase ):
         # self.assertEquals(len(loaded_dataset_collection.datasets), 2)
         # assert loaded_dataset_collection.collection_type == "pair"
 
+    def test_default_disk_usage( self ):
+        model = self.model
+
+        u = model.User( email="disk_default@test.com", password="password" )
+        self.persist( u )
+        u.adjust_total_disk_usage( 1 )
+        u_id = u.id
+        self.expunge()
+        user_reload = model.session.query( model.User ).get( u_id )
+        assert user_reload.disk_usage == 1
+
     def test_basic( self ):
         model = self.model
 
@@ -410,7 +421,7 @@ class MappingTests( unittest.TestCase ):
     @classmethod
     def setUpClass(cls):
         # Start the database and connect the mapping
-        cls.model = mapping.init( "/tmp", "sqlite:///:memory:", create_tables=True )
+        cls.model = mapping.init( "/tmp", "sqlite:///:memory:", create_tables=True, object_store=MockObjectStore() )
         assert cls.model.engine is not None
 
     @classmethod
@@ -437,6 +448,21 @@ class MappingTests( unittest.TestCase ):
     def expunge(cls):
         cls.model.session.flush()
         cls.model.session.expunge_all()
+
+
+class MockObjectStore(object):
+
+    def __init__(self):
+        pass
+
+    def size(self, dataset):
+        return 42
+
+    def exists(self, *args, **kwds):
+        return True
+
+    def get_filename(self, *args, **kwds):
+        return "dataest_14.dat"
 
 
 def get_suite():

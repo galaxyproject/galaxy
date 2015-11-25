@@ -13,7 +13,7 @@ from galaxy import managers
 from galaxy import web
 from galaxy.web import url_for
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.util import listify, Params, string_as_bool, string_as_bool_or_none
+from galaxy.util import listify, Params, string_as_bool
 
 import logging
 log = logging.getLogger( __name__ )
@@ -35,10 +35,16 @@ class RootController( BaseUIController, UsesAnnotations ):
         raise HTTPNotFound( 'This link may not be followed from within Galaxy.' )
 
     @web.expose
-    def index(self, trans, id=None, tool_id=None, mode=None, workflow_id=None, m_c=None, m_a=None, **kwd):
+    def index(self, trans, id=None, tool_id=None, mode=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd):
         """
         Called on the root url to display the main Galaxy page.
         """
+        if history_id is not None:
+            # Get history or throw exception.
+            unencoded_id = trans.security.decode_id( history_id )
+            history = self.history_manager.get_owned( unencoded_id, trans.user )
+            trans.set_history( history )
+
         return trans.fill_template( "root/index.mako",
                                     tool_id=tool_id,
                                     workflow_id=workflow_id,
@@ -93,53 +99,6 @@ class RootController( BaseUIController, UsesAnnotations ):
         else:
             yield "No additional help available for tool '%s'" % tool.name
         yield "</body></html>"
-
-    # ---- Root history display ---------------------------------------------
-    def history_as_xml( self, trans, show_deleted=None, show_hidden=None ):
-        if trans.app.config.require_login and not trans.user:
-            return trans.fill_template( '/no_access.mako', message='Please log in to access Galaxy histories.' )
-
-        history = trans.get_history( create=True )
-        trans.response.set_content_type('text/xml')
-        return trans.fill_template_mako(
-            "root/history_as_xml.mako",
-            history=history,
-            show_deleted=string_as_bool( show_deleted ),
-            show_hidden=string_as_bool( show_hidden ) )
-
-    @web.expose
-    def history( self, trans, as_xml=False, show_deleted=None, show_hidden=None, **kwd ):
-        """
-        Display the current history in its own page or as xml.
-        """
-        if as_xml:
-            return self.history_as_xml( trans,
-                                        show_deleted=string_as_bool( show_deleted ), show_hidden=string_as_bool( show_hidden ) )
-
-        if trans.app.config.require_login and not trans.user:
-            return trans.fill_template( '/no_access.mako', message='Please log in to access Galaxy histories.' )
-
-        # get all datasets server-side, client-side will get flags and render appropriately
-        show_deleted = string_as_bool_or_none( show_deleted )
-
-        history_dictionary = {}
-        content_dictionaries = []
-        try:
-            history = trans.get_history( create=True )
-            history_dictionary = self.history_serializer.serialize_to_view( history,
-                view='detailed', user=trans.user, trans=trans )
-            content_dictionaries = self.history_serializer.serialize_contents( history,
-                'contents', trans=trans, user=trans.user )
-
-        except Exception, exc:
-            user_id = str( trans.user.id ) if trans.user else '(anonymous)'
-            log.exception( 'Error bootstrapping history for user %s: %s', user_id, str( exc ) )
-            history_dictionary[ 'error' ] = ( 'An error occurred getting the history data from the server. ' +
-                                              'Please contact a Galaxy administrator if the problem persists.' )
-
-        return trans.fill_template_mako( "root/history.mako",
-            history=history_dictionary, contents=content_dictionaries,
-            show_deleted=show_deleted, show_hidden=show_hidden )
 
     # ---- Dataset display / editing ----------------------------------------
     @web.expose

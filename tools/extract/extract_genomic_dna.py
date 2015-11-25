@@ -5,34 +5,37 @@ usage: %prog $input $out_file1
     -d, --dbkey=N: Genome build of input file
     -o, --output_format=N: the data type of the output file
     -g, --GALAXY_DATA_INDEX_DIR=N: the directory containing alignseq.loc or twobit.loc
-    -I, --interpret_features: if true, complete features are interpreted when input is GFF 
+    -I, --interpret_features: if true, complete features are interpreted when input is GFF
     -F, --fasta=<genomic_sequences>: genomic sequences to use for extraction
     -G, --gff: input and output file, when it is interval, coordinates are treated as GFF format (1-based, half-open) rather than 'traditional' 0-based, closed format.
 """
-from galaxy import eggs
-import pkg_resources
-pkg_resources.require( "bx-python" )
-import sys, string, os, re, tempfile, subprocess
-from bx.cookbook import doc_optparse
-from bx.intervals.io import Header, Comment
+import os
+import subprocess
+import sys
+import tempfile
+
 import bx.seq.nib
 import bx.seq.twobit
-from galaxy.tools.util.galaxyops import *
-from galaxy.datatypes.util import gff_util
+from bx.cookbook import doc_optparse
+from bx.intervals.io import Header, Comment
 
-assert sys.version_info[:2] >= ( 2, 4 )
-    
+from galaxy.datatypes.util import gff_util
+from galaxy.tools.util.galaxyops import parse_cols_arg
+
+
 def stop_err( msg ):
     sys.stderr.write( msg )
     sys.exit()
 
+
 def reverse_complement( s ):
-    complement_dna = {"A":"T", "T":"A", "C":"G", "G":"C", "a":"t", "t":"a", "c":"g", "g":"c", "N":"N", "n":"n" }
+    complement_dna = {"A": "T", "T": "A", "C": "G", "G": "C", "a": "t", "t": "a", "c": "g", "g": "c", "N": "N", "n": "n"}
     reversed_s = []
     for i in s:
         reversed_s.append( complement_dna[i] )
     reversed_s.reverse()
     return "".join( reversed_s )
+
 
 def check_seq_file( dbkey, GALAXY_DATA_INDEX_DIR ):
     # Checks for the presence of *.nib files matching the dbkey within alignseq.loc
@@ -44,7 +47,7 @@ def check_seq_file( dbkey, GALAXY_DATA_INDEX_DIR ):
             if len( fields) >= 3 and fields[1] == dbkey:
                 print "Using *.nib genomic reference files"
                 return fields[2].strip()
-    
+
     # If no entry in aligseq.loc was found, check for the presence of a *.2bit file in twobit.loc
     seq_file = "%s/twobit.loc" % GALAXY_DATA_INDEX_DIR
     for line in open( seq_file ):
@@ -54,9 +57,10 @@ def check_seq_file( dbkey, GALAXY_DATA_INDEX_DIR ):
             if len(fields) >= 2 and fields[0] == dbkey:
                 print "Using a *.2bit genomic reference file"
                 return fields[1].strip()
-    
+
     return ''
-        
+
+
 def __main__():
     #
     # Parse options, args.
@@ -83,8 +87,7 @@ def __main__():
     includes_strand_col = strand_col >= 0
     strand = None
     nibs = {}
-    twobits = {}
-        
+
     #
     # Set path to sequence data.
     #
@@ -93,7 +96,7 @@ def __main__():
         try:
             seq_path = tempfile.NamedTemporaryFile( dir="." ).name
             cmd = "faToTwoBit %s %s" % ( fasta_file, seq_path )
-        
+
             tmp_name = tempfile.NamedTemporaryFile( dir="." ).name
             tmp_stderr = open( tmp_name, 'wb' )
             proc = subprocess.Popen( args=cmd, shell=True, stderr=tmp_stderr.fileno() )
@@ -115,7 +118,7 @@ def __main__():
 
             # Error checking.
             if returncode != 0:
-                raise Exception, stderr
+                raise Exception(stderr)
         except Exception, e:
             stop_err( 'Error running faToTwoBit. ' + str( e ) )
     else:
@@ -123,18 +126,18 @@ def __main__():
         if not os.path.exists( seq_path ):
             # If this occurs, we need to fix the metadata validator.
             stop_err( "No sequences are available for '%s', request them by reporting this error." % dbkey )
-    
+
     #
     # Fetch sequences.
     #
-    
+
     # Get feature's line(s).
     def get_lines( feature ):
         if isinstance( feature, gff_util.GFFFeature ):
             return feature.lines()
         else:
             return [ feature.rstrip( '\r\n' ) ]
-    
+
     skipped_lines = 0
     first_invalid_line = 0
     invalid_lines = []
@@ -198,7 +201,7 @@ def __main__():
             else:
                 continue
 
-        # Open sequence file and get sequence for feature/interval. 
+        # Open sequence file and get sequence for feature/interval.
         if seq_path and os.path.exists( "%s/%s.nib" % ( seq_path, chrom ) ):
             # TODO: improve support for GFF-nib interaction.
             if chrom in nibs:
@@ -206,9 +209,9 @@ def __main__():
             else:
                 nibs[chrom] = nib = bx.seq.nib.NibFile( file( "%s/%s.nib" % ( seq_path, chrom ) ) )
             try:
-                sequence = nib.get( start, end-start )
+                sequence = nib.get( start, end - start )
             except Exception, e:
-                warning = "Unable to fetch the sequence from '%d' to '%d' for build '%s'. " %( start, end-start, dbkey )
+                warning = "Unable to fetch the sequence from '%d' to '%d' for build '%s'. " % ( start, end - start, dbkey )
                 warnings.append( warning )
                 if not invalid_lines:
                     invalid_lines = get_lines( feature )
@@ -227,7 +230,7 @@ def __main__():
                 else:
                     sequence = twobitfile[chrom][start:end]
             except:
-                warning = "Unable to fetch the sequence from '%d' to '%d' for chrom '%s'. " %( start, end-start, chrom )
+                warning = "Unable to fetch the sequence from '%d' to '%d' for chrom '%s'. " % ( start, end - start, chrom )
                 warnings.append( warning )
                 if not invalid_lines:
                     invalid_lines = get_lines( feature )
@@ -243,8 +246,8 @@ def __main__():
             skipped_lines += len( invalid_lines )
             continue
         if sequence == '':
-            warning = "Chrom: '%s', start: '%s', end: '%s' is either invalid or not present in build '%s'. " \
-                        % ( chrom, start, end, dbkey )
+            warning = "Chrom: '%s', start: '%s', end: '%s' is either invalid or not present in build '%s'. " % \
+                ( chrom, start, end, dbkey )
             warnings.append( warning )
             if not invalid_lines:
                 invalid_lines = get_lines( feature )
@@ -269,14 +272,14 @@ def __main__():
                 b = min( c + 50, l )
                 fout.write( "%s\n" % str( sequence[c:b] ) )
                 c = b
-        else: # output_format == "interval"
+        else:  # output_format == "interval"
             if gff_format and interpret_features:
                 # TODO: need better GFF Reader to capture all information needed
                 # to produce this line.
-                meta_data = "\t".join( 
-                                [feature.chrom, "galaxy_extract_genomic_dna", "interval", \
-                                 str( feature.start ), str( feature.end ), feature.score, feature.strand,
-                                 ".", gff_util.gff_attributes_to_str( feature.attributes, "GTF" ) ] )
+                meta_data = "\t".join(
+                    [feature.chrom, "galaxy_extract_genomic_dna", "interval",
+                    str( feature.start ), str( feature.end ), feature.score, feature.strand,
+                    ".", gff_util.gff_attributes_to_str( feature.attributes, "GTF" ) ] )
             else:
                 meta_data = "\t".join( fields )
             if gff_format:
@@ -284,7 +287,7 @@ def __main__():
             else:
                 format_str = "%s\t%s\n"
             fout.write( format_str % ( meta_data, str( sequence ) ) )
-            
+
         # Update line count.
         if isinstance( feature, gff_util.GFFFeature ):
             line_count += len( feature.intervals )
@@ -300,10 +303,11 @@ def __main__():
     if skipped_lines:
         # Error message includes up to the first 10 skipped lines.
         print 'Skipped %d invalid lines, 1st is #%d, "%s"' % ( skipped_lines, first_invalid_line, '\n'.join( invalid_lines[:10] ) )
-        
+
     # Clean up temp file.
     if fasta_file:
         os.remove( seq_path )
         os.remove( tmp_name )
 
-if __name__ == "__main__": __main__()
+if __name__ == "__main__":
+    __main__()

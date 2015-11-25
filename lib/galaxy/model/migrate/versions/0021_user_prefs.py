@@ -1,17 +1,15 @@
 """
 This migration script adds a user preferences table to Galaxy.
 """
-
-from sqlalchemy import *
-from migrate import *
-
 import datetime
-now = datetime.datetime.utcnow
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table, Unicode
+
+now = datetime.datetime.utcnow
+log = logging.getLogger( __name__ )
 metadata = MetaData()
+
 
 def display_migration_details():
     print ""
@@ -27,6 +25,7 @@ UserPreference_table = Table( "user_preference", metadata,
                               Column( "name", Unicode( 255 ), index=True),
                               Column( "value", Unicode( 1024 ) ) )
 
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     display_migration_details()
@@ -36,6 +35,7 @@ def upgrade(migrate_engine):
     except Exception, e:
         print str(e)
         log.debug( "Creating user_preference table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

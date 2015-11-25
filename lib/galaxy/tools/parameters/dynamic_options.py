@@ -582,8 +582,8 @@ class DynamicOptions( object ):
     def get_fields( self, trans, other_values ):
         if self.dataset_ref_name:
             dataset = other_values.get( self.dataset_ref_name, None )
-            assert dataset is not None, "Required dataset '%s' missing from input" % self.dataset_ref_name
             if not dataset:
+                log.warn( "Required dataset '%s' missing from input" % self.dataset_ref_name )
                 return []  # no valid dataset in history
             # Ensure parsing dynamic options does not consume more than a megabyte worth memory.
             path = dataset.file_name

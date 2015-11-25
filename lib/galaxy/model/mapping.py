@@ -5,10 +5,8 @@ are encapsulated here.
 
 import logging
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import ( and_, asc, Boolean, Column, DateTime, desc, false, ForeignKey, Integer,
-    MetaData, not_, Numeric, select, String, Table, TEXT, true, Unicode, UniqueConstraint )
+    MetaData, not_, Numeric, select, String, Table, Text, TEXT, true, Unicode, UniqueConstraint )
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.types import BigInteger
@@ -1360,7 +1358,7 @@ model.UserPreference.table = Table(
     Column( "id", Integer, primary_key=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "name", Unicode( 255 ), index=True),
-    Column( "value", Unicode( 1024 ) ) )
+    Column( "value", Text ) )
 
 model.UserAction.table = Table(
     "user_action", metadata,

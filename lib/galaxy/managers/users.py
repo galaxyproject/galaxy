@@ -2,8 +2,6 @@
 Manager and Serializer for Users.
 """
 
-import pkg_resources
-pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy
 
 from galaxy import model
@@ -65,6 +63,11 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
             permissions = self.app.config.new_user_dataset_access_role_default_private
             self.app.security_agent.user_set_default_permissions( user, default_access_private=permissions )
         return user
+
+    def delete(self, user):
+        user.deleted = True
+        self.session().add(user)
+        self.session().flush()
 
     def _error_on_duplicate_email( self, email ):
         """
@@ -251,13 +254,12 @@ class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
         self.add_view( 'detailed', [
             # 'update_time',
             # 'create_time',
-
+            'is_admin',
             'total_disk_usage',
             'nice_total_disk_usage',
             'quota_percent',
-
-            # 'deleted',
-            # 'purged',
+            'deleted',
+            'purged',
             # 'active',
 
             # 'preferences',

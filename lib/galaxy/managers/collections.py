@@ -61,7 +61,7 @@ class DatasetCollectionManager( object ):
         if element_identifiers and not trusted_identifiers:
             validate_input_element_identifiers( element_identifiers )
 
-        dataset_collection = self.__create_dataset_collection(
+        dataset_collection = self.create_dataset_collection(
             trans=trans,
             collection_type=collection_type,
             element_identifiers=element_identifiers,
@@ -107,18 +107,6 @@ class DatasetCollectionManager( object ):
         return self.__persist( dataset_collection_instance )
 
     def create_dataset_collection(
-        self,
-        trans,
-        collection_type,
-        elements=None,
-    ):
-        return self.__create_dataset_collection(
-            trans=trans,
-            collection_type=collection_type,
-            elements=elements,
-        )
-
-    def __create_dataset_collection(
         self,
         trans,
         collection_type,
@@ -199,7 +187,7 @@ class DatasetCollectionManager( object ):
         parent.add_dataset_collection( new_hdca )
         trans.sa_session.add( new_hdca )
         trans.sa_session.flush()
-        return source_hdca
+        return new_hdca
 
     def _set_from_dict( self, trans, dataset_collection_instance, new_data ):
         # send what we can down into the model
@@ -253,7 +241,7 @@ class DatasetCollectionManager( object ):
 
             # element identifier is a dict with src new_collection...
             collection_type = element_identifier.get( "collection_type", None )
-            collection = self.__create_dataset_collection(
+            collection = self.create_dataset_collection(
                 trans=trans,
                 collection_type=collection_type,
                 element_identifiers=element_identifier[ "element_identifiers" ],

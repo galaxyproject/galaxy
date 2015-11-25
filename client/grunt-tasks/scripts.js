@@ -7,25 +7,17 @@ module.exports = function( grunt ){
     "use strict";
 
     var app = grunt.config.get( 'app' ),
-        paths = grunt.config.get( 'paths' );
-
-    grunt.config( 'uglify', {
-        target : {
-            files: [{
-                expand : true,
-                cwd : paths.srcSymlink,
-                src : '**/*.js',
-                dest : paths.dist
-            }],
-            options : {
-                sourceMap : true,
-                sourceMapName : function( path ){
-                    // rewrite name to have all source maps in 'static/maps'
-                    return path.replace( paths.dist, paths.maps ) + '.map';
-                }
+        paths = grunt.config.get( 'paths' ),
+        // uglify settings used when scripts are decompressed/not-minified
+        decompressedSettings = {
+            mangle   : false,
+            beautify : true,
+            compress : {
+                drop_debugger : false
             }
         },
-        options : {
+        // uglify settings used when scripts are compressed/minified
+        compressedSettings = {
             mangle : {
                 screw_ie8 : true
             },
@@ -45,15 +37,39 @@ module.exports = function( grunt ){
                 if_return : true,
                 join_vars : true,
                 cascade : true,
-                // drop_console : true
             }
+        };
+
+    grunt.config( 'uglify', {
+        target : {
+            files: [{
+                expand : true,
+                cwd : paths.srcSymlink,
+                src : '**/*.js',
+                dest : paths.dist
+            }],
         }
     });
+
+
+    if (grunt.option( 'develop' )){
+        grunt.config( 'uglify.options', decompressedSettings );
+
+    } else {
+        grunt.config( 'uglify.target.options', {
+            sourceMap : true,
+            sourceMapName : function( path ){
+                // rewrite name to have all source maps in 'static/maps'
+                return path.replace( paths.dist, paths.maps ) + '.map';
+            }
+        });
+        grunt.config( 'uglify.options', compressedSettings );
+    }
 
     // -------------------------------------------------------------------------- decompress for easier debugging
     grunt.registerTask( 'decompress', function(){
         grunt.log.writeln( "decompressing... (don't forget to call 'grunt' again before committing)" );
-        grunt.config( 'uglify.options', { beautify: true });
+        grunt.config( 'uglify.options', decompressedSettings );
         grunt.config( 'uglify.target.options', {});
         grunt.task.run( 'uglify' );
     });
@@ -72,6 +88,7 @@ module.exports = function( grunt ){
             }
         }
     });
+
 
     // outer scope variable for the event handler and onChange fn - begin with empty hash
     var changedFiles = Object.create(null);

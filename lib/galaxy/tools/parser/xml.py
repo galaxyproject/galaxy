@@ -300,11 +300,13 @@ def _test_elem_to_dict(test_elem, i):
         outputs=__parse_output_elems(test_elem),
         output_collections=__parse_output_collection_elems(test_elem),
         inputs=__parse_input_elems(test_elem, i),
+        expect_num_outputs=test_elem.get("expect_num_outputs"),
         command=__parse_assert_list_from_elem( test_elem.find("assert_command") ),
         stdout=__parse_assert_list_from_elem( test_elem.find("assert_stdout") ),
         stderr=__parse_assert_list_from_elem( test_elem.find("assert_stderr") ),
         expect_exit_code=test_elem.get("expect_exit_code"),
         expect_failure=string_as_bool(test_elem.get("expect_failure", False)),
+        maxseconds=test_elem.get("maxseconds", None),
     )
     _copy_to_dict_if_present(test_elem, rval, ["interactor", "num_outputs"])
     return rval

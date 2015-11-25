@@ -86,4 +86,9 @@ Creates quality statistics report for the given Solexa/FASTQ library.
     
 
 </help>
+
+  <citations>
+    <citation type="doi">10.1093/bioinformatics/btq281</citation>
+  </citations>
+
 </tool>

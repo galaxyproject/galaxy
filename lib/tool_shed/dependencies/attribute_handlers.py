@@ -199,5 +199,5 @@ class ToolDependencyAttributeHandler( object ):
         if tree is None:
             return False, None, error_message
         root = tree.getroot()
-        altered, new_root, error_message = tah.process_config( root )
+        altered, new_root, error_message = tah.process_config( root, skip_actions_tags=False )
         return altered, new_root, error_message

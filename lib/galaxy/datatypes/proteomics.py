@@ -193,6 +193,12 @@ class TandemXML(ProteomicsXml):
     root = "bioml"
 
 
+class UniProtXML(ProteomicsXml):
+    file_ext = "uniprotxml"
+    blurb = "UniProt Proteome file"
+    root = "uniprot"
+
+
 class Mgf(Text):
     """Mascot Generic Format data"""
     file_ext = "mgf"

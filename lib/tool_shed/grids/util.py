@@ -1,14 +1,11 @@
 import logging
-import os
 
 from galaxy.util import listify
 from galaxy.web.form_builder import SelectField
-
-from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
-from tool_shed.util import shed_util_common as suc
+from tool_shed.util import hg_util, metadata_util, shed_util_common as suc
 
 log = logging.getLogger( __name__ )
+
 
 def build_approved_select_field( trans, name, selected_value=None, for_component=True ):
     options = [ ( 'No', trans.model.ComponentReview.approved_states.NO ),
@@ -22,6 +19,7 @@ def build_approved_select_field( trans, name, selected_value=None, for_component
         selected = selected_value and option_tup[ 1 ] == selected_value
         select_field.add_option( option_tup[ 0 ], option_tup[ 1 ], selected=selected )
     return select_field
+
 
 def build_changeset_revision_select_field( trans, repository, selected_value=None, add_id_to_name=True,
                                            downloadable=False, reviewed=False, not_reviewed=False ):
@@ -82,6 +80,7 @@ def build_changeset_revision_select_field( trans, repository, selected_value=Non
         select_field.add_option( option_tup[ 0 ], option_tup[ 1 ], selected=selected )
     return select_field
 
+
 def filter_by_latest_downloadable_changeset_revision_that_has_failing_tool_tests( trans, repository ):
     """
     Inspect the latest downloadable changeset revision for the received repository to see if it
@@ -90,12 +89,13 @@ def filter_by_latest_downloadable_changeset_revision_that_has_failing_tool_tests
     """
     repository_metadata = get_latest_downloadable_repository_metadata_if_it_includes_tools( trans, repository )
     if repository_metadata is not None \
-        and has_been_tested( repository_metadata ) \
-        and not repository_metadata.missing_test_components \
-        and not repository_metadata.tools_functionally_correct \
-        and not repository_metadata.test_install_error:
+            and has_been_tested( repository_metadata ) \
+            and not repository_metadata.missing_test_components \
+            and not repository_metadata.tools_functionally_correct \
+            and not repository_metadata.test_install_error:
         return repository_metadata.changeset_revision
     return None
+
 
 def filter_by_latest_downloadable_changeset_revision_that_has_missing_tool_test_components( trans, repository ):
     """
@@ -107,10 +107,11 @@ def filter_by_latest_downloadable_changeset_revision_that_has_missing_tool_test_
     """
     repository_metadata = get_latest_downloadable_repository_metadata_if_it_includes_tools( trans, repository )
     if repository_metadata is not None \
-        and has_been_tested( repository_metadata ) \
-        and repository_metadata.missing_test_components:
+            and has_been_tested( repository_metadata ) \
+            and repository_metadata.missing_test_components:
         return repository_metadata.changeset_revision
     return None
+
 
 def filter_by_latest_downloadable_changeset_revision_that_has_no_failing_tool_tests( trans, repository ):
     """
@@ -120,11 +121,12 @@ def filter_by_latest_downloadable_changeset_revision_that_has_no_failing_tool_te
     """
     repository_metadata = get_latest_downloadable_repository_metadata_if_it_includes_tools( trans, repository )
     if repository_metadata is not None \
-        and has_been_tested( repository_metadata ) \
-        and not repository_metadata.missing_test_components \
-        and repository_metadata.tools_functionally_correct:
+            and has_been_tested( repository_metadata ) \
+            and not repository_metadata.missing_test_components \
+            and repository_metadata.tools_functionally_correct:
         return repository_metadata.changeset_revision
     return None
+
 
 def filter_by_latest_metadata_changeset_revision_that_has_invalid_tools( trans, repository ):
     """
@@ -137,6 +139,7 @@ def filter_by_latest_metadata_changeset_revision_that_has_invalid_tools( trans, 
         return repository_metadata.changeset_revision
     return None
 
+
 def filter_by_latest_downloadable_changeset_revision_that_has_test_install_errors( trans, repository ):
     """
     Inspect the latest downloadable changeset revision for the received repository to see if
@@ -146,10 +149,11 @@ def filter_by_latest_downloadable_changeset_revision_that_has_test_install_error
     repository_metadata = get_latest_downloadable_repository_metadata_if_it_has_test_install_errors( trans, repository )
     # Filter further by eliminating repositories that are missing test components.
     if repository_metadata is not None \
-        and has_been_tested( repository_metadata ) \
-        and not repository_metadata.missing_test_components:
+            and has_been_tested( repository_metadata ) \
+            and not repository_metadata.missing_test_components:
         return repository_metadata.changeset_revision
     return None
+
 
 def filter_by_latest_downloadable_changeset_revision_with_skip_tests_checked( trans, repository ):
     """
@@ -162,6 +166,7 @@ def filter_by_latest_downloadable_changeset_revision_with_skip_tests_checked( tr
     if repository_metadata is not None and repository_metadata.skip_tool_tests:
         return repository_metadata.changeset_revision
     return None
+
 
 def get_latest_downloadable_repository_metadata( trans, repository ):
     """
@@ -192,6 +197,7 @@ def get_latest_downloadable_repository_metadata( trans, repository ):
             return repository_metadata
         return None
 
+
 def get_latest_downloadable_repository_metadata_if_it_includes_tools( trans, repository ):
     """
     Return the latest downloadable repository_metadata record for the received repository if its
@@ -203,6 +209,7 @@ def get_latest_downloadable_repository_metadata_if_it_includes_tools( trans, rep
         return repository_metadata
     return None
 
+
 def get_latest_downloadable_repository_metadata_if_it_has_test_install_errors( trans, repository ):
     """
     Return the latest downloadable repository_metadata record for the received repository if its
@@ -211,10 +218,11 @@ def get_latest_downloadable_repository_metadata_if_it_has_test_install_errors( t
     """
     repository_metadata = get_latest_downloadable_repository_metadata( trans, repository )
     if repository_metadata is not None \
-        and has_been_tested( repository_metadata ) \
-        and repository_metadata.test_install_error:
+            and has_been_tested( repository_metadata ) \
+            and repository_metadata.test_install_error:
         return repository_metadata
     return None
+
 
 def get_latest_repository_metadata( trans, repository ):
     """
@@ -240,6 +248,7 @@ def get_latest_repository_metadata( trans, repository ):
                                                                                  latest_downloadable_revision )
         return repository_metadata
 
+
 def get_latest_repository_metadata_if_it_includes_invalid_tools( trans, repository ):
     """
     Return the latest repository_metadata record for the received repository that contains invalid
@@ -253,20 +262,21 @@ def get_latest_repository_metadata_if_it_includes_invalid_tools( trans, reposito
             return repository_metadata
     return None
 
+
 def has_been_tested( repository_metadata ):
     """
     Return True if the received repository_metadata record'd tool_test_results column was populated by
-    the Tool Shed's install and test framework. 
+    the Tool Shed's install and test framework.
     """
     tool_test_results = repository_metadata.tool_test_results
     if tool_test_results is None:
         return False
     # The install and test framework's preparation scripts will populate the tool_test_results column
     # with something like this:
-    # [{"test_environment": 
+    # [{"test_environment":
     #    {"time_tested": "2014-05-15 16:15:18",
-    #     "tool_shed_database_version": 22, 
-    #     "tool_shed_mercurial_version": "2.2.3", 
+    #     "tool_shed_database_version": 22,
+    #     "tool_shed_mercurial_version": "2.2.3",
     #     "tool_shed_revision": "13459:9a1415f8108f"}
     # }]
     tool_test_results = listify( tool_test_results )

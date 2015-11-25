@@ -192,7 +192,7 @@ class MockDataset(object):
 
 # Poor man's mocking. Need to get a real mocking library as real Galaxy development
 # dependnecy.
-PERSIST_METHOD_NAME = "create_object_in_session"
+PERSIST_METHOD_NAME = "_create_object_in_session"
 
 
 @contextmanager

@@ -348,7 +348,7 @@ def add_file( dataset, registry, json_file, output_path ):
         datatype.groom_dataset_content( output_path )
 
 
-def add_composite_file( dataset, registry, json_file, output_path, files_path ):
+def add_composite_file( dataset, json_file, output_path, files_path ):
         if dataset.composite_files:
             os.mkdir( files_path )
             for name, value in dataset.composite_files.iteritems():
@@ -414,7 +414,7 @@ def __main__():
             sys.exit( 1 )
         if dataset.type == 'composite':
             files_path = output_paths[int( dataset.dataset_id )][1]
-            add_composite_file( dataset, registry, json_file, output_path, files_path )
+            add_composite_file( dataset, json_file, output_path, files_path )
         else:
             add_file( dataset, registry, json_file, output_path )
 

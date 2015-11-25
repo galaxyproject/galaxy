@@ -18,12 +18,10 @@ available in the test public Tool Shed and create each of them in a local develo
 ./create_categories.py -a <api key> -f http://testtoolshed.g2.bx.psu.edu -t http://localhost:9009
 """
 
-import os
-import sys
 import argparse
-sys.path.insert( 0, os.path.dirname( __file__ ) )
-from common import get
-from common import submit
+
+from common import get, submit
+
 
 def main( options ):
     api_key = options.api

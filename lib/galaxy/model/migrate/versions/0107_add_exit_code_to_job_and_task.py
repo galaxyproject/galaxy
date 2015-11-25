@@ -1,18 +1,11 @@
 """
 Add the exit_code column to the Job and Task tables.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import logging
+
+from sqlalchemy import Column, Integer, MetaData, Table
+
 log = logging.getLogger( __name__ )
-
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
-
 metadata = MetaData()
 
 # There was a bug when only one column was used for both tables,
@@ -20,9 +13,11 @@ metadata = MetaData()
 exit_code_job_col = Column( "exit_code", Integer, nullable=True )
 exit_code_task_col = Column( "exit_code", Integer, nullable=True )
 
+
 def display_migration_details():
     print ""
     print "This migration script adds a 'handler' column to the Job table."
+
 
 def upgrade(migrate_engine):
     print __doc__
@@ -49,6 +44,7 @@ def upgrade(migrate_engine):
         log.error( "Adding column 'exit_code' to task table failed: %s" % str( e ) )
         return
 
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
@@ -68,4 +64,3 @@ def downgrade(migrate_engine):
         exit_code_col.drop()
     except Exception, e:
         log.debug( "Dropping 'exit_code' column from task table failed: %s" % ( str( e ) ) )
-
