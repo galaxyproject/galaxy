@@ -241,24 +241,36 @@ class ToolShedRepositoriesController( BaseAPIController ):
         :param install_tool_dependencies (required): True to install tool dependencies.
         :param tool_shed_repository_ids (required): Encoded tool shed repository IDs for installation.
         """
+        params = dict()
         irm = InstallRepositoryManager( trans.app )
         reinstalling = util.string_as_bool( kwd.get( 'reinstalling', False ) )
-        repositories = json.loads( kwd[ 'repositories' ] )
-        encoded_kwd = kwd[ 'encoded_kwd' ]
-        decoded_kwd = encoding_util.tool_shed_decode( encoded_kwd )
-        install_tool_dependencies = decoded_kwd.get( 'install_tool_dependencies', False )
-        tsr_ids = [ repo['id'] for repo in repositories ]
-        decoded_kwd['install_tool_dependencies'] = install_tool_dependencies
+        repository = kwd.get( 'repo_dict', None )
+        if repository is not None:
+            repository = encoding_util.tool_shed_decode( repository )
+            log.debug( json.dumps( repository, indent=2 ) )
+        name = repository[ 'name' ]
+        owner = repository[ 'owner' ]
+        changeset = kwd.get( 'changeset', None )
+        tool_shed_url = kwd.get( 'tool_shed_url', None )
+        params[ 'tool_panel_section_id' ] = kwd.get( 'tool_panel_section_id', None )
+        params[ 'install_tool_dependencies' ] = util.asbool( kwd.get( 'install_tool_dependencies', False ) )
+        params[ 'install_repository_dependencies' ] = util.asbool( kwd.get( 'install_repository_dependencies', False ) )
+        params[ 'shed_tool_conf' ] = kwd.get( 'shed_tool_conf', None )
+        params[ 'tool_path' ] = suc.get_tool_path_by_shed_tool_conf_filename( trans.app, params[ 'shed_tool_conf' ] )
         async = util.string_as_bool( kwd.get( 'async', True ) )
+        # def install( self, tool_shed_url, name, owner, changeset_revision, install_options ):
         if async:
             try:
-                tool_shed_repositories = irm.install_repositories(
-                    tsr_ids=tsr_ids,
-                    decoded_kwd=decoded_kwd,
-                    reinstalling=reinstalling,
+                tool_shed_repositories = irm.install(
+                    tool_shed_url,
+                    repository[ 'name' ],
+                    repository[ 'owner' ],
+                    changeset,
+                    params
                 )
                 tsr_ids_for_monitoring = [ trans.security.encode_id( tsr.id ) for tsr in tool_shed_repositories ]
-                return tsr_ids_for_monitoring
+                url = web.url_for( controller='admin_toolshed', action='monitor_repository_installation', tool_shed_repository_ids=','.join( tsr_ids_for_monitoring ) )
+                return url
             except RepositoriesInstalledException as e:
                 return dict( message=e.message,
                              status='error' )
@@ -266,7 +278,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             names = [ repo[ 'name' ] for repo in repositories ]
             owners = [ repo[ 'owner' ] for repo in repositories ]
             changeset_revisions = [ repo[ 'revision' ] for repo in repositories ]
-            return
+            return names, owners, changeset_revisions
 
     @expose_api
     def install_repository_revision( self, trans, payload, **kwd ):

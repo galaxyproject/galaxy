@@ -713,9 +713,9 @@ class RepositoriesController( BaseAPIController ):
         metadata = suc.get_current_repository_metadata_for_changeset_revision( trans.app, repository, changeset )
         if metadata is None:
             raise ObjectNotFound( 'Unable to locate metadata for the given id and changeset.' )
-        toolshed_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
+        tool_shed_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
         metadata_dict = metadata.to_dict( value_mapper={ 'id': trans.security.encode_id, 'repository_id': trans.security.encode_id } )
-        metadata_dict['repository_dependencies'] = repository.get_repository_dependencies( trans.app, changeset, toolshed_url )
+        metadata_dict['repository_dependencies'] = repository.get_repository_dependencies( trans.app, changeset, tool_shed_url )
         metadata_dict['tool_dependencies'] = repository.get_tool_dependencies( changeset )
         return metadata_dict
 

@@ -513,6 +513,12 @@ def populate_api_routes( webapp, app ):
                            action='set_permissions',
                            conditions=dict( method=[ "POST" ] ) )
 
+    webapp.mapper.connect( 'install_repository',
+                           '/api/tool_shed_repositories/install',
+                           controller='tool_shed_repositories',
+                           action='install',
+                           conditions=dict( method=[ 'POST' ] ) )
+
     webapp.mapper.resource( 'content',
                             'contents',
                             controller='folder_contents',
@@ -560,8 +566,7 @@ def populate_api_routes( webapp, app ):
                                      'import_workflow': 'POST',
                                      'import_workflows': 'POST' },
                             collection={ 'get_latest_installable_revision': 'POST',
-                                         'reset_metadata_on_installed_repositories': 'POST',
-                                         'install': 'POST' },
+                                         'reset_metadata_on_installed_repositories': 'POST' },
                             controller='tool_shed_repositories',
                             name_prefix='tool_shed_repository_',
                             path_prefix='/api',

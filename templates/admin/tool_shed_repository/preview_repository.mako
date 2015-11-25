@@ -19,30 +19,30 @@
     $(document).ready(function() {
         $('#install_repository').click(function() {
             var params = {};
-            params['tool_shed_url'] = $("#toolshed_url").val();
+            params['tool_shed_url'] = $("#tool_shed_url").val();
             params['install_tool_dependencies'] = $("#install_tool_dependencies").val();
             params['install_repository_dependencies'] = $("#install_repository_dependencies").val();
             params['tool_panel_section_id'] = $("#tool_panel_section_id").val();
             params['new_tool_panel_section_label'] = $("#new_tool_panel_section").val();
             params['changeset'] = $("#changeset").val();
+            params['repo_dict'] = '${encoded_repository}';
             url = $('#repository_installation').attr('action');
             console.log(url);
             $.post(url, params, function(data) {
-                console.log(data);
+                window.location.href = data;
             });
 
         });
     });
 </script>
-<pre>${repository}</pre>
 <h1>${repository['name']}</h1>
 <form id="repository_installation" action="${h.url_for(controller='/api/tool_shed_repositories', action='install', async=True)}">
     <label for="install_tool_dependencies">Install tool dependencies</label>
     <input type="checkbox" checked id="install_tool_dependencies" />
     <label for="install_tool_dependencies">Install repository dependencies</label>
     <input type="checkbox" checked id="install_repository_dependencies" />
-    <input type="hidden" name="tsr_id" value="${repository['id']}" />
-    <input type="hidden" name="toolshed_url" value="${toolshed_url}" />
+    <input type="hidden" id="tsr_id" name="tsr_id" value="${repository['id']}" />
+    <input type="hidden" id="tool_shed_url" name="tool_shed_url" value="${tool_shed_url}" />
     %if shed_tool_conf_select_field:
         <div class="form-row">
             <table class="colored" width="100%">
