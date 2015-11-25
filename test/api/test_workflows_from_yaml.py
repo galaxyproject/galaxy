@@ -87,6 +87,28 @@ test_data:
         details2 = self.dataset_populator.get_history_dataset_details(history_id, hid=3)
         assert details2["visible"]
 
+    def test_inputs_to_steps( self ):
+        history_id = self.dataset_populator.new_history()
+        self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+steps:
+  - tool_id: cat1
+    label: first_cat
+    state:
+      input1:
+        $link: input1
+      queries:
+        - input2:
+            $link: input1
+
+test_data:
+  input1: "hello world"
+""", history_id=history_id)
+        contents1 = self.dataset_populator.get_history_dataset_content(history_id)
+        self.assertEquals(contents1.strip(), "hello world\nhello world")
+
     def test_pause( self ):
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow

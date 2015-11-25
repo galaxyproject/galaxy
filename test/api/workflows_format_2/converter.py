@@ -41,6 +41,12 @@ def python_to_workflow(as_python):
 
     steps = as_python["steps"]
 
+    # If an inputs section is defined, build steps for each
+    # and add to steps array.
+    if "inputs" in as_python:
+        inputs = as_python["inputs"]
+        convert_inputs_to_steps(inputs, steps)
+
     conversion_context = ConversionContext()
     if isinstance(steps, list):
         steps_as_dict = OrderedDict()
@@ -72,6 +78,42 @@ def python_to_workflow(as_python):
         eval("transform_%s" % step_type)(conversion_context, step)
 
     return as_python
+
+
+def convert_inputs_to_steps(inputs, steps):
+    new_steps = []
+    for input_def_raw in inputs:
+        input_def = input_def_raw.copy()
+
+        if "label" in input_def and "id" in input_def:
+            raise Exception("label and id are aliases for inputs, may only define one")
+        if "label" not in input_def and "id" not in input_def:
+            raise Exception("Input must define a label.")
+
+        raw_label = __rip_value(input_def, "label")
+        raw_id = __rip_value(input_def, "id")
+        label = raw_label or raw_id
+
+        if not label:
+            raise Exception("Input label must not be empty.")
+
+        input_type = __rip_value(input_def, "type", "data")
+        if input_type in ["File", "data", "data_input"]:
+            step_type = "data_input"
+        elif input_type in ["collection", "data_collection", "data_collection_input"]:
+            step_type = "data_collection_input"
+        else:
+            raise Exception("Input type must be a data file or collection.")
+
+        step_def = input_def
+        step_def.update({
+            "type": step_type,
+            "label": label,
+        })
+        new_steps.append(step_def)
+
+    for i, new_step in enumerate(new_steps):
+        steps.insert(i, new_step)
 
 
 def transform_data_input(context, step):
@@ -252,6 +294,15 @@ def __join_prefix(prefix, key):
     else:
         new_key = key
     return new_key
+
+
+def __rip_value(input_def, key, default=None):
+    if key in input_def:
+        value = input_def[key]
+        del input_def[key]
+    else:
+        value = default
+    return value
 
 
 def __init_connect_dict(step):
