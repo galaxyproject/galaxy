@@ -1,5 +1,6 @@
 id: simple_constructs_y
 name: simple_constructs_y
+class: GalaxyTool
 version: 1.0
 command:
   >

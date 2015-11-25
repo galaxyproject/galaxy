@@ -641,11 +641,15 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
     },
 
     // ------------------------------------------------------------------------ selection
+    /** @type Integer when the number of list item views is >= to this, don't animate selectors */
+    THROTTLE_SELECTORS_AT : 20,
+
     /** show selectors on all visible itemViews and associated controls */
     showSelectors : function( speed ){
         speed = ( speed !== undefined )?( speed ):( this.fxSpeed );
         this.selecting = true;
         this.$( '.list-actions' ).slideDown( speed );
+        speed = this.views.length >= this.THROTTLE_SELECTORS_AT? 0 : speed;
         _.each( this.views, function( view ){
             view.showSelector( speed );
         });
@@ -658,6 +662,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         speed = ( speed !== undefined )?( speed ):( this.fxSpeed );
         this.selecting = false;
         this.$( '.list-actions' ).slideUp( speed );
+        speed = this.views.length >= this.THROTTLE_SELECTORS_AT? 0 : speed;
         _.each( this.views, function( view ){
             view.hideSelector( speed );
         });
@@ -801,9 +806,9 @@ ListPanel.prototype.templates = (function(){
     var controlsTemplate = BASE_MVC.wrapTemplate([
         '<div class="controls">',
             '<div class="title">',
-                '<div class="name"><%= view.title %></div>',
+                '<div class="name"><%- view.title %></div>',
             '</div>',
-            '<div class="subtitle"><%= view.subtitle %></div>',
+            '<div class="subtitle"><%- view.subtitle %></div>',
             // buttons, controls go here
             '<div class="actions"></div>',
             // deleted msg, etc.
@@ -942,9 +947,9 @@ ModelListPanel.prototype.templates = (function(){
         '<div class="controls">',
             '<div class="title">',
 //TODO: this is really the only difference - consider factoring titlebar out
-                '<div class="name"><%= model.name %></div>',
+                '<div class="name"><%- model.name %></div>',
             '</div>',
-            '<div class="subtitle"><%= view.subtitle %></div>',
+            '<div class="subtitle"><%- view.subtitle %></div>',
             '<div class="actions"></div>',
             '<div class="messages"></div>',
 

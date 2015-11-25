@@ -77,10 +77,11 @@ module.exports = function( grunt ){
     grunt.loadNpmTasks( 'grunt-spritesmith' );
     grunt.loadNpmTasks( 'grunt-contrib-clean' );
 
+
     // Write theme variable for less
     grunt.registerTask( 'less-site-config', 'Write site configuration for less', function() {
         grunt.file.write( fmt( '%s/tmp-site-config.less', lessPath ), fmt( "@theme-name: %s;", theme ) );
     });
 
-    grunt.registerTask( 'style', [ 'sprite', 'less-site-config', 'less', 'clean' ] );
+    grunt.registerTask( 'style', [  'check-modules', 'sprite', 'less-site-config', 'less', 'clean' ] );
 };

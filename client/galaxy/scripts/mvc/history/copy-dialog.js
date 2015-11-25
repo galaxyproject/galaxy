@@ -54,7 +54,7 @@ function historyCopyDialog( history, options ){
     }
 
     // maybe better as multiselect dialog?
-    var historyName = history.get( 'name' ),
+    var historyName = _.escape(history.get( 'name' )),
         defaultCopyName = "Copy of '" + historyName + "'";
 
     function copyHistory( name ){

@@ -16,6 +16,7 @@
       <display file="igv/bam.xml" />
       <display file="igb/bam.xml" />
     </datatype>
+    <datatype extension="cram" type="galaxy.datatypes.binary:CRAM" mimetype="application/octet-stream" display_in_upload="true" description="CRAM is a file format for highly efficient and tunable reference-based compression of alignment data." description_url="http://www.ebi.ac.uk/ena/software/cram-usage"/>
     <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true" description="BED format provides a flexible way to define the data lines that are displayed in an annotation track. BED lines have three required columns and nine additional optional columns. The three required columns are chrom, chromStart and chromEnd." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Bed">
       <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
       <converter file="bed_to_bgzip_converter.xml" target_datatype="bgzip"/>
@@ -171,6 +172,7 @@
     <datatype extension="traml" type="galaxy.datatypes.proteomics:TraML" mimetype="application/xml" display_in_upload="true" />
     <datatype extension="featurexml" type="galaxy.datatypes.proteomics:FeatureXML" mimetype="application/xml" display_in_upload="true" />
     <datatype extension="consensusxml" type="galaxy.datatypes.proteomics:ConsensusXML" mimetype="application/xml" display_in_upload="true" />
+    <datatype extension="uniprotxml" type="galaxy.datatypes.proteomics:UniProtXML" mimetype="application/xml" display_in_upload="true" />
     <datatype extension="msp" type="galaxy.datatypes.proteomics:Msp" display_in_upload="true" />
     <datatype extension="splib_noindex" type="galaxy.datatypes.proteomics:SPLibNoIndex" display_in_upload="true" />
     <datatype extension="splib" type="galaxy.datatypes.proteomics:SPLib" display_in_upload="true" />
@@ -423,6 +425,8 @@
     <datatype extension="plybinary" type="galaxy.datatypes.constructive_solid_geometry:PlyBinary" display_in_upload="true" />
     <datatype extension="vtkascii" type="galaxy.datatypes.constructive_solid_geometry:VtkAscii" display_in_upload="true" />
     <datatype extension="vtkbinary" type="galaxy.datatypes.constructive_solid_geometry:VtkBinary" display_in_upload="true" />
+    <!-- Metagenomic Datatype -->
+    <datatype extension="biom1" type="galaxy.datatypes.text:Biom1" display_in_upload="True" subclass="True" mimetype="application/json" />
   </registration>
   <sniffers>
     <!--
@@ -442,6 +446,7 @@
     <sniffer type="galaxy.datatypes.proteomics:MzSQlite"/>
     <sniffer type="galaxy.datatypes.binary:SQlite"/>
     <sniffer type="galaxy.datatypes.binary:Bam"/>
+    <sniffer type="galaxy.datatypes.binary:CRAM"/>
     <sniffer type="galaxy.datatypes.binary:Sff"/>
     <sniffer type="galaxy.datatypes.binary:Sra"/>
     <sniffer type="galaxy.datatypes.xml:Phyloxml"/>
@@ -455,6 +460,7 @@
     <sniffer type="galaxy.datatypes.proteomics:TraML"/>
     <sniffer type="galaxy.datatypes.proteomics:MzIdentML"/>
     <sniffer type="galaxy.datatypes.proteomics:MzQuantML"/>
+    <sniffer type="galaxy.datatypes.proteomics:UniProtXML"/>
     <sniffer type="galaxy.datatypes.proteomics:Msp"/>
     <sniffer type="galaxy.datatypes.proteomics:SPLib"/>
     <sniffer type="galaxy.datatypes.proteomics:ThermoRAW"/>
@@ -483,6 +489,7 @@
     <sniffer type="galaxy.datatypes.text:Obo"/>
     <sniffer type="galaxy.datatypes.text:Arff"/>
     <sniffer type="galaxy.datatypes.text:Ipynb"/>
+    <sniffer type="galaxy.datatypes.text:Biom1"/>
     <sniffer type="galaxy.datatypes.text:Json"/>
     <sniffer type="galaxy.datatypes.sequence:RNADotPlotMatrix"/>
     <sniffer type="galaxy.datatypes.sequence:DotBracket"/>

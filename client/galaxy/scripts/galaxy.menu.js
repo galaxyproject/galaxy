@@ -50,12 +50,12 @@ var GalaxyMenu = Backbone.Model.extend({
         });
 
         tab_shared.add({
-            title   : 'Data Libraries',
+            title   : 'Data Libraries deprecated',
             content : 'library/index'
         });
 
         tab_shared.add({
-            title   : 'Data Libraries Beta',
+            title   : 'Data Libraries',
             content : 'library/list',
             divider : true
         });

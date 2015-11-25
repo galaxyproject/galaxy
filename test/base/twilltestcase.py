@@ -37,6 +37,8 @@ tc.config( 'use_tidy', 0 )
 logging.getLogger( "ClientCookie.cookies" ).setLevel( logging.WARNING )
 log = logging.getLogger( __name__ )
 
+DEFAULT_TOOL_TEST_WAIT = os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 86400)
+
 
 class TwillTestCase( unittest.TestCase ):
 
@@ -2440,15 +2442,16 @@ class TwillTestCase( unittest.TestCase ):
     def wait_for( self, func, **kwd ):
         sleep_amount = 0.2
         slept = 0
-        walltime_exceeded = 86400
+        walltime_exceeded = kwd.get("maxseconds", None)
+        if walltime_exceeded is None:
+            walltime_exceeded = DEFAULT_TOOL_TEST_WAIT
+        log.info("walltime_exceeded is %s" % walltime_exceeded)
         while slept <= walltime_exceeded:
             result = func()
             if result:
                 time.sleep( sleep_amount )
                 slept += sleep_amount
                 sleep_amount *= 2
-                if slept + sleep_amount > walltime_exceeded:
-                    sleep_amount = walltime_exceeded - slept  # don't overshoot maxseconds
             else:
                 break
         assert slept < walltime_exceeded, 'Tool run exceeded reasonable walltime of 24 hours, terminating.'

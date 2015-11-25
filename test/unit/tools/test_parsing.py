@@ -45,6 +45,7 @@ TOOL_XML_1 = """
 
 TOOL_YAML_1 = """
 name: "Bowtie Mapper"
+class: GalaxyTool
 id: bowtie
 version: 1.0.2
 description: "The Bowtie Mapper"

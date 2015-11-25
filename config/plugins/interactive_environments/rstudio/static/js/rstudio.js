@@ -78,7 +78,7 @@ function _handle_notebook_loading(password, notebook_login_url, notebook_access_
                 append_notebook(notebook_access_url);
             },
             error: function(jqxhr, status, error){
-                if(ie_password_auth && !ie_apache_urls){
+                if(ie_password_auth){
                     // Failure now happens because the redirect that RStudio gives us includes the
                     // port internal to nginx. (E.g. localhost:NNNN/rstudio/NNNN/)
                     // so disabling the message here makes sense as long as it's working correctly

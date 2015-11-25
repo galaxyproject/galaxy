@@ -463,7 +463,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     @web.expose
     def login( self, trans, refresh_frames=[], **kwd ):
         '''Handle Galaxy Log in'''
-        redirect = self.__get_redirect_url( kwd.get( 'redirect', trans.request.referer ).strip() )
+        referer = trans.request.referer or ''
+        redirect = self.__get_redirect_url( kwd.get( 'redirect', referer ).strip() )
         redirect_url = ''  # always start with redirect_url being empty
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         message = kwd.get( 'message', '' )
@@ -516,7 +517,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         status = kwd.get( 'status', 'error' )
         login = kwd.get( 'login', '' )
         password = kwd.get( 'password', '' )
-        redirect = kwd.get( 'redirect', trans.request.referer ).strip()
+        referer = trans.request.referer or ''
+        redirect = kwd.get( 'redirect', referer ).strip()
         success = False
         user = trans.sa_session.query( trans.app.model.User ).filter(or_(
             trans.app.model.User.table.c.email == login,
@@ -671,7 +673,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         username = util.restore_text( params.get( 'username', '' ) )
         subscribe = params.get( 'subscribe', '' )
         subscribe_checked = CheckboxField.is_checked( subscribe )
-        redirect = kwd.get( 'redirect', trans.request.referer ).strip()
+        referer = trans.request.referer or ''
+        redirect = kwd.get( 'redirect', referer ).strip()
         is_admin = cntrller == 'admin' and trans.user_is_admin
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
             message = 'User registration is disabled.  Please contact your local Galaxy administrator for an account.'

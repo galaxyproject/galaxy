@@ -24,10 +24,12 @@
   <tool file="metadata_bcf.xml" />
   <tool file="detect_errors_aggressive.xml" />
   <tool file="md5sum.xml" />
+  <tool file="maxseconds.xml" />
   <tool file="job_properties.xml" />
   <tool file="gzipped_inputs.xml" />
   <tool file="output_order.xml" />
   <tool file="output_format.xml" />
+  <tool file="output_format_collection.xml" />
   <tool file="output_filter.xml" />
   <tool file="output_collection_filter.xml" />
   <tool file="output_auto_format.xml" />
@@ -63,6 +65,10 @@
   <tool file="collection_creates_dynamic_nested.xml" />
   <tool file="collection_creates_dynamic_list_of_pairs.xml" />
   <tool file="cheetah_casting.xml" />
+
+  <tool file="cheetah_problem_unbound_var.xml" />
+  <tool file="cheetah_problem_unbound_var_input.xml" />
+  <tool file="cheetah_problem_syntax_error.xml" />
 
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v02.xml" />
