@@ -312,7 +312,7 @@ def guess_ext( fname, sniff_order=None, is_multi_byte=False ):
     'bam'
     >>> fname = get_test_fname('test.idpDB')
     >>> guess_ext(fname)
-    'idpDB'
+    'idpdb'
     >>> fname = get_test_fname('test.mz5')
     >>> guess_ext(fname)
     'h5'
