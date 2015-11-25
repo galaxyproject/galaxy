@@ -1235,9 +1235,21 @@ class AdminToolshed( AdminGalaxy ):
     def preview_repository( self, trans, **kwd ):
         toolshed_url = kwd.get( 'toolshed_url', '' )
         tsr_id = kwd.get( 'tsr_id', '' )
-        json_data = common_util.tool_shed_get( trans.app, toolshed_url, pathspec=[ 'api', 'repositories', tsr_id ] )
-        return trans.fill_template( '/admin/tool_shed_repository/preview_repository.mako', repository=json.loads( json_data ) )
-
+        json_data = json.loads( common_util.tool_shed_get( trans.app, toolshed_url, pathspec=[ 'api', 'repositories', tsr_id ] ) )
+        json_data[ 'metadata' ] = dict()
+        revisions = common_util.tool_shed_get( trans.app, toolshed_url, pathspec=[ 'api', 'repositories', 'get_ordered_installable_revisions' ], params=dict( tsr_id=tsr_id ) )
+        for revision in json.loads( revisions ):
+            pathspec = [ 'api', 'repositories', tsr_id, revision, 'metadata' ]
+            json_data[ 'metadata' ][ revision ] = json.loads( common_util.tool_shed_get( trans.app, toolshed_url, pathspec=pathspec ) )
+        log.debug( len( str( json_data ) ) )
+        shed_tool_conf_select_field = tool_util.build_shed_tool_conf_select_field( trans.app )
+        tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field( trans.app )
+        log.debug( tool_panel_section_select_field )
+        return trans.fill_template( '/admin/tool_shed_repository/preview_repository.mako',
+                                    toolshed_url=toolshed_url,
+                                    repository=json_data,
+                                    tool_panel_section_select_field=tool_panel_section_select_field,
+                                    shed_tool_conf_select_field=shed_tool_conf_select_field )
 
     @web.expose
     @web.require_admin

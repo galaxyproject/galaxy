@@ -87,7 +87,7 @@ class RepositoriesController( BaseAPIController ):
         return response_dict
 
     @web.expose_api_anonymous
-    def get_ordered_installable_revisions( self, trans, name, owner, **kwd ):
+    def get_ordered_installable_revisions( self, trans, **kwd ):
         """
         GET /api/repositories/get_ordered_installable_revisions
 
@@ -98,22 +98,20 @@ class RepositoriesController( BaseAPIController ):
         As in the changelog, the list is ordered oldest to newest.
         """
         # Example URL: http://localhost:9009/api/repositories/get_installable_revisions?name=add_column&owner=test
-        if name and owner:
+        name = kwd.get( 'name', None )
+        owner = kwd.get( 'owner', None )
+        tsr_id = kwd.get( 'tsr_id', None )
+        if None not in [ name, owner ]:
             # Get the repository information.
             repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
-            if repository is None:
-                error_message = "Error in the Tool Shed repositories API in get_ordered_installable_revisions: "
-                error_message += "cannot locate repository %s owned by %s." % ( str( name ), str( owner ) )
-                log.debug( error_message )
-                return []
-            repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
-            ordered_installable_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
-            return ordered_installable_revisions
+        elif tsr_id is not None:
+            repository = suc.get_repository_in_tool_shed( trans.app, tsr_id )
         else:
             error_message = "Error in the Tool Shed repositories API in get_ordered_installable_revisions: "
-            error_message += "invalid name %s or owner %s received." % ( str( name ), str( owner ) )
+            error_message += "invalid parameters received." % ( str( name ), str( owner ) )
             log.debug( error_message )
             return []
+        return repository.ordered_installable_revisions( trans.app )
 
     @web.expose_api_anonymous
     def get_repository_revision_install_info( self, trans, name, owner, changeset_revision, **kwd ):
@@ -690,6 +688,36 @@ class RepositoriesController( BaseAPIController ):
         repository_dict[ 'category_ids' ] = \
             [ trans.security.encode_id( x.category.id ) for x in repository.categories ]
         return repository_dict
+
+    @expose_api_anonymous_and_sessionless
+    def metadata( self, trans, id, changeset, **kwd ):
+        """
+        GET /api/repositories/{encoded_repository_id}/{changeset}/metadata
+        Returns information about a repository in the Tool Shed.
+
+        Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135/4a129b2343bb/metadata
+
+        :param id: the encoded id of the Repository object
+        :type  id: encoded str
+
+        :returns:   the given changeset's metadata
+
+        :raises:  ObjectNotFound, MalformedId
+        """
+        try:
+            trans.security.decode_id( id )
+        except Exception:
+            raise MalformedId( 'The given id is invalid.' )
+
+        repository = suc.get_repository_in_tool_shed( trans.app, id )
+        metadata = suc.get_current_repository_metadata_for_changeset_revision( trans.app, repository, changeset )
+        if metadata is None:
+            raise ObjectNotFound( 'Unable to locate metadata for the given id and changeset.' )
+        toolshed_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
+        metadata_dict = metadata.to_dict( value_mapper={ 'id': trans.security.encode_id, 'repository_id': trans.security.encode_id } )
+        metadata_dict['repository_dependencies'] = repository.get_repository_dependencies( trans.app, changeset, toolshed_url )
+        metadata_dict['tool_dependencies'] = repository.get_tool_dependencies( changeset )
+        return metadata_dict
 
     @expose_api
     def update( self, trans, id, **kwd ):

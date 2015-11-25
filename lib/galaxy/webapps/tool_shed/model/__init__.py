@@ -8,6 +8,8 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.model.item_attrs import Dictifiable
 import tool_shed.repository_types.util as rt_util
+from tool_shed.dependencies.repository import relation_builder
+from tool_shed.util import shed_util_common as suc
 
 from mercurial import hg
 from mercurial import ui
@@ -221,13 +223,44 @@ class Repository( object, Dictifiable ):
         type_class = self.get_type_class( app )
         return type_class.get_changesets_for_setting_metadata( app, self )
 
+    def get_repository_dependencies( self, app, changeset, toolshed_url ):
+        # We aren't concerned with repositories of type tool_dependency_definition here if a
+        # repository_metadata record is not returned because repositories of this type will never
+        # have repository dependencies. However, if a readme file is uploaded, or some other change
+        # is made that does not create a new downloadable changeset revision but updates the existing
+        # one, we still want to be able to get repository dependencies.
+        repository_metadata = suc.get_current_repository_metadata_for_changeset_revision( app,
+                                                                                          self,
+                                                                                          changeset )
+        if repository_metadata:
+            metadata = repository_metadata.metadata
+            if metadata:
+                rb = relation_builder.RelationBuilder( app, self, repository_metadata, toolshed_url )
+                repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
+                if repository_dependencies:
+                    return repository_dependencies
+        return None
+
     def get_type_class( self, app ):
         return app.repository_types_registry.get_class_by_label( self.type )
+
+    def get_tool_dependencies( self, changeset_revision ):
+        for downloadable_revision in self.downloadable_revisions:
+            if downloadable_revision.changeset_revision == changeset_revision:
+                break
+        metadata = downloadable_revision.metadata
+        return metadata.get( 'tool_dependencies', None )
 
     def is_new( self, app ):
         repo = hg.repository( ui.ui(), self.repo_path( app ) )
         tip_ctx = repo.changectx( repo.changelog.tip() )
         return tip_ctx.rev() < 0
+
+    def ordered_installable_revisions( self, app ):
+        repo = hg.repository( ui.ui(), self.repo_path( app ) )
+        log.debug( repo )
+        ordered_installable_revisions = suc.get_ordered_metadata_changeset_revisions( self, repo, downloadable=True )
+        return ordered_installable_revisions
 
     def repo_path( self, app ):
         return app.hgweb_config_manager.get_entry( os.path.join( "repos", self.user.username, self.name ) )
