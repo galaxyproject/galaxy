@@ -879,7 +879,7 @@ class MzSQlite( SQlite ):
     def set_meta( self, dataset, overwrite=True, **kwd ):
         super( MzSQlite, self ).set_meta( dataset, overwrite=overwrite, **kwd )
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         if super( MzSQlite, self ).sniff( filename ):
             mz_table_names = ["DBSequence", "Modification", "Peaks", "Peptide", "PeptideEvidence", "Score", "SearchDatabase", "Source", "SpectraData", "Spectrum", "SpectrumIdentification"]
             try:
@@ -909,12 +909,12 @@ class IdpDB( SQlite ):
     >>> IdpDB().sniff( fname )
     False
     """
-    file_ext = "idpDB"
+    file_ext = "idpdb"
 
     def set_meta( self, dataset, overwrite=True, **kwd ):
         super( IdpDB, self ).set_meta( dataset, overwrite=overwrite, **kwd )
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         if super( IdpDB, self ).sniff( filename ):
             mz_table_names = ["About", "Analysis", "AnalysisParameter", "PeptideSpectrumMatch", "Spectrum", "SpectrumSource"]
             try:
