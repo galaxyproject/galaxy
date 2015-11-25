@@ -85,7 +85,7 @@ then
     shift
     DOCKER_EXTRA_ARGS=${DOCKER_ARGS:-""}
     DOCKER_RUN_EXTRA_ARGS=${DOCKER_RUN_EXTRA_ARGS:-""}
-    DOCKER_IMAGE=${DOCKER_IMAGE:-"galaxy/testing-base"}
+    DOCKER_IMAGE=${DOCKER_IMAGE:-"galaxy/testing-base:15.10.0"}
     if [ "$1" = "--db" ]; then
        db_type=$2
        shift 2
