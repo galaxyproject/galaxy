@@ -258,6 +258,7 @@ class ToolOutput( ToolOutputBase ):
         # Initialize default values
         self.change_format = []
         self.implicit = implicit
+        self.from_work_dir = None
 
     # Tuple emulation
 
