@@ -9,6 +9,8 @@
         <meta name="viewport" content="maximum-scale=1.0">
         ## Force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
         <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+        ## relative href for site root
+        <link rel="index" href="${ h.url_for( '/' ) }"/>
         ## TODO: use loaders to move everything but the essentials below the fold
         ${ h.css(
             'jquery.rating',
@@ -63,17 +65,7 @@
     </script>
     %endif
 
-    ## console protection needed in some versions of IE
     <script type="text/javascript">
-        window.console = window.console || {
-            log     : function(){},
-            debug   : function(){},
-            info    : function(){},
-            warn    : function(){},
-            error   : function(){},
-            assert  : function(){}
-        };
-
         // this is needed *before* the app code is loaded - many MVC access Galaxy.root for their url
         // TODO: change this by using a common Backbone.Model base class and url fn
         window.Galaxy = { root: '${ options[ "root" ] }' };

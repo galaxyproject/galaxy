@@ -56,18 +56,6 @@
     )}
 
     <script type="text/javascript">
-        ## global configuration object
-
-        // console protection
-        window.console = window.console || {
-            log     : function(){},
-            debug   : function(){},
-            info    : function(){},
-            warn    : function(){},
-            error   : function(){},
-            assert  : function(){}
-        };
-
         // configure require
         // due to our using both script tags and require, we need to access the same jq in both for plugin retention
         // source http://www.manuel-strehl.de/dev/load_jquery_before_requirejs.en.html
@@ -189,6 +177,8 @@
         <meta name = "viewport" content = "maximum-scale=1.0">
         ## Force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
         <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+        ## relative href for site root
+        <link rel="index" href="${ h.url_for( '/' ) }"/>
         ${self.stylesheets()}
         ${self.javascripts()}
         ${self.javascript_app()}

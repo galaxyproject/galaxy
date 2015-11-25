@@ -9,6 +9,8 @@
     <head>
         <title>${self.title()}</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        ## relative href for site root
+        <link rel="index" href="${ h.url_for( '/' ) }"/>
         ${self.metas()}
         ${self.stylesheets()}
         ${self.javascripts()}
@@ -50,22 +52,11 @@
     )}
 
     <script type="text/javascript">
-        ## global galaxy object
-        window.Galaxy = window.Galaxy || {};
-
         ## global configuration object
-        window.Galaxy.config = {};
+        ## TODO: remove
+        window.Galaxy = window.Galaxy || {};
         window.Galaxy.root = '${h.url_for( "/" )}';
-
-        ## console protection
-        window.console = window.console || {
-            log     : function(){},
-            debug   : function(){},
-            info    : function(){},
-            warn    : function(){},
-            error   : function(){},
-            assert  : function(){}
-        };
+        window.Galaxy.config = {};
 
         // configure require
         // due to our using both script tags and require, we need to access the same jq in both for plugin retention
