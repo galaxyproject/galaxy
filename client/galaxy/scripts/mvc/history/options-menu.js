@@ -30,32 +30,28 @@ var menu = [
                 Galaxy.currHistoryPanel.createNewHistory();
             }
         },
-        icon : 'plus'
     },
     {
         html    : _l( 'Copy History' ),
         href    : 'history/copy',
-        // TODO: I really want the clone icon here.
-        // http://fortawesome.github.io/Font-Awesome/icon/clone/
-        // missing??
-        icon    : 'files-o'
     },
     {
         html    : _l( 'Share or Publish' ),
         href    : 'history/sharing',
-        icon    : 'share'
     },
     {
         html    : _l( 'Show Structure' ),
         href    : 'history/display_structured',
         anon    : true,
-        icon    : 'binoculars'
+    },
+    {
+        html    : _l( 'Extract Workflow' ),
+        href    : 'workflow/build_from_current_history',
     },
     {
         html    : _l( 'Delete' ),
         confirm : _l( 'Really delete the current history?' ),
         href    : 'history/delete_current',
-        icon    : 'trash-o'
     },
     {
         html    : _l( 'Delete Permanently' ),
@@ -63,7 +59,6 @@ var menu = [
         href    : 'history/delete_current?purge=True',
         purge   : true,
         anon    : true,
-        icon    : 'trash'
     },
 
 
@@ -75,23 +70,15 @@ var menu = [
     {
         html    : _l( 'Copy Datasets' ),
         href    : 'dataset/copy_datasets',
-        icon    : 'files-o'
-    },
-    {
-        html    : _l( 'Extract Workflow' ),
-        href    : 'workflow/build_from_current_history',
-        icon    : 'puzzle-piece'  // or cubes, object-group, binoculars
     },
     {
         html    : _l( 'Dataset Security' ),
         href    : 'root/history_set_default_permissions',
-        icon    : 'cog'
     },
     {
         html    : _l( 'Resume Paused Jobs' ),
         href    : 'history/resume_paused_jobs?current=True',
         anon    : true,
-        icon    : 'play'
     },
     {
         html    : _l( 'Collapse Expanded Datasets' ),
@@ -100,7 +87,6 @@ var menu = [
                 Galaxy.currHistoryPanel.collapseAll();
             }
         },
-        icon    : 'compress'
     },
     {
         html    : _l( 'Unhide Hidden Datasets' ),
@@ -119,7 +105,6 @@ var menu = [
                     });
             }
         },
-        icon    : 'eye'
     },
     {
         html    : _l( 'Delete Hidden Datasets' ),
@@ -139,7 +124,6 @@ var menu = [
                     });
             }
         },
-        icon    : 'trash',
     },
     {
         html    : _l( 'Purge Deleted Datasets' ),
@@ -155,16 +139,14 @@ var menu = [
         header  : true
     },
     {
-        html    : _l( 'Export Citations' ),
+        html    : _l( 'Export Tool Citations' ),
         href    : 'history/citations',
         anon    : true,
-        icon    : 'download'
     },
     {
-        html    : _l( 'Export to File' ),
+        html    : _l( 'Export History to File' ),
         href    : 'history/export_archive?preview=True',
         anon    : true,
-        icon    : 'download'
     },
 
     {
@@ -174,7 +156,6 @@ var menu = [
     {
         html    : _l( 'Import from File' ),
         href    : 'history/import_archive',
-        icon    : 'upload'
     }
 ];
 
@@ -191,12 +172,6 @@ function buildMenu( isAnon, purgeAllowed, urlRoot ){
         if( menuOption.href ){
             menuOption.href = urlRoot + menuOption.href;
             menuOption.target = 'galaxy_main';
-        }
-
-        if( menuOption.icon ){
-            menuOption.html = '<span class="fa fa-' + menuOption.icon + '"></span> ' + menuOption.html
-        } else {
-            menuOption.html = '<span class="fa"></span> ' + menuOption.html
         }
 
         if( menuOption.confirm ){
