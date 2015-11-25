@@ -2,9 +2,11 @@
 # Little script to make HISTORY.rst more easy to format properly, lots TODO
 # pull message down and embed, use arg parse, handle multiple, etc...
 
+import calendar
 import datetime
 import os
 import re
+import string
 import sys
 try:
     import requests
@@ -28,7 +30,8 @@ PROJECT_API = "https://api.github.com/repos/%s/%s/" % (PROJECT_OWNER, PROJECT_NA
 RELEASES = [
     ("15.05", "b16ac25cdc0f2b64d6af34ea1e6ff253d8a71ee4"),
     ("15.07", "e44c8db9dea56b8d1a2f941ce572b0f14e999d4c"),
-    ("15.10", "d554136658e165c84a42b988f39009c185325919"),
+    ("15.10", "ef55279d58eced4b90632a572a8fc5a227ceefb9"),
+    ("16.01", "cc23adb0a962f1c9780b838604718319a0a71888"),
 ]
 
 # Uncredit pull requestors... kind of arbitrary at this point.
@@ -58,9 +61,9 @@ Fixes
 """
 
 # TODO: for 15.10 use this template...
-ANNOUNCE_TEMPLATE = """
+ANNOUNCE_TEMPLATE = string.Template("""
 ===========================================================
-TODO Galaxy Release (v %s)
+${month_name} 20${year} Galaxy Release (v ${release})
 ===========================================================
 
 .. include:: _header.rst
@@ -93,7 +96,7 @@ Update to latest stable release
 Update to exact version
   .. code-block:: shell
 
-      % git checkout v%s
+      % git checkout v${release}
 
 
 `BitBucket <https://bitbucket.org/galaxy/galaxy-dist>`__
@@ -103,7 +106,7 @@ Upgrade
   .. code-block:: shell
 
       % hg pull
-      % hg update latest_%s
+      % hg update latest_${release}
 
 
 See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additional details regarding the source code locations.
@@ -111,12 +114,23 @@ See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additio
 Release Notes
 ===========================================================
 
-.. include:: %s.rst
+.. include:: ${release}.rst
    :start-after: enhancements
 
 .. include:: _thanks.rst
-"""
+""")
 
+NEXT_TEMPLATE = string.Template("""
+===========================================================
+${month_name} 20${year} Galaxy Release (v ${version})
+===========================================================
+
+
+Schedule
+===========================================================
+ * Planned Freeze Date: ${freeze_date}
+ * Planned Release Date: ${release_date}
+""")
 
 # https://api.github.com/repos/galaxyproject/galaxy/pulls?base=dev&state=closed
 # https://api.github.com/repos/galaxyproject/galaxy/pulls?base=release_15.07&state=closed
@@ -134,7 +148,39 @@ def do_release(argv):
     release_file = _release_file(release_name + ".rst")
     release_info = TEMPLATE % release_name
     open(release_file, "w").write(release_info.encode("utf-8"))
-    print release_info
+    month = int(release_name.split(".")[1])
+    month_name = calendar.month_name[month]
+    year = release_name.split(".")[0]
+
+    announce_info = ANNOUNCE_TEMPLATE.substitute(
+        month_name=month_name,
+        year=year,
+        release=release_name
+    )
+    announce_file = _release_file(release_name + "_announce.rst")
+    open(announce_file, "w").write(announce_info.encode("utf-8"))
+
+    next_month = (((month - 1) + 3) % 12) + 1
+    next_month_name = calendar.month_name[next_month]
+    if next_month < 3:
+        next_year = int(year) + 1
+    else:
+        next_year = year
+    next_version = "%s.%02d" % (next_year, next_month)
+    first_of_next_month = datetime.date(next_year + 2000, next_month, 1)
+    freeze_date = next_weekday(first_of_next_month, 0)
+    release_date = next_weekday(first_of_next_month, 0) + datetime.timedelta(21)
+
+    next_release_file = _release_file(next_version + "_announce.rst")
+    next_announce = NEXT_TEMPLATE.substitute(
+        version=next_version,
+        year=next_year,
+        month_name=next_month_name,
+        freeze_date=freeze_date,
+        release_date=release_date,
+    )
+    open(next_release_file, "w").write(next_announce.encode("utf-8"))
+
     release_commit_start = None
     release_commit_end = None
 
@@ -180,6 +226,8 @@ def _get_prs():
 
 
 def main(argv):
+    if requests is None:
+        raise Exception("Requests library not found, please pip install requests")
     github = _github_client()
     newest_release = None
 
@@ -247,27 +295,32 @@ def main(argv):
         text = ".. _Pull Request {0}: {1}/pull/{0}".format(pull_request, PROJECT_URL)
         history = extend(".. github_links", text)
         if owner:
-            to_doc += "(Thanks to `@%s <https://github.com/%s>`__.) " % (
+            to_doc += "\n(Thanks to `@%s <https://github.com/%s>`__.)" % (
                 owner, owner,
             )
-        to_doc += "`Pull Request {0}`_".format(pull_request)
+        to_doc += "\n`Pull Request {0}`_".format(pull_request)
         if github:
             labels = []
             try:
                 labels = github.issues.labels.list_by_issue(int(pull_request), user=PROJECT_OWNER, repo=PROJECT_NAME)
-            except:
+            except Exception:
                 pass
-            is_bug = is_enhancement = False
+            is_bug = is_enhancement = is_minor = False
             for label in labels:
-                if label.name == "bug":
+                if label.name.lower() == "minor":
+                    is_minor = True
+                if label.name.lower() == "bug":
                     is_bug = True
-                if label.name == "enhancement":
+                if label.name.lower() == "enhancement":
                     is_enhancement = True
+            if is_minor:
+                return
             if is_enhancement:
                 text_target = "enhancements"
             elif is_bug:
                 text_target = "fixes"
             else:
+                print "Problem not label for %s" % pull_request
                 text_target = None
     elif ident.startswith("issue"):
         issue = ident[len("issue"):]
@@ -321,7 +374,20 @@ def wrap(message):
     wrapper = textwrap.TextWrapper(initial_indent="* ")
     wrapper.subsequent_indent = '  '
     wrapper.width = 78
-    return "\n".join(wrapper.wrap(message))
+    message_lines = message.splitlines()
+    first_lines = "\n".join(wrapper.wrap(message_lines[0]))
+    wrapper.initial_indent = "  "
+    rest_lines = "\n".join(["\n".join(wrapper.wrap(m)) for m in message_lines[1:]])
+    return first_lines + ("\n" + rest_lines if rest_lines else "")
+
+
+def next_weekday(d, weekday):
+    """ Return the next week day (0 for Monday, 6 for Sunday) starting from ``d``. """
+    days_ahead = weekday - d.weekday()
+    if days_ahead <= 0:  # Target day already happened this week
+        days_ahead += 7
+    return d + datetime.timedelta(days_ahead)
+
 
 if __name__ == "__main__":
     main(sys.argv)

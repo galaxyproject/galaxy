@@ -33,7 +33,6 @@ ${h.css("base")}
         'allow_user_creation'           : app.config.allow_user_creation,
         'logo_url'                      : h.url_for(app.config.get( 'logo_url', '/')),
         'spinner_url'                   : h.url_for('/static/images/loading_small_white_bg.gif'),
-        'search_url'                    : h.url_for(controller='root', action='tool_search'),
         'is_admin_user'                 : trans.user_is_admin(),
         'ftp_upload_dir'                : app.config.get("ftp_upload_dir",  None),
         'ftp_upload_site'               : app.config.get("ftp_upload_site",  None),
