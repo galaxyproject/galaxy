@@ -1578,7 +1578,7 @@ simple_mapping( model.HistoryDatasetAssociation,
                         model.HistoryDatasetCollectionAssociation.table.c.id ) ),
         uselist=False,
         backref="hidden_dataset_instances"),
-        _metadata=deferred(model.HistoryDatasetAssociation.table.c._metadata)
+    _metadata=deferred(model.HistoryDatasetAssociation.table.c._metadata)
 )
 
 simple_mapping( model.Dataset,
