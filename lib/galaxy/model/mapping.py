@@ -10,7 +10,7 @@ from sqlalchemy import ( and_, asc, Boolean, Column, DateTime, desc, false, Fore
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.types import BigInteger
-from sqlalchemy.orm import backref, object_session, relation, mapper, class_mapper
+from sqlalchemy.orm import backref, object_session, relation, mapper, class_mapper, deferred
 from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from galaxy import model
@@ -1577,7 +1577,8 @@ simple_mapping( model.HistoryDatasetAssociation,
         primaryjoin=( ( model.HistoryDatasetAssociation.table.c.hidden_beneath_collection_instance_id ==
                         model.HistoryDatasetCollectionAssociation.table.c.id ) ),
         uselist=False,
-        backref="hidden_dataset_instances" )
+        backref="hidden_dataset_instances"),
+        _metadata=deferred(model.HistoryDatasetAssociation.table.c._metadata)
 )
 
 simple_mapping( model.Dataset,
@@ -1945,7 +1946,8 @@ mapper( model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssoc
         remote_side=[model.LibraryDatasetDatasetAssociation.table.c.id] ),
     extended_metadata=relation( model.ExtendedMetadata,
         primaryjoin=( ( model.LibraryDatasetDatasetAssociation.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id ) )
-    )
+    ),
+    _metadata=deferred(model.LibraryDatasetDatasetAssociation.table.c._metadata)
 ) )
 
 mapper( model.LibraryDatasetDatasetInfoAssociation, model.LibraryDatasetDatasetInfoAssociation.table, properties=dict(
