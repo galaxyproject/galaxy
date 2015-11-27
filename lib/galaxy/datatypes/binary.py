@@ -465,39 +465,45 @@ class CRAM( Binary ):
 
     def set_meta( self, dataset, overwrite=True, **kwd ):
         major_version, minor_version = self.get_cram_version( dataset.file_name )
-        if major_version > 0:
+        if major_version != -1:
             dataset.metadata.cram_version = str(major_version) + "." + str(minor_version)
-        
-        if not dataset.metadata.bam_index:
+
+        if not dataset.metadata.cram_index:
             index_file = dataset.metadata.spec['cram_index'].param.new_file( dataset=dataset )
-            self.set_index_file(dataset, index_file)
+            if self.set_index_file(dataset, index_file):
+                dataset.metadata.cram_index = index_file
 
     def get_cram_version( self, filename):
         try:
-            with open(, "r") as fh:
+            with open( filename , "r") as fh:
                 header = fh.read(6)
-                return ord(header[4]), ord(header[5])
-            except Exception as exc:
-                log.warn( '%s, set_meta Exception: %s', self, exc )
-                return -1, -1
+                return ord( header[4] ), ord( header[5] )
+        except Exception as exc:
+            log.warn( '%s, get_cram_version Exception: %s', self, exc )
+            return -1, -1
 
-    def get_index_file(self, dataset, index_file):
+    def set_index_file(self, dataset, index_file):
         try:
-            ## @todo when pysam 1.2.1 or pysam 1.3.0 gets released use pysam.index(alignment, target_idx)
-            ## This currently gives coredump in the current release but is fixed in the dev branch
-            ## xref: https://github.com/samtools/samtools/issues/199
-            
+            # @todo when pysam 1.2.1 or pysam 1.3.0 gets released and becomes
+            # a dependency of galaxy, use pysam.index(alignment, target_idx)
+            # This currently gives coredump in the current release but is
+            # fixed in the dev branch:
+            # xref: https://github.com/samtools/samtools/issues/199
+
             dataset_symlink = os.path.join( os.path.dirname( index_file.file_name ), '__dataset_%d_%s' % ( dataset.id, os.path.basename( index_file.file_name ) ) )
-            os.symlink( dataset.file_name, dataset_symlink )            
-            pysam.index(bam_file)
-            
-            # if file dataset_symlink + ".bai" exists
-            #     shutil.move( dataset_symlink + '.bai', index_file.file_name ) 
-            # else
-            #     os.unlink( dataset_symlink )
-            #     return False
-        except:
-            # Can not read the bam file for some reason
+            os.symlink( dataset.file_name, dataset_symlink )
+            pysam.index( dataset_symlink )
+
+            tmp_index = dataset_symlink + ".crai"
+            if os.path.isfile( tmp_index ):
+                 shutil.move( tmp_index, index_file.file_name )
+                 return index_file.file_name
+            else:
+                 os.unlink( dataset_symlink )
+                 log.warn( '%s, expected crai index not created for: %s', self, dataset.file_name )
+                 return False
+        except Exception as exc:
+            log.warn( '%s, set_index_file Exception: %s', self, exc )
             return False
 
     def set_peek( self, dataset, is_multi_byte=False ):
