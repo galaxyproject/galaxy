@@ -1296,6 +1296,21 @@ class AdminToolshed( AdminGalaxy ):
                 # Just in case the tool_section.id differs from tool_panel_section_id, which it shouldn't...
                 tool_panel_section_id = str( tool_section.id )
         if tool_shed_repository.status == trans.install_model.ToolShedRepository.installation_status.UNINSTALLED:
+            repository_type = suc.get_repository_type_from_tool_shed(trans.app,
+                                                                     tool_shed_url,
+                                                                     tool_shed_repository.name,
+                                                                     tool_shed_repository.owner)
+            if repository_type == rt_util.TOOL_DEPENDENCY_DEFINITION:
+                # Repositories of type tool_dependency_definition must get the latest
+                # metadata from the Tool Shed since they have only a single installable
+                # revision.
+                raw_text = suc.get_tool_dependency_definition_metadata_from_tool_shed(trans.app,
+                                                                                      tool_shed_url,
+                                                                                      tool_shed_repository.name,
+                                                                                      tool_shed_repository.owner)
+                new_meta = json.loads(raw_text)
+                # Clean up old repository dependency and tool dependency relationships.
+                suc.clean_dependency_relationships(trans, new_meta, tool_shed_repository, tool_shed_url)
             # The repository's status must be updated from 'Uninstalled' to 'New' when initiating reinstall
             # so the repository_installation_updater will function.
             tool_shed_repository = suc.create_or_update_tool_shed_repository( trans.app,
