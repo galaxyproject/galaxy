@@ -1,5 +1,8 @@
+import os
 
 from .test_workflows import BaseWorkflowsApiTestCase
+
+WORKFLOWS_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 
 
 class WorkflowsFromYamlApiTestCase( BaseWorkflowsApiTestCase ):

@@ -26,6 +26,21 @@ class BioBlendImporterGalaxyInterface(object):
         """
         url = None
 
+        admin_key = None
+        admin_gi = None
+        if "admin_gi" in kwds:
+            admin_gi = kwds["admin_gi"]
+        elif "gi" in kwds:
+            admin_gi = kwds["gi"]
+        elif "url" in kwds and "admin_key" in kwds:
+            url = kwds["url"]
+            admin_key = kwds["admin_key"]
+
+        if admin_gi is None:
+            assert url is not None
+            assert admin_key is not None
+            admin_gi = bioblend.GalaxyInstance(url=url, key=admin_key)
+
         user_key = None
         user_gi = None
         if "user_gi" in kwds:
@@ -41,6 +56,7 @@ class BioBlendImporterGalaxyInterface(object):
             assert user_key is not None
             user_gi = bioblend.GalaxyInstance(url=url, key=user_key)
 
+        self._admin_gi = admin_gi
         self._user_gi = user_gi
 
     def import_workflow(self, workflow):

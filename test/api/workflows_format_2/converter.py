@@ -11,9 +11,19 @@ except ImportError:
     from galaxy.util.odict import odict as OrderedDict
 
 
+STEP_TYPES = [
+    "data_input",
+    "data_collection_input",
+    "tool",
+    "pause",
+]
+
 STEP_TYPE_ALIASES = {
     'input': 'data_input',
     'input_collection': 'data_collection_input',
+}
+
+RUN_ACTIONS_TO_STEPS = {
 }
 
 
@@ -25,6 +35,11 @@ def yaml_to_workflow(has_yaml, galaxy_interface, workflow_directory):
 def python_to_workflow(as_python, galaxy_interface, workflow_directory):
     if workflow_directory is None:
         workflow_directory = os.path.abspath(".")
+
+    conversion_context = ConversionContext(
+        galaxy_interface,
+        workflow_directory,
+    )
 
     if not isinstance(as_python, dict):
         raise Exception("This is not a not a valid Galaxy workflow definition.")
@@ -51,7 +66,6 @@ def python_to_workflow(as_python, galaxy_interface, workflow_directory):
         inputs = as_python["inputs"]
         convert_inputs_to_steps(inputs, steps)
 
-    conversion_context = ConversionContext()
     if isinstance(steps, list):
         steps_as_dict = OrderedDict()
         for i, step in enumerate(steps):
@@ -74,9 +88,31 @@ def python_to_workflow(as_python, galaxy_interface, workflow_directory):
         steps = steps_as_dict
 
     for i, step in steps.iteritems():
+        step_type = step.get("type", None)
+        if "run" in step:
+            if step_type is not None:
+                raise Exception("Steps specified as run actions cannot specify a type.")
+            run_action = step.get("run")
+            if "@import" in run_action:
+                if len(run_action) > 1:
+                    raise Exception("@import must be only key if present.")
+
+                run_action_path = run_action["@import"]
+                runnable_path = os.path.join(workflow_directory, run_action_path)
+                with open(runnable_path, "r") as f:
+                    runnable_description = yaml.load(f)
+                    run_action = runnable_description
+
+            run_class = run_action["class"]
+            run_to_step_function = eval(RUN_ACTIONS_TO_STEPS[run_class])
+
+            run_to_step_function(conversion_context, step, run_action)
+            del step["run"]
+
+    for i, step in steps.iteritems():
         step_type = step.get("type", "tool")
         step_type = STEP_TYPE_ALIASES.get(step_type, step_type)
-        if step_type not in [ "data_input", "data_collection_input", "tool", "pause"]:
+        if step_type not in STEP_TYPES:
             raise Exception("Unknown step type encountered %s" % step_type)
         step["type"] = step_type
         eval("transform_%s" % step_type)(conversion_context, step)
@@ -274,10 +310,22 @@ def transform_tool(context, step):
         del step["outputs"]
 
 
+def run_tool_to_step(conversion_context, step, run_action):
+    tool_description = conversion_context.galaxy_interface.import_tool(
+        run_action
+    )
+    step["type"] = "tool"
+    step["tool_id"] = tool_description["tool_id"]
+    step["tool_version"] = tool_description["tool_version"]
+    step["tool_hash"] = tool_description["tool_hash"]
+
+
 class ConversionContext(object):
 
-    def __init__(self):
+    def __init__(self, galaxy_interface, workflow_directory):
         self.labels = {}
+        self.galaxy_interface = galaxy_interface
+        self.workflow_directory = workflow_directory
 
 
 def __action(type, name, arguments={}):
