@@ -7,7 +7,7 @@
 # Description: This script can be used to start or stop the galaxy
 # reports web application. Passing in --sync-config as the first
 # argument to this will cause Galaxy's database and path parameters
-# from universe_wsgi.ini to be copied over into reports.ini.
+# from galaxy.ini to be copied over into reports.ini.
 
 cd `dirname $0`
 
