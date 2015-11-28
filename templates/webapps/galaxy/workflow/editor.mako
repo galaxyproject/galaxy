@@ -340,6 +340,28 @@
                 ## End Data Manager Tools
             </div>
             <div>&nbsp;</div>
+            <div class="toolSectionWrapper">
+                <div class="toolSectionTitle" id="title__WORKLFOWS">
+                     <span>Workflows</span>
+                </div>
+                <div id="__workflows__" class="toolSectionBody">
+                    <div class="toolSectionBg">
+                    %for workflow in (workflows or []):
+                        %if workflow == stored:
+                            <% continue %>
+                        %endif
+                        <div class="toolTitle">
+                           <p class="workflow-entry"
+                              style="display: inline"
+                              data-worklfow-step-count="${len(workflow.latest_workflow.steps)}"
+                              data-stored-workflow-id="${trans.security.encode_id( workflow.id )}"
+                              data-workflow-id="${trans.security.encode_id(workflow.latest_workflow.id)}">${h.to_unicode(workflow.name) | h }</p>
+                        </div>
+                    %endfor
+                    </div>
+                </div>
+            </div>
+            <div>&nbsp;</div>
             %for section_name, module_section in module_sections.items():
                 %if section_name != "inputs":
                     ${render_module_section(module_section)}

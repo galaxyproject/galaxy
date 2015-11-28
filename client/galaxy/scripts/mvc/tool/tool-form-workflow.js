@@ -9,6 +9,7 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
         initialize: function(options) {
             // link this
             var self = this;
+            this.hasLabelListeners = false;
 
             // link with node representation in workflow module
             this.node = options.node;
@@ -35,6 +36,11 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
                 // configure model update
                 update_url      : Galaxy.root + 'api/workflows/build_module',
                 update          : function(data) {
+                    // This hasn't modified the workflow, just returned
+                    // module information for the tool to update the workflow
+                    // state stored on the client with. User needs to save
+                    // for this to take effect.
+                    self.initializeLabelListener();
                     self.node.update_field_data(data);
                     self.errors(data && data.tool_model)
                 }
@@ -66,6 +72,29 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
             // create final tool form
             ToolFormBase.prototype.initialize.call(this, options);
         },
+
+        initializeLabelListener: function() {
+            var self = this;
+            if(this.hasLabelListeners !== false) {
+                return;
+            }
+            this.hasLabelListeners = [];
+            var outputSections = _.where(this.options.inputs, {outputSection: true});
+            var labelInputs = outputSections.map(function(entry) {
+                var sectionId = entry.id;
+                var outputId = entry.outputId;
+                var $section = $("#" + sectionId);
+                var $labelRow = $section.find(".section-row").first();
+                var labelTextInput = $labelRow.find("input")[0];
+                $(labelTextInput).bind('input propertychange', function() {
+                    var newLabel = $(labelTextInput).val();
+                    var workflow = self.node.app.workflow;
+                    workflow.attemptUpdateOutputLabel( self.node, outputId, newLabel );
+                });
+            });
+
+        },
+
 
         /** Builds all sub sections
         */
@@ -156,17 +185,30 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
 
             // create custom sub section
             var input_config = {
-                title   : 'Add Actions: \'' + output_id + '\'',
+                title   : 'Configure Output: \'' + output_id + '\'',
                 type    : 'section',
                 flat    : true,
+                outputSection: true,
+                outputId   : output_id,
                 inputs  : [{
-                    action      : 'RenameDatasetAction',
-                    pja_arg     : 'newname',
-                    label       : 'Rename dataset',
+                    action      : 'Label',
+                    label       : 'Label',
                     type        : 'text',
                     value       : '',
                     ignore      : '',
-                    help        : 'This action will rename the output dataset. Click <a href="https://wiki.galaxyproject.org/Learn/AdvancedWorkflow/Variables">here</a> for more information. Valid inputs are: <strong>' + input_terminal_names.join(", ") + '</strong>.'
+                    help        : 'This will provide a short name to describe the output - this must be unique across workflows.'
+                }, {
+                    action      : 'RenameDatasetAction',
+                    pja_arg     : 'newname',
+                    label       : 'Rename dataset',
+                     type        : 'text',
+                     value       : '',
+                     ignore      : '',
+                    help        : 'This action will rename the output dataset. Click <a hr
+ef="https://wiki.galaxyproject.org/Learn/AdvancedWorkflow/Variables">here</a> for more info
+rmation. Valid inputs are: <strong>' + input_terminal_names.join(", ") + '</strong>.'
+                 },{
+
                 },{
                     action      : 'ChangeDatatypeAction',
                     pja_arg     : 'newtype',
@@ -235,7 +277,15 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
                 head_list.push(head);
                 for (var i in head.inputs) {
                     var input = head.inputs[i];
-                    if (input.action) {
+                    var action = input.action;
+                    if ( action == "Label") {
+                        var workflowOutput = self.node.getWorkflowOutput(output_id);
+                        if ( workflowOutput ) {
+                            input.value = workflowOutput['label'] || '';
+                        } else{
+                            input.value = '';
+                        }
+                    } else if (action) {
                         // construct identifier as expected by backend
                         input.name = 'pja__' + output_id + '__' + input.action;
                         if (input.pja_arg) {

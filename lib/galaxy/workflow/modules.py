@@ -307,6 +307,215 @@ class SimpleWorkflowModule( WorkflowModule ):
                                          module=self, form=form )
 
 
+class SubWorkflowModule( WorkflowModule ):
+    state_fields = [ ]
+    type = "subworkflow"
+    name = "Subworkflow"
+    default_name = "Subworkflow"
+
+    @classmethod
+    def new( Class, trans, content_id=None ):
+        module = Class( trans )
+        module.subworkflow = SubWorkflowModule.subworkflow_from_content_id( trans, content_id )
+        module.label = None
+        return module
+
+    @classmethod
+    def from_dict( Class, trans, d, secure=True ):
+        module = Class( trans )
+        if "subworkflow" in d:
+            module.subworkflow = d["subworkflow"]
+        elif "content_id" in d:
+            content_id = d["content_id"]
+            module.subworkflow = SubWorkflowModule.subworkflow_from_content_id( trans, content_id )
+        module.label = d.get("label", None) or None
+        return module
+
+    @classmethod
+    def from_workflow_step( Class, trans, step ):
+        module = Class( trans )
+        module.subworkflow = step.subworkflow
+        module.label = step.label
+        return module
+
+    def save_to_step( self, step ):
+        step.type = self.type
+        step.subworkflow = self.subworkflow
+
+    @classmethod
+    def default_state( Class ):
+        return dict( )
+
+    def get_errors( self ):
+        return None
+
+    def get_data_inputs( self ):
+        """ Get configure time data input descriptions. """
+        # Filter subworkflow steps and get inputs
+        step_to_input_type = {
+            "data_input": "dataset",
+            "data_collection_input": "dataset_collection",
+        }
+        inputs = []
+        for step in self.subworkflow.input_steps:
+            name = step.label
+            if name is None:
+                # trans shouldn't really be needed for data inputs...
+                step_module = module_factory.from_workflow_step(self.trans, step)
+                name = step_module.get_runtime_input_dicts(None)[0]["name"]
+
+            if not name:
+                raise Exception("Failed to find name for workflow module.")
+            step_type = step.type
+            assert step_type in step_to_input_type
+            input = dict(
+                input_subworkflow_step_id=step.order_index,
+                name=name,
+                label=name,
+                multiple=False,
+                extensions="input",
+                input_type=step_to_input_type[step_type],
+            )
+            inputs.append(input)
+
+        return inputs
+
+    def get_data_outputs( self ):
+        outputs = []
+        for workflow_output in self.subworkflow.workflow_outputs:
+            output_step = workflow_output.workflow_step
+            label = name = workflow_output.label
+            if name is None:
+                name = "%s:%s" % (output_step.order_index, workflow_output.output_name)
+                label = name
+            output = dict(
+                name=name,
+                label=label,
+                extensions=['input'],  # TODO
+            )
+            outputs.append(output)
+        return outputs
+
+    def get_runtime_input_dicts( self, step_annotation ):
+        """ Get runtime inputs (inputs and parameters) as simple dictionary. """
+        return []
+
+    def get_content_id( self ):
+        return self.trans.security.encode_id(self.subworkflow.id)
+
+    def recover_runtime_state( self, runtime_state ):
+        """ Take secure runtime state from persisted invocation and convert it
+        into a DefaultToolState object for use during workflow invocation.
+        """
+        fake_tool = Bunch( inputs=self.get_runtime_inputs() )
+        state = galaxy.tools.DefaultToolState()
+        state.decode( runtime_state, fake_tool, self.trans.app, secure=False )
+        return state
+
+    def normalize_runtime_state( self, runtime_state ):
+        fake_tool = Bunch( inputs=self.get_runtime_inputs() )
+        return runtime_state.encode( fake_tool, self.trans.app, secure=False )
+
+    def encode_runtime_state( self, trans, state ):
+        fake_tool = Bunch( inputs=self.get_runtime_inputs() )
+        return state.encode( fake_tool, trans.app )
+
+    def decode_runtime_state( self, trans, string ):
+        fake_tool = Bunch( inputs=self.get_runtime_inputs() )
+        state = galaxy.tools.DefaultToolState()
+        if string:
+            state.decode( string, fake_tool, trans.app )
+        return state
+
+    def update_runtime_state( self, trans, state, values ):
+        errors = {}
+        for name, param in self.get_runtime_inputs().iteritems():
+            value, error = check_param( trans, param, values.get( name, None ), values )
+            state.inputs[ name ] = value
+            if error:
+                errors[ name ] = error
+        return errors
+
+    def compute_runtime_state( self, trans, step_updates=None, source="html" ):
+        state = self.get_runtime_state()
+        step_errors = {}
+        return state, step_errors
+
+    def recover_state( self, state, **kwds ):
+        """ Recover state `dict` from simple dictionary describing configuration
+        state (potentially from persisted step state).
+
+        Sub-classes should supply `default_state` method and `state_fields`
+        attribute which are used to build up the state `dict`.
+        """
+        self.state = self.default_state()
+        for key in self.state_fields:
+            if state and key in state:
+                self.state[ key ] = state[ key ]
+
+    def get_config_form( self ):
+        form = self._abstract_config_form( )
+        return self.trans.fill_template( "workflow/editor_generic_form.mako",
+                                         module=self, form=form )
+
+    def _abstract_config_form( self ):
+        form = formbuilder.FormBuilder( title=self.name )
+        return form
+
+    def check_and_update_state( self ):
+        """
+        If the state is not in sync with the current implementation of the
+        module, try to update. Returns a list of messages to be displayed
+        """
+        return None
+
+    def add_dummy_datasets( self, connections=None):
+        # Replaced connected inputs with DummyDataset values.
+        return None
+
+    def get_runtime_inputs( self, **kwds ):
+        # Two step improvements to this...
+        # - First pass verify nested workflow doesn't have an RuntimeInputs
+        # - Second pass actually turn RuntimeInputs into inputs here if possible.
+        return {}
+
+    def execute( self, trans, progress, invocation, step ):
+        """ Execute the given workflow step in the given workflow invocation.
+        Use the supplied workflow progress object to track outputs, find
+        inputs, etc...
+        """
+        subworkflow_invoker = progress.subworkflow_invoker( trans, step )
+        subworkflow_invoker.invoke()
+        subworkflow = subworkflow_invoker.workflow
+        subworkflow_progress = subworkflow_invoker.progress
+        outputs = {}
+        for workflow_output in subworkflow.workflow_outputs:
+            workflow_output_label = workflow_output.label
+            replacement = subworkflow_progress.get_replacement_workflow_output( workflow_output )
+            outputs[ workflow_output_label ] = replacement
+
+        progress.set_step_outputs( step, outputs )
+        return None
+
+    def recover_mapping( self, step, step_invocations, progress ):
+        """ Re-populate progress object with information about connections
+        from previously executed steps recorded via step_invocations.
+        """
+        raise TypeError( "Abstract method" )
+
+    def get_runtime_state( self ):
+        state = galaxy.tools.DefaultToolState()
+        state.inputs = dict( )
+        return state
+
+    @classmethod
+    def subworkflow_from_content_id(clazz, trans, content_id):
+        from galaxy.managers.workflows import WorkflowsManager
+        workflow_manager = WorkflowsManager(trans.app)
+        subworkflow = workflow_manager.get_owned_workflow( trans, content_id )
+        return subworkflow
+
+
 class InputModule( SimpleWorkflowModule ):
 
     def get_runtime_state( self ):
@@ -603,7 +812,9 @@ class ToolModule( WorkflowModule ):
 
     @classmethod
     def from_dict( Class, trans, d, secure=True ):
-        tool_id = d[ 'tool_id' ]
+        tool_id = d.get( 'content_id', None )
+        if tool_id is None:
+            tool_id = d.get( 'tool_id', None )  # Older workflows will have exported this as tool_id.
         tool_version = str( d.get( 'tool_version', None ) )
         module = Class( trans, tool_id, tool_version=tool_version )
         module.state = galaxy.tools.DefaultToolState()
@@ -1095,6 +1306,7 @@ module_types = dict(
     parameter_input=InputParameterModule,
     pause=PauseModule,
     tool=ToolModule,
+    subworkflow=SubWorkflowModule,
 )
 module_factory = WorkflowModuleFactory( module_types )
 
@@ -1159,8 +1371,9 @@ class WorkflowModuleInjector(object):
     """ Injects workflow step objects from the ORM with appropriate module and
     module generated/influenced state. """
 
-    def __init__( self, trans ):
+    def __init__( self, trans, allow_tool_state_corrections=False ):
         self.trans = trans
+        self.allow_tool_state_corrections = allow_tool_state_corrections
 
     def inject( self, step, step_args=None, source="html" ):
         """ Pre-condition: `step` is an ORM object coming from the database, if
@@ -1199,16 +1412,22 @@ class WorkflowModuleInjector(object):
         module.add_dummy_datasets( connections=step.input_connections )
 
         state, step_errors = module.compute_runtime_state( trans, step_args, source=source )
+
         step.state = state
+
+        if step.type == "subworkflow":
+            subworkflow = step.subworkflow
+            populate_module_and_state( self.trans, subworkflow, param_map={}, )
 
         return step_errors
 
 
-def populate_module_and_state( trans, workflow, param_map, allow_tool_state_corrections=False ):
+def populate_module_and_state( trans, workflow, param_map, allow_tool_state_corrections=False, module_injector=None ):
     """ Used by API but not web controller, walks through a workflow's steps
     and populates transient module and state attributes on each.
     """
-    module_injector = WorkflowModuleInjector( trans )
+    if module_injector is None:
+        module_injector = WorkflowModuleInjector( trans, allow_tool_state_corrections )
     for step in workflow.steps:
         step_args = param_map.get( step.id, {} )
         step_errors = module_injector.inject( step, step_args=step_args, source="json" )

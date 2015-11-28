@@ -118,9 +118,13 @@ def queue_invoke( trans, workflow, workflow_run_config, request_params={}, popul
 
 class WorkflowInvoker( object ):
 
-    def __init__( self, trans, workflow, workflow_run_config, workflow_invocation=None ):
+    def __init__( self, trans, workflow, workflow_run_config, workflow_invocation=None, progress=None ):
         self.trans = trans
         self.workflow = workflow
+        if progress is not None:
+            assert workflow_invocation is None
+            workflow_invocation = progress.workflow_invocation
+
         if workflow_invocation is None:
             invocation_uuid = uuid.uuid1()
 
@@ -140,7 +144,9 @@ class WorkflowInvoker( object ):
         self.workflow_invocation.replacement_dict = workflow_run_config.replacement_dict
 
         module_injector = modules.WorkflowModuleInjector( trans )
-        self.progress = WorkflowProgress( self.workflow_invocation, workflow_run_config.inputs, module_injector )
+        if progress is None:
+            progress = WorkflowProgress( self.workflow_invocation, workflow_run_config.inputs, module_injector )
+        self.progress = progress
 
     def invoke( self ):
         workflow_invocation = self.workflow_invocation
@@ -309,6 +315,11 @@ class WorkflowProgress( object ):
                 raise modules.DelayedWorkflowEvaluation()
         return replacement
 
+    def get_replacement_workflow_output( self, workflow_output ):
+        step = workflow_output.workflow_step
+        output_name = workflow_output.output_name
+        return self.outputs[ step.id ][ output_name ]
+
     def set_outputs_for_input( self, step, outputs=None ):
         if outputs is None:
             outputs = {}
@@ -328,6 +339,57 @@ class WorkflowProgress( object ):
 
     def mark_step_outputs_delayed(self, step):
         self.outputs[ step.id ] = STEP_OUTPUT_DELAYED
+
+    def _subworkflow_invocation(self, step):
+        workflow_invocation = self.workflow_invocation
+        subworkflow_invocation = workflow_invocation.get_subworkflow_invocation_for_step(step)
+        if subworkflow_invocation is None:
+            raise Exception("Failed to find persisted workflow invocation for step [%s]" % step.id)
+        return subworkflow_invocation
+
+    def subworkflow_invoker(self, trans, step):
+        subworkflow_progress = self.subworkflow_progress(step)
+        subworkflow_invocation = subworkflow_progress.workflow_invocation
+        workflow_run_config = WorkflowRunConfig(
+            target_history=subworkflow_invocation.history,
+            replacement_dict={},
+            inputs={},
+            param_map={},
+            copy_inputs_to_history=False,
+        )
+        return WorkflowInvoker(
+            trans,
+            workflow=subworkflow_invocation.workflow,
+            workflow_run_config=workflow_run_config,
+            progress=subworkflow_progress,
+        )
+
+    def subworkflow_progress(self, step):
+        subworkflow_invocation = self._subworkflow_invocation(step)
+        subworkflow = subworkflow_invocation.workflow
+        subworkflow_inputs = {}
+        for input_subworkflow_step in subworkflow.input_steps:
+            connection_found = False
+            for input_connection in step.input_connections:
+                if input_connection.input_subworkflow_step == input_subworkflow_step:
+                    subworkflow_step_id = input_subworkflow_step.id
+                    is_data = input_connection.output_step.type != "parameter_input"
+                    replacement = self.replacement_for_connection(
+                        input_connection,
+                        is_data=is_data,
+                    )
+                    subworkflow_inputs[subworkflow_step_id] = replacement
+                    connection_found = True
+                    break
+
+            if not connection_found:
+                raise Exception("Could not find connections for all subworkflow inputs.")
+
+        return WorkflowProgress(
+            subworkflow_invocation,
+            subworkflow_inputs,
+            self.module_injector,
+        )
 
     def _recover_mapping( self, step, step_invocations ):
         try:

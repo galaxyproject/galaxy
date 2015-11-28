@@ -430,7 +430,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
                 step,
                 'id',
                 'type',
-                'tool_id',
+                'content_id',
                 'name',
                 'tool_state',
                 'tooltip',
@@ -659,6 +659,57 @@ steps:
         self.wait_for_invocation_and_jobs( history_id, workflow_id, invocation_id )
         content = self.dataset_populator.get_history_dataset_content( history_id, hid=7 )
         self.assertEquals(content.strip(), "samp1\t10.0\nsamp2\t20.0")
+
+    def test_run_subworkflow_simple( self ):
+        history_id = self.dataset_populator.new_history()
+        self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: outer_input
+steps:
+  - tool_id: cat1
+    label: first_cat
+    state:
+      input1:
+        $link: outer_input
+  - run:
+      class: GalaxyWorkflow
+      inputs:
+        - id: inner_input
+      outputs:
+        - id: workflow_output
+          source: random_lines#out_file1
+      steps:
+        - tool_id: random_lines1
+          label: random_lines
+          state:
+            num_lines: 1
+            input:
+              $link: inner_input
+            seed_source:
+              seed_source_selector: set_seed
+              seed: asdf
+              __current_case__: 1
+    label: nested_workflow
+    connect:
+      inner_input: first_cat#out_file1
+  - tool_id: cat1
+    label: second_cat
+    state:
+      input1:
+        $link: nested_workflow#workflow_output
+      queries:
+        - input2:
+            $link: nested_workflow#workflow_output
+
+test_data:
+  outer_input:
+    value: 1.bed
+    type: File
+""", history_id=history_id)
+
+        content = self.dataset_populator.get_history_dataset_content( history_id )
+        self.assertEquals("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\nchr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
 
     def test_workflow_request( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_queue" )

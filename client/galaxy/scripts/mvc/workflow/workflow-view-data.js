@@ -44,13 +44,14 @@ define(['mvc/workflow/workflow-globals'], function( Globals ){
                 label = label + " (" + output.extensions.join(", ") + ")";
             }
             this.$el.html( label )
-
+            this.calloutView = null;
             if (node.type == 'tool'){
                 var calloutView = new OutputCalloutView( {
                     "label": label,
                     "output": output,
                     "node": node,
                 });
+                this.calloutView = calloutView;
                 this.$el.append( calloutView.el );
                 this.$el.hover( function() { calloutView.hoverImage() }, function() { calloutView.resetImage() } );
             }
@@ -65,6 +66,11 @@ define(['mvc/workflow/workflow-globals'], function( Globals ){
                            top:'',
                            display:'' })
                     .detach();
+        },
+        redrawWorkflowOutput: function() {
+            if( this.calloutView ) {
+                this.calloutView.resetImage();
+            }
         }
     });
 

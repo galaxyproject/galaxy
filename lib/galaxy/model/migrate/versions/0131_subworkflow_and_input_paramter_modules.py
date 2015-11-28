@@ -85,7 +85,7 @@ def __alter_column(table_name, column_name, metadata, **kwds):
         getattr( table.c, column_name ).alter(**kwds)
     except Exception as e:
         print str(e)
-        log.exception( "Adding column %s failed." % column)
+        log.exception( "Adding column %s failed." % column_name)
 
 
 def __add_column(column, table_name, metadata, **kwds):

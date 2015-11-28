@@ -31,6 +31,28 @@ steps:
        output_name: "out_file1"
 """
 
+TEST_SUBWORKFLOW_YAML = """
+steps:
+  - type: "data_input"
+    tool_inputs: {"name": "outer_input"}
+  - type: "subworkflow"
+    subworkflow:
+       steps:
+          - type: "data_input"
+            tool_inputs: {"name": "inner_input"}
+          - type: "tool"
+            tool_id: "cat1"
+            input_connections:
+            -  input_name: "input1"
+               "@output_step": 0
+               output_name: "output"
+    input_connections:
+    -  input_name: "inner_input"
+       "@output_step": 0
+       output_name: "output"
+       "@input_subworkflow_step": 0
+"""
+
 UNSCHEDULED_STEP = object()
 
 
@@ -127,11 +149,39 @@ class WorkflowProgressTestCase( unittest.TestCase ):
     # TODO: Test cancel on collection invalid
     # TODO: Test delay on collection waiting for population
 
+    def test_subworkflow_progress(self):
+        self._setup_workflow(TEST_SUBWORKFLOW_YAML)
+        hda = model.HistoryDatasetAssociation()
+        self._set_previous_progress({
+            100: {"output": hda},
+            101: UNSCHEDULED_STEP,
+        })
+        self.invocation.create_subworkflow_invocation_for_step(
+            self.invocation.workflow.step_by_index(1)
+        )
+        progress = self._new_workflow_progress()
+        remaining_steps = progress.remaining_steps()
+        subworkflow_step = remaining_steps[0]
+        subworkflow_progress = progress.subworkflow_progress(subworkflow_step)
+        subworkflow = subworkflow_step.subworkflow
+        assert subworkflow_progress.workflow_invocation.workflow == subworkflow
+        subworkflow_input_step = subworkflow.step_by_index(0)
+        subworkflow_progress.set_outputs_for_input( subworkflow_input_step )
+
+        subworkflow_cat_step = subworkflow.step_by_index(1)
+
+        assert hda is subworkflow_progress.replacement_for_tool_input(
+            subworkflow_cat_step,
+            MockInput(),
+            "input1",
+        )
+
 
 class MockInput(object):
 
-    def __init__(self, multiple=False):
+    def __init__(self, type="data", multiple=False):
         self.multiple = multiple
+        self.type = type
 
 
 class MockModuleInjector(object):

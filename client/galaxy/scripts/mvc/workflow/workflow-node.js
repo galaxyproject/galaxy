@@ -19,10 +19,34 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
                 this.workflow_outputs.splice(this.getWorkflowOutput(outputName), 1);
             }
         },
-        addWorkflowOutput: function(outputName) {
+        addWorkflowOutput: function(outputName, label) {
             if(!this.isWorkflowOutput(outputName)){
-                this.workflow_outputs.push({"output_name": outputName});
+                var output = {"output_name": outputName};
+                if( label ) {
+                    output["label"] = label;
+                }
+                this.workflow_outputs.push(output);
+                return true
             }
+            return false;
+        },
+        labelWorkflowOutput: function(outputName, label) {
+            var changed = false;
+            var oldLabel = null;
+            if( this.isWorkflowOutput(outputName) ) {
+                var workflowOutput = this.getWorkflowOutput(outputName);
+                oldLabel = workflowOutput["label"];
+                workflowOutput["label"] = label;
+                changed = oldLabel != label;
+            } else {
+                changed = this.addWorkflowOutput(outputName, label);
+            }
+            if( changed ) {
+                this.app.workflow.updateOutputLabel(oldLabel, label);
+                this.markChanged();
+                this.nodeView.redrawWorkflowOutputs();
+            }
+            return changed;
         },
         connectedOutputTerminals: function() {
             return this._connectedTerminals( this.output_terminals );
@@ -199,6 +223,12 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
                 nodeView.updateDataOutput( data.data_outputs[ 0 ] );
             }
             old_body.replaceWith( new_body );
+
+            if( "workflow_outputs" in data ) {
+                // Won't be present in response for data inputs
+                this.workflow_outputs = workflow_outputs ? workflow_outputs : [];
+            }
+
             // If active, reactivate with new form_html
             this.markChanged();
             this.redraw();

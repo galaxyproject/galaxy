@@ -50,6 +50,7 @@ NODE_ICONS = {
     'tool': 'fa-wrench',
     'data_input': 'fa-file-o',
     'data_collection_input': 'fa-folder-o',
+    'subworkflow': 'fa-sitemap fa-rotate-270',
     'pause': 'fa-pause'
 }
 
@@ -347,14 +348,10 @@ EditorFormView = Backbone.View.extend({
             this.type_to_type = this.datatypes_mapping.class_to_classes;
 
             // Load workflow definition
-            $.ajax( {
-                url: self.urls.load_workflow,
-                data: { id: self.options.id, "_": "true" },
-                dataType: 'json',
-                cache: false,
+            this._workflowLoadAjax(self.options.id, {
                 success: function( data ) {
                      self.reset();
-                     self.workflow.from_simple( data );
+                     self.workflow.from_simple( data, true );
                      self.workflow.has_changes = false;
                      self.workflow.fit_canvas_to_nodes();
                      self.scroll_to_nodes();
@@ -530,6 +527,30 @@ EditorFormView = Backbone.View.extend({
                    }
                });
             });
+            $("p.workflow-entry").each(function() {
+                var $this = $(this);
+                var storedWorkflowId = $this.data("stored-workflow-id");
+                var stepCount = $this.data("worklfow-step-count");
+                var doCopy = function() { self.copy_into_workflow(storedWorkflowId, $this.text()); hide_modal(); };
+                var embedLink = $('<i class="fa fa-copy" style="margin-left: 4px;">').click(function() {
+                    if(parseInt(stepCount) < 2) {
+                        doCopy();
+                    } else {
+                        // Don't ruin the workflow by adding 50 steps unprompted.
+                        window.show_modal( "Warning",
+                                "This will copy " + stepCount + " new steps into your workflow.",
+                                { "Cancel" : hide_modal,
+                                  "Ok": doCopy } );
+                    }
+                });
+                $this.after(embedLink);
+
+                var workflowId = $this.data("workflow-id");
+                var subworkflowLink = $('<i class="fa fa-link" style="margin-left: 4px;">').click(function() {
+                    self.add_node_for_subworkflow(workflowId, $this.text());
+                });
+                $this.after(subworkflowLink);
+            });
 
             // Rename async.
             async_save_text("workflow-name", "workflow-name", self.urls.rename_async, "new_name");
@@ -541,6 +562,36 @@ EditorFormView = Backbone.View.extend({
             });
             // Annotate async.
             async_save_text("workflow-annotation", "workflow-annotation", self.urls.annotate_async, "new_annotation", 25, true, 4);
+        },
+
+        copy_into_workflow: function(workflowId) {
+            // Load workflow definition
+            var self = this;
+
+            this._workflowLoadAjax(workflowId, {
+                success: function( data ) {
+                    self.workflow.from_simple( data, false );
+                    // Determine if any parameters were 'upgraded' and provide message
+                    upgrade_message = "";
+                    $.each( data.upgrade_messages, function( k, v ) {
+                       upgrade_message += ( "<li>Step " + ( parseInt(k, 10) + 1 ) + ": " + self.workflow.nodes[k].name + "<ul>");
+                       $.each( v, function( i, vv ) {
+                           upgrade_message += "<li>" + vv +"</li>";
+                       });
+                       upgrade_message += "</ul></li>";
+                    });
+                    if ( upgrade_message ) {
+                       window.show_modal( "Subworkflow embedded with changes",
+                                   "Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save.<ul>" + upgrade_message + "</ul>",
+                                   { "Continue" : hide_modal } );
+                    } else {
+                       hide_modal();
+                    }
+                },
+                beforeSubmit: function( data ) {
+                   show_message( "Importing workflow", "progress" );
+                }
+            });
         },
 
         // Global state for the whole workflow
@@ -566,6 +617,16 @@ EditorFormView = Backbone.View.extend({
                 top = 0;
             }
             cc.css( { left: left, top: top } );
+        },
+
+        _workflowLoadAjax: function(workflowId, options_) {
+            var options = Utils.merge(options_, {
+                url: this.urls.load_workflow,
+                data: { id: workflowId, "_": "true" },
+                dataType: 'json',
+                cache: false
+            });
+            $.ajax(options);
         },
 
         _moduleInitAjax: function(node, request_data) {
@@ -596,7 +657,7 @@ EditorFormView = Backbone.View.extend({
         // Add a new step to the workflow by tool id
         add_node_for_subworkflow: function ( id, title ) {
             node = this.workflow.create_node( 'subworkflow', title, id );
-            this._moduleInitAjax(node, { type: "subworkflow", subworkflow_id: id, "_": "true" });
+            this._moduleInitAjax(node, { type: "subworkflow", content_id: id, "_": "true" });
         },
 
         add_node_for_module: function ( type, title ) {

@@ -312,8 +312,28 @@ def workflow_run_config_to_request( trans, run_config, workflow ):
         serializable_runtime_state = step.module.normalize_runtime_state( state )
         step_state = model.WorkflowRequestStepState()
         step_state.workflow_step = step
+        log.info("Creating a step_state for step.id %s" % step.id)
         step_state.value = serializable_runtime_state
         workflow_invocation.step_states.append( step_state )
+
+        if step.type == "subworkflow":
+            subworkflow_run_config = WorkflowRunConfig(
+                target_history=run_config.target_history,
+                replacement_dict=run_config.replacement_dict,
+                copy_inputs_to_history=False,
+                inputs={},
+                param_map={},
+                allow_tool_state_corrections=run_config.allow_tool_state_corrections
+            )
+            subworkflow_invocation = workflow_run_config_to_request(
+                trans,
+                subworkflow_run_config,
+                step.subworkflow,
+            )
+            workflow_invocation.attach_subworkflow_invocation_for_step(
+                step,
+                subworkflow_invocation,
+            )
 
     replacement_dict = run_config.replacement_dict
     for name, value in replacement_dict.iteritems():

@@ -12,6 +12,7 @@ except ImportError:
 
 
 STEP_TYPES = [
+    "subworkflow",
     "data_input",
     "data_collection_input",
     "tool",
@@ -26,6 +27,7 @@ STEP_TYPE_ALIASES = {
 }
 
 RUN_ACTIONS_TO_STEPS = {
+    'GalaxyWorkflow': 'run_workflow_to_step',
 }
 
 
@@ -127,6 +129,15 @@ def _python_to_workflow(as_python, conversion_context):
         assert isinstance(output, dict), "Output definition must be dictionary"
         assert "source" in output, "Output definition must specify source"
 
+        if "label" in output and "id" in output:
+            raise Exception("label and id are aliases for outputs, may only define one")
+        if "label" not in output and "id" not in output:
+            raise Exception("Output must define a label.")
+
+        raw_label = output.pop("label", None)
+        raw_id = output.pop("id", None)
+        label = raw_label or raw_id
+
         source = output["source"]
         id, output_name = conversion_context.step_output(source)
         step = steps[str(id)]
@@ -135,6 +146,8 @@ def _python_to_workflow(as_python, conversion_context):
 
         step["workflow_outputs"].append({
             "output_name": output_name,
+            "label": label,
+            "uuid": output.get("uuid", None)
         })
 
     return as_python
@@ -177,6 +190,16 @@ def convert_inputs_to_steps(inputs, steps):
 
     for i, new_step in enumerate(new_steps):
         steps.insert(i, new_step)
+
+
+def run_workflow_to_step(conversion_context, step, run_action):
+    subworkflow_conversion_context = conversion_context.get_subworkflow_conversion_context(step)
+
+    step["type"] = "subworkflow"
+    step["subworkflow"] = _python_to_workflow(
+        run_action,
+        subworkflow_conversion_context,
+    )
 
 
 def transform_data_input(context, step):
@@ -244,6 +267,21 @@ def transform_pause(context, step, default_name="Pause for dataset review"):
     })
     tool_state = {
         "name": name
+    }
+
+    connect = __init_connect_dict(step)
+    __populate_input_connections(context, step, connect)
+    __populate_tool_state(step, tool_state)
+
+
+def transform_subworkflow(context, step):
+    __ensure_defaults( step, {
+        "annotation": "",
+    })
+
+    __ensure_inputs_connections(step)
+
+    tool_state = {
     }
 
     connect = __init_connect_dict(step)
@@ -358,6 +396,7 @@ class ConversionContext(object):
 
     def __init__(self, galaxy_interface, workflow_directory):
         self.labels = {}
+        self.subworkflow_conversion_contexts = {}
         self.galaxy_interface = galaxy_interface
         self.workflow_directory = workflow_directory
 
@@ -374,6 +413,16 @@ class ConversionContext(object):
             value_parts.append("output")
         id = self.step_id(value_parts[0])
         return id, value_parts[1]
+
+    def get_subworkflow_conversion_context(self, step):
+        step_id = step["id"]
+        if step_id not in self.subworkflow_conversion_contexts:
+            subworkflow_conversion_context = ConversionContext(
+                self.galaxy_interface,
+                self.workflow_directory,
+            )
+            self.subworkflow_conversion_contexts[step_id] = subworkflow_conversion_context
+        return self.subworkflow_conversion_contexts[step_id]
 
 
 def __action(type, name, arguments={}):
@@ -408,6 +457,7 @@ def __init_connect_dict(step):
 def __populate_input_connections(context, step, connect):
     __ensure_inputs_connections(step)
     input_connections = step["input_connections"]
+    is_subworkflow_step = step.get("type") == "subworkflow"
 
     for key, values in connect.iteritems():
         input_connection_value = []
@@ -419,6 +469,10 @@ def __populate_input_connections(context, step, connect):
                     value += "#__NO_INPUT_OUTPUT_NAME__"
                 id, output_name = context.step_output(value)
                 value = {"id": id, "output_name": output_name}
+                if is_subworkflow_step:
+                    subworkflow_conversion_context = context.get_subworkflow_conversion_context(step)
+                    input_subworkflow_step_id = subworkflow_conversion_context.step_id(key)
+                    value["input_subworkflow_step_id"] = input_subworkflow_step_id
             input_connection_value.append(value)
         if key == "$step":
             key = "__NO_INPUT_OUTPUT_NAME__"
