@@ -81,7 +81,7 @@ class WorkflowModule( object ):
 
     # ---- Configuration time -----------------------------------------------
 
-    def get_state( self ):
+    def get_state( self, secure=True ):
         """ Return a serializable representation of the persistable state of
         the step - for tools it DefaultToolState.encode returns a string and
         for simpler module types a json description is dumped out.
