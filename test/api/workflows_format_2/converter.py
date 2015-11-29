@@ -40,6 +40,10 @@ def python_to_workflow(as_python, galaxy_interface, workflow_directory):
         galaxy_interface,
         workflow_directory,
     )
+    return _python_to_workflow(as_python, conversion_context)
+
+
+def _python_to_workflow(as_python, conversion_context):
 
     if not isinstance(as_python, dict):
         raise Exception("This is not a not a valid Galaxy workflow definition.")
@@ -98,7 +102,7 @@ def python_to_workflow(as_python, galaxy_interface, workflow_directory):
                     raise Exception("@import must be only key if present.")
 
                 run_action_path = run_action["@import"]
-                runnable_path = os.path.join(workflow_directory, run_action_path)
+                runnable_path = os.path.join(conversion_context.workflow_directory, run_action_path)
                 with open(runnable_path, "r") as f:
                     runnable_description = yaml.load(f)
                     run_action = runnable_description
