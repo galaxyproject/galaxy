@@ -42,6 +42,7 @@ reports_webapp.pid
 
 # Config files
 universe_wsgi.ini
+reports_wsgi.ini
 reports.ini
 tool_shed_wsgi.ini
 
