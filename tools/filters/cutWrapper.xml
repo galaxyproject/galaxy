@@ -1,4 +1,4 @@
-<tool id="Cut1" name="Cut" version="1.0.2">
+<tool id="Cut1" name="Cut" version="1.0.3">
   <description>columns from a table</description>
   <command interpreter="perl">cutWrapper.pl "${input}" "${columnList}" "${delimiter}" "${out_file1}" "${fill_char}" "${keep_header}"</command>
   <inputs>
