@@ -132,7 +132,7 @@ class WorkflowModule( object ):
 
     # ---- Run time ---------------------------------------------------------
 
-    def get_runtime_inputs( self ):
+    def get_runtime_inputs( self, **kwds ):
         """ Used internally by modules and when displaying inputs in workflow
         editor and run workflow templates.
 

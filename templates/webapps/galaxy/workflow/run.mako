@@ -612,7 +612,7 @@ if wf_parms:
               if not type_filter:
                   type_filter = ['data']
               %>
-              ${do_inputs( module.get_runtime_inputs(type_filter), step.state.inputs, errors.get( step.id, dict() ), "", step, None, used_accumulator )}
+              ${do_inputs( module.get_runtime_inputs(filter_set=type_filter), step.state.inputs, errors.get( step.id, dict() ), "", step, None, used_accumulator )}
           </div>
       </div>
     %endif
