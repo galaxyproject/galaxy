@@ -427,6 +427,8 @@
     <datatype extension="vtkbinary" type="galaxy.datatypes.constructive_solid_geometry:VtkBinary" display_in_upload="true" />
     <!-- Metagenomic Datatype -->
     <datatype extension="biom1" type="galaxy.datatypes.text:Biom1" display_in_upload="True" subclass="True" mimetype="application/json" />
+    <!-- Strand-specific Coordinate Count Datatype used by the Center for Eukaryotic Gene Regulation labs at Penn State -->
+    <datatype extension="scidx" type="galaxy.datatypes.interval:ScIdx" display_in_upload="true" />
   </registration>
   <sniffers>
     <!--
@@ -440,6 +442,7 @@
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyBinary"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkAscii"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkBinary"/>
+    <sniffer type="galaxy.datatypes.interval:ScIdx"/>
     <sniffer type="galaxy.datatypes.tabular:Vcf"/>
     <sniffer type="galaxy.datatypes.binary:TwoBit"/>
     <sniffer type="galaxy.datatypes.binary:GeminiSQLite"/>
