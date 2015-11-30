@@ -63,7 +63,7 @@ var FolderToolbarView = Backbone.View.extend({
                     ' to set your data to the format you think it should be.' +
                     ' You can also upload compressed files, which will automatically be decompressed.'
   },
-  
+
   // genomes
   list_genomes : [],
 
@@ -99,7 +99,7 @@ var FolderToolbarView = Backbone.View.extend({
   renderPaginator: function( options ){
       this.options = _.extend( this.options, options );
       var paginator_template = this.templatePaginator();
-      this.$el.find( '#folder_paginator' ).html( paginator_template({ 
+      this.$el.find( '#folder_paginator' ).html( paginator_template({
           id: this.options.id,
           show_page: parseInt( this.options.show_page ),
           page_count: parseInt( this.options.page_count ),
@@ -163,7 +163,7 @@ var FolderToolbarView = Backbone.View.extend({
           var folder = new mod_library_model.FolderAsModel();
           url_items = Backbone.history.fragment.split('/');
           current_folder_id = url_items[url_items.length-1];
-          folder.url = folder.urlRoot + '/' + current_folder_id ;
+          folder.url = folder.urlRoot + current_folder_id ;
 
           folder.save(folderDetails, {
             success: function (folder) {
@@ -281,7 +281,7 @@ var FolderToolbarView = Backbone.View.extend({
     }
 
     this.initChainCallControl( { length: datasets_to_import.length, action: 'to_history', history_name: history_name } );
-    // set the used history as current so user will see the last one 
+    // set the used history as current so user will see the last one
     // that he imported into in the history panel on the 'analysis' page
     jQuery.getJSON( galaxy_config.root + 'history/set_as_current?id=' + history_id  );
     this.chainCallImportingIntoHistory( datasets_to_import, history_name );
@@ -360,7 +360,7 @@ var FolderToolbarView = Backbone.View.extend({
             Galaxy.libraries.library_router.back();
           }
       });
-      
+
       // user should always have a history, even anonymous user
       if (self.histories.models.length > 0){
         self.fetchAndDisplayHistoryContents(self.histories.models[0].id);
@@ -393,7 +393,7 @@ var FolderToolbarView = Backbone.View.extend({
           //  TODO: should not trigger routes outside of the router
           Galaxy.libraries.library_router.navigate( 'folders/' + that.id, { trigger: true } );
         }
-    });  
+    });
     this.renderSelectBoxes();
   },
 
@@ -439,7 +439,7 @@ var FolderToolbarView = Backbone.View.extend({
   renderSelectBoxes: function(){
     // This won't work properly unlesss we already have the data fetched.
     // See this.fetchExtAndGenomes()
-    // TODO switch to common resources: 
+    // TODO switch to common resources:
     // https://trello.com/c/dIUE9YPl/1933-ui-common-resources-and-data-into-galaxy-object
     var that = this;
     this.select_genome = new mod_select.View( {
@@ -469,7 +469,7 @@ var FolderToolbarView = Backbone.View.extend({
       title           : 'Please select folders or files',
       body            : template_modal({}),
       buttons         : {
-          'Import'    : function() { 
+          'Import'    : function() {
             that.importFromJstreePath( that, options );
           },
           'Close'     : function() {
@@ -503,7 +503,7 @@ var FolderToolbarView = Backbone.View.extend({
           that.renderJstree( options );
         }
       }
-    );     
+    );
   },
 
   /**
@@ -518,9 +518,9 @@ var FolderToolbarView = Backbone.View.extend({
     var target = options.source || 'userdir';
     var disabled_jstree_element = this.options.disabled_jstree_element;
     this.jstree = new mod_library_model.Jstree();
-    this.jstree.url = this.jstree.urlRoot + 
-                        '?target=' + target + 
-                        '&format=jstree' + 
+    this.jstree.url = this.jstree.urlRoot +
+                        '?target=' + target +
+                        '&format=jstree' +
                         '&disable=' + disabled_jstree_element;
     this.jstree.fetch({
       success: function(model, response){
@@ -583,8 +583,8 @@ var FolderToolbarView = Backbone.View.extend({
       };
       this.initChainCallControl( { length: valid_paths.length, action: 'adding_datasets' } );
       this.chainCallImportingFolders( { paths: valid_paths,
-                                        preserve_dirs: preserve_dirs, 
-                                        link_data: link_data, 
+                                        preserve_dirs: preserve_dirs,
+                                        link_data: link_data,
                                         source: 'admin_path',
                                         file_type: file_type,
                                         dbkey: dbkey } );
@@ -626,9 +626,9 @@ var FolderToolbarView = Backbone.View.extend({
 
   /**
    * Take the selected items from the jstree, create a request queue
-   * and send them one by one to the server for importing into 
-   * the current folder. 
-   * 
+   * and send them one by one to the server for importing into
+   * the current folder.
+   *
    * jstree.js has to be loaded before
    * @see renderJstree
    */
@@ -653,8 +653,8 @@ var FolderToolbarView = Backbone.View.extend({
       if ( selection_type === 'folder' ){
         var full_source = options.source + '_folder';
         this.chainCallImportingFolders( { paths: paths,
-                                          preserve_dirs: preserve_dirs, 
-                                          link_data: link_data, 
+                                          preserve_dirs: preserve_dirs,
+                                          link_data: link_data,
                                           source: full_source,
                                           file_type: file_type,
                                           dbkey: dbkey } );
@@ -767,7 +767,7 @@ var FolderToolbarView = Backbone.View.extend({
       }
       return true;
     }
-    var promise = $.when( $.post( ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/libraries/datasets?encoded_folder_id=' + that.id + 
+    var promise = $.when( $.post( ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/libraries/datasets?encoded_folder_id=' + that.id +
                                                        '&source=' + options.source +
                                                        '&path=' + popped_item +
                                                        '&file_type=' + options.file_type +
@@ -789,7 +789,7 @@ var FolderToolbarView = Backbone.View.extend({
    * @param  {array} paths           paths relative to Galaxy root folder
    * @param  {boolean} preserve_dirs indicates whether to preserve folder structure
    * @param  {boolean} link_data     copy files to Galaxy or link instead
-   * @param  {str} source            string representing what type of folder 
+   * @param  {str} source            string representing what type of folder
    *                                 is the source of import
    */
   chainCallImportingFolders: function( options ){
@@ -825,7 +825,7 @@ var FolderToolbarView = Backbone.View.extend({
   },
 
   /**
-   * Take the array of hdas and create a request for each. 
+   * Take the array of hdas and create a request for each.
    * Call them in chain and update progress bar in between each.
    * @param  {array} hdas_set array of empty hda objects
    */
@@ -859,7 +859,7 @@ var FolderToolbarView = Backbone.View.extend({
   },
 
   /**
-   * Take the array of lddas, create request for each and 
+   * Take the array of lddas, create request for each and
    * call them in chain. Update progress bar in between each.
    * @param  {array} lddas_set array of lddas to delete
    */
@@ -953,7 +953,7 @@ var FolderToolbarView = Backbone.View.extend({
       var items_total = dataset_ids.length + folder_ids.length
       this.progressStep = 100 / items_total;
       this.progress = 0;
-      
+
       // prepare the dataset items to be added
       var items_to_delete = [];
       for (var i = dataset_ids.length - 1; i >= 0; i--) {
@@ -1017,7 +1017,7 @@ var FolderToolbarView = Backbone.View.extend({
       case "importdir":
         this.importFilesFromGalaxyFolderModal( { source: 'importdir' } );
         break;
-      case "path": 
+      case "path":
         this.importFilesFromPathModal();
         break;
       case "userdir":
@@ -1215,7 +1215,7 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('<div class="alert alert-info jstree-files-message">All files you select will be imported into the current folder.</div>');
     tmpl_array.push('<div class="alert alert-info jstree-folders-message" style="display:none;">All files within the selected folders and their subfolders will be imported into the current folder.</div>');
 
-    
+
     tmpl_array.push('<div style="margin-bottom:1em;">');
     tmpl_array.push('<label class="radio-inline">');
     tmpl_array.push('  <input title="Switch to selecting files" type="radio" name="jstree-radio" value="jstree-disable-folders" checked="checked"> Files');
