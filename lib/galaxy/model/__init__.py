@@ -556,8 +556,11 @@ class Job( object, JobLike, Dictifiable ):
     def add_parameter( self, name, value ):
         self.parameters.append( JobParameter( name, value ) )
 
-    def add_input_dataset( self, name, dataset ):
-        self.input_datasets.append( JobToInputDatasetAssociation( name, dataset ) )
+    def add_input_dataset( self, name, dataset=None, dataset_id=None ):
+        assoc = JobToInputDatasetAssociation( name, dataset )
+        if dataset is None and dataset_id is not None:
+            assoc.dataset_id = dataset_id
+        self.input_datasets.append( assoc )
 
     def add_output_dataset( self, name, dataset ):
         self.output_datasets.append( JobToOutputDatasetAssociation( name, dataset ) )
@@ -1484,10 +1487,13 @@ class DefaultQuotaAssociation( Quota, Dictifiable ):
 
 
 class DatasetPermissions( object ):
-    def __init__( self, action, dataset, role ):
+    def __init__( self, action, dataset, role=None, role_id=None ):
         self.action = action
         self.dataset = dataset
-        self.role = role
+        if role is not None:
+            self.role = role
+        else:
+            self.role_id = role_id
 
 
 class LibraryPermissions( object ):

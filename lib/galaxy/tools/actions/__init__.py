@@ -162,6 +162,8 @@ class DefaultToolAction( object ):
         # Set history.
         if not history:
             history = tool.get_default_history_by_trans( trans, create=True )
+        if history not in trans.sa_session:
+            history = trans.sa_session.query( trans.app.model.History ).get( history.id )
 
         out_data = odict()
         out_collections = {}
@@ -425,7 +427,10 @@ class DefaultToolAction( object ):
             if dataset:
                 if not trans.app.security_agent.can_access_dataset( current_user_roles, dataset.dataset ):
                     raise Exception("User does not have permission to use a dataset (%s) provided for input." % data.id)
-                job.add_input_dataset( name, dataset )
+                if dataset in trans.sa_session:
+                    job.add_input_dataset( name, dataset=dataset )
+                else:
+                    job.add_input_dataset( name, dataset_id=dataset.id )
             else:
                 job.add_input_dataset( name, None )
         log.info("Verified access to datasets %s" % access_timer)
