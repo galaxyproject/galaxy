@@ -22,6 +22,9 @@
 		<td>
 			<a href="${h.url_for( controller='admin_toolshed', action='preview_repository', tool_shed_url=tool_shed_url, tsr_id=repository['id'] )}">${repository['name']}</a>
 		</td>
+        <td>${repository['description']}</td>
+        <td>${repository['type']}</td>
+        <td>${repository['owner']}</td>
 	</tr>
 %endfor
 </table>

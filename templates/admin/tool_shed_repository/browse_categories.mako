@@ -21,7 +21,8 @@
         <td>
             <a href="${h.url_for(controller='admin_toolshed', action='browse_tool_shed_category', category_id=category['id'], tool_shed_url=tool_shed_url)}">${category['name']}</a>
         </td>
-        <td>${h.url_for(controller='admin_toolshed', action='browse_tool_shed_category', category_id=category['id'], tool_shed_url=tool_shed_url)}</td>
+        <td>${category['description']}</td>
+        <td>${category['repositories']}</td>
     </tr>
 %endfor
 </table>

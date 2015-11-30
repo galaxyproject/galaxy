@@ -185,7 +185,7 @@ class AdminToolshed( AdminGalaxy ):
 
     @web.expose
     @web.require_admin
-    def browse_tool_sheds( self, trans, **kwd ):
+    def browse_tool_shed( self, trans, **kwd ):
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
         params = dict( galaxy_url=web.url_for( '/', qualified=True ) )
@@ -195,6 +195,14 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def browse_toolsheds( self, trans, **kwd ):
+        message = escape( kwd.get( 'message', '' ) )
+        return trans.fill_template( '/webapps/galaxy/admin/toolsheds.mako',
+                                    message=message,
+                                    status='error' )
+
+    @web.expose
+    @web.require_admin
+    def browse_toolshed( self, trans, **kwd ):
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
         params = dict( galaxy_url=web.url_for( '/', qualified=True ) )
