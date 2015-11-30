@@ -1290,6 +1290,7 @@ class Tool( object, Dictifiable ):
 
         all_errors = []
         all_params = []
+        validate_input = self.get_hook( 'validate_input' )
         for expanded_incoming in expanded_incomings:
             expanded_state = self.new_state( trans, history=history )
             # Process incoming data
@@ -1304,7 +1305,6 @@ class Tool( object, Dictifiable ):
                 # values from `incoming`.
                 errors = self.populate_state( trans, self.inputs, expanded_state.inputs, expanded_incoming, history, source=source )
                 # If the tool provides a `validate_input` hook, call it.
-                validate_input = self.get_hook( 'validate_input' )
                 if validate_input:
                     validate_input( trans, errors, expanded_state.inputs, self.inputs )
                 params = expanded_state.inputs
