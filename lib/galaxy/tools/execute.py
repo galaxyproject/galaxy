@@ -20,6 +20,7 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
     failures, etc...).
     """
     execution_tracker = ToolExecutionTracker( tool, param_combinations, collection_info )
+    all_jobs_timer = ExecutionTimer()
     for params in execution_tracker.param_combinations:
         job_timer = ExecutionTimer()
         if workflow_invocation_uuid:
@@ -35,7 +36,7 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
             execution_tracker.record_success( job, result )
         else:
             execution_tracker.record_error( result )
-
+    log.debug("Executed all jobs for tool request: %s" % all_jobs_timer)
     if collection_info:
         history = history or tool.get_default_history_by_trans( trans )
         execution_tracker.create_output_collections( trans, history, params )
