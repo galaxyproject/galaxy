@@ -376,15 +376,20 @@ class DefaultToolAction( object ):
                     handle_output( name, output )
                     log.info("Handled output %s" % handle_output_timer)
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
+        add_to_history_timer = ExecutionTimer()
+        datasets_to_persist = []
         for name in out_data.keys():
             if name not in child_dataset_names and name not in incoming:  # don't add children; or already existing datasets, i.e. async created
                 data = out_data[ name ]
-                if set_output_history:
-                    # Set HID and add to history.
-                    # This is brand new and certainly empty so don't worry about quota.
-                    history.add_dataset( data, set_hid=set_output_hid, quota=False )
+                datasets_to_persist.append( data )
+        if set_output_history:
+            # Set HID and add to history.
+            # This is brand new and certainly empty so don't worry about quota.
+            history.add_datasets( trans.sa_session, datasets_to_persist, set_hid=set_output_hid, quota=False, flush=False )
+        else:
+            for data in datasets_to_persist:
                 trans.sa_session.add( data )
-                trans.sa_session.flush()
+        log.info("Add outputs to history %s" % add_to_history_timer)
         # Add all the children to their parents
         for parent_name, child_name in parent_to_child_pairs:
             parent_dataset = out_data[ parent_name ]

@@ -1103,16 +1103,16 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
     def empty( self ):
         return self.hid_counter == 1
 
-    def _next_hid( self ):
+    def _next_hid( self, n=1 ):
         # this is overriden in mapping.py db_next_hid() method
         if len( self.datasets ) == 0:
-            return 1
+            return n
         else:
             last_hid = 0
             for dataset in self.datasets:
                 if dataset.hid > last_hid:
                     last_hid = dataset.hid
-            return last_hid + 1
+            return last_hid + n
 
     def add_galaxy_session( self, galaxy_session, association=None ):
         if association is None:
@@ -1146,6 +1146,41 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             self.genome_build = genome_build
         self.datasets.append( dataset )
         return dataset
+
+    def add_datasets( self, sa_session, datasets, parent_id=None, genome_build=None, set_hid=True, quota=True, flush=False ):
+        """ Optimized version of add_dataset above that minimizes database
+        interactions when adding many datasets to history at once.
+        """
+        all_hdas = all( map( lambda d: isinstance( d, HistoryDatasetAssociation ), datasets ) )
+        optimize = len( datasets) > 1 and parent_id is None and all_hdas and set_hid and not quota
+        if optimize:
+            self.__add_datasets_optimized( datasets, genome_build=genome_build )
+            sa_session.add_all( datasets )
+            if flush:
+                sa_session.flush()
+        else:
+            for dataset in datasets:
+                self.add_dataset( dataset, parent_id=parent_id, genome_build=genome_build, set_hid=set_hid, quota=quota )
+                sa_session.add( dataset )
+                if flush:
+                    sa_session.flush()
+
+    def __add_datasets_optimized( self, datasets, genome_build=None ):
+        """ Optimized version of add_dataset above that minimizes database
+        interactions when adding many datasets to history at once under
+        certain cirucumstances.
+        """
+        n = len( datasets )
+
+        base_hid = self._next_hid( n=n )
+
+        for i, dataset in enumerate( datasets ):
+            dataset.hid = base_hid + i
+            dataset.history = self
+            if genome_build not in [None, '?']:
+                self.genome_build = genome_build
+        self.datasets.extend( datasets )
+        return datasets
 
     def add_dataset_collection( self, history_dataset_collection, set_hid=True ):
         if set_hid:
