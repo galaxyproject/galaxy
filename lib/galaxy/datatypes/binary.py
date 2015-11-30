@@ -946,7 +946,7 @@ class IdpDB( SQlite ):
             return "IDPickerDB SQLite file (%s)" % ( nice_size( dataset.get_size() ) )
 
 Binary.register_sniffable_binary_format( "gemini.sqlite", "gemini.sqlite", GeminiSQLite )
-Binary.register_sniffable_binary_format( "idpDB", "idpDB", IdpDB )
+Binary.register_sniffable_binary_format( "idpdb", "idpdb", IdpDB )
 Binary.register_sniffable_binary_format( "mz.sqlite", "mz.sqlite", MzSQlite )
 # FIXME: We need to register specialized sqlite formats before sqlite, since register_sniffable_binary_format and is_sniffable_binary called in upload.py
 # ignores sniff order declared in datatypes_conf.xml
