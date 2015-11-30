@@ -7,6 +7,8 @@ import collections
 import galaxy.tools
 from galaxy.util import ExecutionTimer
 from galaxy.tools.actions import on_text_for_names
+from threading import Thread
+from Queue import Queue
 
 import logging
 log = logging.getLogger( __name__ )
@@ -20,8 +22,9 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
     failures, etc...).
     """
     execution_tracker = ToolExecutionTracker( tool, param_combinations, collection_info )
-    all_jobs_timer = ExecutionTimer()
-    for params in execution_tracker.param_combinations:
+    app = trans.app
+
+    def execute_single_job(params):
         job_timer = ExecutionTimer()
         if workflow_invocation_uuid:
             params[ '__workflow_invocation_uuid__' ] = workflow_invocation_uuid
@@ -36,6 +39,34 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
             execution_tracker.record_success( job, result )
         else:
             execution_tracker.record_error( result )
+
+    all_jobs_timer = ExecutionTimer()
+    config = app.config
+    burst_at = getattr( config, 'tool_submission_burst_at', 10 )
+    burst_threads = getattr( config, 'tool_submission_burst_threads', 1 )
+
+    if len(execution_tracker.param_combinations) < burst_at or burst_threads < 2:
+        for params in execution_tracker.param_combinations:
+            execute_single_job(params)
+    else:
+        q = Queue()
+
+        def worker():
+            while True:
+                params = q.get()
+                execute_single_job(params)
+                q.task_done()
+
+        for i in range(burst_threads):
+            t = Thread(target=worker)
+            t.daemon = True
+            t.start()
+
+        for params in execution_tracker.param_combinations:
+            q.put(params)
+
+        q.join()
+
     log.info("Executed all jobs for tool request: %s" % all_jobs_timer)
     if collection_info:
         history = history or tool.get_default_history_by_trans( trans )
@@ -140,6 +171,8 @@ class ToolExecutionTracker( object ):
                 # TODO: Think through this, may only want this for output
                 # collections - or we may be already recording data in some
                 # other way.
+                if job not in trans.sa_session:
+                    job = trans.sa_session.query( trans.app.model.Job ).get( job.id )
                 job.add_output_dataset_collection( output_name, collection )
             collections[ output_name ] = collection
 

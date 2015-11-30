@@ -832,6 +832,20 @@ use_interactive = True
 #enable_beta_tool_command_isolation = False
 
 
+# Set the following to a number of threads greater than 1 to spawn
+# a Python task queue for dealing with large tool submissions (either
+# through the tool form or as part of an individual workflow step across
+# large collection). This number of Python threads will spawned per 
+# large request - so you may wish to set it to a number smaller than
+# the core count of your server. This affects workflow scheduling and 
+# web processes, not job handlers.
+#tool_submission_burst_threads = 1
+
+# If the above setting is to set to greater than 1, that number of 
+# threads will be used to process requests resulting in greater than
+# the number of jobs specified by the following setting.
+#tool_submission_burst_at = 10
+
 # Enable beta workflow modules that should not yet be considered part of Galaxy's
 # stable API.
 #enable_beta_workflow_modules = False
