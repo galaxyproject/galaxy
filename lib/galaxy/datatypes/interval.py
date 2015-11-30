@@ -1487,19 +1487,14 @@ class ChromatinInteractions( Interval ):
 
 class ScIdx(Tabular):
     """
-    Support for the Strand-specific coordinate count datatype which is used
-    by tools within the Chip-exo Galaxy flavor.  The Chip-exo Galaxy flavor
-    is used by the Center for Eukaryotic Gene Regulation labs at Penn State
-    University.
-
     ScIdx files are 1-based and consist of strand-specific coordinate counts.
     They always have 5 columns, and the first row is the column labels:
     'chrom', 'index', 'forward', 'reverse', 'value'.
     Each line following the first consists of data:
     chromosome name (type str), peak index (type int), Forward strand peak
     count (type int), Reverse strand peak count (type int) and value (type int).
-    The value of the 5th 'value' column is the sum of the forward and end
-    reverse peak count values.
+    The value of the 5th 'value' column is the sum of the forward and reverse
+    peak count values.
     """
     file_ext = "scidx"
 
@@ -1513,7 +1508,7 @@ class ScIdx(Tabular):
         Tabular.__init__(self, **kwd)
         # Don't set column names since the first
         # line of the dataset displays them.
-        self.column_names = []
+        self.column_names = ['chrom', 'index', 'forward', 'reverse', 'value']
 
     def sniff(self, filename):
         """
