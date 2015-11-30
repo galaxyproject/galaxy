@@ -1,8 +1,14 @@
 <tool id="Cut1" name="Cut" version="1.0.2">
   <description>columns from a table</description>
-  <command interpreter="perl">cutWrapper.pl "${input}" "${columnList}" "${delimiter}" "${out_file1}"</command>
+  <command interpreter="perl">cutWrapper.pl "${input}" "${columnList}" "${delimiter}" "${out_file1}" "${fill_char}" "${keep_header}"</command>
   <inputs>
-    <param name="columnList" type="text" value="c1,c2" label="Cut columns"/>
+    <param name="columnList" type="text" value="c1,c2" label="Cut columns">
+        <sanitizer invalid_char="X">
+            <valid>
+                <add value="|"/>
+            </valid>
+        </sanitizer>
+    </param>
     <param name="delimiter" type="select" label="Delimited by">
       <option value="T">Tab</option>
       <option value="Sp">Whitespace</option>
@@ -11,6 +17,12 @@
       <option value="D">Dash</option>
       <option value="U">Underscore</option>
       <option value="P">Pipe</option>
+    </param>
+    <param name="fill_char" type="text" value="." label="Fill missing columns character"/>
+    <param name="keep_header" type="select" label="Keep Header" help="Header is any line starting with #">
+      <option value="0" selected="True">Discard</option>
+      <option value="1">Keep as-is</option>
+      <option value="2">Treat as column headings</option>
     </param>
     <param format="txt" name="input" type="data" label="From"/>
   </inputs>
