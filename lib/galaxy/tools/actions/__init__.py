@@ -178,9 +178,7 @@ class DefaultToolAction( object ):
         input_names = []
         input_ext = 'data'
         input_dbkey = incoming.get( "dbkey", "?" )
-        inp_items = inp_data.items()
-        inp_items.reverse()
-        for name, data in inp_items:
+        for name, data in reversed(inp_data.items()):
             if not data:
                 data = NoneDataset( datatypes_registry=trans.app.datatypes_registry )
                 continue
