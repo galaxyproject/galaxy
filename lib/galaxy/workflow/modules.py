@@ -1057,13 +1057,7 @@ class WorkflowModuleInjector(object):
         step.upgrade_messages = {}
 
         # Make connection information available on each step by input name.
-        input_connections_by_name = {}
-        for conn in step.input_connections:
-            input_name = conn.input_name
-            if input_name not in input_connections_by_name:
-                input_connections_by_name[input_name] = []
-            input_connections_by_name[input_name].append(conn)
-        step.input_connections_by_name = input_connections_by_name
+        step.setup_input_connections_by_name()
 
         # Populate module.
         module = step.module = module_factory.from_workflow_step( trans, step )
