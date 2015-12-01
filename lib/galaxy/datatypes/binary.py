@@ -496,12 +496,12 @@ class CRAM( Binary ):
 
             tmp_index = dataset_symlink + ".crai"
             if os.path.isfile( tmp_index ):
-                 shutil.move( tmp_index, index_file.file_name )
-                 return index_file.file_name
+                shutil.move( tmp_index, index_file.file_name )
+                return index_file.file_name
             else:
-                 os.unlink( dataset_symlink )
-                 log.warn( '%s, expected crai index not created for: %s', self, dataset.file_name )
-                 return False
+                os.unlink( dataset_symlink )
+                log.warn( '%s, expected crai index not created for: %s', self, dataset.file_name )
+                return False
         except Exception as exc:
             log.warn( '%s, set_index_file Exception: %s', self, exc )
             return False
