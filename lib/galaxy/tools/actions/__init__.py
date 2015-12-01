@@ -405,8 +405,6 @@ class DefaultToolAction( object ):
                     handle_output( name, output )
                     log.info("Handled output %s" % handle_output_timer)
 
-        trans.sa_session.flush()
-
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
         datasets_to_persist = []
         for name in out_data.keys():
