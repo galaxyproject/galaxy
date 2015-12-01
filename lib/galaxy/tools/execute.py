@@ -21,6 +21,7 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
     Execute a tool and return object containing summary (output data, number of
     failures, etc...).
     """
+    all_jobs_timer = ExecutionTimer()
     execution_tracker = ToolExecutionTracker( tool, param_combinations, collection_info )
     app = trans.app
 
@@ -40,7 +41,6 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
         else:
             execution_tracker.record_error( result )
 
-    all_jobs_timer = ExecutionTimer()
     config = app.config
     burst_at = getattr( config, 'tool_submission_burst_at', 10 )
     burst_threads = getattr( config, 'tool_submission_burst_threads', 1 )
