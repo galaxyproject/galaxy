@@ -39,6 +39,7 @@ from galaxy.tools.parser import get_tool_source
 from galaxy.tools.parser.xml import XmlPageSource
 from galaxy.tools.toolbox import AbstractToolBox
 from galaxy.util import rst_to_html, string_as_bool
+from galaxy.util import ExecutionTimer
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
@@ -1288,8 +1289,10 @@ class Tool( object, Dictifiable ):
         if rerun_remap_job_id and len( expanded_incomings ) > 1:
             raise exceptions.MessageException( 'Failure executing tool (cannot create multiple jobs when remapping existing job).' )
 
+        validation_timer = ExecutionTimer()
         all_errors = []
         all_params = []
+        validate_input = self.get_hook( 'validate_input' )
         for expanded_incoming in expanded_incomings:
             expanded_state = self.new_state( trans, history=history )
             # Process incoming data
@@ -1304,13 +1307,12 @@ class Tool( object, Dictifiable ):
                 # values from `incoming`.
                 errors = self.populate_state( trans, self.inputs, expanded_state.inputs, expanded_incoming, history, source=source )
                 # If the tool provides a `validate_input` hook, call it.
-                validate_input = self.get_hook( 'validate_input' )
                 if validate_input:
                     validate_input( trans, errors, expanded_state.inputs, self.inputs )
                 params = expanded_state.inputs
             all_errors.append( errors )
             all_params.append( params )
-
+        log.info("Validated and populated state for tool request %s" % validation_timer)
         # If there were errors, we stay on the same page and display
         # error messages
         if any( all_errors ):

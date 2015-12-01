@@ -1029,26 +1029,33 @@ class JobWrapper( object ):
         self.sa_session.add( job )
         self.sa_session.flush()
 
-    def change_state( self, state, info=False ):
-        job = self.get_job()
-        self.sa_session.refresh( job )
+    def change_state( self, state, info=False, flush=True, job=None ):
+        job_supplied = job is not None
+        if not job_supplied:
+            job = self.get_job()
+            self.sa_session.refresh( job )
+        # Else:
+        # If this is a new job (e.g. initially queued) - we are in the same
+        # thread and no other threads are working on the job yet - so don't refresh.
+
         if job.state in model.Job.terminal_states:
             log.warning( "(%s) Ignoring state change from '%s' to '%s' for job "
                          "that is already terminal", job.id, job.state, state )
             return
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             dataset = dataset_assoc.dataset
-            self.sa_session.refresh( dataset )
-            dataset.state = state
+            if not job_supplied:
+                self.sa_session.refresh( dataset )
+            dataset.raw_set_dataset_state( state )
             if info:
                 dataset.info = info
             self.sa_session.add( dataset )
-            self.sa_session.flush()
         if info:
             job.info = info
         job.set_state( state )
         self.sa_session.add( job )
-        self.sa_session.flush()
+        if flush:
+            self.sa_session.flush()
 
     def get_state( self ):
         job = self.get_job()
@@ -1059,22 +1066,23 @@ class JobWrapper( object ):
         log.warning('set_runner() is deprecated, use set_job_destination()')
         self.set_job_destination(self.job_destination, external_id)
 
-    def set_job_destination( self, job_destination, external_id=None ):
+    def set_job_destination( self, job_destination, external_id=None, flush=True, job=None ):
         """
         Persist job destination params in the database for recovery.
 
         self.job_destination is not used because a runner may choose to rewrite
         parts of the destination (e.g. the params).
         """
-        job = self.get_job()
-        self.sa_session.refresh(job)
+        if job is None:
+            job = self.get_job()
         log.debug('(%s) Persisting job destination (destination id: %s)' % (job.id, job_destination.id))
         job.destination_id = job_destination.id
         job.destination_params = job_destination.params
         job.job_runner_name = job_destination.runner
         job.job_runner_external_id = external_id
         self.sa_session.add(job)
-        self.sa_session.flush()
+        if flush:
+            self.sa_session.flush()
 
     def finish( self, stdout, stderr, tool_exit_code=None, remote_working_directory=None ):
         """
