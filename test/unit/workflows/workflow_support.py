@@ -55,8 +55,13 @@ def yaml_to_model(has_dict):
 
     workflow = model.Workflow()
     workflow.steps = []
-    for step in has_dict.get("steps", []):
+    for i, step in enumerate(has_dict.get("steps", [])):
         workflow_step = model.WorkflowStep()
+        if "order_index" not in step:
+            step["order_index"] = i
+        if "id" not in step:
+            # Fixed Offset ids just to test against assuption order_index != id
+            step["id"] = i + 100
         for key, value in step.iteritems():
             if key == "input_connections":
                 connections = []
