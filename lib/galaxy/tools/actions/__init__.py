@@ -408,7 +408,6 @@ class DefaultToolAction( object ):
         trans.sa_session.flush()
 
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
-        add_to_history_timer = ExecutionTimer()
         datasets_to_persist = []
         for name in out_data.keys():
             if name not in child_dataset_names and name not in incoming:  # don't add children; or already existing datasets, i.e. async created
@@ -417,11 +416,13 @@ class DefaultToolAction( object ):
         if set_output_history:
             # Set HID and add to history.
             # This is brand new and certainly empty so don't worry about quota.
+            # TOOL OPTIMIZATION NOTE - from above loop to the job create below 99%+
+            # of execution time happens within in history.add_datasets.
             history.add_datasets( trans.sa_session, datasets_to_persist, set_hid=set_output_hid, quota=False, flush=False )
         else:
             for data in datasets_to_persist:
                 trans.sa_session.add( data )
-        log.info("Add outputs to history %s" % add_to_history_timer)
+
         # Add all the children to their parents
         for parent_name, child_name in parent_to_child_pairs:
             parent_dataset = out_data[ parent_name ]
@@ -436,6 +437,8 @@ class DefaultToolAction( object ):
             # If we're submitting from the API, there won't be a session.
             if type( galaxy_session ) == trans.model.GalaxySession:
                 job.session_id = galaxy_session.id
+        # Whole if above takes well less than a millisecond (0.024 ms)
+        # not worth optimizing.
         if trans.user is not None:
             job.user_id = trans.user.id
         job.history_id = history.id
