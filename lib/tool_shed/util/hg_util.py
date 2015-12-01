@@ -44,7 +44,7 @@ def bundle_to_json( fh ):
     command line) to a json object.
     """
     # See http://www.wstein.org/home/wstein/www/home/was/patches/hg_json
-    hg_unbundle10_obj = readbundle( None, fh, None )
+    hg_unbundle10_obj = readbundle( get_configured_ui(), fh, None )
     groups = [ group for group in unpack_groups( hg_unbundle10_obj ) ]
     return json.dumps( groups, indent=4 )
 
