@@ -267,7 +267,7 @@ var DatasetListItemView = _super.extend(
         }
 
         return $([
-            '<a class="download-btn icon-btn" href="', this.model.urls.download, '" title="' + _l( 'Download' ) + '">',
+            '<a class="download-btn icon-btn" href="', this.model.urls.download, '" title="' + _l( 'Download' ) + '" download>',
                 '<span class="fa fa-floppy-o"></span>',
             '</a>'
         ].join( '' ));
@@ -283,7 +283,7 @@ var DatasetListItemView = _super.extend(
                     '<span class="fa fa-floppy-o"></span>',
                 '</a>',
                 '<ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">',
-                    '<li><a href="' + urls.download + '">', _l( 'Download dataset' ), '</a></li>',
+                    '<li><a href="' + urls.download + '" download>', _l( 'Download dataset' ), '</a></li>',
                     _.map( this.model.get( 'meta_files' ), function( meta_file ){
                         return [
                             '<li><a href="', urls.meta_download + meta_file.file_type, '">',
