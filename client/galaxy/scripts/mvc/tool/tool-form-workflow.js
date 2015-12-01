@@ -48,9 +48,8 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
                         input.info = 'Data input \'' + input.name + '\' (' + Utils.textify( input.extensions && input.extensions.toString() ) + ')';
                         input.value = null;
                     } else {
-                        input.collapsible = true;
                         input.collapsible_value = {'__class__': 'RuntimeValue'};
-                        input.is_workflow = ( input.type && input.options && input.options.length == 0 ) ||
+                        input.is_workflow = ( input.options && input.options.length == 0 ) ||
                                             ( [ 'integer', 'float' ].indexOf( input.type ) != -1 );
                     }
                 }
@@ -58,7 +57,7 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
 
             // declare conditional and data input fields as not collapsible
             Utils.deepeach(options.inputs, function(item) {
-                item.type && item.type == 'conditional' && ( item.test_param.collapsible = false );
+                item.type == 'conditional' && ( item.test_param.collapsible_value = undefined );
             });
 
             // configure custom sections

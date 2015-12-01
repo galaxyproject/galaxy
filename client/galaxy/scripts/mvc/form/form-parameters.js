@@ -162,12 +162,9 @@ define(['utils/utils',
         _fieldText: function(input_def) {
             // field replaces e.g. a select field
             if (input_def.options) {
-                // show text area if selecting multiple entries is allowed
                 input_def.area = input_def.multiple;
-
-                // validate value
                 if (!Utils.validate(input_def.value)) {
-                    input_def.value = '';
+                    input_def.value = null;
                 } else {
                     if ($.isArray(input_def.value)) {
                         var str_value = '';

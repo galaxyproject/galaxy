@@ -31,9 +31,8 @@ define([], function() {
             // add field element
             this.$field.prepend(this.field.$el);
 
-            // decide wether to expand or collapse optional fields
-            this.field.collapsed =  options.collapsible &&
-                                    JSON.stringify(options.value) == JSON.stringify(options.collapsible_value);
+            // decide wether to expand or collapse fields
+            this.field.collapsed = options.collapsible_value !== undefined && JSON.stringify( options.value ) == JSON.stringify( options.collapsible_value );
 
             // refresh view
             this._refresh();
@@ -90,12 +89,10 @@ define([], function() {
         /** Set tooltip text
         */
         _tooltip: function(title, cls) {
-            if (this.$optional.length) {
-                this.$optional_icon.addClass(cls)
-                                   .tooltip({ placement: 'bottom' })
-                                   .attr('data-original-title', title)
-                                   .tooltip('fixTitle').tooltip('hide');
-            }
+            this.$optional_icon.addClass(cls)
+                               .tooltip({ placement: 'bottom' })
+                               .attr('data-original-title', title)
+                               .tooltip('fixTitle').tooltip('hide');
         },
 
         /** Main Template
@@ -106,7 +103,7 @@ define([], function() {
                                 '<span class="fa fa-arrow-down"/><span class="ui-table-form-error-text"/>' +
                             '</div>' +
                             '<div class="ui-table-form-title">';
-            if (options.collapsible) {
+            if (options.collapsible_value !== undefined) {
                 tmp +=          '<div class="ui-table-form-optional">' +
                                     '<i class="icon"/>' + options.label +
                                 '</div>';

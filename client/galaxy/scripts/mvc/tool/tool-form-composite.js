@@ -62,8 +62,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                             input.options && input.options.length == 0 && ( input.is_workflow = true );
                             if ( input.value && input.value.__class__ == 'RuntimeValue' ) {
                                 input.value = null;
-                            } else if ( [ 'data', 'data_collection' ].indexOf( input.type ) == -1 && ( String( input.value ) ).substring( 0, 1 ) != '$' ) {
-                                input.collapsible = true;
+                            } else if ( [ 'data', 'data_collection' ].indexOf( input.type ) == -1 && !self._isWorkflowParameter( input.value ) ) {
                                 input.collapsible_value = input.value;
                                 input.collapsible_preview = true;
                             }
@@ -83,7 +82,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                     });
                     // match data references
                     FormData.matchContext( step.inputs, 'data_ref', function( input, reference ) {
-                        input.is_workflow = !reference.options || !reference.options[ input.value ];
+                        input.is_workflow = !reference.options || self._isWorkflowParameter( input.value );
                     });
                     form = new ToolFormBase( step ).form;
                 }
@@ -104,11 +103,10 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
             }
             _.each( this.steps, function( step, i ) {
                 _.each( step.inputs, function( input ) {
-                    var value = String( input.value );
-                    if ( value.substring( 0, 1 ) === '$' ) {
+                    var wp_name = self._isWorkflowParameter( input.value );
+                    if ( wp_name ) {
                         var wp_field = self.forms[ i ].field_list[ input.id ];
                         var wp_element = self.forms[ i ].element_list[ input.id ];
-                        var wp_name = Utils.sanitize( value.substring( 2,  value.length - 1 ) );
                         wp_fields[ wp_name ] = wp_fields[ wp_name ] || [];
                         wp_fields[ wp_name ].push( wp_field );
                         wp_field.value( wp_name );
@@ -280,6 +278,14 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
             if ( enabled ) { this.execute_btn.unwait() } else { this.execute_btn.wait() }
             if ( enabled ) { this.history_form.portlet.enable() } else { this.history_form.portlet.disable() }
             _.each( this.forms, function( form ) { if ( enabled ) {  form.portlet.enable() } else { form.portlet.disable() } });
+        },
+
+        /** Handle workflow parameter
+        */
+        _isWorkflowParameter: function( value ) {
+            if ( String( value ).substring( 0, 1 ) === '$' ) {
+                return Utils.sanitize( value.substring( 2,  value.length - 1 ) )
+            }
         }
     });
     return {

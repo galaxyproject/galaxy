@@ -40,13 +40,8 @@ define(['utils/utils',
         /** Add a new input element
         */
         add: function(input) {
-            // link this
             var self = this;
-
-            // clone definition
             var input_def = jQuery.extend(true, {}, input);
-
-            // create unique id
             input_def.id = input.id = Utils.uid();
 
             // add to sequential list of inputs
@@ -55,19 +50,15 @@ define(['utils/utils',
             // identify field type
             var type = input_def.type;
             switch(type) {
-                // conditional field
                 case 'conditional':
                     this._addConditional(input_def);
                     break;
-                // repeat block
                 case 'repeat':
                     this._addRepeat(input_def);
                     break;
-                // customized section
                 case 'section':
                     this._addSection(input_def);
                     break;
-                // default single element row
                 default:
                     this._addRow(input_def);
             }
@@ -125,10 +116,7 @@ define(['utils/utils',
         /** Add a repeat block
         */
         _addRepeat: function(input_def) {
-            // link this
             var self = this;
-
-            // block index
             var block_index = 0;
 
             // create repeat block element
@@ -183,18 +171,13 @@ define(['utils/utils',
                 help    : input_def.help,
                 field   : repeat
             });
-
-            // create table row
             this.table.add(input_element.$el);
-
-            // append row to table
             this.table.append(input_def.id);
         },
 
         /** Add a customized section
         */
         _addSection: function(input_def) {
-            // link this
             var self = this;
 
             // create sub section
@@ -245,8 +228,6 @@ define(['utils/utils',
 
             // create table row
             this.table.add(portlet.$el);
-
-            // append row to table
             this.table.append(input_def.id);
         },
 
@@ -262,7 +243,6 @@ define(['utils/utils',
                 value               : input_def.value,
                 default_value       : input_def.default_value,
                 text_value          : input_def.text_value,
-                collapsible         : input_def.collapsible,
                 collapsible_value   : input_def.collapsible_value,
                 collapsible_preview : input_def.collapsible_preview,
                 help                : input_def.help,
@@ -273,9 +253,7 @@ define(['utils/utils',
             this.app.element_list[id] = input_element;
             this.table.add(input_element.$el);
             this.table.append(id);
-            if (input_def.hidden) {
-                this.table.get(id).hide();
-            }
+            input_def.hidden && this.table.get(id).hide();
             return field;
         }
     });
