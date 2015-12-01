@@ -122,6 +122,11 @@ class WorkflowProgressTestCase( unittest.TestCase ):
         replacement = progress.replacement_for_tool_input(self._step(4), MockInput(), "input1")
         assert replacement is hda3
 
+    # TODO: Replace multiple true HDA with HDCA
+    # TODO: Test explicit delay
+    # TODO: Test cancel on collection invalid
+    # TODO: Test delay on collection waiting for population
+
 
 class MockInput(object):
 
