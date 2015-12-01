@@ -106,10 +106,11 @@ class WorkflowProgressTestCase( unittest.TestCase ):
 
     def test_remaining_steps_with_progress(self):
         self._setup_workflow(TEST_WORKFLOW_YAML)
+        hda3 = model.HistoryDatasetAssociation()
         self._set_previous_progress({
             100: {"output": model.HistoryDatasetAssociation()},
             101: {"output": model.HistoryDatasetAssociation()},
-            102: {"out_file1": model.HistoryDatasetAssociation()},
+            102: {"out_file1": hda3},
             103: {"out_file1": model.HistoryDatasetAssociation()},
             104: UNSCHEDULED_STEP,
         })
@@ -117,6 +118,9 @@ class WorkflowProgressTestCase( unittest.TestCase ):
         steps = progress.remaining_steps()
         assert len(steps) == 1
         assert steps[0] is self.invocation.workflow.steps[4]
+
+        replacement = progress.replacement_for_tool_input(self._step(4), MockInput(), "input1")
+        assert replacement is hda3
 
 
 class MockInput(object):
