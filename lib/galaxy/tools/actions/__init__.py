@@ -275,8 +275,10 @@ class DefaultToolAction( object ):
                     data.visible = False
                 trans.sa_session.add( data )
                 trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions, new=True )
-                trans.sa_session.flush()
 
+            # Must flush before setting object store id currently.
+            # TODO: optimize this.
+            trans.sa_session.flush()
             object_store_populator.set_object_store_id( data )
 
             # This may not be neccesary with the new parent/child associations
@@ -307,10 +309,7 @@ class DefaultToolAction( object ):
                 output_action_params = dict( out_data )
                 output_action_params.update( incoming )
                 output.actions.apply_action( data, output_action_params )
-            # Store all changes to database
-            # Updates at least state, blurb, and name. Does a query before
-            # hand I don't know why...
-            trans.sa_session.flush()
+            # Flush all datasets at once.
             return data
 
         for name, output in tool.outputs.items():
@@ -405,6 +404,9 @@ class DefaultToolAction( object ):
                     handle_output_timer = ExecutionTimer()
                     handle_output( name, output )
                     log.info("Handled output %s" % handle_output_timer)
+
+        trans.sa_session.flush()
+
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
         add_to_history_timer = ExecutionTimer()
         datasets_to_persist = []
