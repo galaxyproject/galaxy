@@ -427,8 +427,7 @@ class DefaultToolAction( object ):
             parent_dataset = out_data[ parent_name ]
             child_dataset = out_data[ child_name ]
             parent_dataset.children.append( child_dataset )
-        # Store data after custom code runs
-        trans.sa_session.flush()
+
         # Create the job object
         job = trans.app.model.Job()
 
