@@ -11,7 +11,7 @@ import subprocess
 import tempfile
 
 from galaxy.datatypes.data import get_file_peek, Text
-from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
 from galaxy.util import nice_size, string_as_bool
 
 log = logging.getLogger(__name__)
@@ -129,6 +129,18 @@ class Biom1( Json ):
     """
     file_ext = "biom1"
 
+    MetadataElement( name="table_rows", default=[], desc="table_rows", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value=[] )
+    MetadataElement( name="table_matrix_element_type", default="", desc="table_matrix_element_type", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="" )
+    MetadataElement( name="table_format", default="", desc="table_format", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="" )
+    MetadataElement( name="table_generated_by", default="", desc="table_generated_by", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="" )
+    MetadataElement( name="table_matrix_type", default="", desc="table_matrix_type", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="" )
+    MetadataElement( name="table_shape", default=[], desc="table_shape", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value=[] )
+    MetadataElement( name="table_format_url", default="", desc="table_format_url", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="" )
+    MetadataElement( name="table_date", default="", desc="table_date", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="" )
+    MetadataElement( name="table_type", default="", desc="table_type", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="" )
+    MetadataElement( name="table_id", default=None, desc="table_id", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value=None )
+    MetadataElement( name="table_columns", default=[], desc="table_columns", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value=[] )
+
     def set_peek( self, dataset, is_multi_byte=False ):
         super ( Biom1, self ).set_peek( dataset, is_multi_byte )
         if not dataset.dataset.purged:
@@ -162,9 +174,35 @@ class Biom1( Json ):
                                 break
                         prev_str = segment_str
                         segment_str = fh.read( segment_size )
-        except:
+        except Exception:
             pass
         return is_biom
+
+    def set_meta( self, dataset, **kwd ):
+        """
+            Store metadata information from the BIOM file.
+        """
+        if dataset.has_data():
+            with open( dataset.file_name ) as fh:
+                try:
+                    json_dict = json.load( fh )
+                except Exception:
+                    return
+                for ( m_name, b_name ) in [ ('table_rows', 'rows'),
+                                            ('table_matrix_element_type', 'matrix_element_type'),
+                                            ('table_format', 'format'),
+                                            ('table_generated_by', 'generated_by'),
+                                            ('table_matrix_type', 'matrix_type'),
+                                            ('table_shape', 'shape'),
+                                            ('table_format_url', 'format_url'),
+                                            ('table_date', 'date'),
+                                            ('table_type', 'type'),
+                                            ('table_id', 'id'),
+                                            ('table_columns', 'columns') ]:
+                    try:
+                        setattr( dataset.metadata, m_name, json_dict.get( b_name, None ) )
+                    except Exception:
+                        pass
 
 
 class Obo( Text ):
