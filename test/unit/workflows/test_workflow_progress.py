@@ -58,6 +58,17 @@ class WorkflowProgressTestCase( unittest.TestCase ):
         conn.output_step = self._step(0)
         assert progress.replacement_for_connection(conn) is hda
 
+    def test_replacement_for_tool_input( self ):
+        self._setup_workflow(TEST_WORKFLOW_YAML)
+        hda = model.HistoryDatasetAssociation()
+
+        self.inputs_by_step_id = {100: hda}
+        progress = self._new_workflow_progress()
+        progress.set_outputs_for_input( self._step(0) )
+
+        replacement = progress.replacement_for_tool_input(self._step(2), MockInput(), "input1")
+        assert replacement is hda
+
     def test_connect_tool_output( self ):
         self._setup_workflow(TEST_WORKFLOW_YAML)
         hda = model.HistoryDatasetAssociation()
@@ -71,7 +82,13 @@ class WorkflowProgressTestCase( unittest.TestCase ):
         assert progress.replacement_for_connection(conn) is hda
 
 
-class MockModuleInjector( object ):
+class MockInput(object):
+
+    def __init__(self, multiple=False):
+        self.multiple = multiple
+
+
+class MockModuleInjector(object):
 
     def __init__(self):
         pass
