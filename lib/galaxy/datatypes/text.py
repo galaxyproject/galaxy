@@ -142,7 +142,7 @@ class Biom1( Json ):
     MetadataElement( name="table_columns", default=[], desc="table_columns", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
 
     def set_peek( self, dataset, is_multi_byte=False ):
-        super ( Biom1, self ).set_peek( dataset, is_multi_byte )
+        super( Biom1, self ).set_peek( dataset, is_multi_byte )
         if not dataset.dataset.purged:
             dataset.blurb = "Biological Observation Matrix v1"
 
