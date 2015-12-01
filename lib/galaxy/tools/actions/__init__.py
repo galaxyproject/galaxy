@@ -29,12 +29,14 @@ class ToolAction( object ):
 class DefaultToolAction( object ):
     """Default tool action is to run an external command"""
 
-    def collect_input_datasets( self, tool, param_values, trans ):
+    def collect_input_datasets( self, tool, param_values, trans, current_user_roles=None ):
         """
         Collect any dataset inputs from incoming. Returns a mapping from
         parameter name to Dataset instance for each tool parameter that is
         of the DataToolParameter type.
         """
+        if current_user_roles is None:
+            current_user_roles = trans.get_current_user_roles()
         input_datasets = odict()
 
         def visitor( prefix, input, value, parent=None ):
@@ -62,7 +64,7 @@ class DefaultToolAction( object ):
                             trans.sa_session.add( assoc )
                             trans.sa_session.flush()
                             data = new_data
-                current_user_roles = trans.get_current_user_roles()
+
                 if not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
                     raise "User does not have permission to use a dataset (%s) provided for input." % data.id
                 return data
@@ -125,8 +127,6 @@ class DefaultToolAction( object ):
 
                 for i, v in enumerate( dataset_instances ):
                     data = v
-                    current_user_roles = trans.get_current_user_roles()
-
                     if not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
                         raise Exception( "User does not have permission to use a dataset (%s) provided for input." % data.id )
                     # Skipping implicit conversion stuff for now, revisit at
@@ -181,6 +181,7 @@ class DefaultToolAction( object ):
         trans.history as destination for tool's output datasets.
         """
         app = trans.app
+        current_user_roles = trans.get_current_user_roles()
         assert tool.allow_user_access( trans.user ), "User (%s) is not allowed to access this tool." % ( trans.user )
         # Set history.
         if not history:
@@ -195,7 +196,7 @@ class DefaultToolAction( object ):
         # input datasets can process these normally.
         inp_dataset_collections = self.collect_input_dataset_collections( tool, incoming )
         # Collect any input datasets from the incoming parameters
-        inp_data = self.collect_input_datasets( tool, incoming, trans )
+        inp_data = self.collect_input_datasets( tool, incoming, trans, current_user_roles=current_user_roles )
 
         # Deal with input dataset names, 'dbkey' and types
         input_names = []
@@ -465,7 +466,6 @@ class DefaultToolAction( object ):
                 job.add_input_dataset_collection( name, dataset_collection )
         for name, value in tool.params_to_strings( incoming, app ).iteritems():
             job.add_parameter( name, value )
-        current_user_roles = trans.get_current_user_roles()
         access_timer = ExecutionTimer()
         for name, dataset in inp_data.iteritems():
             if dataset:
