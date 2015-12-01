@@ -42,7 +42,11 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                     sustain_version         : true,
                     sustain_repeats         : true,
                     sustain_conditionals    : true,
-                    narrow                  : true
+                    narrow                  : true,
+                    text_enable             : 'Edit',
+                    text_disable            : 'Undo',
+                    cls_enable              : 'fa fa-edit',
+                    cls_disable             : 'fa fa-undo',
                 }, step );
 
                 // build forms
@@ -52,6 +56,19 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                         title : '<b>' + step.name + '</b>'
                     }, step ));
                 } else if ( step.step_type == 'tool' ) {
+                    // configure input elements
+                    Utils.deepeach( step.inputs, function( input ) {
+                        if ( input.type ) {
+                            input.options && input.options.length == 0 && ( input.is_workflow = true );
+                            if ( input.value && input.value.__class__ == 'RuntimeValue' ) {
+                                input.value = null;
+                            } else if ( [ 'data', 'data_collection' ].indexOf( input.type ) == -1 && ( String( input.value ) ).substring( 0, 1 ) != '$' ) {
+                                input.collapsible = true;
+                                input.collapsible_value = input.value;
+                                input.collapsible_preview = true;
+                            }
+                        }
+                    });
                     // replace referenced dataset input fields with labels
                     FormData.matchIds( step.inputs, step.input_connections_by_name, function( connection, input ) {
                         if( input ) {
@@ -64,14 +81,9 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                             }, '' );
                         }
                     });
-                    // configure runtime values
-                    Utils.deepeach( step.inputs, function( input ) {
-                        input.value && input.value.__class__ == 'RuntimeValue' && ( input.value = null );
-                        input.type && input.options && input.options.length == 0 && !input.data_ref && ( input.is_workflow = true );
-                    });
                     // match data references
                     FormData.matchContext( step.inputs, 'data_ref', function( input, reference ) {
-                        input.is_workflow = !reference.options || ( input.value && !reference.options[ input.value ] );
+                        input.is_workflow = !reference.options || !reference.options[ input.value ];
                     });
                     form = new ToolFormBase( step ).form;
                 }
@@ -86,9 +98,9 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
             var wp_inputs = {};
             var wp_count = 0;
             var wp_style = function( wp_field, wp_color, wp_cls ) {
-                var $input = wp_field.$( 'input' );
-                $input.length === 0 && ( $input = wp_field.$el );
-                $input.addClass( wp_cls ).css( { 'color': wp_color, 'border-color': wp_color } );
+                var $wp_input = wp_field.$( 'input' );
+                $wp_input.length === 0 && ( $wp_input = wp_field.$el );
+                $wp_input.addClass( wp_cls ).css({ 'color': wp_color, 'border-color': wp_color });
             }
             _.each( this.steps, function( step, i ) {
                 _.each( step.inputs, function( input ) {
@@ -121,8 +133,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                     });
                 }});
                 _.each( wp_form.field_list, function( wp_field, i ) {
-                    var wp_color = wp_form.input_list[ i ].color;
-                    wp_style( wp_field, wp_color, 'ui-form-wp-source' );
+                    wp_style( wp_field, wp_form.input_list[ i ].color, 'ui-form-wp-source' );
                 });
                 this.$el.append( '<p/>' ).addClass( 'ui-margin-top' );
                 this.$el.append( wp_form.$el );

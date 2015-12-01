@@ -78,7 +78,10 @@ define(['utils/utils',
         _addConditional: function(input_def) {
             var self = this;
             input_def.test_param.id = input_def.id;
-            this.app.options.sustain_conditionals && ( input_def.test_param.disabled = true );
+            if ( this.app.options.sustain_conditionals ) {
+                input_def.test_param.disabled = true;
+                input.test_param.collapsible = false;
+            }
             var field = this._addRow( input_def.test_param );
 
             // set onchange event for test parameter
@@ -258,8 +261,10 @@ define(['utils/utils',
                 label               : input_def.label || input_def.name,
                 value               : input_def.value,
                 default_value       : input_def.default_value,
+                text_value          : input_def.text_value,
                 collapsible         : input_def.collapsible,
                 collapsible_value   : input_def.collapsible_value,
+                collapsible_preview : input_def.collapsible_preview,
                 help                : input_def.help,
                 argument            : input_def.argument,
                 disabled            : input_def.disabled,

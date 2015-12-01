@@ -2357,6 +2357,9 @@ class Tool( object, Dictifiable ):
                     # update input value from tool state
                     tool_dict['value'] = state_inputs.get(input.name, tool_dict['default_value'])
 
+                    # add text value
+                    tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ], trans.app )
+
                     # sanitize values
                     sanitize(tool_dict, 'value')
                     sanitize(tool_dict, 'default_value')

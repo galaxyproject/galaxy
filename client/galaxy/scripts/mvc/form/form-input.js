@@ -15,13 +15,13 @@ define([], function() {
 
             // link field
             this.field = options.field;
-            this.default_value = options.default_value;
 
             // set element
             this.setElement(this._template(options));
 
             // link elements
             this.$field = this.$('.ui-table-form-field');
+            this.$preview = this.$('.ui-table-form-preview');
             this.$optional = this.$('.ui-table-form-optional');
             this.$optional_icon = this.$('.ui-table-form-optional').find('.icon');
             this.$error_text = this.$('.ui-table-form-error-text');
@@ -32,7 +32,7 @@ define([], function() {
             this.$field.prepend(this.field.$el);
 
             // decide wether to expand or collapse optional fields
-            this.field.collapsed =  options.collapsible && options.value &&
+            this.field.collapsed =  options.collapsible &&
                                     JSON.stringify(options.value) == JSON.stringify(options.collapsible_value);
 
             // refresh view
@@ -43,7 +43,6 @@ define([], function() {
             this.$optional.on('click', function() {
                 self.field.collapsed = !self.field.collapsed;
                 self._refresh();
-                self.app.trigger('change');
             });
 
             // disable input element
@@ -78,13 +77,14 @@ define([], function() {
             this.$optional_icon.removeClass().addClass('icon');
             if (!this.field.collapsed) {
                 this.$field.fadeIn('fast');
+                this.$preview.hide();
                 this._tooltip(this.text_disable, this.cls_disable);
-                this.app.trigger('change');
             } else {
                 this.$field.hide();
+                this.$preview.show();
                 this._tooltip(this.text_enable, this.cls_enable);
-                this.field.value && this.field.value(this.default_value);
             }
+            this.app.trigger('change');
         },
 
         /** Set tooltip text
@@ -124,8 +124,11 @@ define([], function() {
             }
             tmp +=              '</div>' +
                                 '<div class="ui-table-form-backdrop"/>' +
-                            '</div>' +
-                        '</div>';
+                            '</div>';
+            if ( options.collapsible_preview ) {
+                tmp +=      '<div class="ui-table-form-preview">' + options.text_value + '</div>';
+            }
+            tmp += '</div>';
             return tmp;
         }
     });

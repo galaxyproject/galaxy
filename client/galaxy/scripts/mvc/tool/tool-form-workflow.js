@@ -58,11 +58,7 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
 
             // declare conditional and data input fields as not collapsible
             Utils.deepeach(options.inputs, function(item) {
-                if (item.type) {
-                    if (item.type == 'conditional') {
-                        item.test_param.collapsible = false;
-                    }
-                }
+                item.type && item.type == 'conditional' && ( item.test_param.collapsible = false );
             });
 
             // configure custom sections
