@@ -129,17 +129,17 @@ class Biom1( Json ):
     """
     file_ext = "biom1"
 
-    MetadataElement( name="table_rows", default=[], desc="table_rows", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value=[] )
-    MetadataElement( name="table_matrix_element_type", default="", desc="table_matrix_element_type", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="" )
-    MetadataElement( name="table_format", default="", desc="table_format", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="" )
+    MetadataElement( name="table_rows", default=[], desc="table_rows", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
+    MetadataElement( name="table_matrix_element_type", default="", desc="table_matrix_element_type", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value="" )
+    MetadataElement( name="table_format", default="", desc="table_format", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value="" )
     MetadataElement( name="table_generated_by", default="", desc="table_generated_by", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="" )
-    MetadataElement( name="table_matrix_type", default="", desc="table_matrix_type", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="" )
-    MetadataElement( name="table_shape", default=[], desc="table_shape", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value=[] )
-    MetadataElement( name="table_format_url", default="", desc="table_format_url", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="" )
+    MetadataElement( name="table_matrix_type", default="", desc="table_matrix_type", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value="" )
+    MetadataElement( name="table_shape", default=[], desc="table_shape", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
+    MetadataElement( name="table_format_url", default="", desc="table_format_url", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value="" )
     MetadataElement( name="table_date", default="", desc="table_date", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="" )
     MetadataElement( name="table_type", default="", desc="table_type", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="" )
     MetadataElement( name="table_id", default=None, desc="table_id", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value=None )
-    MetadataElement( name="table_columns", default=[], desc="table_columns", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value=[] )
+    MetadataElement( name="table_columns", default=[], desc="table_columns", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
 
     def set_peek( self, dataset, is_multi_byte=False ):
         super ( Biom1, self ).set_peek( dataset, is_multi_byte )
