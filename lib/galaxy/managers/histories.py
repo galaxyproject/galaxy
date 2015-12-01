@@ -294,7 +294,8 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
                     hda_state_counts[states.UPLOAD] > 0):
                 state = states.RUNNING
             # TODO: this method may be more useful if we *also* polled the histories jobs here too
-            elif hda_state_counts[ states.QUEUED ] > 0:
+            elif (hda_state_counts[ states.QUEUED ] > 0 or
+                    hda_state_counts[states.NEW] > 0):
                 state = states.QUEUED
             elif (hda_state_counts[states.ERROR] > 0 or
                     hda_state_counts[states.FAILED_METADATA] > 0):

@@ -297,8 +297,6 @@ class DefaultToolAction( object ):
             # Take dbkey from LAST input
             data.dbkey = str(input_dbkey)
             # Set state
-            # FIXME: shouldn't this be NEW until the job runner changes it?
-            data.state = data.states.QUEUED
             data.blurb = "queued"
             # Set output label
             data.name = self.get_output_name( output, data, tool, on_text, trans, incoming, history, wrapped_params.params, job_params )
