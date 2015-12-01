@@ -153,12 +153,13 @@ class Biom1( Json ):
                 prev_str = ""
                 segment_str = fh.read( segment_size )
                 if segment_str.strip().startswith( '{' ):
-                    while segment_str and not is_biom:
+                    while segment_str:
                         current_str = prev_str + segment_str
                         if '"format"' in current_str:
                             current_str = re.sub( r'\s', '', current_str )
                             if '"format":"BiologicalObservationMatrix' in current_str:
                                 is_biom = True
+                                break
                         prev_str = segment_str
                         segment_str = fh.read( segment_size )
         except:
