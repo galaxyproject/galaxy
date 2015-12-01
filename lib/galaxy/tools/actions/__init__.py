@@ -180,12 +180,13 @@ class DefaultToolAction( object ):
         submitting the job to the job queue. If history is not specified, use
         trans.history as destination for tool's output datasets.
         """
+        app = trans.app
         assert tool.allow_user_access( trans.user ), "User (%s) is not allowed to access this tool." % ( trans.user )
         # Set history.
         if not history:
             history = tool.get_default_history_by_trans( trans, create=True )
         if history not in trans.sa_session:
-            history = trans.sa_session.query( trans.app.model.History ).get( history.id )
+            history = trans.sa_session.query( app.model.History ).get( history.id )
 
         out_data = odict()
         out_collections = {}
@@ -202,7 +203,7 @@ class DefaultToolAction( object ):
         input_dbkey = incoming.get( "dbkey", "?" )
         for name, data in reversed(inp_data.items()):
             if not data:
-                data = NoneDataset( datatypes_registry=trans.app.datatypes_registry )
+                data = NoneDataset( datatypes_registry=app.datatypes_registry )
                 continue
 
             # Convert LDDA to an HDA.
@@ -223,7 +224,7 @@ class DefaultToolAction( object ):
                 incoming[ "%s|__identifier__" % name ] = identifier
 
         # Collect chromInfo dataset and add as parameters to incoming
-        ( chrom_info, db_dataset ) = trans.app.genome_builds.get_chrom_info( input_dbkey, trans=trans, custom_build_hack_get_len_from_fasta_conversion=tool.id != 'CONVERTER_fasta_to_len' )
+        ( chrom_info, db_dataset ) = app.genome_builds.get_chrom_info( input_dbkey, trans=trans, custom_build_hack_get_len_from_fasta_conversion=tool.id != 'CONVERTER_fasta_to_len' )
         if db_dataset:
             inp_data.update( { "chromInfo": db_dataset } )
         incoming[ "chromInfo" ] = chrom_info
@@ -231,10 +232,10 @@ class DefaultToolAction( object ):
         # Determine output dataset permission/roles list
         existing_datasets = [ inp for inp in inp_data.values() if inp ]
         if existing_datasets:
-            output_permissions = trans.app.security_agent.guess_derived_permissions_for_datasets( existing_datasets )
+            output_permissions = app.security_agent.guess_derived_permissions_for_datasets( existing_datasets )
         else:
             # No valid inputs, we will use history defaults
-            output_permissions = trans.app.security_agent.history_get_default_permissions( history )
+            output_permissions = app.security_agent.history_get_default_permissions( history )
 
         # Build name for output datasets based on tool name and input names
         on_text = on_text_for_names( input_names )
@@ -247,7 +248,7 @@ class DefaultToolAction( object ):
         # datasets first, then create the associations
         parent_to_child_pairs = []
         child_dataset_names = set()
-        object_store_populator = ObjectStorePopulator( trans.app )
+        object_store_populator = ObjectStorePopulator( app )
 
         def handle_output( name, output ):
             if output.parent:
@@ -259,7 +260,7 @@ class DefaultToolAction( object ):
             #      this happens i.e. as a result of the async controller
             if name in incoming:
                 dataid = incoming[name]
-                data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataid )
+                data = trans.sa_session.query( app.model.HistoryDatasetAssociation ).get( dataid )
                 assert data is not None
                 out_data[name] = data
             else:
@@ -270,7 +271,7 @@ class DefaultToolAction( object ):
                     inp_dataset_collections,
                     input_ext
                 )
-                data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, flush=False )
+                data = app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, flush=False )
                 if output.hidden:
                     data.visible = False
                 trans.sa_session.add( data )
@@ -315,7 +316,7 @@ class DefaultToolAction( object ):
         for name, output in tool.outputs.items():
             if not filter_output(output, incoming):
                 if output.collection:
-                    collections_manager = trans.app.dataset_collections_service
+                    collections_manager = app.dataset_collections_service
                     # As far as I can tell - this is always true - but just verify
                     assert set_output_history, "Cannot create dataset collection for this kind of tool."
 
@@ -428,7 +429,7 @@ class DefaultToolAction( object ):
             parent_dataset.children.append( child_dataset )
 
         # Create the job object
-        job = trans.app.model.Job()
+        job = app.model.Job()
 
         if hasattr( trans, "get_galaxy_session" ):
             galaxy_session = trans.get_galaxy_session()
@@ -462,13 +463,13 @@ class DefaultToolAction( object ):
                 # datasets below?
                 # TODO: verify can have multiple with same name, don't want to loose tracability
                 job.add_input_dataset_collection( name, dataset_collection )
-        for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
+        for name, value in tool.params_to_strings( incoming, app ).iteritems():
             job.add_parameter( name, value )
         current_user_roles = trans.get_current_user_roles()
         access_timer = ExecutionTimer()
         for name, dataset in inp_data.iteritems():
             if dataset:
-                if not trans.app.security_agent.can_access_dataset( current_user_roles, dataset.dataset ):
+                if not app.security_agent.can_access_dataset( current_user_roles, dataset.dataset ):
                     raise Exception("User does not have permission to use a dataset (%s) provided for input." % data.id)
                 if dataset in trans.sa_session:
                     job.add_input_dataset( name, dataset=dataset )
@@ -490,9 +491,9 @@ class DefaultToolAction( object ):
         trans.sa_session.add( job )
         # Now that we have a job id, we can remap any outputs if this is a rerun and the user chose to continue dependent jobs
         # This functionality requires tracking jobs in the database.
-        if trans.app.config.track_jobs_in_database and rerun_remap_job_id is not None:
+        if app.config.track_jobs_in_database and rerun_remap_job_id is not None:
             try:
-                old_job = trans.sa_session.query( trans.app.model.Job ).get(rerun_remap_job_id)
+                old_job = trans.sa_session.query( app.model.Job ).get(rerun_remap_job_id)
                 assert old_job is not None, '(%s/%s): Old job id is invalid' % (rerun_remap_job_id, job.id)
                 assert old_job.tool_id == job.tool_id, '(%s/%s): Old tool id (%s) does not match rerun tool id (%s)' % (old_job.id, job.id, old_job.tool_id, job.tool_id)
                 if trans.user is not None:
@@ -541,14 +542,14 @@ class DefaultToolAction( object ):
             assert GALAXY_URL is not None, "GALAXY_URL parameter missing in tool config."
             redirect_url += "&GALAXY_URL=%s" % GALAXY_URL
             # Job should not be queued, so set state to ok
-            job.set_state( trans.app.model.Job.states.OK )
+            job.set_state( app.model.Job.states.OK )
             job.info = "Redirected to: %s" % redirect_url
             trans.sa_session.add( job )
             trans.sa_session.flush()
             trans.response.send_redirect( url_for( controller='tool_runner', action='redirect', redirect_url=redirect_url ) )
         else:
             # Put the job in the queue if tracking in memory
-            trans.app.job_queue.put( job.id, job.tool_id )
+            app.job_queue.put( job.id, job.tool_id )
             trans.log_event( "Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
             return job, out_data
 
