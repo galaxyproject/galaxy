@@ -366,7 +366,7 @@ class DefaultToolAction( object ):
                         child_dataset_names.add( effective_output_name )
 
                         if set_output_history:
-                            history.add_dataset( element, set_hid=set_output_hid )
+                            history.add_dataset( element, set_hid=set_output_hid, quota=False )
                         trans.sa_session.add( element )
                         trans.sa_session.flush()
 
