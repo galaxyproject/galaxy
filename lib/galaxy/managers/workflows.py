@@ -471,7 +471,14 @@ class WorkflowContentsManager(UsesAnnotations):
             # Data inputs
             step_dict['inputs'] = module.get_runtime_input_dicts( annotation_str )
             # User outputs
-            step_dict['user_outputs'] = []
+
+            workflow_outputs_dicts = []
+            for workflow_output in step.workflow_outputs:
+                workflow_output_dict = dict(
+                    output_name=workflow_output.output_name,
+                )
+                workflow_outputs_dicts.append(workflow_output_dict)
+            step_dict['workflow_outputs'] = workflow_outputs_dicts
 
             # All step outputs
             step_dict['outputs'] = []
@@ -610,6 +617,15 @@ class WorkflowContentsManager(UsesAnnotations):
             step.label = step_dict["label"]
         module = module_factory.from_dict( trans, step_dict, secure=secure )
         module.save_to_step( step )
+
+        workflow_outputs_dicts = step_dict.get("workflow_outputs", [])
+        for workflow_output_dict in workflow_outputs_dicts:
+            output_name = workflow_output_dict["output_name"]
+            workflow_output = model.WorkflowOutput(
+                step,
+                output_name,
+            )
+            step.workflow_outputs.append(workflow_output)
 
         annotation = step_dict[ 'annotation' ]
         if annotation:

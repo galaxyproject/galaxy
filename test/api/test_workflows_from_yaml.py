@@ -131,6 +131,29 @@ test_data:
         contents1 = self.dataset_populator.get_history_dataset_content(history_id)
         self.assertEquals(contents1.strip(), "hello world\nhello world")
 
+    def test_outputs( self ):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+outputs:
+  - source: first_cat#out_file1
+steps:
+  - tool_id: cat1
+    label: first_cat
+    state:
+      input1:
+        $link: input1
+      queries:
+        - input2:
+            $link: input1
+
+test_data:
+  input1: "hello world"
+""")
+        workflow = self._get("workflows/%s/download" % workflow_id).json()
+        self.assertEquals(workflow["steps"]["1"]["workflow_outputs"][0]["output_name"], "out_file1")
+
     def test_pause( self ):
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow

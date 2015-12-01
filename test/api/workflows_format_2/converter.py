@@ -121,6 +121,20 @@ def _python_to_workflow(as_python, conversion_context):
         step["type"] = step_type
         eval("transform_%s" % step_type)(conversion_context, step)
 
+    for output in as_python.get("outputs", []):
+        assert isinstance(output, dict), "Output definition must be dictionary"
+        assert "source" in output, "Output definition must specify source"
+
+        source = output["source"]
+        id, output_name = conversion_context.step_output(source)
+        step = steps[str(id)]
+        if "workflow_output" not in step:
+            step["workflow_outputs"] = []
+
+        step["workflow_outputs"].append({
+            "output_name": output_name,
+        })
+
     return as_python
 
 
@@ -331,6 +345,18 @@ class ConversionContext(object):
         self.galaxy_interface = galaxy_interface
         self.workflow_directory = workflow_directory
 
+    def step_id(self, label_or_id):
+        if label_or_id in self.labels:
+            id = self.labels[label_or_id]
+        return int(id)
+
+    def step_output(self, value):
+        value_parts = str(value).split("#")
+        if len(value_parts) == 1:
+            value_parts.append("output")
+        id = self.step_id(value_parts[0])
+        return id, value_parts[1]
+
 
 def __action(type, name, arguments={}):
     return {
@@ -382,13 +408,8 @@ def __populate_input_connections(context, step, connect):
             if not isinstance(value, dict):
                 if key == "$step":
                     value += "#__NO_INPUT_OUTPUT_NAME__"
-                value_parts = str(value).split("#")
-                if len(value_parts) == 1:
-                    value_parts.append("output")
-                id = value_parts[0]
-                if id in context.labels:
-                    id = context.labels[id]
-                value = {"id": int(id), "output_name": value_parts[1]}
+                id, output_name = context.step_output(value)
+                value = {"id": id, "output_name": output_name}
             input_connection_value.append(value)
         if key == "$step":
             key = "__NO_INPUT_OUTPUT_NAME__"
