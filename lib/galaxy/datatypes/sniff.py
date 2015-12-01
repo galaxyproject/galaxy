@@ -331,6 +331,7 @@ def guess_ext( fname, sniff_order=None, is_multi_byte=False ):
         successfully discovered.
         """
         try:
+            print(datatype.file_ext)
             if datatype.sniff( fname ):
                 return datatype.file_ext
         except:
