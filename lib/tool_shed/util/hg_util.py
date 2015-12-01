@@ -196,9 +196,12 @@ def get_mercurial_default_options_dict( command, command_table=None, **kwd ):
     if command_table is None:
         command_table = commands.table
     possible = cmdutil.findpossible( command, command_table )
+    # Mercurial >= 3.4 returns a tuple whose first element is the old return dict
+    if type(possible) is tuple:
+        possible = possible[0]
     if len( possible ) != 1:
         raise Exception('unable to find mercurial command "%s"' % command)
-    default_options_dict = dict( ( r[ 1 ].replace( '-', '_' ), r[ 2 ] ) for r in possible[ possible.keys()[ 0 ] ][ 1 ][ 1 ] )
+    default_options_dict = dict( ( r[1].replace( '-', '_' ), r[2] ) for r in possible.values()[0][1][1] )
     for option in kwd:
         default_options_dict[ option ] = kwd[ option ]
     return default_options_dict
