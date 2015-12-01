@@ -139,13 +139,15 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
 
             // append elements
             _.each( self.steps, function( step, i ) {
-                self.$el.append( '<p/>' ).addClass( 'ui-margin-top' );
-                self.$el.append( self.forms[ i ].$el );
+                var form = self.forms[ i ];
+                self.$el.append( '<p/>' ).addClass( 'ui-margin-top' ).append( form.$el );
                 if ( step.post_job_actions && step.post_job_actions.length ) {
-                    self.$el.append( $( '<div/>' ).addClass( 'fa fa-bolt' ) )
-                            .append( _.reduce( step.post_job_actions, function( memo, value ) {
-                                return memo + ' ' + value.short_str;
-                            }, '' ) );
+                    form.portlet.append( $( '<p/>' ).addClass( 'ui-margin-top' ) );
+                    form.portlet.append( $( '<div/>' ).addClass( 'fa fa-bolt' ).append(
+                        _.reduce( step.post_job_actions, function( memo, value ) {
+                            return memo + ' ' + value.short_str;
+                        }, '' ))
+                    );
                 }
                 Galaxy.emit.debug( 'tool-form-composite::initialize()', i + ' : Workflow step state ready.', step );
             });
