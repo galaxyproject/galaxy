@@ -7,8 +7,8 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
         initialize: function( options ) {
             var self = this;
             this.workflow_id = options.id;
-            this.forms = {};
-            this.steps = {};
+            this.forms = [];
+            this.steps = [];
 
             // initialize elements
             this.setElement( '<div class="ui-form-composite"/>' );
@@ -88,8 +88,8 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                 }
 
                 // backup objects
-                self.forms[ step.step_id ] = form;
-                self.steps[ step.step_id ] = step;
+                self.forms[ i ] = form;
+                self.steps[ i ] = step;
             });
 
             // build workflow parameters
@@ -200,9 +200,9 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                 parameters  : {}
             };
             var validated = true;
-            _.each( this.forms, function( form, key ) {
+            _.each( this.forms, function( form, i ) {
                 var job_inputs  = form.data.create();
-                var step        = self.steps[ key ];
+                var step        = self.steps[ i ];
                 var step_id     = step.step_id;
                 var step_type   = step.step_type;
                 var order_index = step.order_index;
