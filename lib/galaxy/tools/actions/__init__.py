@@ -17,6 +17,15 @@ import logging
 log = logging.getLogger( __name__ )
 
 
+class ToolExecutionCache( object ):
+    """ An object mean to cache calculation caused by repeatedly evaluting
+    the same tool by the same user with slightly different parameters.
+    """
+    def __init__(self, trans):
+        self.trans = trans
+        self.current_user_roles = trans.get_current_user_roles()
+
+
 class ToolAction( object ):
     """
     The actions to be taken when a tool is run (after parameters have
@@ -174,14 +183,17 @@ class DefaultToolAction( object ):
         tool.visit_inputs( param_values, visitor )
         return input_dataset_collections
 
-    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, set_output_history=True, history=None, job_params=None, rerun_remap_job_id=None, mapping_over_collection=False):
+    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, set_output_history=True, history=None, job_params=None, rerun_remap_job_id=None, mapping_over_collection=False, execution_cache=None ):
         """
         Executes a tool, creating job and tool outputs, associating them, and
         submitting the job to the job queue. If history is not specified, use
         trans.history as destination for tool's output datasets.
         """
         app = trans.app
-        current_user_roles = trans.get_current_user_roles()
+        if execution_cache is None:
+            execution_cache = ToolExecutionCache(trans)
+        current_user_roles = execution_cache.current_user_roles
+
         assert tool.allow_user_access( trans.user ), "User (%s) is not allowed to access this tool." % ( trans.user )
         # Set history.
         if not history:

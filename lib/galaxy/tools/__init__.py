@@ -1342,14 +1342,14 @@ class Tool( object, Dictifiable ):
             else:
                 raise exceptions.MessageException( execution_tracker.execution_errors[ 0 ] )
 
-    def handle_single_execution( self, trans, rerun_remap_job_id, params, history, mapping_over_collection ):
+    def handle_single_execution( self, trans, rerun_remap_job_id, params, history, mapping_over_collection, execution_cache=None ):
         """
         Return a pair with whether execution is successful as well as either
         resulting output data or an error message indicating the problem.
         """
         try:
             params = self.__remove_meta_properties( params )
-            job, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id, mapping_over_collection=mapping_over_collection )
+            job, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id, mapping_over_collection=mapping_over_collection, execution_cache=execution_cache )
         except httpexceptions.HTTPFound, e:
             # if it's a paste redirect exception, pass it up the stack
             raise e

@@ -6,7 +6,7 @@ collections from matched collections.
 import collections
 import galaxy.tools
 from galaxy.util import ExecutionTimer
-from galaxy.tools.actions import on_text_for_names
+from galaxy.tools.actions import on_text_for_names, ToolExecutionCache
 from threading import Thread
 from Queue import Queue
 
@@ -24,6 +24,7 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
     all_jobs_timer = ExecutionTimer()
     execution_tracker = ToolExecutionTracker( tool, param_combinations, collection_info )
     app = trans.app
+    execution_cache = ToolExecutionCache(trans)
 
     def execute_single_job(params):
         job_timer = ExecutionTimer()
@@ -33,7 +34,7 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
             # Only workflow invocation code gets to set this, ignore user supplied
             # values or rerun parameters.
             del params[ '__workflow_invocation_uuid__' ]
-        job, result = tool.handle_single_execution( trans, rerun_remap_job_id, params, history, collection_info )
+        job, result = tool.handle_single_execution( trans, rerun_remap_job_id, params, history, collection_info, execution_cache )
         if job:
             message = EXECUTION_SUCCESS_MESSAGE % (tool.id, job.id, job_timer)
             log.debug(message)

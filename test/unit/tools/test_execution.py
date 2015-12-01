@@ -276,6 +276,9 @@ class MockTrans( object ):
     def get_history( self, **kwargs ):
         return self.history
 
+    def get_current_user_roles( self ):
+        return []
+
 
 class MockCollectionService( object ):
 
