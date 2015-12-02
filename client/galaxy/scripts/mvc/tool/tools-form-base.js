@@ -255,14 +255,12 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
 
             // add admin operations
             if (Galaxy.user && Galaxy.user.get('is_admin')) {
-                // create download button
                 menu_button.addMenu({
                     icon    : 'fa-download',
                     title   : 'Download',
                     tooltip : 'Download this tool',
-                    onclick : function() {
-                        window.location.href = Galaxy.root + 'api/tools/' + options.id + '/download';
-                    }
+                    href    : Galaxy.root + 'api/tools/' + options.id + '/download',
+                    download: options.id
                 });
             }
 

@@ -35,13 +35,22 @@ var GalaxyMasthead = Backbone.View.extend({
         // assign background
         this.$background = $(this.el).find('#masthead-background');
 
-        // loop through unload functions if the user attempts to unload the page
+        // loop through beforeunload functions if the user attempts to unload the page
         var self = this;
-        $(window).on('beforeunload', function() {
+        $(window).on('click', function( e ) {
+            var $download_link = $( e.target ).closest( 'a[download]' );
+            if ( $download_link.length == 1 ) {
+                if( $( 'iframe[id=download]' ).length === 0 ){
+                    $( 'body' ).append( $( '<iframe id="download" style="display: none;" />' ) );
+                }
+                $( 'iframe[id=download]' ).attr( 'src', $download_link.attr( 'href' ) );
+                e.preventDefault();
+            }
+        }).on('beforeunload', function() {
             var text = "";
             for (var key in self.list) {
-                if (self.list[key].options.onunload) {
-                    var q = self.list[key].options.onunload();
+                if (self.list[key].options.onbeforeunload) {
+                    var q = self.list[key].options.onbeforeunload();
                     if (q) text += q + " ";
                 }
             }

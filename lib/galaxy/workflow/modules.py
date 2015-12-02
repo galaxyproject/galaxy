@@ -132,7 +132,7 @@ class WorkflowModule( object ):
 
     # ---- Run time ---------------------------------------------------------
 
-    def get_runtime_inputs( self ):
+    def get_runtime_inputs( self, **kwds ):
         """ Used internally by modules and when displaying inputs in workflow
         editor and run workflow templates.
 
@@ -222,6 +222,7 @@ class SimpleWorkflowModule( WorkflowModule ):
     def save_to_step( self, step ):
         step.type = self.type
         step.tool_id = None
+        step.tool_version = None
         step.tool_inputs = self.state
 
     def get_state( self, secure=True ):

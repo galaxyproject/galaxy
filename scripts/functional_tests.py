@@ -326,6 +326,7 @@ def main():
                        user_library_import_dir=user_library_import_dir,
                        master_api_key=master_api_key,
                        use_tasked_jobs=True,
+                       check_migrate_tools=False,
                        cleanup_job='onsuccess',
                        enable_beta_tool_formats=True,
                        auto_configure_logging=logging_config_file is None,

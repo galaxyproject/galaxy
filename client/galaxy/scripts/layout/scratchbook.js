@@ -29,10 +29,10 @@ var GalaxyFrame = Backbone.View.extend({
 
         // add activate icon
         this.button_active = new GalaxyMastheadIcon({
-            icon        : 'fa-th',
-            tooltip     : 'Enable/Disable Scratchbook',
-            onclick     : function() { self._activate(); },
-            onunload    : function() {
+            icon            : 'fa-th',
+            tooltip         : 'Enable/Disable Scratchbook',
+            onclick         : function() { self._activate(); },
+            onbeforeunload  : function() {
                 if (self.frames.length() > 0) {
                     return "You opened " + self.frames.length() + " frame(s) which will be lost.";
                 }

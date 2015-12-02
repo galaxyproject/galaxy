@@ -27,4 +27,9 @@ require.config({
         "interactive_environments": "${h.url_for('/static/scripts/galaxy.interactive_environments')}",
     },
 });
+
+window.onbeforeunload = function() {
+    return 'You are leaving your Interactive Environment.';
+};
+
 </%def>

@@ -248,14 +248,25 @@ var CenterPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
     /**   */
     display: function( view ){
         // we need to display an MVC view: hide the iframe and show the other center panel
-        // remove any previous views
-        if( this.prev ){
-            this.prev.remove();
+        // first checking for any onbeforeunload handlers on the iframe
+        var contentWindow = this.$( '#galaxy_main' )[ 0 ].contentWindow || {};
+        var message = contentWindow.onbeforeunload && contentWindow.onbeforeunload();
+        if ( !message || confirm( message ) ) {
+            contentWindow.onbeforeunload = undefined;
+            // remove any previous views
+            if( this.prev ){
+                this.prev.remove();
+            }
+            this.prev = view;
+            this.$( '#galaxy_main' ).attr( 'src', 'about:blank' ).hide();
+            this.$( '#center-panel' ).scrollTop( 0 ).append( view.$el ).show();
+            this.trigger( 'center-panel:load', view );
+
+        } else {
+            if( view ){
+                view.remove();
+            }
         }
-        this.prev = view;
-        this.$( '#galaxy_main' ).hide();
-        this.$( '#center-panel' ).scrollTop( 0 ).append( view.$el ).show();
-        this.trigger( 'center-panel:load', view );
     },
 
     template: function(){

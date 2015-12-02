@@ -1,3 +1,6 @@
+import json
+import re
+
 from galaxy.exceptions import ObjectInvalid
 from galaxy.model import LibraryDatasetDatasetAssociation
 from galaxy import model
@@ -238,14 +241,19 @@ class DefaultToolAction( object ):
                 assert data is not None
                 out_data[name] = data
             else:
-                ext = determine_output_format( output, wrapped_params.params, inp_data, input_ext )
-                data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, sa_session=trans.sa_session )
+                ext = determine_output_format(
+                    output,
+                    wrapped_params.params,
+                    inp_data,
+                    inp_dataset_collections,
+                    input_ext
+                )
+                data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, flush=False )
                 if output.hidden:
                     data.visible = False
-                # Commit the dataset immediately so it gets database assigned unique id
                 trans.sa_session.add( data )
+                trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions, new=True )
                 trans.sa_session.flush()
-                trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions )
 
             object_store_populator.set_object_store_id( data )
 
@@ -280,6 +288,8 @@ class DefaultToolAction( object ):
                 output_action_params.update( incoming )
                 output.actions.apply_action( data, output_action_params )
             # Store all changes to database
+            # Updates at least state, blurb, and name. Does a query before
+            # hand I don't know why...
             trans.sa_session.flush()
             return data
 
@@ -339,10 +349,22 @@ class DefaultToolAction( object ):
                     else:
                         element_kwds = dict(element_identifiers=element_identifiers)
 
+                    collection_type = output.structure.collection_type
+                    if collection_type is None:
+                        collection_type_source = output.structure.collection_type_source
+                        if collection_type_source is None:
+                            # TODO: Not a new problem, but this should be determined
+                            # sooner.
+                            raise Exception("Could not determine collection type to create.")
+                        if collection_type_source not in input_collections:
+                            raise Exception("Could not find collection type source with name [%s]." % collection_type_source)
+
+                        collection_type = input_collections[collection_type_source].collection.collection_type
+
                     if mapping_over_collection:
                         dc = collections_manager.create_dataset_collection(
                             trans,
-                            collection_type=output.structure.collection_type,
+                            collection_type=collection_type,
                             **element_kwds
                         )
                         out_collections[ name ] = dc
@@ -352,7 +374,7 @@ class DefaultToolAction( object ):
                             trans,
                             history,
                             name=hdca_name,
-                            collection_type=output.structure.collection_type,
+                            collection_type=collection_type,
                             trusted_identifiers=True,
                             **element_kwds
                         )
@@ -368,7 +390,9 @@ class DefaultToolAction( object ):
             if name not in child_dataset_names and name not in incoming:  # don't add children; or already existing datasets, i.e. async created
                 data = out_data[ name ]
                 if set_output_history:
-                    history.add_dataset( data, set_hid=set_output_hid )
+                    # Set HID and add to history.
+                    # This is brand new and certainly empty so don't worry about quota.
+                    history.add_dataset( data, set_hid=set_output_hid, quota=False )
                 trans.sa_session.add( data )
                 trans.sa_session.flush()
         # Add all the children to their parents
@@ -562,7 +586,7 @@ def filter_output(output, incoming):
     return False
 
 
-def determine_output_format(output, parameter_context, input_datasets, random_input_ext):
+def determine_output_format(output, parameter_context, input_datasets, input_dataset_collections, random_input_ext):
     """ Determines the output format for a dataset based on an abstract
     description of the output (galaxy.tools.ToolOutput), the parameter
     wrappers, a map of the input datasets (name => HDA), and the last input
@@ -575,13 +599,31 @@ def determine_output_format(output, parameter_context, input_datasets, random_in
     ext = output.format
     if ext == "input":
         ext = random_input_ext
-    if output.format_source is not None and output.format_source in input_datasets:
+    format_source = output.format_source
+    if format_source is not None and format_source in input_datasets:
         try:
             input_dataset = input_datasets[output.format_source]
             input_extension = input_dataset.ext
             ext = input_extension
         except Exception:
             pass
+    elif format_source is not None:
+        if re.match(r"^[^\[\]]*\[[^\[\]]*\]$", format_source):
+            collection_name, element_index = format_source[0:-1].split("[")
+            # Treat as json to interpret "forward" vs 0 with type
+            # Make it feel more like Python, single quote better in XML also.
+            element_index = element_index.replace("'", '"')
+            element_index = json.loads(element_index)
+
+            if collection_name in input_dataset_collections:
+                try:
+                    input_collection = input_dataset_collections[collection_name][0]
+                    input_dataset = input_collection.collection[element_index].element_object
+                    input_extension = input_dataset.ext
+                    ext = input_extension
+                except Exception, e:
+                    log.debug("Exception while trying to determine format_source: %s", e)
+                    pass
 
     # process change_format tags
     if output.change_format is not None:
