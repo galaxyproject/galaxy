@@ -69,10 +69,7 @@ define(['utils/utils',
         _addConditional: function(input_def) {
             var self = this;
             input_def.test_param.id = input_def.id;
-            if ( this.app.options.sustain_conditionals ) {
-                input_def.test_param.disabled = true;
-                input.test_param.collapsible = false;
-            }
+            this.app.options.sustain_conditionals && ( input_def.test_param.disabled = true );
             var field = this._addRow( input_def.test_param );
 
             // set onchange event for test parameter
@@ -203,7 +200,7 @@ define(['utils/utils',
                 }
             });
             portlet.append( sub_section.$el );
-            portlet.append( $( '<div/>' ).addClass( 'ui-table-form-info' ).html( input_def.help ) );
+            portlet.append( $( '<div/>' ).addClass( 'ui-form-info' ).html( input_def.help ) );
             portlet.setOperation( 'button_visible', function() {
                 if( portlet.collapsed ) {
                     portlet.expand();
@@ -242,7 +239,7 @@ define(['utils/utils',
                 label               : input_def.label || input_def.name,
                 value               : input_def.value,
                 default_value       : input_def.default_value,
-                text_value          : input_def.text_value,
+                text_value          : input_def.text_value || input_def.value,
                 collapsible_value   : input_def.collapsible_value,
                 collapsible_preview : input_def.collapsible_preview,
                 help                : input_def.help,

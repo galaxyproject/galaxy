@@ -29,14 +29,6 @@
                 tool = trans.app.toolbox.get_tool( step.tool_id )
                 params_to_incoming( incoming, tool.inputs, step.state.inputs, trans.app, to_html=False )
                 step_model = tool.to_json( trans, incoming, workflow_mode=True )
-                step_model[ 'input_connections_by_name' ] = {}
-                for key, conns in step.input_connections_by_name.iteritems():
-                    if not isinstance( conns, list ):
-                        conns = [ conns ]
-                    step_model[ 'input_connections_by_name' ][ key ] = [{
-                        'output_name'       : elem.output_name,
-                        'order_index'       : int( elem.output_step.order_index ) + 1
-                    } for elem in conns ]
                 step_model[ 'post_job_actions' ] = [{
                     'short_str'         : ActionBox.get_short_str( pja ),
                     'action_type'       : pja.action_type,

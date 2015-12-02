@@ -12,6 +12,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
             });
             this.modal = ( parent.Galaxy && parent.Galaxy.modal ) || new Ui.Modal.View();
             this.setElement('<div/>');
+            this.render();
         },
 
         /** Update available options */

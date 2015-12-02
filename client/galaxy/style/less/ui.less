@@ -194,14 +194,14 @@
 }
 
 // table form elements
-.ui-table-form-element {
+.ui-form-element {
     margin-top: @ui-margin-vertical;
     margin-bottom: @ui-margin-vertical;
     overflow: visible;
-    .ui-table-form-title {
+    .ui-form-title {
         word-break: break-word;
         font-weight: bold;
-        .ui-table-form-optional {
+        .ui-form-optional {
             cursor: pointer;
             .icon {
                 font-size: 1.2em;
@@ -211,7 +211,7 @@
             }
         }
     }
-    .ui-table-form-field {
+    .ui-form-field {
         position: relative;
         margin-top: @ui-margin-vertical;
         .ui-form-wp-source {
@@ -225,7 +225,7 @@
             border-left-width: 5px;
             font-style: italic;
         }
-        .ui-table-form-backdrop {
+        .ui-form-backdrop {
             display: none;
             z-index: 10;
             position: absolute;
@@ -237,7 +237,7 @@
             cursor: not-allowed;
         }
     }
-    .ui-table-form-preview {
+    .ui-form-preview {
         &:extend(.ui-input);
         margin-top: 5px;
         border-color: transparent !important;
@@ -245,19 +245,23 @@
     }
 }
 
-.ui-table-form-separator {
+.ui-form-separator {
 	font-weight: bold;
 	font-size: 0.9em;
 }
 
-.ui-table-form-info {
+.ui-form-info {
         &:extend(.toolParamHelp);
         clear: both !important;
 }
 
-.ui-table-form-error {
+.ui-form-footer-info {
+    line-height: 1.4em;
+}
+
+.ui-form-error {
     display: none;
-    .ui-table-form-error-text  {
+    .ui-form-error-text  {
         padding-left: @ui-margin-horizontal;
     }
 }

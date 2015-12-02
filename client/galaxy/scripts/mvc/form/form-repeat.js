@@ -109,7 +109,7 @@ var View = Backbone.View.extend({
             portlet.hideOperation('button_delete');
         });
         if( _.isEmpty( this.list ) ) {
-            this.$el.append( $('<div/>').addClass( 'ui-table-form-info' ).html( this.options.empty_text ) );
+            this.$el.append( $('<div/>').addClass( 'ui-form-info' ).html( this.options.empty_text ) );
         }
     },
 

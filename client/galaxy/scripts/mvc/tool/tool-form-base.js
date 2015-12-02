@@ -6,12 +6,15 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
     function(Utils, Deferred, Ui, FormBase, ToolTemplate, CitationModel, CitationView) {
     return FormBase.extend({
         initialize: function(options) {
+            var self = this;
             FormBase.prototype.initialize.call(this, options);
             this.deferred = new Deferred();
             if (options.inputs) {
                 this._buildForm(options);
+                options.needs_update && this.deferred.execute( function( process ) {
+                    self._updateModel( process );
+                });
             } else {
-                var self = this;
                 this.deferred.execute(function(process) {
                     self._buildModel(process, options, true);
                 });

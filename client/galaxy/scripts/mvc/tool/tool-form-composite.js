@@ -9,6 +9,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
             this.workflow_id = options.id;
             this.forms = [];
             this.steps = [];
+            this.links = [];
 
             // initialize elements
             this.setElement( '<div class="ui-form-composite"/>' );
@@ -37,6 +38,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                     help                    : null,
                     description             : step.annotation && ' - ' + step.annotation || step.description,
                     citations               : null,
+                    needs_update            : true,
                     collapsible             : true,
                     collapsed               : i > 0,
                     sustain_version         : true,
@@ -49,48 +51,69 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                     cls_disable             : 'fa fa-undo'
                 }, step );
 
+                // link output datasets to input fields
+                _.each( options.steps, function( sub_step ) {
+                    var connections_by_name = {};
+                    _.each( step.output_connections, function( connection ) {
+                        sub_step.step_id === connection.input_step_id && ( connections_by_name[ connection.input_name ] = connection );
+                    });
+                    FormData.matchIds( sub_step.inputs, connections_by_name, function( connection, input ) {
+                        if ( !input.linked ) {
+                            input.linked = step.step_type;
+                            input.type = 'hidden';
+                            input.help = '';
+                        } else {
+                            input.help += ', ';
+                        }
+                        input.help += 'Output dataset \'' + connection.output_name + '\' from step ' + ( parseInt( i ) + 1 );
+                    });
+                });
+
                 // build forms
                 var form = null;
-                if ( (['data_input', 'data_collection_input']).indexOf( step.step_type ) != -1 ) {
+                if ( String( step.step_type ).startsWith( 'data' ) ) {
                     form = new Form( Utils.merge({
-                        title : '<b>' + step.name + '</b>'
+                        title : '<b>' + step.name + '</b>',
+                        onchange: function() {
+                            var input_value = form.data.create().input;
+                            _.each( self.links[ i ], function( link ) {
+                                link.input.value ( input_value );
+                                link.form.trigger( 'change' );
+                            });
+                        }
                     }, step ));
-                    form.render();
                 } else if ( step.step_type == 'tool' ) {
-                    // configure input elements
                     Utils.deepeach( step.inputs, function( input ) {
                         if ( input.type ) {
                             input.options && input.options.length == 0 && ( input.is_workflow = true );
                             if ( input.value && input.value.__class__ == 'RuntimeValue' ) {
                                 input.value = null;
-                            } else if ( [ 'data', 'data_collection' ].indexOf( input.type ) == -1 && !self._isWorkflowParameter( input.value ) ) {
+                            } else if ( [ 'data', 'data_collection', 'hidden' ].indexOf( input.type ) == -1 && !self._isWorkflowParameter( input.value ) ) {
                                 input.collapsible_value = input.value;
                                 input.collapsible_preview = true;
                             }
                         }
                     });
-                    // replace referenced dataset input fields with labels
-                    FormData.matchIds( step.inputs, step.input_connections_by_name, function( connection, input ) {
-                        if( input ) {
-                            input.type = 'hidden';
-                            input.value = input.ignore = '';
-                            input.options = null;
-                            input.help = _.reduce( connection, function( memo, value ) {
-                                memo && ( memo = memo + ', ' );
-                                return memo + 'Output dataset \'' + value.output_name + '\' from step ' + value.order_index;
-                            }, '' );
-                        }
-                    });
-                    // match data references
                     FormData.matchContext( step.inputs, 'data_ref', function( input, reference ) {
-                        input.is_workflow = !reference.options || self._isWorkflowParameter( input.value );
+                        input.is_workflow = ( reference.linked && !reference.linked.startsWith( 'data' ) ) || self._isWorkflowParameter( input.value );
                     });
                     form = new ToolFormBase( step );
                 }
-
-                // backup objects
                 self.forms[ i ] = form;
                 self.steps[ i ] = step;
+                self.links[ i ] = [];
+            });
+
+            // create index of data output links
+            _.each( this.steps, function( step, i ) {
+                _.each( step.output_connections, function( output_connection ) {
+                    _.each( self.forms, function( form ) {
+                        if ( form.options.step_id === output_connection.input_step_id ) {
+                            var matched_input = form.field_list[ form.data.match( output_connection.input_name ) ];
+                            matched_input && self.links[ i ].push( { input: matched_input, form: form } );
+                        }
+                    });
+                });
             });
 
             // build workflow parameters
@@ -131,7 +154,6 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                         });
                     });
                 }});
-                wp_form.render();
                 _.each( wp_form.field_list, function( wp_field, i ) {
                     wp_style( wp_field, wp_form.input_list[ i ].color, 'ui-form-wp-source' );
                 });
@@ -140,12 +162,11 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
             }
 
             // append elements
-            _.each( self.steps, function( step, i ) {
+            _.each( this.steps, function( step, i ) {
                 var form = self.forms[ i ];
                 self.$el.append( '<p/>' ).addClass( 'ui-margin-top' ).append( form.$el );
                 if ( step.post_job_actions && step.post_job_actions.length ) {
-                    form.portlet.append( $( '<p/>' ).addClass( 'ui-margin-top' ) );
-                    form.portlet.append( $( '<div/>' ).addClass( 'fa fa-bolt' ).append(
+                    form.portlet.append( $( '<div/>' ).addClass( 'ui-form-footer-info fa fa-bolt' ).append(
                         _.reduce( step.post_job_actions, function( memo, value ) {
                             return memo + ' ' + value.short_str;
                         }, '' ))
@@ -179,7 +200,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                     }]
                 });
                 this.$el.append( '<p/>' ).addClass( 'ui-margin-top' );
-                this.$el.append( this.history_form.render().$el );
+                this.$el.append( this.history_form.$el );
             }
 
             // add execute button
@@ -217,7 +238,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                     var input_id    = form.data.match( job_input_id );
                     var input_field = form.field_list[ input_id ];
                     var input_def   = form.input_list[ input_id ];
-                    if ( ( [ 'data_input', 'data_collection_input' ] ).indexOf( step_type ) != -1 ) {
+                    if ( String( step_type ).startsWith( 'data' ) ) {
                         if ( input_value && input_value.values && input_value.values.length > 0 ) {
                             job_def.inputs[ order_index ] = input_value.values[ 0 ];
                         } else if ( validated ) {
@@ -225,11 +246,13 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                             validated = false;
                         }
                     } else {
-                        if ( input_def.optional || input_def.is_workflow || input_value != null ) {
-                            job_def.parameters[ step_id ][ job_input_id ] = input_value;
-                        } else {
-                            form.highlight( input_id );
-                            validated = false;
+                        if ( !String( input_def.type ).startsWith( 'data' ) ) {
+                            if ( input_def.optional || input_def.is_workflow || input_value != null ) {
+                                job_def.parameters[ step_id ][ job_input_id ] = input_value;
+                            } else {
+                                form.highlight( input_id );
+                                validated = false;
+                            }
                         }
                     }
                 }

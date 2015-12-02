@@ -2329,6 +2329,7 @@ class Tool( object, Dictifiable ):
                         test_param = tool_dict['test_param']
                         test_param['default_value'] = jsonify(input.test_param.get_initial_value(trans, other_values, history=history))
                         test_param['value'] = jsonify(group_state.get(test_param['name'], test_param['default_value']))
+                        test_param['text_value'] = input.test_param.value_to_display_text(test_param['value'], trans.app)
                         for i in range(len( tool_dict['cases'] ) ):
                             current_state = {}
                             if i == group_state.get('__current_case__', None):

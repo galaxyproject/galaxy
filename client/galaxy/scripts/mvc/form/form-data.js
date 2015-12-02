@@ -51,7 +51,6 @@ define([ 'utils/utils' ], function( Utils ) {
                         }
                         flat_id += input.name;
                         switch ( input.type ) {
-                            // handle repeats
                             case 'repeat':
                                 var section_label = 'section-';
                                 var block_indices = [];
@@ -72,7 +71,6 @@ define([ 'utils/utils' ], function( Utils ) {
                                     convert( flat_id + '_' + index++, node[ block_prefix + block_indices[ i ] ]);
                                 }
                                 break;
-                            // handle conditionals
                             case 'conditional':
                                 var value = self.app.field_list[ input.id ].value();
                                 add ( flat_id + '|' + input.test_param.name, input.id, value );
@@ -81,12 +79,10 @@ define([ 'utils/utils' ], function( Utils ) {
                                     convert( flat_id, head[ input.id + '-section-' + selectedCase ] );
                                 }
                                 break;
-                            // handle sections
                             case 'section':
                                 convert( !input.flat && flat_id || '', node );
                                 break;
                             default:
-                                // process regular field value
                                 var field = self.app.field_list[ input.id ];
                                 if ( field && field.value ) {
                                     var value = field.value();
