@@ -499,8 +499,16 @@ class WorkflowContentsManager(UsesAnnotations):
             input_conn_dict = {}
             unique_input_names = set( [conn.input_name for conn in input_connections] )
             for input_name in unique_input_names:
-                input_conn_dict[ input_name ] = \
-                    [ dict( id=conn.output_step.order_index, output_name=conn.output_name ) for conn in input_connections if conn.input_name == input_name ]
+                input_conn_dicts = []
+                for conn in input_connections:
+                    if conn.input_name != input_name:
+                        continue
+                    input_conn = dict(
+                        id=conn.output_step.order_index,
+                        output_name=conn.output_name
+                    )
+                    input_conn_dicts.append(input_conn)
+                input_conn_dict[ input_name ] = input_conn_dicts
 
             # Preserve backward compatability. Previously Galaxy
             # assumed input connections would be dictionaries not
