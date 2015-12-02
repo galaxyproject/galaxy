@@ -6,28 +6,12 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
     return Backbone.View.extend({
         initialize: function(options) {
             this.options = Utils.merge(options, {
-                // shows errors on start
                 initial_errors  : false,
                 cls             : 'ui-portlet-limited',
                 icon            : ''
             });
-
-            // log options
-            Galaxy.emit.debug('form-view::initialize()', 'Ready to build form.', this.options);
-
-            // link galaxy modal or create one
-            var galaxy = parent.Galaxy;
-            if (galaxy && galaxy.modal) {
-                this.modal = galaxy.modal;
-            } else {
-                this.modal = new Ui.Modal.View();
-            }
-
-            // set element
+            this.modal = ( parent.Galaxy && parent.Galaxy.modal ) || new Ui.Modal.View();
             this.setElement('<div/>');
-
-            // build this form
-            this._build();
         },
 
         /** Update available options */
@@ -127,9 +111,9 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
             }
         },
 
-        /** Main tool form build function. This function is called once a new model is available.
+        /** Render tool form
         */
-        _build: function() {
+        render: function() {
             // link this
             var self = this;
 
@@ -176,6 +160,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
                     this.element_list[i].reset();
                 }
             });
+            return this;
         },
 
         /** Renders the UI elements required for the form

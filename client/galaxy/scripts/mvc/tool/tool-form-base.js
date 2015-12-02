@@ -3,11 +3,10 @@
 */
 define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
         'mvc/tool/tool-template', 'mvc/citation/citation-model', 'mvc/citation/citation-view'],
-    function(Utils, Deferred, Ui, Form, ToolTemplate, CitationModel, CitationView) {
-    return Backbone.View.extend({
+    function(Utils, Deferred, Ui, FormBase, ToolTemplate, CitationModel, CitationView) {
+    return FormBase.extend({
         initialize: function(options) {
-            this.options = Utils.merge(options, {});
-            this.setElement('<div/>');
+            FormBase.prototype.initialize.call(this, options);
             this.deferred = new Deferred();
             if (options.inputs) {
                 this._buildForm(options);
@@ -24,7 +23,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             var self = this;
             this.$el.hide();
             this.deferred.execute(function(){
-                Backbone.View.prototype.remove.call(self);
+                FormBase.prototype.remove.call(self);
                 Galaxy.emit.debug('tool-form-base::remove()', 'Destroy view.');
             });
         },
@@ -45,12 +44,10 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 }
             }, this.options);
             this.options.customize && this.options.customize( this.options );
-            this.form = new Form(this.options);
+            this.render();
             if ( !this.options.collapsible ) {
-                this.form.$el.append( $( '<div/>' ).addClass( 'ui-margin-top-large' ).append( this._footer() ) );
+                this.$el.append( $( '<div/>' ).addClass( 'ui-margin-top-large' ).append( this._footer() ) );
             }
-            this.$el.empty();
-            this.$el.append(this.form.$el);
         },
 
         /** Builds a new model through api call and recreates the entire form
@@ -80,7 +77,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 data    : build_data,
                 success : function(new_model) {
                     self._buildForm(new_model['tool_model'] || new_model);
-                    !hide_message && self.form.message.update({
+                    !hide_message && self.message.update({
                         status      : 'success',
                         message     : 'Now you are using \'' + self.options.name + '\' version ' + self.options.version + '.',
                         persistent  : false
@@ -121,13 +118,12 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             // link this
             var self = this;
             var model_url = this.options.update_url || Galaxy.root + 'api/tools/' + this.options.id + '/build';
-            var form = this.form;
             var current_state = {
                 tool_id         : this.options.id,
                 tool_version    : this.options.version,
-                inputs          : $.extend(true, {}, self.form.data.create())
+                inputs          : $.extend(true, {}, self.data.create())
             }
-            form.wait(true);
+            this.wait(true);
 
             // log tool state
             Galaxy.emit.debug('tool-form-base::_updateModel()', 'Sending current state.', current_state);
@@ -138,9 +134,9 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 url     : model_url,
                 data    : current_state,
                 success : function(new_model) {
-                    self.form.update(new_model['tool_model'] || new_model);
+                    self.update(new_model['tool_model'] || new_model);
                     self.options.update && self.options.update(new_model);
-                    form.wait(false);
+                    self.wait(false);
                     Galaxy.emit.debug('tool-form-base::_updateModel()', 'Received new model.', new_model);
                     process.resolve();
                 },
@@ -242,14 +238,14 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     onclick : function() {
                         if (!this.visible) {
                             this.visible = true;
-                            self.form.message.update({
+                            self.message.update({
                                 persistent  : true,
                                 message     : ToolTemplate.requirements(options),
                                 status      : 'info'
                             });
                         } else {
                             this.visible = false;
-                            self.form.message.update({
+                            self.message.update({
                                 message     : ''
                             });
                         }

@@ -18,10 +18,10 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tool/tool-form-base', 'mvc/tool/to
                             floating : 'clear',
                             onclick  : function() {
                                 execute_btn.wait();
-                                self.form.portlet.disable();
+                                self.portlet.disable();
                                 self.submit( options, function() {
                                     execute_btn.unwait();
-                                    self.form.portlet.enable();
+                                    self.portlet.enable();
                                 } );
                             }
                         })
@@ -52,9 +52,9 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tool/tool-form-base', 'mvc/tool/to
             var job_def = {
                 tool_id         : options.id,
                 tool_version    : options.version,
-                inputs          : this.form.data.create()
+                inputs          : this.data.create()
             }
-            this.form.trigger( 'reset' );
+            this.trigger( 'reset' );
             if ( !self.validate( job_def ) ) {
                 Galaxy.emit.debug( 'tool-form::submit()', 'Submission canceled. Validation failed.' );
                 callback && callback();
@@ -67,25 +67,25 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tool/tool-form-base', 'mvc/tool/to
                 data    : job_def,
                 success : function( response ) {
                     callback && callback();
-                    self.form.$el.replaceWith( ToolTemplate.success( response ) );
+                    self.$el.empty().append( ToolTemplate.success( response ) );
                     parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.refreshContents();
                 },
                 error   : function( response ) {
                     callback && callback();
                     Galaxy.emit.debug( 'tool-form::submit', 'Submission failed.', response );
                     if ( response && response.err_data ) {
-                        var error_messages = self.form.data.matchResponse( response.err_data );
+                        var error_messages = self.data.matchResponse( response.err_data );
                         for (var input_id in error_messages) {
-                            self.form.highlight( input_id, error_messages[ input_id ]);
+                            self.highlight( input_id, error_messages[ input_id ]);
                             break;
                         }
                     } else {
-                        self.form.modal.show({
+                        self.modal.show({
                             title   : 'Job submission failed',
                             body    : ( response && response.err_msg ) || ToolTemplate.error( job_def ),
                             buttons : {
                                 'Close' : function() {
-                                    self.form.modal.hide();
+                                    self.modal.hide();
                                 }
                             }
                         });
@@ -103,15 +103,15 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tool/tool-form-base', 'mvc/tool/to
             var batch_src   = null;
             for ( var job_input_id in job_inputs ) {
                 var input_value = job_inputs[ job_input_id ];
-                var input_id    = this.form.data.match( job_input_id );
-                var input_field = this.form.field_list[ input_id ];
-                var input_def   = this.form.input_list[ input_id ];
+                var input_id    = this.data.match( job_input_id );
+                var input_field = this.field_list[ input_id ];
+                var input_def   = this.input_list[ input_id ];
                 if ( !input_id || !input_def || !input_field ) {
                     Galaxy.emit.debug('tool-form::validate()', 'Retrieving input objects failed.');
                     continue;
                 }
                 if ( !input_def.optional && input_value == null ) {
-                    this.form.highlight( input_id );
+                    this.highlight( input_id );
                     return false;
                 }
                 if ( input_value && input_value.batch ) {
@@ -121,14 +121,14 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tool/tool-form-base', 'mvc/tool/to
                         if ( batch_src === null ) {
                             batch_src = src;
                         } else if ( batch_src !== src ) {
-                            this.form.highlight( input_id, 'Please select either dataset or dataset list fields for all batch mode fields.' );
+                            this.highlight( input_id, 'Please select either dataset or dataset list fields for all batch mode fields.' );
                             return false;
                         }
                     }
                     if ( batch_n === -1 ) {
                         batch_n = n;
                     } else if ( batch_n !== n ) {
-                        this.form.highlight( input_id, 'Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>' + n + '</b> selection(s) while a previous field contains <b>' + batch_n + '</b>.' );
+                        this.highlight( input_id, 'Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>' + n + '</b> selection(s) while a previous field contains <b>' + batch_n + '</b>.' );
                         return false;
                     }
                 }

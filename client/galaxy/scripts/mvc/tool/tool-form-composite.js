@@ -46,7 +46,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                     text_enable             : 'Edit',
                     text_disable            : 'Undo',
                     cls_enable              : 'fa fa-edit',
-                    cls_disable             : 'fa fa-undo',
+                    cls_disable             : 'fa fa-undo'
                 }, step );
 
                 // build forms
@@ -55,6 +55,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                     form = new Form( Utils.merge({
                         title : '<b>' + step.name + '</b>'
                     }, step ));
+                    form.render();
                 } else if ( step.step_type == 'tool' ) {
                     // configure input elements
                     Utils.deepeach( step.inputs, function( input ) {
@@ -84,7 +85,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                     FormData.matchContext( step.inputs, 'data_ref', function( input, reference ) {
                         input.is_workflow = !reference.options || self._isWorkflowParameter( input.value );
                     });
-                    form = new ToolFormBase( step ).form;
+                    form = new ToolFormBase( step );
                 }
 
                 // backup objects
@@ -130,6 +131,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                         });
                     });
                 }});
+                wp_form.render();
                 _.each( wp_form.field_list, function( wp_field, i ) {
                     wp_style( wp_field, wp_form.input_list[ i ].color, 'ui-form-wp-source' );
                 });
@@ -177,7 +179,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                     }]
                 });
                 this.$el.append( '<p/>' ).addClass( 'ui-margin-top' );
-                this.$el.append( this.history_form.$el );
+                this.$el.append( this.history_form.render().$el );
             }
 
             // add execute button
