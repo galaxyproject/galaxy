@@ -1964,21 +1964,25 @@ class DataToolParameter( BaseDataToolParameter ):
             rval = []
             found_hdca = False
             for single_value in value:
-                if found_hdca:
-                    raise ValueError("Only one collection may be supplied to parameter.")
                 if isinstance( single_value, dict ) and 'src' in single_value and 'id' in single_value:
                     if single_value['src'] == 'hda':
                         rval.append(trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.app.security.decode_id(single_value['id']) ))
                     elif single_value['src'] == 'hdca':
                         found_hdca = True
                         decoded_id = trans.app.security.decode_id( single_value[ 'id' ] )
-                        rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
+                        rval.append( trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id ) )
                     else:
                         raise ValueError("Unknown input source %s passed to job submission API." % single_value['src'])
+                elif isinstance( single_value, trans.app.model.HistoryDatasetCollectionAssociation ):
+                    rval.append( single_value )
                 elif isinstance( single_value, trans.app.model.HistoryDatasetAssociation ):
                     rval.append( single_value )
                 else:
                     rval.append( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( single_value ) )
+            if found_hdca:
+                for val in rval:
+                    if not isinstance( val, trans.app.model.HistoryDatasetCollectionAssociation ):
+                        raise ValueError( "If collections are supplied to multiple data input parameter, only collections may be used." )
         elif isinstance( value, trans.app.model.HistoryDatasetAssociation ):
             rval = value
         elif isinstance( value, dict ) and 'src' in value and 'id' in value:
@@ -1990,9 +1994,12 @@ class DataToolParameter( BaseDataToolParameter ):
             else:
                 raise ValueError("Unknown input source %s passed to job submission API." % value['src'])
         elif str( value ).startswith( "__collection_reduce__|" ):
-            encoded_id = str( value )[ len( "__collection_reduce__|" ): ]
-            decoded_id = trans.app.security.decode_id( encoded_id )
-            rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
+            encoded_ids = [ v[ len( "__collection_reduce__|" ): ] for v in str( value ).split(",") ]
+            decoded_ids = map( trans.app.security.decode_id, encoded_ids )
+            rval = []
+            for decoded_id in decoded_ids:
+                hdca = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
+                rval.append( hdca )
         elif isinstance( value, trans.app.model.HistoryDatasetCollectionAssociation ):
             rval = value
         else:
@@ -2035,19 +2042,21 @@ class DataToolParameter( BaseDataToolParameter ):
         # Both of these values indicate that no dataset is selected.  However, 'None'
         # indicates that the dataset is optional, while '' indicates that it is not.
         none_values = [ None, '', 'None' ]
-        if value in none_values:
-            return value
+
+        def single_to_python(value):
+            if value in none_values:
+                return value
+            elif str( value ).startswith( "__collection_reduce__|" ):
+                decoded_id = str( value )[ len( "__collection_reduce__|" ): ]
+                return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
+            else:
+                return app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( value ) )
+
         if isinstance(value, str) and value.find(",") > -1:
             values = value.split(",")
-            # TODO: Optimize. -John
-            return [ app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( val ) ) for val in values if val not in none_values ]
-        # Not sure if following case is needed, if yes deduplicate with above code.
-        elif str( value ).startswith( "__collection_reduce__|" ):
-            # When coming from HTML this id would be encoded, in database it
-            # really should be decoded however.
-            decoded_id = str( value )[ len( "__collection_reduce__|" ): ]
-            return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
-        return app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( value ) )
+            return [v for v in map( single_to_python, values ) if v not in none_values]
+        else:
+            return single_to_python( value )
 
     def to_param_dict_string( self, value, other_values={} ):
         if value is None:
