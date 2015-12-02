@@ -8,9 +8,6 @@ import sys
 import tempfile
 import urllib
 
-from galaxy import eggs
-eggs.require( "bx-python" )
-eggs.require( "numpy" )
 import numpy
 from bx.intervals.io import GenomicIntervalReader, ParseError
 
@@ -1520,14 +1517,21 @@ class ScIdx(Tabular):
             while True:
                 line = fh.readline()
                 line = line.strip()
+                # The first line is always a comment like this:
+                # 2015-11-23 20:18:56.51;input.bam;READ1
+                if line.startswith('#'):
+                    count += 1
+                    continue
                 if not line:
                     # EOF
                     if count > 1:
+                        # The second line is always the labels:
+                        # chrom index forward reverse value
                         # We need at least the column labels and a data line.
                         return True
                     return False
                 # Skip first line.
-                if count > 0:
+                if count > 1:
                     items = line.split('\t')
                     if len(items) != 5:
                         return False
