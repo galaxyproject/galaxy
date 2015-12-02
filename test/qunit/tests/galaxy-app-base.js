@@ -1,5 +1,5 @@
 define([
-    "galaxy-app-base",
+    "galaxy",
     "jquery",
     "sinon-qunit"
 ], function(
