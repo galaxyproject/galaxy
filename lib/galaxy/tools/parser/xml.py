@@ -178,6 +178,7 @@ class XmlToolSource(ToolSource):
             label = xml_text( collection_elem, "label" )
             default_format = collection_elem.get( "format", "data" )
             collection_type = collection_elem.get( "type", None )
+            collection_type_source = collection_elem.get( "type_source", None )
             structured_like = collection_elem.get( "structured_like", None )
             inherit_format = False
             inherit_metadata = False
@@ -193,6 +194,7 @@ class XmlToolSource(ToolSource):
                 dataset_collectors = output_collect.dataset_collectors_from_elem( collection_elem )
             structure = galaxy.tools.ToolOutputCollectionStructure(
                 collection_type=collection_type,
+                collection_type_source=collection_type_source,
                 structured_like=structured_like,
                 dataset_collectors=dataset_collectors,
             )

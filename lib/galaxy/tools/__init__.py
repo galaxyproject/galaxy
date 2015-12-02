@@ -397,13 +397,17 @@ class ToolOutputCollectionStructure( object ):
     def __init__(
         self,
         collection_type,
+        collection_type_source,
         structured_like,
         dataset_collectors,
     ):
         self.collection_type = collection_type
+        self.collection_type_source = collection_type_source
         self.structured_like = structured_like
         self.dataset_collectors = dataset_collectors
-        if collection_type is None and structured_like is None and dataset_collectors is None:
+        if collection_type and collection_type_source:
+            raise ValueError("Cannot set both type and type_source on collection output.")
+        if collection_type is None and structured_like is None and dataset_collectors is None and collection_type_source is None:
             raise ValueError( "Output collection types must be specify type of structured_like" )
         if dataset_collectors and structured_like:
             raise ValueError( "Cannot specify dynamic structure (discovered_datasets) and structured_like attribute." )

@@ -349,10 +349,22 @@ class DefaultToolAction( object ):
                     else:
                         element_kwds = dict(element_identifiers=element_identifiers)
 
+                    collection_type = output.structure.collection_type
+                    if collection_type is None:
+                        collection_type_source = output.structure.collection_type_source
+                        if collection_type_source is None:
+                            # TODO: Not a new problem, but this should be determined
+                            # sooner.
+                            raise Exception("Could not determine collection type to create.")
+                        if collection_type_source not in input_collections:
+                            raise Exception("Could not find collection type source with name [%s]." % collection_type_source)
+
+                        collection_type = input_collections[collection_type_source].collection.collection_type
+
                     if mapping_over_collection:
                         dc = collections_manager.create_dataset_collection(
                             trans,
-                            collection_type=output.structure.collection_type,
+                            collection_type=collection_type,
                             **element_kwds
                         )
                         out_collections[ name ] = dc
@@ -362,7 +374,7 @@ class DefaultToolAction( object ):
                             trans,
                             history,
                             name=hdca_name,
-                            collection_type=output.structure.collection_type,
+                            collection_type=collection_type,
                             trusted_identifiers=True,
                             **element_kwds
                         )
