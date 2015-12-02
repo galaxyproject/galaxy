@@ -43,7 +43,7 @@ class WorkflowProgressTestCase( unittest.TestCase ):
         self.progress = {}
 
     def _setup_workflow(self, workflow_yaml):
-        workflow = yaml_to_model(TEST_WORKFLOW_YAML)
+        workflow = yaml_to_model(workflow_yaml)
         self.invocation.workflow = workflow
 
     def _new_workflow_progress( self ):
