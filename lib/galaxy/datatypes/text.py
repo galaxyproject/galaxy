@@ -188,10 +188,12 @@ class Biom1( Json ):
                     json_dict = json.load( fh )
                 except Exception:
                     return
+
                 def _transform_dict_list_ids( dict_list ):
                     if dict_list:
                         return [ x.get( 'id', None ) for x in dict_list ]
                     return []
+
                 b_transform = { 'rows': _transform_dict_list_ids, 'columns': _transform_dict_list_ids }
                 for ( m_name, b_name ) in [ ('table_rows', 'rows'),
                                             ('table_matrix_element_type', 'matrix_element_type'),
