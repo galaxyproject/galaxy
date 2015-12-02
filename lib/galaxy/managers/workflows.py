@@ -529,22 +529,17 @@ class WorkflowContentsManager(UsesAnnotations):
         item['url'] = url_for('workflow', id=item['id'])
         item['owner'] = stored.user.username
         inputs = {}
-        for step in workflow.steps:
+        for step in workflow.input_steps():
             step_type = step.type
-            if step_type in ['data_input', 'data_collection_input']:
-                if step.tool_inputs and "name" in step.tool_inputs:
-                    label = step.tool_inputs['name']
-                elif step_type == "data_input":
-                    label = "Input Dataset"
-                elif step_type == "data_collection_input":
-                    label = "Input Dataset Collection"
-                else:
-                    raise ValueError("Invalid step_type %s" % step_type)
-                inputs[step.id] = {'label': label, 'value': ""}
+            if step.tool_inputs and "name" in step.tool_inputs:
+                label = step.tool_inputs['name']
+            elif step_type == "data_input":
+                label = "Input Dataset"
+            elif step_type == "data_collection_input":
+                label = "Input Dataset Collection"
             else:
-                pass
-                # Eventually, allow regular tool parameters to be inserted and modified at runtime.
-                # p = step.get_required_parameters()
+                raise ValueError("Invalid/unknown input step_type %s" % step_type)
+            inputs[step.id] = {'label': label, 'value': ""}
         item['inputs'] = inputs
         item['annotation'] = self.get_item_annotation_str( sa_session, stored.user, stored )
         steps = {}
