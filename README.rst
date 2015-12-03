@@ -11,9 +11,9 @@ The latest information about Galaxy is available via `https://galaxyproject.org/
     :target: https://webchat.freenode.net/?channels=galaxyproject
     :alt: Chat with us
 
-.. image:: https://readthedocs.org/projects/galaxy/badge/?version=master
-    :target: https://galaxy.readthedocs.org/en/master/
-    :alt: Documentation Status
+.. image:: https://img.shields.io/badge/docs-release-green.svg
+    :target: https://docs.galaxyproject.org/en/master/
+    :alt: Release Documentation
 
 .. image:: https://travis-ci.org/galaxyproject/galaxy.svg?branch=dev
     :target: https://travis-ci.org/galaxyproject/galaxy
