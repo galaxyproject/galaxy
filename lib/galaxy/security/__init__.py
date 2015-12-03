@@ -898,7 +898,8 @@ class GalaxyRBACAgent( RBACAgent ):
         for action, roles in permissions.items():
             if isinstance( action, Action ):
                 action = action.action
-            for dp in [ self.model.DatasetPermissions( action, dataset, role ) for role in roles ]:
+            for role in roles:
+                dp = self.model.DatasetPermissions( action, dataset, role_id=role.id )
                 self.sa_session.add( dp )
                 flush_needed = True
         if flush_needed:

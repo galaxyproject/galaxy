@@ -2449,7 +2449,7 @@ class_mapper( model.HistoryDatasetCollectionAssociation ).add_property(
 
 
 # Helper methods.
-def db_next_hid( self ):
+def db_next_hid( self, n=1 ):
     """
     db_next_hid( self )
 
@@ -2465,7 +2465,7 @@ def db_next_hid( self ):
     trans = conn.begin()
     try:
         next_hid = select( [table.c.hid_counter], table.c.id == self.id, for_update=True ).scalar()
-        table.update( table.c.id == self.id ).execute( hid_counter=( next_hid + 1 ) )
+        table.update( table.c.id == self.id ).execute( hid_counter=( next_hid + n ) )
         trans.commit()
         return next_hid
     except:
