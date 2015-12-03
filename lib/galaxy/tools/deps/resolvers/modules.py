@@ -31,6 +31,7 @@ class ModuleDependencyResolver(DependencyResolver):
         find_by = kwds.get('find_by', 'avail')
         prefetch = _string_as_bool(kwds.get('prefetch', DEFAULT_MODULE_PREFETCH))
         self.modulecmd = kwds.get('modulecmd', DEFAULT_MODULECMD_PATH)
+        self.default_indicator = kwds.get('default_indicator', DEFAULT_INDICATOR)
         if find_by == 'directory':
             modulepath = kwds.get('modulepath', self.__default_modulespath())
             self.module_checker = DirectoryModuleChecker(self, modulepath, prefetch)
@@ -64,7 +65,10 @@ class ModuleDependencyResolver(DependencyResolver):
 
 
 class DirectoryModuleChecker(object):
+    """Finds module by path.
 
+    Searches the paths listed in modulepath to for a file or directory matching the module name.
+    If the version=True, searches for files named module/version."""
     def __init__(self, module_dependency_resolver, modulepath, prefetch):
         self.module_dependency_resolver = module_dependency_resolver
         self.directories = modulepath.split(pathsep)
@@ -88,8 +92,13 @@ class DirectoryModuleChecker(object):
 
 
 class AvailModuleChecker(object):
+    """Finds modules by searching output of 'module avail'.
 
-    def __init__(self, module_dependency_resolver, prefetch):
+    Parses the Environment Modules 'module avail' output, splitting
+    module names into module and version on '/' and discarding a postfix matching default_indicator
+    (by default '(default)'. Matching is done using the module and
+    (if version=True) the module version."""
+    def __init__(self, module_dependency_resolver, prefetch, default_indicator):
         self.module_dependency_resolver = module_dependency_resolver
         if prefetch:
             prefetched_modules = []
@@ -98,6 +107,7 @@ class AvailModuleChecker(object):
         else:
             prefetched_modules = None
         self.prefetched_modules = prefetched_modules
+        self.default_indicator = default_indicator
 
     def has_module(self, module, version):
         module_generator = self.prefetched_modules
@@ -120,8 +130,8 @@ class AvailModuleChecker(object):
 
             line_modules = line.split()
             for module in line_modules:
-                if module.endswith(DEFAULT_INDICATOR):
-                    module = module[0:-len(DEFAULT_INDICATOR)].strip()
+                if module.endswith(self.default_indicator):
+                    module = module[0:-len(self.default_indicator)].strip()
                 module_parts = module.split('/')
                 module_version = None
                 if len(module_parts) == 2:
@@ -135,7 +145,11 @@ class AvailModuleChecker(object):
 
 
 class ModuleDependency(Dependency):
+    """Converts module dependencies into shell expressions using modulecmd.
 
+    Using Environment Modules' 'modulecmd' (specifically 'modulecmd sh load') to
+    convert module specifications into shell expressions for inclusion in
+    the script used to run a tool in Galaxy."""
     def __init__(self, module_dependency_resolver, module_name, module_version=None):
         self.module_dependency_resolver = module_dependency_resolver
         self.module_name = module_name
