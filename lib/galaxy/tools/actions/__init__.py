@@ -653,7 +653,7 @@ def determine_output_format(output, parameter_context, input_datasets, input_dat
 
             if collection_name in input_dataset_collections:
                 try:
-                    input_collection = input_dataset_collections[collection_name][0]
+                    input_collection = input_dataset_collections[collection_name][0][0]
                     input_dataset = input_collection.collection[element_index].element_object
                     input_extension = input_dataset.ext
                     ext = input_extension
