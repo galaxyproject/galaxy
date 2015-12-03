@@ -4,6 +4,7 @@ Determine what optional dependencies are needed.
 import pkg_resources
 
 from sys import version_info
+from os import environ
 from os.path import dirname, join
 from xml.etree import ElementTree
 
@@ -22,6 +23,8 @@ class ConditionalDependencies( object ):
 
     def parse_configs( self ):
         self.config = load_app_properties( ini_file=self.config_file )
+        if 'GALAXY_TEST_DBURI' in environ:
+            self.config["database_connection"] = environ["GALAXY_TEST_DBURI"]
         job_conf_xml = self.config.get(
             "job_config_file",
             join( dirname( self.config_file ), 'job_conf.xml' ) )
