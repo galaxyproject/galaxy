@@ -239,7 +239,8 @@ class WorkflowContentsManager(UsesAnnotations):
             steps.append( step )
             steps_by_external_id[ step_dict['id' ] ] = step
             if 'workflow_outputs' in step_dict:
-                for output_name in step_dict['workflow_outputs']:
+                for workflow_output in step_dict['workflow_outputs']:
+                    output_name = workflow_output["output_name"]
                     m = model.WorkflowOutput(workflow_step=step, output_name=output_name)
                     trans.sa_session.add(m)
             if step.tool_errors:
@@ -393,7 +394,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 # workflow outputs
                 outputs = []
                 for output in step.workflow_outputs:
-                    outputs.append(output.output_name)
+                    outputs.append({"output_name": output.output_name})
                 step_dict['workflow_outputs'] = outputs
             # Encode input connections as dictionary
             input_conn_dict = {}
