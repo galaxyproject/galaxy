@@ -3462,6 +3462,25 @@ class WorkflowStep( object ):
         self.input_connections = []
         self.config = None
         self.uuid = uuid4()
+        self._input_connections_by_name = None
+
+    @property
+    def input_connections_by_name(self):
+        if self._input_connections_by_name is None:
+            self.setup_input_connections_by_name()
+        return self._input_connections_by_name
+
+    def setup_input_connections_by_name(self):
+        # Ensure input_connections has already been set.
+
+        # Make connection information available on each step by input name.
+        input_connections_by_name = {}
+        for conn in self.input_connections:
+            input_name = conn.input_name
+            if input_name not in input_connections_by_name:
+                input_connections_by_name[input_name] = []
+            input_connections_by_name[input_name].append(conn)
+        self._input_connections_by_name = input_connections_by_name
 
 
 class WorkflowStepConnection( object ):
