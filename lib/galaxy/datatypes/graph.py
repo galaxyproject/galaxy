@@ -8,7 +8,6 @@ import xml
 
 import dataproviders
 from galaxy.util import simplegraph
-from . import triples
 
 import logging
 log = logging.getLogger( __name__ )
@@ -93,11 +92,6 @@ class Sif( tabular.Tabular ):
     def node_edge_dataprovider( self, dataset, **settings ):
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         return SIFGraphDataProvider( dataset_source, **settings )
-
-
-@data.deprecated_datatype_reference
-class Rdf(triples.Rdf):
-    pass
 
 
 # ----------------------------------------------------------------------------- graph specific data providers
