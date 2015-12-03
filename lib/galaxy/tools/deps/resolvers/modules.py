@@ -100,6 +100,7 @@ class AvailModuleChecker(object):
     (if version=True) the module version."""
     def __init__(self, module_dependency_resolver, prefetch, default_indicator=DEFAULT_INDICATOR):
         self.module_dependency_resolver = module_dependency_resolver
+        self.default_indicator = default_indicator
         if prefetch:
             prefetched_modules = []
             for module in self.__modules():
@@ -107,7 +108,6 @@ class AvailModuleChecker(object):
         else:
             prefetched_modules = None
         self.prefetched_modules = prefetched_modules
-        self.default_indicator = default_indicator
 
     def has_module(self, module, version):
         module_generator = self.prefetched_modules
