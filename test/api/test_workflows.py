@@ -132,7 +132,7 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
 
         for key, value in test_data.items():
             is_dict = isinstance( value, dict )
-            if is_dict and "elements" in value:
+            if is_dict and ("elements" in value or value.get("type", None) in ["list:paired", "list", "paired"]):
                 elements_data = value.get( "elements", [] )
                 elements = []
                 for element_data in elements_data:
