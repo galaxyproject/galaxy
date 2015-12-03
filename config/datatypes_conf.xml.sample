@@ -308,7 +308,13 @@
     <!-- graph datatypes -->
     <datatype extension="xgmml" type="galaxy.datatypes.graph:Xgmml" display_in_upload="true"/>
     <datatype extension="sif" type="galaxy.datatypes.graph:Sif" display_in_upload="true"/>
-    <datatype extension="rdf" type="galaxy.datatypes.graph:Rdf" display_in_upload="true"/>
+    <!-- datatypes storing triples -->
+    <datatype extension="triples" type="galaxy.datatypes.triples:Triples" display_in_upload="false"/>
+    <datatype extension="nt" type="galaxy.datatypes.triples:NTriples" display_in_upload="true"/> 
+    <datatype extension="n3" type="galaxy.datatypes.triples:N3" display_in_upload="true"/>  
+    <datatype extension="ttl" type="galaxy.datatypes.triples:Turtle" display_in_upload="true"/> 
+    <datatype extension="rdf" type="galaxy.datatypes.triples:Rdf" display_in_upload="true"/>
+    <datatype extension="jsonld" type="galaxy.datatypes.triples:Jsonld" display_in_upload="true"/>
     <!-- Excel datatypes -->
     <datatype extension="xlsx" type="galaxy.datatypes.binary:Xlsx" display_in_upload="true" />
     <datatype extension="btwisted" type="galaxy.datatypes.data:Text" subclass="True"/>
@@ -454,6 +460,7 @@
     <sniffer type="galaxy.datatypes.binary:CRAM"/>
     <sniffer type="galaxy.datatypes.binary:Sff"/>
     <sniffer type="galaxy.datatypes.binary:Sra"/>
+    <sniffer type="galaxy.datatypes.triples:Rdf"/>
     <sniffer type="galaxy.datatypes.xml:Phyloxml"/>
     <sniffer type="galaxy.datatypes.xml:Owl"/>
     <sniffer type="galaxy.datatypes.proteomics:MzML"/>
@@ -470,6 +477,9 @@
     <sniffer type="galaxy.datatypes.proteomics:SPLib"/>
     <sniffer type="galaxy.datatypes.proteomics:ThermoRAW"/>
     <sniffer type="galaxy.datatypes.xml:GenericXml"/>
+    <sniffer type="galaxy.datatypes.triples:Turtle"/>
+    <sniffer type="galaxy.datatypes.triples:NTriples"/>
+    <sniffer type="galaxy.datatypes.triples:Jsonld"/>
     <sniffer type="galaxy.datatypes.sequence:Maf"/>
     <sniffer type="galaxy.datatypes.sequence:Lav"/>
     <sniffer type="galaxy.datatypes.sequence:csFasta"/>
