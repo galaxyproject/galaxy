@@ -36,7 +36,7 @@ class ModuleDependencyResolver(DependencyResolver):
             modulepath = kwds.get('modulepath', self.__default_modulespath())
             self.module_checker = DirectoryModuleChecker(self, modulepath, prefetch)
         elif find_by == 'avail':
-            self.module_checker = AvailModuleChecker(self, prefetch)
+            self.module_checker = AvailModuleChecker(self, prefetch, self.default_indicator)
         else:
             raise Exception(UNKNOWN_FIND_BY_MESSAGE % (find_by, ["avail", "directory"]))
 
@@ -98,7 +98,7 @@ class AvailModuleChecker(object):
     module names into module and version on '/' and discarding a postfix matching default_indicator
     (by default '(default)'. Matching is done using the module and
     (if version=True) the module version."""
-    def __init__(self, module_dependency_resolver, prefetch, default_indicator):
+    def __init__(self, module_dependency_resolver, prefetch, default_indicator=DEFAULT_INDICATOR):
         self.module_dependency_resolver = module_dependency_resolver
         if prefetch:
             prefetched_modules = []
