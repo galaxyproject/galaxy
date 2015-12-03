@@ -1488,7 +1488,7 @@ class AdminToolshed( AdminGalaxy ):
         repository_clone_url = common_util.generate_clone_url_for_installed_repository( trans.app, tool_shed_repository )
         metadata = tool_shed_repository.metadata
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, str( tool_shed_repository.tool_shed ) )
-        tool_path, relative_install_dir = tool_shed_repository.get_tool_relative_path( trans.app )
+        tool_path = tool_shed_repository.get_tool_relative_path( trans.app )[0]
         if latest_changeset_revision and latest_ctx_rev:
             # There are updates available in the tool shed for the repository, so use the received
             # dependency information which was retrieved from the tool shed.
@@ -1497,20 +1497,14 @@ class AdminToolshed( AdminGalaxy ):
             readme_files_dict = updated_repo_info_dict.get( 'readme_files_dict', None )
             includes_data_managers = updated_repo_info_dict.get( 'includes_data_managers', False )
             includes_datatypes = updated_repo_info_dict.get( 'includes_datatypes', False )
-            includes_tools = updated_repo_info_dict.get( 'includes_tools', False )
-            includes_tools_for_display_in_tool_panel = updated_repo_info_dict.get( 'includes_tools_for_display_in_tool_panel', False )
             includes_workflows = updated_repo_info_dict.get( 'includes_workflows', False )
-            has_repository_dependencies = updated_repo_info_dict.get( 'has_repository_dependencies', False )
             includes_tool_dependencies = updated_repo_info_dict.get( 'includes_tool_dependencies', False )
             repo_info_dict = updated_repo_info_dict[ 'repo_info_dict' ]
         else:
             # There are no updates available from the tool shed for the repository, so use its locally stored metadata.
-            has_repository_dependencies = False
             includes_data_managers = False
             includes_datatypes = False
             includes_tool_dependencies = False
-            includes_tools = False
-            includes_tools_for_display_in_tool_panel = False
             includes_workflows = False
             readme_files_dict = None
             tool_dependencies = None
@@ -1519,14 +1513,6 @@ class AdminToolshed( AdminGalaxy ):
                     includes_data_managers = True
                 if 'datatypes' in metadata:
                     includes_datatypes = True
-                if 'tools' in metadata:
-                    includes_tools = True
-                    # Handle includes_tools_for_display_in_tool_panel.
-                    tool_dicts = metadata[ 'tools' ]
-                    for tool_dict in tool_dicts:
-                        if tool_dict.get( 'add_to_tool_panel', True ):
-                            includes_tools_for_display_in_tool_panel = True
-                            break
                 if 'tool_dependencies' in metadata:
                     includes_tool_dependencies = True
                 if 'workflows' in metadata:
@@ -1555,8 +1541,7 @@ class AdminToolshed( AdminGalaxy ):
         dependencies_for_repository_dict = irm.get_dependencies_for_repository( tool_shed_url,
                                                                                 repo_info_dict,
                                                                                 includes_tool_dependencies,
-                                                                                updating=False )
-        has_repository_dependencies = dependencies_for_repository_dict.get( 'has_repository_dependencies', False )
+                                                                                updating=True )
         includes_tool_dependencies = dependencies_for_repository_dict.get( 'includes_tool_dependencies', False )
         includes_tools = dependencies_for_repository_dict.get( 'includes_tools', False )
         includes_tools_for_display_in_tool_panel = dependencies_for_repository_dict.get( 'includes_tools_for_display_in_tool_panel', False )
