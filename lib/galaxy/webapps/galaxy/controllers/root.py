@@ -67,7 +67,24 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
         return config
 
     @web.expose
-    def index( self, trans, id=None, tool_id=None, mode=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd ):
+    def index( self, trans, tool_id=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd ):
+        """
+        Root and entry point for client-side web app.
+
+        :type       tool_id: str or None
+        :param      tool_id: load center panel with given tool if not None
+        :type   workflow_id: encoded id or None
+        :param  workflow_id: load center panel with given workflow if not None
+        :type    history_id: encoded id or None
+        :param   history_id: switch current history to given history if not None
+        :type           m_c: str or None
+        :param          m_c: controller name (e.g. 'user')
+        :type           m_a: str or None
+        :param          m_a: controller method/action (e.g. 'dbkeys')
+
+        If m_c and m_a are present, the center panel will be loaded using the
+        controller and action as a url: (e.g. 'user/dbkeys').
+        """
         if trans.app.config.require_login and self.user_manager.is_anonymous( trans.user ):
             # TODO: this doesn't properly redirect when login is done
             # (see webapp __ensure_logged_in_user for the initial redirect - not sure why it doesn't redirect to login?)
@@ -90,11 +107,15 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
 
     @web.expose
     def login( self, trans, redirect=None, **kwd ):
+        """
+        User login path for client-side.
+        """
         return self.template( trans, 'login',
+            redirect=redirect,
             # TODO: move into config
             openid_providers=[ p.name for p in trans.app.openid_providers ],
             # an installation may have it's own welcome_url - show it here if they've set that
-            welcome_url=trans.app.config.welcome_url,
+            welcome_url=web.url_for( controller='root', action='welcome' ),
             show_welcome_with_login=trans.app.config.show_welcome_with_login )
 
     # ---- Tool related -----------------------------------------------------
