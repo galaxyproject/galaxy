@@ -172,6 +172,8 @@ class DefaultToolAction( object ):
         # Set history.
         if not history:
             history = tool.get_default_history_by_trans( trans, create=True )
+        if history not in trans.sa_session:
+            history = trans.sa_session.query( trans.app.model.History ).get( history.id )
 
         out_data = odict()
         out_collections = {}
@@ -186,9 +188,7 @@ class DefaultToolAction( object ):
         input_names = []
         input_ext = 'data'
         input_dbkey = incoming.get( "dbkey", "?" )
-        inp_items = inp_data.items()
-        inp_items.reverse()
-        for name, data in inp_items:
+        for name, data in reversed(inp_data.items()):
             if not data:
                 data = NoneDataset( datatypes_registry=trans.app.datatypes_registry )
                 continue
@@ -396,15 +396,20 @@ class DefaultToolAction( object ):
                     handle_output( name, output )
                     log.info("Handled output %s" % handle_output_timer)
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
+        add_to_history_timer = ExecutionTimer()
+        datasets_to_persist = []
         for name in out_data.keys():
             if name not in child_dataset_names and name not in incoming:  # don't add children; or already existing datasets, i.e. async created
                 data = out_data[ name ]
-                if set_output_history:
-                    # Set HID and add to history.
-                    # This is brand new and certainly empty so don't worry about quota.
-                    history.add_dataset( data, set_hid=set_output_hid, quota=False )
+                datasets_to_persist.append( data )
+        if set_output_history:
+            # Set HID and add to history.
+            # This is brand new and certainly empty so don't worry about quota.
+            history.add_datasets( trans.sa_session, datasets_to_persist, set_hid=set_output_hid, quota=False, flush=False )
+        else:
+            for data in datasets_to_persist:
                 trans.sa_session.add( data )
-                trans.sa_session.flush()
+        log.info("Add outputs to history %s" % add_to_history_timer)
         # Add all the children to their parents
         for parent_name, child_name in parent_to_child_pairs:
             parent_dataset = out_data[ parent_name ]
@@ -447,7 +452,10 @@ class DefaultToolAction( object ):
             if dataset:
                 if not trans.app.security_agent.can_access_dataset( current_user_roles, dataset.dataset ):
                     raise Exception("User does not have permission to use a dataset (%s) provided for input." % data.id)
-                job.add_input_dataset( name, dataset )
+                if dataset in trans.sa_session:
+                    job.add_input_dataset( name, dataset=dataset )
+                else:
+                    job.add_input_dataset( name, dataset_id=dataset.id )
             else:
                 job.add_input_dataset( name, None )
         log.info("Verified access to datasets %s" % access_timer)
