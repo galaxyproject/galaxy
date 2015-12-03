@@ -613,7 +613,7 @@ class SetEnvironment( RecipeTag ):
             # <requirement type="set_environment">R_SCRIPT_PATH</requirement>).
             env_var_action = env_var_elem.get( 'action', None )
             if env_var_name and env_var_action:
-                # Tool dependencies of type "set_environmnet" always have the version attribute set to None.
+                # Tool dependencies of type "set_environment" always have the version attribute set to None.
                 attr_tup = ( env_var_name, None, 'set_environment' )
                 if attr_tup in attr_tups_of_dependencies_for_install:
                     install_dir = \
