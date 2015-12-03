@@ -15,4 +15,8 @@ Attributes are:
 * prefetch - default: true - in the AvailModuleChecker prefetch module info with 'module avail'
 * default_indicator - default: '(default)' - what indicate to the AvailModuleChecker that a module is the default version
 -->
+<!-- other resolvers
+  <tool_shed_tap />
+  <homebrew />
+-->
 </dependency_resolvers>
