@@ -7,6 +7,15 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             this.output_terminals = {};
             this.tool_errors = {};
         },
+        isWorkflowOutput: function(outputName) {
+            return $.inArray(outputName, this.workflow_outputs) != -1;
+        },
+        removeWorkflowOutput: function(outputName) {
+            this.workflow_outputs.splice($.inArray(outputName, this.workflow_outputs), 1);
+        },
+        addWorkflowOutput: function(outputName) {
+            this.workflow_outputs.push(outputName);
+        },
         connectedOutputTerminals: function() {
             return this._connectedTerminals( this.output_terminals );
         },
