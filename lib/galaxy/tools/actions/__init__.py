@@ -111,9 +111,19 @@ class DefaultToolAction( object ):
             elif isinstance( input, DataCollectionToolParameter ):
                 if not value:
                     return
-                for i, v in enumerate( value.collection.dataset_instances ):
+
+                dataset_instances = []
+                if hasattr( value, 'child_collection' ):
+                    # if we are mapping a collection over a tool, we only require the child_collection
+                    dataset_instances = value.child_collection.dataset_instances
+                else:
+                    # else the tool takes a collection as input so we need everything
+                    dataset_instances = value.collection.dataset_instances
+
+                for i, v in enumerate( dataset_instances ):
                     data = v
                     current_user_roles = trans.get_current_user_roles()
+
                     if not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
                         raise Exception( "User does not have permission to use a dataset (%s) provided for input." % data.id )
                     # Skipping implicit conversion stuff for now, revisit at
