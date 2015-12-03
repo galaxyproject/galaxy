@@ -276,7 +276,7 @@ class WorkflowContentsManager(UsesAnnotations):
         if style == "editor":
             return self._workflow_to_dict_editor( trans, stored )
         elif style == "instance":
-            return self._workflow_to_dict_instance( trans, stored )
+            return self._workflow_to_dict_instance( stored )
         else:
             return self._workflow_to_dict_export( trans, stored )
 
@@ -521,8 +521,10 @@ class WorkflowContentsManager(UsesAnnotations):
             data['steps'][step.order_index] = step_dict
         return data
 
-    def _workflow_to_dict_instance(self, trans, stored):
-        item = stored.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id } )
+    def _workflow_to_dict_instance(self, stored):
+        encode = self.app.security.encode_id
+        sa_session = self.app.model.context
+        item = stored.to_dict( view='element', value_mapper={ 'id': encode } )
         workflow = stored.latest_workflow
         item['url'] = url_for('workflow', id=item['id'])
         item['owner'] = stored.user.username
@@ -544,19 +546,21 @@ class WorkflowContentsManager(UsesAnnotations):
                 # Eventually, allow regular tool parameters to be inserted and modified at runtime.
                 # p = step.get_required_parameters()
         item['inputs'] = inputs
-        item['annotation'] = self.get_item_annotation_str( trans.sa_session, stored.user, stored )
+        item['annotation'] = self.get_item_annotation_str( sa_session, stored.user, stored )
         steps = {}
         for step in workflow.steps:
-            steps[step.id] = {'id': step.id,
-                              'type': step.type,
-                              'tool_id': step.tool_id,
-                              'tool_version': step.tool_version,
-                              'annotation': self.get_item_annotation_str( trans.sa_session, stored.user, step ),
-                              'tool_inputs': step.tool_inputs,
-                              'input_steps': {}}
+            step_type = step.type
+            step_dict = {'id': step.id,
+                         'type': step_type,
+                         'tool_id': step.tool_id,
+                         'tool_version': step.tool_version,
+                         'annotation': self.get_item_annotation_str( sa_session, stored.user, step ),
+                         'tool_inputs': step.tool_inputs,
+                         'input_steps': {}}
             for conn in step.input_connections:
-                steps[step.id]['input_steps'][conn.input_name] = {'source_step': conn.output_step_id,
-                                                                  'step_output': conn.output_name}
+                step_dict['input_steps'][conn.input_name] = {'source_step': conn.output_step_id,
+                                                             'step_output': conn.output_name}
+            steps[step.id] = step_dict
         item['steps'] = steps
         return item
 

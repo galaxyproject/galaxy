@@ -5,6 +5,7 @@ from collections import namedtuple
 from uuid import uuid4
 
 from base import api
+from base.test_data import TestDataResolver
 from galaxy.exceptions import error_codes
 from .helpers import WorkflowPopulator
 from .helpers import DatasetPopulator
@@ -128,14 +129,17 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
 
         label_map = {}
         inputs = {}
+
         for key, value in test_data.items():
-            if isinstance( value, dict ):
+            is_dict = isinstance( value, dict )
+            if is_dict and ("elements" in value or value.get("type", None) in ["list:paired", "list", "paired"]):
                 elements_data = value.get( "elements", [] )
                 elements = []
                 for element_data in elements_data:
                     identifier = element_data[ "identifier" ]
                     content = element_data["content"]
                     elements.append( ( identifier, content ) )
+                # TODO: make this collection_type
                 collection_type = value["type"]
                 if collection_type == "list:paired":
                     hdca = self.dataset_collection_populator.create_list_of_pairs_in_history( history_id ).json()
@@ -145,10 +149,22 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
                     hdca = self.dataset_collection_populator.create_pair_in_history( history_id, contents=elements ).json()
                 label_map[key] = self._ds_entry( hdca )
                 inputs[key] = hdca
-            else:
+            elif is_dict and "type" in value:
+                input_type = value["type"]
+                if input_type == "File":
+                    test_data_resolver = TestDataResolver()
+                    filename = test_data_resolver.get_filename(value["value"])
+                    content = open(filename, "r").read()
+                    hda = self.dataset_populator.new_dataset( history_id, content=content )
+                    label_map[key] = self._ds_entry( hda )
+                elif input_type == "raw":
+                    inputs[key] = value["value"]
+            elif not is_dict:
                 hda = self.dataset_populator.new_dataset( history_id, content=value )
                 label_map[key] = self._ds_entry( hda )
                 inputs[key] = hda
+            else:
+                raise ValueError("Invalid test_data def %" % test_data)
         workflow_request = dict(
             history="hist_id=%s" % history_id,
             workflow_id=workflow_id,

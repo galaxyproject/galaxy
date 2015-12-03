@@ -258,6 +258,7 @@ class ToolOutput( ToolOutputBase ):
         # Initialize default values
         self.change_format = []
         self.implicit = implicit
+        self.from_work_dir = None
 
     # Tuple emulation
 
@@ -652,16 +653,8 @@ class Tool( object, Dictifiable ):
         else:
             self.input_translator = None
 
-        # Command line (template). Optional for tools that do not invoke a local program
-        command = tool_source.parse_command()
-        if command is not None:
-            self.command = command.lstrip()  # get rid of leading whitespace
-            # Must pre-pend this AFTER processing the cheetah command template
-            self.interpreter = tool_source.parse_interpreter()
-        else:
-            self.command = ''
-            self.interpreter = None
-        self.environment_variables = tool_source.parse_environment_variables()
+        self.parse_command( tool_source )
+        self.environment_variables = self.parse_environment_variables( tool_source )
 
         # Parameters used to build URL for redirection to external app
         redirect_url_params = tool_source.parse_redirect_url_params_elem()
@@ -835,6 +828,22 @@ class Tool( object, Dictifiable ):
                 self.__tests = None
             self.__tests_populated = True
         return self.__tests
+
+    def parse_command( self, tool_source ):
+        """
+        """
+        # Command line (template). Optional for tools that do not invoke a local program
+        command = tool_source.parse_command()
+        if command is not None:
+            self.command = command.lstrip()  # get rid of leading whitespace
+            # Must pre-pend this AFTER processing the cheetah command template
+            self.interpreter = tool_source.parse_interpreter()
+        else:
+            self.command = ''
+            self.interpreter = None
+
+    def parse_environment_variables( self, tool_source ):
+        return tool_source.parse_environment_variables()
 
     def parse_inputs( self, tool_source ):
         """
