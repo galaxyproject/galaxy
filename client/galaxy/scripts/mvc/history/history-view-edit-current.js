@@ -170,15 +170,10 @@ var CurrentHistoryView = _super.extend(
     _setUpModelListeners : function(){
         _super.prototype._setUpModelListeners.call( this );
         // ---- history
-        // update the quota meter when current history changes size
-//TODO: global - have Galaxy listen to this instead
-        if( Galaxy && Galaxy.quotaMeter ){
-            this.listenTo( this.model, 'change:nice_size', function(){
-                //this.info( '!! model size changed:', this.model.get( 'nice_size' ) )
-                Galaxy.quotaMeter.update();
-            });
-        }
-
+        // re-broadcast any model change events so that listeners don't have to re-bind to each history
+        this.listenTo( this.model, 'change:nice_size change:size', function(){
+            this.trigger( 'history-size-change', this, this.model, arguments );
+        }, this );
     },
 
     // ------------------------------------------------------------------------ panel rendering

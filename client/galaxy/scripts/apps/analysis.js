@@ -63,7 +63,6 @@ window.app = function app( options, bootstrapped ){
     Galaxy.upload = toolPanel.uploadButton;
 
     Galaxy.currHistoryPanel = historyPanel.historyView;
-    Galaxy.currHistoryPanel.connectToQuotaMeter( Galaxy.quotaMeter );
     Galaxy.currHistoryPanel.listenToGalaxy( Galaxy );
 
     //HACK: move there
@@ -143,6 +142,15 @@ window.app = function app( options, bootstrapped ){
         analysisPage
             .render()
             .right.historyView.loadCurrentHistory();
+
+        // use galaxy to listen to history size changes and then re-fetch the user's total size (to update the quota meter)
+        // TODO: we have to do this here (and after every page.render()) because the masthead is re-created on each
+        // page render. It's re-created each time because there is no render function and can't be re-rendered without
+        // re-creating it.
+        Galaxy.listenTo( analysisPage.right.historyView, 'history-size-change', function(){
+            Galaxy.user.fetch();
+        });
+        analysisPage.right.historyView.connectToQuotaMeter( analysisPage.masthead.quotaMeter );
 
         // start the router - which will call any of the routes above
         Backbone.history.start({

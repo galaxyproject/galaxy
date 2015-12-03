@@ -72,7 +72,7 @@ var GalaxyMasthead = Backbone.View.extend({
 
         // set up the quota meter (And fetch the current user data from trans)
         // add quota meter to masthead
-        Galaxy.quotaMeter = new QuotaMeter.UserQuotaMeter({
+        this.quotaMeter = Galaxy.quotaMeter = new QuotaMeter.UserQuotaMeter({
             model       : Galaxy.user,
             el          : this.$( '.quota-meter-container' )
         }).render();

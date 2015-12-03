@@ -25,7 +25,6 @@ var History = Backbone.Model
         name            : 'Unnamed History',
         state           : 'new',
 
-        diskSize        : 0,
         deleted         : false
     },
 
