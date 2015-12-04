@@ -9,8 +9,8 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
         this.active_form_has_changes = false;
     }
     $.extend( Workflow.prototype, {
-        create_node: function ( type, title_text, tool_id ) {
-            var node = this.app.prebuildNode( type, title_text, tool_id );
+        create_node: function ( type, title_text, content_id ) {
+            var node = this.app.prebuildNode( type, title_text, content_id );
             this.add_node( node );
             this.fit_canvas_to_nodes();
             this.app.canvas_manager.draw_overview();
@@ -131,7 +131,7 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
                 var node_data = {
                     id : node.id,
                     type : node.type,
-                    tool_id : node.tool_id,
+                    tool_id : node.content_id,
                     tool_state : node.tool_state,
                     tool_errors : node.tool_errors,
                     input_connections : input_connections,

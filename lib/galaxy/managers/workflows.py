@@ -348,7 +348,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict = {
                 'id': step.order_index,
                 'type': module.type,
-                'tool_id': module.get_tool_id(),
+                'tool_id': module.get_content_id(),
                 'name': module.get_name(),
                 'tool_state': module.get_state(),
                 'tooltip': module.get_tooltip( static_path=url_for( '/static' ) ),
@@ -449,7 +449,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict = {
                 'id': step.order_index,
                 'type': module.type,
-                'tool_id': module.get_tool_id(),
+                'tool_id': module.get_content_id(),
                 'tool_version': step.tool_version,
                 'name': module.get_name(),
                 'tool_state': module.get_state( secure=False ),

@@ -525,12 +525,10 @@ EditorFormView = Backbone.View.extend({
             cc.css( { left: left, top: top } );
         },
 
-        // Add a new step to the workflow by tool id
-        add_node_for_tool: function ( id, title ) {
-            node = this.workflow.create_node( 'tool', title, id );
+        _moduleInitAjax: function(node, request_data) {
             $.ajax( {
                 url: this.urls.get_new_module_info,
-                data: { type: "tool", tool_id: id, "_": "true" },
+                data: request_data,
                 global: false,
                 dataType: "json",
                 success: function( data ) {
@@ -546,23 +544,21 @@ EditorFormView = Backbone.View.extend({
             });
         },
 
+        // Add a new step to the workflow by tool id
+        add_node_for_tool: function ( id, title ) {
+            node = this.workflow.create_node( 'tool', title, id );
+            this._moduleInitAjax(node, { type: "tool", content_id: id, "_": "true" });
+        },
+
+        // Add a new step to the workflow by tool id
+        add_node_for_subworkflow: function ( id, title ) {
+            node = this.workflow.create_node( 'subworkflow', title, id );
+            this._moduleInitAjax(node, { type: "subworkflow", subworkflow_id: id, "_": "true" });
+        },
+
         add_node_for_module: function ( type, title ) {
             node = this.workflow.create_node( type, title );
-            $.ajax( {
-                url: this.urls.get_new_module_info,
-                data: { type: type, "_": "true" },
-                dataType: "json",
-                success: function( data ) {
-                    node.init_field_data( data );
-                },
-                error: function( x, e ) {
-                    var m = "error loading field data"
-                    if ( x.status == 0 ) {
-                        m += ", server unavailable"
-                    }
-                    node.error( m );
-                }
-            });
+            this._moduleInitAjax(node, { type: type, "_": "true" });
         },
 
         // This function preloads how to display known pja's.
@@ -704,14 +700,12 @@ EditorFormView = Backbone.View.extend({
             return ( this.type_to_type[child] ) && ( parent in this.type_to_type[child] );
         },
 
-        prebuildNode: function ( type, title_text, tool_id ) {
+        prebuildNode: function ( type, title_text, content_id ) {
             var self = this;
             var f = $("<div class='toolForm toolFormInCanvas'></div>");
             var node = new Node( this, { element: f } );
             node.type = type;
-            if ( type == 'tool' ) {
-                node.tool_id = tool_id;
-            }
+            node.content_id = content_id;
             var title = $("<div class='toolFormTitle unselectable'>" + title_text + "</div>" );
             f.append( title );
             f.css( "left", $(window).scrollLeft() + 20 ); f.css( "top", $(window).scrollTop() + 20 );

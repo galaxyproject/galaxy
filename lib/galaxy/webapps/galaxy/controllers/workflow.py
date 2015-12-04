@@ -664,7 +664,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         return {
             'type': module.type,
             'name': module.get_name(),
-            'tool_id': module.get_tool_id(),
+            'tool_id': module.get_content_id(),
             'tool_state': module.get_state(),
             'tool_model': tool_model,
             'tooltip': module.get_tooltip( static_path=url_for( '/static' ) ),
