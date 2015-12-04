@@ -191,7 +191,7 @@ var create = function( $button, options ){
         purgeAllowed = options.purgeAllowed || false,
         root = options.root || ( ( Galaxy && Galaxy.options )? Galaxy.options.root: '/' ),
         menu = buildMenu( isAnon, purgeAllowed, root );
-    console.debug( 'menu:', menu );
+    //console.debug( 'menu:', menu );
     return new PopupMenu( $button, menu );
 };
 
