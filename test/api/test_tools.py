@@ -296,8 +296,8 @@ class ToolsTestCase( api.ApiTestCase ):
         output_collection = self._assert_one_job_one_collection_run( create )
         element0, element1 = self._assert_elements_are( output_collection, "forward", "reverse" )
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        self._verify_element( history_id, element0, contents="123\n789\n", file_ext="txt" )
-        self._verify_element( history_id, element1, contents="456\n0ab\n", file_ext="txt" )
+        self._verify_element( history_id, element0, contents="123\n789\n", file_ext="txt", visible=False )
+        self._verify_element( history_id, element1, contents="456\n0ab\n", file_ext="txt", visible=False )
 
     @skip_without_tool( "collection_creates_list" )
     def test_list_collection_output( self ):
