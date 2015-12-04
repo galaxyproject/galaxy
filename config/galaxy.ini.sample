@@ -456,9 +456,6 @@ nglims_config_file = tool-data/nglims.yaml
 # be an absolute or relative URL.
 #welcome_url = /static/welcome.html
 
-# Show the welcome_url page along side the login form
-#show_welcome_with_login = False
-
 # The URL linked by the "Galaxy/brand" text.
 #logo_url = /
 
@@ -793,6 +790,10 @@ use_interactive = True
 
 # Force everyone to log in (disable anonymous access).
 #require_login = False
+
+# Show the site's welcome page (see welcome_url) alongside the login page
+# (even if require_login is True)
+#show_welcome_with_login = False
 
 # Allow unregistered users to create new accounts (otherwise, they will have to
 # be created by an admin).
