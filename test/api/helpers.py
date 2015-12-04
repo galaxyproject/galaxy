@@ -76,7 +76,7 @@ class BaseDatasetPopulator( object ):
         if wait:
             job = run_response["jobs"][0]
             self.wait_for_job(job["id"])
-            self.wait_for_history(history_id)
+            self.wait_for_history(history_id, assert_ok=True)
         return run_response["outputs"][0]
 
     def wait_for_history( self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
