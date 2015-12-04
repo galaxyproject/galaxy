@@ -2,11 +2,17 @@ from __future__ import absolute_import
 
 from collections import namedtuple
 import json
+import uuid
+
+from sqlalchemy import and_
 
 from galaxy import model
+from galaxy import util
 from galaxy import exceptions
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.workflow import modules
+
+from .base import decode_id
 
 # For WorkflowContentManager
 from galaxy.util.sanitize_html import sanitize_html
@@ -25,6 +31,38 @@ class WorkflowsManager( object ):
 
     def __init__( self, app ):
         self.app = app
+
+    def get_stored_workflow( self, trans, workflow_id ):
+        """ Use a supplied ID (UUID or encoded stored workflow ID) to find
+        a workflow.
+        """
+        if util.is_uuid(workflow_id):
+            # see if they have passed in the UUID for a workflow that is attached to a stored workflow
+            workflow_uuid = uuid.UUID(workflow_id)
+            stored_workflow = trans.sa_session.query(trans.app.model.StoredWorkflow).filter( and_(
+                trans.app.model.StoredWorkflow.latest_workflow_id == trans.app.model.Workflow.id,
+                trans.app.model.Workflow.uuid == workflow_uuid
+            )).first()
+            if stored_workflow is None:
+                raise exceptions.ObjectNotFound( "Workflow not found: %s" % workflow_id )
+        else:
+            workflow_id = decode_id( self.app, workflow_id )
+            query = trans.sa_session.query( trans.app.model.StoredWorkflow )
+            stored_workflow = query.get( workflow_id )
+        if stored_workflow is None:
+            raise exceptions.ObjectNotFound( "No such workflow found." )
+        return stored_workflow
+
+    def get_stored_accessible_workflow( self, trans, workflow_id ):
+        stored_workflow = self.get_stored_workflow( trans, workflow_id )
+
+        # check to see if user has permissions to selected workflow
+        if stored_workflow.user != trans.user and not trans.user_is_admin():
+            if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
+                message = "Workflow is not owned by or shared with current user"
+                raise exceptions.ItemAccessibilityException( message )
+
+        return stored_workflow
 
     def check_security( self, trans, has_workflow, check_ownership=True, check_accessible=True):
         """ check accessibility or ownership of workflows, storedworkflows, and
