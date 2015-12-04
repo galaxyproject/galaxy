@@ -373,13 +373,17 @@ class MappingTests( unittest.TestCase ):
             email="testworkflows@bx.psu.edu",
             password="password"
         )
-        stored_workflow = model.StoredWorkflow()
-        stored_workflow.user = user
-        workflow = model.Workflow()
-        workflow_step = model.WorkflowStep()
-        workflow.steps = [ workflow_step ]
-        workflow.stored_workflow = stored_workflow
 
+        def workflow_from_steps(steps):
+            stored_workflow = model.StoredWorkflow()
+            stored_workflow.user = user
+            workflow = model.Workflow()
+            workflow.steps = steps
+            workflow.stored_workflow = stored_workflow
+            return workflow
+
+        workflow_step = model.WorkflowStep()
+        workflow = workflow_from_steps([workflow_step])
         self.persist( workflow )
         assert workflow_step.id is not None
 

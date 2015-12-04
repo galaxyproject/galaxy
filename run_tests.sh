@@ -310,6 +310,10 @@ do
 done
 
 if [ -z "$skip_common_startup" ]; then
+    if [ -n "$GALAXY_TEST_DBURI" ]; then
+            GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION=$GALAXY_TEST_DBURI
+            export GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION
+    fi
     ./scripts/common_startup.sh $skip_venv --dev-wheels || exit 1
 fi
 

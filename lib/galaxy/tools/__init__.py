@@ -39,6 +39,7 @@ from galaxy.tools.parser import get_tool_source
 from galaxy.tools.parser.xml import XmlPageSource
 from galaxy.tools.toolbox import AbstractToolBox
 from galaxy.util import rst_to_html, string_as_bool
+from galaxy.util import ExecutionTimer
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
@@ -258,6 +259,7 @@ class ToolOutput( ToolOutputBase ):
         # Initialize default values
         self.change_format = []
         self.implicit = implicit
+        self.from_work_dir = None
 
     # Tuple emulation
 
@@ -652,16 +654,8 @@ class Tool( object, Dictifiable ):
         else:
             self.input_translator = None
 
-        # Command line (template). Optional for tools that do not invoke a local program
-        command = tool_source.parse_command()
-        if command is not None:
-            self.command = command.lstrip()  # get rid of leading whitespace
-            # Must pre-pend this AFTER processing the cheetah command template
-            self.interpreter = tool_source.parse_interpreter()
-        else:
-            self.command = ''
-            self.interpreter = None
-        self.environment_variables = tool_source.parse_environment_variables()
+        self.parse_command( tool_source )
+        self.environment_variables = self.parse_environment_variables( tool_source )
 
         # Parameters used to build URL for redirection to external app
         redirect_url_params = tool_source.parse_redirect_url_params_elem()
@@ -835,6 +829,22 @@ class Tool( object, Dictifiable ):
                 self.__tests = None
             self.__tests_populated = True
         return self.__tests
+
+    def parse_command( self, tool_source ):
+        """
+        """
+        # Command line (template). Optional for tools that do not invoke a local program
+        command = tool_source.parse_command()
+        if command is not None:
+            self.command = command.lstrip()  # get rid of leading whitespace
+            # Must pre-pend this AFTER processing the cheetah command template
+            self.interpreter = tool_source.parse_interpreter()
+        else:
+            self.command = ''
+            self.interpreter = None
+
+    def parse_environment_variables( self, tool_source ):
+        return tool_source.parse_environment_variables()
 
     def parse_inputs( self, tool_source ):
         """
@@ -1292,8 +1302,10 @@ class Tool( object, Dictifiable ):
         if rerun_remap_job_id and len( expanded_incomings ) > 1:
             raise exceptions.MessageException( 'Failure executing tool (cannot create multiple jobs when remapping existing job).' )
 
+        validation_timer = ExecutionTimer()
         all_errors = []
         all_params = []
+        validate_input = self.get_hook( 'validate_input' )
         for expanded_incoming in expanded_incomings:
             expanded_state = self.new_state( trans, history=history )
             # Process incoming data
@@ -1308,13 +1320,12 @@ class Tool( object, Dictifiable ):
                 # values from `incoming`.
                 errors = self.populate_state( trans, self.inputs, expanded_state.inputs, expanded_incoming, history, source=source )
                 # If the tool provides a `validate_input` hook, call it.
-                validate_input = self.get_hook( 'validate_input' )
                 if validate_input:
                     validate_input( trans, errors, expanded_state.inputs, self.inputs )
                 params = expanded_state.inputs
             all_errors.append( errors )
             all_params.append( params )
-
+        log.debug("Validated and populated state for tool request %s" % validation_timer)
         # If there were errors, we stay on the same page and display
         # error messages
         if any( all_errors ):
@@ -1830,6 +1841,9 @@ class Tool( object, Dictifiable ):
                             rep_dict = dict()
                             messages[ input.name ].append( rep_dict )
                             self.check_and_update_param_values_helper( input.inputs, {}, trans, rep_dict, context, rep_prefix, allow_workflow_parameters=allow_workflow_parameters )
+                elif isinstance( input, Section ):
+                    messages[ input.name ] = { input.name: "No value found for '%s%s', used default" % ( prefix, input.label ) }
+                    self.check_and_update_param_values_helper( input.inputs, {}, trans, messages[ input.name ], context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 else:
                     messages[ input.name ] = "No value found for '%s%s', used default" % ( prefix, input.label )
                 values[ input.name ] = input.get_initial_value( trans, context )
@@ -1857,6 +1871,9 @@ class Tool( object, Dictifiable ):
                     else:
                         current = group_values["__current_case__"]
                         self.check_and_update_param_values_helper( input.cases[current].inputs, group_values, trans, messages, context, prefix, allow_workflow_parameters=allow_workflow_parameters )
+                elif isinstance( input, Section ):
+                    messages[ input.name ] = "No value found for '%s%s', used default" % ( prefix, input.label )
+                    self.check_and_update_param_values_helper( input.inputs, values[ input.name ], trans, messages, context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 else:
                     # Regular tool parameter, no recursion needed
                     try:

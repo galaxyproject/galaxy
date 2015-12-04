@@ -293,6 +293,14 @@ def workflow_run_config_to_request( trans, run_config, workflow ):
         )
         workflow_invocation.input_parameters.append( parameter )
 
+    for step in workflow.steps:
+        state = step.state
+        serializable_runtime_state = step.module.normalize_runtime_state( state )
+        step_state = model.WorkflowRequestStepState()
+        step_state.workflow_step = step
+        step_state.value = serializable_runtime_state
+        workflow_invocation.step_states.append( step_state )
+
     replacement_dict = run_config.replacement_dict
     for name, value in replacement_dict.iteritems():
         add_parameter(
@@ -302,14 +310,6 @@ def workflow_run_config_to_request( trans, run_config, workflow ):
         )
     for step_id, content in run_config.inputs.iteritems():
         workflow_invocation.add_input( content, step_id )
-
-    for step in workflow.steps:
-        state = step.state
-        serializable_runtime_state = step.module.normalize_runtime_state( state )
-        step_state = model.WorkflowRequestStepState()
-        step_state.workflow_step = step
-        step_state.value = serializable_runtime_state
-        workflow_invocation.step_states.append( step_state )
 
     add_parameter( "copy_inputs_to_history", "true" if run_config.copy_inputs_to_history else "false", param_types.META_PARAMETERS )
     return workflow_invocation

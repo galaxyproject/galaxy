@@ -35,7 +35,7 @@ require.config({
             deps: [ 'sinon', "QUnit" ],
             exports: "sinon"  // Odd but seems to work
         },
-        "underscore": {
+        "libs/underscore": {
             exports: "_"
         },
         "libs/underscore": {

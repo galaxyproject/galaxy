@@ -540,12 +540,36 @@ Binary.register_sniffable_binary_format("bcf", "bcf", Bcf)
 
 
 class H5( Binary ):
-    """Class describing an HDF5 file"""
+    """
+    Class describing an HDF5 file
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'test.mz5' )
+    >>> H5().sniff( fname )
+    True
+    >>> fname = get_test_fname( 'interval.interval' )
+    >>> H5().sniff( fname )
+    False
+    """
     file_ext = "h5"
+
+    def __init__( self, **kwd ):
+        Binary.__init__( self, **kwd )
+        self._magic = binascii.unhexlify("894844460d0a1a0a")
+
+    def sniff( self, filename ):
+        # The first 8 bytes of any hdf5 file are 0x894844460d0a1a0a
+        try:
+            header = open( filename ).read(8)
+            if header == self._magic:
+                return True
+            return False
+        except:
+            return False
 
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
-            dataset.peek = "Binary h5 file"
+            dataset.peek = "Binary HDF5 file"
             dataset.blurb = nice_size( dataset.get_size() )
         else:
             dataset.peek = 'file does not exist'
@@ -555,9 +579,9 @@ class H5( Binary ):
         try:
             return dataset.peek
         except:
-            return "Binary h5 sequence file (%s)" % ( nice_size( dataset.get_size() ) )
+            return "Binary HDF5 file (%s)" % ( nice_size( dataset.get_size() ) )
 
-Binary.register_unsniffable_binary_ext("h5")
+Binary.register_sniffable_binary_format("h5", "h5", H5)
 
 
 class Scf( Binary ):
@@ -847,8 +871,84 @@ class GeminiSQLite( SQlite ):
         except:
             return "Gemini SQLite Database, version %s" % ( dataset.metadata.gemini_version or 'unknown' )
 
+
+class MzSQlite( SQlite ):
+    """Class describing a Proteomics Sqlite database """
+    file_ext = "mz.sqlite"
+
+    def set_meta( self, dataset, overwrite=True, **kwd ):
+        super( MzSQlite, self ).set_meta( dataset, overwrite=overwrite, **kwd )
+
+    def sniff( self, filename ):
+        if super( MzSQlite, self ).sniff( filename ):
+            mz_table_names = ["DBSequence", "Modification", "Peaks", "Peptide", "PeptideEvidence", "Score", "SearchDatabase", "Source", "SpectraData", "Spectrum", "SpectrumIdentification"]
+            try:
+                conn = sqlite.connect( filename )
+                c = conn.cursor()
+                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                result = c.execute( tables_query ).fetchall()
+                result = map( lambda x: x[0], result )
+                for table_name in mz_table_names:
+                    if table_name not in result:
+                        return False
+                return True
+            except Exception, e:
+                log.warn( '%s, sniff Exception: %s', self, e )
+        return False
+
+
+class IdpDB( SQlite ):
+    """
+    Class describing an IDPicker 3 idpDB (sqlite) database
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'test.idpDB' )
+    >>> IdpDB().sniff( fname )
+    True
+    >>> fname = get_test_fname( 'interval.interval' )
+    >>> IdpDB().sniff( fname )
+    False
+    """
+    file_ext = "idpdb"
+
+    def set_meta( self, dataset, overwrite=True, **kwd ):
+        super( IdpDB, self ).set_meta( dataset, overwrite=overwrite, **kwd )
+
+    def sniff( self, filename ):
+        if super( IdpDB, self ).sniff( filename ):
+            mz_table_names = ["About", "Analysis", "AnalysisParameter", "PeptideSpectrumMatch", "Spectrum", "SpectrumSource"]
+            try:
+                conn = sqlite.connect( filename )
+                c = conn.cursor()
+                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                result = c.execute( tables_query ).fetchall()
+                result = map( lambda x: x[0], result )
+                for table_name in mz_table_names:
+                    if table_name not in result:
+                        return False
+                return True
+            except Exception, e:
+                log.warn( '%s, sniff Exception: %s', self, e )
+        return False
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = "IDPickerDB SQLite file"
+            dataset.blurb = nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek( self, dataset ):
+        try:
+            return dataset.peek
+        except:
+            return "IDPickerDB SQLite file (%s)" % ( nice_size( dataset.get_size() ) )
+
 Binary.register_sniffable_binary_format( "gemini.sqlite", "gemini.sqlite", GeminiSQLite )
-# FIXME: We need to register gemini.sqlite before sqlite, since register_sniffable_binary_format and is_sniffable_binary called in upload.py
+Binary.register_sniffable_binary_format( "idpdb", "idpdb", IdpDB )
+Binary.register_sniffable_binary_format( "mz.sqlite", "mz.sqlite", MzSQlite )
+# FIXME: We need to register specialized sqlite formats before sqlite, since register_sniffable_binary_format and is_sniffable_binary called in upload.py
 # ignores sniff order declared in datatypes_conf.xml
 Binary.register_sniffable_binary_format("sqlite", "sqlite", SQlite)
 
