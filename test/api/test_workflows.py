@@ -409,7 +409,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
                 'tool_errors',
                 'annotation',
                 'inputs',
-                'user_outputs',
+                'workflow_outputs',
                 'outputs'
             )
             if step['type'] == "tool":

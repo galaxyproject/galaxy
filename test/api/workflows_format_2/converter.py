@@ -348,6 +348,8 @@ class ConversionContext(object):
     def step_id(self, label_or_id):
         if label_or_id in self.labels:
             id = self.labels[label_or_id]
+        else:
+            id = label_or_id
         return int(id)
 
     def step_output(self, value):
