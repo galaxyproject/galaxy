@@ -319,7 +319,7 @@ class BaseJobRunner( object ):
             # sync file system to avoid "Text file busy" problems.
             # These have occurred both in Docker containers and on EC2 clusters
             # under high load.
-            subprocess.check_call(["sync"])
+            subprocess.check_call(["/bin/sync"])
         except Exception:
             pass
 
