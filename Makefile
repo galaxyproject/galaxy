@@ -1,7 +1,7 @@
-GRUNT_DOCKER_NAME:=galaxy-client-builder
+GRUNT_DOCKER_NAME:=galaxy/client-builder:16.01
 
 all:
-	@echo "This makefile is used for building Galaxy's JS client. A sensible all action is not yet implemented"
+	@echo "This makefile is primarily used for building Galaxy's JS client. A sensible all target is not yet implemented."
 
 npm-deps:
 	cd client && npm install
