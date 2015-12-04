@@ -7,7 +7,7 @@ define([], function() {
             this.app = app;
             this.field = options.field;
 
-            // set text labels and icons for optional button
+            // set text labels and icons for collapsible button
             this.text_enable    = app.options.text_enable || 'Enable';
             this.text_disable   = app.options.text_disable || 'Disable';
             this.cls_enable     = app.options.cls_enable || 'fa fa-caret-square-o-down';
@@ -19,8 +19,8 @@ define([], function() {
             // link elements
             this.$field = this.$('.ui-form-field');
             this.$preview = this.$('.ui-form-preview');
-            this.$optional = this.$('.ui-form-optional');
-            this.$optional_icon = this.$('.ui-form-optional').find('.icon');
+            this.$collapsible = this.$('.ui-form-collapsible');
+            this.$collapsible_icon = this.$('.ui-form-collapsible').find('.icon');
             this.$error_text = this.$('.ui-form-error-text');
             this.$error = this.$('.ui-form-error');
             this.$backdrop = this.$('.ui-form-backdrop');
@@ -34,9 +34,9 @@ define([], function() {
             // refresh view
             this._refresh();
 
-            // add optional hide/show
+            // add collapsible hide/show
             var self = this;
-            this.$optional.on('click', function() {
+            this.$collapsible.on('click', function() {
                 self.field.collapsed = !self.field.collapsed;
                 self._refresh();
             });
@@ -67,7 +67,7 @@ define([], function() {
         /** Refresh element
         */
         _refresh: function() {
-            this.$optional_icon.removeClass().addClass('icon');
+            this.$collapsible_icon.removeClass().addClass('icon');
             if (!this.field.collapsed) {
                 this.$field.fadeIn('fast');
                 this.$preview.hide();
@@ -83,7 +83,7 @@ define([], function() {
         /** Set tooltip text
         */
         _tooltip: function(title, cls) {
-            this.$optional_icon.addClass(cls)
+            this.$collapsible_icon.addClass(cls)
                                .tooltip({ placement: 'bottom' })
                                .attr('data-original-title', title)
                                .tooltip('fixTitle').tooltip('hide');
@@ -98,7 +98,7 @@ define([], function() {
                             '</div>' +
                             '<div class="ui-form-title">';
             if ( !options.disabled && options.collapsible_value !== undefined ) {
-                tmp +=          '<div class="ui-form-optional">' +
+                tmp +=          '<div class="ui-form-collapsible">' +
                                     '<i class="icon"/>' + options.label +
                                 '</div>';
             } else {
