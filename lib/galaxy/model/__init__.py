@@ -3450,6 +3450,7 @@ class Workflow( object, Dictifiable ):
         rval['uuid'] = ( lambda uuid: str( uuid ) if uuid else None )( self.uuid )
         return rval
 
+    @property
     def steps_by_id( self ):
         steps = {}
         for step in self.steps:
@@ -3463,6 +3464,7 @@ class Workflow( object, Dictifiable ):
                 return step
         raise KeyError("Workflow has no step with order_index '%s'" % order_index)
 
+    @property
     def input_steps(self):
         for step in self.steps:
             if step.type in Workflow.input_step_types:

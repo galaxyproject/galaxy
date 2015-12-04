@@ -537,7 +537,7 @@ class WorkflowContentsManager(UsesAnnotations):
         item['url'] = url_for('workflow', id=item['id'])
         item['owner'] = stored.user.username
         inputs = {}
-        for step in workflow.input_steps():
+        for step in workflow.input_steps:
             step_type = step.type
             if step.tool_inputs and "name" in step.tool_inputs:
                 label = step.tool_inputs['name']
