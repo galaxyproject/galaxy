@@ -11,7 +11,6 @@ from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
 from paste.httpexceptions import HTTPNotImplemented, HTTPRequestRangeNotSatisfiable
 from galaxy.exceptions import ItemAccessibilityException, ItemDeletionException, ItemOwnershipException
 from galaxy.exceptions import MessageException
-from galaxy import exceptions
 
 from galaxy import web
 from galaxy import model
@@ -94,13 +93,7 @@ class BaseController( object ):
 
     # ---- parsing query params
     def decode_id( self, id ):
-        try:
-            # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
-            #   resulting in error for valid id
-            return self.app.security.decode_id( str( id ) )
-        except ( ValueError, TypeError ):
-            msg = "Malformed id ( %s ) specified, unable to decode" % ( str( id ) )
-            raise exceptions.MalformedId( msg, id=str( id ) )
+        return managers_base.decode_id( self.app, id )
 
     def encode_all_ids( self, trans, rval, recursive=False ):
         """
