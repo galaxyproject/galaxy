@@ -1,9 +1,9 @@
 FROM digitallyseamless/nodejs-bower-grunt
-RUN mkdir /gx && \
-    cd /gx && \
-    wget https://github.com/galaxyproject/galaxy/archive/dev.tar.gz && \
-    tar xvfz dev.tar.gz && \
-    cd galaxy-dev/client && \
+RUN mkdir /gx
+
+COPY package.json /gx/package.json
+
+RUN cd /gx && \
     npm install -g && \
     cd / && \
     rm -rf /gx
