@@ -61,7 +61,7 @@ EditorFormView = Backbone.View.extend({
         this.setElement($el);
 
         if (node && node.id != 'no-node') {
-            $el.find('.toolForm:first').after(this._genericStepAttributesTemplate( node ));
+            $el.find('table:first').after(this._genericStepAttributesTemplate( node ));
             ($el.find( 'form' ).length > 0) && $el.find( 'form' ).ajaxForm( {
                 type: 'POST',
                 dataType: 'json',
