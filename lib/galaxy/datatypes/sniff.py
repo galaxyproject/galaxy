@@ -310,6 +310,12 @@ def guess_ext( fname, sniff_order=None, is_multi_byte=False ):
     >>> fname = get_test_fname('3unsorted.bam')
     >>> guess_ext(fname)
     'bam'
+    >>> fname = get_test_fname('test.idpDB')
+    >>> guess_ext(fname)
+    'idpdb'
+    >>> fname = get_test_fname('test.mz5')
+    >>> guess_ext(fname)
+    'h5'
     """
     if sniff_order is None:
         datatypes_registry = registry.Registry()

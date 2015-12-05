@@ -1,7 +1,8 @@
 define([
+    "libs/bibtex",
     "mvc/base-mvc",
     "utils/localization"
-], function( baseMVC, _l ){
+], function( bibtex, baseMVC, _l ){
 /* global Backbone */
 
 var logNamespace = 'citation';
@@ -15,11 +16,11 @@ var Citation = Backbone.Model.extend( baseMVC.LoggableMixin ).extend( {
 
     initialize: function( ) {
         var bibtex = this.attributes.content;
-        var entry = new BibtexParser(bibtex).entries[0];
+        var entry = new bibtex.BibtexParser(bibtex).entries[0];
         this.entry = entry;
         this._fields = {};
         var rawFields = entry.Fields;
-        for(key in rawFields) {
+        for(var key in rawFields) {
             var value = rawFields[ key ];
             var lowerKey = key.toLowerCase();
             this._fields[ lowerKey ] = value;
@@ -40,7 +41,7 @@ var BaseCitationCollection = Backbone.Collection.extend( baseMVC.LoggableMixin )
     _logNamespace : logNamespace,
 
     /** root api url */
-    urlRoot : galaxy_config.root + 'api',
+    urlRoot : Galaxy.root + 'api',
     partial : true, // Assume some tools in history/workflow may not be properly annotated yet.
     model : Citation,
 } );

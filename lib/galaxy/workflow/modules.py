@@ -81,7 +81,7 @@ class WorkflowModule( object ):
 
     # ---- Configuration time -----------------------------------------------
 
-    def get_state( self ):
+    def get_state( self, secure=True ):
         """ Return a serializable representation of the persistable state of
         the step - for tools it DefaultToolState.encode returns a string and
         for simpler module types a json description is dumped out.
@@ -132,7 +132,7 @@ class WorkflowModule( object ):
 
     # ---- Run time ---------------------------------------------------------
 
-    def get_runtime_inputs( self ):
+    def get_runtime_inputs( self, **kwds ):
         """ Used internally by modules and when displaying inputs in workflow
         editor and run workflow templates.
 
@@ -222,6 +222,7 @@ class SimpleWorkflowModule( WorkflowModule ):
     def save_to_step( self, step ):
         step.type = self.type
         step.tool_id = None
+        step.tool_version = None
         step.tool_inputs = self.state
 
     def get_state( self, secure=True ):
@@ -1056,13 +1057,7 @@ class WorkflowModuleInjector(object):
         step.upgrade_messages = {}
 
         # Make connection information available on each step by input name.
-        input_connections_by_name = {}
-        for conn in step.input_connections:
-            input_name = conn.input_name
-            if input_name not in input_connections_by_name:
-                input_connections_by_name[input_name] = []
-            input_connections_by_name[input_name].append(conn)
-        step.input_connections_by_name = input_connections_by_name
+        step.setup_input_connections_by_name()
 
         # Populate module.
         module = step.module = module_factory.from_workflow_step( trans, step )

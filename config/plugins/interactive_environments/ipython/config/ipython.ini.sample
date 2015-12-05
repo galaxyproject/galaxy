@@ -1,7 +1,6 @@
 [main]
 # Following options are ignored if using the Galaxy dynamic proxy but
 # are useful if mapping a range of ports for environment consumption.
-#apache_urls = False
 #password_auth = False
 #ssl = False
 

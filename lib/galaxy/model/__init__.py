@@ -187,8 +187,27 @@ class User( object, Dictifiable ):
         """
         Return a unique list of Roles associated with this user or any of their groups.
         """
-        roles = [ ura.role for ura in self.roles ]
-        for group in [ uga.group for uga in self.groups ]:
+        try:
+            db_session = object_session( self )
+            user = db_session.query(
+                User
+            ).filter_by(  # don't use get, it will use session variant.
+                id=self.id
+            ).options(
+                joinedload("roles"),
+                joinedload("roles.role"),
+                joinedload("groups"),
+                joinedload("groups.group"),
+                joinedload("groups.group.roles"),
+                joinedload("groups.group.roles.role")
+            ).one()
+        except Exception:
+            # If not persistent user, just use models normaly and
+            # skip optimizations...
+            user = self
+
+        roles = [ ura.role for ura in user.roles ]
+        for group in [ uga.group for uga in user.groups ]:
             for role in [ gra.role for gra in group.roles ]:
                 if role not in roles:
                     roles.append( role )
@@ -215,7 +234,8 @@ class User( object, Dictifiable ):
     total_disk_usage = property( get_disk_usage, set_disk_usage )
 
     def adjust_total_disk_usage( self, amount ):
-        self.disk_usage = func.coalesce(self.table.c.disk_usage, 0) + amount
+        if amount != 0:
+            self.disk_usage = func.coalesce(self.table.c.disk_usage, 0) + amount
 
     @property
     def nice_total_disk_usage( self ):
@@ -536,8 +556,11 @@ class Job( object, JobLike, Dictifiable ):
     def add_parameter( self, name, value ):
         self.parameters.append( JobParameter( name, value ) )
 
-    def add_input_dataset( self, name, dataset ):
-        self.input_datasets.append( JobToInputDatasetAssociation( name, dataset ) )
+    def add_input_dataset( self, name, dataset=None, dataset_id=None ):
+        assoc = JobToInputDatasetAssociation( name, dataset )
+        if dataset is None and dataset_id is not None:
+            assoc.dataset_id = dataset_id
+        self.input_datasets.append( assoc )
 
     def add_output_dataset( self, name, dataset ):
         self.output_datasets.append( JobToOutputDatasetAssociation( name, dataset ) )
@@ -1080,16 +1103,16 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
     def empty( self ):
         return self.hid_counter == 1
 
-    def _next_hid( self ):
+    def _next_hid( self, n=1 ):
         # this is overriden in mapping.py db_next_hid() method
         if len( self.datasets ) == 0:
-            return 1
+            return n
         else:
             last_hid = 0
             for dataset in self.datasets:
                 if dataset.hid > last_hid:
                     last_hid = dataset.hid
-            return last_hid + 1
+            return last_hid + n
 
     def add_galaxy_session( self, galaxy_session, association=None ):
         if association is None:
@@ -1123,6 +1146,41 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             self.genome_build = genome_build
         self.datasets.append( dataset )
         return dataset
+
+    def add_datasets( self, sa_session, datasets, parent_id=None, genome_build=None, set_hid=True, quota=True, flush=False ):
+        """ Optimized version of add_dataset above that minimizes database
+        interactions when adding many datasets to history at once.
+        """
+        all_hdas = all( map( lambda d: isinstance( d, HistoryDatasetAssociation ), datasets ) )
+        optimize = len( datasets) > 1 and parent_id is None and all_hdas and set_hid and not quota
+        if optimize:
+            self.__add_datasets_optimized( datasets, genome_build=genome_build )
+            sa_session.add_all( datasets )
+            if flush:
+                sa_session.flush()
+        else:
+            for dataset in datasets:
+                self.add_dataset( dataset, parent_id=parent_id, genome_build=genome_build, set_hid=set_hid, quota=quota )
+                sa_session.add( dataset )
+                if flush:
+                    sa_session.flush()
+
+    def __add_datasets_optimized( self, datasets, genome_build=None ):
+        """ Optimized version of add_dataset above that minimizes database
+        interactions when adding many datasets to history at once under
+        certain circumstances.
+        """
+        n = len( datasets )
+
+        base_hid = self._next_hid( n=n )
+
+        for i, dataset in enumerate( datasets ):
+            dataset.hid = base_hid + i
+            dataset.history = self
+            if genome_build not in [None, '?']:
+                self.genome_build = genome_build
+        self.datasets.extend( datasets )
+        return datasets
 
     def add_dataset_collection( self, history_dataset_collection, set_hid=True ):
         if set_hid:
@@ -1464,10 +1522,13 @@ class DefaultQuotaAssociation( Quota, Dictifiable ):
 
 
 class DatasetPermissions( object ):
-    def __init__( self, action, dataset, role ):
+    def __init__( self, action, dataset, role=None, role_id=None ):
         self.action = action
         self.dataset = dataset
-        self.role = role
+        if role is not None:
+            self.role = role
+        else:
+            self.role_id = role_id
 
 
 class LibraryPermissions( object ):
@@ -1729,7 +1790,8 @@ class DatasetInstance( object ):
 
     def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None, extension=None,
                   dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
-                  parent_id=None, validation_errors=None, visible=True, create_dataset=False, sa_session=None, extended_metadata=None ):
+                  parent_id=None, validation_errors=None, visible=True, create_dataset=False, sa_session=None,
+                  extended_metadata=None, flush=True ):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.info = info
@@ -1750,8 +1812,9 @@ class DatasetInstance( object ):
         if not dataset and create_dataset:
             # Had to pass the sqlalchemy session in order to create a new dataset
             dataset = Dataset( state=Dataset.states.NEW )
-            sa_session.add( dataset )
-            sa_session.flush()
+            if flush:
+                sa_session.add( dataset )
+                sa_session.flush()
         self.dataset = dataset
         self.parent_id = parent_id
         self.validation_errors = validation_errors
@@ -1767,10 +1830,17 @@ class DatasetInstance( object ):
             return self._state
         return self.dataset.state
 
+    def raw_set_dataset_state( self, state ):
+        if state != self.dataset.state:
+            self.dataset.state = state
+            return True
+        else:
+            return False
+
     def set_dataset_state( self, state ):
-        self.dataset.state = state
-        object_session( self ).add( self.dataset )
-        object_session( self ).flush()  # flush here, because hda.flush() won't flush the Dataset object
+        if self.raw_set_dataset_state( state ):
+            object_session( self ).add( self.dataset )
+            object_session( self ).flush()  # flush here, because hda.flush() won't flush the Dataset object
     state = property( get_dataset_state, set_dataset_state )
 
     def get_file_name( self ):
@@ -3401,6 +3471,7 @@ class Workflow( object, Dictifiable ):
 
     dict_collection_visible_keys = ( 'name', 'has_cycles', 'has_errors' )
     dict_element_visible_keys = ( 'name', 'has_cycles', 'has_errors' )
+    input_step_types = ['data_input', 'data_collection_input']
 
     def __init__( self, uuid=None ):
         self.user = None
@@ -3427,6 +3498,32 @@ class Workflow( object, Dictifiable ):
         rval['uuid'] = ( lambda uuid: str( uuid ) if uuid else None )( self.uuid )
         return rval
 
+    @property
+    def steps_by_id( self ):
+        steps = {}
+        for step in self.steps:
+            step_id = step.id
+            steps[ step_id ] = step
+        return steps
+
+    def step_by_index(self, order_index):
+        for step in self.steps:
+            if order_index == step.order_index:
+                return step
+        raise KeyError("Workflow has no step with order_index '%s'" % order_index)
+
+    @property
+    def input_steps(self):
+        for step in self.steps:
+            if step.type in Workflow.input_step_types:
+                yield step
+
+    @property
+    def workflow_outputs(self):
+        for step in self.steps:
+            for workflow_output in step.workflow_outputs:
+                yield workflow_output
+
 
 class WorkflowStep( object ):
 
@@ -3440,6 +3537,25 @@ class WorkflowStep( object ):
         self.input_connections = []
         self.config = None
         self.uuid = uuid4()
+        self._input_connections_by_name = None
+
+    @property
+    def input_connections_by_name(self):
+        if self._input_connections_by_name is None:
+            self.setup_input_connections_by_name()
+        return self._input_connections_by_name
+
+    def setup_input_connections_by_name(self):
+        # Ensure input_connections has already been set.
+
+        # Make connection information available on each step by input name.
+        input_connections_by_name = {}
+        for conn in self.input_connections:
+            input_name = conn.input_name
+            if input_name not in input_connections_by_name:
+                input_connections_by_name[input_name] = []
+            input_connections_by_name[input_name].append(conn)
+        self._input_connections_by_name = input_connections_by_name
 
 
 class WorkflowStepConnection( object ):

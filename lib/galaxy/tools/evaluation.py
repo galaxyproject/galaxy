@@ -110,6 +110,12 @@ class ToolEvaluator( object ):
         `to_param_dict_string` method of the associated input.
         """
         param_dict = dict()
+
+        def input():
+            raise SyntaxError("Unbound variable input.")  # Don't let $input hang Python evaluation process.
+
+        param_dict["input"] = input
+
         param_dict.update(self.tool.template_macro_params)
         # All parameters go into the param_dict
         param_dict.update( incoming )
@@ -154,9 +160,8 @@ class ToolEvaluator( object ):
 
         def wrap_input( input_values, input ):
             if isinstance( input, DataToolParameter ) and input.multiple:
-                dataset_instances = input_values[ input.name ]
-                if isinstance( dataset_instances, model.HistoryDatasetCollectionAssociation ):
-                    dataset_instances = dataset_instances.collection.dataset_elements[:]
+                value = input_values[ input.name ]
+                dataset_instances = DatasetListWrapper.to_dataset_instances( value )
                 input_values[ input.name ] = \
                     DatasetListWrapper( dataset_instances,
                                         dataset_paths=input_dataset_paths,

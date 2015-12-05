@@ -30,7 +30,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         super( WorkflowsAPIController, self ).__init__( app )
         self.history_manager = histories.HistoryManager( app )
         self.workflow_manager = workflows.WorkflowsManager( app )
-        self.workflow_contents_manager = workflows.WorkflowContentsManager()
+        self.workflow_contents_manager = workflows.WorkflowContentsManager( app )
 
     @expose_api
     def index(self, trans, **kwd):
@@ -300,8 +300,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         stored_workflow = self.__get_stored_workflow( trans, id )
         if 'workflow' in payload:
-            workflow_contents_manager = workflows.WorkflowContentsManager()
-            workflow, errors = workflow_contents_manager.update_workflow_from_dict(
+            workflow, errors = self.workflow_contents_manager.update_workflow_from_dict(
                 trans,
                 stored_workflow,
                 payload['workflow'],

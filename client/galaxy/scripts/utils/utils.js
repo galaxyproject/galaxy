@@ -182,7 +182,7 @@ function cssGetAttribute (classname, name) {
  */
 function cssLoadFile (url) {
     if (!$('link[href^="' + url + '"]').length) {
-        $('<link href="' + galaxy_config.root + url + '" rel="stylesheet">').appendTo('head');
+        $('<link href="' + Galaxy.root + url + '" rel="stylesheet">').appendTo('head');
     }
 };
 

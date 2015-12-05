@@ -6,6 +6,23 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             this.input_terminals = {};
             this.output_terminals = {};
             this.tool_errors = {};
+            this.workflow_outputs = [];
+        },
+        getWorkflowOutput: function(outputName) {
+            return _.findWhere(this.workflow_outputs, {"output_name": outputName});
+        },
+        isWorkflowOutput: function(outputName) {
+            return this.getWorkflowOutput(outputName) != undefined;
+        },
+        removeWorkflowOutput: function(outputName) {
+            while(this.isWorkflowOutput(outputName)) {
+                this.workflow_outputs.splice(this.getWorkflowOutput(outputName), 1);
+            }
+        },
+        addWorkflowOutput: function(outputName) {
+            if(!this.isWorkflowOutput(outputName)){
+                this.workflow_outputs.push({"output_name": outputName});
+            }
         },
         connectedOutputTerminals: function() {
             return this._connectedTerminals( this.output_terminals );

@@ -170,7 +170,6 @@ spaceghost.test.begin( 'Test permissions for accessible, published, and inaccess
             });
             this.debug( this.jsonStr( returned ) );
         }, 403, 'History is not accessible by user', 'hda copy from failed with error' );
-
     }
 
     function testWriteFunctions( history, hdas ){
@@ -256,7 +255,7 @@ spaceghost.test.begin( 'Test permissions for accessible, published, and inaccess
         testInaccessible.call( spaceghost, accessibleHistory, accessibleHdas );
         testInaccessible.call( spaceghost, publishedHistory, publishedHdas );
     });
-    spaceghost.user.logout();
+    // spaceghost.user.logout();
 
 
     // ===================================================================

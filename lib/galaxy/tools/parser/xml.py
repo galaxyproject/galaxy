@@ -178,6 +178,7 @@ class XmlToolSource(ToolSource):
             label = xml_text( collection_elem, "label" )
             default_format = collection_elem.get( "format", "data" )
             collection_type = collection_elem.get( "type", None )
+            collection_type_source = collection_elem.get( "type_source", None )
             structured_like = collection_elem.get( "structured_like", None )
             inherit_format = False
             inherit_metadata = False
@@ -193,6 +194,7 @@ class XmlToolSource(ToolSource):
                 dataset_collectors = output_collect.dataset_collectors_from_elem( collection_elem )
             structure = galaxy.tools.ToolOutputCollectionStructure(
                 collection_type=collection_type,
+                collection_type_source=collection_type_source,
                 structured_like=structured_like,
                 dataset_collectors=dataset_collectors,
             )
@@ -306,6 +308,7 @@ def _test_elem_to_dict(test_elem, i):
         stderr=__parse_assert_list_from_elem( test_elem.find("assert_stderr") ),
         expect_exit_code=test_elem.get("expect_exit_code"),
         expect_failure=string_as_bool(test_elem.get("expect_failure", False)),
+        maxseconds=test_elem.get("maxseconds", None),
     )
     _copy_to_dict_if_present(test_elem, rval, ["interactor", "num_outputs"])
     return rval

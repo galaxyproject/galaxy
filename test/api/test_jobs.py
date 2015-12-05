@@ -200,8 +200,8 @@ class JobsApiTestCase( api.ApiTestCase, TestsDatasets ):
         return history_id, dataset_id
 
     def __history_with_ok_dataset( self ):
-        history_id, dataset_id = self.__history_with_new_dataset()
-        self._wait_for_history( history_id, assert_ok=True )
+        history_id = self._new_history()
+        dataset_id = self._new_dataset( history_id, wait=True )[ "id" ]
         return history_id, dataset_id
 
     def __jobs_index( self, **kwds ):

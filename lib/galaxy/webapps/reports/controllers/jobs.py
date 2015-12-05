@@ -7,6 +7,8 @@ from datetime import datetime, date, timedelta
 import sqlalchemy as sa
 from sqlalchemy import and_, not_, or_
 
+from markupsafe import escape
+
 from galaxy import model, util
 from galaxy.web.base.controller import BaseUIController, web
 from galaxy.web.framework.helpers import grids
@@ -139,7 +141,7 @@ class SpecifiedDateListGrid( grids.Grid ):
 
         def get_value( self, trans, grid, job ):
             if job.user:
-                return job.user.email
+                return escape(job.user.email)
             return 'anonymous'
 
     class EmailColumn( grids.GridColumn ):

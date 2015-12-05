@@ -1,3 +1,6 @@
+import json
+import re
+
 from galaxy.exceptions import ObjectInvalid
 from galaxy.model import LibraryDatasetDatasetAssociation
 from galaxy import model
@@ -111,9 +114,19 @@ class DefaultToolAction( object ):
             elif isinstance( input, DataCollectionToolParameter ):
                 if not value:
                     return
-                for i, v in enumerate( value.collection.dataset_instances ):
+
+                dataset_instances = []
+                if hasattr( value, 'child_collection' ):
+                    # if we are mapping a collection over a tool, we only require the child_collection
+                    dataset_instances = value.child_collection.dataset_instances
+                else:
+                    # else the tool takes a collection as input so we need everything
+                    dataset_instances = value.collection.dataset_instances
+
+                for i, v in enumerate( dataset_instances ):
                     data = v
                     current_user_roles = trans.get_current_user_roles()
+
                     if not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
                         raise Exception( "User does not have permission to use a dataset (%s) provided for input." % data.id )
                     # Skipping implicit conversion stuff for now, revisit at
@@ -129,22 +142,34 @@ class DefaultToolAction( object ):
         return input_datasets
 
     def collect_input_dataset_collections( self, tool, param_values ):
+        def append_to_key( the_dict, key, value ):
+            if key not in the_dict:
+                the_dict[ key ] = []
+            the_dict[ key ].append( value )
+
         input_dataset_collections = dict()
 
         def visitor( prefix, input, value, parent=None ):
             if isinstance( input, DataToolParameter ):
-                if isinstance( value, model.HistoryDatasetCollectionAssociation ):
-                    input_dataset_collections[ prefix + input.name ] = ( value, True )
-                    target_dict = parent
-                    if not target_dict:
-                        target_dict = param_values
-                    # This is just a DataToolParameter, so replace this
-                    # collection with individual datasets. Database will still
-                    # record collection which should be enought for workflow
-                    # extraction and tool rerun.
-                    target_dict[ input.name ] = value.collection.dataset_instances[:]  # shallow copy
+                values = value
+                if not isinstance( values, list ):
+                    values = [ value ]
+                for i, value in enumerate(values):
+                    if isinstance( value, model.HistoryDatasetCollectionAssociation ):
+                        append_to_key( input_dataset_collections, prefix + input.name, ( value, True ) )
+                        target_dict = parent
+                        if not target_dict:
+                            target_dict = param_values
+                        # This is just a DataToolParameter, so replace this
+                        # collection with individual datasets. Database will still
+                        # record collection which should be enought for workflow
+                        # extraction and tool rerun.
+                        dataset_instances = value.collection.dataset_instances
+                        if i == 0:
+                            target_dict[ input.name ] = []
+                        target_dict[ input.name ].extend( dataset_instances )
             elif isinstance( input, DataCollectionToolParameter ):
-                input_dataset_collections[ prefix + input.name ] = ( value, False )
+                append_to_key( input_dataset_collections, prefix + input.name, ( value, False ) )
 
         tool.visit_inputs( param_values, visitor )
         return input_dataset_collections
@@ -159,6 +184,8 @@ class DefaultToolAction( object ):
         # Set history.
         if not history:
             history = tool.get_default_history_by_trans( trans, create=True )
+        if history not in trans.sa_session:
+            history = trans.sa_session.query( trans.app.model.History ).get( history.id )
 
         out_data = odict()
         out_collections = {}
@@ -173,9 +200,7 @@ class DefaultToolAction( object ):
         input_names = []
         input_ext = 'data'
         input_dbkey = incoming.get( "dbkey", "?" )
-        inp_items = inp_data.items()
-        inp_items.reverse()
-        for name, data in inp_items:
+        for name, data in reversed(inp_data.items()):
             if not data:
                 data = NoneDataset( datatypes_registry=trans.app.datatypes_registry )
                 continue
@@ -238,14 +263,19 @@ class DefaultToolAction( object ):
                 assert data is not None
                 out_data[name] = data
             else:
-                ext = determine_output_format( output, wrapped_params.params, inp_data, input_ext )
-                data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, sa_session=trans.sa_session )
+                ext = determine_output_format(
+                    output,
+                    wrapped_params.params,
+                    inp_data,
+                    inp_dataset_collections,
+                    input_ext
+                )
+                data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, flush=False )
                 if output.hidden:
                     data.visible = False
-                # Commit the dataset immediately so it gets database assigned unique id
                 trans.sa_session.add( data )
+                trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions, new=True )
                 trans.sa_session.flush()
-                trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions )
 
             object_store_populator.set_object_store_id( data )
 
@@ -280,6 +310,8 @@ class DefaultToolAction( object ):
                 output_action_params.update( incoming )
                 output.actions.apply_action( data, output_action_params )
             # Store all changes to database
+            # Updates at least state, blurb, and name. Does a query before
+            # hand I don't know why...
             trans.sa_session.flush()
             return data
 
@@ -291,7 +323,7 @@ class DefaultToolAction( object ):
                     assert set_output_history, "Cannot create dataset collection for this kind of tool."
 
                     element_identifiers = []
-                    input_collections = dict( [ (k, v[0]) for k, v in inp_dataset_collections.iteritems() ] )
+                    input_collections = dict( [ (k, v[0][0]) for k, v in inp_dataset_collections.iteritems() ] )
                     known_outputs = output.known_outputs( input_collections, collections_manager.type_registry )
                     # Just to echo TODO elsewhere - this should be restructured to allow
                     # nested collections.
@@ -339,10 +371,22 @@ class DefaultToolAction( object ):
                     else:
                         element_kwds = dict(element_identifiers=element_identifiers)
 
+                    collection_type = output.structure.collection_type
+                    if collection_type is None:
+                        collection_type_source = output.structure.collection_type_source
+                        if collection_type_source is None:
+                            # TODO: Not a new problem, but this should be determined
+                            # sooner.
+                            raise Exception("Could not determine collection type to create.")
+                        if collection_type_source not in input_collections:
+                            raise Exception("Could not find collection type source with name [%s]." % collection_type_source)
+
+                        collection_type = input_collections[collection_type_source].collection.collection_type
+
                     if mapping_over_collection:
                         dc = collections_manager.create_dataset_collection(
                             trans,
-                            collection_type=output.structure.collection_type,
+                            collection_type=collection_type,
                             **element_kwds
                         )
                         out_collections[ name ] = dc
@@ -352,7 +396,7 @@ class DefaultToolAction( object ):
                             trans,
                             history,
                             name=hdca_name,
-                            collection_type=output.structure.collection_type,
+                            collection_type=collection_type,
                             trusted_identifiers=True,
                             **element_kwds
                         )
@@ -364,13 +408,20 @@ class DefaultToolAction( object ):
                     handle_output( name, output )
                     log.info("Handled output %s" % handle_output_timer)
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
+        add_to_history_timer = ExecutionTimer()
+        datasets_to_persist = []
         for name in out_data.keys():
             if name not in child_dataset_names and name not in incoming:  # don't add children; or already existing datasets, i.e. async created
                 data = out_data[ name ]
-                if set_output_history:
-                    history.add_dataset( data, set_hid=set_output_hid )
+                datasets_to_persist.append( data )
+        if set_output_history:
+            # Set HID and add to history.
+            # This is brand new and certainly empty so don't worry about quota.
+            history.add_datasets( trans.sa_session, datasets_to_persist, set_hid=set_output_hid, quota=False, flush=False )
+        else:
+            for data in datasets_to_persist:
                 trans.sa_session.add( data )
-                trans.sa_session.flush()
+        log.info("Add outputs to history %s" % add_to_history_timer)
         # Add all the children to their parents
         for parent_name, child_name in parent_to_child_pairs:
             parent_dataset = out_data[ parent_name ]
@@ -398,13 +449,19 @@ class DefaultToolAction( object ):
         # FIXME: Don't need all of incoming here, just the defined parameters
         #        from the tool. We need to deal with tools that pass all post
         #        parameters to the command as a special case.
-        for name, ( dataset_collection, reduced ) in inp_dataset_collections.iteritems():
-            # TODO: Does this work if nested in repeat/conditional?
-            if reduced:
-                incoming[ name ] = "__collection_reduce__|%s" % dataset_collection.id
-            # Should verify security? We check security of individual
-            # datasets below?
-            job.add_input_dataset_collection( name, dataset_collection )
+        for name, dataset_collection_info_pairs in inp_dataset_collections.iteritems():
+            first_reduction = True
+            for ( dataset_collection, reduced ) in dataset_collection_info_pairs:
+                # TODO: update incoming for list...
+                if reduced and first_reduction:
+                    first_reduction = False
+                    incoming[ name ] = []
+                if reduced:
+                    incoming[ name ].append( "__collection_reduce__|%s" % dataset_collection.id )
+                # Should verify security? We check security of individual
+                # datasets below?
+                # TODO: verify can have multiple with same name, don't want to loose tracability
+                job.add_input_dataset_collection( name, dataset_collection )
         for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
             job.add_parameter( name, value )
         current_user_roles = trans.get_current_user_roles()
@@ -413,7 +470,10 @@ class DefaultToolAction( object ):
             if dataset:
                 if not trans.app.security_agent.can_access_dataset( current_user_roles, dataset.dataset ):
                     raise Exception("User does not have permission to use a dataset (%s) provided for input." % data.id)
-                job.add_input_dataset( name, dataset )
+                if dataset in trans.sa_session:
+                    job.add_input_dataset( name, dataset=dataset )
+                else:
+                    job.add_input_dataset( name, dataset_id=dataset.id )
             else:
                 job.add_input_dataset( name, None )
         log.info("Verified access to datasets %s" % access_timer)
@@ -562,7 +622,7 @@ def filter_output(output, incoming):
     return False
 
 
-def determine_output_format(output, parameter_context, input_datasets, random_input_ext):
+def determine_output_format(output, parameter_context, input_datasets, input_dataset_collections, random_input_ext):
     """ Determines the output format for a dataset based on an abstract
     description of the output (galaxy.tools.ToolOutput), the parameter
     wrappers, a map of the input datasets (name => HDA), and the last input
@@ -575,13 +635,31 @@ def determine_output_format(output, parameter_context, input_datasets, random_in
     ext = output.format
     if ext == "input":
         ext = random_input_ext
-    if output.format_source is not None and output.format_source in input_datasets:
+    format_source = output.format_source
+    if format_source is not None and format_source in input_datasets:
         try:
             input_dataset = input_datasets[output.format_source]
             input_extension = input_dataset.ext
             ext = input_extension
         except Exception:
             pass
+    elif format_source is not None:
+        if re.match(r"^[^\[\]]*\[[^\[\]]*\]$", format_source):
+            collection_name, element_index = format_source[0:-1].split("[")
+            # Treat as json to interpret "forward" vs 0 with type
+            # Make it feel more like Python, single quote better in XML also.
+            element_index = element_index.replace("'", '"')
+            element_index = json.loads(element_index)
+
+            if collection_name in input_dataset_collections:
+                try:
+                    input_collection = input_dataset_collections[collection_name][0][0]
+                    input_dataset = input_collection.collection[element_index].element_object
+                    input_extension = input_dataset.ext
+                    ext = input_extension
+                except Exception, e:
+                    log.debug("Exception while trying to determine format_source: %s", e)
+                    pass
 
     # process change_format tags
     if output.change_format is not None:

@@ -1,7 +1,9 @@
 define([
+    'libs/underscore',
+    'libs/backbone',
     'utils/add-logging',
     'utils/localization'
-], function( addLogging, _l ){
+], function( _, Backbone, addLogging, _l ){
 //==============================================================================
 /** @class Mixin to add logging capabilities to an object.
  *      Designed to allow switching an objects log output off/on at one central
@@ -166,7 +168,7 @@ function mixin( mixinHash1, /* mixinHash2, etc: ... variadic */ propsHash ){
  * @example:
  *      see hda-model for searchAttribute and searchAliases definition examples.
  *      see history-contents.matches for how collections are filtered
- *      and see readonly-history-panel.searchHdas for how user input is connected to the filtering
+ *      and see readonly-history-view.searchHdas for how user input is connected to the filtering
  */
 var SearchableModelMixin = {
 
@@ -463,7 +465,11 @@ var SelectableViewMixin = {
         this.selectable = true;
         this.trigger( 'selectable', true, this );
         this._renderSelected();
-        this.$selector().show( speed );
+        if( speed ){
+            this.$selector().show( speed );
+        } else {
+            this.$selector().show();
+        }
     },
 
     /** remove the selector control
@@ -475,7 +481,11 @@ var SelectableViewMixin = {
         // reverse the process from showSelect
         this.selectable = false;
         this.trigger( 'selectable', false, this );
-        this.$selector().hide( speed );
+        if( speed ){
+            this.$selector().hide( speed );
+        } else {
+            this.$selector().hide();
+        }
     },
 
     /** Toggle whether the view is selected */

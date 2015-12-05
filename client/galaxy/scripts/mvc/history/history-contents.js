@@ -71,7 +71,7 @@ var HistoryContents = Backbone.Collection
     },
 
     /** root api url */
-    urlRoot : galaxy_config.root + 'api/histories',
+    urlRoot : Galaxy.root + 'api/histories',
     /** complete api url */
     url : function(){
         return this.urlRoot + '/' + this.historyId + '/contents';

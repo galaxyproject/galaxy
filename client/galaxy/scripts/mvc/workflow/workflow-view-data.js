@@ -77,18 +77,20 @@ define(['mvc/workflow/workflow-globals'], function( Globals ){
             this.output = options.output;
 
             var view = this;
+            var node = this.node;
             this.$el
                 .attr( "class", 'callout '+this.label )
                 .css( { display: 'none' } )
                 .append(
                     $("<div class='buttons'></div>").append(
-                        $("<img/>").attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png').click( function() {
-                            if ($.inArray(view.output.name, view.node.workflow_outputs) != -1){
-                                view.node.workflow_outputs.splice($.inArray(view.output.name, view.node.workflow_outputs), 1);
-                                view.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png');
+                        $("<img/>").attr('src', Galaxy.root + 'static/images/fugue/asterisk-small-outline.png').click( function() {
+                            var outputName = view.output.name;
+                            if( node.isWorkflowOutput( outputName ) ) {
+                                node.removeWorkflowOutput( outputName );
+                                view.$('img').attr('src', Galaxy.root + 'static/images/fugue/asterisk-small-outline.png');
                             }else{
-                                view.node.workflow_outputs.push(view.output.name);
-                                view.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small.png');
+                                node.addWorkflowOutput( outputName );
+                                view.$('img').attr('src', Galaxy.root + 'static/images/fugue/asterisk-small.png');
                             }
                             Globals.workflow.has_changes = true;
                             Globals.canvas_manager.draw_overview();
@@ -105,15 +107,15 @@ define(['mvc/workflow/workflow-globals'], function( Globals ){
         },
 
         resetImage: function() {
-            if ($.inArray( this.output.name, this.node.workflow_outputs) === -1){
-                this.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png');
+            if ( ! this.node.isWorkflowOutput( this.output.name ) ) {
+                this.$('img').attr('src', Galaxy.root + 'static/images/fugue/asterisk-small-outline.png');
             } else{
-                this.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small.png');
+                this.$('img').attr('src', Galaxy.root + 'static/images/fugue/asterisk-small.png');
             }
         },
 
         hoverImage: function() {
-            this.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-yellow.png');
+            this.$('img').attr('src', Galaxy.root + 'static/images/fugue/asterisk-small-yellow.png');
         }
     });
 

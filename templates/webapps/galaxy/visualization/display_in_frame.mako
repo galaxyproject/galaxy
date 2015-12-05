@@ -14,9 +14,6 @@
         });
     </script>
 
-    <!--[if lt IE 9]>
-      <script type='text/javascript' src="${h.url_for('/static/scripts/libs/IE/excanvas.js')}"></script>
-    <![endif]-->
 </%def>
 
 <%def name="stylesheets()">

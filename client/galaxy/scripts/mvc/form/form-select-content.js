@@ -1,7 +1,5 @@
 // dependencies
-define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
-        function(Utils, Ui, Tabs) {
-
+define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'], function(Utils, Ui, Tabs) {
 // hda/hdca content selector ui element
 var View = Backbone.View.extend({
     // initialize
@@ -101,8 +99,11 @@ var View = Backbone.View.extend({
                 value   : 'collection',
                 tooltip : 'Dataset collection'
             });
+            var multiple = this.mode == 'multiple';
             this.select_collection = new Ui.Select.View({
                 error_text  : hdca_error,
+                multiple    : multiple,
+                searchable  : false,
                 optional    : options.optional,
                 onchange    : function() {
                     self.trigger('change');
@@ -222,11 +223,11 @@ var View = Backbone.View.extend({
                     for (var i in new_value.values) {
                         list.push(new_value.values[i].id);
                     }
-                    
+
                     // identify suitable select field
                     if (new_value && new_value.values.length > 0 && new_value.values[0].src == 'hdca') {
                         this.current = 'collection';
-                        this.select_collection.value(list[0]);
+                        this.select_collection.value(list);
                     } else {
                         if (this.mode == 'multiple') {
                             this.current = 'multiple';

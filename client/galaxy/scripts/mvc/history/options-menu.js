@@ -11,7 +11,7 @@ var menu = [
     },
     {
         html    : _l( 'Saved Histories' ),
-        href    : 'history/list'
+        href    : 'history/list',
     },
     {
         html    : _l( 'Histories Shared with Me' ),
@@ -19,7 +19,7 @@ var menu = [
     },
 
     {
-        html    : _l( 'Current History' ),
+        html    : _l( 'History Actions' ),
         header  : true,
         anon    : true
     },
@@ -29,32 +29,56 @@ var menu = [
             if( Galaxy && Galaxy.currHistoryPanel ){
                 Galaxy.currHistoryPanel.createNewHistory();
             }
-        }
+        },
     },
     {
         html    : _l( 'Copy History' ),
-        href    : 'history/copy'
-    },
-    {
-        html    : _l( 'Copy Datasets' ),
-        href    : 'dataset/copy_datasets'
+        href    : 'history/copy',
     },
     {
         html    : _l( 'Share or Publish' ),
-        href    : 'history/sharing'
+        href    : 'history/sharing',
+    },
+    {
+        html    : _l( 'Show Structure' ),
+        href    : 'history/display_structured',
+        anon    : true,
     },
     {
         html    : _l( 'Extract Workflow' ),
-        href    : 'workflow/build_from_current_history'
+        href    : 'workflow/build_from_current_history',
+    },
+    {
+        html    : _l( 'Delete' ),
+        confirm : _l( 'Really delete the current history?' ),
+        href    : 'history/delete_current',
+    },
+    {
+        html    : _l( 'Delete Permanently' ),
+        confirm : _l( 'Really delete the current history permanently? This cannot be undone.' ),
+        href    : 'history/delete_current?purge=True',
+        purge   : true,
+        anon    : true,
+    },
+
+
+    {
+        html    : _l( 'Dataset Actions' ),
+        header  : true,
+        anon    : true
+    },
+    {
+        html    : _l( 'Copy Datasets' ),
+        href    : 'dataset/copy_datasets',
     },
     {
         html    : _l( 'Dataset Security' ),
-        href    : 'root/history_set_default_permissions'
+        href    : 'root/history_set_default_permissions',
     },
     {
         html    : _l( 'Resume Paused Jobs' ),
         href    : 'history/resume_paused_jobs?current=True',
-        anon    : true
+        anon    : true,
     },
     {
         html    : _l( 'Collapse Expanded Datasets' ),
@@ -62,7 +86,7 @@ var menu = [
             if( Galaxy && Galaxy.currHistoryPanel ){
                 Galaxy.currHistoryPanel.collapseAll();
             }
-        }
+        },
     },
     {
         html    : _l( 'Unhide Hidden Datasets' ),
@@ -80,7 +104,7 @@ var menu = [
                         console.error( arguments );
                     });
             }
-        }
+        },
     },
     {
         html    : _l( 'Delete Hidden Datasets' ),
@@ -99,41 +123,30 @@ var menu = [
                         console.error( arguments );
                     });
             }
-        }
+        },
     },
     {
         html    : _l( 'Purge Deleted Datasets' ),
         confirm : _l( 'Really delete all deleted datasets permanently? This cannot be undone.' ),
         href    : 'history/purge_deleted_datasets',
         purge   : true,
-        anon    : true
+        anon    : true,
+    },
+
+
+    {
+        html    : _l( 'Downloads' ),
+        header  : true
     },
     {
-        html    : _l( 'Show Structure' ),
-        href    : 'history/display_structured',
-        anon    : true
-    },
-    {
-        html    : _l( 'Export Citations' ),
+        html    : _l( 'Export Tool Citations' ),
         href    : 'history/citations',
-        anon    : true
+        anon    : true,
     },
     {
-        html    : _l( 'Export to File' ),
+        html    : _l( 'Export History to File' ),
         href    : 'history/export_archive?preview=True',
-        anon    : true
-    },
-    {
-        html    : _l( 'Delete' ),
-        confirm : _l( 'Really delete the current history?' ),
-        href    : 'history/delete_current'
-    },
-    {
-        html    : _l( 'Delete Permanently' ),
-        confirm : _l( 'Really delete the current history permanently? This cannot be undone.' ),
-        href    : 'history/delete_current?purge=True',
-        purge   : true,
-        anon    : true
+        anon    : true,
     },
 
     {
@@ -142,7 +155,7 @@ var menu = [
     },
     {
         html    : _l( 'Import from File' ),
-        href    : 'history/import_archive'
+        href    : 'history/import_archive',
     }
 ];
 
@@ -160,6 +173,7 @@ function buildMenu( isAnon, purgeAllowed, urlRoot ){
             menuOption.href = urlRoot + menuOption.href;
             menuOption.target = 'galaxy_main';
         }
+
         if( menuOption.confirm ){
             menuOption.func = function(){
                 if( confirm( menuOption.confirm ) ){
@@ -175,8 +189,7 @@ var create = function( $button, options ){
     options = options || {};
     var isAnon = options.anonymous === undefined? true : options.anonymous,
         purgeAllowed = options.purgeAllowed || false,
-        root = options.root || ( ( Galaxy && Galaxy.options )? Galaxy.options.root: '/' ),
-        menu = buildMenu( isAnon, purgeAllowed, root );
+        menu = buildMenu( isAnon, purgeAllowed, Galaxy.root );
     //console.debug( 'menu:', menu );
     return new PopupMenu( $button, menu );
 };

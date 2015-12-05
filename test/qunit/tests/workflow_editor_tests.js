@@ -36,7 +36,7 @@ define([
         // build app
         return new App({
             id      : null,
-            urls    : { get_datatypes : galaxy_config.root + 'api/datatypes/mapping' }
+            urls    : { get_datatypes : Galaxy.root + 'api/datatypes/mapping' }
         });
     };
 
@@ -367,7 +367,7 @@ define([
                 tool_errors: false,
                 tooltip: "tool tooltip",
                 annotation: "tool annotation",
-                workflow_outputs: [ "out1" ],
+                workflow_outputs: [ {"output_name": "out1"} ],
             };
             node.init_field_data( data );
             equal( node.type, "tool" );
@@ -377,7 +377,7 @@ define([
             equal( node.tooltip, "tool tooltip" );
             equal( node.annotation, "tool annotation" );
             deepEqual( node.post_job_actions, {} );
-            deepEqual( node.workflow_outputs, [ "out1" ] );
+            deepEqual( node.workflow_outputs, [  {"output_name": "out1"} ] );
         } );
     } );
 
@@ -480,7 +480,7 @@ define([
 
             var outputTerminal = new Terminals.OutputTerminal( { name: "TestOuptut", datatypes: [ outputType ] } );
             outputTerminal.node = { markChanged: function() {}, post_job_actions: [], hasMappedOverInputTerminals: function() { return false; }, hasConnectedOutputTerminals: function() { return true; } };
-            outputTerminal.terminalMapping = { disableMapOver: function() {}, mapOver: Terminals.NULL_COLLECTION_TYPE_DESCRIPTION }; 
+            outputTerminal.terminalMapping = { disableMapOver: function() {}, mapOver: Terminals.NULL_COLLECTION_TYPE_DESCRIPTION };
             var c = new Connector( outputTerminal, terminal );
 
             return c;
@@ -860,7 +860,7 @@ define([
             }
 
             ok( inputTerminal.attachable( outputTerminal ) );
-            
+
             // Go further... make sure datatypes are being enforced
             inputTerminal.datatypes = [ "bam" ];
             outputTerminal.datatypes = [ "txt" ];

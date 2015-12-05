@@ -44,6 +44,15 @@ new_file_path = database/tmp
 # File containing old-style genome builds
 #builds_file_path = tool-data/shared/ucsc/builds.txt
 
+# Format string used when showing date and time information.
+# The string may contain:
+# - the directives used by Python time.strftime() function (see
+#   https://docs.python.org/2/library/time.html#time.strftime ),
+# - $locale (complete format string for the server locale),
+# - $iso8601 (complete format string as specified by ISO 8601 international
+#   standard).
+# pretty_datetime_format = $locale (UTC)
+
 # Session support (beaker)
 use_beaker_session = True
 session_type = memory

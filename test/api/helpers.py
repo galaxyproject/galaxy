@@ -70,10 +70,14 @@ class BaseDatasetPopulator( object ):
     Galaxy - implementations must implement _get and _post.
     """
 
-    def new_dataset( self, history_id, content='TestData123', **kwds ):
+    def new_dataset( self, history_id, content='TestData123', wait=False, **kwds ):
         payload = self.upload_payload( history_id, content, **kwds )
-        run_response = self._post( "tools", data=payload )
-        return run_response.json()["outputs"][0]
+        run_response = self._post( "tools", data=payload ).json()
+        if wait:
+            job = run_response["jobs"][0]
+            self.wait_for_job(job["id"])
+            self.wait_for_history(history_id)
+        return run_response["outputs"][0]
 
     def wait_for_history( self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
         try:

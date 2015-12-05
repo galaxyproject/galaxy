@@ -231,12 +231,17 @@ class WorkflowProgress( object ):
         remaining_steps = []
         step_invocations_by_id = self.workflow_invocation.step_invocations_by_step_id()
         for step in steps:
+            step_id = step.id
             if not hasattr( step, 'module' ):
                 self.module_injector.inject( step )
-                runtime_state = step_states[ step.id ].value
+                if step_id not in step_states:
+                    template = "Workflow invocation [%s] has no step state for step id [%s]. States are [%s]."
+                    message = template % (self.workflow_invocation.id, step_id, step_states)
+                    raise Exception(message)
+                runtime_state = step_states[ step_id ].value
                 step.state = step.module.recover_runtime_state( runtime_state )
 
-            invocation_steps = step_invocations_by_id.get( step.id, None )
+            invocation_steps = step_invocations_by_id.get( step_id, None )
             if invocation_steps:
                 self._recover_mapping( step, invocation_steps )
             else:
@@ -263,7 +268,12 @@ class WorkflowProgress( object ):
         return replacement
 
     def replacement_for_connection( self, connection ):
-        step_outputs = self.outputs[ connection.output_step.id ]
+        output_step_id = connection.output_step.id
+        if output_step_id not in self.outputs:
+            template = "No outputs found for step id %s, outputs are %s"
+            message = template % (output_step_id, self.outputs)
+            raise Exception(message)
+        step_outputs = self.outputs[ output_step_id ]
         if step_outputs is STEP_OUTPUT_DELAYED:
             raise modules.DelayedWorkflowEvaluation()
         output_name = connection.output_name
@@ -290,7 +300,12 @@ class WorkflowProgress( object ):
             outputs = {}
 
         if self.inputs_by_step_id:
-            outputs[ 'output' ] = self.inputs_by_step_id[ step.id ]
+            step_id = step.id
+            if step_id not in self.inputs_by_step_id:
+                template = "Step with id %s not found in inputs_step_id (%s)"
+                message = template % (step_id, self.inputs_by_step_id)
+                raise ValueError(message)
+            outputs[ 'output' ] = self.inputs_by_step_id[ step_id ]
 
         self.set_step_outputs( step, outputs )
 

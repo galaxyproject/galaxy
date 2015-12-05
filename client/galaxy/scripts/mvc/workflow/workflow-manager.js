@@ -77,12 +77,7 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
                         }
                         if (using_workflow_outputs){
                             $.each(node.output_terminals, function(ot_id, ot){
-                                var create_pja = true;
-                                $.each(node.workflow_outputs, function(i, wo_name){
-                                    if (ot.name === wo_name){
-                                        create_pja = false;
-                                    }
-                                });
+                                var create_pja = !node.isWorkflowOutput(ot.name);
                                 if (create_pja === true){
                                     node_changed = true;
                                     var pja = {
@@ -121,8 +116,8 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
                 if (node.post_job_actions){
                     $.each( node.post_job_actions, function ( i, act ) {
                         var pja = {
-                            action_type : act.action_type, 
-                            output_name : act.output_name, 
+                            action_type : act.action_type,
+                            output_name : act.output_name,
                             action_arguments : act.action_arguments
                         }
                         post_job_actions[ act.action_type + act.output_name ] = null;
@@ -203,9 +198,9 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
                     // Ensure that every output terminal has a WorkflowOutput or HideDatasetAction.
                     $.each(node.output_terminals, function(ot_id, ot){
                         if(node.post_job_actions['HideDatasetAction'+ot.name] === undefined){
-                            node.workflow_outputs.push(ot.name);
+                            node.addWorkflowOutput(ot.name);
                             callout = $(node.element).find('.callout.'+ot.name);
-                            callout.find('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small.png');
+                            callout.find('img').attr('src', Galaxy.root + 'static/images/fugue/asterisk-small.png');
                             wf.has_changes = true;
                         }
                     });
@@ -285,7 +280,7 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
                     if ( n_pred[ pred_k ] == 0 ) {
                         level_parents.push( pred_k );
                     }
-                }        
+                }
                 if ( level_parents.length == 0 ) {
                     break;
                 }
@@ -307,7 +302,7 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
             // Layout each level
             var all_nodes = this.nodes;
             var h_pad = 80; v_pad = 30;
-            var left = h_pad;        
+            var left = h_pad;
             $.each( node_ids_by_level, function( i, ids ) {
                 // We keep nodes in the same order in a level to give the user
                 // some control over ordering

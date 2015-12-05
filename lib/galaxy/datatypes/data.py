@@ -343,7 +343,7 @@ class Data( object ):
                 self._clean_and_set_mime_type( trans, mime )
                 return open( file_path )
             else:
-                return trans.show_error_message( "Could not find '%s' on the extra files path %s." % ( filename, file_path ) )
+                return paste.httpexceptions.HTTPNotFound( "Could not find '%s' on the extra files path %s." % ( filename, file_path ) )
         self._clean_and_set_mime_type( trans, data.get_mime() )
 
         trans.log_event( "Display dataset id: %s" % str( data.id ) )
