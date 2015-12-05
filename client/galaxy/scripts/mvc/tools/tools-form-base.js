@@ -99,7 +99,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     self._buildForm(new_model['tool_model'] || new_model);
                     !hide_message && self.form.message.update({
                         status      : 'success',
-                        message     : 'Now you are using \'' + self.options.name + '\' version ' + self.options.version + '.',
+                        message     : 'Now you are using \'' + self.options.name + '\' version ' + self.options.version + ', id \'' + self.options.id + '\'.',
                         persistent  : false
                     });
                     Galaxy.emit.debug('tools-form-base::initialize()', 'Initial tool model ready.', new_model);

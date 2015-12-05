@@ -2565,18 +2565,17 @@ class Tool( object, Dictifiable ):
                         # for some reason jobs don't always keep track of the tool version.
                         message = ''
                     else:
-                        message = 'This job was initially run with tool version "%s", which is currently not available.  ' % tool_version
+                        message = 'This job was run with tool version "%s", which is not available.  ' % tool_version
                         if len( tools ) > 1:
-                            message += 'You can re-run the job with the selected tool or choose another derivation of the tool.'
+                            message += 'You can re-run the job with the selected tool or choose another version of the tool.'
                         else:
-                            message += 'You can re-run the job with this tool version, which is a derivation of the original tool.'
+                            message += 'You can re-run the job with this tool version, which is a different version of the original tool.'
                 else:
+                    message = 'This job was run with tool id "%s", version "%s", which is not available.  ' % ( tool_id, tool_version )
                     if len( tools ) > 1:
-                        message = 'This job was initially run with tool version "%s", which is currently not available.  ' % tool_version
-                        message += 'You can re-run the job with the selected tool or choose another derivation of the tool.'
+                        message += 'You can re-run the job with the selected tool id "%s" or choose another derivation of the tool.' % self.id
                     else:
-                        message = 'This job was initially run with tool id "%s", version "%s", which is ' % ( tool_id, tool_version )
-                        message += 'currently not available.  You can re-run the job with this tool, which is a derivation of the original tool.'
+                        message += 'You can re-run the job with tool id "%s", which is a derivation of the original tool.' % self.id
         except Exception, e:
             raise exceptions.MessageException( str( e ) )
         return message
