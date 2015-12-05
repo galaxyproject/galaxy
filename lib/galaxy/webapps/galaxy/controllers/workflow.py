@@ -613,7 +613,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         return trans.fill_template( "workflow/editor.mako", stored=stored, annotation=self.get_item_annotation_str( trans.sa_session, trans.user, stored ) )
 
     @web.json
-    def editor_form_post( self, trans, type='tool', tool_id=None, annotation=None, **incoming ):
+    def editor_form_post( self, trans, type='tool', tool_id=None, annotation=None, label=None, **incoming ):
         """
         Accepts a tool state and incoming values, and generates a new tool
         form and some additional information, packed into a json dictionary.
@@ -625,12 +625,14 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         module = module_factory.from_dict( trans, {
             'type': type,
             'tool_id': tool_id,
-            'tool_state': tool_state
+            'tool_state': tool_state,
+            'label': label or None,
         } )
         # update module state
         module.update_state( incoming )
         if type == 'tool':
             return {
+                'label': module.label,
                 'tool_state': module.get_state(),
                 'data_inputs': module.get_data_inputs(),
                 'data_outputs': module.get_data_outputs(),
@@ -641,6 +643,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             }
         else:
             return {
+                'label': module.label,
                 'tool_state': module.get_state(),
                 'data_inputs': module.get_data_inputs(),
                 'data_outputs': module.get_data_outputs(),

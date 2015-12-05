@@ -1,8 +1,15 @@
 <form name="${form.name}" action="${h.url_for( controller='workflow', action='editor_form_post' )}" method="post">
+    <%
+    label = module.label
+    if label is not None:
+        title = label
+    else:
+        title = form.title
+    %>
     <div class="ui-portlet-narrow">
         <div class="portlet-header">
           <div class="portlet-title">
-            <span class="portlet-title-text"><b>${form.title}</b></span>
+            <span class="portlet-title-text"><b>${title}</b></span>
           </div>
         </div>
         <div class="portlet-content">
@@ -10,6 +17,7 @@
             <div class="ui-margin-top"></div>
             <div>
             <input type="hidden" name="type" value="${module.type}" />
+            <input type="hidden" name="label" value="${label or ''}" />
             <table class="ui-table-plain">
               <thead></thead>
               <tbody>

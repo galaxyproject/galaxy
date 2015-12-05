@@ -200,6 +200,7 @@ class SimpleWorkflowModule( WorkflowModule ):
     def new( Class, trans, content_id=None ):
         module = Class( trans )
         module.state = Class.default_state()
+        module.label = None
         return module
 
     @classmethod
@@ -207,12 +208,14 @@ class SimpleWorkflowModule( WorkflowModule ):
         module = Class( trans )
         state = loads( d["tool_state"] )
         module.recover_state( state )
+        module.label = d.get("label", None) or None
         return module
 
     @classmethod
     def from_workflow_step( Class, trans, step ):
         module = Class( trans )
         module.recover_state( step.tool_inputs )
+        module.label = step.label
         return module
 
     @classmethod
@@ -511,6 +514,7 @@ class ToolModule( WorkflowModule ):
             error_message = "Attempted to create new workflow module for invalid tool_id, no tool with id - %s." % content_id
             raise Exception( error_message )
         module.state = module.tool.new_state( trans )
+        module.label = None
         return module
 
     @classmethod
@@ -519,6 +523,7 @@ class ToolModule( WorkflowModule ):
         tool_version = str( d.get( 'tool_version', None ) )
         module = Class( trans, tool_id, tool_version=tool_version )
         module.state = galaxy.tools.DefaultToolState()
+        module.label = d.get("label", None) or None
         if module.tool is not None:
             if d.get('tool_version', 'Unspecified') != module.get_tool_version():
                 message = "%s: using version '%s' instead of version '%s' indicated in this workflow." % ( tool_id, d.get( 'tool_version', 'Unspecified' ), module.get_tool_version() )
@@ -555,6 +560,7 @@ class ToolModule( WorkflowModule ):
             module.recover_state( step.tool_inputs )
             module.errors = step.tool_errors
             module.workflow_outputs = step.workflow_outputs
+            module.label = step.label or None
             pjadict = {}
             for pja in step.post_job_actions:
                 pjadict[pja.action_type] = pja
@@ -730,6 +736,7 @@ class ToolModule( WorkflowModule ):
         # set. We also need to make sure all datasets have a dummy value
         # for dependencies to see
 
+        self.label = incoming.get("label", None) or None
         self.post_job_actions = ActionBox.handle_incoming(incoming)
 
         make_runtime_key = incoming.get( 'make_runtime', None )
