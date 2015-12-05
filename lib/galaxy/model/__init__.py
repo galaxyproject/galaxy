@@ -3471,6 +3471,7 @@ class Workflow( object, Dictifiable ):
 
     dict_collection_visible_keys = ( 'name', 'has_cycles', 'has_errors' )
     dict_element_visible_keys = ( 'name', 'has_cycles', 'has_errors' )
+    input_step_types = ['data_input', 'data_collection_input']
 
     def __init__( self, uuid=None ):
         self.user = None
@@ -3496,6 +3497,32 @@ class Workflow( object, Dictifiable ):
         rval = super( Workflow, self ).to_dict( view=view, value_mapper=value_mapper )
         rval['uuid'] = ( lambda uuid: str( uuid ) if uuid else None )( self.uuid )
         return rval
+
+    @property
+    def steps_by_id( self ):
+        steps = {}
+        for step in self.steps:
+            step_id = step.id
+            steps[ step_id ] = step
+        return steps
+
+    def step_by_index(self, order_index):
+        for step in self.steps:
+            if order_index == step.order_index:
+                return step
+        raise KeyError("Workflow has no step with order_index '%s'" % order_index)
+
+    @property
+    def input_steps(self):
+        for step in self.steps:
+            if step.type in Workflow.input_step_types:
+                yield step
+
+    @property
+    def workflow_outputs(self):
+        for step in self.steps:
+            for workflow_output in step.workflow_outputs:
+                yield workflow_output
 
 
 class WorkflowStep( object ):
