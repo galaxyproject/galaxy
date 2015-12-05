@@ -335,7 +335,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 data['upgrade_messages'][step.order_index] = upgrade_message.values()
                 # Dispay version/tool_id changes
                 data['upgrade_messages'] = [step.order_index][module.tool.name] = "\n".join( module.version_changes )
-            elif module.version_changes:
+            elif (hasattr(module, "version_changes")) and (module.version_changes):
                 data['upgrade_messages'] = {step.order_index: {module.tool.name: "\n".join( module.version_changes )}}
             # Get user annotation.
             step_annotation = self.get_item_annotation_obj( trans.sa_session, trans.user, step )
