@@ -429,11 +429,13 @@ class WorkflowContentsManager(UsesAnnotations):
                         action_arguments=pja.action_arguments
                     )
                 step_dict['post_job_actions'] = pja_dict
-                # workflow outputs
-                outputs = []
-                for output in step.workflow_outputs:
-                    outputs.append({"output_name": output.output_name})
-                step_dict['workflow_outputs'] = outputs
+
+            # workflow outputs
+            outputs = []
+            for output in step.workflow_outputs:
+                outputs.append({"output_name": output.output_name})
+            step_dict['workflow_outputs'] = outputs
+
             # Encode input connections as dictionary
             input_conn_dict = {}
             for conn in input_connections:
