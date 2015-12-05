@@ -91,7 +91,7 @@ def _python_to_workflow(as_python, conversion_context):
         as_python["steps"] = steps_as_dict
         steps = steps_as_dict
 
-    for i, step in steps.iteritems():
+    for step in steps.itervalues():
         step_type = step.get("type", None)
         if "run" in step:
             if step_type is not None:
@@ -113,7 +113,7 @@ def _python_to_workflow(as_python, conversion_context):
             run_to_step_function(conversion_context, step, run_action)
             del step["run"]
 
-    for i, step in steps.iteritems():
+    for step in steps.itervalues():
         step_type = step.get("type", "tool")
         step_type = STEP_TYPE_ALIASES.get(step_type, step_type)
         if step_type not in STEP_TYPES:
