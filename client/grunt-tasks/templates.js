@@ -19,13 +19,10 @@ module.exports = function( grunt ){
                 ext : '.js'
             }],
             options : {
-                namespace : 'Handlebars.templates',
-                // generates the key under the namespace above where the template fns are accessed
-                processName : function( filepath ){
-                    filepath = filepath.match( /.*\/(\w+)\.handlebars/ ).pop();
-                    return filepath;
-                },
-                wrapped : true
+                // namespace needs to be false to return a fn (instead of adding to a global namespace)
+                namespace : false,
+                // define truthy amd here - if string, this will be the modules require'd
+                amd : 'libs/handlebars.runtime',
             }
         }
     });

@@ -1,5 +1,5 @@
 // dependencies
-define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'mvc/tools/tools-template'],
+define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'mvc/tool/tools-template'],
         function(Utils, Ui, Tabs, ToolTemplate) {
 
 // hda/hdca content selector ui element
@@ -222,7 +222,7 @@ var View = Backbone.View.extend({
                     for (var i in new_value.values) {
                         list.push(new_value.values[i].id);
                     }
-                    
+
                     // identify suitable select field
                     if (new_value && new_value.values.length > 0 && new_value.values[0].src == 'hdca') {
                         this.current = 'collection';

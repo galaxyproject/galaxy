@@ -25,22 +25,41 @@
     self.galaxy_config.update(config)
 %>
 
+<%def name="stylesheets()">
+   ## load default style
+   ${h.css("base")}
+
+   ## modify default style
+    <style type="text/css">
+    #center {
+        %if not self.galaxy_config['left_panel']:
+            left: 0 !important;
+        %endif
+        %if not self.galaxy_config['right_panel']:
+            right: 0 !important;
+        %endif
+    }
+    </style>
+
+    <style type="text/css">
+        %if self.galaxy_config['message_box']:
+            #left, #left-border, #center, #right-border, #right {
+                top: 64px;
+            }
+        %endif
+    </style>
+
+</%def>
+
 <%def name="javascripts()">
 
     ## load jscript libraries
     ${h.js(
-        'libs/jquery/jquery',
-        'libs/jquery/jquery.migrate',
+        ## TODO: remove when all libs are required directly in modules
+        'bundled/libs.bundled',
         'libs/jquery/jquery-ui',
-        "libs/jquery/select2",
-        'libs/bootstrap',
-        'libs/underscore',
-        'libs/backbone/backbone',
-        'libs/handlebars.runtime',
         'libs/d3',
         'libs/require',
-        'galaxy.base',
-        'galaxy.panels'
     )}
 
     ## send errors to Sntry server if configured
@@ -68,42 +87,38 @@
         };
     </script>
 
-    ## load default style
-    ${h.css("base")}
-
-    ## modify default style
-    <style type="text/css">
-    #center {
-        %if not self.galaxy_config['left_panel']:
-            left: 0 !important;
-        %endif
-            %if not self.galaxy_config['right_panel']:
-            right: 0 !important;
-        %endif
-    }
-    %if self.galaxy_config['message_box']:
-        #left, #left-border, #center, #right-border, #right
-        {
-            top: 64px;
-        }
-    %endif
-    </style>
-
     ## default script wrapper
     <script type="text/javascript">
         ## configure require
+        // due to our using both script tags and require, we need to access the same jq in both for plugin retention
+        define( 'jquery', [], function(){ return jQuery; })
         require.config({
             baseUrl: "${h.url_for('/static/scripts') }",
             shim: {
                 "libs/underscore": { exports: "_" },
+                "libs/backbone": {
+                    deps: [ 'jquery', 'libs/underscore' ],
+                    exports: "Backbone"
+                },
                 "libs/d3": { exports: "d3" },
-                "libs/backbone/backbone": { exports: "Backbone" },
             },
+            // this section allows us to require the compiled tool menu handlebars templates from compiled/ using requirejs
+            // even if they're formatted (with the extension) to load via handlebars-loader when using webpack
+            map: {
+                'mvc/tool/tools': {
+                    'templates/tool_form.handlebars'    : 'templates/compiled/tool_form',
+                    'templates/tool_search.handlebars'  : 'templates/compiled/tool_search',
+                    'templates/panel_section.handlebars': 'templates/compiled/panel_section',
+                    'templates/tool_link.handlebars'    : 'templates/compiled/tool_link',
+                },
+            },
+            // cache buster based on templated server (re)start time
             urlArgs: 'v=${app.server_starttime}'
         });
         var galaxy_config = ${ h.dumps( self.galaxy_config ) };
 
     </script>
+
 </%def>
 
 <%def name="javascript_app()">
@@ -141,17 +156,15 @@
     ## the panels, but do not change layout
     <script type="text/javascript">
 
-        ensure_dd_helper();
-
         ## configure left panel
         %if self.galaxy_config['left_panel']:
-            var lp = new Panel( { panel: $("#left"), center: $("#center"), drag: $("#left > .unified-panel-footer > .drag" ), toggle: $("#left > .unified-panel-footer > .panel-collapse" ) } );
+            var lp = new panels.LeftPanel({ el: '#left' });
             force_left_panel = function( x ) { lp.force_panel( x ) };
         %endif
 
         ## configure right panel
         %if self.galaxy_config['right_panel']:
-            var rp = new Panel( { panel: $("#right"), center: $("#center"), drag: $("#right > .unified-panel-footer > .drag" ), toggle: $("#right > .unified-panel-footer > .panel-collapse" ), right: true } );
+            var rp = new panels.RightPanel({ el: '#right' });
             window.handle_minwidth_hint = function( x ) { rp.handle_minwidth_hint( x ) };
             force_right_panel = function( x ) { rp.force_panel( x ) };
         %endif
@@ -174,7 +187,7 @@
         ## force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
         <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
 
-        ## load scripts
+        ${self.stylesheets()}
         ${self.javascripts()}
         ${self.javascript_app()}
     </head>
@@ -186,6 +199,7 @@
 
             ## master header
             %if self.galaxy_config['master']:
+                <div id="masthead" class="navbar navbar-fixed-top navbar-inverse"></div>
                 ${masthead.load()}
             %endif
 
@@ -238,8 +252,9 @@
                 </div>
             %endif
         </div>
+        <div id='dd-helper' style="display: none;"></div>
+        ## Scripts can be loaded later since they progressively add features to
+        ## the panels, but do not change layout
+        ${self.late_javascripts()}
     </body>
-    ## Scripts can be loaded later since they progressively add features to
-    ## the panels, but do not change layout
-    ${self.late_javascripts()}
 </html>

@@ -3,7 +3,7 @@
 
 <%def name="javascripts()">
    ${parent.javascripts()}
-   ${h.js("libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging" )}
+   ${h.js("libs/jquery/jquery.autocomplete")}
 </%def>
 
 <%def name="stylesheets()">
@@ -76,7 +76,7 @@
                             You are not authorized to move items into the selected data library
                         %endif
                     %endif
-                    %if source_library: 
+                    %if source_library:
                         <br/><br/>
                         %if target_library.id == source_library.id:
                             <a style="margin-left: 10px;" href="${h.url_for( controller='library_common', action='move_library_item', cntrller=cntrller, item_type=item_type, item_id=item_id, source_library_id=source_library_id, make_target_current=False, use_panels=use_panels, show_deleted=show_deleted )}">Choose another data library</a>

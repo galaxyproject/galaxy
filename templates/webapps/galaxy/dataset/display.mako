@@ -5,19 +5,12 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
+
     ## If data is chunkable, use JavaScript for display.
     %if item.datatype.CHUNKABLE:
 
     <script type="text/javascript">
-        require.config({
-            baseUrl: "${h.url_for('/static/scripts')}",
-            shim: {
-                "libs/backbone/backbone": { exports: "Backbone" },
-            },
-            urlArgs: 'v=${app.server_starttime}'
-        });
-
-        require(['mvc/data'], function(data) {
+        require(['mvc/dataset/data'], function(data) {
             //
             // Use tabular data display progressively by deleting data from page body
             // and then showing dataset view.

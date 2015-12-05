@@ -30,9 +30,9 @@ var LibraryToolbarView = Backbone.View.extend({
     var toolbar_template = this.templateToolBar();
     var is_admin = false;
     var is_anonym = true;
-    if ( Galaxy.currUser ){
-      is_admin = Galaxy.currUser.isAdmin();
-      is_anonym = Galaxy.currUser.isAnonymous();
+    if ( Galaxy.user ){
+      is_admin = Galaxy.user.isAdmin();
+      is_anonym = Galaxy.user.isAnonymous();
     }
     this.$el.html(toolbar_template( { admin_user: is_admin, anon_user: is_anonym } ) );
     if ( is_admin ){
@@ -46,7 +46,7 @@ var LibraryToolbarView = Backbone.View.extend({
   renderPaginator: function( options ){
     this.options = _.extend( this.options, options );
     var paginator_template = this.templatePaginator();
-    this.$el.find( '#library_paginator' ).html( paginator_template({ 
+    this.$el.find( '#library_paginator' ).html( paginator_template({
       show_page: parseInt( this.options.show_page ),
       page_count: parseInt( this.options.page_count ),
       total_libraries_count: this.options.total_libraries_count,

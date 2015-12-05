@@ -1,7 +1,6 @@
-this["Handlebars"] = this["Handlebars"] || {};
-this["Handlebars"]["templates"] = this["Handlebars"]["templates"] || {};
+define(['libs/handlebars.runtime'], function(Handlebars) {
 
-this["Handlebars"]["templates"]["tool_link"] = Handlebars.template({"1":function(depth0,helpers,partials,data) {
+return Handlebars.template({"1":function(depth0,helpers,partials,data) {
     var alias1=this.lambda, alias2=this.escapeExpression;
 
   return "<span class=\"label label-default label-"
@@ -27,4 +26,6 @@ this["Handlebars"]["templates"]["tool_link"] = Handlebars.template({"1":function
     + "</a>\n"
     + alias3(((helper = (helper = helpers.description || (depth0 != null ? depth0.description : depth0)) != null ? helper : alias1),(typeof helper === alias2 ? helper.call(depth0,{"name":"description","hash":{},"data":data}) : helper)))
     + "\n";
-},"useData":true});
+},"useData":true})
+
+});
