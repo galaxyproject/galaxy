@@ -77,17 +77,19 @@ define(['mvc/workflow/workflow-globals'], function( Globals ){
             this.output = options.output;
 
             var view = this;
+            var node = this.node;
             this.$el
                 .attr( "class", 'callout '+this.label )
                 .css( { display: 'none' } )
                 .append(
                     $("<div class='buttons'></div>").append(
                         $("<img/>").attr('src', Galaxy.root + 'static/images/fugue/asterisk-small-outline.png').click( function() {
-                            if ($.inArray(view.output.name, view.node.workflow_outputs) != -1){
-                                view.node.workflow_outputs.splice($.inArray(view.output.name, view.node.workflow_outputs), 1);
+                            var outputName = view.output.name;
+                            if( node.isWorkflowOutput( outputName ) ) {
+                                node.removeWorkflowOutput( outputName );
                                 view.$('img').attr('src', Galaxy.root + 'static/images/fugue/asterisk-small-outline.png');
                             }else{
-                                view.node.workflow_outputs.push(view.output.name);
+                                node.addWorkflowOutput( outputName );
                                 view.$('img').attr('src', Galaxy.root + 'static/images/fugue/asterisk-small.png');
                             }
                             Globals.workflow.has_changes = true;
@@ -105,7 +107,7 @@ define(['mvc/workflow/workflow-globals'], function( Globals ){
         },
 
         resetImage: function() {
-            if ($.inArray( this.output.name, this.node.workflow_outputs) === -1){
+            if ( ! this.node.isWorkflowOutput( this.output.name ) ) {
                 this.$('img').attr('src', Galaxy.root + 'static/images/fugue/asterisk-small-outline.png');
             } else{
                 this.$('img').attr('src', Galaxy.root + 'static/images/fugue/asterisk-small.png');

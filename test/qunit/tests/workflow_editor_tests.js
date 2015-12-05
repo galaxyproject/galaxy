@@ -367,7 +367,7 @@ define([
                 tool_errors: false,
                 tooltip: "tool tooltip",
                 annotation: "tool annotation",
-                workflow_outputs: [ "out1" ],
+                workflow_outputs: [ {"output_name": "out1"} ],
             };
             node.init_field_data( data );
             equal( node.type, "tool" );
@@ -377,7 +377,7 @@ define([
             equal( node.tooltip, "tool tooltip" );
             equal( node.annotation, "tool annotation" );
             deepEqual( node.post_job_actions, {} );
-            deepEqual( node.workflow_outputs, [ "out1" ] );
+            deepEqual( node.workflow_outputs, [  {"output_name": "out1"} ] );
         } );
     } );
 

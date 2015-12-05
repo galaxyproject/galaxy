@@ -301,7 +301,7 @@ function reset_tool_search( initValue ) {
                         for (var ot_key in node.output_terminals){
                             var output = node.output_terminals[ot_key];
                             // if (node.workflow_outputs[node.id + "|" + output.name]){
-                            if ($.inArray(output.name, node.workflow_outputs) != -1){
+                            if (node.isWorkflowOutput(output.name)) {
                                 new_content += "<p>"+output.name +"<input type='checkbox' name='"+ node.id + "|" + output.name +"' checked /></p>";
                             }
                             else{
@@ -314,16 +314,12 @@ function reset_tool_search( initValue ) {
                 $("#output-fill-area").html(new_content);
                 $("#output-fill-area input").bind('click', function(){
                     var node_id = this.name.split('|')[0];
+                    var workflowNode = this.workflow.nodes[node_id];
                     var output_name = this.name.split('|')[1];
                     if (this.checked){
-                        if($.inArray(output_name, self.workflow.nodes[node_id].workflow_outputs) == -1){
-                            self.workflow.nodes[node_id].workflow_outputs.push(output_name);
-                        }//else it's already in the array.  Shouldn't happen, but forget it.
+                        workflowNode.addWorkflowOutput(output_name);
                     }else{
-                        while ($.inArray(output_name, self.workflow.nodes[node_id].workflow_outputs) != -1){
-                            var ia = $.inArray(output_name, self.workflow.nodes[node_id].workflow_outputs);
-                            self.workflow.nodes[node_id].workflow_outputs = self.workflow.nodes[node_id].workflow_outputs.slice(0,ia).concat( self.workflow.nodes[node_id].workflow_outputs.slice(ia+1) );
-                        }
+                        workflowNode.removeWorkflowOutput(output_name);
                     }
                     self.workflow.has_changes = true;
                 });

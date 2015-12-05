@@ -77,12 +77,7 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
                         }
                         if (using_workflow_outputs){
                             $.each(node.output_terminals, function(ot_id, ot){
-                                var create_pja = true;
-                                $.each(node.workflow_outputs, function(i, wo_name){
-                                    if (ot.name === wo_name){
-                                        create_pja = false;
-                                    }
-                                });
+                                var create_pja = !node.isWorkflowOutput(ot.name);
                                 if (create_pja === true){
                                     node_changed = true;
                                     var pja = {
@@ -203,7 +198,7 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
                     // Ensure that every output terminal has a WorkflowOutput or HideDatasetAction.
                     $.each(node.output_terminals, function(ot_id, ot){
                         if(node.post_job_actions['HideDatasetAction'+ot.name] === undefined){
-                            node.workflow_outputs.push(ot.name);
+                            node.addWorkflowOutput(ot.name);
                             callout = $(node.element).find('.callout.'+ot.name);
                             callout.find('img').attr('src', Galaxy.root + 'static/images/fugue/asterisk-small.png');
                             wf.has_changes = true;

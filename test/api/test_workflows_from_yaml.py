@@ -1,5 +1,8 @@
+import os
 
 from .test_workflows import BaseWorkflowsApiTestCase
+
+WORKFLOWS_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 
 
 class WorkflowsFromYamlApiTestCase( BaseWorkflowsApiTestCase ):
@@ -12,6 +15,7 @@ class WorkflowsFromYamlApiTestCase( BaseWorkflowsApiTestCase ):
 class: GalaxyWorkflow
 steps:
   - type: input
+    label: the_input
   - tool_id: cat1
     state:
       input1:
@@ -21,6 +25,7 @@ steps:
       input1:
         $link: 1#out_file1
   - tool_id: random_lines1
+    label: random_line_label
     state:
       num_lines: 10
       input:
@@ -30,7 +35,24 @@ steps:
         seed: asdf
         __current_case__: 1
 """)
-        self._get("workflows/%s/download" % workflow_id).content
+        workflow = self._get("workflows/%s/download" % workflow_id).json()
+
+        tool_count = {'random_lines1': 0, 'cat1': 0}
+        input_found = False
+        for step in workflow['steps'].values():
+            step_type = step['type']
+            if step_type == "data_input":
+                assert step['label'] == 'the_input'
+                input_found = True
+            else:
+                tool_id = step['tool_id']
+                tool_count[tool_id] += 1
+                if tool_id == "random_lines1":
+                    assert step['label'] == "random_line_label"
+
+        assert input_found
+        assert tool_count['random_lines1'] == 1
+        assert tool_count['cat1'] == 2
 
 # FIXME:  This test fails on some machines due to (we're guessing) yaml loading
 # order being not guaranteed and inconsistent across platforms.  The workflow
@@ -86,6 +108,51 @@ test_data:
         assert details1["name"] == "the new value", details1
         details2 = self.dataset_populator.get_history_dataset_details(history_id, hid=3)
         assert details2["visible"]
+
+    def test_inputs_to_steps( self ):
+        history_id = self.dataset_populator.new_history()
+        self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+steps:
+  - tool_id: cat1
+    label: first_cat
+    state:
+      input1:
+        $link: input1
+      queries:
+        - input2:
+            $link: input1
+
+test_data:
+  input1: "hello world"
+""", history_id=history_id)
+        contents1 = self.dataset_populator.get_history_dataset_content(history_id)
+        self.assertEquals(contents1.strip(), "hello world\nhello world")
+
+    def test_outputs( self ):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+outputs:
+  - source: first_cat#out_file1
+steps:
+  - tool_id: cat1
+    label: first_cat
+    state:
+      input1:
+        $link: input1
+      queries:
+        - input2:
+            $link: input1
+
+test_data:
+  input1: "hello world"
+""")
+        workflow = self._get("workflows/%s/download" % workflow_id).json()
+        self.assertEquals(workflow["steps"]["1"]["workflow_outputs"][0]["output_name"], "out_file1")
 
     def test_pause( self ):
         workflow_id = self._upload_yaml_workflow("""
