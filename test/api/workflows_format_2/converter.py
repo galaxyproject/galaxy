@@ -148,14 +148,14 @@ def convert_inputs_to_steps(inputs, steps):
         if "label" not in input_def and "id" not in input_def:
             raise Exception("Input must define a label.")
 
-        raw_label = __rip_value(input_def, "label")
-        raw_id = __rip_value(input_def, "id")
+        raw_label = input_def.pop("label", None)
+        raw_id = input_def.pop("id", None)
         label = raw_label or raw_id
 
         if not label:
             raise Exception("Input label must not be empty.")
 
-        input_type = __rip_value(input_def, "type", "data")
+        input_type = input_def.pop("type", "data")
         if input_type in ["File", "data", "data_input"]:
             step_type = "data_input"
         elif input_type in ["collection", "data_collection", "data_collection_input"]:
@@ -378,15 +378,6 @@ def __join_prefix(prefix, key):
     else:
         new_key = key
     return new_key
-
-
-def __rip_value(input_def, key, default=None):
-    if key in input_def:
-        value = input_def[key]
-        del input_def[key]
-    else:
-        value = default
-    return value
 
 
 def __init_connect_dict(step):
