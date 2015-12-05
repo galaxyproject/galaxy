@@ -51,7 +51,7 @@
         baseUrl : "${h.url_for( '/static/scripts' )}",
         urlArgs: 'v=${app.server_starttime}'
     });
-    require([ 'mvc/history/history-panel-annotated' ], function( panelMod ){
+    require([ 'mvc/history/history-view-annotated' ], function( viewMod ){
 
         function toggleExpanded( ev ){
             var $embeddedHistory = $( thisScript ).prev();
@@ -64,7 +64,7 @@
 
         $(function(){
             var historyModel = require( 'mvc/history/history-model' ),
-                panel = new panelMod.AnnotatedHistoryPanel({
+                view = new viewMod.AnnotatedHistoryView({
                     el      : $embeddedHistory.find( ".history-panel" ),
                     model   : new historyModel.History(
                         ${h.dumps( history_dict )},

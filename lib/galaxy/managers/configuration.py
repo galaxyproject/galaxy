@@ -59,7 +59,7 @@ class ConfigSerializer( base.ModelSerializer ):
             'ga_code'                   : _defaults_to( None ),
             'enable_unique_workflow_defaults' : _defaults_to( False ),
 
-            'nginx_upload_path'         : _defaults_to( self.url_for( controller='api', action='tools' ) ),
+            'nginx_upload_path'         : _defaults_to( False ),
             'ftp_upload_dir'            : _defaults_to( None ),
             'ftp_upload_site'           : _defaults_to( None ),
             'version_major'             : _defaults_to( None ),

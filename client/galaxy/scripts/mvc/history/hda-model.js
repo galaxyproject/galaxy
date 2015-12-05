@@ -22,7 +22,7 @@ var HistoryDatasetAssociation = _super.extend( BASE_MVC.mixin( hcontentMixin,
     constructor : function( attrs, options ){
         hcontentMixin.constructor.call( this, attrs, options );
     },
-    
+
     /** default attributes for a model */
     defaults : _.extend( {}, _super.prototype.defaults, hcontentMixin.defaults, {
         model_class         : 'HistoryDatasetAssociation'

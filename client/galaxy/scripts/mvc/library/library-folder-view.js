@@ -73,15 +73,15 @@ var FolderView = Backbone.View.extend({
     $(".tooltip").remove();
 
     var is_admin = false;
-    if (Galaxy.currUser){
-      is_admin = Galaxy.currUser.isAdmin();
-    } 
+    if (Galaxy.user){
+      is_admin = Galaxy.user.isAdmin();
+    }
     var template = this.templateFolderPermissions();
     this.$el.html(template({folder: this.model, is_admin:is_admin}));
 
     var self = this;
     if (this.options.fetched_permissions === undefined){
-      $.get( ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/folders/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
+      $.get( Galaxy.root + "api/folders/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
         self.prepareSelectBoxes({fetched_permissions:fetched_permissions});
       }).fail(function(){
           mod_toastr.error('An error occurred while attempting to fetch folder permissions.');
@@ -125,7 +125,7 @@ var FolderView = Backbone.View.extend({
       placeholder: 'Click to select a role',
       container: self.$el.find('#' + id),
       ajax: {
-          url: ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/folders/" + self.id + "/permissions?scope=available",
+          url: Galaxy.root + "api/folders/" + self.id + "/permissions?scope=available",
           dataType: 'json',
           quietMillis: 100,
           data: function (term, page) { // page is the one-based page number tracked by Select2
@@ -195,7 +195,7 @@ var FolderView = Backbone.View.extend({
     var manage_ids = this._extractIds(this.manageSelectObject.$el.select2('data'));
     var modify_ids = this._extractIds(this.modifySelectObject.$el.select2('data'));
 
-    $.post( ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/folders/" + self.id + "/permissions?action=set_permissions", { 'add_ids[]': add_ids, 'manage_ids[]': manage_ids, 'modify_ids[]': modify_ids, } )
+    $.post( Galaxy.root + "api/folders/" + self.id + "/permissions?action=set_permissions", { 'add_ids[]': add_ids, 'manage_ids[]': manage_ids, 'modify_ids[]': modify_ids, } )
     .done(function(fetched_permissions){
       //fetch dataset again
       self.showPermissions({fetched_permissions:fetched_permissions})
@@ -252,7 +252,7 @@ var FolderView = Backbone.View.extend({
     var tmpl_array = [];
     // CONTAINER START
     tmpl_array.push('<div class="library_style_container">');
-    
+
 
     tmpl_array.push('  <div id="library_toolbar">');
     tmpl_array.push('   <a href="#/folders/<%= folder.get("parent_id") %>"><button data-toggle="tooltip" data-placement="top" title="Go back to the parent folder" class="btn btn-default primary-button" type="button"><span class="fa fa-caret-left fa-lg"></span> Parent folder</span></button></a>');
@@ -267,7 +267,7 @@ var FolderView = Backbone.View.extend({
     tmpl_array.push('You can assign any number of roles to any of the following permission types. However please read carefully the implications of such actions.');
     tmpl_array.push('<% }%>');
     tmpl_array.push('</div>');
-    
+
     tmpl_array.push('<div class="dataset_table">');
 
     tmpl_array.push('<h2>Folder permissions</h2>');

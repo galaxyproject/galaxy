@@ -1,10 +1,10 @@
 define([
     "mvc/dataset/states",
     "mvc/collection/collection-li",
-    "mvc/collection/collection-panel",
+    "mvc/collection/collection-view",
     "mvc/base-mvc",
     "utils/localization"
-], function( STATES, DC_LI, DC_PANEL, BASE_MVC, _l ){
+], function( STATES, DC_LI, DC_VIEW, BASE_MVC, _l ){
 /* global Backbone */
 //==============================================================================
 var _super = DC_LI.DCListItemView;
@@ -31,11 +31,11 @@ var HDCAListItemView = _super.extend(
     _getFoldoutPanelClass : function(){
         switch( this.model.get( 'collection_type' ) ){
             case 'list':
-                return DC_PANEL.ListCollectionPanel;
+                return DC_VIEW.ListCollectionView;
             case 'paired':
-                return DC_PANEL.PairCollectionPanel;
+                return DC_VIEW.PairCollectionView;
             case 'list:paired':
-                return DC_PANEL.ListOfPairsCollectionPanel;
+                return DC_VIEW.ListOfPairsCollectionView;
         }
         throw new TypeError( 'Uknown collection_type: ' + this.model.get( 'collection_type' ) );
     },

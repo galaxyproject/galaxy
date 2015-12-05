@@ -51,8 +51,13 @@
 <%def name="load( embedded=False, insert=None )">
     <!-- grid_base.mako -->
     ## imports
-    ${h.css( "autocomplete_tagging", "jquery.rating" )}
-    ${h.js("libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging", "libs/jquery/jquery.rating" )}
+    ${h.css(
+        "autocomplete_tagging",
+        "jquery.rating"
+    )}
+    ${h.js(
+        "libs/jquery/jquery.autocomplete",
+    )}
 
     ## grid container
     <div id="grid-container"></div>

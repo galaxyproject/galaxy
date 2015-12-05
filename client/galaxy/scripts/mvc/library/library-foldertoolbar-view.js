@@ -1,5 +1,5 @@
 define([
-    "galaxy.masthead",
+    "layout/masthead",
     "utils/utils",
     "libs/toastr",
     "mvc/library/library-model",
@@ -82,9 +82,9 @@ var FolderToolbarView = Backbone.View.extend({
         is_anonym: true,
         mutiple_add_dataset_options: false
     }
-    if (Galaxy.currUser){
-      template_defaults.is_admin = Galaxy.currUser.isAdmin();
-      template_defaults.is_anonym = Galaxy.currUser.isAnonymous();
+    if (Galaxy.user){
+      template_defaults.is_admin = Galaxy.user.isAdmin();
+      template_defaults.is_anonym = Galaxy.user.isAnonymous();
       if ( Galaxy.config.user_library_import_dir !== null || Galaxy.config.allow_library_path_paste !== false || Galaxy.config.library_import_dir !== null ){
         template_defaults.mutiple_add_dataset_options = true;
       }
@@ -117,8 +117,8 @@ var FolderToolbarView = Backbone.View.extend({
       $('.add-library-items').hide();
     }
     if (this.options.contains_file_or_folder === true){
-      if (Galaxy.currUser){
-        if (!Galaxy.currUser.isAnonymous()){
+      if (Galaxy.user){
+        if (!Galaxy.user.isAnonymous()){
           $('.logged-dataset-manipulation').show();
           $('.dataset-manipulation').show();
         } else {
@@ -283,7 +283,7 @@ var FolderToolbarView = Backbone.View.extend({
     this.initChainCallControl( { length: datasets_to_import.length, action: 'to_history', history_name: history_name } );
     // set the used history as current so user will see the last one
     // that he imported into in the history panel on the 'analysis' page
-    jQuery.getJSON( galaxy_config.root + 'history/set_as_current?id=' + history_id  );
+    jQuery.getJSON( Galaxy.root + 'history/set_as_current?id=' + history_id  );
     this.chainCallImportingIntoHistory( datasets_to_import, history_name );
   },
 
@@ -312,7 +312,7 @@ var FolderToolbarView = Backbone.View.extend({
                 folder_ids.push( this.parentElement.parentElement.id );
             }
         } );
-    var url = ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/libraries/datasets/download/' + format;
+    var url = Galaxy.root + 'api/libraries/datasets/download/' + format;
     var data = { 'ld_ids' : dataset_ids, 'folder_ids' : folder_ids };
     this.processDownload( url, data, 'get' );
   },
@@ -404,7 +404,7 @@ var FolderToolbarView = Backbone.View.extend({
   fetchExtAndGenomes: function(){
     var that = this;
     mod_utils.get({
-        url      :  ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/datatypes?extension_only=False",
+        url      :  Galaxy.root + "api/datatypes?extension_only=False",
         success  :  function( datatypes ) {
                         for (key in datatypes) {
                             that.list_extensions.push({
@@ -421,8 +421,8 @@ var FolderToolbarView = Backbone.View.extend({
                     }
       });
     mod_utils.get({
-        url:    ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/genomes",
-        success: function( genomes ) {
+        url     :    Galaxy.root + "api/genomes",
+        success : function( genomes ) {
                     for ( key in genomes ) {
                         that.list_genomes.push({
                             id      : genomes[key][1],
@@ -707,7 +707,7 @@ var FolderToolbarView = Backbone.View.extend({
       for ( var i = history_dataset_ids.length - 1; i >= 0; i-- ) {
         history_dataset_id = history_dataset_ids[i];
         var folder_item = new mod_library_model.Item();
-        folder_item.url = ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/folders/' + this.options.id + '/contents';
+        folder_item.url = Galaxy.root + 'api/folders/' + this.options.id + '/contents';
         folder_item.set( { 'from_hda_id':history_dataset_id } );
         hdas_to_add.push( folder_item );
       }
@@ -767,7 +767,7 @@ var FolderToolbarView = Backbone.View.extend({
       }
       return true;
     }
-    var promise = $.when( $.post( ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/libraries/datasets?encoded_folder_id=' + that.id +
+    var promise = $.when( $.post( Galaxy.root + 'api/libraries/datasets?encoded_folder_id=' + that.id +
                                                        '&source=' + options.source +
                                                        '&path=' + popped_item +
                                                        '&file_type=' + options.file_type +
@@ -806,7 +806,7 @@ var FolderToolbarView = Backbone.View.extend({
       }
       return true;
     }
-    var promise = $.when( $.post( ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/libraries/datasets?encoded_folder_id=' + that.id +
+    var promise = $.when( $.post( Galaxy.root + 'api/libraries/datasets?encoded_folder_id=' + that.id +
                                                           '&source=' + options.source +
                                                           '&path=' + popped_item +
                                                           '&preserve_dirs=' + options.preserve_dirs +

@@ -964,14 +964,33 @@ class ToolsTestCase( api.ApiTestCase ):
         }
         self._check_simple_reduce_job( history_id, inputs )
 
+    @skip_without_tool( "multi_data_param" )
+    def test_reduce_multiple_lists_on_multi_data( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca1_id = self.__build_pair( history_id, [ "123", "456" ] )
+        hdca2_id = self.dataset_collection_populator.create_list_in_history( history_id  ).json()[ "id" ]
+        inputs = {
+            "f1": [{ 'src': 'hdca', 'id': hdca1_id }, { 'src': 'hdca', 'id': hdca2_id }],
+            "f2": [{ 'src': 'hdca', 'id': hdca1_id }],
+        }
+        create = self._run( "multi_data_param", history_id, inputs, assert_ok=True )
+        outputs = create[ 'outputs' ]
+        jobs = create[ 'jobs' ]
+        self.assertEquals( len( jobs ), 1 )
+        self.assertEquals( len( outputs ), 2 )
+        output1, output2 = outputs
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output2 )
+        self.assertEquals( output1_content.strip(), "123\n456\nTestData123\nTestData123\nTestData123" )
+        self.assertEquals( output2_content.strip(), "123\n456" )
+
     def _check_simple_reduce_job( self, history_id, inputs ):
         create = self._run( "multi_data_param", history_id, inputs, assert_ok=True )
         outputs = create[ 'outputs' ]
         jobs = create[ 'jobs' ]
-        assert len( jobs ) == 1
-        assert len( outputs ) == 2
-        output1 = outputs[ 0 ]
-        output2 = outputs[ 1 ]
+        self.assertEquals( len( jobs ), 1 )
+        self.assertEquals( len( outputs ), 2 )
+        output1, output2 = outputs
         output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
         output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output2 )
         assert output1_content.strip() == "123\n456"

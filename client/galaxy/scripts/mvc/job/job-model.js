@@ -86,7 +86,7 @@ var Job = Backbone.Model
 
     // ........................................................................ ajax
     /** root api url */
-    urlRoot : (( window.galaxy_config && galaxy_config.root )?( galaxy_config.root ):( '/' )) + 'api/jobs',
+    urlRoot : Galaxy.root + 'api/jobs',
     //url : function(){ return this.urlRoot; },
 
     // ........................................................................ searching
@@ -115,7 +115,7 @@ var JobCollection = Backbone.Collection
     model : Job,
 
     /** root api url */
-    urlRoot : (( window.galaxy_config && galaxy_config.root )?( galaxy_config.root ):( '/' )) + 'api/jobs',
+    urlRoot : Galaxy.root + 'api/jobs',
     url : function(){ return this.urlRoot; },
 
     intialize : function( models, options ){
