@@ -3,7 +3,7 @@
 
 <%def name="javascripts()">
    ${parent.javascripts()}
-   ${h.js("libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging" )}
+   ${h.js("libs/jquery/jquery.autocomplete")}
 </%def>
 
 <%def name="stylesheets()">
@@ -36,7 +36,7 @@
                     Select a sample attribute for searching.  To search <br/>
                     for a sample with a dataset name, select the dataset <br/>
                     option above. This will return all the samples that <br/>
-                    are associated with a dataset with that name. <br/> 
+                    are associated with a dataset with that name. <br/>
                 </div>
             </div>
             <div class="form-row">
@@ -45,10 +45,10 @@
             </div>
             <div class="form-row">
                 ${search_box.get_html()}
-                <input type="submit" name="find_samples_button" value="Find"/>  
+                <input type="submit" name="find_samples_button" value="Find"/>
                 <div class="toolParamHelp" style="clear: both;">
                    <p>
-                   Wildcard search (%) can be used as placeholder for any sequence of characters or words.<br/> 
+                   Wildcard search (%) can be used as placeholder for any sequence of characters or words.<br/>
                    For example, to search for samples starting with 'mysample' use 'mysample%' as the search string.
                    </p>
                    <p>
@@ -63,7 +63,7 @@
                     <label><i>${results}</i></label>
                     %if samples:
                         <div class="toolParamHelp" style="clear: both;">
-                           The search results are sorted by the date the samples where created. 
+                           The search results are sorted by the date the samples where created.
                         </div>
                     %endif
                 </div>

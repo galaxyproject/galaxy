@@ -36,7 +36,7 @@ define([
         // build app
         return new App({
             id      : null,
-            urls    : { get_datatypes : galaxy_config.root + 'api/datatypes/mapping' }
+            urls    : { get_datatypes : Galaxy.root + 'api/datatypes/mapping' }
         });
     };
 
@@ -480,7 +480,7 @@ define([
 
             var outputTerminal = new Terminals.OutputTerminal( { name: "TestOuptut", datatypes: [ outputType ] } );
             outputTerminal.node = { markChanged: function() {}, post_job_actions: [], hasMappedOverInputTerminals: function() { return false; }, hasConnectedOutputTerminals: function() { return true; } };
-            outputTerminal.terminalMapping = { disableMapOver: function() {}, mapOver: Terminals.NULL_COLLECTION_TYPE_DESCRIPTION }; 
+            outputTerminal.terminalMapping = { disableMapOver: function() {}, mapOver: Terminals.NULL_COLLECTION_TYPE_DESCRIPTION };
             var c = new Connector( outputTerminal, terminal );
 
             return c;
@@ -860,7 +860,7 @@ define([
             }
 
             ok( inputTerminal.attachable( outputTerminal ) );
-            
+
             // Go further... make sure datatypes are being enforced
             inputTerminal.datatypes = [ "bam" ];
             outputTerminal.datatypes = [ "txt" ];

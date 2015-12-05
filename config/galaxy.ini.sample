@@ -791,6 +791,10 @@ use_interactive = True
 # Force everyone to log in (disable anonymous access).
 #require_login = False
 
+# Show the site's welcome page (see welcome_url) alongside the login page
+# (even if require_login is True)
+#show_welcome_with_login = False
+
 # Allow unregistered users to create new accounts (otherwise, they will have to
 # be created by an admin).
 #allow_user_creation = True

@@ -3,9 +3,28 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     <script type="text/javascript">
-         $.fn.outerHTML = function(s) {
-             return s ? this.before(s).remove() : jQuery("<p>").append(this.eq(0).clone()).html();
-         };
+
+        // jQuery plugin to prevent double submission of forms
+        // Ref: http://stackoverflow.com/questions/2830542/prevent-double-submission-of-forms-in-jquery
+        jQuery.fn.preventDoubleSubmission = function() {
+            $(this).on('submit',function(e){
+                var $form = $(this);
+
+                if ($form.data('submitted') === true) {
+                    // Previously submitted - don't submit again
+                    e.preventDefault();
+                } else {
+                    // Mark it so that the next submit can be ignored
+                    $form.data('submitted', true);
+                }
+            });
+            // Keep chainability
+            return this;
+        };
+
+        $.fn.outerHTML = function(s) {
+            return s ? this.before(s).remove() : jQuery("<p>").append(this.eq(0).clone()).html();
+        };
         $( function() {
             function show_tool_body(title){
                 title.parent().show().css('border-bottom-width', '1px');
@@ -195,7 +214,7 @@
             // http://stackoverflow.com/a/2088430
             $(function(){
                 $(".multi-mode").each(function(){
-                    if($(this).val() == "matched") { 
+                    if($(this).val() == "matched") {
                         $(this).closest('.form-row').children('label').append($('<span class="icon-button link mode-icon" title="This input is linked and will be run in matched order with other input datasets (ex: use this for matching forward and reverse reads)."></span>')
                             .attr({id:$(this).attr("id")})
                             .css("display", $(this).css("display"))

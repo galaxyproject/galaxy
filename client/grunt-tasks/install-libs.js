@@ -16,7 +16,7 @@ module.exports = function( grunt ){
             'ravenjs':        [ 'dist/raven.js', 'raven.js' ],
             'underscore':     [ 'underscore.js', 'underscore.js' ],
             'handlebars':     [ 'handlebars.runtime.js', 'handlebars.runtime.js' ],
-            'backbone':       [ 'backbone.js', 'backbone/backbone.js' ],
+            'backbone':       [ 'backbone.js', 'backbone.js' ],
             'requirejs':      [ 'require.js', 'require.js' ],
             'd3':             [ 'd3.js', 'd3.js' ],
             'bib2json':       [ 'Parser.js', 'bibtex.js' ],

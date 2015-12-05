@@ -54,7 +54,7 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
                 break
         config_arg = ''
         if os.path.abspath( os.path.join( os.getcwd(), 'galaxy.ini' ) ) != galaxy_config_file:
-            config_arg = ' -c %s' % galaxy_config_file.replace( os.path.abspath( os.getcwd() ), '.' )
+            config_arg = ' -c %s' % galaxy_config_file.replace( os.path.abspath( os.getcwd() ), '.', 1 )
         if not app.config.running_functional_tests:
             if tool_shed_accessible:
                 # Automatically update the value of the migrate_tools.version database table column.

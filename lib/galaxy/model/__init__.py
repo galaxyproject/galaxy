@@ -1168,7 +1168,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
     def __add_datasets_optimized( self, datasets, genome_build=None ):
         """ Optimized version of add_dataset above that minimizes database
         interactions when adding many datasets to history at once under
-        certain cirucumstances.
+        certain circumstances.
         """
         n = len( datasets )
 

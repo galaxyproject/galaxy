@@ -1,6 +1,6 @@
 // dependencies
 define([
-    "galaxy.masthead",
+    "layout/masthead",
     "utils/utils",
     "libs/toastr"],
 function(mod_masthead,
@@ -18,7 +18,7 @@ var LibraryRowView = Backbone.View.extend({
   },
 
   edit_mode: false,
-  
+
   element_visibility_config: {
     upload_library_btn: false,
     edit_library_btn: false,
@@ -45,22 +45,22 @@ var LibraryRowView = Backbone.View.extend({
   },
 
   repaint: function(library){
-    /* need to hide manually because of the element removal in setElement 
+    /* need to hide manually because of the element removal in setElement
     invoked in render() */
     $(".tooltip").hide();
-    /* we need to store the old element to be able to replace it with 
+    /* we need to store the old element to be able to replace it with
     new one */
     var old_element = this.$el;
-    /* if user canceled the library param is undefined, 
+    /* if user canceled the library param is undefined,
       if user saved and succeeded the updated library is rendered */
     this.render(library);
     old_element.replaceWith(this.$el);
     /* now we attach new tooltips to the newly created row element */
     this.$el.find("[data-toggle]").tooltip();
   },
-  
+
   /**
-   * Function modifies the visibility of buttons for 
+   * Function modifies the visibility of buttons for
    * the filling of the row template of given library.
    */
   prepareButtons: function(library){
@@ -273,7 +273,7 @@ var LibraryRowView = Backbone.View.extend({
 
     return _.template(tmpl_array.join(''));
   }
-   
+
 });
 
 return {

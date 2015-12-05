@@ -1,7 +1,9 @@
 define([
+    'libs/underscore',
+    'libs/backbone',
     'utils/add-logging',
     'utils/localization'
-], function( addLogging, _l ){
+], function( _, Backbone, addLogging, _l ){
 //==============================================================================
 /** @class Mixin to add logging capabilities to an object.
  *      Designed to allow switching an objects log output off/on at one central
@@ -166,7 +168,7 @@ function mixin( mixinHash1, /* mixinHash2, etc: ... variadic */ propsHash ){
  * @example:
  *      see hda-model for searchAttribute and searchAliases definition examples.
  *      see history-contents.matches for how collections are filtered
- *      and see readonly-history-panel.searchHdas for how user input is connected to the filtering
+ *      and see readonly-history-view.searchHdas for how user input is connected to the filtering
  */
 var SearchableModelMixin = {
 

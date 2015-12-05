@@ -1,5 +1,5 @@
 define([
-    "galaxy.masthead",
+    "layout/masthead",
     "utils/utils",
     "libs/toastr",
     "mvc/library/library-model",
