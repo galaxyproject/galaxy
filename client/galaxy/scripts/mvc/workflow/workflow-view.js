@@ -44,6 +44,21 @@ function reset_tool_search( initValue ) {
     }
 }
 
+NODE_ICONS = {
+    'tool': 'fa-wrench',
+    'data_input': 'fa-file-o',
+    'data_collection_input': 'fa-folder-o',
+    'pause': 'fa-pause'
+}
+
+add_node_icon = function($to_el, nodeType) {
+    var iconStyle = NODE_ICONS[nodeType];
+    if(iconStyle) {
+        var $icon = $('<i class="icon fa">&nbsp;</i>').addClass(iconStyle);
+        $to_el.before($icon);
+    }
+}
+
 
 // Really a shell of a real backbone view, but refactoring in the right
 // direction I think.
@@ -62,6 +77,8 @@ EditorFormView = Backbone.View.extend({
 
         if (node && node.id != 'no-node') {
             $el.find('table:first').after(this._genericStepAttributesTemplate( node ));
+            var nodeType = node.type;
+            add_node_icon($el.find('.portlet-title-text'), nodeType);
             ($el.find( 'form' ).length > 0) && $el.find( 'form' ).ajaxForm( {
                 type: 'POST',
                 dataType: 'json',
