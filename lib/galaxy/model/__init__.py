@@ -14,7 +14,7 @@ import os
 import socket
 import time
 from datetime import datetime, timedelta
-from itertools import ifilter
+from itertools import ifilter, imap
 from string import Template
 from uuid import UUID, uuid4
 
@@ -1078,6 +1078,10 @@ class UserGroupAssociation( object ):
         self.group = group
 
 
+def is_hda(d):
+    return isinstance( d, HistoryDatasetAssociation )
+
+
 class History( object, Dictifiable, UsesAnnotations, HasName ):
 
     dict_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
@@ -1151,7 +1155,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         """ Optimized version of add_dataset above that minimizes database
         interactions when adding many datasets to history at once.
         """
-        all_hdas = all( map( lambda d: isinstance( d, HistoryDatasetAssociation ), datasets ) )
+        all_hdas = all( imap( is_hda, datasets ) )
         optimize = len( datasets) > 1 and parent_id is None and all_hdas and set_hid and not quota
         if optimize:
             self.__add_datasets_optimized( datasets, genome_build=genome_build )
@@ -1173,11 +1177,11 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         n = len( datasets )
 
         base_hid = self._next_hid( n=n )
-
+        set_genome = genome_build not in [None, '?']
         for i, dataset in enumerate( datasets ):
             dataset.hid = base_hid + i
             dataset.history = self
-            if genome_build not in [None, '?']:
+            if set_genome:
                 self.genome_build = genome_build
         self.datasets.extend( datasets )
         return datasets
