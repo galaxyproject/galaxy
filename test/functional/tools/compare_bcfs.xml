@@ -1,0 +1,27 @@
+<tool id="compare_bcfs" name="Compare BCFs" version ="0.0.1">
+  <description>Compare body of two BCF files</description>
+    <requirements>
+      <requirement type="package" version="1.2">bcftools</requirement>
+    </requirements>
+  <command>
+
+        cp $input_bcf $output_bcf
+
+  </command>
+  <inputs>
+    <param name="input_bcf" type="data" label="BCF File" help="" optional="false" format="bcf"/>
+  </inputs>
+  <outputs>
+    <data format="bcf" name="output_bcf"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input_bcf" value="input.bcf" ftype="bcf" />
+      <output name="output_bcf" file="output.bcf" ftype="bcf" />
+    </test>
+  </tests>
+
+  <help>
+    Comparing bcfs is what this test tool does.
+  </help>
+</tool>
