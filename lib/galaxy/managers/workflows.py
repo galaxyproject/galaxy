@@ -334,6 +334,10 @@ class WorkflowContentsManager(UsesAnnotations):
                 # FIXME: Frontend should be able to handle workflow messages
                 #        as a dictionary not just the values
                 data['upgrade_messages'][step.order_index] = upgrade_message.values()
+                # Dispay version/tool_id changes
+                data['upgrade_messages'] = [step.order_index][module.tool.name] = "\n".join( module.version_changes )
+            elif (hasattr(module, "version_changes")) and (module.version_changes):
+                data['upgrade_messages'] = {step.order_index: {module.tool.name: "\n".join( module.version_changes )}}
             # Get user annotation.
             step_annotation = self.get_item_annotation_obj( trans.sa_session, trans.user, step )
             annotation_str = ""
