@@ -301,7 +301,7 @@ class IntegerToolParameter( TextToolParameter ):
     >>> type( p.from_html( "bleh" ) )
     Traceback (most recent call last):
         ...
-    ValueError: An integer is required
+    ValueError: An integer or workflow parameter e.g. ${name} is required
     """
 
     dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ( 'min', 'max' )
@@ -345,7 +345,10 @@ class IntegerToolParameter( TextToolParameter ):
                     return value
             elif not value and self.optional:
                 return ""
-            raise ValueError( "An integer is required" )
+            if trans is None or trans.workflow_building_mode:
+                raise ValueError( "An integer or workflow parameter e.g. ${name} is required" )
+            else:
+                raise ValueError( "An integer is required" )
 
     def to_python( self, value, app ):
         try:
@@ -379,7 +382,7 @@ class FloatToolParameter( TextToolParameter ):
     >>> type( p.from_html( "bleh" ) )
     Traceback (most recent call last):
         ...
-    ValueError: A real number is required
+    ValueError: A real number or workflow parameter e.g. ${name} is required
     """
 
     dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ( 'min', 'max' )
@@ -423,7 +426,10 @@ class FloatToolParameter( TextToolParameter ):
                     return value
             elif not value and self.optional:
                 return ""
-            raise ValueError( "A real number is required" )
+            if trans is None or trans.workflow_building_mode:
+                raise ValueError( "A real number or workflow parameter e.g. ${name} is required" )
+            else:
+                raise ValueError( "A real number is required" )
 
     def to_python( self, value, app ):
         try:
