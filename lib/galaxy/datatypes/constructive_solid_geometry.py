@@ -195,8 +195,6 @@ class Vtk(object):
     # which ensures order for select list options that are built from it.
     MetadataElement(name="field_components", default={}, desc="Field names and components",
                     readonly=True, optional=True, visible=True, no_value={})
-    MetadataElement(name="has_color", default=False, desc="Surface field has color",
-                    readonly=True, optional=True, visible=True, no_value=False)
 
     def sniff(self, filename, subtype):
         """
@@ -254,6 +252,7 @@ class Vtk(object):
             dataset_type = None
             field_components = {}
             dataset_structure_complete = False
+            processing_field_section = False
             with open(dataset.file_name) as fh:
                 for i, line in enumerate(fh):
                     line = line.strip()
@@ -263,65 +262,77 @@ class Vtk(object):
                         dataset = self.set_initial_metadata(i, line, dataset)
                     elif dataset.metadata.file_format == 'ASCII' or not util.is_binary(line):
                         if dataset_structure_complete:
-                            dataset, field_components = self.set_dataset_attributes_metadata(line,
-                                                                                             dataset,
-                                                                                             field_components)
-                        elif line.startswith('POINT_DATA') or line.startswith('CELL_DATA'):
+                            """
+                            The final part of legacy VTK files describes the dataset attributes.
+                            This part begins with the keywords POINT_DATA or CELL_DATA, followed
+                            by an integer number specifying the number of points or cells,
+                            respectively. Other keyword/data combinations then define the actual
+                            dataset attribute values (i.e., scalars, vectors, tensors, normals,
+                            texture coordinates, or field data).  Dataset attributes are supported
+                            for both points and cells.
+
+                            Each type of attribute data has a dataName associated with it. This is
+                            a character string (without embedded whitespace) used to identify a
+                            particular data.  The dataName is used by the VTK readers to extract
+                            data. As a result, more than one attribute data of the same type can be
+                            included in a file.  For example, two different scalar fields defined
+                            on the dataset points, pressure and temperature, can be contained in
+                            the same file.  If the appropriate dataName is not specified in the VTK
+                            reader, then the first data of that type is extracted from the file.
+                            """
+                            items = line.split()
+                            if items[0] == 'SCALARS':
+                                # Example: SCALARS surface_field double 3
+                                # Scalar definition includes specification of a lookup table. The
+                                # definition of a lookup table is optional. If not specified, the
+                                # default VTK table will be used, and tableName should be
+                                # "default". Also note that the numComp variable is optional.  By
+                                # default the number of components is equal to one.  The parameter
+                                # numComp must range between (1,4) inclusive; in versions of VTK
+                                # prior to vtk2.3 this parameter was not supported.
+                                field_name = items[1]
+                                dataset.metadata.field_names.append(field_name)
+                                try:
+                                    num_components = int(items[-1])
+                                except:
+                                    num_components = 1
+                                field_component_indexes = [str(i) for i in range(num_components)]
+                                field_components[field_name] = field_component_indexes
+                            elif items[0] == 'FIELD':
+                                # The dataset consists of CELL_DATA.
+                                # FIELD FieldData 2
+                                processing_field_section = True
+                                num_fields = int(items[-1])
+                                fields_processed = []
+                            elif processing_field_section:
+                                if len(fields_processed) == num_fields:
+                                    processing_field_section = False
+                                else:
+                                    try:
+                                        float(items[0])
+                                        # Don't process the cell data.
+                                        # 0.0123457 0.197531
+                                    except:
+                                        # Line consists of arrayName numComponents numTuples dataType.
+                                        # Example: surface_field1 1 12 double
+                                        field_name = items[0]
+                                        dataset.metadata.field_names.append(field_name)
+                                        num_components = int(items[1])
+                                        field_component_indexes = [str(i) for i in range(num_components)]
+                                        field_components[field_name] = field_component_indexes
+                                        fields_processed.append(field_name)
+                        elif line.startswith('CELL_DATA'):
+                            # CELL_DATA 3188
                             dataset_structure_complete = True
-                            dataset, field_components = self.set_dataset_attributes_metadata(line,
-                                                                                             dataset,
-                                                                                             field_components)
+                            dataset.metadata.cells = int(line.split()[1])
+                        elif line.startswith('POINT_DATA'):
+                            # POINT_DATA 1876
+                            dataset_structure_complete = True
+                            dataset.metadata.points = int(line.split()[1])
                         else:
-                            dataset, dataset_type = self.set_dataset_structure_metadata(line,
-                                                                                        dataset,
-                                                                                        dataset_type)
+                            dataset, dataset_type = self.set_structure_metadata(line, dataset, dataset_type)
             if len(field_components) > 0:
                 dataset.metadata.field_components = field_components
-
-    def set_dataset_attributes_metadata(self, line, dataset, field_components):
-        """
-        The final part of legacy VTK files describes the dataset attributes.
-        This part begins with the keywords POINT_DATA or CELL_DATA, followed
-        by an integer number specifying the number of points or cells,
-        respectively. Other keyword/ data combinations then define the actual
-        dataset attribute values (i. e., scalars, vectors, tensors, normals,
-        texture coordinates, or field data).  Dataset attributes are supported
-        for both points and cells.
-
-        Each type of attribute data has a dataName associated with it. This is
-        a character string (without embedded whitespace) used to identify a
-        particular data.  The dataName is used by the VTK readers to extract
-        data. As a result, more than one attribute data of the same type can be
-        included in a file.  For example, two different scalar fields defined
-        on the dataset points, pressure and temperature, can be contained in
-        the same file.  If the appropriate dataName is not specified in the VTK
-        reader, then the first data of that type is extracted from the file.
-        """
-        if line.startswith('SCALARS'):
-            # Example: SCALARS surface_field double 2
-            # Scalar definition includes specification of a lookup table. The
-            # definition of a lookup table is optional. If not specified, the
-            # default VTK table will be used, and tableName should be
-            # "default". Also note that the numComp variable is optional.  By
-            # default the number of components is equal to one.  The parameter
-            # numComp must range between (1,4) inclusive; in versions of VTK
-            # prior to vtk2.3 this parameter was not supported.
-            items = line.split()
-            # Set the field_names and field_components metadata elements.
-            field_name = items[1]
-            dataset.metadata.field_names.append(field_name)
-            try:
-                num_components = int(items[-1])
-            except:
-                num_components = 1
-            field_component_indexes = [str(i) for i in range(num_components)]
-            field_components[field_name] = field_component_indexes
-        else:
-            for opt in COLOR_OPTS:
-                if line.startswith(opt):
-                    # TODO: find out if / how color is associated with a specific field name,
-                    dataset.metadata.has_color = True
-        return dataset, field_components
 
     def set_initial_metadata(self, i, line, dataset):
         if i == 0:
@@ -341,7 +352,7 @@ class Vtk(object):
             dataset.metadata.file_format = line
         return dataset
 
-    def set_dataset_structure_metadata(self, line, dataset, dataset_type):
+    def set_structure_metadata(self, line, dataset, dataset_type):
         """
         The fourth part of legacy VTK files is the dataset structure. The
         geometry part describes the geometry and topology of the dataset.
