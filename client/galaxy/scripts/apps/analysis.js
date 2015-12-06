@@ -28,14 +28,17 @@ window.app = function app( options, bootstrapped ){
     // .................................................... panels and page
     var config = options.config,
         toolPanel = new ToolPanel({
-            el              : '#left',
-            userIsAnonymous : Galaxy.user.isAnonymous(),
-            require_login   : config.require_login,
-            spinner_url     : config.spinner_url,
-            search_url      : config.search_url,
-            toolbox         : config.toolbox,
-            toolbox_in_panel: config.toolbox_in_panel,
+            el                  : '#left',
+            userIsAnonymous     : Galaxy.user.isAnonymous(),
+            spinner_url         : config.spinner_url,
+            search_url          : config.search_url,
+            toolbox             : config.toolbox,
+            toolbox_in_panel    : config.toolbox_in_panel,
             stored_workflow_menu_entries : config.stored_workflow_menu_entries,
+            nginx_upload_path   : config.nginx_upload_path,
+            ftp_upload_site     : config.ftp_upload_site,
+            default_genome      : config.default_genome,
+            default_extension   : config.default_extension,
         }),
         centerPanel = new PANEL.CenterPanel({
             el              : '#center'

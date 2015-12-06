@@ -51,7 +51,7 @@ class ConfigSerializer( base.ModelSerializer ):
             'biostar_url_redirect'      : lambda *a, **c: self.url_for( controller='biostar', action='biostar_redirect',
                                                                         qualified=True ),
 
-            'allow_user_creation'       : lambda i, k, **c: i.allow_user_creation,
+            'allow_user_creation'       : _defaults_to( False ),
             'use_remote_user'           : _defaults_to( None ),
             'remote_user_logout_href'   : _defaults_to( '' ),
             'datatypes_disable_auto'    : _defaults_to( False ),
@@ -59,7 +59,10 @@ class ConfigSerializer( base.ModelSerializer ):
             'ga_code'                   : _defaults_to( None ),
             'enable_unique_workflow_defaults' : _defaults_to( False ),
 
-            'nginx_upload_path'         : _defaults_to( False ),
+            # TODO: is there no 'correct' way to get an api url? controller='api', action='tools' is a hack
+            # at any rate: the following works with path_prefix but is still brittle
+            # TODO: change this to (more generic) upload_path and incorporate config.nginx_upload_path into building it
+            'nginx_upload_path'         : lambda i, k, **c: getattr( i, k, False ) or self.url_for( '/api/tools' ),
             'ftp_upload_dir'            : _defaults_to( None ),
             'ftp_upload_site'           : _defaults_to( None ),
             'version_major'             : _defaults_to( None ),
@@ -81,12 +84,11 @@ class AdminConfigSerializer( ConfigSerializer ):
             return lambda i, k, **c: getattr( i, k, default )
 
         self.serializers.update({
-            # TODO: this is available from user data, remove
+            # TODO: this is available from user serialization: remove
             'is_admin_user'             : lambda *a: True,
 
             'library_import_dir'        : _defaults_to( None ),
             'user_library_import_dir'   : _defaults_to( None ),
             'allow_library_path_paste'  : _defaults_to( False ),
-            'allow_user_creation'       : _defaults_to( False ),
             'allow_user_deletion'       : _defaults_to( False ),
         })

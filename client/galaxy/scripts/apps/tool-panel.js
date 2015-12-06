@@ -30,7 +30,12 @@ var ToolPanel = LeftPanel.extend({
         this.tool_panel_view = new Tools.ToolPanelView({ model: this.tool_panel });
 
         // add upload modal
-        this.uploadButton = new Upload( options );
+        this.uploadButton = new Upload({
+            nginx_upload_path   : options.nginx_upload_path,
+            ftp_upload_site     : options.ftp_upload_site,
+            default_genome      : options.default_genome,
+            default_extension   : options.default_extension,
+        });
     },
 
     render : function(){
