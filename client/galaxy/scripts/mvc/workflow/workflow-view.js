@@ -44,6 +44,83 @@ function reset_tool_search( initValue ) {
     }
 }
 
+
+// Really a shell of a real backbone view, but refactoring in the right
+// direction I think.
+EditorFormView = Backbone.View.extend({
+
+    initialize: function(options) {
+        this.options = Utils.merge(options, {});
+        var $el = $('<div/>'),
+            workflowView = options.workflowView,
+            node = options.node;
+
+        if(options.html) {
+            $el.html(options.html);
+        }
+        this.setElement($el);
+
+        if (node && node.id != 'no-node') {
+            $el.find('.toolForm:first').after(this._genericStepAttributesTemplate( node ));
+            ($el.find( 'form' ).length > 0) && $el.find( 'form' ).ajaxForm( {
+                type: 'POST',
+                dataType: 'json',
+                success: function( data ) {
+                    workflowView.workflow.active_form_has_changes = false;
+                    node.update_field_data( data );
+                    workflowView.showWorkflowParameters();
+                },
+                beforeSubmit: function( data ) {
+                    data.push( { name: 'tool_state', value: node.tool_state } );
+                    data.push( { name: '_', value: 'true' } );
+                }
+            }).each( function() {
+                var form = this;
+                $(this).find('select[refresh_on_change="true"]').change( function() {
+                    $(form).submit();
+                });
+                $(this).find('input[refresh_on_change="true"]').change( function() {
+                    $(form).submit();
+                });
+                $(this).find('input, textarea, select').each( function() {
+                    $(this).bind('focus click', function() {
+                        workflowView.workflow.active_form_has_changes = true;
+                    });
+                });
+            });
+        }
+
+    },
+
+    _genericStepAttributesTemplate: function( node ) {
+        return  '<p>' +
+                    '<div class="metadataForm">' +
+                        '<div class="metadataFormTitle">' +
+                            'Edit Step Attributes' +
+                        '</div>' +
+                        this._annotationTemplate(node) +
+                    '</div>' +
+                '</p>';
+    },
+
+    _annotationTemplate: function( node ){
+        return '<div class="form-row">' +
+            '<label>Annotation / Notes:</label>' +
+            '<div style="margin-right: 10px;">' +
+                '<textarea name="annotation" rows="3" style="width: 100%">' +
+                    node.annotation +
+                '</textarea>' +
+                '<div class="toolParamHelp">' +
+                    'Add an annotation or notes to this step; annotations are available when a workflow is viewed.' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    },
+
+});
+
+
+
     // create form view
     return Backbone.View.extend({
         initialize: function(options) {
@@ -594,14 +671,21 @@ function reset_tool_search( initValue ) {
             // check if tool form already exists
             if ($container.find('#' + id).length == 0) {
                 var $el = $('<div id="' + id + '" class="' + cls + '"/>');
+                var formView = null;
                 if (node.type == 'tool' && Utils.isJSON(text)) {
                     var options = JSON.parse(text);
                     options.node = node;
                     options.datatypes = this.datatypes;
-                    $el.append((new ToolForm.View(options)).$el);
+                    formView = new ToolForm.View(options);
                 } else {
-                    $el.append(this._genericFormTemplate( text, node ));
+                    var options = {
+                        html: text,
+                        node: node,
+                        workflowView: this
+                    };
+                    formView = new EditorFormView(options);
                 }
+                $el.append(formView.$el);
                 $container.append($el);
             }
 
@@ -612,62 +696,6 @@ function reset_tool_search( initValue ) {
             $container.find('#' + id).show();
             $container.show();
             $container.scrollTop();
-        },
-
-        _genericFormTemplate: function ( text, node ) {
-            var $el = $('<div/>').html( text );
-            if (node && node.id != 'no-node') {
-                $el.find('.toolForm:first').after(this._genericStepAttributesTemplate( node ));
-                var self = this;
-                ($el.find( 'form' ).length > 0) && $el.find( 'form' ).ajaxForm( {
-                    type: 'POST',
-                    dataType: 'json',
-                    success: function( data ) {
-                        self.workflow.active_form_has_changes = false;
-                        node.update_field_data( data );
-                        self.showWorkflowParameters();
-                    },
-                    beforeSubmit: function( data ) {
-                        data.push( { name: 'tool_state', value: node.tool_state } );
-                        data.push( { name: '_', value: 'true' } );
-                    }
-                }).each( function() {
-                    var form = this;
-                    $(this).find('select[refresh_on_change="true"]').change( function() {
-                        $(form).submit();
-                    });
-                    $(this).find('input[refresh_on_change="true"]').change( function() {
-                        $(form).submit();
-                    });
-                    $(this).find('input, textarea, select').each( function() {
-                        $(this).bind('focus click', function() {
-                            self.workflow.active_form_has_changes = true;
-                        });
-                    });
-                });
-            }
-            return $el;
-        },
-
-        _genericStepAttributesTemplate: function( node ) {
-            return  '<p>' +
-                        '<div class="metadataForm">' +
-                            '<div class="metadataFormTitle">' +
-                                'Edit Step Attributes' +
-                            '</div>' +
-                            '<div class="form-row">' +
-                                '<label>Annotation / Notes:</label>' +
-                                '<div style="margin-right: 10px;">' +
-                                    '<textarea name="annotation" rows="3" style="width: 100%">' +
-                                        node.annotation +
-                                    '</textarea>' +
-                                    '<div class="toolParamHelp">' +
-                                        'Add an annotation or notes to this step; annotations are available when a workflow is viewed.' +
-                                    '</div>' +
-                                '</div>' +
-                            '</div>' +
-                        '</div>' +
-                    '</p>';
         },
 
         isSubType: function ( child, parent ) {
