@@ -33,7 +33,7 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
                 cls             : 'ui-portlet-narrow',
 
                 // configure model update
-                update_url      : galaxy_config.root + 'api/workflows/build_module',
+                update_url      : Galaxy.root + 'api/workflows/build_module',
                 update          : function(data) {
                     self.node.update_field_data(data);
                     self.errors(data && data.tool_model)

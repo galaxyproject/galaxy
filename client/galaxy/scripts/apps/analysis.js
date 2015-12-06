@@ -7,7 +7,7 @@ var jQuery = require( 'jquery' ),
     ToolPanel = require( './tool-panel' ),
     HistoryPanel = require( './history-panel' ),
     PAGE = require( 'layout/page' ),
-    ToolsForm = require( 'mvc/tool/tools-form' );
+    ToolForm = require( 'mvc/tool/tool-form' );
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -124,7 +124,7 @@ window.app = function app( options, bootstrapped ){
         _loadToolForm : function( params ){
             //TODO: load tool form code async
             params.id = params.tool_id;
-            centerPanel.display( new ToolsForm.View( params ) );
+            centerPanel.display( new ToolForm.View( params ) );
         },
 
         /** load the center panel iframe using the given url */

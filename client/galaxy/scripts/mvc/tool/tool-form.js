@@ -63,7 +63,7 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tool/tool-form-base', 'mvc/tool/to
             Galaxy.emit.debug( 'tool-form::submit()', 'Validation complete.', job_def );
             Utils.request({
                 type    : 'POST',
-                url     : galaxy_config.root + 'api/tools',
+                url     : Galaxy.root + 'api/tools',
                 data    : job_def,
                 success : function( response ) {
                     callback && callback();

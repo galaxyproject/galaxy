@@ -2178,7 +2178,7 @@ class Tool( object, Dictifiable ):
             raise exceptions.MessageException( '[history_id=%s] Failed to retrieve history. %s.' % ( history_id, str( e ) ) )
 
         # set workflow mode ( TODO: Should be revised/parsed without trans to tool parameters (basic.py) )
-        trans.workflow_building_mode = workflow_mode;
+        trans.workflow_building_mode = workflow_mode
 
         # load job parameters into incoming
         tool_message = ''

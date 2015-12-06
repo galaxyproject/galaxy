@@ -5,7 +5,6 @@ Basic tool parameters.
 import logging
 import os
 import os.path
-import urllib
 from xml.etree.ElementTree import XML
 from galaxy import util
 from galaxy.web import form_builder
@@ -353,7 +352,7 @@ class IntegerToolParameter( TextToolParameter ):
             return int( value )
         except Exception, err:
             if isinstance( value, basestring ):
-                if value.startswith( "$" ) and ( trans is None or trans.workflow_building_mode ):
+                if value.startswith( "$" ):
                     return value
             elif not value and self.optional:
                 return None
@@ -431,7 +430,7 @@ class FloatToolParameter( TextToolParameter ):
             return float( value )
         except Exception, err:
             if isinstance( value, basestring ):
-                if value.startswith( "$" ) and ( trans is None or trans.workflow_building_mode ):
+                if value.startswith( "$" ):
                     return value
             elif not value and self.optional:
                 return None
@@ -2174,8 +2173,10 @@ class DataToolParameter( BaseDataToolParameter ):
 
         # prepare dataset/collection matching
         dataset_matcher = DatasetMatcher( trans, self, None, other_values )
-        history = trans.history
         multiple = self.multiple
+        history = trans.history
+        if history is None:
+            return d
 
         # add datasets
         for hda in history.active_datasets_children_and_roles:
