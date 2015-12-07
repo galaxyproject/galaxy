@@ -118,8 +118,8 @@ define(['utils/utils',
 
             // create repeat block element
             var repeat = new Repeat.View({
-                title           : input_def.title,
-                title_new       : input_def.title,
+                title           : input_def.title || 'Repeat',
+                title_new       : input_def.title || '',
                 min             : input_def.min,
                 max             : input_def.max,
                 onnew           : function() {
@@ -164,7 +164,7 @@ define(['utils/utils',
 
             // create input field wrapper
             var input_element = new InputElement(this.app, {
-                label   : input_def.title,
+                label   : input_def.title || input_def.name,
                 help    : input_def.help,
                 field   : repeat
             });
@@ -191,7 +191,7 @@ define(['utils/utils',
 
             // create portlet for sub section
             var portlet = new Portlet.View({
-                title       : input_def.title,
+                title       : input_def.title || input_def.name,
                 cls         : 'ui-portlet-section',
                 collapsible : true,
                 collapsed   : true,
