@@ -7,8 +7,9 @@ define([
     'mvc/workflow/workflow-node',
     'mvc/tool/tools-form-workflow',
     'utils/async-save-text',
-    'ui/editable-text',
-], function( Utils, Globals, Workflow, WorkflowCanvas, Node, ToolsForm, async_save_text ){
+    'libs/toastr',
+    'ui/editable-text'
+], function( Utils, Globals, Workflow, WorkflowCanvas, Node, ToolsForm, async_save_text, Toastr ){
 
 // Reset tool search to start state.
 function reset_tool_search( initValue ) {
@@ -95,7 +96,7 @@ EditorFormView = Backbone.View.extend({
                         $titleText.data("last-value", newLabel);
                         $el.find('form').submit();
                     } else {
-                        alert("Step label " + newLabel + " already exists, cannot update label.");
+                        Toastr.warning("Step label " + newLabel + " already exists, cannot update label.");
                         $titleText.text(lastValue);
                     }
                 }

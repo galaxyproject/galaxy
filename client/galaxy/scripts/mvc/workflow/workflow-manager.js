@@ -1,4 +1,8 @@
-define(['mvc/workflow/workflow-connector'], function( Connector ) {
+define([
+    'mvc/workflow/workflow-connector',
+    'libs/toastr'
+    ],
+function( Connector, Toastr ) {
     function Workflow( app, canvas_container ) {
         this.app = app;
         this.canvas_container = canvas_container;
@@ -8,6 +12,7 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
         this.has_changes = false;
         this.active_form_has_changes = false;
         this.nodeLabels = {}; // TODO: track and enforce output labels also
+
     }
     $.extend( Workflow.prototype, {
         canLabelNodeWith: function( label ) {
@@ -33,8 +38,7 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
                 this.unregisterNodeLabel( fromLabel );
             }
             if( ! this.canLabelNodeWith( toLabel ) ) {
-                // TODO: Improve display of this error.
-                alert("Workflow contains duplicate node labels " + toLabel + ". This must be fixed before it can be saved.");
+                Toastr.warning("Workflow contains duplicate node labels " + toLabel + ". This must be fixed before it can be saved.");
             }
             if( toLabel ) {
                 this.registerNodeLabel( toLabel );
