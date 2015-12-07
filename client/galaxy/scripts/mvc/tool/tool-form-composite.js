@@ -29,7 +29,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
             }).$el );
             this.$el.append( this.$header );
 
-            // configure steps and build form views
+            // initialize steps and configure connections
             _.each( options.steps, function( step, i ) {
                 Galaxy.emit.debug( 'tool-form-composite::initialize()', i + ' : Preparing workflow step.' );
                 step = Utils.merge( {
@@ -50,8 +50,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                     cls_enable              : 'fa fa-edit',
                     cls_disable             : 'fa fa-undo'
                 }, step );
-
-                // link output datasets to input fields
+                // convert all connected data inputs to hidden fields with proper labels
                 _.each( options.steps, function( sub_step ) {
                     var connections_by_name = {};
                     _.each( step.output_connections, function( connection ) {
@@ -68,8 +67,12 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                         input.help += 'Output dataset \'' + connection.output_name + '\' from step ' + ( parseInt( i ) + 1 );
                     });
                 });
+                self.steps[ i ] = step;
+                self.links[ i ] = [];
+            });
 
-                // build forms
+            // finalize configuration and build forms
+            _.each( self.steps, function( step, i ) {
                 var form = null;
                 if ( String( step.step_type ).startsWith( 'data' ) ) {
                     form = new Form( Utils.merge({
@@ -83,25 +86,33 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                         }
                     }, step ));
                 } else if ( step.step_type == 'tool' ) {
-                    Utils.deepeach( step.inputs, function( input ) {
-                        if ( input.type ) {
-                            input.options && input.options.length == 0 && ( input.is_workflow = true );
-                            if ( input.value && input.value.__class__ == 'RuntimeValue' ) {
-                                input.value = null;
-                            } else if ( [ 'data', 'data_collection', 'hidden' ].indexOf( input.type ) == -1 && !self._isWorkflowParameter( input.value ) ) {
-                                input.collapsible_value = input.value;
-                                input.collapsible_preview = true;
+                    // select fields are shown for dynamic fields if all putative data inputs are available
+                    function visitInputs( inputs, data_resolved ) {
+                        data_resolved === undefined && ( data_resolved = true );
+                        _.each( inputs, function ( input ) {
+                            if ( _.isObject( input ) ) {
+                                if ( input.type ) {
+                                    var is_data_input = [ 'data', 'data_collection' ].indexOf( input.type ) !== -1;
+                                    is_data_input && input.linked && !input.linked.startsWith( 'data' ) && ( data_resolved = false );
+                                    input.options && input.options.length == 0 && !data_resolved && ( input.is_workflow = true );
+                                    input.value && input.value.__class__ == 'RuntimeValue' && ( input.value = null );
+                                    if ( !is_data_input && input.type !== 'hidden' && !self._isWorkflowParameter( input.value ) ) {
+                                        input.collapsible_value = input.value;
+                                        input.collapsible_preview = true;
+                                    }
+                                }
+                                visitInputs( input, data_resolved );
                             }
-                        }
-                    });
+                        });
+                    };
+                    visitInputs( step.inputs );
+                    // or if a particular reference is specified and available
                     FormData.matchContext( step.inputs, 'data_ref', function( input, reference ) {
                         input.is_workflow = ( reference.linked && !reference.linked.startsWith( 'data' ) ) || self._isWorkflowParameter( input.value );
                     });
                     form = new ToolFormBase( step );
                 }
                 self.forms[ i ] = form;
-                self.steps[ i ] = step;
-                self.links[ i ] = [];
             });
 
             // create index of data output links
