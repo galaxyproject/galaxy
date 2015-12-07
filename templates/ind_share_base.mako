@@ -93,7 +93,8 @@
                             Email address of user to share with
                         </label>
                         <div style="float: left; width: 250px; margin-right: 10px;">
-                            <input type="text" name="email" value="${email | h}" size="40">
+                            <input type="hidden" id="email_select" name="email" >
+                            </input>
                         </div>
                         <div style="clear: both"></div>
                     </div>
@@ -103,9 +104,91 @@
                     <div class="form-row">
                         <a href="${h.url_for(controller=item_controller, action="sharing", id=trans.security.encode_id( item.id ) )}">Back to ${item_class_name}'s Sharing Home</a>
                     </div>
-                    
                 </form>
             </div>
         </div>
     </div>
+
+    <script type="text/javascript">
+    /*  This should be ripped out and made generic at some point for the
+     *  various API bindings available, and once the API can filter list
+     *  queries (term, below) */
+
+    var user_id = "${trans.security.encode_id(trans.user.id)}";
+
+    function item_to_label(item){
+        var text = "";
+        if(typeof(item.username) === "string" && typeof(item.email) === "string"){
+            text = item.username + " <" + item.email + ">";
+        }else if(typeof(item.username) === "string"){
+            text = item.username;
+        }else{
+            text = item.email;
+        }
+        return text;
+        //return "id:" + item.id + "|e:" + item.email + "|u:" + item.username;
+    }
+
+    $("#email_select").select2({
+        placeholder: "Select a user",
+        multiple: false,
+        initSelection: function(element, callback) {
+            var data = [];
+            callback(data);
+        },
+        // Required for initSelection
+        id: function(object) {
+            return object.id;
+        },
+        ajax: {
+            url: "${h.url_for(controller="/api/users", action="index")}",
+            data: function (term) {
+                return {
+                    f_any: term,
+                };
+            },
+            dataType: 'json',
+            quietMillis: 250,
+            results: function (data) {
+                var results = [];
+                // For every user returned by the API call,
+                $.each(data, function(index, item){
+                    // If they aren't the requesting user, add to the
+                    // list that will populate the select
+                    if(item.id != "${trans.security.encode_id(trans.user.id)}"){
+                        // Because we "share-by-email", we can ONLY add a
+                        // result if we can see the email. Hopefully someday
+                        // someone will allow sharing by Galaxy user ID (or
+                        // something else "opaque" and people will be able to
+                        // share-by-username.)
+                        if(item.email !== undefined){
+                            results.push({
+                              id: item.email,
+                              name: item.username,
+                              text: item_to_label(item),
+                            });
+                        }
+                    }
+                });
+                return {
+                    results: results
+                };
+            }
+        },
+        createSearchChoice: function(term, data) {
+            // Check for a user with a matching email.
+            var matches = _.filter(data, function(user){
+                return user.text.indexOf(term) > -1;
+            });
+            // If there aren't any users with matching object labels, then
+            // display a "default" entry with whatever text they're entering.
+            // id is set to term as that will be used in 
+            if(matches.length == 0){
+                return {id: term, text:term};
+            }else{
+                // No extra needed
+            }
+        }
+    });
+    </script>
 </%def>

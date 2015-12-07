@@ -1342,14 +1342,14 @@ class Tool( object, Dictifiable ):
             else:
                 raise exceptions.MessageException( execution_tracker.execution_errors[ 0 ] )
 
-    def handle_single_execution( self, trans, rerun_remap_job_id, params, history, mapping_over_collection ):
+    def handle_single_execution( self, trans, rerun_remap_job_id, params, history, mapping_over_collection, execution_cache=None ):
         """
         Return a pair with whether execution is successful as well as either
         resulting output data or an error message indicating the problem.
         """
         try:
             params = self.__remove_meta_properties( params )
-            job, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id, mapping_over_collection=mapping_over_collection )
+            job, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id, mapping_over_collection=mapping_over_collection, execution_cache=execution_cache )
         except httpexceptions.HTTPFound, e:
             # if it's a paste redirect exception, pass it up the stack
             raise e
@@ -2576,18 +2576,17 @@ class Tool( object, Dictifiable ):
                         # for some reason jobs don't always keep track of the tool version.
                         message = ''
                     else:
-                        message = 'This job was initially run with tool version "%s", which is currently not available.  ' % tool_version
+                        message = 'This job was run with tool version "%s", which is not available.  ' % tool_version
                         if len( tools ) > 1:
-                            message += 'You can re-run the job with the selected tool or choose another derivation of the tool.'
+                            message += 'You can re-run the job with the selected tool or choose another version of the tool.'
                         else:
-                            message += 'You can re-run the job with this tool version, which is a derivation of the original tool.'
+                            message += 'You can re-run the job with this tool version, which is a different version of the original tool.'
                 else:
+                    message = 'This job was run with tool id "%s", version "%s", which is not available.  ' % ( tool_id, tool_version )
                     if len( tools ) > 1:
-                        message = 'This job was initially run with tool version "%s", which is currently not available.  ' % tool_version
-                        message += 'You can re-run the job with the selected tool or choose another derivation of the tool.'
+                        message += 'You can re-run the job with the selected tool id "%s" or choose another derivation of the tool.' % self.id
                     else:
-                        message = 'This job was initially run with tool id "%s", version "%s", which is ' % ( tool_id, tool_version )
-                        message += 'currently not available.  You can re-run the job with this tool, which is a derivation of the original tool.'
+                        message += 'You can re-run the job with tool id "%s", which is a derivation of the original tool.' % self.id
         except Exception, e:
             raise exceptions.MessageException( str( e ) )
         return message

@@ -517,8 +517,12 @@ class ToolModule( WorkflowModule ):
         module = Class( trans, tool_id, tool_version=tool_version )
         module.state = galaxy.tools.DefaultToolState()
         if module.tool is not None:
+            message = ""
+            if tool_id != module.tool_id:
+                message += "The tool (id '%s') specified in this step is not available. Using the tool with id %s instead." % (tool_id, module.tool_id)
             if d.get('tool_version', 'Unspecified') != module.get_tool_version():
-                message = "%s: using version '%s' instead of version '%s' indicated in this workflow." % ( tool_id, d.get( 'tool_version', 'Unspecified' ), module.get_tool_version() )
+                message += "%s: using version '%s' instead of version '%s' specified in this workflow." % ( tool_id, d.get( 'tool_version', 'Unspecified' ), module.get_tool_version() )
+            if message:
                 log.debug(message)
                 module.version_changes.append(message)
             if d[ "tool_state" ]:
@@ -545,8 +549,12 @@ class ToolModule( WorkflowModule ):
                 return module_factory.from_dict(trans, loads(step.config), secure=False)
             tool_version = step.tool_version
             module = Class( trans, tool_id, tool_version=tool_version )
+            message = ""
+            if step.tool_id != module.tool_id:
+                message += "The tool with the id '%s' is not available. Using the tool with id '%s' instead." % (step.tool_id, module.tool_id)
             if step.tool_version and (step.tool_version != module.tool.version):
-                message = "%s: using version '%s' instead of version '%s' indicated in this workflow." % (tool_id, module.tool.version, step.tool_version)
+                message += "%s: using version '%s' instead of version '%s' specified in this workflow." % (tool_id, module.tool.version, step.tool_version)
+            if message:
                 log.debug(message)
                 module.version_changes.append(message)
             module.recover_state( step.tool_inputs )
