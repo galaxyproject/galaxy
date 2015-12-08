@@ -16,7 +16,7 @@ var Citation = Backbone.Model.extend( baseMVC.LoggableMixin ).extend( {
 
     initialize: function() {
         var bibtex = this.get( 'content' );
-        var entry = new BibtexParser(bibtex).entries[0];
+        var entry = BibtexParser(bibtex).entries[0];
         this.entry = entry;
         this._fields = {};
         var rawFields = entry.Fields;
@@ -61,7 +61,7 @@ var ToolCitationCollection = BaseCitationCollection.extend( {
     partial : false, // If a tool has citations, assume they are complete.
 } );
 
-window.Citation = Citation;
+
 //==============================================================================
 return {
     Citation : Citation,
