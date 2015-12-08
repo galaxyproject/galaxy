@@ -235,7 +235,7 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         if self.is_anonymous( user ):
             return False
         request_types = self.app.security_agent.get_accessible_request_types( trans, user )
-        return ( user.requests or request_types )
+        return bool( user.requests or request_types )
 
 
 class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
