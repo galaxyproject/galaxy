@@ -282,14 +282,6 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
 
     # ---- History management -----------------------------------------------
     @web.expose
-    def history_options( self, trans ):
-        """Displays a list of history related actions.
-        """
-        return trans.fill_template( "/history/options.mako",
-                                    user=trans.get_user(),
-                                    history=trans.get_history( create=True ) )
-
-    @web.expose
     def history_delete( self, trans, id ):
         """Backward compatibility with check_galaxy script.
         """
