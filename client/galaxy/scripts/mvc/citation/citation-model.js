@@ -2,7 +2,7 @@ define([
     "libs/bibtex",
     "mvc/base-mvc",
     "utils/localization"
-], function( bibtex, baseMVC, _l ){
+], function( BibtexParser, baseMVC, _l ){
 /* global Backbone */
 
 var logNamespace = 'citation';
@@ -14,9 +14,9 @@ var logNamespace = 'citation';
 var Citation = Backbone.Model.extend( baseMVC.LoggableMixin ).extend( {
     _logNamespace : logNamespace,
 
-    initialize: function( ) {
-        var bibtex = this.attributes.content;
-        var entry = new bibtex.BibtexParser(bibtex).entries[0];
+    initialize: function() {
+        var bibtex = this.get( 'content' );
+        var entry = BibtexParser(bibtex).entries[0];
         this.entry = entry;
         this._fields = {};
         var rawFields = entry.Fields;
@@ -60,6 +60,7 @@ var ToolCitationCollection = BaseCitationCollection.extend( {
     },
     partial : false, // If a tool has citations, assume they are complete.
 } );
+
 
 //==============================================================================
 return {
