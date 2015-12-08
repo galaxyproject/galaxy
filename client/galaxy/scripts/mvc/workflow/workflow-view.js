@@ -95,6 +95,10 @@ EditorFormView = Backbone.View.extend({
                         $el.find("input[name='label']").val(newLabel);
                         $titleText.data("last-value", newLabel);
                         $el.find('form').submit();
+                        if(newLabel == "") {
+                            // If label unset restore default name as title.
+                            $titleText.text(node.name);
+                        }
                     } else {
                         Toastr.warning("Step label " + newLabel + " already exists, cannot update label.");
                         $titleText.text(lastValue);

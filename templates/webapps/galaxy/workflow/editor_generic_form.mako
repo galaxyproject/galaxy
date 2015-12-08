@@ -1,5 +1,6 @@
 <form name="${form.name}" action="${h.url_for( controller='workflow', action='editor_form_post' )}" method="post">
     <%
+    from xml.sax.saxutils import escape
     label = module.label
     if label is not None:
         title = label
@@ -17,7 +18,7 @@
             <div class="ui-margin-top"></div>
             <div>
             <input type="hidden" name="type" value="${module.type}" />
-            <input type="hidden" name="label" value="${label or ''}" />
+            <input type="hidden" name="label" value="${escape(label or '')}" />
             <table class="ui-table-plain">
               <thead></thead>
               <tbody>
