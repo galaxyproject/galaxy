@@ -128,7 +128,7 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
             assert source_type != "path"
             jobs_descriptions = yaml.load( has_workflow )
 
-        test_data = jobs_descriptions["test_data"]
+        test_data = jobs_descriptions.get("test_data", {})
 
         label_map = {}
         inputs = {}
@@ -174,7 +174,8 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
         )
         workflow_request[ "inputs" ] = dumps( label_map )
         workflow_request[ "inputs_by" ] = 'name'
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        if inputs:
+            self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         url = "workflows/%s/usage" % ( workflow_id )
         invocation_response = self._post( url, data=workflow_request )
         self._assert_status_code_is( invocation_response, 200 )
@@ -1039,7 +1040,7 @@ steps:
         self.__assert_lines_hid_line_count_is( history_id, 3, 3 )
 
     @skip_without_tool( "validation_default" )
-    def test_parameter_substitution_validation( self ):
+    def test_parameter_substitution_sanitization( self ):
         substitions = dict( input1="\" ; echo \"moo" )
         run_workflow_response, history_id = self._run_validation_workflow_with_substitions( substitions )
 
