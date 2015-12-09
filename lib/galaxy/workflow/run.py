@@ -152,6 +152,7 @@ class WorkflowInvoker( object ):
             try:
                 self.__check_implicitly_dependent_steps(step)
 
+                # TODO: step may fail to invoke, do something about that.
                 jobs = self._invoke_step( step )
                 for job in (util.listify( jobs ) or [None]):
                     # Record invocation
@@ -260,10 +261,10 @@ class WorkflowProgress( object ):
         """ For given workflow 'step' that has had input_connections_by_name
         populated fetch the actual runtime input for the given tool 'input'.
         """
-        replacement = None
+        replacement = modules.NO_REPLACEMENT
         if prefixed_name in step.input_connections_by_name:
             connection = step.input_connections_by_name[ prefixed_name ]
-            if input.multiple:
+            if input.type == "data" and input.multiple:
                 replacement = [ self.replacement_for_connection( c ) for c in connection ]
                 # If replacement is just one dataset collection, replace tool
                 # input with dataset collection - tool framework will extract
@@ -272,10 +273,11 @@ class WorkflowProgress( object ):
                     if isinstance( replacement[ 0 ], model.HistoryDatasetCollectionAssociation ):
                         replacement = replacement[ 0 ]
             else:
-                replacement = self.replacement_for_connection( connection[ 0 ] )
+                is_data = input.type in ["data", "data_collection"]
+                replacement = self.replacement_for_connection( connection[ 0 ], is_data=is_data )
         return replacement
 
-    def replacement_for_connection( self, connection ):
+    def replacement_for_connection( self, connection, is_data=True ):
         output_step_id = connection.output_step.id
         if output_step_id not in self.outputs:
             template = "No outputs found for step id %s, outputs are %s"
@@ -288,9 +290,13 @@ class WorkflowProgress( object ):
         try:
             replacement = step_outputs[ output_name ]
         except KeyError:
-            template = "Workflow evaluation problem - failed to find output_name %s in step_outputs %s"
-            message = template % ( output_name, step_outputs )
-            raise Exception( message )
+            if is_data:
+                # Must resolve.
+                template = "Workflow evaluation problem - failed to find output_name %s in step_outputs %s"
+                message = template % ( output_name, step_outputs )
+                raise Exception( message )
+            else:
+                replacement = modules.NO_REPLACEMENT
         if isinstance( replacement, model.HistoryDatasetCollectionAssociation ):
             if not replacement.collection.populated:
                 if not replacement.collection.waiting_for_elements:

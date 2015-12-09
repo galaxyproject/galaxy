@@ -5,7 +5,7 @@ from galaxy import model
 
 from galaxy.managers import histories
 
-INPUT_STEP_TYPES = [ 'data_input', 'data_collection_input' ]
+INPUT_STEP_TYPES = [ 'data_input', 'data_collection_input', 'parameter_input' ]
 
 import logging
 log = logging.getLogger( __name__ )
@@ -76,7 +76,7 @@ def normalize_inputs(steps, inputs, inputs_by):
             message = "Workflow cannot be run because an expected input step '%s' has no input dataset." % step.id
             raise exceptions.MessageException( message )
 
-        normalized_inputs[ step.id ] = inputs[ inputs_key ][ 'content' ]
+        normalized_inputs[ step.id ] = inputs[ inputs_key ]
 
     return normalized_inputs
 
@@ -205,8 +205,15 @@ def build_workflow_run_config( trans, workflow, payload ):
         trans.sa_session.add(history)
         trans.sa_session.flush()
 
+    normalized_inputs = normalize_inputs( workflow.steps, inputs, inputs_by )
+    steps_by_id = workflow.steps_by_id
+
     # Set workflow inputs.
-    for input_dict in inputs.itervalues():
+    for key, input_dict in normalized_inputs.iteritems():
+        step = steps_by_id[key]
+        if step.type == "parameter_input":
+            continue
+
         if 'src' not in input_dict:
             message = "Not input source type defined for input '%s'." % input_dict
             raise exceptions.RequestParameterInvalidException( message )
@@ -263,7 +270,12 @@ def build_workflow_run_config( trans, workflow, payload ):
             message = "Invalid workflow input '%s' specified" % input_id
             raise exceptions.ItemAccessibilityException( message )
 
-    normalized_inputs = normalize_inputs( workflow.steps, inputs, inputs_by )
+    for key in set(normalized_inputs.keys()):
+        value = normalized_inputs[key]
+        if isinstance(value, dict) and 'content' in value:
+            normalized_inputs[key] = value['content']
+        else:
+            normalized_inputs[key] = value
 
     # Run each step, connecting outputs to inputs
     replacement_dict = payload.get('replacement_params', {})
@@ -293,7 +305,9 @@ def workflow_run_config_to_request( trans, run_config, workflow ):
         )
         workflow_invocation.input_parameters.append( parameter )
 
+    steps_by_id = {}
     for step in workflow.steps:
+        steps_by_id[step.id] = step
         state = step.state
         serializable_runtime_state = step.module.normalize_runtime_state( state )
         step_state = model.WorkflowRequestStepState()
@@ -344,6 +358,9 @@ def workflow_request_to_run_config( work_request_context, workflow_invocation ):
 
     for input_association in workflow_invocation.input_dataset_collections:
         inputs[ input_association.workflow_step_id ] = input_association.dataset_collection
+
+    for input_association in workflow_invocation.input_step_parameters:
+        inputs[ input_association.workflow_step_id ] = input_association.parameter_value
 
     if copy_inputs_to_history is None:
         raise exceptions.InconsistentDatabase("Failed to find copy_inputs_to_history parameter loading workflow_invocation from database.")

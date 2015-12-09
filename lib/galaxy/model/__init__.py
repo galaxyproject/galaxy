@@ -3484,7 +3484,7 @@ class Workflow( object, Dictifiable ):
 
     dict_collection_visible_keys = ( 'name', 'has_cycles', 'has_errors' )
     dict_element_visible_keys = ( 'name', 'has_cycles', 'has_errors' )
-    input_step_types = ['data_input', 'data_collection_input']
+    input_step_types = ['data_input', 'data_collection_input', 'parameter_input']
 
     def __init__( self, uuid=None ):
         self.user = None
@@ -3735,16 +3735,22 @@ class WorkflowInvocation( object, Dictifiable ):
         self.update_time = galaxy.model.orm.now.now()
 
     def add_input( self, content, step_id ):
-        if content.history_content_type == "dataset":
+        history_content_type = getattr(content, "history_content_type", None)
+        if history_content_type == "dataset":
             request_to_content = WorkflowRequestToInputDatasetAssociation()
             request_to_content.dataset = content
             request_to_content.workflow_step_id = step_id
             self.input_datasets.append( request_to_content )
-        else:
+        elif history_content_type == "dataset_collection":
             request_to_content = WorkflowRequestToInputDatasetCollectionAssociation()
             request_to_content.dataset_collection = content
             request_to_content.workflow_step_id = step_id
             self.input_dataset_collections.append( request_to_content )
+        else:
+            request_to_content = WorkflowRequestInputStepParmeter()
+            request_to_content.parameter_value = content
+            request_to_content.workflow_step_id = step_id
+            self.input_step_parameters.append( request_to_content )
 
     def has_input_for_step( self, step_id ):
         for content in self.input_datasets:
@@ -3833,6 +3839,12 @@ class WorkflowRequestToInputDatasetCollectionAssociation(object, Dictifiable):
     """ Workflow step input dataset collection parameters.
     """
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name' ]
+
+
+class WorkflowRequestInputStepParmeter(object, Dictifiable):
+    """ Workflow step parameter inputs.
+    """
+    dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'parameter_value' ]
 
 
 class MetadataFile( StorableObject ):

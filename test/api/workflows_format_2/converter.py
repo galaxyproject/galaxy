@@ -16,11 +16,13 @@ STEP_TYPES = [
     "data_collection_input",
     "tool",
     "pause",
+    "parameter_input",
 ]
 
 STEP_TYPE_ALIASES = {
     'input': 'data_input',
     'input_collection': 'data_collection_input',
+    'parameter': 'parameter_input',
 }
 
 RUN_ACTIONS_TO_STEPS = {
@@ -160,6 +162,9 @@ def convert_inputs_to_steps(inputs, steps):
             step_type = "data_input"
         elif input_type in ["collection", "data_collection", "data_collection_input"]:
             step_type = "data_collection_input"
+        elif input_type in ["text", "integer", "float", "color", "boolean"]:
+            step_type = "parameter_input"
+            input_def["parameter_type"] = input_type
         else:
             raise Exception("Input type must be a data file or collection.")
 
@@ -180,6 +185,10 @@ def transform_data_input(context, step):
 
 def transform_data_collection_input(context, step):
     transform_input(context, step, default_name="Input dataset collection")
+
+
+def transform_parameter_input(context, step):
+    transform_input(context, step, default_name="input_parameter")
 
 
 def transform_input(context, step, default_name):
@@ -206,8 +215,9 @@ def transform_input(context, step, default_name):
     tool_state = {
         "name": name
     }
-    if "collection_type" in step:
-        tool_state["collection_type"] = step["collection_type"]
+    for attrib in ["collection_type", "parameter_type", "optional"]:
+        if attrib in step:
+            tool_state[attrib] = step[attrib]
 
     __populate_tool_state(step, tool_state)
 
@@ -268,7 +278,13 @@ def transform_tool(context, step):
     def replace_links(value, key=""):
         if __is_link(value):
             append_link(key, value)
-            return None
+            # Filled in by the connection, so to force late
+            # validation of the field just mark as RuntimeValue.
+            # It would be better I guess if this were some other
+            # value dedicated to this purpose (e.g. a ficitious
+            # {"__class__": "ConnectedValue"}) that could be further
+            # validated by Galaxy.
+            return {"__class__": "RuntimeValue"}
         if isinstance(value, dict):
             new_values = {}
             for k, v in value.iteritems():

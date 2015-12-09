@@ -16,7 +16,13 @@ from galaxy.web.framework import formbuilder
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
 from galaxy.tools.parameters import check_param, visit_input_values
-from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter, DummyDataset, RuntimeValue
+from galaxy.tools.parameters.basic import (
+    parameter_types,
+    DataCollectionToolParameter,
+    DataToolParameter,
+    DummyDataset,
+    RuntimeValue,
+)
 from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.tools.execute import execute
 from galaxy.util.bunch import Bunch
@@ -33,6 +39,7 @@ RUNTIME_STEP_META_STATE_KEY = "__STEP_META_STATE__"
 # actions (i.e. PJA specified at runtime on top of the workflow-wide defined
 # ones.
 RUNTIME_POST_JOB_ACTIONS_KEY = "__POST_JOB_ACTIONS__"
+NO_REPLACEMENT = object()
 
 
 class WorkflowModule( object ):
@@ -417,6 +424,82 @@ class InputDataCollectionModule( InputModule ):
                 collection_type=self.state[ 'collection_type' ]
             )
         ]
+
+
+class InputParameterModule( SimpleWorkflowModule ):
+    default_name = "input_parameter"
+    default_parameter_type = "text"
+    default_optional = False
+    type = "parameter_input"
+    name = default_name
+    parameter_type = default_parameter_type
+    optional = default_optional
+    state_fields = [
+        "name",
+        "parameter_type",
+        "optional",
+    ]
+
+    @classmethod
+    def default_state( Class ):
+        return dict(
+            name=Class.default_name,
+            parameter_type=Class.default_parameter_type,
+            optional=Class.default_optional,
+        )
+
+    def _abstract_config_form( self ):
+        form = formbuilder.FormBuilder(
+            title=self.name
+        ).add_text(
+            "name", "Name", value=self.state['name']
+        ).add_select(
+            "parameter_type", "Parameter Type", value=self.state['parameter_type'],
+            options=[
+                ('text', "Text"),
+                ('integer', "Integer"),
+                ('float', "Float"),
+                ('boolean', "Boolean (True or False)"),
+                ('color', "Color"),
+            ]
+        ).add_checkbox(
+            "optional", "Optional", value=self.state['optional']
+        )
+
+        return form
+
+    def get_runtime_inputs( self, **kwds ):
+        label = self.state.get( "name", self.default_name )
+        parameter_type = self.state.get("parameter_type", self.default_parameter_type)
+        optional = self.state.get("optional", self.default_optional)
+        if parameter_type not in ["text", "boolean", "integer", "float", "color"]:
+            raise ValueError("Invalid parameter type for workflow parameters encountered.")
+        parameter_class = parameter_types[parameter_type]
+        parameter_kwds = {}
+        if parameter_type in ["integer", "float"]:
+            parameter_kwds["value"] = str(0)
+
+        # TODO: Use a dict-based description from YAML tool source
+        element = Element("param", name="input", label=label, type=parameter_type, optional=str(optional), **parameter_kwds )
+        input = parameter_class( None, element )
+        return dict( input=input )
+
+    def get_runtime_state( self ):
+        state = galaxy.tools.DefaultToolState()
+        state.inputs = dict( input=None )
+        return state
+
+    def get_runtime_input_dicts( self, step_annotation ):
+        name = self.state.get( "name", self.default_name )
+        return [ dict( name=name, description=step_annotation ) ]
+
+    def get_data_inputs( self ):
+        return []
+
+    def execute( self, trans, progress, invocation, step ):
+        job, step_outputs = None, dict( output=step.state.inputs['input'])
+        progress.set_outputs_for_input( step, step_outputs )
+        return job
 
 
 class PauseModule( SimpleWorkflowModule ):
@@ -840,7 +923,7 @@ class ToolModule( WorkflowModule ):
 
             # Connect up
             def callback( input, value, prefixed_name, prefixed_label ):
-                replacement = None
+                replacement = NO_REPLACEMENT
                 if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
                     if iteration_elements and prefixed_name in iteration_elements:
                         if isinstance( input, DataToolParameter ):
@@ -851,10 +934,13 @@ class ToolModule( WorkflowModule ):
                             replacement = iteration_elements[ prefixed_name ]
                     else:
                         replacement = progress.replacement_for_tool_input( step, input, prefixed_name )
+                else:
+                    replacement = progress.replacement_for_tool_input( step, input, prefixed_name )
                 return replacement
+
             try:
                 # Replace DummyDatasets with historydatasetassociations
-                visit_input_values( tool.inputs, execution_state.inputs, callback )
+                visit_input_values( tool.inputs, execution_state.inputs, callback, no_replacement_value=NO_REPLACEMENT )
             except KeyError, k:
                 message_template = "Error due to input mapping of '%s' in '%s'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review your workflow."
                 message = message_template % (tool.name, k.message)
@@ -1006,6 +1092,7 @@ def is_tool_module_type( module_type ):
 module_types = dict(
     data_input=InputDataModule,
     data_collection_input=InputDataCollectionModule,
+    parameter_input=InputParameterModule,
     pause=PauseModule,
     tool=ToolModule,
 )
@@ -1043,6 +1130,11 @@ def load_module_sections( trans ):
                     "name": "pause",
                     "title": "Pause Workflow for Dataset Review",
                     "description": "Pause for Review"
+                },
+                {
+                    "name": "parameter_input",
+                    "title": "Parameter Input",
+                    "description": "Simple inputs used for workflow logic"
                 },
             ],
         }
