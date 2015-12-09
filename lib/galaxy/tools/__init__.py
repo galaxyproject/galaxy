@@ -1883,7 +1883,13 @@ class Tool( object, Dictifiable ):
                                 ck_param = False
                         # this will fail when a parameter's type has changed to a non-compatible one: e.g. conditional group changed to dataset input
                         if ck_param:
-                            input.value_from_basic( input.value_to_basic( values[ input.name ], trans.app ), trans.app, ignore_errors=False )
+                            value = values[ input.name ]
+                            input.value_from_basic( input.value_to_basic( value, trans.app ), trans.app, ignore_errors=False )
+                            _, error = check_param(trans, input, value, context, history=trans.history)
+                            if error:
+                                messages[ input.name ] = error
+                                if update_values:
+                                    values[ input.name ] = input.get_initial_value( trans, context )
                     except:
                         messages[ input.name ] = "Value no longer valid for '%s%s', replaced with default" % ( prefix, input.label )
                         if update_values:

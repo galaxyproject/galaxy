@@ -1053,6 +1053,25 @@ steps:
 
         self._assert_status_code_is( run_workflow_response, 400 )
 
+    @skip_without_tool( "validation_repeat" )
+    def test_workflow_import_state_validation_1( self ):
+        history_id = self.dataset_populator.new_history()
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+ - tool_id: validation_repeat
+   state:
+     r2:
+      - text: ""
+""")
+        workflow_request = dict(
+            history="hist_id=%s" % history_id,
+            workflow_id=workflow_id,
+        )
+        url = "workflows/%s/usage" % ( workflow_id )
+        invocation_response = self._post( url, data=workflow_request )
+        self._assert_status_code_is( invocation_response, 400 )
+
     def _run_validation_workflow_with_substitions( self, substitions ):
         workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_validation_1" )
         uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
