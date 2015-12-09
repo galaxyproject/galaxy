@@ -35,7 +35,7 @@ var menu = [
     {
         html    : _l( 'Copy History' ),
         func    : function() {
-            HistoryCopyDialog( Galaxy.currHistoryPanel.model )
+            HistoryCopyDialog( Galaxy.currHistoryPanel.model, { allDatasets : true } )
                 .done( function(){
                     Galaxy.currHistoryPanel.loadCurrentHistory();
                 });

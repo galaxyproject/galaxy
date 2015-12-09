@@ -14306,7 +14306,7 @@ webpackJsonp([0,1],[
 	    {
 	        html    : _l( 'Copy History' ),
 	        func    : function() {
-	            HistoryCopyDialog( Galaxy.currHistoryPanel.model )
+	            HistoryCopyDialog( Galaxy.currHistoryPanel.model, { allDatasets : true } )
 	                .done( function(){
 	                    Galaxy.currHistoryPanel.loadCurrentHistory();
 	                });
@@ -26405,13 +26405,13 @@ webpackJsonp([0,1],[
 	            '<br />',
 	            '<p>', _l( 'Choose which datasets from the original history to include:' ), '</p>',
 	            // copy non-deleted is the default
-	            '<input name="copy-what" type="radio" id="copy-non-deleted" value="copy-non-deleted" checked />',
+	            '<input name="copy-what" type="radio" id="copy-non-deleted" value="copy-non-deleted" />',
 	            '<label for="copy-non-deleted"> ',
 	                _l( 'Copy only the active (non-deleted) datasets' ),
 	            '</label><br />',
 	            '<input name="copy-what" type="radio" id="copy-all" value="copy-all" />',
 	            '<label for="copy-all"> ',
-	                _l( 'Copy all datasets, including deleted ones' ),
+	                _l( 'Copy all datasets including deleted ones' ),
 	            '</label><br />',
 	        '</form>'
 	    ].join('');
@@ -26463,7 +26463,8 @@ webpackJsonp([0,1],[
 	
 	    var deferred = jQuery.Deferred(),
 	        historyName = _.escape( history.get( 'name' ) ),
-	        defaultCopyName = "Copy of '" + historyName + "'";
+	        defaultCopyName = options.name || ( "Copy of '" + historyName + "'" ),
+	        defaultCopyWhat = options.allDatasets? 'copy-all' : 'copy-non-deleted';
 	
 	    // do the actual work of copying here
 	    function copyHistory( name ){
@@ -26506,8 +26507,7 @@ webpackJsonp([0,1],[
 	        title   : _l( 'Copying history' ) + ' "' + historyName + '"',
 	        body    : $( _renderBody({
 	            defaultCopyName : defaultCopyName,
-	            // isAnon          : Galaxy.user.isAnonymous()
-	            isAnon          : true
+	            isAnon          : Galaxy.user.isAnonymous()
 	        })),
 	        buttons : {
 	            'Cancel' : function(){ Galaxy.modal.hide(); },
@@ -26515,6 +26515,8 @@ webpackJsonp([0,1],[
 	        },
 	        closing_events : true
 	    }, options ));
+	
+	    $( '#' + defaultCopyWhat ).prop( 'checked', true );
 	
 	    $( '#copy-modal-title' ).focus().select();
 	    $( '#copy-modal-title' ).on( 'keydown', function( ev ){
