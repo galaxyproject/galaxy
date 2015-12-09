@@ -66,7 +66,7 @@ var SessionStorageModel = Backbone.Model.extend({
 
     _checkEnabledSessionStorage : function(){
         try {
-            return sessionStorage.length;
+            return window.sessionStorage.length >= 0;
         } catch( err ){
             alert( 'Please enable cookies in your browser for this Galaxy site' );
             return false;
