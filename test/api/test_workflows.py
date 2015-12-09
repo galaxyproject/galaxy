@@ -1047,6 +1047,26 @@ steps:
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         self.assertEquals("__dq__ X echo __dq__moo\n", self.dataset_populator.get_history_dataset_content( history_id, hid=1 ) )
 
+    @skip_without_tool( "validation_repeat" )
+    def test_parameter_substitution_validation_value_errors_0( self ):
+        history_id = self.dataset_populator.new_history()
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+ - tool_id: validation_repeat
+   state:
+     r2:
+      - text: "abd"
+""")
+        workflow_request = dict(
+            history="hist_id=%s" % history_id,
+            parameters=dumps( dict( validation_repeat={"r2_0|text": ""} ) )
+        )
+        url = "workflows/%s/invocations" % workflow_id
+        invocation_response = self._post( url, data=workflow_request )
+        # Take a valid stat and make it invalid, assert workflow won't run.
+        self._assert_status_code_is( invocation_response, 400 )
+
     @skip_without_tool( "validation_default" )
     def test_parameter_substitution_validation_value_errors_1( self ):
         substitions = dict( select_param="\" ; echo \"moo" )
