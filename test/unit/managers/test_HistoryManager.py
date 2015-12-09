@@ -36,6 +36,12 @@ class HistoryManagerTestCase( BaseTestCase ):
     def set_up_managers( self ):
         super( HistoryManagerTestCase, self ).set_up_managers()
         self.history_manager = HistoryManager( self.app )
+        self.hda_manager = hdas.HDAManager( self.app )
+
+    def add_hda_to_history( self, history, **kwargs ):
+        dataset = self.hda_manager.dataset_manager.create()
+        hda = self.hda_manager.create( history=history, dataset=dataset, **kwargs )
+        return hda
 
     def test_base( self ):
         user2 = self.user_manager.create( **user2_data )
@@ -52,13 +58,7 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.assertEqual( history1,
             self.trans.sa_session.query( model.History ).filter( model.History.user == user2 ).one() )
 
-        self.log( "should be able to copy a history" )
         history2 = self.history_manager.copy( history1, user=user3 )
-        self.assertIsInstance( history2, model.History )
-        self.assertEqual( history2.user, user3 )
-        self.assertEqual( history2, self.trans.sa_session.query( model.History ).get( history2.id ) )
-        self.assertEqual( history2.name, history1.name )
-        self.assertNotEqual( history2, history1 )
 
         self.log( "should be able to query" )
         histories = self.trans.sa_session.query( model.History ).all()
@@ -80,6 +80,36 @@ class HistoryManagerTestCase( BaseTestCase ):
         name_first_then_time = ( model.History.name, sqlalchemy.desc( model.History.create_time ) )
         self.assertEqual( self.history_manager.list( order_by=name_first_then_time ),
             [ history2, history1, history3 ] )
+
+    def test_copy( self ):
+        user2 = self.user_manager.create( **user2_data )
+        user3 = self.user_manager.create( **user3_data )
+
+        self.log( "should be able to copy a history (and it's hdas)" )
+        history1 = self.history_manager.create( name='history1', user=user2 )
+        tags = [ u'tag-one' ]
+        annotation = u'history annotation'
+        self.history_manager.set_tags( history1, tags, user=user2 )
+        self.history_manager.annotate( history1, annotation, user=user2 )
+
+        hda = self.add_hda_to_history( history1, name='wat' )
+        hda_tags = [ u'tag-one', u'tag-two' ]
+        hda_annotation = u'annotation'
+        self.hda_manager.set_tags( hda, hda_tags, user=user2 )
+        self.hda_manager.annotate( hda, hda_annotation, user=user2 )
+
+        history2 = self.history_manager.copy( history1, user=user3 )
+        self.assertIsInstance( history2, model.History )
+        self.assertEqual( history2.user, user3 )
+        self.assertEqual( history2, self.trans.sa_session.query( model.History ).get( history2.id ) )
+        self.assertEqual( history2.name, history1.name )
+        self.assertNotEqual( history2, history1 )
+
+        copied_hda = history2.datasets[0]
+        copied_hda_tags = self.hda_manager.get_tags( copied_hda )
+        self.assertEqual( sorted( hda_tags ), sorted( copied_hda_tags ) )
+        copied_hda_annotation = self.hda_manager.annotation( copied_hda )
+        self.assertEqual( hda_annotation, copied_hda_annotation )
 
     def test_has_user( self ):
         owner = self.user_manager.create( **user2_data )

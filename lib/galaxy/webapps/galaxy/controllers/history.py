@@ -1328,7 +1328,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
 
         # include all datasets when copying?
-        all_datasets = util.string_as_bool( kwd.get( 'all_datasets', False ) )
+        all_datasets = util.string_as_bool( kwd.get( 'all_datasets', False ) ) if user else False
 
         # Do import.
         if not id:
@@ -1339,54 +1339,87 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # History is importable if user is admin or it's accessible. TODO: probably want to have app setting to enable admin access to histories.
         if not self.history_manager.is_accessible( import_history, trans.user, current_history=trans.history ):
             return trans.show_error_message( "You cannot access this history.<br>You can %s." % referer_message, use_panels=True )
-        if user:
-            # dan: I can import my own history.
-            # if import_history.user_id == user.id:
-            #    return trans.show_error_message( "You cannot import your own history.<br>You can %s." % referer_message, use_panels=True )
-            new_history = import_history.copy( target_user=user, all_datasets=all_datasets )
-            new_history.name = "imported: " + new_history.name
-            new_history.user_id = user.id
-            galaxy_session = trans.get_galaxy_session()
-            try:
-                association = trans.sa_session.query( trans.app.model.GalaxySessionToHistoryAssociation ) \
-                                              .filter_by( session_id=galaxy_session.id, history_id=new_history.id ) \
-                                              .first()
-            except:
-                association = None
-            new_history.add_galaxy_session( galaxy_session, association=association )
-            trans.sa_session.add( new_history )
-            trans.sa_session.flush()
-            # Set imported history to be user's current history.
-            trans.set_history( new_history )
-            return trans.show_ok_message(
-                message="""History "%s" has been imported. <br>You can <a href="%s" onclick="parent.window.location='%s';">start using this history</a> or %s."""
-                % ( new_history.name, web.url_for( '/' ), web.url_for( '/' ), referer_message ), use_panels=True )
 
-        elif not user_history or not user_history.datasets or confirm:
-            # TODO:?? should anon-users be allowed to include deleted datasets when importing?
-            # new_history = import_history.copy( activatable=include_deleted )
-            new_history = import_history.copy()
-            new_history.name = "imported: " + new_history.name
-            new_history.user_id = None
-            galaxy_session = trans.get_galaxy_session()
-            try:
-                association = trans.sa_session.query( trans.app.model.GalaxySessionToHistoryAssociation ) \
-                                              .filter_by( session_id=galaxy_session.id, history_id=new_history.id ) \
-                                              .first()
-            except:
-                association = None
-            new_history.add_galaxy_session( galaxy_session, association=association )
-            trans.sa_session.add( new_history )
-            trans.sa_session.flush()
-            trans.set_history( new_history )
-            return trans.show_ok_message(
-                message="""History "%s" has been imported. <br>You can <a href="%s">start using this history</a> or %s."""
-                % ( new_history.name, web.url_for( '/' ), referer_message ), use_panels=True )
-        return trans.show_warn_message( """
-            Warning! If you import this history, you will lose your current
-            history. <br>You can <a href="%s">continue and import this history</a> or %s.
-            """ % ( web.url_for(controller='history', action='imp', id=id, confirm=True, referer=trans.request.referer ), referer_message ), use_panels=True )
+        # don't allow importing your own history
+        if user and import_history.user_id == user.id:
+            return trans.show_error_message( "You cannot import your own history.<br>You can %s." % referer_message, use_panels=True )
+
+        # warn an anonymous user with a history and datasets that they'll lose it, and ask them to confirm
+        if not user:
+            if ( user_history and user_history.datasets ) and not confirm:
+                confirm_url = web.url_for( controller='history', action='imp', id=id, confirm=True, referer=trans.request.referer )
+                return trans.show_warn_message( """
+                    Warning! If you import this history, you will lose your current
+                    history. <br>You can <a href="%s">continue and import this history</a> or %s.
+                    """ % ( confirm_url, referer_message ), use_panels=True )
+
+        # if they've logged in, confirmed, or don't have a history/datasets: copy the history for the anon user
+        name = "imported: " + import_history.name
+        new_history = import_history.copy( target_user=user, name=name, all_datasets=all_datasets )
+
+        galaxy_session = trans.get_galaxy_session()
+        try:
+            association = trans.sa_session.query( trans.app.model.GalaxySessionToHistoryAssociation ) \
+                                          .filter_by( session_id=galaxy_session.id, history_id=new_history.id ) \
+                                          .first()
+        except:
+            association = None
+
+        new_history.add_galaxy_session( galaxy_session, association=association )
+        trans.sa_session.add( new_history )
+        trans.sa_session.flush()
+        trans.set_history( new_history )
+        return trans.show_ok_message(
+            message="""History "%s" has been imported. <br>You can <a href="%s" onclick="parent.window.location='%s';">start using this history</a> or %s."""
+            % ( new_history.name, web.url_for( '/' ), web.url_for( '/' ), referer_message ), use_panels=True )
         # TODO: used in history/view, display, embed
+
+    @web.expose
+    @web.require_login( "copy shared Galaxy history" )
+    def copy( self, trans, id=None, **kwd ):
+        """Copy one or more histories"""
+        params = Params( kwd )
+        # If copy_choice was not specified, display form passing along id
+        # argument
+        copy_choice = params.get( 'copy_choice', None )
+        if not copy_choice:
+            return trans.fill_template( "/history/copy.mako", id_argument=id )
+
+        # Extract histories for id argument, defaulting to current
+        if id is None:
+            histories = [ trans.history ]
+        else:
+            ids = galaxy.util.listify( id )
+            histories = []
+            for history_id in ids:
+                history = self.history_manager.get_accessible( self.decode_id( history_id ), trans.user, current_history=trans.history )
+                histories.append( history )
+        user = trans.get_user()
+        for history in histories:
+            if history.user == user:
+                owner = True
+            else:
+                if trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ) \
+                                   .filter_by( user=user, history=history ) \
+                                   .count() == 0:
+                    return trans.show_error_message( "The history you are attempting to copy is not owned by you or shared with you.  " )
+                owner = False
+
+            name = "Copy of '%s'" % history.name
+            if not owner:
+                name += " shared by '%s'" % history.user.email
+            if copy_choice == 'activatable':
+                new_history = history.copy( name=name, target_user=user, activatable=True )
+            elif copy_choice == 'active':
+                name += " (active items only)"
+                new_history = history.copy( name=name, target_user=user )
+
+        if len( histories ) == 1:
+            switch_url = url_for( controller="history", action="switch_to_history", hist_id=trans.security.encode_id( new_history.id ) )
+            msg = 'New history "<a href="%s" target="_top">%s</a>" has been created.' % ( switch_url, new_history.name )
+        else:
+            msg = 'Copied and created %d new histories.' % len( histories )
+        return trans.show_ok_message( msg )
 
     @web.expose
     @web.require_login( "rename histories" )
@@ -1441,51 +1474,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
         change_msg = '<br />'.join( change_msgs )
         return trans.show_message( change_msg, refresh_frames=['history'] )
-
-    @web.expose
-    @web.require_login( "copy shared Galaxy history" )
-    def copy( self, trans, id=None, **kwd ):
-        """Copy one or more histories"""
-        params = Params( kwd )
-        # If copy_choice was not specified, display form passing along id
-        # argument
-        copy_choice = params.get( 'copy_choice', None )
-        if not copy_choice:
-            return trans.fill_template( "/history/copy.mako", id_argument=id )
-
-        # Extract histories for id argument, defaulting to current
-        if id is None:
-            histories = [ trans.history ]
-        else:
-            ids = galaxy.util.listify( id )
-            histories = []
-            for history_id in ids:
-                history = self.history_manager.get_accessible( self.decode_id( history_id ), trans.user, current_history=trans.history )
-                histories.append( history )
-        user = trans.get_user()
-        for history in histories:
-            if history.user == user:
-                owner = True
-            else:
-                if trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ) \
-                                   .filter_by( user=user, history=history ) \
-                                   .count() == 0:
-                    return trans.show_error_message( "The history you are attempting to copy is not owned by you or shared with you.  " )
-                owner = False
-            name = "Copy of '%s'" % history.name
-            if not owner:
-                name += " shared by '%s'" % history.user.email
-            if copy_choice == 'activatable':
-                new_history = history.copy( name=name, target_user=user, activatable=True )
-            elif copy_choice == 'active':
-                name += " (active items only)"
-                new_history = history.copy( name=name, target_user=user )
-        if len( histories ) == 1:
-            switch_url = url_for( controller="history", action="switch_to_history", hist_id=trans.security.encode_id( new_history.id ) )
-            msg = 'New history "<a href="%s" target="_top">%s</a>" has been created.' % ( switch_url, new_history.name )
-        else:
-            msg = 'Copied and created %d new histories.' % len( histories )
-        return trans.show_ok_message( msg )
 
     # ------------------------------------------------------------------------- current history
     @web.expose

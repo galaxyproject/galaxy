@@ -1213,11 +1213,14 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         db_session.add( new_history )
         db_session.flush()
 
-        # Copy annotation.
-        self.copy_item_annotation( db_session, self.user, self, target_user, new_history )
+        print '-' * 40
+        print 'target_user:', target_user, target_user.username, target_user.email
+        print '-' * 40
 
-        # Copy Tags
-        new_history.copy_tags_from(target_user=target_user, source_history=self)
+        # copy history tags and annotations (if copying user is not anonymous)
+        if target_user:
+            self.copy_item_annotation( db_session, self.user, self, target_user, new_history )
+            new_history.copy_tags_from(target_user=target_user, source_history=self)
 
         # Copy HDAs.
         if activatable:
@@ -1232,8 +1235,11 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             new_history.add_dataset( new_hda, set_hid=False, quota=quota )
             db_session.add( new_hda )
             db_session.flush()
-            # Copy annotation.
-            self.copy_item_annotation( db_session, self.user, hda, target_user, new_hda )
+
+            if target_user:
+                new_hda.copy_item_annotation( db_session, self.user, hda, target_user, new_hda )
+                new_hda.copy_tags_from( target_user, hda )
+
         # Copy history dataset collections
         if all_datasets:
             hdcas = self.dataset_collections
@@ -1244,8 +1250,9 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             new_history.add_dataset_collection( new_hdca, set_hid=False )
             db_session.add( new_hdca )
             db_session.flush()
-            # Copy annotation.
-            self.copy_item_annotation( db_session, self.user, hdca, target_user, new_hdca )
+
+            if target_user:
+                new_hdca.copy_item_annotation( db_session, self.user, hdca, target_user, new_hdca )
 
         new_history.hid_counter = self.hid_counter
         db_session.add( new_history )
@@ -2450,6 +2457,15 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
     @property
     def history_content_type( self ):
         return "dataset"
+
+    def copy_tags_from( self, target_user, source_hda ):
+        """
+        Copy tags from `source_hda` to this HDA and assign them the user `target_user`.
+        """
+        for source_tag_assoc in source_hda.tags:
+            new_tag_assoc = source_tag_assoc.copy()
+            new_tag_assoc.user = target_user
+            self.tags.append( new_tag_assoc )
 
 
 class HistoryDatasetAssociationDisplayAtAuthorization( object ):
