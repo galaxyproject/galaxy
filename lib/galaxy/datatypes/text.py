@@ -309,18 +309,18 @@ class SnpEffDb( Text ):
     def __init__( self, **kwd ):
         Text.__init__( self, **kwd )
 
-    # The SnpEff version line was added in SnpEff version 4.1 
+    # The SnpEff version line was added in SnpEff version 4.1
     def getSnpeffVersionFromFile(self, path):
         snpeff_version = None
         try:
             fh = gzip.open(path, 'rb')
             buf = fh.read(100)
             lines = buf.splitlines()
-            m = re.match('^(SnpEff)\s+(\d+\.\d+).*$',lines[0].strip())
+            m = re.match('^(SnpEff)\s+(\d+\.\d+).*$', lines[0].strip())
             if m:
                 snpeff_version = m.groups()[0] + m.groups()[1]
             fh.close()
-        except Exception, e:
+        except:
             pass
         return snpeff_version
 
@@ -343,7 +343,7 @@ class SnpEffDb( Text ):
                         genome_version = os.path.basename(root)
                         dataset.metadata.genome_version = genome_version
                         # read the first line of the gzipped snpEffectPredictor.bin file to get the SnpEff version
-                        snpeff_version = self.getSnpeffVersionFromFile(os.path.join(root,fname))
+                        snpeff_version = self.getSnpeffVersionFromFile(os.path.join(root, fname))
                         if snpeff_version:
                             dataset.metadata.snpeff_version = snpeff_version
                     else:
@@ -441,7 +441,7 @@ class SnpSiftDbNSFP( Text ):
             self.regenerate_primary_file(dataset)
         except Exception as e:
             log.warn("set_meta fname: %s  %s" % (dataset.file_name if dataset and dataset.file_name else 'Unkwown', str(e)))
-            
+
         def set_peek( self, dataset, is_multi_byte=False ):
             if not dataset.dataset.purged:
                 dataset.peek = '%s :  %s' % (dataset.metadata.reference_name, ','.join(dataset.metadata.annotation))
@@ -449,4 +449,3 @@ class SnpSiftDbNSFP( Text ):
             else:
                 dataset.peek = 'file does not exist'
                 dataset.blurb = 'file purged from disc'
-        
