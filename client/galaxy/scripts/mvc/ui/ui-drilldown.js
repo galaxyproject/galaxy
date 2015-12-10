@@ -40,12 +40,12 @@ var View = Options.BaseIcons.extend({
         $button.data('is_expanded', is_expanded);
         if (is_expanded) {
             $subgroup.fadeIn('fast')
-            $button.removeClass('toggle-expand');
-            $button.addClass('toggle');
+            $button.removeClass('fa-plus-square');
+            $button.addClass('fa-minus-square');
         } else {
             $subgroup.hide();
-            $button.removeClass('toggle');
-            $button.addClass('toggle-expand');
+            $button.removeClass('fa-minus-square');
+            $button.addClass('fa-plus-square');
         }
     },
 
@@ -87,7 +87,7 @@ var View = Options.BaseIcons.extend({
                 if (has_options) {
                     // create button and subgroup
                     var header_id = Utils.uid();
-                    var $button = $('<span class="button-' + header_id + ' ui-drilldown-button form-toggle icon-button toggle-expand"/>');
+                    var $button = $('<span class="button-' + header_id + ' ui-drilldown-button fa fa-plus-square"/>');
                     var $subgroup = $('<div class="subgroup-' + header_id + '" style="display: none; margin-left: 25px;"/>');
 
                     // keep track of button and subgroup
