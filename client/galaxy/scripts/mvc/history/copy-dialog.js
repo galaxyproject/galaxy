@@ -155,7 +155,7 @@ var CopyDialog = {
  * Subclass CopyDialog to use the import language.
  */
 var ImportDialog = _.extend( {}, CopyDialog, {
-    defaultName     : _.template( "imported: '<%- name %>" ),
+    defaultName     : _.template( "imported: <%- name %>" ),
     title           : _.template( _l( 'Importing history' ) + ' "<%- name %>"' ),
     submitLabel     : _l( 'Import' ),
     errorMessage    : _l( 'History could not be imported' ),
@@ -178,7 +178,7 @@ var ImportDialog = _.extend( {}, CopyDialog, {
  *     (this object is also passed to the modal used to display the dialog and accepts modal options)
  *     {Function} nameFn    if defined, use this to build the default name shown to the user
  *                          (the fn is passed: {name: <original history's name>})
- *     {bool} import        if true, use the 'import' language (instead of Copy)
+ *     {bool} useImport     if true, use the 'import' language (instead of Copy)
  *     {bool} allowAll      if true, allow the user to choose between copying all datasets and
  *                          only non-deleted datasets
  *     {String} allDatasets default initial checked radio button: 'copy-all' or 'copy-non-deleted',
@@ -187,7 +187,7 @@ var historyCopyDialog = function( history, options ){
     options = options || {};
     // create our own modal if Galaxy doesn't have one (mako tab without use_panels)
     var modal = window.parent.Galaxy.modal || new MODAL.View({});
-    return options.import?
+    return options.useImport?
         ImportDialog.dialog( modal, history, options ):
         CopyDialog.dialog( modal, history, options );
 };

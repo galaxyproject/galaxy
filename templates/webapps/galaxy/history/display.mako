@@ -60,7 +60,7 @@
             history = new historyModel.History( historyJSON, contentsJSON, {});
 
         $( '.history-copy-link' ).click( function( ev ){
-            historyCopyDialog( history, { import: true, allowAll: false })
+            historyCopyDialog( history, { useImport: true, allowAll: false })
                 .done( function(){
                     window.location.href = Galaxy.root;
                 });
