@@ -93,12 +93,15 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                             if ( _.isObject( input ) ) {
                                 if ( input.type ) {
                                     var is_data_input = [ 'data', 'data_collection' ].indexOf( input.type ) !== -1;
+                                    var is_workflow_parameter = self._isWorkflowParameter( input.value );
                                     is_data_input && input.linked && !input.linked.startsWith( 'data' ) && ( data_resolved = false );
-                                    input.options && input.options.length == 0 && !data_resolved && ( input.is_workflow = true );
+                                    input.options && ( ( input.options.length == 0 && !data_resolved ) || is_workflow_parameter ) && ( input.is_workflow = true );
                                     input.value && input.value.__class__ == 'RuntimeValue' && ( input.value = null );
-                                    if ( !is_data_input && input.type !== 'hidden' && !self._isWorkflowParameter( input.value ) ) {
-                                        input.collapsible_value = input.value;
-                                        input.collapsible_preview = true;
+                                    if ( !is_data_input && input.type !== 'hidden' && !is_workflow_parameter ) {
+                                        if ( input.optional || ( Utils.validate( input.value ) && input.value !== '' ) ) {
+                                            input.collapsible_value = input.value;
+                                            input.collapsible_preview = true;
+                                        }
                                     }
                                 }
                                 visitInputs( input, data_resolved );
