@@ -1,2 +1,58 @@
-define([],function(){function a(a){var b=this;return b.deferred=jQuery.Deferred(),b.queue=[],b.responses=[],b.numToProcess=0,b.running=!1,b.init(a||[]),b.start(),b}function b(b){var c=this;return c.names={},a.call(this,b),c}return a.prototype.init=function(a){var b=this;a.forEach(function(a){b.add(a)})},a.prototype.add=function(a){var b=this,c=this.queue.length;this.numToProcess+=1,this.queue.push(function(){var d=c,e=a();e.done(function(a){b.deferred.notify({curr:d,total:b.numToProcess,response:a})}),e.always(function(a){b.responses.push(a),b.queue.length?b.queue.shift()():b.stop()})})},a.prototype.start=function(){this.queue.length&&(this.running=!0,this.queue.shift()())},a.prototype.stop=function(a,b){return this.running=!1,this.queue=[],a?this.deferred.reject(b):this.deferred.resolve(this.responses),this.numToProcess=0,this.deferred=jQuery.Deferred(),this},a.prototype.done=function(a){return this.deferred.done(a)},a.prototype.fail=function(a){return this.deferred.fail(a)},a.prototype.always=function(a){return this.deferred.always(a)},a.prototype.progress=function(a){return this.deferred.progress(a)},a.create=function(a){return new AjaxQeueue(a).deferred},b.prototype=new a,b.prototype.constructor=b,b.prototype.add=function(b){if(!b.hasOwnProperty("name")||!b.hasOwnProperty("fn"))throw new Error('NamedAjaxQueue.add requires an object with both "name" and "fn": '+JSON.stringify(b));this.names.hasOwnProperty(b.name)||(this.names[b.name]=!0,a.prototype.add.call(this,b.fn))},b.prototype.clear=function(){this.names={}},b.create=function(a){return new b(a).deferred},{AjaxQueue:a,NamedAjaxQueue:b}});
-//# sourceMappingURL=../../maps/utils/ajax-queue.js.map
+define([], function() {
+    function AjaxQueue(initialFunctions) {
+        var self = this;
+        return self.deferred = jQuery.Deferred(), self.queue = [], self.responses = [], 
+        self.numToProcess = 0, self.running = !1, self.init(initialFunctions || []), self.start(), 
+        self;
+    }
+    function NamedAjaxQueue(initialFunctions) {
+        var self = this;
+        return self.names = {}, AjaxQueue.call(this, initialFunctions), self;
+    }
+    return AjaxQueue.prototype.init = function(initialFunctions) {
+        var self = this;
+        initialFunctions.forEach(function(fn) {
+            self.add(fn);
+        });
+    }, AjaxQueue.prototype.add = function(fn) {
+        var self = this, index = this.queue.length;
+        this.numToProcess += 1, this.queue.push(function() {
+            var fnIndex = index, xhr = fn();
+            xhr.done(function(response) {
+                self.deferred.notify({
+                    curr: fnIndex,
+                    total: self.numToProcess,
+                    response: response
+                });
+            }), xhr.always(function(response) {
+                self.responses.push(response), self.queue.length ? self.queue.shift()() : self.stop();
+            });
+        });
+    }, AjaxQueue.prototype.start = function() {
+        this.queue.length && (this.running = !0, this.queue.shift()());
+    }, AjaxQueue.prototype.stop = function(causeFail, msg) {
+        return this.running = !1, this.queue = [], causeFail ? this.deferred.reject(msg) : this.deferred.resolve(this.responses), 
+        this.numToProcess = 0, this.deferred = jQuery.Deferred(), this;
+    }, AjaxQueue.prototype.done = function(fn) {
+        return this.deferred.done(fn);
+    }, AjaxQueue.prototype.fail = function(fn) {
+        return this.deferred.fail(fn);
+    }, AjaxQueue.prototype.always = function(fn) {
+        return this.deferred.always(fn);
+    }, AjaxQueue.prototype.progress = function(fn) {
+        return this.deferred.progress(fn);
+    }, AjaxQueue.create = function(initialFunctions) {
+        return new AjaxQueue(initialFunctions).deferred;
+    }, NamedAjaxQueue.prototype = new AjaxQueue(), NamedAjaxQueue.prototype.constructor = NamedAjaxQueue, 
+    NamedAjaxQueue.prototype.add = function(obj) {
+        if (!obj.hasOwnProperty("name") || !obj.hasOwnProperty("fn")) throw new Error('NamedAjaxQueue.add requires an object with both "name" and "fn": ' + JSON.stringify(obj));
+        this.names.hasOwnProperty(obj.name) || (this.names[obj.name] = !0, AjaxQueue.prototype.add.call(this, obj.fn));
+    }, NamedAjaxQueue.prototype.clear = function() {
+        this.names = {};
+    }, NamedAjaxQueue.create = function(initialFunctions) {
+        return new NamedAjaxQueue(initialFunctions).deferred;
+    }, {
+        AjaxQueue: AjaxQueue,
+        NamedAjaxQueue: NamedAjaxQueue
+    };
+});
