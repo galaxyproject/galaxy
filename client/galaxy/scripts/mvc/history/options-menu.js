@@ -3,7 +3,8 @@ define([
     "mvc/history/copy-dialog",
     "mvc/base-mvc",
     "utils/localization"
-], function( PopupMenu, HistoryCopyDialog, BASE_MVC, _l ){
+], function( PopupMenu, historyCopyDialog, BASE_MVC, _l ){
+    "use strict";
 // ============================================================================
 var menu = [
     {
@@ -35,7 +36,7 @@ var menu = [
     {
         html    : _l( 'Copy History' ),
         func    : function() {
-            HistoryCopyDialog( Galaxy.currHistoryPanel.model, { allDatasets : true } )
+            historyCopyDialog( Galaxy.currHistoryPanel.model )
                 .done( function(){
                     Galaxy.currHistoryPanel.loadCurrentHistory();
                 });

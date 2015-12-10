@@ -88,6 +88,11 @@
 <%def name="get_grid_config( embedded=False, insert=None )">
 ## generates dictionary
 <%
+    item_class = grid.model_class.__name__
+    print item_class
+
+    print 'tag url:', url( controller='tag', action='tag_autocomplete_data', item_class=item_class )
+    ## print 'name url:', url( controller='history', action='name_autocomplete_data' )
     self.grid_config = {
         'title'                         : grid.title,
         'url_base'                      : trans.request.path_url,
@@ -100,8 +105,8 @@
         'cur_page_num'                  : cur_page_num,
         'num_pages'                     : num_pages,
         'num_page_links'                : num_page_links,
-        'history_tag_autocomplete_url'  : url( controller='tag', action='tag_autocomplete_data', item_class='History' ),
-        'history_name_autocomplete_url' : url( controller='history', action='name_autocomplete_data' ),
+        'history_tag_autocomplete_url'  : url( controller='tag', action='tag_autocomplete_data', item_class=item_class ),
+        ## 'history_name_autocomplete_url' : url( controller='history', action='name_autocomplete_data' ),
         'status'                        : status,
         'message'                       : util.restore_text(message),
         'global_actions'                : [],
