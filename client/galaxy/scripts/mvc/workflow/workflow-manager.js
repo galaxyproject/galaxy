@@ -1,4 +1,8 @@
-define(['mvc/workflow/workflow-connector'], function( Connector ) {
+define([
+    'mvc/workflow/workflow-connector',
+    'libs/toastr'
+    ],
+function( Connector, Toastr ) {
     function Workflow( app, canvas_container ) {
         this.app = app;
         this.canvas_container = canvas_container;
@@ -7,10 +11,49 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
         this.name = null;
         this.has_changes = false;
         this.active_form_has_changes = false;
+        this.nodeLabels = {}; // TODO: track and enforce output labels also
+
     }
     $.extend( Workflow.prototype, {
-        create_node: function ( type, title_text, tool_id ) {
-            var node = this.app.prebuildNode( type, title_text, tool_id );
+        canLabelNodeWith: function( label ) {
+            if( label ) {
+                return ! (label in this.nodeLabels);
+            } else {
+                // empty labels are non-exclusive, so allow this one.
+                return true;
+            }
+        },
+        registerNodeLabel: function( label ) {
+            if( label ) {
+                this.nodeLabels[label] = true;
+            }
+        },
+        unregisterNodeLabel: function( label ) {
+            if( label ) {
+                delete this.nodeLabels[label];
+            }
+        },
+        updateNodeLabel: function( fromLabel, toLabel ) {
+            if( fromLabel ) {
+                this.unregisterNodeLabel( fromLabel );
+            }
+            if( ! this.canLabelNodeWith( toLabel ) ) {
+                Toastr.warning("Workflow contains duplicate node labels " + toLabel + ". This must be fixed before it can be saved.");
+            }
+            if( toLabel ) {
+                this.registerNodeLabel( toLabel );
+            }
+        },
+        attemptUpdateNodeLabel: function( node, label ) {
+            if( this.canLabelNodeWith( label ) ) {
+                node.setLabel( label );
+                return true;
+            } else {
+                return false;
+            }
+        },
+        create_node: function ( type, title_text, content_id ) {
+            var node = this.app.prebuildNode( type, title_text, content_id );
             this.add_node( node );
             this.fit_canvas_to_nodes();
             this.app.canvas_manager.draw_overview();
@@ -131,7 +174,7 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
                 var node_data = {
                     id : node.id,
                     type : node.type,
-                    tool_id : node.tool_id,
+                    tool_id : node.content_id,
                     tool_state : node.tool_state,
                     tool_errors : node.tool_errors,
                     input_connections : input_connections,

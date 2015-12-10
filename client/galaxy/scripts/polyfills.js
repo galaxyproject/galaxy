@@ -51,17 +51,17 @@
     };
 
     // ------------------------------------------------------------------ can't/won't polyfill
-    var incompatibilities = [
+    var features = [
         { name: 'canvas',           compatible: function(){ return window.CanvasRenderingContext2D; } },
         { name: 'sessionStorage',   compatible: function(){
             try {
-                return Number.isInteger( sessionStorage.length );
+                return window.sessionStorage.length >= 0;
             } catch( err ){}
             return false;
         }},
     ];
     // build a list of feature names for features that were not found
-    incompatibilities = incompatibilities
+    var incompatibilities = features
         .filter( function( feature ){ return !feature.compatible(); })
         .map( function( feature ){ return feature.name; });
 
@@ -69,7 +69,7 @@
     if( !!incompatibilities.length ){
         var root = document.querySelectorAll( 'link[rel="index"]' ).item( 0 );
         if( root ){
-            window.location.href = root.href + 'static/incompatible-browser.html';
+            window.location = root.href + 'static/incompatible-browser.html';
         }
         console.log( 'incompatible browser:\n' + incompatibilities.join( '\n' ) );
     }

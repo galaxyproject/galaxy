@@ -7,7 +7,9 @@ define([
     'mvc/workflow/workflow-node',
     'mvc/tool/tools-form-workflow',
     'utils/async-save-text',
-], function( Utils, Globals, Workflow, WorkflowCanvas, Node, ToolsForm, async_save_text ){
+    'libs/toastr',
+    'ui/editable-text'
+], function( Utils, Globals, Workflow, WorkflowCanvas, Node, ToolsForm, async_save_text, Toastr ){
 
 // Reset tool search to start state.
 function reset_tool_search( initValue ) {
@@ -44,6 +46,21 @@ function reset_tool_search( initValue ) {
     }
 }
 
+NODE_ICONS = {
+    'tool': 'fa-wrench',
+    'data_input': 'fa-file-o',
+    'data_collection_input': 'fa-folder-o',
+    'pause': 'fa-pause'
+}
+
+add_node_icon = function($to_el, nodeType) {
+    var iconStyle = NODE_ICONS[nodeType];
+    if(iconStyle) {
+        var $icon = $('<i class="icon fa">&nbsp;</i>').addClass(iconStyle);
+        $to_el.before($icon);
+    }
+}
+
 
 // Really a shell of a real backbone view, but refactoring in the right
 // direction I think.
@@ -61,7 +78,33 @@ EditorFormView = Backbone.View.extend({
         this.setElement($el);
 
         if (node && node.id != 'no-node') {
-            $el.find('.toolForm:first').after(this._genericStepAttributesTemplate( node ));
+            $el.find('table:first').after(this._genericStepAttributesTemplate( node ));
+            var nodeType = node.type;
+            add_node_icon($el.find('.portlet-title-text'), nodeType);
+            var $titleText = $el.find(".portlet-title-text");
+            $titleText.data('last-value', $titleText.text());
+            $titleText.make_text_editable({
+                on_finish: function( newLabel ){
+                    var lastValue = $titleText.data("last-value");
+                    if( newLabel == lastValue ) {
+                        return;
+                    }
+
+                    var workflow = workflowView.workflow;
+                    if( workflow.attemptUpdateNodeLabel( node, newLabel ) ) {
+                        $el.find("input[name='label']").val(newLabel);
+                        $titleText.data("last-value", newLabel);
+                        $el.find('form').submit();
+                        if(newLabel == "") {
+                            // If label unset restore default name as title.
+                            $titleText.text(node.name);
+                        }
+                    } else {
+                        Toastr.warning("Step label " + newLabel + " already exists, cannot update label.");
+                        $titleText.text(lastValue);
+                    }
+                }
+            });
             ($el.find( 'form' ).length > 0) && $el.find( 'form' ).ajaxForm( {
                 type: 'POST',
                 dataType: 'json',
@@ -525,12 +568,10 @@ EditorFormView = Backbone.View.extend({
             cc.css( { left: left, top: top } );
         },
 
-        // Add a new step to the workflow by tool id
-        add_node_for_tool: function ( id, title ) {
-            node = this.workflow.create_node( 'tool', title, id );
+        _moduleInitAjax: function(node, request_data) {
             $.ajax( {
                 url: this.urls.get_new_module_info,
-                data: { type: "tool", tool_id: id, "_": "true" },
+                data: request_data,
                 global: false,
                 dataType: "json",
                 success: function( data ) {
@@ -546,23 +587,21 @@ EditorFormView = Backbone.View.extend({
             });
         },
 
+        // Add a new step to the workflow by tool id
+        add_node_for_tool: function ( id, title ) {
+            node = this.workflow.create_node( 'tool', title, id );
+            this._moduleInitAjax(node, { type: "tool", content_id: id, "_": "true" });
+        },
+
+        // Add a new step to the workflow by tool id
+        add_node_for_subworkflow: function ( id, title ) {
+            node = this.workflow.create_node( 'subworkflow', title, id );
+            this._moduleInitAjax(node, { type: "subworkflow", subworkflow_id: id, "_": "true" });
+        },
+
         add_node_for_module: function ( type, title ) {
             node = this.workflow.create_node( type, title );
-            $.ajax( {
-                url: this.urls.get_new_module_info,
-                data: { type: type, "_": "true" },
-                dataType: "json",
-                success: function( data ) {
-                    node.init_field_data( data );
-                },
-                error: function( x, e ) {
-                    var m = "error loading field data"
-                    if ( x.status == 0 ) {
-                        m += ", server unavailable"
-                    }
-                    node.error( m );
-                }
-            });
+            this._moduleInitAjax(node, { type: type, "_": "true" });
         },
 
         // This function preloads how to display known pja's.
@@ -704,22 +743,27 @@ EditorFormView = Backbone.View.extend({
             return ( this.type_to_type[child] ) && ( parent in this.type_to_type[child] );
         },
 
-        prebuildNode: function ( type, title_text, tool_id ) {
+        $newNodeElement: function(type, title_text) {
+            var $f = $("<div class='toolForm toolFormInCanvas'></div>");
+            var $title = $("<div class='toolFormTitle unselectable'><span class='nodeTitle'>" + title_text + "</div></div>" );
+            add_node_icon($title.find('.nodeTitle'), type);
+            $f.append( $title );
+            $f.css( "left", $(window).scrollLeft() + 20 );
+            $f.css( "top", $(window).scrollTop() + 20 );
+            var $b = $("<div class='toolFormBody'></div>");
+            $f.append($b);
+            return $f
+        },
+
+        prebuildNode: function ( type, title_text, content_id ) {
             var self = this;
-            var f = $("<div class='toolForm toolFormInCanvas'></div>");
-            var node = new Node( this, { element: f } );
+            var $f = this.$newNodeElement( type, title_text );
+            var node = new Node( this, { element: $f } );
             node.type = type;
-            if ( type == 'tool' ) {
-                node.tool_id = tool_id;
-            }
-            var title = $("<div class='toolFormTitle unselectable'>" + title_text + "</div>" );
-            f.append( title );
-            f.css( "left", $(window).scrollLeft() + 20 ); f.css( "top", $(window).scrollTop() + 20 );
-            var b = $("<div class='toolFormBody'></div>");
+            node.content_id = content_id;
             var tmp = "<div><img height='16' align='middle' src='" + Galaxy.root + "static/images/loading_small_white_bg.gif'/> loading tool info...</div>";
-            b.append( tmp );
+            $f.find(".toolFormBody").append(tmp);
             node.form_html = tmp;
-            f.append( b );
             // Fix width to computed width
             // Now add floats
             var buttons = $("<div class='buttons' style='float: right;'></div>");
@@ -727,17 +771,17 @@ EditorFormView = Backbone.View.extend({
                 node.destroy();
             }));
             // Place inside container
-            f.appendTo( "#canvas-container" );
+            $f.appendTo( "#canvas-container" );
             // Position in container
             var o = $("#canvas-container").position();
             var p = $("#canvas-container").parent();
-            var width = f.width();
-            var height = f.height();
-            f.css( { left: ( - o.left ) + ( p.width() / 2 ) - ( width / 2 ), top: ( - o.top ) + ( p.height() / 2 ) - ( height / 2 ) } );
-            buttons.prependTo( title );
+            var width = $f.width();
+            var height = $f.height();
+            $f.css( { left: ( - o.left ) + ( p.width() / 2 ) - ( width / 2 ), top: ( - o.top ) + ( p.height() / 2 ) - ( height / 2 ) } );
+            buttons.prependTo( $f.find(".toolFormTitle" ) );
             width += ( buttons.width() + 10 );
-            f.css( "width", width );
-            $(f).bind( "dragstart", function() {
+            $f.css( "width", width );
+            $f.bind( "dragstart", function() {
                 self.workflow.activate_node( node );
             }).bind( "dragend", function() {
                 self.workflow.node_changed( this );
