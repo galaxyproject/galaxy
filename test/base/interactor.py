@@ -281,7 +281,7 @@ class GalaxyInteractorApi( object ):
 
     def __job_ready( self, job_id, history_id ):
         if job_id is None:
-            raise ValueError("__job_ready passed empty history_id")
+            raise ValueError("__job_ready passed empty job_id")
         job_json = self._get( "jobs/%s" % job_id ).json()
         state = job_json[ 'state' ]
         try:
