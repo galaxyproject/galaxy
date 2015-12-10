@@ -551,6 +551,8 @@ class ToolModule( WorkflowModule ):
             tool_version = step.tool_version
             module = Class( trans, tool_id, tool_version=tool_version )
             message = ""
+            if step.tool_version and (step.tool_version != module.tool.version):
+                message += "%s: Using version '%s' instead of version '%s' specified in this workflow. " % (tool_id, module.tool.version, step.tool_version)
             if step.tool_id != module.tool_id:  # This means the exact version of the tool is not installed. We inform the user.
                 old_tool_shed = step.tool_id.split( "/repos/" )[0]
                 if old_tool_shed not in tool_id:  # Only display the following warning if the tool comes from a different tool shed
@@ -559,9 +561,7 @@ class ToolModule( WorkflowModule ):
                     new_url = module.tool.tool_shed_repository.get_sharable_url( module.tool.app ) + '/%s/' % module.tool.tool_shed_repository.changeset_revision
                     new_tool_shed_url = new_url.split( "/view" )[0]
                     message += "The tool \'%s\', version %s by the owner %s installed from <a href=\"%s\" target=\"_blank\">%s</a> is not available. " % (module.tool.name, tool_version, module.tool.repository_owner, old_url, old_tool_shed_url)
-                    message += "A derivation of this tool installed from <a href=\"%s\" target=\"_blank\">%s</a> will be used instead. " % (new_url, new_tool_shed_url)
-            if step.tool_version and (step.tool_version != module.tool.version):
-                message += "Using version '%s' instead of version '%s' specified in this workflow." % (module.tool.version, step.tool_version)
+                    message += "A derivation of this tool installed from <a href=\"%s\" target=\"_blank\">%s</a> will be used instead." % (new_url, new_tool_shed_url)
             if message:
                 log.debug(message)
                 module.version_changes.append(message)
