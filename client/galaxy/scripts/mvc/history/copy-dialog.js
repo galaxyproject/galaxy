@@ -1,112 +1,18 @@
 define([
+    "mvc/ui/ui-modal",
     "utils/localization"
-], function( _l ){
-    "use strict";
-/* =============================================================================
-Wrapper function around the global Galaxy.modal for use when copying histories.
+], function( MODAL, _l ){
 
-TODO:
-    need:
-        copy that allows:
-            all datasets
-            non-deleted datasets
-            ?choose datasets
-        import that allows:
-            all datasets
-            non-deleted datasets
-        import that's only:
-            non-deleted datasets
-
-    language changes only between copy/import
-
-    import : defaults to false
-    allowAll : defaults to true
-
-==============================================================================*/
-// maintain the (slight) distinction between copy and import
-
-// /** show the dialog and handle validation, ajax, and callbacks */
-// function historyCopyDialog( history, options ){
-//     options = options || {};
-
-//     // fall back to un-notifying copy
-//     if( !( Galaxy && Galaxy.modal ) ){
-//         return history.copy();
-//     }
-
-//     var modal = Galaxy.modal,
-//         deferred = jQuery.Deferred(),
-//         historyName = _.escape( history.get( 'name' ) ),
-//         defaultCopyName = "Copy of '" + historyName + "'",
-//         defaultCopyWhat = options.allDatasets? 'copy-all' : 'copy-non-deleted',
-//         allowAll = !_.isUndefined( options.allowAll )? options.allowAll : true;
-
-//     // validate the name and copy if good
-//     function checkNameAndCopy(){
-//         var name = modal.$( '#copy-modal-title' ).val();
-//         if( !name ){
-//             modal.$( '.invalid-title' ).show();
-//             return;
-//         }
-//         // get further settings, shut down and indicate the ajax call, then hide and resolve/reject
-//         var copyAllDatasets = modal.$( 'input[name="copy-what"]:checked' ).val() === 'copy-all';
-//         modal.$( 'button' ).prop( 'disabled', true );
-//         showAjaxIndicator();
-//         history.copy( true, name, copyAllDatasets )
-//             .done( function( response ){
-//                 deferred.resolve( response );
-//             })
-//             //TODO: make this unneccessary with pub-sub error or handling via Galaxy
-//             .fail( function(){
-//                 alert( _l( 'History could not be copied. Please contact a Galaxy administrator' ) );
-//                 deferred.rejectWith( deferred, arguments );
-//             })
-//             .always( function(){
-//                 modal.hide();
-//             });
-//     }
-
-//     var originalClosingCallback = options.closing_callback;
-//     modal.show( _.extend( options, {
-//         title   : _l( 'Copying history' ) + ' "' + historyName + '"',
-//         body    : $( templateDialog({
-//                 name    : defaultCopyName,
-//                 isAnon  : Galaxy.user.isAnonymous(),
-//                 allowAll: allowAll,
-//                 copyWhat: defaultCopyWhat
-//             })),
-//         buttons : _.object([
-//                 [ _l( 'Cancel' ),   function(){ modal.hide(); } ],
-//                 [ _l( 'Copy' ),     checkNameAndCopy ]
-//             ]),
-//         height          : 'auto',
-//         closing_events  : true,
-//         closing_callback: function _historyCopyClose( cancelled ){
-//                 if( cancelled ){
-//                     deferred.reject({ cancelled : true });
-//                 }
-//                 if( originalClosingCallback ){
-//                     originalClosingCallback( cancelled );
-//                 }
-//             }
-//         }));
-
-//     // set the default dataset copy, autofocus the title, and set up for a simple return
-//     modal.$( '#copy-modal-title' ).focus().select();
-//     modal.$( '#copy-modal-title' ).on( 'keydown', function( ev ){
-//         if( ev.keyCode === 13 ){
-//             ev.preventDefault();
-//             checkNameAndCopy();
-//         }
-//     });
-
-//     return deferred;
-// }
-
-
+"use strict";
 //==============================================================================
+/**
+ * A dialog/modal that allows copying a user history or 'importing' from user
+ * another. Generally called via historyCopyDialog below.
+ * @type {Object}
+ */
 var CopyDialog = {
 
+    // language related strings/fns
     defaultName     : _.template( "Copy of '<%- name %>'" ),
     title           : _.template( _l( 'Copying history' ) + ' "<%- name %>"' ),
     submitLabel     : _l( 'Copy' ),
@@ -117,7 +23,8 @@ var CopyDialog = {
     anonWarning     : _l( 'As an anonymous user, unless you login or register, you will lose your current history ' ) +
                       _l( 'after copying this history. ' ),
 
-    template : _.template([
+    // template for modal body
+    _template : _.template([
         //TODO: remove inline styles
         // show a warning message for losing current to anon users
         '<% if( isAnon ){ %>',
@@ -154,24 +61,25 @@ var CopyDialog = {
         '</form>'
     ].join( '' )),
 
-    showAjaxIndicator : function _showAjaxIndicator(){
+    // empty modal body and let the user know the copy is happening
+    _showAjaxIndicator : function _showAjaxIndicator(){
         var indicator = '<p><span class="fa fa-spinner fa-spin"></span> ' + this.progressive + '...</p>';
         this.modal.$( '.modal-body' ).empty().append( indicator ).css({ 'margin-top': '8px' });
     },
 
+    // (sorta) public interface - display the modal, render the form, and potentially copy the history
+    // returns a jQuery.Deferred done->history copied, fail->user cancelled
     dialog : function _dialog( modal, history, options ){
         options = options || {};
-        // fall back to un-notifying copy
-        if( !modal ){
-            return history.copy();
-        }
-        this.modal = modal;
 
         var dialog = this,
             deferred = jQuery.Deferred(),
             defaultCopyName = this.defaultName({ name: history.get( 'name' ) }),
+            // TODO: these two might be simpler as one 3 state option (all,active,no-choice)
             defaultCopyWhat = options.allDatasets? 'copy-all' : 'copy-non-deleted',
             allowAll = !_.isUndefined( options.allowAll )? options.allowAll : true;
+
+        this.modal = modal;
 
         // validate the name and copy if good
         function checkNameAndCopy(){
@@ -183,7 +91,7 @@ var CopyDialog = {
             // get further settings, shut down and indicate the ajax call, then hide and resolve/reject
             var copyAllDatasets = modal.$( 'input[name="copy-what"]:checked' ).val() === 'copy-all';
             modal.$( 'button' ).prop( 'disabled', true );
-            dialog.showAjaxIndicator();
+            dialog._showAjaxIndicator();
             history.copy( true, name, copyAllDatasets )
                 .done( function( response ){
                     deferred.resolve( response );
@@ -201,7 +109,7 @@ var CopyDialog = {
         var originalClosingCallback = options.closing_callback;
         modal.show( _.extend( options, {
             title   : this.title({ name: history.get( 'name' ) }),
-            body    : $( dialog.template({
+            body    : $( dialog._template({
                     name        : defaultCopyName,
                     isAnon      : Galaxy.user.isAnonymous(),
                     allowAll    : allowAll,
@@ -240,6 +148,10 @@ var CopyDialog = {
 };
 
 //==============================================================================
+// maintain the (slight) distinction between copy and import
+/**
+ * Subclass CopyDialog to use the import language.
+ */
 var ImportDialog = _.extend( {}, CopyDialog, {
     defaultName     : _.template( "imported: '<%- name %>" ),
     title           : _.template( _l( 'Importing history' ) + ' "<%- name %>"' ),
@@ -254,11 +166,26 @@ var ImportDialog = _.extend( {}, CopyDialog, {
 });
 
 //==============================================================================
+/**
+ * Main interface for both history import and history copy dialogs.
+ * @param  {Backbone.Model} history     the history to copy
+ * @param  {Object}         options     a hash
+ * @return {jQuery.Deferred}            promise that fails on close and succeeds on copy
+ *
+ * options:
+ *     (this object is also passed to the modal used to display the dialog and accepts modal options)
+ *     {bool} import        if true, use the 'import' language (instead of Copy)
+ *     {bool} allowAll      if true, allow the user to choose between copying all datasets and
+ *                          only non-deleted datasets
+ *     {String} allDatasets default initial checked radio button: 'copy-all' or 'copy-non-deleted',
+ */
 var historyCopyDialog = function( history, options ){
     options = options || {};
+    // create our own modal if Galaxy doesn't have one (mako tab without use_panels)
+    var modal = window.parent.Galaxy.modal || new MODAL.View({});
     return options.import?
-        ImportDialog.dialog( Galaxy.modal, history, options ):
-        CopyDialog.dialog( Galaxy.modal, history, options );
+        ImportDialog.dialog( modal, history, options ):
+        CopyDialog.dialog( modal, history, options );
 };
 
 
