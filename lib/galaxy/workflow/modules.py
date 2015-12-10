@@ -559,9 +559,9 @@ class ToolModule( WorkflowModule ):
                     new_url = module.tool.tool_shed_repository.get_sharable_url( module.tool.app ) + '/%s/' % module.tool.tool_shed_repository.changeset_revision
                     new_tool_shed_url = new_url.split( "/view" )[0]
                     message += "The tool \'%s\', version %s by the owner %s installed from <a href=\"%s\" target=\"_blank\">%s</a> is not available. " % (module.tool.name, tool_version, module.tool.repository_owner, old_url, old_tool_shed_url)
-                    message += "A derivation of this tool installed from <a href=\"%s\" target=\"_blank\">%s</a> will be used instead." % (new_url, new_tool_shed_url)
+                    message += "A derivation of this tool installed from <a href=\"%s\" target=\"_blank\">%s</a> will be used instead. " % (new_url, new_tool_shed_url)
             if step.tool_version and (step.tool_version != module.tool.version):
-                message += "%s: using version '%s' instead of version '%s' specified in this workflow." % (tool_id, module.tool.version, step.tool_version)
+                message += "Using version '%s' instead of version '%s' specified in this workflow." % (module.tool.version, step.tool_version)
             if message:
                 log.debug(message)
                 module.version_changes.append(message)
