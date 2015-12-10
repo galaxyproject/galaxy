@@ -234,7 +234,7 @@ class DefaultToolAction( object ):
         child_dataset_names = set()
         object_store_populator = ObjectStorePopulator( trans.app )
 
-        def handle_output( name, output ):
+        def handle_output( name, output, hidden=None ):
             if output.parent:
                 parent_to_child_pairs.append( ( output.parent, name ) )
                 child_dataset_names.add( name )
@@ -250,7 +250,9 @@ class DefaultToolAction( object ):
             else:
                 ext = determine_output_format( output, wrapped_params.params, inp_data, input_ext )
                 data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, sa_session=trans.sa_session )
-                if output.hidden:
+                if hidden is None:
+                    hidden = output.hidden
+                if hidden:
                     data.visible = False
                 # Commit the dataset immediately so it gets database assigned unique id
                 trans.sa_session.add( data )
@@ -328,7 +330,10 @@ class DefaultToolAction( object ):
                             current_element_identifiers = current_element_identifiers[ index ][ "element_identifiers" ]
 
                         effective_output_name = output_part_def.effective_output_name
-                        element = handle_output( effective_output_name, output_part_def.output_def )
+                        element = handle_output( effective_output_name, output_part_def.output_def, hidden=True )
+                        # TODO: this shouldn't exist in the top-level of the history at all
+                        # but for now we are still working around that by hiding the contents
+                        # there.
                         # Following hack causes dataset to no be added to history...
                         child_dataset_names.add( effective_output_name )
 
