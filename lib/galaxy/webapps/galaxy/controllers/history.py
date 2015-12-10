@@ -149,6 +149,7 @@ class SharedHistoryListGrid( grids.Grid ):
     # Grid definition
     title = "Histories shared with you by others"
     model_class = model.History
+    template = '/history/shared_grid.mako'
     default_sort_key = "-update_time"
     default_filter = {}
     columns = [
@@ -161,6 +162,7 @@ class SharedHistoryListGrid( grids.Grid ):
     operations = [
         grids.GridOperation( "View", allow_multiple=False, target="_top" ),
         grids.GridOperation( "Copy" ),
+        # grids.GridOperation( "Copy", allow_multiple=False ),
         grids.GridOperation( "Unshare" )
     ]
     standard_filters = []

@@ -74,7 +74,9 @@ var CopyDialog = {
 
         var dialog = this,
             deferred = jQuery.Deferred(),
-            defaultCopyName = this.defaultName({ name: history.get( 'name' ) }),
+            // TODO: getting a little byzantine here
+            defaultCopyNameFn = options.nameFn || this.defaultName,
+            defaultCopyName = defaultCopyNameFn({ name: history.get( 'name' ) }),
             // TODO: these two might be simpler as one 3 state option (all,active,no-choice)
             defaultCopyWhat = options.allDatasets? 'copy-all' : 'copy-non-deleted',
             allowAll = !_.isUndefined( options.allowAll )? options.allowAll : true;
@@ -174,6 +176,8 @@ var ImportDialog = _.extend( {}, CopyDialog, {
  *
  * options:
  *     (this object is also passed to the modal used to display the dialog and accepts modal options)
+ *     {Function} nameFn    if defined, use this to build the default name shown to the user
+ *                          (the fn is passed: {name: <original history's name>})
  *     {bool} import        if true, use the 'import' language (instead of Copy)
  *     {bool} allowAll      if true, allow the user to choose between copying all datasets and
  *                          only non-deleted datasets
