@@ -1200,15 +1200,10 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         If `activatable`, copy only non-deleted datasets. If `all_datasets`, copy
         non-deleted, deleted, and purged datasets.
         """
+        name = name or self.name
+        applies_to_quota = target_user != self.user
+
         # Create new history.
-        if not name:
-            name = self.name
-        # wut. If it's an anon user, the target user becomes the original owner??
-        if not target_user:
-            target_user = self.user
-        quota = True
-        if target_user == self.user:
-            quota = False
         new_history = History( name=name, user=target_user )
         db_session = object_session( self )
         db_session.add( new_history )
@@ -1229,7 +1224,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         for hda in hdas:
             # Copy HDA.
             new_hda = hda.copy( copy_children=True )
-            new_history.add_dataset( new_hda, set_hid=False, quota=quota )
+            new_history.add_dataset( new_hda, set_hid=False, quota=applies_to_quota )
             db_session.add( new_hda )
             db_session.flush()
 
@@ -1243,7 +1238,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         else:
             hdcas = self.active_dataset_collections
         for hdca in hdcas:
-            new_hdca = hdca.copy( )
+            new_hdca = hdca.copy()
             new_history.add_dataset_collection( new_hdca, set_hid=False )
             db_session.add( new_hdca )
             db_session.flush()
@@ -1254,6 +1249,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         new_history.hid_counter = self.hid_counter
         db_session.add( new_history )
         db_session.flush()
+
         return new_history
 
     @property

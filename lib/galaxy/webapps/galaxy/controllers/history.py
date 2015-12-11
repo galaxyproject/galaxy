@@ -9,7 +9,6 @@ import galaxy.util
 from galaxy import exceptions
 from galaxy import managers
 from galaxy import model
-from galaxy import util
 from galaxy import web
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.item_attrs import UsesItemRatings

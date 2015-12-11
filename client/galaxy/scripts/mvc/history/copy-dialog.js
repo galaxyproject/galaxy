@@ -102,7 +102,7 @@ var CopyDialog = {
                 })
                 //TODO: make this unneccessary with pub-sub error or handling via Galaxy
                 .fail( function(){
-                    alert([ this.errorMessage, _l( 'Please contact a Galaxy administrator' ) ].join( '. ' ));
+                    alert([ dialog.errorMessage, _l( 'Please contact a Galaxy administrator' ) ].join( '. ' ));
                     deferred.rejectWith( deferred, arguments );
                 })
                 .always( function(){
