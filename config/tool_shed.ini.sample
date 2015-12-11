@@ -127,9 +127,6 @@ use_lint = false
 # Force everyone to log in (disable anonymous access)
 require_login = False
 
-# path to sendmail
-sendmail_path = /usr/sbin/sendmail
-
 # Enables displaying of test run results on repo pages.
 #display_legacy_test_results = True
 
