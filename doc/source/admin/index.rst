@@ -10,4 +10,6 @@ documentation. These resources should be used together.
 
    interactive_environments.rst
 
+   dependency_resolvers.rst
+
    useful_scripts.rst
