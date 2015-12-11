@@ -79,9 +79,11 @@ var CopyDialog = {
             defaultCopyName = defaultCopyNameFn({ name: history.get( 'name' ) }),
             // TODO: these two might be simpler as one 3 state option (all,active,no-choice)
             defaultCopyWhat = options.allDatasets? 'copy-all' : 'copy-non-deleted',
-            allowAll = !_.isUndefined( options.allowAll )? options.allowAll : true;
+            allowAll = !_.isUndefined( options.allowAll )? options.allowAll : true,
+            autoClose = !_.isUndefined( options.autoClose )? options.autoClose : true;
 
         this.modal = modal;
+
 
         // validate the name and copy if good
         function checkNameAndCopy(){
@@ -104,7 +106,7 @@ var CopyDialog = {
                     deferred.rejectWith( deferred, arguments );
                 })
                 .always( function(){
-                    modal.hide();
+                    if( autoClose ){ modal.hide(); }
                 });
         }
 

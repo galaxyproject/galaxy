@@ -1203,6 +1203,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         # Create new history.
         if not name:
             name = self.name
+        # wut. If it's an anon user, the target user becomes the original owner??
         if not target_user:
             target_user = self.user
         quota = True
@@ -1212,10 +1213,6 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         db_session = object_session( self )
         db_session.add( new_history )
         db_session.flush()
-
-        print '-' * 40
-        print 'target_user:', target_user, target_user.username, target_user.email
-        print '-' * 40
 
         # copy history tags and annotations (if copying user is not anonymous)
         if target_user:

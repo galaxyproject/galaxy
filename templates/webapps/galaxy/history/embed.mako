@@ -14,7 +14,7 @@
                title="Show or hide history contents"></a>
         </div>
         <div style="float: right;">
-            <a title="Import history" class="icon-button import" href="${import_href}"></a>
+            <a title="Import history" class="icon-button import" data-id="${encoded_history_id}" href="javascript:void(0)"></a>
             <a title="View history" class="icon-button go-to-full-screen" href="${display_href}"></a>
         </div>
         <h4>
@@ -51,29 +51,61 @@
         baseUrl : "${h.url_for( '/static/scripts' )}",
         urlArgs: 'v=${app.server_starttime}'
     });
-    require([ 'mvc/history/history-view-annotated' ], function( viewMod ){
-
-        function toggleExpanded( ev ){
-            var $embeddedHistory = $( thisScript ).prev();
-            $embeddedHistory.find( '.expand-content-btn' ).toggleClass( 'toggle-expand' ).toggleClass( 'toggle' );
-            $embeddedHistory.find( ".summary-content" ).slideToggle( "fast" );
-            $embeddedHistory.find( ".annotation" ).slideToggle( "fast" );
-            $embeddedHistory.find( ".expanded-content" ).slideToggle( "fast" );
-            ev.preventDefault();
-        }
+    require([
+        'mvc/history/history-view-annotated',
+        'mvc/history/copy-dialog'
+    ], function( viewMod, historyCopyDialog ){
+        var $embeddedHistory = $( thisScript ).prev();
 
         $(function(){
-            var historyModel = require( 'mvc/history/history-model' ),
+            var historyMod = require( 'mvc/history/history-model' ),
+                historyModel = new historyMod.History(
+                    ${h.dumps( history_dict )},
+                    ${h.dumps( content_dicts )}
+                ),
                 view = new viewMod.AnnotatedHistoryView({
                     el      : $embeddedHistory.find( ".history-panel" ),
-                    model   : new historyModel.History(
-                        ${h.dumps( history_dict )},
-                        ${h.dumps( content_dicts )}
-                    )
+                    model   : historyModel
                 }).render();
+
+            function toggleExpanded( ev ){
+                ev.preventDefault();
+                $embeddedHistory.find( '.expand-content-btn' ).toggleClass( 'toggle-expand' ).toggleClass( 'toggle' );
+                $embeddedHistory.find( ".summary-content" ).slideToggle( "fast" );
+                $embeddedHistory.find( ".annotation" ).slideToggle( "fast" );
+                $embeddedHistory.find( ".expanded-content" ).slideToggle( "fast" );
+            }
 
             $embeddedHistory.find( '.expand-content-btn' ).click( toggleExpanded );
             $embeddedHistory.find( '.toggle-embed' ).click( toggleExpanded );
+
+            function showConfirmationModal( name ){
+                var body = [
+                        '<div class="donemessagelarge">',
+                            _l( 'History imported' ), ': ', _.escape( historyModel.get( 'name' ) ),
+                        '</div>'
+                    ].join('');
+                Galaxy.modal.show({
+                    title : _l( 'Success!' ),
+                    body : $( body ),
+                    buttons : {
+                        'Return to the published page' : function(){
+                            Galaxy.modal.hide();
+                        },
+                        'Start using the history' : function(){
+                            window.location = Galaxy.root;
+                        },
+                    }
+                });
+                Galaxy.modal.$( '.modal-header' ).hide();
+                Galaxy.modal.$( '.modal-body' ).css( 'padding-bottom', 0 );
+                Galaxy.modal.$( '.modal-footer' ).css({ border : 0, 'padding-top': 0 });
+            }
+
+            $embeddedHistory.find( '.import' ).click( function( ev ){
+                var dialogOptions = { useImport: true, allowAll: false, autoClose: false };
+                historyCopyDialog( historyModel, dialogOptions ).done( showConfirmationModal );
+            })
         });
     });
 })();
