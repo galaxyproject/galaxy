@@ -30,6 +30,7 @@ var View = Backbone.View.extend({
         // link elements
         this.$select = this.$el.find('.select');
         this.$icon_dropdown = this.$el.find('.icon-dropdown');
+        this.$icon_dropdown.on( 'click', function() { self.$select.select2 && self.$select.select2( 'open' ) });
 
         // allow regular multi-select field to be resized
         var minHeight = null;
