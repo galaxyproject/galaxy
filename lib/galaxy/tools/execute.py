@@ -34,6 +34,16 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
             # Only workflow invocation code gets to set this, ignore user supplied
             # values or rerun parameters.
             del params[ '__workflow_invocation_uuid__' ]
+
+        # If this is a workflow, everything has now been connected so we should validate
+        # the state we about to execute one last time. Consider whether tool executions
+        # should run this as well.
+        if workflow_invocation_uuid:
+            messages = tool.check_and_update_param_values( params, trans, update_values=False, allow_workflow_parameters=False )
+            if messages:
+                execution_tracker.record_error( messages )
+                return
+
         job, result = tool.handle_single_execution( trans, rerun_remap_job_id, params, history, collection_info, execution_cache )
         if job:
             message = EXECUTION_SUCCESS_MESSAGE % (tool.id, job.id, job_timer)

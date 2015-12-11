@@ -1074,6 +1074,21 @@ steps:
 
         self._assert_status_code_is( run_workflow_response, 400 )
 
+    @skip_without_tool( "validation_repeat" )
+    def test_workflow_import_state_validation_1( self ):
+        history_id = self.dataset_populator.new_history()
+        run_summary = self._run_jobs("""
+class: GalaxyWorkflow
+steps:
+ - tool_id: validation_repeat
+   state:
+     r2:
+     - text: ""
+""", history_id=history_id, wait=False)
+        self.wait_for_invocation( run_summary.workflow_id, run_summary.invocation_id )
+        jobs = self._history_jobs( history_id )
+        assert len(jobs) == 0
+
     def _run_validation_workflow_with_substitions( self, substitions ):
         workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_validation_1" )
         uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
