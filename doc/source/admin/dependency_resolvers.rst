@@ -22,7 +22,7 @@ In some cases these requirement tags can be specified without a version
     <requirement type="package">bedtools</requirement>
 
 The requirement turn into inputs to the dependency resolver. Each dependency resolver is thus given given one or
-two inputs: the name of the dependency to resolve and, in most cases, the version number of the
+two inputs: the name of the dependency to resolve and, in most cases, the version string of the
 dependency.
 
 Default Dependency Resolvers
@@ -41,7 +41,7 @@ The default configuration of dependency resolvers is equivalent to the following
   </dependency_resolvers>
 
 This default dependency resolver configuration contains three items. First, the *tool shed dependency resolver* is used,
-then the *Galaxy packages dependency resolver* is used, first looking for packages by name and version number and then
+then the *Galaxy packages dependency resolver* is used, first looking for packages by name and version string and then
 finally looking for the package just by name. The default configuration thus prefers packages installed from the Galaxy
 Tool Shed, before trying to find a "Galaxy package" satisfying the specific version the dependency requires before
 finally falling back to looking for a Galaxy package with merely the correct name. If any of the dependency
@@ -54,11 +54,11 @@ Tool Shed Dependency Resolver
 The ``tool_shed_packages`` dependency resolver works with packages installed from the Galaxy Tool Shed. When a package
 is installed from the Tool Shed it creates a directory structure under the directory that is specified as the
 ``tool_dependency_dir`` in Galaxy's configuration. This directory structure contains references to the tool's name,
-owner (in the Tool Shed) and version number (amongst other things) and ultimately contains a file named ``env.sh``
+owner (in the Tool Shed) and version string (amongst other things) and ultimately contains a file named ``env.sh``
 that contains commands to make the dependency runnable. This is installed, along with the packaged tool, by the tool
 package and doesn't require any configuration by the Galaxy administrator.
 
-The Tool Shed dependency resolver is not able to resolve package requirements that do not have a version number,
+The Tool Shed dependency resolver is not able to resolve package requirements that do not have a version string,
 like the `bedtools` example above.
 
 Galaxy Packages Dependency Resolver
@@ -72,7 +72,7 @@ it starts looking for the files it requires. The default value for this ``base_p
 ``tool_dependency_dir`` configured in Galaxy's ``config/galaxy.ini``. Below the base path, the Galaxy Packages
 resolver looks for directories named after tools, e.g. ``bedtools``. As mentioned before, this resolver
 works in versioned and versionless mode. The default mode is versioned, where the dependency resolver looks for a
-directory named after the dependency's version number. For example, if the Galaxy tool specifies that it
+directory named after the dependency's version string. For example, if the Galaxy tool specifies that it
 needs ``bedtools`` version 2.20.1, the dependency resolver will look for a directory ``bedtools/2.20.1``.
 
 If the Galaxy Package dependency resolver finds a ``bin`` directory in this directory, it adds it to the ``PATH``
@@ -95,7 +95,7 @@ The Galaxy Package dependency resolver operates quite similarly when used in ver
 for a directory named after a version, it looks for a directory ending in ``default``. For example
 ``bedtools/default``. It then looks for a `bin` subdirectory or ``envh.sh`` and incorporates these in the tool
 script that finally gets run. This versionless (i.e. default) lookup is also used if the package requirement
-does not specify a version number.
+does not specify a version string.
 
 Environment Modules Dependency Resolver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
