@@ -11,6 +11,14 @@ define(['mvc/workflow/workflow-view-terminals', 'mvc/workflow/workflow-view-data
         },
 
         render: function() {
+            var label = this.node.label;
+            var title;
+            if(label) {
+                title = label; 
+            } else {
+                title = this.node.name;
+            }
+            this.$el.find(".nodeTitle").text(title);
             this.renderToolErrors();
             this.$el.css( "width", Math.min(250, Math.max( this.$el.width(), this.output_width )));
         },
