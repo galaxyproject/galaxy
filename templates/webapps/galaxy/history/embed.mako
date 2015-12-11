@@ -3,7 +3,6 @@
 ## Some duplication with embed_base here, needed a way to override the main embedded-item html for histories
 <%
     encoded_history_id = trans.security.encode_id( item.id )
-    import_href = h.url_for( controller='history', action='imp', id=encoded_history_id )
     display_href = h.url_for( controller='history', action='display_by_username_and_slug',
         username=item.user.username, slug=item.slug )
 %>
@@ -14,7 +13,7 @@
                title="Show or hide history contents"></a>
         </div>
         <div style="float: right;">
-            <a title="Import history" class="icon-button import" data-id="${encoded_history_id}" href="javascript:void(0)"></a>
+            <a title="Import history" class="icon-button import" href="javascript:void(0)"></a>
             <a title="View history" class="icon-button go-to-full-screen" href="${display_href}"></a>
         </div>
         <h4>
