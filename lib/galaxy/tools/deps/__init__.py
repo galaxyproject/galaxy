@@ -83,11 +83,11 @@ class DependencyManager( object ):
         return any( map( lambda r: isinstance( r, ToolShedPackageDependencyResolver ), self.dependency_resolvers ) )
 
     def find_dep( self, name, version=None, type='package', **kwds ):
-        log.debug('Find dependency {} version {}'.format(name, version))
+        log.debug('Find dependency %s version %s' % (name, version))
         for resolver in self.dependency_resolvers:
             dependency = resolver.resolve( name, version, type, **kwds )
-            log.debug('Resolver {} returned {} (isnull? {})'.format(resolver.resolver_type, dependency,
-                                                                    dependency == INDETERMINATE_DEPENDENCY))
+            log.debug('Resolver %s returned %s (isnull? %b)' % (resolver.resolver_type, dependency,
+                                                                dependency == INDETERMINATE_DEPENDENCY))
             if dependency != INDETERMINATE_DEPENDENCY:
                 return dependency
         return INDETERMINATE_DEPENDENCY
