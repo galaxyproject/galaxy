@@ -284,8 +284,7 @@ class AssertDirectoryExecutable( RecipeStep ):
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes( self.app,
                                                                                    tool_dependency,
                                                                                    status=status,
-                                                                                   error_message=error_message,
-                                                                                   remove_from_disk=False )
+                                                                                   error_message=error_message )
         return tool_dependency, None, None
 
     def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
@@ -330,8 +329,7 @@ class AssertDirectoryExists( RecipeStep ):
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes( self.app,
                                                                                    tool_dependency,
                                                                                    status=status,
-                                                                                   error_message=error_message,
-                                                                                   remove_from_disk=False )
+                                                                                   error_message=error_message )
         return tool_dependency, None, None
 
     def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
@@ -380,8 +378,7 @@ class AssertFileExecutable( RecipeStep ):
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes( self.app,
                                                                                    tool_dependency,
                                                                                    status=status,
-                                                                                   error_message=error_message,
-                                                                                   remove_from_disk=False )
+                                                                                   error_message=error_message )
         return tool_dependency, None, None
 
     def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
@@ -427,8 +424,7 @@ class AssertFileExists( RecipeStep ):
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes( self.app,
                                                                                    tool_dependency,
                                                                                    status=status,
-                                                                                   error_message=error_message,
-                                                                                   remove_from_disk=False )
+                                                                                   error_message=error_message )
         return tool_dependency, None, None
 
     def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
