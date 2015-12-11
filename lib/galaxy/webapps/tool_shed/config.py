@@ -107,6 +107,7 @@ class Configuration( object ):
         self.smtp_server = kwargs.get( 'smtp_server', None )
         self.smtp_username = kwargs.get( 'smtp_username', None )
         self.smtp_password = kwargs.get( 'smtp_password', None )
+        self.smtp_ssl = kwargs.get( 'smtp_ssl', None )
         self.start_job_runners = kwargs.get( 'start_job_runners', None )
         self.email_from = kwargs.get( 'email_from', None )
         self.nginx_upload_path = kwargs.get( 'nginx_upload_path', False )

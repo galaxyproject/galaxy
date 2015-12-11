@@ -138,6 +138,16 @@ require_login = False
 #smtp_server = smtp.your_tool_shed_server
 #email_from = your_tool_shed_email@server
 
+# If your SMTP server requires a username and password, you can provide them
+# here (password in cleartext here, but if your server supports STARTTLS it
+# will be sent over the network encrypted).
+#smtp_username = None
+#smtp_password = None
+
+# If your SMTP server requires SSL from the beginning of the connection
+# smtp_ssl = False
+
+
 # The URL linked by the "Support" link in the "Help" menu.
 #support_url = https://wiki.galaxyproject.org/Support
 
