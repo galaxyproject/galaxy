@@ -2176,8 +2176,9 @@ class DataToolParameter( BaseDataToolParameter ):
         multiple = self.multiple
 
         # add datasets
+        visible_hda = other_values.get( self.name )
         for hda in history.active_datasets_children_and_roles:
-            match = dataset_matcher.hda_match( hda )
+            match = dataset_matcher.hda_match( hda, ensure_visible=visible_hda != hda )
             if match:
                 m = match.hda
                 d['options']['hda'].append({
