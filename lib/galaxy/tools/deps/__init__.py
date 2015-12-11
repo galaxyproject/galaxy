@@ -86,7 +86,7 @@ class DependencyManager( object ):
         log.debug('Find dependency %s version %s' % (name, version))
         for resolver in self.dependency_resolvers:
             dependency = resolver.resolve( name, version, type, **kwds )
-            log.debug('Resolver %s returned %s (isnull? %b)' % (resolver.resolver_type, dependency,
+            log.debug('Resolver %s returned %s (isnull? %s)' % (resolver.resolver_type, dependency,
                                                                 dependency == INDETERMINATE_DEPENDENCY))
             if dependency != INDETERMINATE_DEPENDENCY:
                 return dependency
