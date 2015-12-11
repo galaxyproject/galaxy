@@ -31,12 +31,12 @@ class ModuleDependencyResolver(DependencyResolver):
         find_by = kwds.get('find_by', 'avail')
         prefetch = _string_as_bool(kwds.get('prefetch', DEFAULT_MODULE_PREFETCH))
         self.modulecmd = kwds.get('modulecmd', DEFAULT_MODULECMD_PATH)
+        self.modulepath = kwds.get('modulepath', self.__default_modulespath())
         self.default_indicator = kwds.get('default_indicator', DEFAULT_INDICATOR)
         if find_by == 'directory':
-            modulepath = kwds.get('modulepath', self.__default_modulespath())
-            self.module_checker = DirectoryModuleChecker(self, modulepath, prefetch)
+            self.module_checker = DirectoryModuleChecker(self, self.modulepath, prefetch)
         elif find_by == 'avail':
-            self.module_checker = AvailModuleChecker(self, prefetch, self.default_indicator)
+            self.module_checker = AvailModuleChecker(self, self.modulepath, prefetch, self.default_indicator)
         else:
             raise Exception(UNKNOWN_FIND_BY_MESSAGE % (find_by, ["avail", "directory"]))
 
@@ -98,8 +98,9 @@ class AvailModuleChecker(object):
     module names into module and version on '/' and discarding a postfix matching default_indicator
     (by default '(default)'. Matching is done using the module and
     (if version=True) the module version."""
-    def __init__(self, module_dependency_resolver, prefetch, default_indicator=DEFAULT_INDICATOR):
+    def __init__(self, module_dependency_resolver, modulepath, prefetch, default_indicator=DEFAULT_INDICATOR):
         self.module_dependency_resolver = module_dependency_resolver
+        self.modulepath = modulepath
         self.default_indicator = default_indicator
         if prefetch:
             prefetched_modules = []
@@ -141,7 +142,7 @@ class AvailModuleChecker(object):
 
     def __module_avail_output(self):
         avail_command = [self.module_dependency_resolver.modulecmd, 'sh', 'avail']
-        return Popen(avail_command, stderr=PIPE).communicate()[1]
+        return Popen(avail_command, stderr=PIPE, env={'MODULEPATH': self.modulepath}).communicate()[1]
 
 
 class ModuleDependency(Dependency):
@@ -159,7 +160,9 @@ class ModuleDependency(Dependency):
         module_to_load = self.module_name
         if self.module_version:
             module_to_load = '%s/%s' % (self.module_name, self.module_version)
-        command = 'eval `%s sh load %s`' % (self.module_dependency_resolver.modulecmd, module_to_load)
+        command = 'MODULEPATH={}; export MODULEPATH; eval `{} sh load {}`'.format(self.module_dependency_resolver.modulepath,
+                                                                                  self.module_dependency_resolver.modulecmd,
+                                                                                  module_to_load)
         return command
 
 

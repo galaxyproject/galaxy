@@ -105,6 +105,9 @@ takes these parameters:
 modulecmd
     path to Environment Modules' ``modulecmd`` tool
 
+modulepath
+    value used for MODULEPATH environment variable, used to locate modules
+
 versionless
     whether to resolve tools using a version number or not (default: *false*)
 
