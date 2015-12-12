@@ -2003,7 +2003,7 @@ class Tool( object, Dictifiable ):
                 if isinstance( input, Conditional ):
                     cond_messages = {}
                     if not input.is_job_resource_conditional:
-                        cond_messages = { input.test_param.name: "No value found for '%s%s', used default" % ( prefix, input.label ) }
+                        cond_messages = { input.test_param.name: "No value found for '%s%s', used default" % ( prefix, input.test_param.label ) }
                         messages[ input.name ] = cond_messages
                     test_value = input.test_param.get_initial_value( trans, context )
                     current_case = input.get_current_case( test_value, trans )
@@ -2017,7 +2017,7 @@ class Tool( object, Dictifiable ):
                             messages[ input.name ].append( rep_dict )
                             self.check_and_update_param_values_helper( input.inputs, {}, trans, rep_dict, context, rep_prefix, allow_workflow_parameters=allow_workflow_parameters )
                 elif isinstance( input, Section ):
-                    messages[ input.name ] = { input.name: "No value found for '%s%s', used default" % ( prefix, input.label ) }
+                    messages[ input.name ] = {}
                     self.check_and_update_param_values_helper( input.inputs, {}, trans, messages[ input.name ], context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 else:
                     messages[ input.name ] = "No value found for '%s%s', used default" % ( prefix, input.label )
@@ -2047,8 +2047,8 @@ class Tool( object, Dictifiable ):
                         current = group_values["__current_case__"]
                         self.check_and_update_param_values_helper( input.cases[current].inputs, group_values, trans, messages, context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 elif isinstance( input, Section ):
-                    messages[ input.name ] = "No value found for '%s%s', used default" % ( prefix, input.label )
-                    self.check_and_update_param_values_helper( input.inputs, values[ input.name ], trans, messages, context, prefix, allow_workflow_parameters=allow_workflow_parameters )
+                    messages[ input.name ] = {}
+                    self.check_and_update_param_values_helper( input.inputs, values[ input.name ], trans, messages[ input.name ], context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 else:
                     # Regular tool parameter, no recursion needed
                     try:
