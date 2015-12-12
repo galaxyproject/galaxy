@@ -878,6 +878,12 @@ class ToolModule( WorkflowModule ):
         jobs = execution_tracker.successful_jobs
         for job in jobs:
             self._handle_post_job_actions( step, job, invocation.replacement_dict )
+        if execution_tracker.execution_errors:
+            failed_count = len(execution_tracker.execution_errors)
+            success_count = len(execution_tracker.successful_jobs)
+            all_count = failed_count + success_count
+            message = "Failed to create %d out of %s job(s) for workflow step." % (failed_count, all_count)
+            raise Exception(message)
         return jobs
 
     def _find_collections_to_match( self, tool, progress, step ):

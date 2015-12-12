@@ -116,6 +116,8 @@ class ToolExecutionTracker( object ):
 
     def record_error( self, error ):
         self.failed_jobs += 1
+        message = "There was a failure executing a job for tool [%s] - %s"
+        log.warn(message, self.tool.id, error)
         self.execution_errors.append( error )
 
     def create_output_collections( self, trans, history, params ):

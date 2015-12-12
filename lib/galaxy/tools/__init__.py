@@ -1893,6 +1893,7 @@ class Tool( object, Dictifiable ):
                             if ck_param:
                                 input.value_from_basic( input.value_to_basic( value, trans.app ), trans.app, ignore_errors=False )
                     except:
+                        log.info("Parameter validation failed.", exc_info=True)
                         messages[ input.name ] = "Value no longer valid for '%s%s', replacing with default" % ( prefix, input.label )
                         if update_values:
                             values[ input.name ] = input.get_initial_value( trans, context )
