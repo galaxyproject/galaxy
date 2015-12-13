@@ -667,7 +667,7 @@ class ToolModule( WorkflowModule ):
                     label=prefixed_label,
                     multiple=input.multiple,
                     input_type="dataset_collection",
-                    collection_type=input.collection_type,
+                    collection_types=input.collection_types,
                     extensions=input.extensions,
                 ) )
 
@@ -886,8 +886,9 @@ class ToolModule( WorkflowModule ):
             if is_data_collection_param and not input.multiple:
                 data = progress.replacement_for_tool_input( step, input, prefixed_name )
                 history_query = input._history_query( self.trans )
-                if history_query.can_map_over( data ):
-                    collections_to_match.add( prefixed_name, data, subcollection_type=input.collection_type )
+                subcollection_type_description = history_query.can_map_over( data )
+                if subcollection_type_description:
+                    collections_to_match.add( prefixed_name, data, subcollection_type=subcollection_type_description.collection_type )
 
         visit_input_values( tool.inputs, step.state.inputs, callback )
         return collections_to_match

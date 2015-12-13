@@ -240,7 +240,7 @@ def __assert_has_runtime_input( module, label=None, collection_type=None ):
     if label is not None:
         assert input_param.get_label() == label, input_param.get_label()
     if collection_type is not None:
-        assert input_param.collection_type == collection_type
+        assert input_param.collection_types == [collection_type]
     return input_param
 
 
