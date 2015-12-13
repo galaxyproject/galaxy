@@ -6,6 +6,7 @@ SPECIAL_TOOLS = {
     "history import": "galaxy/tools/imp_exp/imp_history_from_archive.xml",
     "collection unzip": "galaxy/tools/unzip_collection.xml",
     "collection zip": "galaxy/tools/zip_collection.xml",
+    "filter failed datasets": "galaxy/tools/filter_failed_collection.xml",
 }
 
 

@@ -2235,6 +2235,25 @@ class ZipCollectionTool( DatabaseOperationTool ):
         )
 
 
+class FilterFailedDatasetsTool( DatabaseOperationTool ):
+    tool_type = 'filter_failed_datasets_collection'
+    require_dataset_ok = False
+
+    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
+        hdca = incoming[ "input" ]
+        assert hdca.collection.collection_type == "list"
+        new_elements = odict()
+        for dce in hdca.collection.elements:
+            element = dce.element_object
+            if element.is_ok:
+                element_identifier = dce.element_identifier
+                new_elements[element_identifier] = element.copy()
+
+        output_collections.create_collection(
+            self.outputs.values()[0], "output", elements=new_elements
+        )
+
+
 # Populate tool_type to ToolClass mappings
 tool_types = {}
 for tool_class in [ Tool, SetMetadataTool, OutputParameterJSONTool,

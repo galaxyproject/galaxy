@@ -35,6 +35,7 @@
   <tool file="maxseconds.xml" />
   -->
   <tool file="job_properties.xml" />
+  <tool file="exit_code_from_file.xml" />
   <tool file="gzipped_inputs.xml" />
   <tool file="output_order.xml" />
   <tool file="output_format.xml" />
