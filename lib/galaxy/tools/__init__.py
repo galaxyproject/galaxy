@@ -2254,6 +2254,30 @@ class FilterFailedDatasetsTool( DatabaseOperationTool ):
         )
 
 
+class FlattenTool( DatabaseOperationTool ):
+    tool_type = 'flatten_collection'
+
+    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
+        hdca = incoming[ "input" ]
+        join_identifier = incoming["join_identifier"]
+        new_elements = odict()
+
+        def add_elements(collection, prefix=""):
+            for dce in collection.elements:
+                dce_object = dce.element_object
+                dce_identifier = dce.element_identifier
+                identifier = "%s%s%s" % (prefix, join_identifier, dce_identifier) if prefix else dce_identifier
+                if dce.is_collection:
+                    add_elements(dce_object, prefix=identifier)
+                else:
+                    new_elements[identifier] = dce_object.copy()
+
+        add_elements(hdca.collection)
+        output_collections.create_collection(
+            self.outputs.values()[0], "output", elements=new_elements
+        )
+
+
 # Populate tool_type to ToolClass mappings
 tool_types = {}
 for tool_class in [ Tool, SetMetadataTool, OutputParameterJSONTool,
