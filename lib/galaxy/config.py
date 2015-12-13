@@ -244,6 +244,7 @@ class Configuration( object ):
             log.warn("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
             preserve_python_environment = "legacy_only"
         self.preserve_python_environment = preserve_python_environment
+        self.nodejs_path = kwargs.get( "nodejs_path", None )
         self.container_image_cache_path = self.resolve_path( kwargs.get( "container_image_cache_path", "database/container_images" ) )
         self.outputs_to_working_directory = string_as_bool( kwargs.get( 'outputs_to_working_directory', False ) )
         self.output_size_limit = int( kwargs.get( 'output_size_limit', 0 ) )
