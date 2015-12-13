@@ -8,6 +8,7 @@ SPECIAL_TOOLS = {
     "collection zip": "galaxy/tools/zip_collection.xml",
     "filter failed datasets": "galaxy/tools/filter_failed_collection.xml",
     "filter datasets": "galaxy/tools/filter_collection.xml",
+    "flatten collection": "galaxy/tools/flatten_collection.xml",
 }
 
 
