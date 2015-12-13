@@ -263,6 +263,12 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Disable the 'Auto-detect' option for file uploads
 #datatypes_disable_auto = False
 
+# Location of nodejs executable. Certain optional features of Galaxy
+# require a nodejs runtime (https://nodejs.org/en/), Galaxy can be configured
+# to target a specific executable with this option. If left commented
+# out Galaxy will just check the PATH for a nodejs executable.
+#nodejs_path = None
+
 # Visualizations config directory: where to look for individual visualization
 # plugins.  The path is relative to the Galaxy root dir.  To use an absolute
 # path begin the path with '/'.  This is a comma separated list.
