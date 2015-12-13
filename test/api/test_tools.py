@@ -196,6 +196,25 @@ class ToolsTestCase( api.ApiTestCase ):
         filtered_states = map(get_state, filtered_hdca["elements"])
         assert filtered_states == [u"ok", u"ok"], filtered_states
 
+    def test_filter_0( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca_id = self.dataset_collection_populator.create_list_in_history( history_id, contents=["a", "a\nb", "a\nb\nc", "a\nb\nc\nd" ] ).json()["id"]
+        self.dataset_populator.wait_for_history( history_id )
+        inputs = {
+            "input": {"src": "hdca", "id": hdca_id},
+            "expression": "metadata_data_lines % 2 == 0"
+        }
+        response = self._run( "__FILTER__", history_id, inputs, assert_ok=True )
+        output_collections = response["output_collections"]
+        assert len(output_collections) == 1
+
+        filtered_hid = output_collections[0]["hid"]
+        filtered_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=filtered_hid)
+        self.assertEquals(len(filtered_hdca["elements"]), 2)
+        filtered_dataset = filtered_hdca["elements"][0]["object"]
+        filtered_dataset_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=filtered_dataset )
+        self.assertEquals(filtered_dataset_content.strip(), "a\nb")
+
     @skip_without_tool( "multi_select" )
     def test_multi_select_as_list( self ):
         history_id = self.dataset_populator.new_history()

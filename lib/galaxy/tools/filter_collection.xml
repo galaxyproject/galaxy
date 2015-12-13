@@ -1,0 +1,40 @@
+<tool id="__FILTER__"
+      name="Apply Filter"
+      version="1.0.0"
+      tool_type="filter_collection">
+    <description>to a dataset collection</description>
+    <type class="FilterTool" module="galaxy.tools" />
+    <action module="galaxy.tools.actions.model_operations"
+            class="ModelOperationToolAction"/>
+    <inputs>
+        <param type="data_collection" collection_type="list" name="input" label="Input Collection" />
+        <param type="text" name="expression" label="JavaScript expression" help="">
+            <sanitizer sanitize="False"/>
+        </param>
+    </inputs>
+    <outputs>
+        <collection name="output" format_source="input" type_source="input" label="${on_string} (filtered)" >
+        </collection>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input">
+                <collection type="list">
+                    <element name="e1" value="simple_line.txt" />
+                    <element name="e2" value="simple_line_x2.txt" />
+                </collection>
+            </param>
+            <param name="expression" value="metadata_data_lines % 2 == 1" />
+            <!-- TODO: this doesn't actually verify something was 
+                       removed.
+            -->
+            <output_collection name="output" type="list">
+                <element name="e1">
+                  <assert_contents>
+                      <has_text_matching expression="^This is a line of text.\n$" />
+                  </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+    </tests>
+</tool>
