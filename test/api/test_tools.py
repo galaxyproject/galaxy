@@ -165,6 +165,37 @@ class ToolsTestCase( api.ApiTestCase ):
         implicit_collections = response[ "implicit_collections" ]
         self.assertEquals( len(implicit_collections), 1 )
 
+    def test_filter_failed( self ):
+        history_id = self.dataset_populator.new_history()
+        ok_hdca_id = self.dataset_collection_populator.create_list_in_history( history_id, contents=["0", "1", "0", "1"] ).json()["id"]
+        exit_code_inputs = {
+            "input": { 'batch': True, 'values': [ {"src": "hdca", "id": ok_hdca_id} ] },
+        }
+        response = self._run( "exit_code_from_file", history_id, exit_code_inputs, assert_ok=False ).json()
+        self.dataset_populator.wait_for_history( history_id, assert_ok=False )
+
+        mixed_implicit_collections = response[ "implicit_collections" ]
+        self.assertEquals( len(mixed_implicit_collections), 1 )
+        mixed_hdca_hid = mixed_implicit_collections[0]["hid"]
+        mixed_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=mixed_hdca_hid, wait=False)
+
+        def get_state(dce):
+            return dce["object"]["state"]
+
+        mixed_states = map(get_state, mixed_hdca["elements"])
+        assert mixed_states == [u"ok", u"error", u"ok", u"error"], mixed_states
+        inputs = {
+            "input": { "src": "hdca", "id": mixed_hdca["id"] },
+        }
+        response = self._run( "__FILTER_FAILED_DATASETS__", history_id, inputs, assert_ok=False ).json()
+        self.dataset_populator.wait_for_history( history_id, assert_ok=False )
+        filter_output_collections = response[ "output_collections" ]
+        self.assertEquals( len(filter_output_collections), 1 )
+        filtered_hid = filter_output_collections[0]["hid"]
+        filtered_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=filtered_hid, wait=False)
+        filtered_states = map(get_state, filtered_hdca["elements"])
+        assert filtered_states == [u"ok", u"ok"], filtered_states
+
     @skip_without_tool( "multi_select" )
     def test_multi_select_as_list( self ):
         history_id = self.dataset_populator.new_history()
