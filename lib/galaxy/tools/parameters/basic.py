@@ -291,7 +291,8 @@ class TextToolParameter( ToolParameter ):
             return self.to_string( value, app )
 
     def validate( self, value, history=None, workflow_building_mode=False ):
-        if not ( workflow_building_mode and isinstance( value, basestring ) and value.startswith( '$' ) ):
+        search = self.type == "text"
+        if not ( workflow_building_mode and contains_workflow_parameter(value, search=search) ):
             return super( TextToolParameter, self ).validate( value, history )
 
     def get_initial_value( self, trans, context, history=None ):
