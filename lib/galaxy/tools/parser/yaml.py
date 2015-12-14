@@ -9,7 +9,9 @@ from .output_collection_def import dataset_collector_descriptions_from_list
 from .output_actions import ToolOutputActionGroup
 from galaxy.util.odict import odict
 from .output_objects import (
-    ToolOutput
+    ToolOutput,
+    ToolOutputCollection,
+    ToolOutputCollectionStructure,
 )
 
 
@@ -71,13 +73,24 @@ class YamlToolSource(ToolSource):
     def parse_outputs(self, tool):
         outputs = self.root_dict.get("outputs", {})
         output_defs = []
+        output_collection_defs = []
         for name, output_dict in outputs.items():
-            output_defs.append(self._parse_output(tool, name, output_dict))
+            output_type = output_dict.get("type", "data")
+            if output_type == "data":
+                output_defs.append(self._parse_output(tool, name, output_dict))
+            elif output_type == "collection":
+                output_collection_defs.append(self._parse_output(tool, name, output_dict))
+            else:
+                message = "Unknown output_type [%s] encountered." % output_type
+                raise Exception(message)
         outputs = odict()
         for output in output_defs:
             outputs[output.name] = output
-        # TODO: parse outputs collections
-        return outputs, odict()
+        output_collections = odict()
+        for output in output_collection_defs:
+            output_collections[output.name] = output
+
+        return outputs, output_collections
 
     def _parse_output(self, tool, name, output_dict):
         # TODO: handle filters, actions, change_format
@@ -95,11 +108,50 @@ class YamlToolSource(ToolSource):
         output.hidden = output_dict.get("hidden", "")
         # TODO: implement tool output action group fixes
         output.actions = ToolOutputActionGroup( output, None )
-        discover_datasets_dicts = output_dict.get( "discover_datasets", [] )
+        output.dataset_collector_descriptions = self._dataset_collector_descriptions( output_dict )
+        return output
+
+    def _parse_output_collection(self, tool, name, output_dict):
+        name = output_dict.get("name")
+        label = output_dict.get("label")
+        default_format = output_dict.get( "format", "data" )
+        collection_type = output_dict.get( "type", None )
+        collection_type_source = output_dict.get( "type_source", None )
+        structured_like = output_dict.get( "structured_like", None )
+        inherit_format = False
+        inherit_metadata = False
+        if structured_like:
+            inherit_format = output_dict.get( "inherit_format", None )
+            inherit_metadata = output_dict.get( "inherit_metadata", None )
+        default_format_source = output_dict.get( "format_source", None )
+        default_metadata_source = output_dict.get( "metadata_source", "" )
+        filters = []
+        dataset_collector_descriptions = self._dataset_collector_descriptions( output_dict )
+
+        structure = ToolOutputCollectionStructure(
+            collection_type=collection_type,
+            collection_type_source=collection_type_source,
+            structured_like=structured_like,
+            dataset_collector_descriptions=dataset_collector_descriptions,
+        )
+        output_collection = ToolOutputCollection(
+            name,
+            structure,
+            label=label,
+            filters=filters,
+            default_format=default_format,
+            inherit_format=inherit_format,
+            inherit_metadata=inherit_metadata,
+            default_format_source=default_format_source,
+            default_metadata_source=default_metadata_source,
+        )
+        return output_collection
+
+    def _dataset_collector_descriptions(self, discover_datasets_dicts):
         if _is_dict(discover_datasets_dicts):
             discover_datasets_dicts = [ discover_datasets_dicts ]
-        output.dataset_collector_descriptions = dataset_collector_descriptions_from_list( discover_datasets_dicts )
-        return output
+        dataset_collector_descriptions = dataset_collector_descriptions_from_list( discover_datasets_dicts )
+        return dataset_collector_descriptions
 
     def parse_tests_to_dict(self):
         tests = []
