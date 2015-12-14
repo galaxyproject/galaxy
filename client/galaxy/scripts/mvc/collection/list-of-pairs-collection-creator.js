@@ -90,13 +90,14 @@ var PairView = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 function autoPairFnBuilder( options ){
     options = options || {};
     options.createPair = options.createPair || function _defaultCreatePair( params ){
-        this.debug( 'creating pair:', params.listA[ params.indexA ].name, params.listB[ params.indexB ].name );
         params = params || {};
-        return this._pair(
-            params.listA.splice( params.indexA, 1 )[0],
-            params.listB.splice( params.indexB, 1 )[0],
-            { silent: true }
-        );
+        var a = params.listA.splice( params.indexA, 1 )[0],
+            b = params.listB.splice( params.indexB, 1 )[0],
+            aInBIndex = params.listB.indexOf( a ),
+            bInAIndex = params.listA.indexOf( b );
+        if( aInBIndex !== -1 ){ params.listB.splice( aInBIndex, 1 ); }
+        if( bInAIndex !== -1 ){ params.listA.splice( bInAIndex, 1 ); }
+        return this._pair( a, b, { silent: true });
     };
     // compile these here outside of the loop
     var _regexps = [];
@@ -162,14 +163,14 @@ function autoPairFnBuilder( options ){
             this.debug( 'bestMatch.score:', bestMatch.score );
 
             if( bestMatch.score >= scoreThreshold ){
-                this.debug( 'creating pair' );
+                //console.debug( 'autoPairFnBuilder.strategy', listA[ indexA ].name, listB[ bestMatch.index ].name );
                 paired.push( options.createPair.call( this, {
                     listA   : listA,
                     indexA  : indexA,
                     listB   : listB,
                     indexB  : bestMatch.index
                 }));
-                this.debug( 'list lens now:', listA.length, listB.length );
+                //console.debug( 'list lens now:', listA.length, listB.length );
             } else {
                 indexA += 1;
             }
@@ -219,7 +220,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         }
 
         /** try to auto pair the unpaired datasets on load? */
-        this.automaticallyPair = attributes.automaticallyPair;
+        // this.automaticallyPair = attributes.automaticallyPair;
 
         /** what method to use for auto pairing (will be passed aggression level) */
         this.strategy = this.strategies[ attributes.strategy ] || this.strategies[ this.DEFAULT_STRATEGY ];
@@ -480,7 +481,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** create a pair from fwd and rev, removing them from unpaired, and placing the new pair in paired */
     _pair : function( fwd, rev, options ){
         options = options || {};
-        //this.debug( '_pair:', fwd, rev );
+        this.debug( '_pair:', fwd, rev );
         var pair = this._createPair( fwd, rev, options.name );
         this.paired.push( pair );
         this.unpaired = _.without( this.unpaired, fwd, rev );
