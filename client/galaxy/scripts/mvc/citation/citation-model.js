@@ -2,8 +2,11 @@ define([
     "libs/bibtex",
     "mvc/base-mvc",
     "utils/localization"
-], function( BibtexParser, baseMVC, _l ){
+], function( parseBibtex, baseMVC, _l ){
 /* global Backbone */
+// we use amd here to require, but bibtex uses a global or commonjs pattern.
+// webpack will load via commonjs and plain requirejs will load as global. Check both
+parseBibtex = parseBibtex || window.BibtexParser;
 
 var logNamespace = 'citation';
 //==============================================================================
@@ -16,7 +19,7 @@ var Citation = Backbone.Model.extend( baseMVC.LoggableMixin ).extend( {
 
     initialize: function() {
         var bibtex = this.get( 'content' );
-        var entry = BibtexParser(bibtex).entries[0];
+        var entry = parseBibtex(bibtex).entries[0];
         this.entry = entry;
         this._fields = {};
         var rawFields = entry.Fields;
