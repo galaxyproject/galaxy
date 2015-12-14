@@ -6,8 +6,6 @@ import tarfile
 import tempfile
 
 from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
-from sqlalchemy import and_
 eggs.require( "MarkupSafe" )
 from markupsafe import escape
 
@@ -19,7 +17,7 @@ from galaxy.util import parse_xml
 from galaxy.util import string_as_bool
 from galaxy.util.bunch import Bunch
 
-from tool_shed.util import common_util
+from tool_shed.util import shed_util_common
 
 from .panel import ToolPanelElements
 from .panel import ToolSectionLabel
@@ -449,16 +447,6 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
     def tools( self ):
         return self._tools_by_id.iteritems()
 
-    def __get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
-        # We store only the port, if one exists, in the database.
-        tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
-        return self.app.install_model.context.query( self.app.install_model.ToolShedRepository ) \
-            .filter( and_( self.app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
-                           self.app.install_model.ToolShedRepository.table.c.name == name,
-                           self.app.install_model.ToolShedRepository.table.c.owner == owner,
-                           self.app.install_model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
-            .first()
-
     def get_tool_components( self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
         """
         Retrieve all loaded versions of a tool from the toolbox and return a select list enabling
@@ -588,10 +576,11 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                     # Backward compatibility issue - the tag used to be named 'changeset_revision'.
                     installed_changeset_revision_elem = elem.find( "changeset_revision" )
                 installed_changeset_revision = installed_changeset_revision_elem.text
-                tool_shed_repository = self.__get_tool_shed_repository( tool_shed,
-                                                                        repository_name,
-                                                                        repository_owner,
-                                                                        installed_changeset_revision )
+                tool_shed_repository = shed_util_common.get_installed_repository(self.app,
+                                                                                 tool_shed=tool_shed,
+                                                                                 name=repository_name,
+                                                                                 owner=repository_owner,
+                                                                                 installed_changeset_revision=installed_changeset_revision)
 
                 if tool_shed_repository:
                     # Only load tools if the repository is not deactivated or uninstalled.
