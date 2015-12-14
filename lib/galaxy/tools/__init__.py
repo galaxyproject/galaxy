@@ -1844,7 +1844,6 @@ class Tool( object, Dictifiable ):
                             messages[ input.name ].append( rep_dict )
                             self.check_and_update_param_values_helper( input.inputs, {}, trans, rep_dict, context, rep_prefix, allow_workflow_parameters=allow_workflow_parameters )
                 elif isinstance( input, Section ):
-                    messages[ input.name ] = { input.name: "No value found for '%s%s', using default" % ( prefix, input.label ) }
                     self.check_and_update_param_values_helper( input.inputs, {}, trans, messages[ input.name ], context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 else:
                     messages[ input.name ] = "No value found for '%s%s', using default" % ( prefix, input.label )
@@ -1874,7 +1873,6 @@ class Tool( object, Dictifiable ):
                         current = group_values["__current_case__"]
                         self.check_and_update_param_values_helper( input.cases[current].inputs, group_values, trans, messages, context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 elif isinstance( input, Section ):
-                    messages[ input.name ] = "No value found for '%s%s', using default" % ( prefix, input.label )
                     self.check_and_update_param_values_helper( input.inputs, values[ input.name ], trans, messages, context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 else:
                     # Regular tool parameter, no recursion needed
@@ -2163,7 +2161,7 @@ class Tool( object, Dictifiable ):
 
         return tool_dict
 
-    def to_json(self, trans, kwd={}, job=None, is_workflow=False):
+    def to_json(self, trans, kwd={}, job=None, workflow_mode=False):
         """
         Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
         """
@@ -2178,6 +2176,9 @@ class Tool( object, Dictifiable ):
                 raise exceptions.MessageException( 'History unavailable. Please specify a valid history id' )
         except Exception, e:
             raise exceptions.MessageException( '[history_id=%s] Failed to retrieve history. %s.' % ( history_id, str( e ) ) )
+
+        # set workflow mode ( TODO: Should be revised/parsed without trans to tool parameters (basic.py) )
+        trans.workflow_building_mode = workflow_mode
 
         # load job parameters into incoming
         tool_message = ''
@@ -2263,16 +2264,14 @@ class Tool( object, Dictifiable ):
         def check_state(trans, input, value, context):
             error = 'State validation failed.'
 
-            # do not check unvalidated values
-            if isinstance(value, galaxy.tools.parameters.basic.RuntimeValue):
+            # handle unvalidated values
+            if isinstance(value, galaxy.tools.parameters.basic.DummyDataset):
+                return [ None, None ]
+            elif isinstance(value, galaxy.tools.parameters.basic.RuntimeValue):
                 return [ { '__class__' : 'RuntimeValue' }, None ]
             elif isinstance( value, dict ):
                 if value.get('__class__') == 'RuntimeValue':
                     return [ value, None ]
-
-            # skip dynamic fields if deactivated
-            if is_workflow and input.is_dynamic:
-                return [value, None]
 
             # validate value content
             try:
@@ -2353,6 +2352,7 @@ class Tool( object, Dictifiable ):
                         test_param = tool_dict['test_param']
                         test_param['default_value'] = jsonify(input.test_param.get_initial_value(trans, other_values, history=history))
                         test_param['value'] = jsonify(group_state.get(test_param['name'], test_param['default_value']))
+                        test_param['text_value'] = input.test_param.value_to_display_text(test_param['value'], trans.app)
                         for i in range(len( tool_dict['cases'] ) ):
                             current_state = {}
                             if i == group_state.get('__current_case__', None):
@@ -2380,6 +2380,9 @@ class Tool( object, Dictifiable ):
 
                     # update input value from tool state
                     tool_dict['value'] = state_inputs.get(input.name, tool_dict['default_value'])
+
+                    # add text value
+                    tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ], trans.app )
 
                     # sanitize values
                     sanitize(tool_dict, 'value')

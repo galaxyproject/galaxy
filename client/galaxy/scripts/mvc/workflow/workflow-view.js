@@ -5,11 +5,11 @@ define([
     'mvc/workflow/workflow-manager',
     'mvc/workflow/workflow-canvas',
     'mvc/workflow/workflow-node',
-    'mvc/tool/tools-form-workflow',
+    'mvc/tool/tool-form-workflow',
     'utils/async-save-text',
     'libs/toastr',
     'ui/editable-text'
-], function( Utils, Globals, Workflow, WorkflowCanvas, Node, ToolsForm, async_save_text, Toastr ){
+], function( Utils, Globals, Workflow, WorkflowCanvas, Node, ToolForm, async_save_text, Toastr ){
 
 // Reset tool search to start state.
 function reset_tool_search( initValue ) {
@@ -715,7 +715,7 @@ EditorFormView = Backbone.View.extend({
                     var options = JSON.parse(text);
                     options.node = node;
                     options.datatypes = this.datatypes;
-                    formView = new ToolsForm.View(options);
+                    formView = new ToolForm.View(options);
                 } else {
                     var options = {
                         html: text,

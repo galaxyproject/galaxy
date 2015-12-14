@@ -1,7 +1,5 @@
 // dependencies
-define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'mvc/tool/tools-template'],
-        function(Utils, Ui, Tabs, ToolTemplate) {
-
+define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'], function(Utils, Ui, Tabs) {
 // hda/hdca content selector ui element
 var View = Backbone.View.extend({
     // initialize
@@ -334,7 +332,7 @@ var View = Backbone.View.extend({
 
     /** Batch message template */
     template_batch: function() {
-        return  '<div class="ui-table-form-info">' +
+        return  '<div class="ui-form-info">' +
                     '<i class="fa fa-sitemap" style="font-size: 1.2em; padding: 2px 5px;"/>' +
                     'This is a batch mode input field. A separate job will be triggered for each dataset.' +
                 '</div>';

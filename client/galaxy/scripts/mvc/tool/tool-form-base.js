@@ -2,25 +2,19 @@
     This is the base class of the tool form plugin. This class is e.g. inherited by the regular and the workflow tool form.
 */
 define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
-        'mvc/tool/tools-template', 'mvc/citation/citation-model', 'mvc/citation/citation-view'],
-    function(Utils, Deferred, Ui, Form, ToolTemplate, CitationModel, CitationView) {
-
-    // create form view
-    return Backbone.View.extend({
-        // initialize
+        'mvc/tool/tool-template', 'mvc/citation/citation-model', 'mvc/citation/citation-view'],
+    function(Utils, Deferred, Ui, FormBase, ToolTemplate, CitationModel, CitationView) {
+    return FormBase.extend({
         initialize: function(options) {
-            this.options = Utils.merge(options, {});
-            this.setElement('<div/>');
-
-            // create deferred processing queue handler
-            // this handler reduces the number of requests to the api by filtering redundant requests
+            var self = this;
+            FormBase.prototype.initialize.call(this, options);
             this.deferred = new Deferred();
-
-            // create form
             if (options.inputs) {
                 this._buildForm(options);
+                options.needs_update && this.deferred.execute( function( process ) {
+                    self._updateModel( process );
+                });
             } else {
-                var self = this;
                 this.deferred.execute(function(process) {
                     self._buildModel(process, options, true);
                 });
@@ -32,21 +26,18 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             var self = this;
             this.$el.hide();
             this.deferred.execute(function(){
-                Backbone.View.prototype.remove.call(self);
-                Galaxy.emit.debug('tools-form-base::remove()', 'Destroy view.');
+                FormBase.prototype.remove.call(self);
+                Galaxy.emit.debug('tool-form-base::remove()', 'Destroy view.');
             });
         },
 
         /** Build form */
         _buildForm: function(options) {
-            // link this
             var self = this;
-
-            // merge form options
             this.options = Utils.merge(options, this.options);
             this.options = Utils.merge({
-                icon            : 'fa-wrench',
-                title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Tool Version ' + options.version + ')',
+                icon            : ( (options.icon === undefined) && 'fa-wrench' ) || '',
+                title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')',
                 operations      : this._operations(),
                 onchange        : function() {
                     self.deferred.reset();
@@ -55,19 +46,11 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     });
                 }
             }, this.options);
-
-            // allow option customization
             this.options.customize && this.options.customize( this.options );
-
-            // create form
-            this.form = new Form(this.options);
-
-            // create footer
-            this._footer();
-
-            // create element
-            this.$el.empty();
-            this.$el.append(this.form.$el);
+            this.render();
+            if ( !this.options.collapsible ) {
+                this.$el.append( $( '<div/>' ).addClass( 'ui-margin-top-large' ).append( this._footer() ) );
+            }
         },
 
         /** Builds a new model through api call and recreates the entire form
@@ -97,12 +80,12 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 data    : build_data,
                 success : function(new_model) {
                     self._buildForm(new_model['tool_model'] || new_model);
-                    !hide_message && self.form.message.update({
+                    !hide_message && self.message.update({
                         status      : 'success',
                         message     : 'Now you are using \'' + self.options.name + '\' version ' + self.options.version + ', id \'' + self.options.id + '\'.',
                         persistent  : false
                     });
-                    Galaxy.emit.debug('tools-form-base::initialize()', 'Initial tool model ready.', new_model);
+                    Galaxy.emit.debug('tool-form-base::initialize()', 'Initial tool model ready.', new_model);
                     process.resolve();
 
                 },
@@ -126,7 +109,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                             }
                         });
                     }
-                    Galaxy.emit.debug('tools-form::initialize()', 'Initial tool model request failed.', response);
+                    Galaxy.emit.debug('tool-form::initialize()', 'Initial tool model request failed.', response);
                     process.reject();
                 }
             });
@@ -135,27 +118,18 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
         /** Request a new model for an already created tool form and updates the form inputs
         */
         _updateModel: function(process) {
-            // model url for request
-            var model_url = this.options.update_url || Galaxy.root + 'api/tools/' + this.options.id + '/build';
-
             // link this
             var self = this;
-
-            // create the request dictionary
-            var form = this.form;
-
-            // create the request dictionary
+            var model_url = this.options.update_url || Galaxy.root + 'api/tools/' + this.options.id + '/build';
             var current_state = {
                 tool_id         : this.options.id,
                 tool_version    : this.options.version,
-                inputs          : $.extend(true, {}, self.form.data.create())
+                inputs          : $.extend(true, {}, self.data.create())
             }
-
-            // set wait mode
-            form.wait(true);
+            this.wait(true);
 
             // log tool state
-            Galaxy.emit.debug('tools-form-base::_updateModel()', 'Sending current state.', current_state);
+            Galaxy.emit.debug('tool-form-base::_updateModel()', 'Sending current state.', current_state);
 
             // post job
             Utils.request({
@@ -163,22 +137,22 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 url     : model_url,
                 data    : current_state,
                 success : function(new_model) {
-                    self.form.update(new_model['tool_model'] || new_model);
+                    self.update(new_model['tool_model'] || new_model);
                     self.options.update && self.options.update(new_model);
-                    form.wait(false);
-                    Galaxy.emit.debug('tools-form-base::_updateModel()', 'Received new model.', new_model);
+                    self.wait(false);
+                    Galaxy.emit.debug('tool-form-base::_updateModel()', 'Received new model.', new_model);
                     process.resolve();
                 },
                 error   : function(response) {
-                    Galaxy.emit.debug('tools-form-base::_updateModel()', 'Refresh request failed.', response);
+                    Galaxy.emit.debug('tool-form-base::_updateModel()', 'Refresh request failed.', response);
                     process.reject();
                 }
             });
         },
 
-        // create tool operation menu
+        /** Create tool operation menu
+        */
         _operations: function() {
-            // link this
             var self = this;
             var options = this.options;
 
@@ -188,7 +162,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 title   : (!options.narrow && 'Versions') || null,
                 tooltip : 'Select another tool version'
             });
-            if (!options.is_workflow && options.versions && options.versions.length > 1) {
+            if (!options.sustain_version && options.versions && options.versions.length > 1) {
                 for (var i in options.versions) {
                     var version = options.versions[i];
                     if (version != options.version) {
@@ -213,16 +187,13 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 versions_button.$el.hide();
             }
 
-            // button menu
+            // button for options e.g. search, help
             var menu_button = new Ui.ButtonMenu({
                 icon    : 'fa-caret-down',
                 title   : (!options.narrow && 'Options') || null,
                 tooltip : 'View available options'
             });
-
-            // configure button selection
             if(options.biostar_url) {
-                // add question option
                 menu_button.addMenu({
                     icon    : 'fa-question-circle',
                     title   : 'Question?',
@@ -231,8 +202,6 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                         window.open(options.biostar_url + '/p/new/post/');
                     }
                 });
-
-                // create search button
                 menu_button.addMenu({
                     icon    : 'fa-search',
                     title   : 'Search',
@@ -242,8 +211,6 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     }
                 });
             };
-
-            // create share button
             menu_button.addMenu({
                 icon    : 'fa-share',
                 title   : 'Share',
@@ -259,8 +226,9 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     icon    : 'fa-download',
                     title   : 'Download',
                     tooltip : 'Download this tool',
-                    href    : Galaxy.root + 'api/tools/' + options.id + '/download',
-                    download: options.id
+                    onclick : function() {
+                        window.location.href = Galaxy.root + 'api/tools/' + options.id + '/download';
+                    }
                 });
             }
 
@@ -273,14 +241,14 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     onclick : function() {
                         if (!this.visible) {
                             this.visible = true;
-                            self.form.message.update({
+                            self.message.update({
                                 persistent  : true,
                                 message     : ToolTemplate.requirements(options),
                                 status      : 'info'
                             });
                         } else {
                             this.visible = false;
-                            self.form.message.update({
+                            self.message.update({
                                 message     : ''
                             });
                         }
@@ -300,33 +268,27 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 });
             }
 
-            // return operations
             return {
                 menu        : menu_button,
                 versions    : versions_button
             }
         },
 
-        // create footer
+        /** Create footer
+        */
         _footer: function() {
-            // link options
             var options = this.options;
-
-            // append help
-            if (options.help != '') {
-                this.form.$el.append(ToolTemplate.help(options));
-            }
-
-            // create and append tool citations
-            if (options.citations) {
-                var $citations = $('<div/>');
+            var $el = $( '<div/>' ).append( ToolTemplate.help( options ) );
+            if ( options.citations ) {
+                var $citations = $( '<div/>' );
                 var citations = new CitationModel.ToolCitationCollection();
                 citations.tool_id = options.id;
-                var citation_list_view = new CitationView.CitationListView({ el: $citations, collection: citations } );
+                var citation_list_view = new CitationView.CitationListView({ el: $citations, collection: citations });
                 citation_list_view.render();
                 citations.fetch();
-                this.form.$el.append($citations);
+                $el.append( $citations );
             }
+            return $el;
         }
     });
 });

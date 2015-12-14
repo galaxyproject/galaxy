@@ -135,12 +135,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'from_history_id',
             'shared_workflow_id',
             'workflow',
-        ] ).intersection( payload )
-        if len( ways_to_create ) == 0:
+        ] )
+        if len( ways_to_create.intersection( payload ) ) == 0:
             message = "One parameter among - %s - must be specified" % ", ".join( ways_to_create )
             raise exceptions.RequestParameterMissingException( message )
 
-        if len( ways_to_create ) > 1:
+        if len( ways_to_create.intersection( payload ) ) > 1:
             message = "Only one parameter among - %s - must be specified" % ", ".join( ways_to_create )
             raise exceptions.RequestParameterInvalidException( message )
 
@@ -332,7 +332,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         } )
 
         # create tool model and default tool state (if missing)
-        tool_model = module.tool.to_json(trans, tool_inputs, is_workflow=True)
+        tool_model = module.tool.to_json(trans, tool_inputs, workflow_mode=True)
         module.state.inputs = copy.deepcopy(tool_model['state_inputs'])
         return {
             'tool_model'        : tool_model,
