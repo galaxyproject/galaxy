@@ -41,6 +41,13 @@ def resolve_path( path, root ):
         path = os.path.join( root, path )
     return path
 
+def bind(host, port):
+    """Test if port is open on host"""
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,1)
+    s.bind((host, int(port)))
+    s.listen(0)
+    return s
 
 class Configuration( object ):
     deprecated_options = ( 'database_file', )
@@ -382,6 +389,15 @@ class Configuration( object ):
             })
         self.galaxy_infrastructure_url = galaxy_infrastructure_url
         self.galaxy_infrastructure_url_set = galaxy_infrastructure_url_set
+
+        # Verify host:port is available before continuing
+        try:
+            q = bind(*re.sub(r'http(s?)\://', '', self.galaxy_infrastructure_url).split(':'))
+            q.close()
+        except Exception, e:
+            if e.args[0] == 98:
+                raise ConfigurationError(e.args[1])
+
 
         # Store advanced job management config
         self.job_manager = kwargs.get('job_manager', self.server_name).strip()
