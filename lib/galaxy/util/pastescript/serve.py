@@ -654,6 +654,13 @@ class ServeCommand(Command):
                 else:
                     msg = ''
                 print 'Exiting%s (-v to see traceback)' % msg
+            except AttributeError, e:
+                # Capturing bad error response from paste
+                if str(e) == "'WSGIThreadPoolServer' object has no attribute 'thread_pool'":
+                    import socket
+                    raise socket.error(98, 'Address already in use')
+                else:
+                    raise AttributeError(e)
 
         if jython_monitor:
             # JythonMonitor has to be ran from the main thread
