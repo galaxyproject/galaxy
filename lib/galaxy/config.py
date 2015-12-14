@@ -41,13 +41,15 @@ def resolve_path( path, root ):
         path = os.path.join( root, path )
     return path
 
+
 def bind(host, port):
     """Test if port is open on host"""
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,1)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind((host, int(port)))
     s.listen(0)
     return s
+
 
 class Configuration( object ):
     deprecated_options = ( 'database_file', )
