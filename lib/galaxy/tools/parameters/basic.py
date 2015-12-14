@@ -195,7 +195,7 @@ class ToolParameter( object, Dictifiable ):
                 value = sanitize_param( value )
         return value
 
-    def validate( self, value, history=None, workflow_mode=False ):
+    def validate( self, value, history=None, workflow_building_mode=False ):
         if value == "" and self.optional:
             return
         for validator in self.validators:
@@ -277,8 +277,8 @@ class TextToolParameter( ToolParameter ):
         else:
             return self.to_string( value, app )
 
-    def validate( self, value, history=None, workflow_mode=True ):
-        if not ( workflow_mode and isinstance( value, basestring ) and value.startswith( '$' ) ):
+    def validate( self, value, history=None, workflow_building_mode=False ):
+        if not ( workflow_building_mode and isinstance( value, basestring ) and value.startswith( '$' ) ):
             return super( TextToolParameter, self ).validate( value, history )
 
     def get_initial_value( self, trans, context, history=None ):
