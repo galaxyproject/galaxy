@@ -76,6 +76,12 @@ JOB_RESOURCE_CONDITIONAL_XML = """<conditional name="__job_resource">
     </when>
 </conditional>"""
 
+REQUIRES_JS_RUNTIME_MESSAGE = ("The tool [%s] requires a nodejs runtime to execute "
+                               "but node nor nodejs could be found on Galaxy's PATH and "
+                               "no runtime was configured using the nodejs_path option in "
+                               "galaxy.ini.")
+
+
 HELP_UNINITIALIZED = threading.Lock()
 
 
@@ -577,6 +583,10 @@ class Tool( object, Dictifiable ):
             module, cls = action
             mod = __import__( module, globals(), locals(), [cls])
             self.tool_action = getattr( mod, cls )()
+            if getattr(self.tool_action, "requires_js_runtime", False):
+                if expressions.find_engine(self.app.config) is None:
+                    message = REQUIRES_JS_RUNTIME_MESSAGE % self.tool_id
+                    raise Exception(message)
         # Tests
         self.__parse_tests(tool_source)
 
@@ -2920,6 +2930,7 @@ class FilterFailedDatasetsTool( DatabaseOperationTool ):
 
 
 class FilterTool( DatabaseOperationTool ):
+    requires_js_runtime = True
     exposed_hda_keys = ['file_size', 'file_ext', 'genome_build']
     tool_type = 'filter_collection'
 

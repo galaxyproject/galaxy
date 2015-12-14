@@ -1,6 +1,6 @@
 from .evaluation import evaluate
 from .sandbox import execjs, interpolate
-from .util import jshead
+from .util import jshead, find_engine
 
 
 __all__ = [
@@ -8,4 +8,5 @@ __all__ = [
     'execjs',
     'jshead',
     'interpolate',
+    'find_engine',
 ]
