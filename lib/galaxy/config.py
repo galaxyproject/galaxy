@@ -398,7 +398,6 @@ class Configuration( object ):
             if e.args[0] == 98:
                 raise ConfigurationError(e.args[1])
 
-
         # Store advanced job management config
         self.job_manager = kwargs.get('job_manager', self.server_name).strip()
         self.job_handlers = [ x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',') ]
