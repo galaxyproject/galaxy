@@ -556,6 +556,20 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     # Backward compatibility issue - the tag used to be named 'changeset_revision'.
                     installed_changeset_revision_elem = item.elem.find( "changeset_revision" )
                 installed_changeset_revision = installed_changeset_revision_elem.text
+                try:
+                    splitted_path = path.split('/')
+                    assert splitted_path[0] == tool_shed
+                    assert splitted_path[2] == repository_owner
+                    assert splitted_path[3] == repository_name
+                    if splitted_path[4] != installed_changeset_revision:
+                        # This can happen if the Tool Shed repository has been
+                        # updated to a new revision and the installed_changeset_revision
+                        # element in shed_tool_conf.xml file has been updated too
+                        log.debug("The installed_changeset_revision for tool %s is %s, using %s instead", path, installed_changeset_revision, splitted_path[4])
+                        installed_changeset_revision = splitted_path[4]
+                except Exception as e:
+                    log.debug("Error while loading tool %s : %s", path, e)
+                    pass
                 tool_shed_repository = self._get_tool_shed_repository( tool_shed,
                                                                        repository_name,
                                                                        repository_owner,
