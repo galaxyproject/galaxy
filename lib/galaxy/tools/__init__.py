@@ -7,7 +7,6 @@ import glob
 import json
 import logging
 import os
-import re
 import threading
 import urllib
 from datetime import datetime
@@ -30,7 +29,8 @@ from galaxy.tools.parameters import params_to_incoming, check_param, params_from
 from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
                                            DataToolParameter, DataCollectionToolParameter, HiddenToolParameter,
-                                           SelectToolParameter, ToolParameter, UnvalidatedValue)
+                                           SelectToolParameter, ToolParameter, UnvalidatedValue,
+                                           contains_workflow_parameter)
 from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, Section, UploadDataset
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.validation import LateValidationError
@@ -57,7 +57,6 @@ import galaxy.jobs
 
 log = logging.getLogger( __name__ )
 
-WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile( '''\$\{.+?\}''' )
 
 JOB_RESOURCE_CONDITIONAL_XML = """<conditional name="__job_resource">
     <param name="__job_resource__select" type="select" label="Job Resource Parameters">
@@ -1884,9 +1883,9 @@ class Tool( object, Dictifiable ):
                         else:
                             # skip check if is workflow parameters
                             ck_param = True
-                            if isinstance( value, basestring ):
-                                if WORKFLOW_PARAMETER_REGULAR_EXPRESSION.search( values[ input.name ] ):
-                                    ck_param = False
+                            search = input.type in ["text"]
+                            if allow_workflow_parameters and contains_workflow_parameter( values[ input.name ], search=search ):
+                                ck_param = False
                             # this will fail when a parameter's type has changed to a non-compatible one: e.g. conditional group changed to dataset input
                             if ck_param:
                                 input.value_from_basic( input.value_to_basic( value, trans.app ), trans.app, ignore_errors=False )

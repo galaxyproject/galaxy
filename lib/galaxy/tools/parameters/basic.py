@@ -3,6 +3,7 @@ Basic tool parameters.
 """
 
 import logging
+import re
 import os
 import os.path
 from xml.etree.ElementTree import XML
@@ -25,6 +26,18 @@ from galaxy.model.item_attrs import Dictifiable
 import galaxy.model
 
 log = logging.getLogger(__name__)
+
+WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile( '''\$\{.+?\}''' )
+
+
+def contains_workflow_parameter(value, search=False):
+    if not isinstance( value, basestring ):
+        return False
+    if search and WORKFLOW_PARAMETER_REGULAR_EXPRESSION.search(value):
+        return True
+    if not search and WORKFLOW_PARAMETER_REGULAR_EXPRESSION.match(value):
+        return True
+    return False
 
 
 class ToolParameter( object, Dictifiable ):
@@ -344,9 +357,8 @@ class IntegerToolParameter( TextToolParameter ):
         try:
             return int( value )
         except:
-            if isinstance( value, basestring ):
-                if value.startswith( "$" ) and ( trans is None or trans.workflow_building_mode ):
-                    return value
+            if contains_workflow_parameter(value) and _allow_workflow_parameters_in_context(trans):
+                return value
             elif not value and self.optional:
                 return ""
             if trans is None or trans.workflow_building_mode:
@@ -358,9 +370,8 @@ class IntegerToolParameter( TextToolParameter ):
         try:
             return int( value )
         except Exception, err:
-            if isinstance( value, basestring ):
-                if value.startswith( "$" ):
-                    return value
+            if contains_workflow_parameter(value):
+                return value
             elif not value and self.optional:
                 return None
             raise err
@@ -425,12 +436,11 @@ class FloatToolParameter( TextToolParameter ):
         try:
             return float( value )
         except:
-            if isinstance( value, basestring ):
-                if value.startswith( "$" ) and ( trans is None or trans.workflow_building_mode ):
-                    return value
+            if contains_workflow_parameter(value) and _allow_workflow_parameters_in_context(trans):
+                return value
             elif not value and self.optional:
                 return ""
-            if trans is None or trans.workflow_building_mode:
+            if _allow_workflow_parameters_in_context(trans):
                 raise ValueError( "A real number or workflow parameter e.g. ${name} is required" )
             else:
                 raise ValueError( "A real number is required" )
@@ -439,9 +449,8 @@ class FloatToolParameter( TextToolParameter ):
         try:
             return float( value )
         except Exception, err:
-            if isinstance( value, basestring ):
-                if value.startswith( "$" ):
-                    return value
+            if contains_workflow_parameter(value):
+                return value
             elif not value and self.optional:
                 return None
             raise err
@@ -2549,6 +2558,11 @@ class LibraryDatasetToolParameter( ToolParameter ):
         d = super( LibraryDatasetToolParameter, self ).to_dict( trans )
         d['multiple'] = self.multiple
         return d
+
+
+def _allow_workflow_parameters_in_context(trans):
+    return trans is None or trans.workflow_building_mode
+
 
 # class RawToolParameter( ToolParameter ):
 #     """
