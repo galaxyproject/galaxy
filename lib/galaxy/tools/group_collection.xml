@@ -1,0 +1,46 @@
+<tool id="__GROUP__"
+      name="Group Collection"
+      version="1.0.0"
+      tool_type="group_collection">
+    <description>into a list of lists of datasets</description>
+    <type class="GroupTool" module="galaxy.tools" />
+    <action module="galaxy.tools.actions.model_operations"
+            class="ModelOperationToolAction"/>
+    <inputs>
+        <param type="data_collection" name="input" collection_type="list" label="Input Collection" />
+        <param type="text" name="expression" label="JavaScript expression" help="">
+            <sanitizer sanitize="False"/>
+        </param>
+    </inputs>
+    <outputs>
+        <collection name="output" format_source="input" type="list:list" label="${on_string} (flattened)" >
+        </collection>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input">
+                <collection type="list">
+                    <element name="e1" value="simple_line.txt" />
+                    <element name="e2" value="simple_line_x2.txt" />
+                </collection>
+            </param>
+            <param name="expression" value="((metadata_data_lines % 2) == 0) ? &quot;even&quot; : &quot;odd&quot;" />
+            <output_collection name="output" type="list:list">
+              <element name="odd">
+                  <element name="e1">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a line of text.\n$" />
+                    </assert_contents>
+                  </element>
+              </element>
+              <element name="even">
+                <element name="e2">
+                  <assert_contents>
+                    <has_text_matching expression="This is a line of text.\nThis is a line of text.\n" />
+                  </assert_contents>
+                </element>
+              </element>
+            </output_collection>
+        </test>
+    </tests>
+</tool>
