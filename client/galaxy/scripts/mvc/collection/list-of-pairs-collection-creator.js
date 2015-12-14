@@ -220,7 +220,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         }
 
         /** try to auto pair the unpaired datasets on load? */
-        // this.automaticallyPair = attributes.automaticallyPair;
+        this.automaticallyPair = attributes.automaticallyPair;
 
         /** what method to use for auto pairing (will be passed aggression level) */
         this.strategy = this.strategies[ attributes.strategy ] || this.strategies[ this.DEFAULT_STRATEGY ];
@@ -921,7 +921,11 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
                     this.$( '.collection-name' ).focus();
                 }
             } else {
-                message = _l( 'Could not automatically create any pairs from the given dataset names' );
+                message = _l([
+                    'Could not automatically create any pairs from the given dataset names.',
+                    'You may want to choose or enter different filters and try auto-pairing again.',
+                    'Close this message using the X on the right to view more help.'
+                ].join( ' ' ));
             }
             this._showAlert( message, msgClass );
         });
