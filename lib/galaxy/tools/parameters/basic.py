@@ -277,6 +277,10 @@ class TextToolParameter( ToolParameter ):
         else:
             return self.to_string( value, app )
 
+    def validate( self, value, history=None ):
+        if not ( isinstance( value, basestring ) and value.startswith( '$' ) ):
+            return super( TextToolParameter, self ).validate( value, history )
+
     def get_initial_value( self, trans, context, history=None ):
         return self.value
 
