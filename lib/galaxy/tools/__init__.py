@@ -3001,6 +3001,34 @@ class FlattenTool( DatabaseOperationTool ):
         )
 
 
+class GroupTool( DatabaseOperationTool, UsesExpressions ):
+    tool_type = 'group_collection'
+
+    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
+        hdca = incoming[ "input" ]
+        expression = incoming[ "expression" ]
+        new_elements = odict()
+        for dce in hdca.collection.elements:
+            element = dce.element_object
+            environment_dict = self._expression_environment(element)
+            result = str(self._eval_expression(expression, environment_dict))
+            if not result:
+                continue
+
+            if result not in new_elements:
+                result_elements = {}
+                result_elements["src"] = "new_collection"
+                result_elements["collection_type"] = "list"
+                result_elements["elements"] = odict()
+                new_elements[result] = result_elements
+
+            new_elements[result]["elements"][dce.element_identifier] = element.copy()
+
+        output_collections.create_collection(
+            self.outputs.values()[0], "output", elements=new_elements
+        )
+
+
 # Populate tool_type to ToolClass mappings
 tool_types = {}
 for tool_class in [ Tool, SetMetadataTool, OutputParameterJSONTool,

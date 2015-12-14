@@ -9,6 +9,7 @@ SPECIAL_TOOLS = {
     "filter failed datasets": "galaxy/tools/filter_failed_collection.xml",
     "filter datasets": "galaxy/tools/filter_collection.xml",
     "flatten collection": "galaxy/tools/flatten_collection.xml",
+    "group collection": "galaxy/tools/group_collection.xml",
 }
 
 
