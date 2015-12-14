@@ -1877,14 +1877,21 @@ class Tool( object, Dictifiable ):
                 else:
                     # Regular tool parameter, no recursion needed
                     try:
-                        ck_param = True
-                        if allow_workflow_parameters and isinstance( values[ input.name ], basestring ):
-                            if WORKFLOW_PARAMETER_REGULAR_EXPRESSION.search( values[ input.name ] ):
-                                ck_param = False
-                        # this will fail when a parameter's type has changed to a non-compatible one: e.g. conditional group changed to dataset input
-                        if ck_param:
-                            input.value_from_basic( input.value_to_basic( values[ input.name ], trans.app ), trans.app, ignore_errors=False )
+                        value = values[ input.name ]
+                        if not allow_workflow_parameters:
+                            input.value_from_basic( input.value_to_basic( value, trans.app ), trans.app, ignore_errors=False )
+                            input.validate( value, history=trans.history )
+                        else:
+                            # skip check if is workflow parameters
+                            ck_param = True
+                            if isinstance( value, basestring ):
+                                if WORKFLOW_PARAMETER_REGULAR_EXPRESSION.search( values[ input.name ] ):
+                                    ck_param = False
+                            # this will fail when a parameter's type has changed to a non-compatible one: e.g. conditional group changed to dataset input
+                            if ck_param:
+                                input.value_from_basic( input.value_to_basic( value, trans.app ), trans.app, ignore_errors=False )
                     except:
+                        log.info("Parameter validation failed.", exc_info=True)
                         messages[ input.name ] = "Value no longer valid for '%s%s', replacing with default" % ( prefix, input.label )
                         if update_values:
                             values[ input.name ] = input.get_initial_value( trans, context )

@@ -3528,6 +3528,12 @@ class Workflow( object, Dictifiable ):
             for workflow_output in step.workflow_outputs:
                 yield workflow_output
 
+    def log_str(self):
+        extra = ""
+        if self.stored_workflow:
+            extra = ",name=%s" % self.stored_workflow.name
+        return "Workflow[id=%d%s]" % (self.id, extra)
+
 
 class WorkflowStep( object ):
 
@@ -3560,6 +3566,9 @@ class WorkflowStep( object ):
                 input_connections_by_name[input_name] = []
             input_connections_by_name[input_name].append(conn)
         self._input_connections_by_name = input_connections_by_name
+
+    def log_str(self):
+        return "WorkflowStep[index=%d,type=%s]" % (self.order_index, self.type)
 
 
 class WorkflowStepConnection( object ):

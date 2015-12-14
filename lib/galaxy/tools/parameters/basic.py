@@ -2047,7 +2047,7 @@ class DataToolParameter( BaseDataToolParameter ):
         elif isinstance( value, list ):
             return ",".join( [ str( self.to_string( val, app ) ) for val in value ] )
         elif isinstance( value, app.model.HistoryDatasetCollectionAssociation ):
-            return "__collection_reduce__|%s" % app.security.encode_id( value.id )
+            return "__collection_reduce__|%d" % value.id
         try:
             return value.id
         except:
@@ -2063,6 +2063,9 @@ class DataToolParameter( BaseDataToolParameter ):
                 return value
             elif str( value ).startswith( "__collection_reduce__|" ):
                 decoded_id = str( value )[ len( "__collection_reduce__|" ): ]
+                if not decoded_id.isdigit():
+                    log.info("to_python called encoded data, bad data previously persisted to Galaxy databse - workflow extraction and rerun of this dataset may break if id_secret changed.")
+                    decoded_id = app.security.decode_id(decoded_id)
                 return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
             else:
                 return app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( value ) )
