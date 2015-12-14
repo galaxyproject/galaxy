@@ -2285,7 +2285,7 @@ class Tool( object, Dictifiable ):
                 if input.type == 'boolean' and isinstance(value, basestring):
                     value, error = [string_as_bool(value), None]
                 else:
-                    value, error = check_param(trans, input, value, context, history=history)
+                    value, error = check_param(trans, input, value, context, history=history, workflow_building_mode=workflow_mode)
             except Exception, err:
                 log.error('Checking parameter %s failed. %s', input.name, str(err))
                 pass

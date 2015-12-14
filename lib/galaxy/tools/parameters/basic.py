@@ -2100,7 +2100,7 @@ class DataToolParameter( BaseDataToolParameter ):
                 pass
         return "No dataset"
 
-    def validate( self, value, history=None ):
+    def validate( self, value, history=None, workflow_building_mode=False ):
         dataset_count = 0
         for validator in self.validators:
             if value and self.multiple:
@@ -2402,7 +2402,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
             display_text = "No dataset collection."
         return display_text
 
-    def validate( self, value, history=None ):
+    def validate( self, value, history=None, workflow_building_mode=False ):
         return True  # TODO
 
     def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
