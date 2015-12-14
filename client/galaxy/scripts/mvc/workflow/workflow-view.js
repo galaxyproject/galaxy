@@ -9,7 +9,7 @@ define([
     'utils/async-save-text',
     'libs/toastr',
     'ui/editable-text'
-], function( Utils, Globals, Workflow, WorkflowCanvas, Node, ToolsForm, async_save_text, Toastr ){
+], function( Utils, Globals, Workflow, WorkflowCanvas, Node, ToolForm, async_save_text, Toastr ){
 
 // Reset tool search to start state.
 function reset_tool_search( initValue ) {
