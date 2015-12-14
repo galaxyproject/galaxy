@@ -211,7 +211,7 @@ define(['utils/utils',
         // value
         value : function (new_val) {
             if (new_val !== undefined) {
-                this.$el.val(new_val);
+                this.$el.val( ( typeof new_val === 'string' && new_val ) || '' );
             }
             return this.$el.val();
         },
