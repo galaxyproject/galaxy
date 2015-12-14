@@ -19,7 +19,7 @@ from galaxy.util import unicodify
 
 from tool_shed.galaxy_install.tool_dependencies.recipe import asynchronous_reader
 
-from tool_shed.util import basic_util
+from tool_shed.util import basic_util, tool_dependency_util
 
 log = logging.getLogger( __name__ )
 
@@ -113,7 +113,6 @@ class InstallEnvironment( object ):
 
     def handle_command( self, tool_dependency, cmd, return_output=False, job_name="" ):
         """Handle a command and log the results."""
-        context = self.app.install_model.context
         command = str( cmd )
         output = self.handle_complex_command( command, job_name=job_name )
         self.log_results( cmd, output, os.path.join( self.install_dir, basic_util.INSTALLATION_LOG ) )
@@ -126,17 +125,19 @@ class InstallEnvironment( object ):
             log.warn( "Length of stderr > %s, so only a portion will be saved in the database." % str( DATABASE_MAX_STRING_SIZE_PRETTY ) )
             stderr = shrink_string_by_size( stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
         if output.return_code not in [ 0 ]:
-            tool_dependency.status = self.app.install_model.ToolDependency.installation_status.ERROR
+            status = self.app.install_model.ToolDependency.installation_status.ERROR
             if stderr:
-                tool_dependency.error_message = unicodify( stderr )
+                error_message = unicodify( stderr )
             elif stdout:
-                tool_dependency.error_message = unicodify( stdout )
+                error_message = unicodify( stdout )
             else:
                 # We have a problem if there was no stdout and no stderr.
-                tool_dependency.error_message = "Unknown error occurred executing shell command %s, return_code: %s" % \
+                error_message = "Unknown error occurred executing shell command %s, return_code: %s" % \
                     ( str( cmd ), str( output.return_code ) )
-            context.add( tool_dependency )
-            context.flush()
+            tool_dependency_util.set_tool_dependency_attributes(self.app,
+                                                                tool_dependency=tool_dependency,
+                                                                status=status,
+                                                                error_message=error_message)
         if return_output:
             return output
         return output.return_code
@@ -156,6 +157,8 @@ class InstallEnvironment( object ):
         if len( job_name ) > 0:
             llog_name += ':' + job_name
         llog = logging.getLogger( llog_name )
+        # Print the command we're about to execute, ``set -x`` style.
+        llog.debug('+ ' + str( command ) )
         # Launch the command as subprocess.  A bufsize of 1 means line buffered.
         process_handle = subprocess.Popen( str( command ),
                                            stdout=subprocess.PIPE,

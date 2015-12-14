@@ -8,7 +8,7 @@ then
     sleep 3
     GALAXY_TEST_INSTALL_DB_MERGED="true"
     GALAXY_TEST_DBURI="postgres://root@localhost:5930/galaxy?client_encoding=utf8"
-    TOOL_SHED_TEST_DBURI="postgres://root@localhost:5930/toolshed"
+    TOOL_SHED_TEST_DBURI="postgres://root@localhost:5930/toolshed?client_encoding=utf8"
 elif [ "$GALAXY_TEST_DATABASE_TYPE" = "mysql" ];
 then
     sh /opt/galaxy/start_mysql.sh

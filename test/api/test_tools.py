@@ -245,8 +245,6 @@ class ToolsTestCase( api.ApiTestCase ):
             'r2_0|text': "",
         }
         response = self._run( "validation_repeat", history_id, inputs )
-        import time
-        time.sleep(10)
         self._assert_status_code_is( response, 400 )
 
     @skip_without_tool( "multi_select" )

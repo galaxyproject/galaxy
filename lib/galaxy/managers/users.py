@@ -235,7 +235,7 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         if self.is_anonymous( user ):
             return False
         request_types = self.app.security_agent.get_accessible_request_types( trans, user )
-        return ( user.requests or request_types )
+        return bool( user.requests or request_types )
 
 
 class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
@@ -283,8 +283,7 @@ class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
             'quota_percent' : lambda i, k, **c: self.user_manager.quota( i ),
 
             'tags_used'     : lambda i, k, **c: self.user_manager.tags_used( i ),
-            # TODO: 'has_requests' is more apt
-            'requests'      : lambda i, k, trans=None, **c: self.user_manager.has_requests( i, trans )
+            'has_requests'  : lambda i, k, trans=None, **c: self.user_manager.has_requests( i, trans )
         })
 
 

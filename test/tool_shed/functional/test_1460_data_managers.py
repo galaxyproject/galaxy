@@ -60,7 +60,7 @@ class TestDataManagers( ShedTwillTestCase ):
                                                     owner=common.test_user_1_name,
                                                     category_id=self.security.encode_id( category.id ),
                                                     strings_displayed=[] )
-        # Upload the edited tool dependency definition to the package_lapack_3_4_1440 repository.
+        # Upload the data manager files to the repository.
         self.upload_file( repository,
                           filename=data_manager_tar_file,
                           filepath=None,

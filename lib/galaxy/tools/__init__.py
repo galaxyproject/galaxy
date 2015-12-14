@@ -48,7 +48,9 @@ from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
 from galaxy.model.item_attrs import Dictifiable
+from tool_shed.util import common_util
 from tool_shed.util import shed_util_common as suc
+
 from .loader import template_macro_params, raw_tool_xml_tree, imported_macro_paths
 from .execute import execute as execute_job
 import galaxy.jobs
@@ -1828,7 +1830,7 @@ class Tool( object, Dictifiable ):
                 if isinstance( input, Conditional ):
                     cond_messages = {}
                     if not input.is_job_resource_conditional:
-                        cond_messages = { input.test_param.name: "No value found for '%s%s', used default" % ( prefix, input.label ) }
+                        cond_messages = { input.test_param.name: "No value found for '%s%s', using default" % ( prefix, input.label ) }
                         messages[ input.name ] = cond_messages
                     test_value = input.test_param.get_initial_value( trans, context )
                     current_case = input.get_current_case( test_value, trans )
@@ -1842,10 +1844,10 @@ class Tool( object, Dictifiable ):
                             messages[ input.name ].append( rep_dict )
                             self.check_and_update_param_values_helper( input.inputs, {}, trans, rep_dict, context, rep_prefix, allow_workflow_parameters=allow_workflow_parameters )
                 elif isinstance( input, Section ):
-                    messages[ input.name ] = { input.name: "No value found for '%s%s', used default" % ( prefix, input.label ) }
+                    messages[ input.name ] = { input.name: "No value found for '%s%s', using default" % ( prefix, input.label ) }
                     self.check_and_update_param_values_helper( input.inputs, {}, trans, messages[ input.name ], context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 else:
-                    messages[ input.name ] = "No value found for '%s%s', used default" % ( prefix, input.label )
+                    messages[ input.name ] = "No value found for '%s%s', using default" % ( prefix, input.label )
                 values[ input.name ] = input.get_initial_value( trans, context )
             # Value, visit recursively as usual
             else:
@@ -1864,14 +1866,15 @@ class Tool( object, Dictifiable ):
                     if input.test_param.name not in group_values or use_initial_value:
                         # No test param invalidates the whole conditional
                         values[ input.name ] = group_values = input.get_initial_value( trans, context )
-                        messages[ input.test_param.name ] = "No value found for '%s%s', used default" % ( prefix, input.test_param.label )
+                        messages[ input.test_param.name ] = "No value found for '%s%s', using default" % ( prefix, input.test_param.label )
                         current_case = group_values['__current_case__']
                         for child_input in input.cases[current_case].inputs.itervalues():
-                            messages[ child_input.name ] = "Value no longer valid for '%s%s', replaced with default" % ( prefix, child_input.label )
+                            messages[ child_input.name ] = "Value no longer valid for '%s%s', replacing with default" % ( prefix, child_input.label )
                     else:
                         current = group_values["__current_case__"]
                         self.check_and_update_param_values_helper( input.cases[current].inputs, group_values, trans, messages, context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 elif isinstance( input, Section ):
+                    messages[ input.name ] = "No value found for '%s%s', using default" % ( prefix, input.label )
                     self.check_and_update_param_values_helper( input.inputs, values[ input.name ], trans, messages, context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 else:
                     # Regular tool parameter, no recursion needed
@@ -1884,7 +1887,7 @@ class Tool( object, Dictifiable ):
                         if ck_param:
                             input.value_from_basic( input.value_to_basic( values[ input.name ], trans.app ), trans.app, ignore_errors=False )
                     except:
-                        messages[ input.name ] = "Value no longer valid for '%s%s', replaced with default" % ( prefix, input.label )
+                        messages[ input.name ] = "Value no longer valid for '%s%s', replacing with default" % ( prefix, input.label )
                         if update_values:
                             values[ input.name ] = input.get_initial_value( trans, context )
 
@@ -2581,11 +2584,15 @@ class Tool( object, Dictifiable ):
                         else:
                             message += 'You can re-run the job with this tool version, which is a different version of the original tool.'
                 else:
-                    message = 'This job was run with tool id "%s", version "%s", which is not available.  ' % ( tool_id, tool_version )
+                    new_tool_shed_url = tool.tool_shed_repository.get_sharable_url( tool.app ) + '/%s/' % tool.tool_shed_repository.changeset_revision
+                    old_tool_shed = tool_id.split( "/repos/" )[0]
+                    old_tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, old_tool_shed )
+                    old_tool_shed_url = old_tool_shed_url + "/view/%s/%s/" % (tool.repository_owner, tool.repository_name)
+                    message = 'This job was run with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, version "%s", which is not available.  ' % (old_tool_shed_url, tool_id, tool_version)
                     if len( tools ) > 1:
-                        message += 'You can re-run the job with the selected tool id "%s" or choose another derivation of the tool.' % self.id
+                        message += 'You can re-run the job with the selected <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a> or choose another derivation of the tool.' % (new_tool_shed_url, self.id)
                     else:
-                        message += 'You can re-run the job with tool id "%s", which is a derivation of the original tool.' % self.id
+                        message += 'You can re-run the job with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, which is a derivation of the original tool.' % (new_tool_shed_url, self.id)
         except Exception, e:
             raise exceptions.MessageException( str( e ) )
         return message

@@ -235,8 +235,8 @@ class WorkflowProgress( object ):
             if not hasattr( step, 'module' ):
                 self.module_injector.inject( step )
                 if step_id not in step_states:
-                    template = "Workflow invocation [%s] has no step state for step id [%s]. States are [%s]."
-                    message = template % (self.workflow_invocation.id, step_id, step_states)
+                    template = "Workflow invocation [%s] has no step state for step id [%s]. States ids are %s."
+                    message = template % (self.workflow_invocation.id, step_id, step_states.keys())
                     raise Exception(message)
                 runtime_state = step_states[ step_id ].value
                 step.state = step.module.recover_runtime_state( runtime_state )

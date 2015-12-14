@@ -2,11 +2,17 @@ from __future__ import absolute_import
 
 from collections import namedtuple
 import json
+import uuid
+
+from sqlalchemy import and_
 
 from galaxy import model
+from galaxy import util
 from galaxy import exceptions
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.workflow import modules
+
+from .base import decode_id
 
 # For WorkflowContentManager
 from galaxy.util.sanitize_html import sanitize_html
@@ -25,6 +31,38 @@ class WorkflowsManager( object ):
 
     def __init__( self, app ):
         self.app = app
+
+    def get_stored_workflow( self, trans, workflow_id ):
+        """ Use a supplied ID (UUID or encoded stored workflow ID) to find
+        a workflow.
+        """
+        if util.is_uuid(workflow_id):
+            # see if they have passed in the UUID for a workflow that is attached to a stored workflow
+            workflow_uuid = uuid.UUID(workflow_id)
+            stored_workflow = trans.sa_session.query(trans.app.model.StoredWorkflow).filter( and_(
+                trans.app.model.StoredWorkflow.latest_workflow_id == trans.app.model.Workflow.id,
+                trans.app.model.Workflow.uuid == workflow_uuid
+            )).first()
+            if stored_workflow is None:
+                raise exceptions.ObjectNotFound( "Workflow not found: %s" % workflow_id )
+        else:
+            workflow_id = decode_id( self.app, workflow_id )
+            query = trans.sa_session.query( trans.app.model.StoredWorkflow )
+            stored_workflow = query.get( workflow_id )
+        if stored_workflow is None:
+            raise exceptions.ObjectNotFound( "No such workflow found." )
+        return stored_workflow
+
+    def get_stored_accessible_workflow( self, trans, workflow_id ):
+        stored_workflow = self.get_stored_workflow( trans, workflow_id )
+
+        # check to see if user has permissions to selected workflow
+        if stored_workflow.user != trans.user and not trans.user_is_admin():
+            if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
+                message = "Workflow is not owned by or shared with current user"
+                raise exceptions.ItemAccessibilityException( message )
+
+        return stored_workflow
 
     def check_security( self, trans, has_workflow, check_ownership=True, check_accessible=True):
         """ check accessibility or ownership of workflows, storedworkflows, and
@@ -331,14 +369,12 @@ class WorkflowContentsManager(UsesAnnotations):
             # Fix any missing parameters
             upgrade_message = module.check_and_update_state()
             if upgrade_message:
-                # FIXME: Frontend should be able to handle workflow messages
-                #        as a dictionary not just the values
-                data['upgrade_messages'][step.order_index] = upgrade_message.values()
-                # Dispay version/tool_id changes
-                # FIXME:
-                #data['upgrade_messages'] = [step.order_index][module.tool.name] = "\n".join( module.version_changes )
-            elif (hasattr(module, "version_changes")) and (module.version_changes):
-                data['upgrade_messages'] = {step.order_index: {module.tool.name: "\n".join( module.version_changes )}}
+                data['upgrade_messages'][step.order_index] = upgrade_message
+            if (hasattr(module, "version_changes")) and (module.version_changes):
+                if step.order_index in data['upgrade_messages']:
+                    data['upgrade_messages'][step.order_index][module.tool_name] = "\n".join(module.version_changes)
+                else:
+                    data['upgrade_messages'][step.order_index] = {module.tool.name: "\n".join(module.version_changes)}
             # Get user annotation.
             step_annotation = self.get_item_annotation_obj( trans.sa_session, trans.user, step )
             annotation_str = ""
@@ -353,7 +389,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict = {
                 'id': step.order_index,
                 'type': module.type,
-                'tool_id': module.get_tool_id(),
+                'tool_id': module.get_content_id(),
                 'name': module.get_name(),
                 'tool_state': module.get_state(),
                 'tooltip': module.get_tooltip( static_path=url_for( '/static' ) ),
@@ -396,11 +432,13 @@ class WorkflowContentsManager(UsesAnnotations):
                         action_arguments=pja.action_arguments
                     )
                 step_dict['post_job_actions'] = pja_dict
-                # workflow outputs
-                outputs = []
-                for output in step.workflow_outputs:
-                    outputs.append({"output_name": output.output_name})
-                step_dict['workflow_outputs'] = outputs
+
+            # workflow outputs
+            outputs = []
+            for output in step.workflow_outputs:
+                outputs.append({"output_name": output.output_name})
+            step_dict['workflow_outputs'] = outputs
+
             # Encode input connections as dictionary
             input_conn_dict = {}
             for conn in input_connections:
@@ -454,7 +492,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict = {
                 'id': step.order_index,
                 'type': module.type,
-                'tool_id': module.get_tool_id(),
+                'tool_id': module.get_content_id(),
                 'tool_version': step.tool_version,
                 'name': module.get_name(),
                 'tool_state': module.get_state( secure=False ),

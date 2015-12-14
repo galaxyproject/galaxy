@@ -462,6 +462,7 @@ class WorkflowStep( object ):
         self.position = None
         self.input_connections = []
         self.config = None
+        self.label = None
 
 
 class WorkflowStepConnection( object ):
