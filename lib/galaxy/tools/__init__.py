@@ -2878,6 +2878,32 @@ class DatabaseOperationTool( Tool ):
         return odict()
 
 
+class UsesExpressions:
+    requires_js_runtime = True
+
+    def _expression_environment( self, hda ):
+        raw_as_dict = hda.to_dict()
+        filtered_as_dict = {}
+        # We are more conservative with the API provided to tools
+        # than the API exposed via the web API, so cut down on what
+        # is supplied to the tool. Also, no reason to leak unneeded
+        # data prematurely regardless.
+        for key, value in raw_as_dict.iteritems():
+            include = False
+            if key.startswith("metadata_"):
+                include = True
+            elif key in FilterTool.exposed_hda_keys:
+                include = True
+            if include:
+                filtered_as_dict[key] = value
+        return filtered_as_dict
+
+    def _eval_expression(self, expression, environment_dict):
+        environment = expressions.jshead([], environment_dict)
+        result = expressions.execjs(self.app.config, expression, environment)
+        return result
+
+
 class UnzipCollectionTool( DatabaseOperationTool ):
     tool_type = 'unzip_collection'
 
@@ -2929,8 +2955,7 @@ class FilterFailedDatasetsTool( DatabaseOperationTool ):
         )
 
 
-class FilterTool( DatabaseOperationTool ):
-    requires_js_runtime = True
+class FilterTool( DatabaseOperationTool, UsesExpressions ):
     exposed_hda_keys = ['file_size', 'file_ext', 'genome_build']
     tool_type = 'filter_collection'
 
@@ -2941,9 +2966,8 @@ class FilterTool( DatabaseOperationTool ):
         new_elements = odict()
         for dce in hdca.collection.elements:
             element = dce.element_object
-            environment_dict = self.expression_environment(element)
-            environment = expressions.jshead([], environment_dict)
-            result = expressions.execjs(self.app.config, expression, environment)
+            environment_dict = self._expression_environment(element)
+            result = self._eval_expression(expression, environment_dict)
             if result:
                 element_identifier = dce.element_identifier
                 new_elements[element_identifier] = element.copy()
@@ -2951,23 +2975,6 @@ class FilterTool( DatabaseOperationTool ):
         output_collections.create_collection(
             self.outputs.values()[0], "output", elements=new_elements
         )
-
-    def expression_environment( self, hda ):
-        raw_as_dict = hda.to_dict()
-        filtered_as_dict = {}
-        # We are more conservative with the API provided to tools
-        # than the API exposed via the web API, so cut down on what
-        # is supplied to the tool. Also, no reason to leak unneeded
-        # data prematurely regardless.
-        for key, value in raw_as_dict.iteritems():
-            include = False
-            if key.startswith("metadata_"):
-                include = True
-            elif key in FilterTool.exposed_hda_keys:
-                include = True
-            if include:
-                filtered_as_dict[key] = value
-        return filtered_as_dict
 
 
 class FlattenTool( DatabaseOperationTool ):
