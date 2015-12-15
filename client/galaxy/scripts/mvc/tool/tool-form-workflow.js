@@ -197,18 +197,14 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
                     value       : '',
                     ignore      : '',
                     help        : 'This will provide a short name to describe the output - this must be unique across workflows.'
-                }, {
+                },{
                     action      : 'RenameDatasetAction',
                     pja_arg     : 'newname',
                     label       : 'Rename dataset',
-                     type        : 'text',
-                     value       : '',
-                     ignore      : '',
-                    help        : 'This action will rename the output dataset. Click <a hr
-ef="https://wiki.galaxyproject.org/Learn/AdvancedWorkflow/Variables">here</a> for more info
-rmation. Valid inputs are: <strong>' + input_terminal_names.join(", ") + '</strong>.'
-                 },{
-
+                    type        : 'text',
+                    value       : '',
+                    ignore      : '',
+                    help        : 'This action will rename the output dataset. Click <a href="https://wiki.galaxyproject.org/Learn/AdvancedWorkflow/Variables">here</a> for more information. Valid inputs are: <strong>' + input_terminal_names.join(', ') + '</strong>.'
                 },{
                     action      : 'ChangeDatatypeAction',
                     pja_arg     : 'newtype',
