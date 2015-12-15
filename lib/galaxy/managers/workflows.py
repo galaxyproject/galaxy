@@ -201,6 +201,12 @@ class WorkflowContentsManager(UsesAnnotations):
             steps.append( step )
             steps_by_external_id[ step_dict['id' ] ] = step
 
+            if 'workflow_outputs' in step_dict:
+                for workflow_output in step_dict['workflow_outputs']:
+                    output_name = workflow_output["output_name"]
+                    m = model.WorkflowOutput(workflow_step=step, output_name=output_name)
+                    trans.sa_session.add(m)
+
             if module.type == 'tool' and module.tool is None:
                 # A required tool is not available in the local Galaxy instance.
                 missing_tool_tup = ( step_dict[ 'tool_id' ], step_dict[ 'name' ], step_dict[ 'tool_version' ] )
