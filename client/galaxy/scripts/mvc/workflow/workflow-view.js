@@ -413,7 +413,7 @@ EditorFormView = Backbone.View.extend({
                 var new_content = "";
                 for (var node_key in self.workflow.nodes){
                     var node = self.workflow.nodes[node_key];
-                    if(node.type == 'tool'){
+                    if(['tool', 'subworkflow'].indexOf(node.type) >= 0){
                         new_content += "<div class='toolForm' style='margin-bottom:5px;'><div class='toolFormTitle'>Step " + node.id + " - " + node.name + "</div>";
                         for (var ot_key in node.output_terminals){
                             var output = node.output_terminals[ot_key];

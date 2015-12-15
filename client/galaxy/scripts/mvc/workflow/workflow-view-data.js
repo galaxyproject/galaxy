@@ -45,7 +45,7 @@ define(['mvc/workflow/workflow-globals'], function( Globals ){
             }
             this.$el.html( label )
             this.calloutView = null;
-            if (node.type == 'tool'){
+            if (['tool', 'subworkflow'].indexOf(node.type) >= 0){
                 var calloutView = new OutputCalloutView( {
                     "label": label,
                     "output": output,
