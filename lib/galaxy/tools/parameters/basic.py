@@ -362,7 +362,7 @@ class IntegerToolParameter( TextToolParameter ):
                 return value
             elif not value and self.optional:
                 return ""
-            if trans is None or trans.workflow_building_mode:
+            if _allow_workflow_parameters_in_context(trans):
                 raise ValueError( "An integer or workflow parameter e.g. ${name} is required" )
             else:
                 raise ValueError( "An integer is required" )
