@@ -22,6 +22,7 @@
 
     <script type='text/javascript'>
         workflow_view = null;
+        console.debug( 'bibtex?', window.BibtexParser );
 
         // URLs used by galaxy.workflows.js
         var config = {
