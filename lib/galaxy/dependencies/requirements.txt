@@ -37,8 +37,8 @@ requests==2.8.1
 requests-toolbelt==0.4.0
 
 # kombu and dependencies
-kombu==3.0.26
-amqp==1.4.6
+kombu==3.0.30
+amqp==1.4.8
 anyjson==0.3.3
 
 # sqlalchemy-migrate and dependencies
