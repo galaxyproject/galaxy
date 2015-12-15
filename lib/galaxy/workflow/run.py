@@ -162,6 +162,14 @@ class WorkflowInvoker( object ):
             except modules.DelayedWorkflowEvaluation:
                 delayed_steps = True
                 self.progress.mark_step_outputs_delayed( step )
+            except Exception:
+                log.exception(
+                    "Failed to schedule %s, problem occurred on %s.",
+                    self.workflow_invocation.workflow.log_str(),
+                    step.log_str(),
+                )
+                raise
+
             log.debug("Workflow step %s invoked %s" % (step.id, step_timer))
 
         if delayed_steps:

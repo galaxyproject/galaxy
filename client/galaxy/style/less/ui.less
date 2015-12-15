@@ -29,11 +29,16 @@
 
 // default margins
 @ui-margin-vertical: 5px;
+@ui-margin-vertical-large: 10px;
 @ui-margin-horizontal: 5px;
 
 // margins
 .ui-margin-top {
     padding-top: @ui-margin-vertical !important;
+}
+
+.ui-margin-top-large {
+    padding-top: @ui-margin-vertical-large !important;
 }
 
 .ui-margin-bottom {
@@ -189,40 +194,91 @@
 }
 
 // table form elements
-.ui-table-form-element {
-    .ui-table-form-title {
-        word-break: break-word;
-        font-weight: bold;
-        .ui-table-form-optional {
-            cursor: pointer;
-            .icon {
-                margin-right: 5px;
-                font-size: 1.2em;
-            }
-        }
-    }
-    .ui-table-form-field {
-        margin-top: @ui-margin-vertical;
-    }
+.ui-form-element {
     margin-top: @ui-margin-vertical;
     margin-bottom: @ui-margin-vertical;
     overflow: visible;
+    .ui-form-title {
+        word-break: break-word;
+        font-weight: bold;
+        .ui-form-collapsible {
+            cursor: pointer;
+            .icon {
+                font-size: 1.2em;
+                width: 20px;
+                position: relative;
+                top: 1px;
+            }
+        }
+    }
+    .ui-form-field {
+        position: relative;
+        margin-top: @ui-margin-vertical;
+        .ui-form-wp-source {
+            border-left-width: 10px;
+        }
+        .ui-form-wp-target {
+            box-shadow: none;
+            border-top: none;
+            border-bottom: none;
+            border-right: none;
+            border-left-width: 5px;
+            font-style: italic;
+        }
+        .ui-form-backdrop {
+            display: none;
+            z-index: 10;
+            position: absolute;
+            top: 0px;
+            width: 100%;
+            height: 100%;
+            opacity: 0.2;
+            background: @white;
+            cursor: not-allowed;
+        }
+    }
+    .ui-form-preview {
+        &:extend(.ui-input);
+        margin-top: 5px;
+        border-color: transparent !important;
+        box-shadow: none !important;
+    }
 }
 
-.ui-table-form-separator {
+.ui-form-separator {
 	font-weight: bold;
 	font-size: 0.9em;
 }
 
-.ui-table-form-info {
+.ui-form-info {
         &:extend(.toolParamHelp);
         clear: both !important;
 }
 
-.ui-table-form-error {
+.ui-form-footer-info {
+    line-height: 1.4em;
+}
+
+.ui-form-error {
     display: none;
-    .ui-table-form-error-text  {
+    .ui-form-error-text  {
         padding-left: @ui-margin-horizontal;
+    }
+}
+
+.ui-form-composite {
+    max-width: 900px;
+    .ui-form-header {
+        &:extend(h3);
+        margin-top: 0px;
+        .ui-label {
+            width: ~'calc(100% - 200px)';
+        }
+    }
+    .ui-button {
+        &:extend(.btn all);
+        &:extend(.btn-default all);
+        margin-left: @ui-margin-horizontal;
     }
 }
 
@@ -230,12 +286,10 @@
 .ui-portlet {
     border: solid @form-border 1px;
     border-radius: @border-radius-base;
-
     position: relative;
     clear: both;
     width: auto;
     height: 100%;
-
     .portlet-header {
         background: @form-heading-bg;
         border-bottom: solid @form-border 1px;
@@ -262,23 +316,26 @@
             }
         }
     }
-
     .portlet-content {
         height: inherit;
         padding-left: 10px;
         padding-right: 10px;
         clear: both;
-        .content {
+        .portlet-body {
             padding     : 0px;
             height      : 100%;
             width       : 100%;
         }
-        .buttons {
+        .portlet-buttons {
             margin-top: @ui-margin-vertical;
             margin-bottom: @ui-margin-vertical;
         }
     }
-
+    .portlet-footer {
+        margin-top: 5px;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
     .portlet-backdrop {
         display: none;
         z-index: 10;
@@ -311,6 +368,9 @@
     }
     .portlet-content {
         padding-right: 0px;
+    }
+    .portlet-footer {
+        margin-top: 0px;
     }
 }
 
@@ -381,7 +441,7 @@
     width: 100%;
     display: block;
     height: @input-height-base;
-    padding: @padding-base-vertical @padding-base-horizontal;
+    padding: @padding-base-vertical @ui-margin-horizontal !important;
     font-size: @font-size-base;
     line-height: @line-height-base;
     color: @input-color;
@@ -422,11 +482,12 @@
             cursor: pointer;
         }
         .ui-drilldown-button {
-            position: relative;
-            top: 2px;
-            left: -3px;
-            margin-right: 3px;
+            float:left;
             cursor: pointer;
+            font-size: 1.2em;
+            margin-right: 5px;
+            margin-top: 3px;
+
         }
         input[type=checkbox] + label:before {
             font-family: FontAwesome;
@@ -578,6 +639,7 @@
         position: absolute;
         top: 8px;
         right: 8px;
+        cursor: pointer;
     }
     .icon-resize {
         display: none;

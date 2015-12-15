@@ -59,22 +59,22 @@ RUN mkdir /etc/galaxy && cd /tmp/ansible && mkdir roles && \
     apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN cd $GALAXY_ROOT && \
-    echo "Prepopuating postgres database" && \
+    echo "Prepopulating postgres database" && \
     su -c '/usr/lib/postgresql/9.3/bin/pg_ctl -o "-F" start -D /opt/galaxy/db' postgres && \
     sleep 3 && \
     GALAXY_CONFIG_DATABASE_CONNECTION="postgresql://root@localhost:5930/galaxy" sh create_db.sh && \
-    echo "Prepopuating sqlite database" && \
+    echo "Prepopulating sqlite database" && \
     GALAXY_CONFIG_DATABASE_CONNECTION="sqlite:////opt/galaxy/galaxy.sqlite" sh create_db.sh && \
     sh /opt/galaxy/start_mysql.sh && \
-    echo "Prepopuating mysql database" && \
+    echo "Prepopulating mysql database" && \
     GALAXY_CONFIG_DATABASE_CONNECTION="mysql://galaxy:galaxy@localhost/galaxy?unix_socket=/var/run/mysqld/mysqld.sock" sh create_db.sh && \
     echo "Prepopulating toolshed postgres database" && \
     su -c '/usr/lib/postgresql/9.3/bin/pg_ctl -o "-F" start -D /opt/galaxy/db' postgres && \
     GALAXY_CONFIG_DATABASE_CONNECTION="postgresql://root@localhost:5930/toolshed" sh create_db.sh tool_shed && \
-    echo "Prepopuating toolshed sqlite database" && \
+    echo "Prepopulating toolshed sqlite database" && \
     GALAXY_CONFIG_DATABASE_CONNECTION="sqlite:////opt/galaxy/toolshed.sqlite" sh create_db.sh tool_shed && \
     sh /opt/galaxy/start_mysql.sh && \
-    echo "Prepopuating toolshed mysql database" && \
+    echo "Prepopulating toolshed mysql database" && \
     GALAXY_CONFIG_DATABASE_CONNECTION="mysql://galaxy:galaxy@localhost/toolshed?unix_socket=/var/run/mysqld/mysqld.sock" sh create_db.sh tool_shed
 
 # bcftools for Galaxy.

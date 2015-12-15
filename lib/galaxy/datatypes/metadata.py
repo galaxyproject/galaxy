@@ -798,6 +798,9 @@ class JobExternalOutputMetadataWrapper( object ):
                 dataset.dataset  # force dataset_association.dataset to be loaded before pickling
                 # A better fix could be setting 'expire_on_commit=False' on the session, or modifying where commits occur, or ?
 
+                # Touch also deferred column
+                dataset._metadata
+
                 cPickle.dump( dataset, open( metadata_files.filename_in, 'wb+' ) )
                 # file to store metadata results of set_meta()
                 metadata_files.filename_out = abspath( tempfile.NamedTemporaryFile( dir=tmp_dir, prefix="metadata_out_%s_" % key ).name )

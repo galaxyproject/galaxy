@@ -71,9 +71,6 @@ use_lint = false
 # NEVER enable this on a public site (even test or QA)
 # use_interactive = true
 
-# path to sendmail
-sendmail_path = /usr/sbin/sendmail
-
 # Address to join mailing list
 mailing_join_addr = galaxy-user-join@bx.psu.edu
 

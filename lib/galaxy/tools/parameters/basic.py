@@ -5,7 +5,6 @@ Basic tool parameters.
 import logging
 import os
 import os.path
-import urllib
 from xml.etree.ElementTree import XML
 from galaxy import util
 from galaxy.web import form_builder
@@ -196,7 +195,7 @@ class ToolParameter( object, Dictifiable ):
                 value = sanitize_param( value )
         return value
 
-    def validate( self, value, history=None ):
+    def validate( self, value, history=None, workflow_mode=False ):
         if value == "" and self.optional:
             return
         for validator in self.validators:
@@ -205,12 +204,6 @@ class ToolParameter( object, Dictifiable ):
     def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         """ to_dict tool parameter. This can be overridden by subclasses. """
         tool_dict = super( ToolParameter, self ).to_dict()
-        # TODO: wrapping html as it causes a lot of errors on subclasses - needs histories, etc.
-        try:
-            tool_dict[ 'html' ] = urllib.quote( util.smart_str( self.get_html( trans ) ) )
-        except AssertionError:
-            pass  # HACK for assert trans.history, 'requires a history'
-
         tool_dict[ 'model_class' ] = self.__class__.__name__
         tool_dict[ 'optional' ] = self.optional
         tool_dict[ 'hidden' ] = self.hidden
@@ -284,6 +277,10 @@ class TextToolParameter( ToolParameter ):
         else:
             return self.to_string( value, app )
 
+    def validate( self, value, history=None, workflow_mode=True ):
+        if not ( workflow_mode and isinstance( value, basestring ) and value.startswith( '$' ) ):
+            return super( TextToolParameter, self ).validate( value, history )
+
     def get_initial_value( self, trans, context, history=None ):
         return self.value
 
@@ -308,7 +305,7 @@ class IntegerToolParameter( TextToolParameter ):
     >>> type( p.from_html( "bleh" ) )
     Traceback (most recent call last):
         ...
-    ValueError: An integer is required
+    ValueError: An integer or workflow parameter e.g. ${name} is required
     """
 
     dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ( 'min', 'max' )
@@ -347,15 +344,24 @@ class IntegerToolParameter( TextToolParameter ):
         try:
             return int( value )
         except:
-            if not value and self.optional:
+            if isinstance( value, basestring ):
+                if value.startswith( "$" ) and ( trans is None or trans.workflow_building_mode ):
+                    return value
+            elif not value and self.optional:
                 return ""
-            raise ValueError( "An integer is required" )
+            if trans is None or trans.workflow_building_mode:
+                raise ValueError( "An integer or workflow parameter e.g. ${name} is required" )
+            else:
+                raise ValueError( "An integer is required" )
 
     def to_python( self, value, app ):
         try:
             return int( value )
         except Exception, err:
-            if not value and self.optional:
+            if isinstance( value, basestring ):
+                if value.startswith( "$" ):
+                    return value
+            elif not value and self.optional:
                 return None
             raise err
 
@@ -380,7 +386,7 @@ class FloatToolParameter( TextToolParameter ):
     >>> type( p.from_html( "bleh" ) )
     Traceback (most recent call last):
         ...
-    ValueError: A real number is required
+    ValueError: A real number or workflow parameter e.g. ${name} is required
     """
 
     dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ( 'min', 'max' )
@@ -419,15 +425,24 @@ class FloatToolParameter( TextToolParameter ):
         try:
             return float( value )
         except:
-            if not value and self.optional:
+            if isinstance( value, basestring ):
+                if value.startswith( "$" ) and ( trans is None or trans.workflow_building_mode ):
+                    return value
+            elif not value and self.optional:
                 return ""
-            raise ValueError( "A real number is required" )
+            if trans is None or trans.workflow_building_mode:
+                raise ValueError( "A real number or workflow parameter e.g. ${name} is required" )
+            else:
+                raise ValueError( "A real number is required" )
 
     def to_python( self, value, app ):
         try:
             return float( value )
         except Exception, err:
-            if not value and self.optional:
+            if isinstance( value, basestring ):
+                if value.startswith( "$" ):
+                    return value
+            elif not value and self.optional:
                 return None
             raise err
 
@@ -2032,7 +2047,7 @@ class DataToolParameter( BaseDataToolParameter ):
         elif isinstance( value, list ):
             return ",".join( [ str( self.to_string( val, app ) ) for val in value ] )
         elif isinstance( value, app.model.HistoryDatasetCollectionAssociation ):
-            return "__collection_reduce__|%s" % app.security.encode_id( value.id )
+            return "__collection_reduce__|%d" % value.id
         try:
             return value.id
         except:
@@ -2048,6 +2063,9 @@ class DataToolParameter( BaseDataToolParameter ):
                 return value
             elif str( value ).startswith( "__collection_reduce__|" ):
                 decoded_id = str( value )[ len( "__collection_reduce__|" ): ]
+                if not decoded_id.isdigit():
+                    log.info("to_python called encoded data, bad data previously persisted to Galaxy databse - workflow extraction and rerun of this dataset may break if id_secret changed.")
+                    decoded_id = app.security.decode_id(decoded_id)
                 return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
             else:
                 return app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( value ) )
@@ -2150,7 +2168,7 @@ class DataToolParameter( BaseDataToolParameter ):
             ref = ref()
         return ref
 
-    def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         # create dictionary and fill default parameters
         d = super( DataToolParameter, self ).to_dict( trans )
         extensions = self.extensions
@@ -2166,14 +2184,12 @@ class DataToolParameter( BaseDataToolParameter ):
             d['max'] = self.max
         d['options'] = {'hda': [], 'hdca': []}
 
-        # return default content if context is not available
-        if other_values is None:
-            return d
-
         # prepare dataset/collection matching
         dataset_matcher = DatasetMatcher( trans, self, None, other_values )
-        history = trans.history
         multiple = self.multiple
+        history = trans.history
+        if history is None:
+            return d
 
         # add datasets
         for hda in history.active_datasets_children_and_roles:

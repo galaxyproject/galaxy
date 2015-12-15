@@ -1,7 +1,7 @@
 /**
     This is the workflow tool form.
 */
-define(['utils/utils', 'mvc/tool/tools-form-base'],
+define(['utils/utils', 'mvc/tool/tool-form-base'],
     function(Utils, ToolFormBase) {
 
     // create form view
@@ -13,7 +13,7 @@ define(['utils/utils', 'mvc/tool/tools-form-base'],
             // link with node representation in workflow module
             this.node = options.node;
             if (!this.node) {
-                Galaxy.emit.debug('tools-form-workflow::initialize()', 'Node not found in workflow.');
+                Galaxy.emit.debug('tool-form-workflow::initialize()', 'Node not found in workflow.');
                 return;
             }
 
@@ -27,36 +27,37 @@ define(['utils/utils', 'mvc/tool/tools-form-base'],
                 text_disable    : 'Set at Runtime',
 
                 // configure workflow style
-                is_workflow     : true,
                 narrow          : true,
                 initial_errors  : true,
+                sustain_version : true,
                 cls             : 'ui-portlet-narrow',
 
                 // configure model update
                 update_url      : Galaxy.root + 'api/workflows/build_module',
                 update          : function(data) {
                     self.node.update_field_data(data);
-                    self.form.errors(data && data.tool_model);
+                    self.errors(data && data.tool_model)
                 }
             });
 
             // mark values which can be determined at runtime
-            Utils.deepeach(options.inputs, function(item) {
-                if (item.type) {
-                    if ((['data', 'data_collection']).indexOf(item.type) == -1) {
-                        item.collapsible = true;
-                        item.collapsible_value = {'__class__': 'RuntimeValue'};
+            Utils.deepeach (options.inputs, function( input ) {
+                if ( input.type ) {
+                    if ( [ 'data', 'data_collection' ].indexOf( input.type ) != -1 ) {
+                        input.type = 'hidden';
+                        input.info = 'Data input \'' + input.name + '\' (' + Utils.textify( input.extensions && input.extensions.toString() ) + ')';
+                        input.value = null;
+                    } else {
+                        input.collapsible_value = {'__class__': 'RuntimeValue'};
+                        input.is_workflow = ( input.options && input.options.length == 0 ) ||
+                                            ( [ 'integer', 'float' ].indexOf( input.type ) != -1 );
                     }
                 }
             });
 
             // declare conditional and data input fields as not collapsible
             Utils.deepeach(options.inputs, function(item) {
-                if (item.type) {
-                    if (item.type == 'conditional') {
-                        item.test_param.collapsible = false;
-                    }
-                }
+                item.type == 'conditional' && ( item.test_param.collapsible_value = undefined );
             });
 
             // configure custom sections

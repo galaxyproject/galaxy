@@ -48,7 +48,9 @@ from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
 from galaxy.model.item_attrs import Dictifiable
+from tool_shed.util import common_util
 from tool_shed.util import shed_util_common as suc
+
 from .loader import template_macro_params, raw_tool_xml_tree, imported_macro_paths
 from .execute import execute as execute_job
 import galaxy.jobs
@@ -1828,7 +1830,7 @@ class Tool( object, Dictifiable ):
                 if isinstance( input, Conditional ):
                     cond_messages = {}
                     if not input.is_job_resource_conditional:
-                        cond_messages = { input.test_param.name: "No value found for '%s%s', used default" % ( prefix, input.label ) }
+                        cond_messages = { input.test_param.name: "No value found for '%s%s', using default" % ( prefix, input.label ) }
                         messages[ input.name ] = cond_messages
                     test_value = input.test_param.get_initial_value( trans, context )
                     current_case = input.get_current_case( test_value, trans )
@@ -1842,10 +1844,9 @@ class Tool( object, Dictifiable ):
                             messages[ input.name ].append( rep_dict )
                             self.check_and_update_param_values_helper( input.inputs, {}, trans, rep_dict, context, rep_prefix, allow_workflow_parameters=allow_workflow_parameters )
                 elif isinstance( input, Section ):
-                    messages[ input.name ] = { input.name: "No value found for '%s%s', used default" % ( prefix, input.label ) }
                     self.check_and_update_param_values_helper( input.inputs, {}, trans, messages[ input.name ], context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 else:
-                    messages[ input.name ] = "No value found for '%s%s', used default" % ( prefix, input.label )
+                    messages[ input.name ] = "No value found for '%s%s', using default" % ( prefix, input.label )
                 values[ input.name ] = input.get_initial_value( trans, context )
             # Value, visit recursively as usual
             else:
@@ -1864,28 +1865,34 @@ class Tool( object, Dictifiable ):
                     if input.test_param.name not in group_values or use_initial_value:
                         # No test param invalidates the whole conditional
                         values[ input.name ] = group_values = input.get_initial_value( trans, context )
-                        messages[ input.test_param.name ] = "No value found for '%s%s', used default" % ( prefix, input.test_param.label )
+                        messages[ input.test_param.name ] = "No value found for '%s%s', using default" % ( prefix, input.test_param.label )
                         current_case = group_values['__current_case__']
                         for child_input in input.cases[current_case].inputs.itervalues():
-                            messages[ child_input.name ] = "Value no longer valid for '%s%s', replaced with default" % ( prefix, child_input.label )
+                            messages[ child_input.name ] = "Value no longer valid for '%s%s', replacing with default" % ( prefix, child_input.label )
                     else:
                         current = group_values["__current_case__"]
                         self.check_and_update_param_values_helper( input.cases[current].inputs, group_values, trans, messages, context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 elif isinstance( input, Section ):
-                    messages[ input.name ] = "No value found for '%s%s', used default" % ( prefix, input.label )
                     self.check_and_update_param_values_helper( input.inputs, values[ input.name ], trans, messages, context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 else:
                     # Regular tool parameter, no recursion needed
                     try:
-                        ck_param = True
-                        if allow_workflow_parameters and isinstance( values[ input.name ], basestring ):
-                            if WORKFLOW_PARAMETER_REGULAR_EXPRESSION.search( values[ input.name ] ):
-                                ck_param = False
-                        # this will fail when a parameter's type has changed to a non-compatible one: e.g. conditional group changed to dataset input
-                        if ck_param:
-                            input.value_from_basic( input.value_to_basic( values[ input.name ], trans.app ), trans.app, ignore_errors=False )
+                        value = values[ input.name ]
+                        if not allow_workflow_parameters:
+                            input.value_from_basic( input.value_to_basic( value, trans.app ), trans.app, ignore_errors=False )
+                            input.validate( value, history=trans.history )
+                        else:
+                            # skip check if is workflow parameters
+                            ck_param = True
+                            if isinstance( value, basestring ):
+                                if WORKFLOW_PARAMETER_REGULAR_EXPRESSION.search( values[ input.name ] ):
+                                    ck_param = False
+                            # this will fail when a parameter's type has changed to a non-compatible one: e.g. conditional group changed to dataset input
+                            if ck_param:
+                                input.value_from_basic( input.value_to_basic( value, trans.app ), trans.app, ignore_errors=False )
                     except:
-                        messages[ input.name ] = "Value no longer valid for '%s%s', replaced with default" % ( prefix, input.label )
+                        log.info("Parameter validation failed.", exc_info=True)
+                        messages[ input.name ] = "Value no longer valid for '%s%s', replacing with default" % ( prefix, input.label )
                         if update_values:
                             values[ input.name ] = input.get_initial_value( trans, context )
 
@@ -2161,7 +2168,7 @@ class Tool( object, Dictifiable ):
 
         return tool_dict
 
-    def to_json(self, trans, kwd={}, job=None, is_workflow=False):
+    def to_json(self, trans, kwd={}, job=None, workflow_mode=False):
         """
         Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
         """
@@ -2176,6 +2183,9 @@ class Tool( object, Dictifiable ):
                 raise exceptions.MessageException( 'History unavailable. Please specify a valid history id' )
         except Exception, e:
             raise exceptions.MessageException( '[history_id=%s] Failed to retrieve history. %s.' % ( history_id, str( e ) ) )
+
+        # set workflow mode ( TODO: Should be revised/parsed without trans to tool parameters (basic.py) )
+        trans.workflow_building_mode = workflow_mode
 
         # load job parameters into incoming
         tool_message = ''
@@ -2261,16 +2271,14 @@ class Tool( object, Dictifiable ):
         def check_state(trans, input, value, context):
             error = 'State validation failed.'
 
-            # do not check unvalidated values
-            if isinstance(value, galaxy.tools.parameters.basic.RuntimeValue):
+            # handle unvalidated values
+            if isinstance(value, galaxy.tools.parameters.basic.DummyDataset):
+                return [ None, None ]
+            elif isinstance(value, galaxy.tools.parameters.basic.RuntimeValue):
                 return [ { '__class__' : 'RuntimeValue' }, None ]
             elif isinstance( value, dict ):
                 if value.get('__class__') == 'RuntimeValue':
                     return [ value, None ]
-
-            # skip dynamic fields if deactivated
-            if is_workflow and input.is_dynamic:
-                return [value, None]
 
             # validate value content
             try:
@@ -2351,6 +2359,7 @@ class Tool( object, Dictifiable ):
                         test_param = tool_dict['test_param']
                         test_param['default_value'] = jsonify(input.test_param.get_initial_value(trans, other_values, history=history))
                         test_param['value'] = jsonify(group_state.get(test_param['name'], test_param['default_value']))
+                        test_param['text_value'] = input.test_param.value_to_display_text(test_param['value'], trans.app)
                         for i in range(len( tool_dict['cases'] ) ):
                             current_state = {}
                             if i == group_state.get('__current_case__', None):
@@ -2378,6 +2387,9 @@ class Tool( object, Dictifiable ):
 
                     # update input value from tool state
                     tool_dict['value'] = state_inputs.get(input.name, tool_dict['default_value'])
+
+                    # add text value
+                    tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ], trans.app )
 
                     # sanitize values
                     sanitize(tool_dict, 'value')
@@ -2577,11 +2589,15 @@ class Tool( object, Dictifiable ):
                         else:
                             message += 'You can re-run the job with this tool version, which is a different version of the original tool.'
                 else:
-                    message = 'This job was run with tool id "%s", version "%s", which is not available.  ' % ( tool_id, tool_version )
+                    new_tool_shed_url = tool.tool_shed_repository.get_sharable_url( tool.app ) + '/%s/' % tool.tool_shed_repository.changeset_revision
+                    old_tool_shed = tool_id.split( "/repos/" )[0]
+                    old_tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, old_tool_shed )
+                    old_tool_shed_url = old_tool_shed_url + "/view/%s/%s/" % (tool.repository_owner, tool.repository_name)
+                    message = 'This job was run with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, version "%s", which is not available.  ' % (old_tool_shed_url, tool_id, tool_version)
                     if len( tools ) > 1:
-                        message += 'You can re-run the job with the selected tool id "%s" or choose another derivation of the tool.' % self.id
+                        message += 'You can re-run the job with the selected <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a> or choose another derivation of the tool.' % (new_tool_shed_url, self.id)
                     else:
-                        message += 'You can re-run the job with tool id "%s", which is a derivation of the original tool.' % self.id
+                        message += 'You can re-run the job with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, which is a derivation of the original tool.' % (new_tool_shed_url, self.id)
         except Exception, e:
             raise exceptions.MessageException( str( e ) )
         return message

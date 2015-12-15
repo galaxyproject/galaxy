@@ -369,13 +369,12 @@ class WorkflowContentsManager(UsesAnnotations):
             # Fix any missing parameters
             upgrade_message = module.check_and_update_state()
             if upgrade_message:
-                # FIXME: Frontend should be able to handle workflow messages
-                #        as a dictionary not just the values
-                data['upgrade_messages'][step.order_index] = upgrade_message.values()
-                # Dispay version/tool_id changes
-                data['upgrade_messages'] = [step.order_index][module.tool.name] = "\n".join( module.version_changes )
-            elif (hasattr(module, "version_changes")) and (module.version_changes):
-                data['upgrade_messages'] = {step.order_index: {module.tool.name: "\n".join( module.version_changes )}}
+                data['upgrade_messages'][step.order_index] = upgrade_message
+            if (hasattr(module, "version_changes")) and (module.version_changes):
+                if step.order_index in data['upgrade_messages']:
+                    data['upgrade_messages'][step.order_index][module.tool_name] = "\n".join(module.version_changes)
+                else:
+                    data['upgrade_messages'][step.order_index] = {module.tool.name: "\n".join(module.version_changes)}
             # Get user annotation.
             step_annotation = self.get_item_annotation_obj( trans.sa_session, trans.user, step )
             annotation_str = ""
@@ -666,14 +665,11 @@ class WorkflowContentsManager(UsesAnnotations):
         module = module_factory.from_dict( trans, step_dict, secure=secure )
         module.save_to_step( step )
 
-        workflow_outputs_dicts = step_dict.get("workflow_outputs", [])
-        for workflow_output_dict in workflow_outputs_dicts:
-            output_name = workflow_output_dict["output_name"]
-            workflow_output = model.WorkflowOutput(
+        for index in range( len( step.workflow_outputs ) ):
+            step.workflow_outputs[ index ] = model.WorkflowOutput(
                 step,
-                output_name,
+                step.workflow_outputs[ index ][ "output_name" ]
             )
-            step.workflow_outputs.append(workflow_output)
 
         annotation = step_dict[ 'annotation' ]
         if annotation:

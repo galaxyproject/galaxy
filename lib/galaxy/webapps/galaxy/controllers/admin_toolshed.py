@@ -503,7 +503,7 @@ class AdminToolshed( AdminGalaxy ):
         if err_msg:
             message += err_msg
             status = 'error'
-        message += "Installed tool dependencies: %s" % ','.join( td.name for td in installed_tool_dependencies )
+        message += "Installed tool dependencies: %s" % ', '.join( td.name for td in installed_tool_dependencies )
         td_ids = [ trans.security.encode_id( td.id ) for td in tool_shed_repository.tool_dependencies ]
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                           action='manage_tool_dependencies',
@@ -1919,8 +1919,8 @@ class AdminToolshed( AdminGalaxy ):
                             if new_repository_dependencies == original_repository_dependencies:
                                 for new_repository_tup in new_repository_dependencies:
                                     # Make sure all dependencies are installed.
-                                    # TODO: Repository dependencies that are not installed should be displayed to to the user,
-                                    # giving them the option to install them or now.  This is the same behavior as when initially
+                                    # TODO: Repository dependencies that are not installed should be displayed to the user,
+                                    # giving them the option to install them or not. This is the same behavior as when initially
                                     # installing and when re-installing.
                                     new_tool_shed, new_name, new_owner, new_changeset_revision, new_pir, new_oicct = \
                                         common_util.parse_repository_dependency_tuple( new_repository_tup )

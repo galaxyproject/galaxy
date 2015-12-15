@@ -23,6 +23,7 @@ from galaxy.util.bunch import Bunch
 from galaxy.util import odict
 from galaxy.util.json import loads
 from galaxy.util.json import dumps
+from tool_shed.util import common_util
 
 log = logging.getLogger( __name__ )
 
@@ -558,10 +559,17 @@ class ToolModule( WorkflowModule ):
             tool_version = step.tool_version
             module = Class( trans, tool_id, tool_version=tool_version )
             message = ""
-            if step.tool_id != module.tool_id:
-                message += "The tool with the id '%s' is not available. Using the tool with id '%s' instead." % (step.tool_id, module.tool_id)
+            if step.tool_id != module.tool_id:  # This means the exact version of the tool is not installed. We inform the user.
+                old_tool_shed = step.tool_id.split( "/repos/" )[0]
+                if old_tool_shed not in tool_id:  # Only display the following warning if the tool comes from a different tool shed
+                    old_tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, old_tool_shed )
+                    old_url = old_tool_shed_url + "/view/%s/%s/" % (module.tool.repository_owner, module.tool.repository_name)
+                    new_url = module.tool.tool_shed_repository.get_sharable_url( module.tool.app ) + '/%s/' % module.tool.tool_shed_repository.changeset_revision
+                    new_tool_shed_url = new_url.split( "/view" )[0]
+                    message += "The tool \'%s\', version %s by the owner %s installed from <a href=\"%s\" target=\"_blank\">%s</a> is not available. " % (module.tool.name, tool_version, module.tool.repository_owner, old_url, old_tool_shed_url)
+                    message += "A derivation of this tool installed from <a href=\"%s\" target=\"_blank\">%s</a> will be used instead. " % (new_url, new_tool_shed_url)
             if step.tool_version and (step.tool_version != module.tool.version):
-                message += "%s: using version '%s' instead of version '%s' specified in this workflow." % (tool_id, module.tool.version, step.tool_version)
+                message += "<span title=\"tool id '%s'\">Using version '%s' instead of version '%s' specified in this workflow. " % (tool_id, module.tool.version, step.tool_version)
             if message:
                 log.debug(message)
                 module.version_changes.append(message)
@@ -870,6 +878,12 @@ class ToolModule( WorkflowModule ):
         jobs = execution_tracker.successful_jobs
         for job in jobs:
             self._handle_post_job_actions( step, job, invocation.replacement_dict )
+        if execution_tracker.execution_errors:
+            failed_count = len(execution_tracker.execution_errors)
+            success_count = len(execution_tracker.successful_jobs)
+            all_count = failed_count + success_count
+            message = "Failed to create %d out of %s job(s) for workflow step." % (failed_count, all_count)
+            raise Exception(message)
         return jobs
 
     def _find_collections_to_match( self, tool, progress, step ):

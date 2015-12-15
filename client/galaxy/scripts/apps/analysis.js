@@ -7,7 +7,7 @@ var jQuery = require( 'jquery' ),
     ToolPanel = require( './tool-panel' ),
     HistoryPanel = require( './history-panel' ),
     PAGE = require( 'layout/page' ),
-    ToolsForm = require( 'mvc/tool/tools-form' );
+    ToolForm = require( 'mvc/tool/tool-form' );
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -127,7 +127,7 @@ window.app = function app( options, bootstrapped ){
         _loadToolForm : function( params ){
             //TODO: load tool form code async
             params.id = params.tool_id;
-            centerPanel.display( new ToolsForm.View( params ) );
+            centerPanel.display( new ToolForm.View( params ) );
         },
 
         /** load the center panel iframe using the given url */
@@ -151,7 +151,8 @@ window.app = function app( options, bootstrapped ){
         // page render. It's re-created each time because there is no render function and can't be re-rendered without
         // re-creating it.
         Galaxy.listenTo( analysisPage.right.historyView, 'history-size-change', function(){
-            Galaxy.user.fetch();
+            // fetch to update the quota meter adding 'current' for any anon-user's id
+            Galaxy.user.fetch({ url: Galaxy.user.urlRoot() + '/' + ( Galaxy.user.id || 'current' ) });
         });
         analysisPage.right.historyView.connectToQuotaMeter( analysisPage.masthead.quotaMeter );
 

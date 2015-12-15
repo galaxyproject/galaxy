@@ -6,13 +6,13 @@
     "libs/underscore",
     "viz/trackster/util",
     "mvc/dataset/data",
-    "mvc/tool/tools-form",
+    "mvc/tool/tool-form",
     "templates/tool_form.handlebars",
     "templates/tool_link.handlebars",
     "templates/panel_section.handlebars",
     "templates/tool_search.handlebars",
 
-], function(_, util, data, ToolsForm, tool_form_template, tool_link_template, panel_section_template, tool_search_template) {
+], function(_, util, data, ToolForm, tool_form_template, tool_link_template, panel_section_template, tool_search_template) {
 
 /**
  * Mixin for tracking model visibility.
@@ -536,7 +536,7 @@ var ToolLinkView = BaseView.extend({
             var self = this;
             $link.find('a').on('click', function(e) {
                 e.preventDefault();
-                var form = new ToolsForm.View( { id : self.model.id, version : self.model.get('version') } );
+                var form = new ToolForm.View( { id : self.model.id, version : self.model.get('version') } );
                 form.deferred.execute(function() {
                     Galaxy.app.display( form );
                 });

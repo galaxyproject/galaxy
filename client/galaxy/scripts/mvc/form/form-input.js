@@ -4,51 +4,49 @@
 define([], function() {
     return Backbone.View.extend({
         initialize: function(app, options) {
-            // link app
             this.app = app;
+            this.field = options.field;
 
-            // set text labels and icons for optional button
+            // set text labels and icons for collapsible button
             this.text_enable    = app.options.text_enable || 'Enable';
             this.text_disable   = app.options.text_disable || 'Disable';
             this.cls_enable     = app.options.cls_enable || 'fa fa-caret-square-o-down';
             this.cls_disable    = app.options.cls_disable || 'fa fa-caret-square-o-up';
 
-            // link field
-            this.field = options.field;
-            this.default_value = options.default_value;
-
             // set element
             this.setElement(this._template(options));
 
             // link elements
-            this.$field = this.$el.find('.ui-table-form-field');
-            this.$optional = this.$el.find('.ui-table-form-optional');
-            this.$optional_icon = this.$el.find('.ui-table-form-optional').find('.icon');
-            this.$error_text = this.$el.find('.ui-table-form-error-text');
-            this.$error = this.$el.find('.ui-table-form-error');
+            this.$field = this.$('.ui-form-field');
+            this.$preview = this.$('.ui-form-preview');
+            this.$collapsible = this.$('.ui-form-collapsible');
+            this.$collapsible_icon = this.$('.ui-form-collapsible').find('.icon');
+            this.$error_text = this.$('.ui-form-error-text');
+            this.$error = this.$('.ui-form-error');
+            this.$backdrop = this.$('.ui-form-backdrop');
 
             // add field element
             this.$field.prepend(this.field.$el);
 
-            // decide wether to expand or collapse optional fields
-            this.field.collapsed =  options.collapsible && options.value &&
-                                    JSON.stringify(options.value) == JSON.stringify(options.collapsible_value);
+            // decide wether to expand or collapse fields
+            this.field.collapsed = options.collapsible_value !== undefined && JSON.stringify( options.value ) == JSON.stringify( options.collapsible_value );
 
             // refresh view
             this._refresh();
 
-            // add optional hide/show
+            // add collapsible hide/show
             var self = this;
-            this.$optional.on('click', function() {
-                // flip flag
+            this.$collapsible.on('click', function() {
                 self.field.collapsed = !self.field.collapsed;
-
-                // refresh view
                 self._refresh();
-
-                // refresh state
-                self.app.trigger('change');
             });
+        },
+
+        /** Disable input element
+        */
+        disable: function( silent ) {
+            this.$backdrop.show();
+            silent && this.$backdrop.css({ 'opacity': 0, 'cursor': 'default' } );
         },
 
         /** Set error text
@@ -69,61 +67,59 @@ define([], function() {
         /** Refresh element
         */
         _refresh: function() {
-            // reset optional button
-            this.$optional_icon.removeClass().addClass('icon');
-
-            // identify state
+            this.$collapsible_icon.removeClass().addClass('icon');
             if (!this.field.collapsed) {
-                // enable input field
                 this.$field.fadeIn('fast');
+                this.$preview.hide();
                 this._tooltip(this.text_disable, this.cls_disable);
-                this.app.trigger('change');
             } else {
-                // disable input field
                 this.$field.hide();
+                this.$preview.show();
                 this._tooltip(this.text_enable, this.cls_enable);
-                this.field.value && this.field.value(this.default_value);
             }
+            this.app.trigger('change');
         },
 
         /** Set tooltip text
         */
         _tooltip: function(title, cls) {
-            if (this.$optional.length) {
-                this.$optional_icon.addClass(cls)
-                                   .tooltip({ placement: 'bottom' })
-                                   .attr('data-original-title', title)
-                                   .tooltip('fixTitle').tooltip('hide');
-            }
+            this.$collapsible_icon.addClass(cls)
+                               .tooltip({ placement: 'bottom' })
+                               .attr('data-original-title', title)
+                               .tooltip('fixTitle').tooltip('hide');
         },
 
         /** Main Template
         */
         _template: function(options) {
-            var tmp =   '<div class="ui-table-form-element input-name-' + options.name + '">' +
-                            '<div class="ui-table-form-error ui-error">' +
-                                '<span class="fa fa-arrow-down"/><span class="ui-table-form-error-text"/>' +
+            var tmp =   '<div class="ui-form-element input-name-' + options.name + '">' +
+                            '<div class="ui-form-error ui-error">' +
+                                '<span class="fa fa-arrow-down"/><span class="ui-form-error-text"/>' +
                             '</div>' +
-                            '<div class="ui-table-form-title">';
-            if (options.collapsible) {
-                tmp +=          '<div class="ui-table-form-optional">' +
+                            '<div class="ui-form-title">';
+            if ( !options.disabled && options.collapsible_value !== undefined ) {
+                tmp +=          '<div class="ui-form-collapsible">' +
                                     '<i class="icon"/>' + options.label +
                                 '</div>';
             } else {
                 tmp += options.label;
             }
             tmp +=          '</div>' +
-                            '<div class="ui-table-form-field">';
-            tmp +=              '<div class="ui-table-form-info">';
+                            '<div class="ui-form-field">';
+            tmp +=              '<div class="ui-form-info">';
             if (options.help) {
                 tmp +=              options.help;
                 if (options.argument && options.help.indexOf('(' + options.argument + ')') == -1) {
                     tmp += ' (' + options.argument + ')';
                 }
             }
-            tmp +=              '</div>';
-            tmp +=          '</div>' +
-                        '</div>';
+            tmp +=              '</div>' +
+                                '<div class="ui-form-backdrop"/>' +
+                            '</div>';
+            if ( options.collapsible_preview ) {
+                tmp +=      '<div class="ui-form-preview">' + options.text_value + '</div>';
+            }
+            tmp += '</div>';
             return tmp;
         }
     });
