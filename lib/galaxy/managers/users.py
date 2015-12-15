@@ -301,12 +301,13 @@ class CurrentUserSerializer( UserSerializer ):
     def serialize_current_anonymous_user( self, user, keys, trans=None, **kwargs ):
         # use the current history if any to get usage stats for trans' anonymous user
         # TODO: might be better as sep. Serializer class
-        history = trans.history
-        if not history:
-            return None
+        usage = 0
+        percent = None
 
-        usage = self.app.quota_agent.get_usage( trans, history=trans.history )
-        percent = self.app.quota_agent.get_percent( trans=trans, usage=usage )
+        history = trans.history
+        if history:
+            usage = self.app.quota_agent.get_usage( trans, history=trans.history )
+            percent = self.app.quota_agent.get_percent( trans=trans, usage=usage )
 
         # a very small subset of keys available
         values = {
