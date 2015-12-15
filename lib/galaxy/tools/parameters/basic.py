@@ -344,10 +344,9 @@ class IntegerToolParameter( TextToolParameter ):
         try:
             return int( value )
         except:
-            if isinstance( value, basestring ):
-                if value.startswith( "$" ) and ( trans is None or trans.workflow_building_mode ):
-                    return value
-            elif not value and self.optional:
+            if isinstance( value, basestring ) and value.startswith( "$" ) and ( trans is None or trans.workflow_building_mode ):
+                return value
+            if not value and self.optional:
                 return ""
             if trans is None or trans.workflow_building_mode:
                 raise ValueError( "An integer or workflow parameter e.g. ${name} is required" )
@@ -358,10 +357,9 @@ class IntegerToolParameter( TextToolParameter ):
         try:
             return int( value )
         except Exception, err:
-            if isinstance( value, basestring ):
-                if value.startswith( "$" ):
-                    return value
-            elif not value and self.optional:
+            if isinstance( value, basestring ) and value.startswith( "$" ):
+                return value
+            if not value and self.optional:
                 return None
             raise err
 
