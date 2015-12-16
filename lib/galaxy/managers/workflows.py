@@ -378,7 +378,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 data['upgrade_messages'][step.order_index] = upgrade_message
             if (hasattr(module, "version_changes")) and (module.version_changes):
                 if step.order_index in data['upgrade_messages']:
-                    data['upgrade_messages'][step.order_index][module.tool_name] = "\n".join(module.version_changes)
+                    data['upgrade_messages'][step.order_index][module.tool.name] = "\n".join(module.version_changes)
                 else:
                     data['upgrade_messages'][step.order_index] = {module.tool.name: "\n".join(module.version_changes)}
             # Get user annotation.
