@@ -360,7 +360,7 @@ class IntegerToolParameter( TextToolParameter ):
         except:
             if contains_workflow_parameter(value) and _allow_workflow_parameters_in_context(trans):
                 return value
-            elif not value and self.optional:
+            if not value and self.optional:
                 return ""
             if _allow_workflow_parameters_in_context(trans):
                 raise ValueError( "An integer or workflow parameter e.g. ${name} is required" )
@@ -373,7 +373,7 @@ class IntegerToolParameter( TextToolParameter ):
         except Exception, err:
             if contains_workflow_parameter(value):
                 return value
-            elif not value and self.optional:
+            if not value and self.optional:
                 return None
             raise err
 
@@ -439,7 +439,7 @@ class FloatToolParameter( TextToolParameter ):
         except:
             if contains_workflow_parameter(value) and _allow_workflow_parameters_in_context(trans):
                 return value
-            elif not value and self.optional:
+            if not value and self.optional:
                 return ""
             if _allow_workflow_parameters_in_context(trans):
                 raise ValueError( "A real number or workflow parameter e.g. ${name} is required" )
@@ -452,7 +452,7 @@ class FloatToolParameter( TextToolParameter ):
         except Exception, err:
             if contains_workflow_parameter(value):
                 return value
-            elif not value and self.optional:
+            if not value and self.optional:
                 return None
             raise err
 
