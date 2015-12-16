@@ -38,7 +38,8 @@ define([
         // build app
         return new App({
             id      : null,
-            urls    : { get_datatypes : Galaxy.root + 'api/datatypes/mapping' }
+            urls    : { get_datatypes : Galaxy.root + 'api/datatypes/mapping' },
+            workflows : []
         });
     };
 
