@@ -19,11 +19,11 @@ from .util import (
     error_on_exit_code,
     aggressive_error_checks,
 )
+from .output_collection_def import dataset_collector_descriptions_from_elem
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
 from galaxy.tools.deps import requirements
 import galaxy.tools
-from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters import dynamic_options
 from galaxy.tools.parameters.output import ToolOutputActionGroup
 
@@ -189,14 +189,14 @@ class XmlToolSource(ToolSource):
             default_metadata_source = collection_elem.get( "metadata_source", "" )
             filters = collection_elem.findall( 'filter' )
 
-            dataset_collectors = None
+            dataset_collector_descriptions = None
             if collection_elem.find( "discover_datasets" ) is not None:
-                dataset_collectors = output_collect.dataset_collectors_from_elem( collection_elem )
+                dataset_collector_descriptions = dataset_collector_descriptions_from_elem( collection_elem )
             structure = galaxy.tools.ToolOutputCollectionStructure(
                 collection_type=collection_type,
                 collection_type_source=collection_type_source,
                 structured_like=structured_like,
-                dataset_collectors=dataset_collectors,
+                dataset_collector_descriptions=dataset_collector_descriptions,
             )
             output_collection = galaxy.tools.ToolOutputCollection(
                 name,
@@ -258,7 +258,7 @@ class XmlToolSource(ToolSource):
         output.from_work_dir = data_elem.get("from_work_dir", None)
         output.hidden = string_as_bool( data_elem.get("hidden", "") )
         output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
-        output.dataset_collectors = output_collect.dataset_collectors_from_elem( data_elem )
+        output.dataset_collector_descriptions = dataset_collector_descriptions_from_elem( data_elem )
         return output
 
     def parse_stdio(self):

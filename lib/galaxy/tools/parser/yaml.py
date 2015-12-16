@@ -5,7 +5,7 @@ from .interface import InputSource
 from .util import error_on_exit_code
 
 from galaxy.tools.deps import requirements
-from galaxy.tools.parameters import output_collect
+from .output_collection_def import dataset_collector_descriptions_from_list
 from galaxy.tools.parameters.output import ToolOutputActionGroup
 from galaxy.util.odict import odict
 import galaxy.tools
@@ -95,7 +95,7 @@ class YamlToolSource(ToolSource):
         discover_datasets_dicts = output_dict.get( "discover_datasets", [] )
         if isinstance( discover_datasets_dicts, dict ):
             discover_datasets_dicts = [ discover_datasets_dicts ]
-        output.dataset_collectors = output_collect.dataset_collectors_from_list( discover_datasets_dicts )
+        output.dataset_collector_descriptions = dataset_collector_descriptions_from_list( discover_datasets_dicts )
         return output
 
     def parse_tests_to_dict(self):

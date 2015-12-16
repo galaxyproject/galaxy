@@ -389,10 +389,10 @@ class ToolOutputCollection( ToolOutputBase ):
         return self.structure.dynamic
 
     @property
-    def dataset_collectors(self):
+    def dataset_collector_descriptions(self):
         if not self.dynamic_structure:
-            raise Exception("dataset_collectors called for output collection with static structure")
-        return self.structure.dataset_collectors
+            raise Exception("dataset_collector_descriptions called for output collection with static structure")
+        return self.structure.dataset_collector_descriptions
 
 
 class ToolOutputCollectionStructure( object ):
@@ -402,19 +402,19 @@ class ToolOutputCollectionStructure( object ):
         collection_type,
         collection_type_source,
         structured_like,
-        dataset_collectors,
+        dataset_collector_descriptions,
     ):
         self.collection_type = collection_type
         self.collection_type_source = collection_type_source
         self.structured_like = structured_like
-        self.dataset_collectors = dataset_collectors
+        self.dataset_collector_descriptions = dataset_collector_descriptions
         if collection_type and collection_type_source:
             raise ValueError("Cannot set both type and type_source on collection output.")
-        if collection_type is None and structured_like is None and dataset_collectors is None and collection_type_source is None:
+        if collection_type is None and structured_like is None and dataset_collector_descriptions is None and collection_type_source is None:
             raise ValueError( "Output collection types must be specify type of structured_like" )
-        if dataset_collectors and structured_like:
+        if dataset_collector_descriptions and structured_like:
             raise ValueError( "Cannot specify dynamic structure (discovered_datasets) and structured_like attribute." )
-        self.dynamic = dataset_collectors is not None
+        self.dynamic = dataset_collector_descriptions is not None
 
 
 class ToolOutputCollectionPart( object ):
