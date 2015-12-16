@@ -6,10 +6,11 @@ define([
     'mvc/workflow/workflow-canvas',
     'mvc/workflow/workflow-node',
     'mvc/tool/tool-form-workflow',
+    'mvc/ui/ui-misc',
     'utils/async-save-text',
     'libs/toastr',
     'ui/editable-text'
-], function( Utils, Globals, Workflow, WorkflowCanvas, Node, ToolForm, async_save_text, Toastr ){
+], function( Utils, Globals, Workflow, WorkflowCanvas, Node, ToolForm, Ui, async_save_text, Toastr ){
 
 // Reset tool search to start state.
 function reset_tool_search( initValue ) {
@@ -509,6 +510,8 @@ EditorFormView = Backbone.View.extend({
                 }
             };
 
+            this.options.workflows.length > 0 && $( "#left" ).find( ".toolMenu" ).append( this._buildToolPanelWorkflows() );
+
             // Tool menu
             $( "div.toolSectionBody" ).hide();
             $( "div.toolSectionTitle > span" ).wrap( "<a href='#'></a>" );
@@ -527,30 +530,6 @@ EditorFormView = Backbone.View.extend({
                    }
                });
             });
-            $("p.workflow-entry").each(function() {
-                var $this = $(this);
-                var storedWorkflowId = $this.data("stored-workflow-id");
-                var stepCount = $this.data("worklfow-step-count");
-                var doCopy = function() { self.copy_into_workflow(storedWorkflowId, $this.text()); hide_modal(); };
-                var embedLink = $('<i class="fa fa-copy" style="margin-left: 4px;">').click(function() {
-                    if(parseInt(stepCount) < 2) {
-                        doCopy();
-                    } else {
-                        // Don't ruin the workflow by adding 50 steps unprompted.
-                        window.show_modal( "Warning",
-                                "This will copy " + stepCount + " new steps into your workflow.",
-                                { "Cancel" : hide_modal,
-                                  "Ok": doCopy } );
-                    }
-                });
-                $this.after(embedLink);
-
-                var workflowId = $this.data("workflow-id");
-                var subworkflowLink = $('<i class="fa fa-link" style="margin-left: 4px;">').click(function() {
-                    self.add_node_for_subworkflow(workflowId, $this.text());
-                });
-                $this.after(subworkflowLink);
-            });
 
             // Rename async.
             async_save_text("workflow-name", "workflow-name", self.urls.rename_async, "new_name");
@@ -564,10 +543,50 @@ EditorFormView = Backbone.View.extend({
             async_save_text("workflow-annotation", "workflow-annotation", self.urls.annotate_async, "new_annotation", 25, true, 4);
         },
 
+        _buildToolPanelWorkflows: function() {
+            var self = this;
+            var $section = $(   '<div class="toolSectionWrapper">' +
+                                    '<div class="toolSectionTitle">' +
+                                        '<a href="#"><span>Workflows</span></a>' +
+                                    '</div>' +
+                                    '<div class="toolSectionBody">' +
+                                        '<div class="toolSectionBg"/>' +
+                                    '</div>' +
+                                '</div>' );
+            _.each( this.options.workflows, function( workflow ) {
+                if( workflow.id !== self.options.id ) {
+                    var copy = new Ui.ButtonIcon({
+                        icon        : 'fa fa-copy',
+                        cls         : 'ui-button-icon-plain',
+                        tooltip     : 'Copy and insert individual steps',
+                        onclick     : function() {
+                            if( workflow.step_count < 2 ) {
+                                self.copy_into_workflow( workflow.id, workflow.name );
+                            } else {
+                                // don't ruin the workflow by adding 50 steps unprompted.
+                                Galaxy.modal.show({
+                                    title   : 'Warning',
+                                    body    : 'This will copy ' + workflow.step_count + ' new steps into your workflow.',
+                                    buttons : {
+                                        'Cancel' : function() { Galaxy.modal.hide(); },
+                                        'Copy'   : function() { Galaxy.modal.hide(); self.copy_into_workflow( workflow.id, workflow.name ); }
+                                    }
+                                });
+                            }
+                        }
+                    });
+                    var $add = $( '<a/>' ).attr( 'src', '#' ).html( workflow.name ).on( 'click', function() {
+                        self.add_node_for_subworkflow( workflow.id, workflow.name );
+                    }).css( 'cursor', 'pointer' );
+                    $section.find( '.toolSectionBg' ).append( $( '<div/>' ).addClass( 'toolTitle' ).append( $add ).append( copy.$el ) );
+                }
+            });
+            return $section;
+        },
+
         copy_into_workflow: function(workflowId) {
             // Load workflow definition
             var self = this;
-
             this._workflowLoadAjax(workflowId, {
                 success: function( data ) {
                     self.workflow.from_simple( data, false );
@@ -619,14 +638,13 @@ EditorFormView = Backbone.View.extend({
             cc.css( { left: left, top: top } );
         },
 
-        _workflowLoadAjax: function(workflowId, options_) {
-            var options = Utils.merge(options_, {
+        _workflowLoadAjax: function(workflowId, options) {
+            $.ajax(Utils.merge(options, {
                 url: this.urls.load_workflow,
                 data: { id: workflowId, "_": "true" },
                 dataType: 'json',
                 cache: false
-            });
-            $.ajax(options);
+            }));
         },
 
         _moduleInitAjax: function(node, request_data) {

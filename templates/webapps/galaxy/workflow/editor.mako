@@ -4,6 +4,26 @@
 <%
     self.active_view="workflow"
     self.overlay_visible=True
+    self.editor_config = {
+        'id'      : trans.security.encode_id( stored.id ),
+        'urls'    : {
+            'tool_search'         : h.url_for( '/api/tools' ),
+            'get_datatypes'       : h.url_for( '/api/datatypes/mapping' ),
+            'load_workflow'       : h.url_for( controller='workflow', action='load_workflow' ),
+            'run_workflow'        : h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id(stored.id)),
+            'rename_async'        : h.url_for( controller='workflow', action='rename_async', id=trans.security.encode_id(stored.id) ),
+            'annotate_async'      : h.url_for( controller='workflow', action='annotate_async', id=trans.security.encode_id(stored.id) ),
+            'get_new_module_info' : h.url_for(controller='workflow', action='get_new_module_info' ),
+            'workflow_index'      : h.url_for( controller='workflow', action='index' ),
+            'save_workflow'       : h.url_for(controller='workflow', action='save_workflow' )
+        },
+        'workflows' : [{
+            'id'                  : trans.security.encode_id( workflow.id ),
+            'latest_id'           : trans.security.encode_id( workflow.latest_workflow.id ),
+            'step_count'          : len( workflow.latest_workflow.steps ),
+            'name'                : h.to_unicode( workflow.name )
+        } for workflow in workflows ]
+    }
 %>
 </%def>
 
@@ -23,26 +43,9 @@
     <script type='text/javascript'>
         workflow_view = null;
         console.debug( 'bibtex?', window.BibtexParser );
-
-        // URLs used by galaxy.workflows.js
-        var config = {
-            id      : "${trans.security.encode_id( stored.id ) }",
-            urls    : {
-                tool_search         : "${h.url_for( '/api/tools' )}",
-                get_datatypes       : "${h.url_for( '/api/datatypes/mapping' )}",
-                load_workflow       : "${h.url_for( controller='workflow', action='load_workflow' )}",
-                run_workflow        : "${h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id(stored.id))}",
-                rename_async        : "${h.url_for( controller='workflow', action='rename_async', id=trans.security.encode_id(stored.id) )}",
-                annotate_async      : "${h.url_for( controller='workflow', action='annotate_async', id=trans.security.encode_id(stored.id) )}",
-                get_new_module_info : "${h.url_for(controller='workflow', action='get_new_module_info' )}",
-                workflow_index      : "${h.url_for( controller='workflow', action='index' )}",
-                save_workflow       : "${h.url_for(controller='workflow', action='save_workflow' )}"
-            }
-        };
-
         $( function() {
             require(['mvc/workflow/workflow-view'], function(Workflow){
-                workflow_view = new Workflow(config);
+                workflow_view = new Workflow(${h.dumps(self.editor_config)});
             });
         });
     </script>
@@ -338,28 +341,6 @@
                    </div>
                 %endif
                 ## End Data Manager Tools
-            </div>
-            <div>&nbsp;</div>
-            <div class="toolSectionWrapper">
-                <div class="toolSectionTitle" id="title__WORKLFOWS">
-                     <span>Workflows</span>
-                </div>
-                <div id="__workflows__" class="toolSectionBody">
-                    <div class="toolSectionBg">
-                    %for workflow in (workflows or []):
-                        %if workflow == stored:
-                            <% continue %>
-                        %endif
-                        <div class="toolTitle">
-                           <p class="workflow-entry"
-                              style="display: inline"
-                              data-worklfow-step-count="${len(workflow.latest_workflow.steps)}"
-                              data-stored-workflow-id="${trans.security.encode_id( workflow.id )}"
-                              data-workflow-id="${trans.security.encode_id(workflow.latest_workflow.id)}">${h.to_unicode(workflow.name) | h }</p>
-                        </div>
-                    %endfor
-                    </div>
-                </div>
             </div>
             <div>&nbsp;</div>
             %for section_name, module_section in module_sections.items():
