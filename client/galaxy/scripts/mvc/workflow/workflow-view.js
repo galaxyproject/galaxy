@@ -576,7 +576,7 @@ EditorFormView = Backbone.View.extend({
                         }
                     });
                     var $add = $( '<a/>' ).attr( 'href', '#' ).html( workflow.name ).on( 'click', function() {
-                        self.add_node_for_subworkflow( workflow.id, workflow.name );
+                        self.add_node_for_subworkflow( workflow.latest_id, workflow.name );
                     });
                     $section.find( '.toolSectionBg' ).append( $( '<div/>' ).addClass( 'toolTitle' ).append( $add ).append( copy.$el ) );
                 }

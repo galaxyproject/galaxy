@@ -346,6 +346,11 @@ class SubWorkflowModule( WorkflowModule ):
     def default_state( Class ):
         return dict( )
 
+    def get_name( self ):
+        if hasattr( self, 'subworkflow' ) and hasattr( self.subworkflow, 'name' ):
+            return self.subworkflow.name
+        return self.name
+
     def get_errors( self ):
         return None
 
@@ -459,7 +464,7 @@ class SubWorkflowModule( WorkflowModule ):
                                          module=self, form=form )
 
     def _abstract_config_form( self ):
-        form = formbuilder.FormBuilder( title=self.name )
+        form = formbuilder.FormBuilder( title=self.get_name() )
         return form
 
     def check_and_update_state( self ):
