@@ -352,7 +352,7 @@ def pretty_print_time_interval( time=False, precise=False ):
     elif isinstance( time, datetime ):
         diff = now - time
     elif isinstance( time, basestring ):
-        time = datetime.strptime( time, "%Y-%m-%dT%H:%M:%S.%f" )
+        time = datetime.strptime( time, "%Y-%m-%dT%H:%M:%S" )
         diff = now - time
     else:
         diff = now - now
