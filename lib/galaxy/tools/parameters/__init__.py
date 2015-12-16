@@ -47,7 +47,7 @@ def visit_input_values( inputs, input_values, callback, name_prefix="", label_pr
                 input_values[input.name] = new_value
 
 
-def check_param( trans, param, incoming_value, param_values, source='html', history=None ):
+def check_param( trans, param, incoming_value, param_values, source='html', history=None, workflow_building_mode=False ):
     """
     Check the value of a single parameter `param`. The value in
     `incoming_value` is converted from its HTML encoding and validated.
@@ -69,10 +69,10 @@ def check_param( trans, param, incoming_value, param_values, source='html', hist
             # Allow the value to be converted if necessary
             filtered_value = param.filter_value( value, trans, param_values )
             # Then do any further validation on the value
-            param.validate( filtered_value, history )
+            param.validate( filtered_value, history, workflow_building_mode=workflow_building_mode )
         elif value is None and isinstance( param, SelectToolParameter ):
             # An empty select list or column list
-            param.validate( value, history )
+            param.validate( value, history, workflow_building_mode=workflow_building_mode )
     except ValueError, e:
         error = str( e )
     return value, error
