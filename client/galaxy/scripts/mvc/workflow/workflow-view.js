@@ -69,6 +69,7 @@ add_node_icon = function($to_el, nodeType) {
 EditorFormView = Backbone.View.extend({
 
     initialize: function(options) {
+        var self = this;
         this.options = Utils.merge(options, {});
         var $el = $('<div/>'),
             workflowView = options.workflowView,
@@ -116,6 +117,7 @@ EditorFormView = Backbone.View.extend({
                     workflowView.showWorkflowParameters();
                 },
                 beforeSubmit: function( data ) {
+                    data.push( { name: 'content_id', value: node.content_id } );
                     data.push( { name: 'tool_state', value: node.tool_state } );
                     data.push( { name: '_', value: 'true' } );
                 }
