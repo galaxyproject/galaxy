@@ -13,7 +13,7 @@ python_lzo==1.8
 pysam==0.8.3+gx1
 
 # pure Python packages
-Paste==1.7.5.1
+Paste==2.0.2
 PasteDeploy==1.5.2
 docutils==0.12
 wchartype==0.1
