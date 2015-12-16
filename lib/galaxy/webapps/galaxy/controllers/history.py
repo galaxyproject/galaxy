@@ -744,9 +744,13 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         for history in histories:
             if 'make_accessible_via_link' in kwargs:
                 self._make_item_accessible( trans.sa_session, history )
+                for hda in history.activatable_datasets:
+                    trans.app.security_agent.make_dataset_public( hda.dataset )
             elif 'make_accessible_and_publish' in kwargs:
                 self._make_item_accessible( trans.sa_session, history )
                 history.published = True
+                for hda in history.activatable_datasets:
+                    trans.app.security_agent.make_dataset_public( hda.dataset )
             elif 'publish' in kwargs:
                 if history.importable:
                     history.published = True
@@ -755,10 +759,16 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     pass
             elif 'disable_link_access' in kwargs:
                 history.importable = False
+                permissions = trans.app.security_agent.user_get_default_permissions( trans.user )
+                for hda in history.activatable_datasets:
+                    trans.app.security_agent.set_dataset_permission( hda.dataset, permissions )
             elif 'unpublish' in kwargs:
                 history.published = False
             elif 'disable_link_access_and_unpublish' in kwargs:
                 history.importable = history.published = False
+                permissions = trans.app.security_agent.user_get_default_permissions( trans.user )
+                for hda in history.activatable_datasets:
+                    trans.app.security_agent.set_dataset_permission( hda.dataset, permissions )
             elif 'unshare_user' in kwargs:
                 user = trans.sa_session.query( trans.app.model.User ).get( self.decode_id( kwargs[ 'unshare_user' ] ) )
                 # Look for and delete sharing relation for history-user.
