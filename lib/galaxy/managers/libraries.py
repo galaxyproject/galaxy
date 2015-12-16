@@ -184,7 +184,7 @@ class LibraryManager( object ):
         library_dict = library.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id, 'root_folder_id': trans.security.encode_id } )
         if trans.app.security_agent.library_is_public( library, contents=False ):
             library_dict[ 'public' ] = True
-        library_dict[ 'create_time_pretty'] = pretty_print_time_interval( library_dict[ 'create_time' ], precise=True )
+        library_dict[ 'create_time_pretty'] = pretty_print_time_interval( library.create_time, precise=True )
         current_user_roles = trans.get_current_user_roles()
         if not trans.user_is_admin():
             library_dict[ 'can_user_add' ] = trans.app.security_agent.can_add_library_item( current_user_roles, library )
