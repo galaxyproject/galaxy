@@ -11,7 +11,7 @@ from galaxy.tools.parameters.basic import (
     SelectToolParameter,
     UnvalidatedValue
 )
-from galaxy.tools import ToolOutputCollectionPart
+from galaxy.tools.parser import ToolOutputCollectionPart
 from galaxy.tools.parameters.grouping import (
     Conditional,
     Repeat
