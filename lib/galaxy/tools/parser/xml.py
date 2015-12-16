@@ -20,12 +20,11 @@ from .util import (
     aggressive_error_checks,
 )
 from .output_collection_def import dataset_collector_descriptions_from_elem
+from .output_actions import ToolOutputActionGroup
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
 from galaxy.tools.deps import requirements
 import galaxy.tools
-from galaxy.tools.parameters import dynamic_options
-from galaxy.tools.parameters.output import ToolOutputActionGroup
 
 log = logging.getLogger( __name__ )
 
@@ -822,16 +821,12 @@ class XmlInputSource(InputSource):
     def parse_validator_elems(self):
         return self.input_elem.findall("validator")
 
-    def parse_dynamic_options(self, param):
+    def parse_dynamic_options_elem(self):
         """ Return a galaxy.tools.parameters.dynamic_options.DynamicOptions
         if appropriate.
         """
         options_elem = self.input_elem.find( 'options' )
-        if options_elem is None:
-            options = None
-        else:
-            options = dynamic_options.DynamicOptions( options_elem, param )
-        return options
+        return options_elem
 
     def parse_static_options(self):
         static_options = list()

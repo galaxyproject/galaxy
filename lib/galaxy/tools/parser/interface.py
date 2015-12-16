@@ -229,9 +229,8 @@ class InputSource(object):
             default = self.default_optional
         return self.get_bool( "optional", default )
 
-    def parse_dynamic_options(self, param):
-        """ Return a galaxy.tools.parameters.dynamic_options.DynamicOptions
-        if appropriate.
+    def parse_dynamic_options_elem(self):
+        """ Return an XML elemnt describing dynamic options.
         """
         return None
 

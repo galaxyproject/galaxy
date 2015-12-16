@@ -18,6 +18,7 @@ import validation
 import galaxy.tools.parser
 from ..parser import get_input_source as ensure_input_source
 from ..parameters import history_query
+from ..parameters import dynamic_options
 from .dataset_matcher import DatasetMatcher
 from .dataset_matcher import DatasetCollectionMatcher
 # For BaseURLToolParameter
@@ -756,6 +757,15 @@ class BaseURLToolParameter( HiddenToolParameter ):
 DEFAULT_VALUE_MAP = lambda x: x
 
 
+def parse_dynamic_options(param, input_source):
+    options_elem = input_source.parse_dynamic_options_elem()
+    if options_elem is None:
+        options = None
+    else:
+        options = dynamic_options.DynamicOptions( options_elem, param )
+    return options
+
+
 class SelectToolParameter( ToolParameter ):
     """
     Parameter that takes on one (or many) or a specific set of values.
@@ -843,7 +853,7 @@ class SelectToolParameter( ToolParameter ):
         self.separator = input_source.get( 'separator', ',' )
         self.legal_values = set()
         self.dynamic_options = input_source.get( "dynamic_options", None )
-        self.options = input_source.parse_dynamic_options(self)
+        self.options = parse_dynamic_options( self, input_source )
         if self.options is not None:
             for validator in self.options.validators:
                 self.validators.append( validator )
@@ -1749,7 +1759,7 @@ class BaseDataToolParameter( ToolParameter ):
         #       only the special case key='build' of type='data_meta' is
         #       a valid filter
         self.options_filter_attribute = None
-        self.options = input_source.parse_dynamic_options( self )
+        self.options = parse_dynamic_options( self, input_source )
         if self.options:
             # TODO: Abstract away XML handling here.
             options_elem = input_source.elem().find('options')
