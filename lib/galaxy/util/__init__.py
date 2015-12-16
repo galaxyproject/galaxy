@@ -58,6 +58,21 @@ NULL_CHAR = '\000'
 BINARY_CHARS = [ NULL_CHAR ]
 
 
+def remove_protocol_from_url( url ):
+    """ Supplied URL may be null, if not ensure http:// or https://
+    etc... is stripped off.
+    """
+    if url is None:
+        return url
+
+    # We have a URL
+    if url.find( '://' ) > 0:
+        new_url = url.split( '://' )[1]
+    else:
+        new_url = url
+    return new_url.rstrip( '/' )
+
+
 def is_binary( value, binary_chars=None ):
     """
     File is binary if it contains a null-byte by default (e.g. behavior of grep, etc.).
