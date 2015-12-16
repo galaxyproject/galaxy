@@ -18,6 +18,9 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
+    ${h.css(
+        "trackster"
+    )}
 
     ## Style changes needed for display.
     <style type="text/css">
