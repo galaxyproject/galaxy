@@ -1,9 +1,9 @@
 export GALAXY_SLOTS_CONFIGURED="1"
-if [ -n "$SLURM_NTASKS" ]; then
-    # May want to multiply this by ${SLURM_CPUS_PER_TASK:-1}.
-    # SLURM_NTASKS is total tasks over all nodes so this is 
-    # shouldn't be used for multi-node requests.
-    GALAXY_SLOTS="$SLURM_NTASKS"
+if [ -n "$SLURM_NTASKS" ] || [ -n "$SLURM_CPUS_PER_TASK" ]; then
+    # Multiply these values since SLURM_NTASKS is total tasks over all nodes.
+    # GALAXY_SLOTS maps to CPUS on a single node and shouldn't be used for
+    # multi-node requests.
+    GALAXY_SLOTS=`expr "${SLURM_NTASKS:-1}" \* "${SLURM_CPUS_PER_TASK:-1}"`
 elif [ -n "$NSLOTS" ]; then
     GALAXY_SLOTS="$NSLOTS"
 elif [ -n "$PBS_NCPUS" ]; then
