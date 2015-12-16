@@ -7,7 +7,15 @@ npm-deps:
 	cd client && npm install
 
 grunt: npm-deps
-	cd client && grunt
+	cd client && node_modules/grunt-cli/bin/grunt
+
+style: npm-deps
+	cd client && node_modules/grunt-cli/bin/grunt style
+
+webpack: npm-deps
+	cd client && node_modules/webpack/bin/webpack.js -p
+
+client: grunt style webpack
 
 grunt-docker-image:
 	docker build -t ${GRUNT_DOCKER_NAME} client
