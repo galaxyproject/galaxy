@@ -2,7 +2,7 @@ from abc import abstractmethod
 
 from galaxy.util.odict import odict
 from galaxy.util import bunch
-from galaxy.model.item_attrs import Dictifiable
+from galaxy.util.dictifiable import Dictifiable
 
 
 panel_item_types = bunch.Bunch(
