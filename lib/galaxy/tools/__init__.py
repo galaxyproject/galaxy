@@ -41,6 +41,7 @@ from galaxy.tools.parser import ToolOutputCollectionPart
 from galaxy.tools.toolbox import AbstractToolBox
 from galaxy.util import rst_to_html, string_as_bool
 from galaxy.util import ExecutionTimer
+from galaxy.util import listify
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
@@ -48,6 +49,7 @@ from galaxy.util.hash_util import hmac_new
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
+from galaxy.web.form_builder import SelectField
 from galaxy.util.dictifiable import Dictifiable
 from tool_shed.util import common_util
 from tool_shed.util import shed_util_common as suc
@@ -164,6 +166,46 @@ class ToolBox( AbstractToolBox ):
             tool = self._tools_by_id[ tool_id ]
             if isinstance( tool.tool_action, UploadToolAction ):
                 self.reload_tool_by_id( tool_id )
+
+    def get_tool_components( self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
+        """
+        Retrieve all loaded versions of a tool from the toolbox and return a select list enabling
+        selection of a different version, the list of the tool's loaded versions, and the specified tool.
+        """
+        toolbox = self
+        tool_version_select_field = None
+        tools = []
+        tool = None
+        # Backwards compatibility for datasource tools that have default tool_id configured, but which
+        # are now using only GALAXY_URL.
+        tool_ids = listify( tool_id )
+        for tool_id in tool_ids:
+            if get_loaded_tools_by_lineage:
+                tools = toolbox.get_loaded_tools_by_lineage( tool_id )
+            else:
+                tools = toolbox.get_tool( tool_id, tool_version=tool_version, get_all_versions=True )
+            if tools:
+                tool = toolbox.get_tool( tool_id, tool_version=tool_version, get_all_versions=False )
+                if len( tools ) > 1:
+                    tool_version_select_field = self.__build_tool_version_select_field( tools, tool.id, set_selected )
+                break
+        return tool_version_select_field, tools, tool
+
+    def __build_tool_version_select_field( self, tools, tool_id, set_selected ):
+        """Build a SelectField whose options are the ids for the received list of tools."""
+        options = []
+        refresh_on_change_values = []
+        for tool in tools:
+            options.insert( 0, ( tool.version, tool.id ) )
+            refresh_on_change_values.append( tool.id )
+        select_field = SelectField( name='tool_id', refresh_on_change=True, refresh_on_change_values=refresh_on_change_values )
+        for option_tup in options:
+            selected = set_selected and option_tup[ 1 ] == tool_id
+            if selected:
+                select_field.add_option( 'version %s' % option_tup[ 0 ], option_tup[ 1 ], selected=True )
+            else:
+                select_field.add_option( 'version %s' % option_tup[ 0 ], option_tup[ 1 ] )
+        return select_field
 
 
 class DefaultToolState( object ):
