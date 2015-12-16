@@ -69,6 +69,7 @@ add_node_icon = function($to_el, nodeType) {
 EditorFormView = Backbone.View.extend({
 
     initialize: function(options) {
+        var self = this;
         this.options = Utils.merge(options, {});
         var $el = $('<div/>'),
             workflowView = options.workflowView,
@@ -116,6 +117,7 @@ EditorFormView = Backbone.View.extend({
                     workflowView.showWorkflowParameters();
                 },
                 beforeSubmit: function( data ) {
+                    data.push( { name: 'content_id', value: node.content_id } );
                     data.push( { name: 'tool_state', value: node.tool_state } );
                     data.push( { name: '_', value: 'true' } );
                 }
@@ -576,7 +578,7 @@ EditorFormView = Backbone.View.extend({
                         }
                     });
                     var $add = $( '<a/>' ).attr( 'href', '#' ).html( workflow.name ).on( 'click', function() {
-                        self.add_node_for_subworkflow( workflow.id, workflow.name );
+                        self.add_node_for_subworkflow( workflow.latest_id, workflow.name );
                     });
                     $section.find( '.toolSectionBg' ).append( $( '<div/>' ).addClass( 'toolTitle' ).append( $add ).append( copy.$el ) );
                 }
