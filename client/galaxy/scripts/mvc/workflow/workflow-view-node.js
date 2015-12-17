@@ -2,7 +2,7 @@ define(['libs/underscore', 'mvc/workflow/workflow-view-terminals', 'mvc/workflow
     return Backbone.View.extend( {
         initialize: function( options ){
             this.node = options.node;
-            this.output_width = Math.max(150, this.$el.width());
+            this.output_width = Math.max( 150, this.$el.width() );
             this.tool_body = this.$el.find( ".toolFormBody" );
             this.tool_body.find( "div" ).remove();
             this.newInputsDiv().appendTo( this.tool_body );
@@ -11,28 +11,21 @@ define(['libs/underscore', 'mvc/workflow/workflow-view-terminals', 'mvc/workflow
         },
 
         render: function() {
-            var label = this.node.label;
-            var title;
-            if(label) {
-                title = label; 
-            } else {
-                title = this.node.name;
-            }
-            this.$el.find(".nodeTitle").text(title);
+            this.renderToolLabel();
             this.renderToolErrors();
-            this.$el.css( "width", Math.min(250, Math.max( this.$el.width(), this.output_width )));
+            this.$el.css( "width", Math.min(250, Math.max( this.$el.width(), this.output_width ) ) );
         },
 
-        renderToolErrors: function( ) {
-            if ( this.node.tool_errors ) {
-                this.$el.addClass( "tool-node-error" );
-            } else {
-                this.$el.removeClass( "tool-node-error" );
-            }
+        renderToolLabel: function() {
+            this.$( '.nodeTitle' ).text( this.node.label || this.node.name );
+        },
+
+        renderToolErrors: function() {
+            this.node.tool_errors ? this.$el.addClass( 'tool-node-error' ) : this.$el.removeClass( 'tool-node-error' );
         },
 
         newInputsDiv: function() {
-            return $("<div class='inputs'></div>");
+            return $( '<div/>' ).addClass( 'inputs' );
         },
 
         updateMaxWidth: function( newWidth ) {
@@ -40,7 +33,7 @@ define(['libs/underscore', 'mvc/workflow/workflow-view-terminals', 'mvc/workflow
         },
 
         addRule: function() {
-            this.tool_body.append( $( "<div class='rule'></div>" ) );
+            this.tool_body.append( $( '<div/>' ).addClass( 'rule' ) );
         },
 
         addDataInput: function( input, body ) {
