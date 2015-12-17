@@ -23,7 +23,8 @@ from galaxy.web.form_builder import build_select_field, HistoryField, PasswordFi
 from galaxy.workflow.modules import WorkflowModuleInjector, MissingToolException
 from galaxy.security.validate_user_input import validate_publicname
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.model.item_attrs import Dictifiable, UsesAnnotations
+from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.util.dictifiable import Dictifiable
 
 from galaxy.datatypes.interval import ChromatinInteractions
 

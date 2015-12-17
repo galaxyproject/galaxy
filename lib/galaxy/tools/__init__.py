@@ -47,7 +47,7 @@ from galaxy.util.hash_util import hmac_new
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
-from galaxy.model.item_attrs import Dictifiable
+from galaxy.util.dictifiable import Dictifiable
 from tool_shed.util import common_util
 from tool_shed.util import shed_util_common as suc
 

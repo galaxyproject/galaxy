@@ -9,7 +9,7 @@ from sqlalchemy import and_
 from markupsafe import escape
 from urlparse import urlparse
 
-from galaxy.model.item_attrs import Dictifiable
+from galaxy.util.dictifiable import Dictifiable
 
 from galaxy.util.odict import odict
 from galaxy.util import listify

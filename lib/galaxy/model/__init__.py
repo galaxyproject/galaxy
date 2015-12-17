@@ -33,7 +33,8 @@ import galaxy.model.orm.now
 import galaxy.security.passwords
 import galaxy.util
 from galaxy.datatypes.metadata import MetadataCollection
-from galaxy.model.item_attrs import Dictifiable, UsesAnnotations
+from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.util.dictifiable import Dictifiable
 from galaxy.security import get_permitted_actions
 from galaxy.util import is_multi_byte, Params, restore_text, send_mail
 from galaxy.util import ready_name_for_url, unique_id
