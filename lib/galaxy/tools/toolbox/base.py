@@ -25,6 +25,8 @@ from .panel import ToolSection
 from .panel import panel_item_types
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 
+from galaxy.tools.loader_directory import looks_like_a_tool
+
 from .lineages import LineageMap
 from .tags import tool_tag_manager
 
@@ -739,7 +741,7 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
             child_path = os.path.join(directory, name)
             if os.path.isdir(child_path) and recursive:
                 self.__watch_directory(child_path, elems, integrated_elems, load_panel_dict, recursive)
-            elif name.endswith( ".xml" ):
+            elif looks_like_a_tool(child_path):
                 quick_load( child_path, async=False )
                 tool_loaded = True
         if tool_loaded or force_watch:

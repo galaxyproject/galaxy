@@ -4,6 +4,8 @@ import os
 import re
 from ..tools import loader
 
+from galaxy.util import checkers
+
 import sys
 
 import logging
@@ -29,12 +31,12 @@ def load_tool_elements_from_path(
     tool_elements = []
     for file in __find_tool_files(path, recursive=recursive):
         try:
-            looks_like_a_tool = __looks_like_a_tool(file)
+            does_look_like_a_tool = looks_like_a_tool(file)
         except IOError:
             # Some problem reading the tool file, skip.
             continue
 
-        if looks_like_a_tool:
+        if does_look_like_a_tool:
             try:
                 tool_elements.append((file, loader.load_tool(file)))
             except Exception:
@@ -49,11 +51,39 @@ def is_tool_load_error(obj):
     return obj is TOOL_LOAD_ERROR
 
 
-def __looks_like_a_tool(path):
+def looks_like_a_tool(path, invalid_names=[]):
+    """ Whether true in a strict sense or not, lets say the intention and
+    purpose of this procedure is to serve as a filter - all valid tools must
+    "looks_like_a_tool" but not everything that looks like a tool is actually
+    a valid tool.
+
+    invalid_names may be supplid in the context of the tool shed to quickly
+    rule common tool shed XML files.
+    """
+    full_path = os.path.abspath(path)
+    name = os.path.basename(full_path)
+
+    if name in invalid_names:
+        return False
+
+    if not full_path.endswith(".xml"):
+        return False
+
+    if not os.path.getsize(full_path):
+        return False
+
+    if(checkers.check_binary(full_path) or
+       checkers.check_image(full_path) or
+       checkers.check_gzip(full_path)[0] or
+       checkers.check_bz2(full_path)[0] or
+       checkers.check_zip(full_path)):
+        return False
+
     with open(path, "r") as f:
         start_contents = f.read(5 * 1024)
         if TOOL_REGEX.search(start_contents):
             return True
+
     return False
 
 
