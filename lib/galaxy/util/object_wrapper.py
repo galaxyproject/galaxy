@@ -3,14 +3,47 @@ Classes for wrapping Objects and Sanitizing string output.
 """
 
 import inspect
-import copy_reg
 import logging
 import string
 from numbers import Number
-from types import ( NoneType, NotImplementedType, EllipsisType, FunctionType, MethodType, GeneratorType, CodeType,
-                    BuiltinFunctionType, BuiltinMethodType, ModuleType, XRangeType, SliceType, TracebackType, FrameType,
-                    BufferType, DictProxyType, GetSetDescriptorType, MemberDescriptorType )
-from UserDict import UserDict
+try:
+    from types import NoneType
+except ImportError:
+    NoneType = type(None)
+try:
+    from types import NotImplementedType
+except ImportError:
+    NotImplementedType = type(NotImplemented)
+
+try:
+    from types import EllipsisType
+except ImportError:
+    EllipsisType = type(Ellipsis)
+
+try:
+    from types import XRangeType
+except ImportError:
+    XRangeType = type(range(0))
+
+try:
+    from types import SliceType
+except ImportError:
+    SliceType = type([][:])
+
+try:
+    from types import BufferType
+    from types import DictProxyType
+except ImportError:
+    # Py3 doesn't have these concepts, just treat them like SliceType that
+    # so they are __WRAP_NO_SUBCLASS__.
+    BufferType = SliceType
+    DictProxyType = SliceType
+
+from types import ( FunctionType, MethodType, GeneratorType, CodeType,
+                    BuiltinFunctionType, BuiltinMethodType, ModuleType, TracebackType, FrameType,
+                    GetSetDescriptorType, MemberDescriptorType )
+from six.moves import UserDict
+from six.moves import copyreg as copy_reg
 import sys
 
 from .dictobj import cmp
