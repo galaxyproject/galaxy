@@ -1,5 +1,5 @@
 """
-Migration script to add session update time (used for timeouts)
+Migration script to support subworkflows and workflow request input parameters
 """
 import datetime
 import logging
