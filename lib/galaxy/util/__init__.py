@@ -22,19 +22,18 @@ import sys
 import time
 import tempfile
 import threading
-import urlparse
+from six.moves.urllib import parse as urlparse
 
 from galaxy.util import json
 from datetime import datetime
 
 from six import string_types, text_type
 from six.moves import xrange
-
-from email.MIMEText import MIMEText
+from six.moves import email_mime_text
+from six.moves import zip
 
 from os.path import relpath
 from hashlib import md5
-from itertools import izip
 
 import docutils.core
 import docutils.writers.html4css1
@@ -386,7 +385,7 @@ def pretty_print_json(json_data, is_json_string=False):
     return json.dumps(json_data, sort_keys=True, indent=4)
 
 # characters that are valid
-valid_chars = set(string.letters + string.digits + " -=_.()/+*^,:?!")
+valid_chars = set(string.ascii_letters + string.digits + " -=_.()/+*^,:?!")
 
 # characters that are allowed but need to be escaped
 mapped_chars = { '>': '__gt__',
@@ -1150,7 +1149,7 @@ def send_mail( frm, to, subject, body, config ):
     Sends an email.
     """
     to = listify( to )
-    msg = MIMEText(  body.encode( 'ascii', 'replace' ) )
+    msg = email_mime_text(  body.encode( 'ascii', 'replace' ) )
     msg[ 'To' ] = ', '.join( to )
     msg[ 'From' ] = frm
     msg[ 'Subject' ] = subject
@@ -1225,7 +1224,7 @@ def safe_str_cmp(a, b):
     if len(a) != len(b):
         return False
     rv = 0
-    for x, y in izip(a, b):
+    for x, y in zip(a, b):
         rv |= ord(x) ^ ord(y)
     return rv == 0
 
