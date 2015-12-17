@@ -14,6 +14,7 @@ import zipfile
 from encodings import search_function as encodings_search_function
 
 from galaxy import util
+from galaxy.util import multi_byte
 from galaxy.datatypes.checkers import check_binary, check_html, is_gzip
 from galaxy.datatypes.binary import Binary
 
@@ -56,7 +57,7 @@ def stream_to_open_named_file( stream, fd, filename, source_encoding=None, sourc
             if not is_compressed:
                 # See if we have a multi-byte character file
                 chars = chunk[:100]
-                is_multi_byte = util.is_multi_byte( chars )
+                is_multi_byte = multi_byte.is_multi_byte( chars )
                 if not is_multi_byte:
                     is_binary = util.is_binary( chunk )
             data_checked = True

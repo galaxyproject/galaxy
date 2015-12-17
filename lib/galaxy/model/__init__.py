@@ -36,7 +36,8 @@ from galaxy.datatypes.metadata import MetadataCollection
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.security import get_permitted_actions
-from galaxy.util import is_multi_byte, Params, restore_text, send_mail
+from galaxy.util import Params, restore_text, send_mail
+from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util import ready_name_for_url, unique_id
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
