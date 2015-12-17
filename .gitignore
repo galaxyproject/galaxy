@@ -86,7 +86,7 @@ tool-data/genome/*
 tool-data/*.sample
 tool-data/testtoolshed.g2.bx.psu.edu/
 tool-data/toolshed.g2.bx.psu.edu/
-
+tool-data/**/*.fa 
 
 # Test output
 test-data-cache
