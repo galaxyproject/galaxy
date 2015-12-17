@@ -1,10 +1,12 @@
 import wchartype
 
+from six import text_type
+
 
 def is_multi_byte( chars ):
     for char in chars:
         try:
-            char = unicode( char )
+            char = text_type( char )
         except UnicodeDecodeError:
             # Probably binary
             return False

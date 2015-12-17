@@ -3,6 +3,8 @@
 # code compatible with Python 2.3.
 import sys
 
+from six.moves import xrange
+
 
 def _resolve_name(name, package, level):
     """Return the absolute name of the module to be imported."""

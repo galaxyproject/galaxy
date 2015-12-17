@@ -1,6 +1,11 @@
 import pickle
 
 
+def cmp(x, y):
+    # Builtin in Python 2, but not Python 3.
+    return (x > y) - (x < y)
+
+
 class DictionaryObject(object):
     """
     Copyright 2012 "Grim Apps"

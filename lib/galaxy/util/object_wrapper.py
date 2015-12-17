@@ -11,7 +11,9 @@ from types import ( NoneType, NotImplementedType, EllipsisType, FunctionType, Me
                     BuiltinFunctionType, BuiltinMethodType, ModuleType, XRangeType, SliceType, TracebackType, FrameType,
                     BufferType, DictProxyType, GetSetDescriptorType, MemberDescriptorType )
 from UserDict import UserDict
+import sys
 
+from .dictobj import cmp
 from galaxy.util import sanitize_lists_to_string as _sanitize_lists_to_string
 
 log = logging.getLogger( __name__ )
@@ -56,6 +58,10 @@ CHARACTER_MAP = { '>': '__gt__',
                   '#': '__pd__'}
 
 INVALID_CHARACTER = "X"
+
+if sys.version_info > (3, 0):
+    # __coerce__ doesn't do anything under Python anyway.
+    coerce = lambda x, y: x
 
 
 def sanitize_lists_to_string( values, valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP, invalid_character=INVALID_CHARACTER  ):
@@ -110,7 +116,7 @@ def wrap_with_safe_string( value, no_wrap_classes=None ):
         else:
             try:
                 wrapped_class = type( wrapped_class_name, ( safe_class, wrapped_class, ), {} )
-            except TypeError, e:
+            except TypeError as e:
                 # Fail-safe for when a class cannot be dynamically subclassed.
                 log.warning( "Unable to create dynamic subclass for %s, %s: %s", type( value), value, e )
                 wrapped_class = type( wrapped_class_name, ( safe_class, ), {} )
@@ -162,7 +168,7 @@ class SafeStringWrapper( object ):
         # that will be used when other + this (this + other is handled by __add__)
         try:
             return super( SafeStringWrapper, cls ).__new__( cls, sanitize_lists_to_string( arg[0], valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP ) )
-        except Exception, e:
+        except Exception as e:
             log.warning( "Could not provide an argument to %s.__new__: %s; will try without arguments.", cls, e )
             return super( SafeStringWrapper, cls ).__new__( cls )
 

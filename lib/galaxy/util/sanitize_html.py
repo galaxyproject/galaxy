@@ -5,6 +5,10 @@ HTML Sanitizer (ripped from feedparser)
 import re
 import sgmllib
 
+from six import unichr
+from six import text_type as unicode
+
+
 # reversable htmlentitydefs mappings for Python 2.2
 try:
     from htmlentitydefs import name2codepoint, codepoint2name
@@ -370,7 +374,7 @@ class _HTMLSanitizer(_BaseHTMLProcessor):
 
         # declare xlink namespace, if needed
         if self.mathmlOK or self.svgOK:
-            if filter(lambda (n, v): n.startswith('xlink:'), attrs):
+            if filter(lambda n, v: n.startswith('xlink:'), attrs):
                 if not ('xmlns:xlink', 'http://www.w3.org/1999/xlink') in attrs:
                     attrs.append(('xmlns:xlink', 'http://www.w3.org/1999/xlink'))
 
