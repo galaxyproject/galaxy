@@ -8,7 +8,9 @@ from galaxy.tools.deps import requirements
 from .output_collection_def import dataset_collector_descriptions_from_list
 from .output_actions import ToolOutputActionGroup
 from galaxy.util.odict import odict
-import galaxy.tools
+from .output_objects import (
+    ToolOutput
+)
 
 
 class YamlToolSource(ToolSource):
@@ -79,7 +81,7 @@ class YamlToolSource(ToolSource):
 
     def _parse_output(self, tool, name, output_dict):
         # TODO: handle filters, actions, change_format
-        output = galaxy.tools.ToolOutput( name )
+        output = ToolOutput( name )
         output.format = output_dict.get("format", "data")
         output.change_format = []
         output.format_source = output_dict.get("format_source", None)
