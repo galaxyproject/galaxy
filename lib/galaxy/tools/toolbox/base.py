@@ -741,7 +741,7 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
             child_path = os.path.join(directory, name)
             if os.path.isdir(child_path) and recursive:
                 self.__watch_directory(child_path, elems, integrated_elems, load_panel_dict, recursive)
-            elif looks_like_a_tool(child_path):
+            elif looks_like_a_tool(child_path, enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False)):
                 quick_load( child_path, async=False )
                 tool_loaded = True
         if tool_loaded or force_watch:
