@@ -15,6 +15,7 @@ from cgi import FieldStorage
 from xml.etree import ElementTree
 from mako.template import Template
 from paste import httpexceptions
+from sqlalchemy import and_
 
 from galaxy import model
 from galaxy.managers import histories
@@ -190,6 +191,19 @@ class ToolBox( AbstractToolBox ):
                     tool_version_select_field = self.__build_tool_version_select_field( tools, tool.id, set_selected )
                 break
         return tool_version_select_field, tools, tool
+
+    def _get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
+        # Abstract toolbox doesn't have a dependency on the the database, so
+        # override _get_tool_shed_repository here to provide this information.
+
+        # We store only the port, if one exists, in the database.
+        tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
+        return self.app.install_model.context.query( self.app.install_model.ToolShedRepository ) \
+            .filter( and_( self.app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
+                           self.app.install_model.ToolShedRepository.table.c.name == name,
+                           self.app.install_model.ToolShedRepository.table.c.owner == owner,
+                           self.app.install_model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
+            .first()
 
     def __build_tool_version_select_field( self, tools, tool_id, set_selected ):
         """Build a SelectField whose options are the ids for the received list of tools."""

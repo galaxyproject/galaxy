@@ -5,7 +5,6 @@ import string
 import tarfile
 import tempfile
 
-from sqlalchemy import and_
 from markupsafe import escape
 from urlparse import urlparse
 
@@ -16,8 +15,6 @@ from galaxy.util import listify
 from galaxy.util import parse_xml
 from galaxy.util import string_as_bool
 from galaxy.util.bunch import Bunch
-
-from tool_shed.util import common_util
 
 from .panel import ToolPanelElements
 from .panel import ToolSectionLabel
@@ -459,16 +456,6 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
     def tools( self ):
         return self._tools_by_id.iteritems()
 
-    def __get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
-        # We store only the port, if one exists, in the database.
-        tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
-        return self.app.install_model.context.query( self.app.install_model.ToolShedRepository ) \
-            .filter( and_( self.app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
-                           self.app.install_model.ToolShedRepository.table.c.name == name,
-                           self.app.install_model.ToolShedRepository.table.c.owner == owner,
-                           self.app.install_model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
-            .first()
-
     def dynamic_confs( self, include_migrated_tool_conf=False ):
         confs = []
         for dynamic_tool_conf_dict in self._dynamic_tool_confs:
@@ -558,10 +545,10 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                     # Backward compatibility issue - the tag used to be named 'changeset_revision'.
                     installed_changeset_revision_elem = elem.find( "changeset_revision" )
                 installed_changeset_revision = installed_changeset_revision_elem.text
-                tool_shed_repository = self.__get_tool_shed_repository( tool_shed,
-                                                                        repository_name,
-                                                                        repository_owner,
-                                                                        installed_changeset_revision )
+                tool_shed_repository = self._get_tool_shed_repository( tool_shed,
+                                                                       repository_name,
+                                                                       repository_owner,
+                                                                       installed_changeset_revision )
 
                 if tool_shed_repository:
                     # Only load tools if the repository is not deactivated or uninstalled.
@@ -597,6 +584,11 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
             log.error( "Error reading tool configuration file from path: %s." % path )
         except Exception:
             log.exception( "Error reading tool from path: %s" % path )
+
+    def _get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
+        # Abstract class does't have a dependency on the database, for full tool shed
+        # support the actual Galaxy ToolBox implement this method and return a ToolShd repository.
+        return None
 
     def __add_tool( self, tool, load_panel_dict, panel_dict ):
         # Allow for the same tool to be loaded into multiple places in the
