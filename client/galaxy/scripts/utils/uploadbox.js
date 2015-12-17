@@ -117,10 +117,10 @@
 
         // append hidden upload field
         var $input = $('<input type="file" style="display: none" ' + (opts.multiple && 'multiple' || '') + '/>');
-        el.append($input).change(function (e) {
+        el.append($input.change(function (e) {
             opts.onchange(e.target.files);
             $(this).val('');
-        });
+        }));
 
         // drag/drop events
         el.on('drop', function (e) {
