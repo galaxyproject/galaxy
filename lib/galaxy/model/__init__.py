@@ -14,7 +14,7 @@ import os
 import socket
 import time
 from datetime import datetime, timedelta
-from itertools import ifilter
+from itertools import ifilter, imap
 from string import Template
 from uuid import UUID, uuid4
 
@@ -33,9 +33,11 @@ import galaxy.model.orm.now
 import galaxy.security.passwords
 import galaxy.util
 from galaxy.datatypes.metadata import MetadataCollection
-from galaxy.model.item_attrs import Dictifiable, UsesAnnotations
+from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.util.dictifiable import Dictifiable
 from galaxy.security import get_permitted_actions
-from galaxy.util import is_multi_byte, Params, restore_text, send_mail
+from galaxy.util import Params, restore_text, send_mail
+from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util import ready_name_for_url, unique_id
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
@@ -556,8 +558,11 @@ class Job( object, JobLike, Dictifiable ):
     def add_parameter( self, name, value ):
         self.parameters.append( JobParameter( name, value ) )
 
-    def add_input_dataset( self, name, dataset ):
-        self.input_datasets.append( JobToInputDatasetAssociation( name, dataset ) )
+    def add_input_dataset( self, name, dataset=None, dataset_id=None ):
+        assoc = JobToInputDatasetAssociation( name, dataset )
+        if dataset is None and dataset_id is not None:
+            assoc.dataset_id = dataset_id
+        self.input_datasets.append( assoc )
 
     def add_output_dataset( self, name, dataset ):
         self.output_datasets.append( JobToOutputDatasetAssociation( name, dataset ) )
@@ -1075,6 +1080,10 @@ class UserGroupAssociation( object ):
         self.group = group
 
 
+def is_hda(d):
+    return isinstance( d, HistoryDatasetAssociation )
+
+
 class History( object, Dictifiable, UsesAnnotations, HasName ):
 
     dict_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
@@ -1100,16 +1109,16 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
     def empty( self ):
         return self.hid_counter == 1
 
-    def _next_hid( self ):
+    def _next_hid( self, n=1 ):
         # this is overriden in mapping.py db_next_hid() method
         if len( self.datasets ) == 0:
-            return 1
+            return n
         else:
             last_hid = 0
             for dataset in self.datasets:
                 if dataset.hid > last_hid:
                     last_hid = dataset.hid
-            return last_hid + 1
+            return last_hid + n
 
     def add_galaxy_session( self, galaxy_session, association=None ):
         if association is None:
@@ -1144,6 +1153,41 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         self.datasets.append( dataset )
         return dataset
 
+    def add_datasets( self, sa_session, datasets, parent_id=None, genome_build=None, set_hid=True, quota=True, flush=False ):
+        """ Optimized version of add_dataset above that minimizes database
+        interactions when adding many datasets to history at once.
+        """
+        all_hdas = all( imap( is_hda, datasets ) )
+        optimize = len( datasets) > 1 and parent_id is None and all_hdas and set_hid and not quota
+        if optimize:
+            self.__add_datasets_optimized( datasets, genome_build=genome_build )
+            sa_session.add_all( datasets )
+            if flush:
+                sa_session.flush()
+        else:
+            for dataset in datasets:
+                self.add_dataset( dataset, parent_id=parent_id, genome_build=genome_build, set_hid=set_hid, quota=quota )
+                sa_session.add( dataset )
+                if flush:
+                    sa_session.flush()
+
+    def __add_datasets_optimized( self, datasets, genome_build=None ):
+        """ Optimized version of add_dataset above that minimizes database
+        interactions when adding many datasets to history at once under
+        certain circumstances.
+        """
+        n = len( datasets )
+
+        base_hid = self._next_hid( n=n )
+        set_genome = genome_build not in [None, '?']
+        for i, dataset in enumerate( datasets ):
+            dataset.hid = base_hid + i
+            dataset.history = self
+            if set_genome:
+                self.genome_build = genome_build
+        self.datasets.extend( datasets )
+        return datasets
+
     def add_dataset_collection( self, history_dataset_collection, set_hid=True ):
         if set_hid:
             history_dataset_collection.hid = self._next_hid()
@@ -1158,24 +1202,19 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         If `activatable`, copy only non-deleted datasets. If `all_datasets`, copy
         non-deleted, deleted, and purged datasets.
         """
+        name = name or self.name
+        applies_to_quota = target_user != self.user
+
         # Create new history.
-        if not name:
-            name = self.name
-        if not target_user:
-            target_user = self.user
-        quota = True
-        if target_user == self.user:
-            quota = False
         new_history = History( name=name, user=target_user )
         db_session = object_session( self )
         db_session.add( new_history )
         db_session.flush()
 
-        # Copy annotation.
-        self.copy_item_annotation( db_session, self.user, self, target_user, new_history )
-
-        # Copy Tags
-        new_history.copy_tags_from(target_user=target_user, source_history=self)
+        # copy history tags and annotations (if copying user is not anonymous)
+        if target_user:
+            self.copy_item_annotation( db_session, self.user, self, target_user, new_history )
+            new_history.copy_tags_from(target_user=target_user, source_history=self)
 
         # Copy HDAs.
         if activatable:
@@ -1187,27 +1226,32 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         for hda in hdas:
             # Copy HDA.
             new_hda = hda.copy( copy_children=True )
-            new_history.add_dataset( new_hda, set_hid=False, quota=quota )
+            new_history.add_dataset( new_hda, set_hid=False, quota=applies_to_quota )
             db_session.add( new_hda )
             db_session.flush()
-            # Copy annotation.
-            self.copy_item_annotation( db_session, self.user, hda, target_user, new_hda )
+
+            if target_user:
+                new_hda.copy_item_annotation( db_session, self.user, hda, target_user, new_hda )
+                new_hda.copy_tags_from( target_user, hda )
+
         # Copy history dataset collections
         if all_datasets:
             hdcas = self.dataset_collections
         else:
             hdcas = self.active_dataset_collections
         for hdca in hdcas:
-            new_hdca = hdca.copy( )
+            new_hdca = hdca.copy()
             new_history.add_dataset_collection( new_hdca, set_hid=False )
             db_session.add( new_hdca )
             db_session.flush()
-            # Copy annotation.
-            self.copy_item_annotation( db_session, self.user, hdca, target_user, new_hdca )
+
+            if target_user:
+                new_hdca.copy_item_annotation( db_session, self.user, hdca, target_user, new_hdca )
 
         new_history.hid_counter = self.hid_counter
         db_session.add( new_history )
         db_session.flush()
+
         return new_history
 
     @property
@@ -1484,10 +1528,13 @@ class DefaultQuotaAssociation( Quota, Dictifiable ):
 
 
 class DatasetPermissions( object ):
-    def __init__( self, action, dataset, role ):
+    def __init__( self, action, dataset, role=None, role_id=None ):
         self.action = action
         self.dataset = dataset
-        self.role = role
+        if role is not None:
+            self.role = role
+        else:
+            self.role_id = role_id
 
 
 class LibraryPermissions( object ):
@@ -1789,10 +1836,17 @@ class DatasetInstance( object ):
             return self._state
         return self.dataset.state
 
+    def raw_set_dataset_state( self, state ):
+        if state != self.dataset.state:
+            self.dataset.state = state
+            return True
+        else:
+            return False
+
     def set_dataset_state( self, state ):
-        self.dataset.state = state
-        object_session( self ).add( self.dataset )
-        object_session( self ).flush()  # flush here, because hda.flush() won't flush the Dataset object
+        if self.raw_set_dataset_state( state ):
+            object_session( self ).add( self.dataset )
+            object_session( self ).flush()  # flush here, because hda.flush() won't flush the Dataset object
     state = property( get_dataset_state, set_dataset_state )
 
     def get_file_name( self ):
@@ -2398,6 +2452,15 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
     @property
     def history_content_type( self ):
         return "dataset"
+
+    def copy_tags_from( self, target_user, source_hda ):
+        """
+        Copy tags from `source_hda` to this HDA and assign them the user `target_user`.
+        """
+        for source_tag_assoc in source_hda.tags:
+            new_tag_assoc = source_tag_assoc.copy()
+            new_tag_assoc.user = target_user
+            self.tags.append( new_tag_assoc )
 
 
 class HistoryDatasetAssociationDisplayAtAuthorization( object ):
@@ -3423,6 +3486,7 @@ class Workflow( object, Dictifiable ):
 
     dict_collection_visible_keys = ( 'name', 'has_cycles', 'has_errors' )
     dict_element_visible_keys = ( 'name', 'has_cycles', 'has_errors' )
+    input_step_types = ['data_input', 'data_collection_input', 'parameter_input']
 
     def __init__( self, uuid=None ):
         self.user = None
@@ -3449,6 +3513,60 @@ class Workflow( object, Dictifiable ):
         rval['uuid'] = ( lambda uuid: str( uuid ) if uuid else None )( self.uuid )
         return rval
 
+    @property
+    def steps_by_id( self ):
+        steps = {}
+        for step in self.steps:
+            step_id = step.id
+            steps[ step_id ] = step
+        return steps
+
+    def step_by_index(self, order_index):
+        for step in self.steps:
+            if order_index == step.order_index:
+                return step
+        raise KeyError("Workflow has no step with order_index '%s'" % order_index)
+
+    @property
+    def input_steps(self):
+        for step in self.steps:
+            if step.type in Workflow.input_step_types:
+                yield step
+
+    @property
+    def workflow_outputs(self):
+        for step in self.steps:
+            for workflow_output in step.workflow_outputs:
+                yield workflow_output
+
+    @property
+    def top_level_workflow( self ):
+        """ If this workflow is not attached to stored workflow directly,
+        recursively grab its parents until it is the top level workflow
+        which must have a stored workflow associated with it.
+        """
+        top_level_workflow = self
+        if self.stored_workflow is None:
+            # TODO: enforce this at creation...
+            assert len(self.parent_workflow_steps) == 1
+            return self.parent_workflow_steps[0].workflow.top_level_workflow
+        return top_level_workflow
+
+    @property
+    def top_level_stored_workflow( self ):
+        """ If this workflow is not attached to stored workflow directly,
+        recursively grab its parents until it is the top level workflow
+        which must have a stored workflow associated with it and then
+        grab that stored workflow.
+        """
+        return self.top_level_workflow.stored_workflow
+
+    def log_str(self):
+        extra = ""
+        if self.stored_workflow:
+            extra = ",name=%s" % self.stored_workflow.name
+        return "Workflow[id=%d%s]" % (self.id, extra)
+
 
 class WorkflowStep( object ):
 
@@ -3462,6 +3580,58 @@ class WorkflowStep( object ):
         self.input_connections = []
         self.config = None
         self.uuid = uuid4()
+        self.worklfow_outputs = []
+        self._input_connections_by_name = None
+
+    @property
+    def content_id( self ):
+        content_id = None
+        if self.type == "tool":
+            content_id = self.tool_id
+        elif self.type == "subworkflow":
+            content_id = self.subworkflow.id
+        else:
+            content_id = None
+        return content_id
+
+    @property
+    def input_connections_by_name(self):
+        if self._input_connections_by_name is None:
+            self.setup_input_connections_by_name()
+        return self._input_connections_by_name
+
+    def setup_input_connections_by_name(self):
+        # Ensure input_connections has already been set.
+
+        # Make connection information available on each step by input name.
+        input_connections_by_name = {}
+        for conn in self.input_connections:
+            input_name = conn.input_name
+            if input_name not in input_connections_by_name:
+                input_connections_by_name[input_name] = []
+            input_connections_by_name[input_name].append(conn)
+        self._input_connections_by_name = input_connections_by_name
+
+    def create_or_update_workflow_output(self, output_name, label, uuid):
+        output = self.workflow_output_for(output_name)
+        if output is None:
+            output = WorkflowOutput(workflow_step=self, output_name=output_name)
+        if uuid is not None:
+            output.uuid = uuid
+        if label is not None:
+            output.label = label
+        return output
+
+    def workflow_output_for(self, output_name):
+        target_output = None
+        for workflow_output in self.workflow_outputs:
+            if workflow_output.output_name == output_name:
+                target_output = workflow_output
+                break
+        return target_output
+
+    def log_str(self):
+        return "WorkflowStep[index=%d,type=%s]" % (self.order_index, self.type)
 
 
 class WorkflowStepConnection( object ):
@@ -3490,9 +3660,14 @@ class WorkflowStepConnection( object ):
 
 class WorkflowOutput(object):
 
-    def __init__( self, workflow_step, output_name):
+    def __init__( self, workflow_step, output_name=None, label=None, uuid=None):
         self.workflow_step = workflow_step
         self.output_name = output_name
+        self.label = label
+        if uuid is None:
+            self.uuid = uuid4()
+        else:
+            self.uuid = UUID(str(uuid))
 
 
 class StoredWorkflowUserShareAssociation( object ):
@@ -3520,6 +3695,40 @@ class WorkflowInvocation( object, Dictifiable ):
         CANCELLED='cancelled',
         FAILED='failed',
     )
+
+    def __init__(self):
+        self.subworkflow_invocations = []
+        self.step_states = []
+        self.steps = []
+
+    def create_subworkflow_invocation_for_step( self, step ):
+        assert step.type == "subworkflow"
+        subworkflow_invocation = WorkflowInvocation()
+        return self.attach_subworkflow_invocation_for_step( step, subworkflow_invocation )
+
+    def attach_subworkflow_invocation_for_step( self, step, subworkflow_invocation ):
+        assert step.type == "subworkflow"
+        assoc = WorkflowInvocationToSubworkflowInvocationAssociation()
+        assoc.workflow_invocation = self
+        assoc.workflow_step = step
+        subworkflow_invocation.history = self.history
+        subworkflow_invocation.workflow = step.subworkflow
+        assoc.subworkflow_invocation = subworkflow_invocation
+        self.subworkflow_invocations.append(assoc)
+        return assoc
+
+    def get_subworkflow_invocation_for_step( self, step ):
+        assoc = self.get_subworkflow_invocation_association_for_step(step)
+        return assoc.subworkflow_invocation
+
+    def get_subworkflow_invocation_association_for_step( self, step ):
+        assert step.type == "subworkflow"
+        assoc = None
+        for subworkflow_invocation in self.subworkflow_invocations:
+            if subworkflow_invocation.workflow_step == step:
+                assoc = subworkflow_invocation
+                break
+        return assoc
 
     @property
     def active( self ):
@@ -3619,16 +3828,22 @@ class WorkflowInvocation( object, Dictifiable ):
         self.update_time = galaxy.model.orm.now.now()
 
     def add_input( self, content, step_id ):
-        if content.history_content_type == "dataset":
+        history_content_type = getattr(content, "history_content_type", None)
+        if history_content_type == "dataset":
             request_to_content = WorkflowRequestToInputDatasetAssociation()
             request_to_content.dataset = content
             request_to_content.workflow_step_id = step_id
             self.input_datasets.append( request_to_content )
-        else:
+        elif history_content_type == "dataset_collection":
             request_to_content = WorkflowRequestToInputDatasetCollectionAssociation()
             request_to_content.dataset_collection = content
             request_to_content.workflow_step_id = step_id
             self.input_dataset_collections.append( request_to_content )
+        else:
+            request_to_content = WorkflowRequestInputStepParmeter()
+            request_to_content.parameter_value = content
+            request_to_content.workflow_step_id = step_id
+            self.input_step_parameters.append( request_to_content )
 
     def has_input_for_step( self, step_id ):
         for content in self.input_datasets:
@@ -3638,6 +3853,11 @@ class WorkflowInvocation( object, Dictifiable ):
             if content.workflow_step_id == step_id:
                 return True
         return False
+
+
+class WorkflowInvocationToSubworkflowInvocationAssociation( object, Dictifiable ):
+    dict_collection_visible_keys = ( 'id', 'workflow_step_id', 'workflow_invocation_id', 'subworkflow_invocation_id' )
+    dict_element_visible_keys = ( 'id', 'workflow_step_id', 'workflow_invocation_id', 'subworkflow_invocation_id' )
 
 
 class WorkflowInvocationStep( object, Dictifiable ):
@@ -3717,6 +3937,12 @@ class WorkflowRequestToInputDatasetCollectionAssociation(object, Dictifiable):
     """ Workflow step input dataset collection parameters.
     """
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name' ]
+
+
+class WorkflowRequestInputStepParmeter(object, Dictifiable):
+    """ Workflow step parameter inputs.
+    """
+    dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'parameter_value' ]
 
 
 class MetadataFile( StorableObject ):

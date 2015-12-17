@@ -280,6 +280,8 @@ class GalaxyInteractorApi( object ):
         return wait
 
     def __job_ready( self, job_id, history_id ):
+        if job_id is None:
+            raise ValueError("__job_ready passed empty job_id")
         job_json = self._get( "jobs/%s" % job_id ).json()
         state = job_json[ 'state' ]
         try:
@@ -290,6 +292,8 @@ class GalaxyInteractorApi( object ):
             raise
 
     def __history_ready( self, history_id ):
+        if history_id is None:
+            raise ValueError("__history_ready passed empty history_id")
         history_json = self._get( "histories/%s" % history_id ).json()
         state = history_json[ 'state' ]
         try:
@@ -300,6 +304,8 @@ class GalaxyInteractorApi( object ):
             raise
 
     def _summarize_history_errors( self, history_id ):
+        if history_id is None:
+            raise ValueError("_summarize_history_errors passed empty history_id")
         print "History with id %s in error - summary of datasets in error below." % history_id
         try:
             history_contents = self.__contents( history_id )

@@ -20,7 +20,7 @@ from urllib2 import urlopen
 from galaxy import util
 from galaxy.util.odict import odict
 
-from galaxy.model.item_attrs import Dictifiable
+from galaxy.util.dictifiable import Dictifiable
 
 log = logging.getLogger( __name__ )
 

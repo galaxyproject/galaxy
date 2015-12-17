@@ -23,7 +23,7 @@ Highlights
   Improved API and UI for data libraries - including support for library
   folder management and search.
 
-`Github <https://github.com/galaxyproject/galaxy>`__
+`GitHub <https://github.com/galaxyproject/galaxy>`__
 ===========================================================
 
 New
@@ -72,6 +72,9 @@ The Data Library menu items were renamed accordingly.
 The **graphview visualization is deprecated** and will be replaced in the next
 release of Galaxy.
 
+The direct access to **Tool Shed repositories through the Mercurial API is deprecated**.
+It will be removed in a future release. Please use Planemo for uploading to the TS
+instead.
 
 Release Notes
 ===========================================================

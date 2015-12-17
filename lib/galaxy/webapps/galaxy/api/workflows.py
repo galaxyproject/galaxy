@@ -4,11 +4,10 @@ API operations for Workflows
 
 from __future__ import absolute_import
 
-import uuid
 import logging
 import copy
 import urllib
-from sqlalchemy import and_, desc, false, or_, true
+from sqlalchemy import desc, false, or_, true
 from galaxy import exceptions, util
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.managers import histories
@@ -136,12 +135,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'from_history_id',
             'shared_workflow_id',
             'workflow',
-        ] ).intersection( payload )
-        if len( ways_to_create ) == 0:
+        ] )
+        if len( ways_to_create.intersection( payload ) ) == 0:
             message = "One parameter among - %s - must be specified" % ", ".join( ways_to_create )
             raise exceptions.RequestParameterMissingException( message )
 
-        if len( ways_to_create ) > 1:
+        if len( ways_to_create.intersection( payload ) ) > 1:
             message = "Only one parameter among - %s - must be specified" % ", ".join( ways_to_create )
             raise exceptions.RequestParameterInvalidException( message )
 
@@ -333,7 +332,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         } )
 
         # create tool model and default tool state (if missing)
-        tool_model = module.tool.to_json(trans, tool_inputs, is_workflow=True)
+        tool_model = module.tool.to_json(trans, tool_inputs, workflow_mode=True)
         module.state.inputs = copy.deepcopy(tool_model['state_inputs'])
         return {
             'tool_model'        : tool_model,
@@ -570,33 +569,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         )
 
     def __get_stored_accessible_workflow( self, trans, workflow_id ):
-        stored_workflow = self.__get_stored_workflow( trans, workflow_id )
-
-        # check to see if user has permissions to selected workflow
-        if stored_workflow.user != trans.user and not trans.user_is_admin():
-            if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
-                message = "Workflow is not owned by or shared with current user"
-                raise exceptions.ItemAccessibilityException( message )
-
-        return stored_workflow
+        return self.workflow_manager.get_stored_accessible_workflow( trans, workflow_id )
 
     def __get_stored_workflow( self, trans, workflow_id ):
-        if util.is_uuid(workflow_id):
-            # see if they have passed in the UUID for a workflow that is attached to a stored workflow
-            workflow_uuid = uuid.UUID(workflow_id)
-            stored_workflow = trans.sa_session.query(trans.app.model.StoredWorkflow).filter( and_(
-                trans.app.model.StoredWorkflow.latest_workflow_id == trans.app.model.Workflow.id,
-                trans.app.model.Workflow.uuid == workflow_uuid
-            )).first()
-            if stored_workflow is None:
-                raise exceptions.ObjectNotFound( "Workflow not found: %s" % workflow_id )
-        else:
-            workflow_id = self.decode_id( workflow_id )
-            query = trans.sa_session.query( trans.app.model.StoredWorkflow )
-            stored_workflow = query.get( workflow_id )
-        if stored_workflow is None:
-            raise exceptions.ObjectNotFound( "No such workflow found." )
-        return stored_workflow
+        return self.workflow_manager.get_stored_workflow( trans, workflow_id )
 
     def __encode_invocation( self, trans, invocation, view="element", step_details=False ):
         return self.encode_all_ids(

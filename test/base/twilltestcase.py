@@ -2445,7 +2445,8 @@ class TwillTestCase( unittest.TestCase ):
         walltime_exceeded = kwd.get("maxseconds", None)
         if walltime_exceeded is None:
             walltime_exceeded = DEFAULT_TOOL_TEST_WAIT
-        log.info("walltime_exceeded is %s" % walltime_exceeded)
+
+        exceeded = True
         while slept <= walltime_exceeded:
             result = func()
             if result:
@@ -2453,8 +2454,13 @@ class TwillTestCase( unittest.TestCase ):
                 slept += sleep_amount
                 sleep_amount *= 2
             else:
+                exceeded = False
                 break
-        assert slept < walltime_exceeded, 'Tool run exceeded reasonable walltime of 24 hours, terminating.'
+
+        if exceeded:
+            message = 'Tool test run exceeded walltime [total %s, max %s], terminating.' % (slept, walltime_exceeded)
+            log.info(message)
+            raise AssertionError(message)
 
     def write_temp_file( self, content, suffix='.html' ):
         fd, fname = tempfile.mkstemp( suffix=suffix, prefix='twilltestcase-' )

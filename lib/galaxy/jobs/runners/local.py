@@ -52,7 +52,7 @@ class LocalJobRunner( BaseJobRunner ):
 
         # slots would be cleaner name, but don't want deployers to see examples and think it
         # is going to work with other job runners.
-        slots = job_wrapper.job_destination.params.get( "local_slots", None )
+        slots = job_wrapper.job_destination.params.get( "local_slots", None ) or os.environ.get("GALAXY_SLOTS", None)
         if slots:
             slots_statement = 'GALAXY_SLOTS="%d"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;' % ( int( slots ) )
         else:

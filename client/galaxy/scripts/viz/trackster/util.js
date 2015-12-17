@@ -1,6 +1,18 @@
 define(function(){
 
 /**
+ * Stringifies a number adding commas for digit grouping as per North America.
+ */
+function commatize( number ) {
+    number += ''; // Convert to string
+    var rgx = /(\d+)(\d{3})/;
+    while (rgx.test(number)) {
+        number = number.replace(rgx, '$1' + ',' + '$2');
+    }
+    return number;
+}
+
+/**
  * Helper to determine if object is jQuery deferred.
  */
 var is_deferred = function ( d ) {
@@ -17,7 +29,7 @@ var ServerStateDeferred = Backbone.Model.extend({
         interval: 1000,
         success_fn: function(result) { return true; }
     },
-    
+
     /**
      * Returns a deferred that resolves when success function returns true.
      */
@@ -52,32 +64,32 @@ var ServerStateDeferred = Backbone.Model.extend({
 var get_random_color = function(colors) {
     // Default for colors is white.
     if (!colors) { colors = "#ffffff"; }
-    
+
     // If needed, create list of colors.
     if ( typeof(colors) === "string" ) {
         colors = [ colors ];
     }
-    
+
     // Convert colors to numbers.
     for (var i = 0; i < colors.length; i++) {
         colors[i] = parseInt( colors[i].slice(1), 16 );
     }
-    
-    // -- Perceived brightness and difference formulas are from 
+
+    // -- Perceived brightness and difference formulas are from
     // -- http://www.w3.org/WAI/ER/WD-AERT/#color-contrast
-    
+
     // Compute perceived color brightness (based on RGB-YIQ transformation):
     var brightness = function(r, g, b) {
         return ( (r * 299) + (g * 587) + (b * 114) ) / 1000;
     };
-    
+
     // Compute color difference:
     var difference = function(r1, g1, b1, r2, g2, b2) {
-        return ( Math.max(r1, r2) - Math.min(r1, r2) ) + 
-               ( Math.max(g1, g2) - Math.min(g1, g2) ) + 
+        return ( Math.max(r1, r2) - Math.min(r1, r2) ) +
+               ( Math.max(g1, g2) - Math.min(g1, g2) ) +
                ( Math.max(b1, b2) - Math.min(b1, b2) );
     };
-    
+
     // Create new random color.
     var new_color, nr, ng, nb,
         other_color, or, og, ob,
@@ -99,23 +111,24 @@ var get_random_color = function(colors) {
             ob = other_color & 0x0000ff;
             o_brightness = brightness(or, og, ob);
             diff = difference(nr, ng, nb, or, og, ob);
-            // These thresholds may need to be adjusted. Brightness difference range is 125; 
+            // These thresholds may need to be adjusted. Brightness difference range is 125;
             // color difference range is 500.
             if ( ( Math.abs(n_brightness - o_brightness) < 40 ) ||
                  ( diff < 200 ) ) {
                 ok = false;
-                break;         
+                break;
             }
         }
-        
+
         num_tries++
 ;    } while (!ok && num_tries <= 10 );
-    
+
     // Add 0x1000000 to left pad number with 0s.
     return '#' + ( 0x1000000 + new_color ).toString(16).substr(1,6);
 };
 
 return {
+    commatize: commatize,
     is_deferred: is_deferred,
     ServerStateDeferred : ServerStateDeferred,
     get_random_color    : get_random_color

@@ -7,7 +7,6 @@ import glob
 import json
 import logging
 import os
-import re
 import threading
 import urllib
 from datetime import datetime
@@ -30,7 +29,8 @@ from galaxy.tools.parameters import params_to_incoming, check_param, params_from
 from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
                                            DataToolParameter, DataCollectionToolParameter, HiddenToolParameter,
-                                           SelectToolParameter, ToolParameter, UnvalidatedValue)
+                                           SelectToolParameter, ToolParameter, UnvalidatedValue,
+                                           contains_workflow_parameter)
 from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, Section, UploadDataset
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.validation import LateValidationError
@@ -39,6 +39,7 @@ from galaxy.tools.parser import get_tool_source
 from galaxy.tools.parser.xml import XmlPageSource
 from galaxy.tools.toolbox import AbstractToolBox
 from galaxy.util import rst_to_html, string_as_bool
+from galaxy.util import ExecutionTimer
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
@@ -46,15 +47,16 @@ from galaxy.util.hash_util import hmac_new
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
-from galaxy.model.item_attrs import Dictifiable
+from galaxy.util.dictifiable import Dictifiable
+from tool_shed.util import common_util
 from tool_shed.util import shed_util_common as suc
+
 from .loader import template_macro_params, raw_tool_xml_tree, imported_macro_paths
 from .execute import execute as execute_job
 import galaxy.jobs
 
 log = logging.getLogger( __name__ )
 
-WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile( '''\$\{.+?\}''' )
 
 JOB_RESOURCE_CONDITIONAL_XML = """<conditional name="__job_resource">
     <param name="__job_resource__select" type="select" label="Job Resource Parameters">
@@ -258,6 +260,7 @@ class ToolOutput( ToolOutputBase ):
         # Initialize default values
         self.change_format = []
         self.implicit = implicit
+        self.from_work_dir = None
 
     # Tuple emulation
 
@@ -386,10 +389,10 @@ class ToolOutputCollection( ToolOutputBase ):
         return self.structure.dynamic
 
     @property
-    def dataset_collectors(self):
+    def dataset_collector_descriptions(self):
         if not self.dynamic_structure:
-            raise Exception("dataset_collectors called for output collection with static structure")
-        return self.structure.dataset_collectors
+            raise Exception("dataset_collector_descriptions called for output collection with static structure")
+        return self.structure.dataset_collector_descriptions
 
 
 class ToolOutputCollectionStructure( object ):
@@ -397,17 +400,21 @@ class ToolOutputCollectionStructure( object ):
     def __init__(
         self,
         collection_type,
+        collection_type_source,
         structured_like,
-        dataset_collectors,
+        dataset_collector_descriptions,
     ):
         self.collection_type = collection_type
+        self.collection_type_source = collection_type_source
         self.structured_like = structured_like
-        self.dataset_collectors = dataset_collectors
-        if collection_type is None and structured_like is None and dataset_collectors is None:
+        self.dataset_collector_descriptions = dataset_collector_descriptions
+        if collection_type and collection_type_source:
+            raise ValueError("Cannot set both type and type_source on collection output.")
+        if collection_type is None and structured_like is None and dataset_collector_descriptions is None and collection_type_source is None:
             raise ValueError( "Output collection types must be specify type of structured_like" )
-        if dataset_collectors and structured_like:
+        if dataset_collector_descriptions and structured_like:
             raise ValueError( "Cannot specify dynamic structure (discovered_datasets) and structured_like attribute." )
-        self.dynamic = dataset_collectors is not None
+        self.dynamic = dataset_collector_descriptions is not None
 
 
 class ToolOutputCollectionPart( object ):
@@ -648,16 +655,8 @@ class Tool( object, Dictifiable ):
         else:
             self.input_translator = None
 
-        # Command line (template). Optional for tools that do not invoke a local program
-        command = tool_source.parse_command()
-        if command is not None:
-            self.command = command.lstrip()  # get rid of leading whitespace
-            # Must pre-pend this AFTER processing the cheetah command template
-            self.interpreter = tool_source.parse_interpreter()
-        else:
-            self.command = ''
-            self.interpreter = None
-        self.environment_variables = tool_source.parse_environment_variables()
+        self.parse_command( tool_source )
+        self.environment_variables = self.parse_environment_variables( tool_source )
 
         # Parameters used to build URL for redirection to external app
         redirect_url_params = tool_source.parse_redirect_url_params_elem()
@@ -831,6 +830,22 @@ class Tool( object, Dictifiable ):
                 self.__tests = None
             self.__tests_populated = True
         return self.__tests
+
+    def parse_command( self, tool_source ):
+        """
+        """
+        # Command line (template). Optional for tools that do not invoke a local program
+        command = tool_source.parse_command()
+        if command is not None:
+            self.command = command.lstrip()  # get rid of leading whitespace
+            # Must pre-pend this AFTER processing the cheetah command template
+            self.interpreter = tool_source.parse_interpreter()
+        else:
+            self.command = ''
+            self.interpreter = None
+
+    def parse_environment_variables( self, tool_source ):
+        return tool_source.parse_environment_variables()
 
     def parse_inputs( self, tool_source ):
         """
@@ -1288,8 +1303,10 @@ class Tool( object, Dictifiable ):
         if rerun_remap_job_id and len( expanded_incomings ) > 1:
             raise exceptions.MessageException( 'Failure executing tool (cannot create multiple jobs when remapping existing job).' )
 
+        validation_timer = ExecutionTimer()
         all_errors = []
         all_params = []
+        validate_input = self.get_hook( 'validate_input' )
         for expanded_incoming in expanded_incomings:
             expanded_state = self.new_state( trans, history=history )
             # Process incoming data
@@ -1304,13 +1321,12 @@ class Tool( object, Dictifiable ):
                 # values from `incoming`.
                 errors = self.populate_state( trans, self.inputs, expanded_state.inputs, expanded_incoming, history, source=source )
                 # If the tool provides a `validate_input` hook, call it.
-                validate_input = self.get_hook( 'validate_input' )
                 if validate_input:
                     validate_input( trans, errors, expanded_state.inputs, self.inputs )
                 params = expanded_state.inputs
             all_errors.append( errors )
             all_params.append( params )
-
+        log.debug("Validated and populated state for tool request %s" % validation_timer)
         # If there were errors, we stay on the same page and display
         # error messages
         if any( all_errors ):
@@ -1327,14 +1343,14 @@ class Tool( object, Dictifiable ):
             else:
                 raise exceptions.MessageException( execution_tracker.execution_errors[ 0 ] )
 
-    def handle_single_execution( self, trans, rerun_remap_job_id, params, history, mapping_over_collection ):
+    def handle_single_execution( self, trans, rerun_remap_job_id, params, history, mapping_over_collection, execution_cache=None ):
         """
         Return a pair with whether execution is successful as well as either
         resulting output data or an error message indicating the problem.
         """
         try:
             params = self.__remove_meta_properties( params )
-            job, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id, mapping_over_collection=mapping_over_collection )
+            job, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id, mapping_over_collection=mapping_over_collection, execution_cache=execution_cache )
         except httpexceptions.HTTPFound, e:
             # if it's a paste redirect exception, pass it up the stack
             raise e
@@ -1813,7 +1829,7 @@ class Tool( object, Dictifiable ):
                 if isinstance( input, Conditional ):
                     cond_messages = {}
                     if not input.is_job_resource_conditional:
-                        cond_messages = { input.test_param.name: "No value found for '%s%s', used default" % ( prefix, input.label ) }
+                        cond_messages = { input.test_param.name: "No value found for '%s%s', using default" % ( prefix, input.label ) }
                         messages[ input.name ] = cond_messages
                     test_value = input.test_param.get_initial_value( trans, context )
                     current_case = input.get_current_case( test_value, trans )
@@ -1826,8 +1842,10 @@ class Tool( object, Dictifiable ):
                             rep_dict = dict()
                             messages[ input.name ].append( rep_dict )
                             self.check_and_update_param_values_helper( input.inputs, {}, trans, rep_dict, context, rep_prefix, allow_workflow_parameters=allow_workflow_parameters )
+                elif isinstance( input, Section ):
+                    self.check_and_update_param_values_helper( input.inputs, {}, trans, messages[ input.name ], context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 else:
-                    messages[ input.name ] = "No value found for '%s%s', used default" % ( prefix, input.label )
+                    messages[ input.name ] = "No value found for '%s%s', using default" % ( prefix, input.label )
                 values[ input.name ] = input.get_initial_value( trans, context )
             # Value, visit recursively as usual
             else:
@@ -1846,25 +1864,34 @@ class Tool( object, Dictifiable ):
                     if input.test_param.name not in group_values or use_initial_value:
                         # No test param invalidates the whole conditional
                         values[ input.name ] = group_values = input.get_initial_value( trans, context )
-                        messages[ input.test_param.name ] = "No value found for '%s%s', used default" % ( prefix, input.test_param.label )
+                        messages[ input.test_param.name ] = "No value found for '%s%s', using default" % ( prefix, input.test_param.label )
                         current_case = group_values['__current_case__']
                         for child_input in input.cases[current_case].inputs.itervalues():
-                            messages[ child_input.name ] = "Value no longer valid for '%s%s', replaced with default" % ( prefix, child_input.label )
+                            messages[ child_input.name ] = "Value no longer valid for '%s%s', replacing with default" % ( prefix, child_input.label )
                     else:
                         current = group_values["__current_case__"]
                         self.check_and_update_param_values_helper( input.cases[current].inputs, group_values, trans, messages, context, prefix, allow_workflow_parameters=allow_workflow_parameters )
+                elif isinstance( input, Section ):
+                    self.check_and_update_param_values_helper( input.inputs, values[ input.name ], trans, messages, context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 else:
                     # Regular tool parameter, no recursion needed
                     try:
-                        ck_param = True
-                        if allow_workflow_parameters and isinstance( values[ input.name ], basestring ):
-                            if WORKFLOW_PARAMETER_REGULAR_EXPRESSION.search( values[ input.name ] ):
+                        value = values[ input.name ]
+                        if not allow_workflow_parameters:
+                            input.value_from_basic( input.value_to_basic( value, trans.app ), trans.app, ignore_errors=False )
+                            input.validate( value, history=trans.history )
+                        else:
+                            # skip check if is workflow parameters
+                            ck_param = True
+                            search = input.type in ["text"]
+                            if allow_workflow_parameters and contains_workflow_parameter( values[ input.name ], search=search ):
                                 ck_param = False
-                        # this will fail when a parameter's type has changed to a non-compatible one: e.g. conditional group changed to dataset input
-                        if ck_param:
-                            input.value_from_basic( input.value_to_basic( values[ input.name ], trans.app ), trans.app, ignore_errors=False )
+                            # this will fail when a parameter's type has changed to a non-compatible one: e.g. conditional group changed to dataset input
+                            if ck_param:
+                                input.value_from_basic( input.value_to_basic( value, trans.app ), trans.app, ignore_errors=False )
                     except:
-                        messages[ input.name ] = "Value no longer valid for '%s%s', replaced with default" % ( prefix, input.label )
+                        log.info("Parameter validation failed.", exc_info=True)
+                        messages[ input.name ] = "Value no longer valid for '%s%s', replacing with default" % ( prefix, input.label )
                         if update_values:
                             values[ input.name ] = input.get_initial_value( trans, context )
 
@@ -2140,7 +2167,7 @@ class Tool( object, Dictifiable ):
 
         return tool_dict
 
-    def to_json(self, trans, kwd={}, job=None, is_workflow=False):
+    def to_json(self, trans, kwd={}, job=None, workflow_mode=False):
         """
         Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
         """
@@ -2155,6 +2182,9 @@ class Tool( object, Dictifiable ):
                 raise exceptions.MessageException( 'History unavailable. Please specify a valid history id' )
         except Exception, e:
             raise exceptions.MessageException( '[history_id=%s] Failed to retrieve history. %s.' % ( history_id, str( e ) ) )
+
+        # set workflow mode ( TODO: Should be revised/parsed without trans to tool parameters (basic.py) )
+        trans.workflow_building_mode = workflow_mode
 
         # load job parameters into incoming
         tool_message = ''
@@ -2240,16 +2270,14 @@ class Tool( object, Dictifiable ):
         def check_state(trans, input, value, context):
             error = 'State validation failed.'
 
-            # do not check unvalidated values
-            if isinstance(value, galaxy.tools.parameters.basic.RuntimeValue):
+            # handle unvalidated values
+            if isinstance(value, galaxy.tools.parameters.basic.DummyDataset):
+                return [ None, None ]
+            elif isinstance(value, galaxy.tools.parameters.basic.RuntimeValue):
                 return [ { '__class__' : 'RuntimeValue' }, None ]
             elif isinstance( value, dict ):
                 if value.get('__class__') == 'RuntimeValue':
                     return [ value, None ]
-
-            # skip dynamic fields if deactivated
-            if is_workflow and input.is_dynamic:
-                return [value, None]
 
             # validate value content
             try:
@@ -2257,7 +2285,7 @@ class Tool( object, Dictifiable ):
                 if input.type == 'boolean' and isinstance(value, basestring):
                     value, error = [string_as_bool(value), None]
                 else:
-                    value, error = check_param(trans, input, value, context, history=history)
+                    value, error = check_param(trans, input, value, context, history=history, workflow_building_mode=workflow_mode)
             except Exception, err:
                 log.error('Checking parameter %s failed. %s', input.name, str(err))
                 pass
@@ -2330,6 +2358,7 @@ class Tool( object, Dictifiable ):
                         test_param = tool_dict['test_param']
                         test_param['default_value'] = jsonify(input.test_param.get_initial_value(trans, other_values, history=history))
                         test_param['value'] = jsonify(group_state.get(test_param['name'], test_param['default_value']))
+                        test_param['text_value'] = input.test_param.value_to_display_text(test_param['value'], trans.app)
                         for i in range(len( tool_dict['cases'] ) ):
                             current_state = {}
                             if i == group_state.get('__current_case__', None):
@@ -2357,6 +2386,9 @@ class Tool( object, Dictifiable ):
 
                     # update input value from tool state
                     tool_dict['value'] = state_inputs.get(input.name, tool_dict['default_value'])
+
+                    # add text value
+                    tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ], trans.app )
 
                     # sanitize values
                     sanitize(tool_dict, 'value')
@@ -2550,18 +2582,21 @@ class Tool( object, Dictifiable ):
                         # for some reason jobs don't always keep track of the tool version.
                         message = ''
                     else:
-                        message = 'This job was initially run with tool version "%s", which is currently not available.  ' % tool_version
+                        message = 'This job was run with tool version "%s", which is not available.  ' % tool_version
                         if len( tools ) > 1:
-                            message += 'You can re-run the job with the selected tool or choose another derivation of the tool.'
+                            message += 'You can re-run the job with the selected tool or choose another version of the tool.'
                         else:
-                            message += 'You can re-run the job with this tool version, which is a derivation of the original tool.'
+                            message += 'You can re-run the job with this tool version, which is a different version of the original tool.'
                 else:
+                    new_tool_shed_url = tool.tool_shed_repository.get_sharable_url( tool.app ) + '/%s/' % tool.tool_shed_repository.changeset_revision
+                    old_tool_shed = tool_id.split( "/repos/" )[0]
+                    old_tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, old_tool_shed )
+                    old_tool_shed_url = old_tool_shed_url + "/view/%s/%s/" % (tool.repository_owner, tool.repository_name)
+                    message = 'This job was run with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, version "%s", which is not available.  ' % (old_tool_shed_url, tool_id, tool_version)
                     if len( tools ) > 1:
-                        message = 'This job was initially run with tool version "%s", which is currently not available.  ' % tool_version
-                        message += 'You can re-run the job with the selected tool or choose another derivation of the tool.'
+                        message += 'You can re-run the job with the selected <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a> or choose another derivation of the tool.' % (new_tool_shed_url, self.id)
                     else:
-                        message = 'This job was initially run with tool id "%s", version "%s", which is ' % ( tool_id, tool_version )
-                        message += 'currently not available.  You can re-run the job with this tool, which is a derivation of the original tool.'
+                        message += 'You can re-run the job with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, which is a derivation of the original tool.' % (new_tool_shed_url, self.id)
         except Exception, e:
             raise exceptions.MessageException( str( e ) )
         return message

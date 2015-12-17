@@ -1,5 +1,5 @@
 define([
-    "galaxy.masthead",
+    "layout/masthead",
     "utils/utils",
     "libs/toastr",
     "mvc/library/library-model",
@@ -66,7 +66,7 @@ var FolderRowView = Backbone.View.extend({
     var dataset_id = $(event.target).closest('tr')[0].id;
     var dataset = Galaxy.libraries.folderListView.collection.get(dataset_id);
     dataset.url = dataset.urlRoot + dataset.id + '?undelete=true';
-    dataset.destroy({ 
+    dataset.destroy({
         success : function(model, response){
           Galaxy.libraries.folderListView.collection.remove(dataset_id);
           var updated_dataset = new mod_library_model.Item(response);
@@ -76,7 +76,7 @@ var FolderRowView = Backbone.View.extend({
             var folder_id = that.model.get('folder_id');
             window.location='#folders/' + folder_id + '/datasets/' + that.id;
           }});
-        }, 
+        },
         error : function(model, response){
           if (typeof response.responseJSON !== "undefined"){
             mod_toastr.error('Dataset was not undeleted. ' + response.responseJSON.err_msg);
@@ -103,7 +103,7 @@ var FolderRowView = Backbone.View.extend({
           Galaxy.libraries.folderListView.collection.add(updated_folder);
           Galaxy.libraries.folderListView.collection.sortByNameAsc();
           mod_toastr.success('Folder undeleted.');
-        }, 
+        },
         error : function(model, response){
           if (typeof response.responseJSON !== "undefined"){
             mod_toastr.error('Folder was not undeleted. ' + response.responseJSON.err_msg);
@@ -157,7 +157,7 @@ var FolderRowView = Backbone.View.extend({
     tmpl_array.push('</tr>');
 
     return _.template(tmpl_array.join(''));
-  },  
+  },
 
   templateRowDeletedFile: function(){
     tmpl_array = [];
@@ -180,7 +180,7 @@ var FolderRowView = Backbone.View.extend({
   templateRowDeletedFolder: function(){
     tmpl_array = [];
 
-    tmpl_array.push('<tr class="active folder_row light library-row" id="<%- content_item.id %>">');
+    tmpl_array.push('<tr class="active deleted_folder light library-row" id="<%- content_item.id %>">');
     tmpl_array.push('  <td>');
     tmpl_array.push('    <span title="Folder" class="fa fa-folder-o"></span>');
     tmpl_array.push('  </td>');
@@ -196,7 +196,7 @@ var FolderRowView = Backbone.View.extend({
 
     return _.template(tmpl_array.join(''));
   }
-   
+
 });
 
 return {

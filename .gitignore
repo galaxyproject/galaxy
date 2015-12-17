@@ -43,6 +43,7 @@ reports_webapp.pid
 # Config files
 universe_wsgi.ini
 reports_wsgi.ini
+reports.ini
 tool_shed_wsgi.ini
 
 # Config files.
@@ -111,7 +112,8 @@ tool-data/shared/jars/
 # CSS build artifacts.
 sprite-*.less
 
-# Local node_modules and bower_components directories
+# JS, Local node_modules, and bower_components directories
+static/scripts/bundled
 node_modules
 bower_components
 

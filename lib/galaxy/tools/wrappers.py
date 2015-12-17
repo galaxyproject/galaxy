@@ -277,6 +277,20 @@ class DatasetListWrapper( list, ToolParameterValueWrapper, HasDatasets ):
 
         list.__init__( self, map( to_wrapper, datasets ) )
 
+    @staticmethod
+    def to_dataset_instances( dataset_instance_sources ):
+        dataset_instances = []
+        if not isinstance( dataset_instance_sources, list ):
+            dataset_instance_sources = [ dataset_instance_sources ]
+        for dataset_instance_source in dataset_instance_sources:
+            if dataset_instance_source is None:
+                dataset_instances.append( dataset_instance_source )
+            elif dataset_instance_source.history_content_type == "dataset":
+                dataset_instances.append( dataset_instance_source )
+            else:
+                dataset_instances.extend( dataset_instance_source.collection.dataset_elements )
+        return dataset_instances
+
     def __str__( self ):
         return ','.join( map( str, self ) )
 

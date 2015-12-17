@@ -446,27 +446,31 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         if session_cookie == 'galaxysession' and self.galaxy_session.user is None:
             # TODO: re-engineer to eliminate the use of allowed_paths
             # as maintenance overhead is far too high.
-            allowed_paths = (
-                url_for( controller='root', action='index' ),
-                url_for( controller='root', action='tool_menu' ),
-                url_for( controller='root', action='masthead' ),
-                url_for( controller='root', action='history' ),
-                url_for( controller='user', action='api_keys' ),
-                url_for( controller='user', action='create' ),
-                url_for( controller='user', action='index' ),
+            allowed_paths = [
+                # client app route
+                # TODO: might be better as '/:username/login', '/:username/logout'
+                url_for( controller='root', action='login' ),
+                # mako app routes
                 url_for( controller='user', action='login' ),
                 url_for( controller='user', action='logout' ),
-                url_for( controller='user', action='manage_user_info' ),
-                url_for( controller='user', action='set_default_permissions' ),
                 url_for( controller='user', action='reset_password' ),
                 url_for( controller='user', action='change_password' ),
+                # required to log in w/ openid
                 url_for( controller='user', action='openid_auth' ),
                 url_for( controller='user', action='openid_process' ),
                 url_for( controller='user', action='openid_associate' ),
-                url_for( controller='library', action='browse' ),
-                url_for( controller='history', action='list' ),
-                url_for( controller='dataset', action='list' )
-            )
+                # TODO: do any of these still need to bypass require login?
+                url_for( controller='user', action='api_keys' ),
+                url_for( controller='user', action='create' ),
+                url_for( controller='user', action='index' ),
+                url_for( controller='user', action='manage_user_info' ),
+                url_for( controller='user', action='set_default_permissions' ),
+            ]
+            # append the welcome url to allowed paths if we'll show it at the login screen
+            if self.app.config.show_welcome_with_login:
+                allowed_paths.append( url_for( controller='root', action='welcome' ) )
+
+            # prevent redirect when UCSC server attempts to get dataset contents as 'anon' user
             display_as = url_for( controller='root', action='display_as' )
             if self.app.datatypes_registry.get_display_sites('ucsc') and self.request.path == display_as:
                 try:
@@ -475,6 +479,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
                     host = None
                 if host in UCSC_SERVERS:
                     return
+            # prevent redirect for external, enabled display applications getting dataset contents
             external_display_path = url_for( controller='', action='display_application' )
             if self.request.path.startswith( external_display_path ):
                 request_path_split = self.request.path.split( '/' )
@@ -485,8 +490,10 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
                         return
                 except IndexError:
                     pass
+            # redirect to root if the path is not in the list above
             if self.request.path not in allowed_paths:
-                self.response.send_redirect( url_for( controller='root', action='index' ) )
+                login_url = url_for( controller='root', action='login', redirect=self.request.path )
+                self.response.send_redirect( login_url )
 
     def __create_new_session( self, prev_galaxy_session=None, user_for_new_session=None ):
         """

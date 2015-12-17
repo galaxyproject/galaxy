@@ -16,7 +16,7 @@ migrate_repository_directory = os.path.abspath(os.path.dirname( __file__ )).repl
 migrate_repository = repository.Repository( migrate_repository_directory )
 
 
-def verify_tools( app, url, galaxy_config_file, engine_options={} ):
+def verify_tools( app, url, galaxy_config_file=None, engine_options={} ):
     # Check the value in the migrate_tools.version database table column to verify that the number is in
     # sync with the number of version scripts in ~/lib/galaxy/tools/migrate/versions.
     # Create engine and metadata
@@ -52,12 +52,12 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
             if v:
                 have_tool_dependencies = True
                 break
-        config_arg = ''
-        if os.path.abspath( os.path.join( os.getcwd(), 'galaxy.ini' ) ) != galaxy_config_file:
-            config_arg = ' -c %s' % galaxy_config_file.replace( os.path.abspath( os.getcwd() ), '.' )
         if not app.config.running_functional_tests:
             if tool_shed_accessible:
                 # Automatically update the value of the migrate_tools.version database table column.
+                config_arg = ''
+                if galaxy_config_file:
+                    config_arg = " -c %s" % galaxy_config_file
                 cmd = 'sh manage_tools.sh%s upgrade' % config_arg
                 proc = subprocess.Popen( args=cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT )
                 return_code = proc.wait()

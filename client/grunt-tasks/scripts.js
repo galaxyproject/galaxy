@@ -45,7 +45,9 @@ module.exports = function( grunt ){
             files: [{
                 expand : true,
                 cwd : paths.srcSymlink,
-                src : '**/*.js',
+                // NOTE: do not use uglify in the apps dir (webpack will do that section)
+                src : [ '**/*.js', '!apps/**/*.js' ],
+                // src : '**/*.js',
                 dest : paths.dist
             }],
         }
@@ -81,7 +83,8 @@ module.exports = function( grunt ){
     grunt.config( 'watch', {
         watch: {
             // watch for changes in the src dir
-            files: [ paths.srcSymlink + '/**' ],
+            // NOTE: but not in the apps dir (which is only used by webpack)
+            files: [ paths.srcSymlink + '/**', '!' + paths.srcSymlink + '/apps/**' ],
             tasks: [ 'uglify' ],
             options: {
                 spawn: false

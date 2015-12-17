@@ -204,9 +204,7 @@ class RepairRepositoryManager():
                         tool_dependency = \
                             tool_dependency_util.set_tool_dependency_attributes( self.app,
                                                                                  tool_dependency=tool_dependency,
-                                                                                 status=self.app.install_model.ToolDependency.installation_status.UNINSTALLED,
-                                                                                 error_message=None,
-                                                                                 remove_from_disk=True )
+                                                                                 status=self.app.install_model.ToolDependency.installation_status.UNINSTALLED )
                 # Install tool dependencies.
                 irm.update_tool_shed_repository_status( repository,
                                                         self.app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )

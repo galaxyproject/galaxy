@@ -1712,8 +1712,19 @@ div.toolTitleNoSection
     .sprite(@chevron-expand-bw);
 }
 
-// honeypot for registration form
+// noscript overlay - displayed when javascript is disabled
+.noscript-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: white;
+    z-index: 10000;
+    & > div {
+        margin: 64px 0px 0px 64px;
+    }
+}
 
+// honeypot for registration form
 #for_bears {
     display: none;
 }

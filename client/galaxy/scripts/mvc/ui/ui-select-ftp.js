@@ -26,7 +26,7 @@ var View = Backbone.View.extend({
 
         // initial fetch of ftps
         Utils.get({
-            url     : galaxy_config.root + 'api/remote_files',
+            url     : Galaxy.root + 'api/remote_files',
             success : function(response) {
                 var data = [];
                 for (var i in response) {

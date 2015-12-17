@@ -3,7 +3,8 @@ bx-python==0.7.3
 MarkupSafe==0.23
 PyYAML==3.11
 SQLAlchemy==1.0.8
-mercurial==3.5
+# Mercurial >= 3.5 changed the bundle format, which breaks hg push of TS repositories
+mercurial==3.4.2
 numpy==1.9.2
 pycrypto==2.6.1
 python_lzo==1.8
@@ -12,7 +13,7 @@ python_lzo==1.8
 pysam==0.8.3+gx1
 
 # pure Python packages
-Paste==1.7.5.1
+Paste==2.0.2
 PasteDeploy==1.5.2
 docutils==0.12
 wchartype==0.1
@@ -36,8 +37,8 @@ requests==2.8.1
 requests-toolbelt==0.4.0
 
 # kombu and dependencies
-kombu==3.0.26
-amqp==1.4.6
+kombu==3.0.30
+amqp==1.4.8
 anyjson==0.3.3
 
 # sqlalchemy-migrate and dependencies

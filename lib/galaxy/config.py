@@ -215,6 +215,8 @@ class Configuration( object ):
         self.use_tasked_jobs = string_as_bool( kwargs.get( 'use_tasked_jobs', False ) )
         self.local_task_queue_workers = int(kwargs.get("local_task_queue_workers", 2))
         self.commands_in_new_shell = string_as_bool( kwargs.get( 'enable_beta_tool_command_isolation', "False" ) )
+        self.tool_submission_burst_threads = int( kwargs.get( 'tool_submission_burst_threads', '1' ) )
+        self.tool_submission_burst_at = int( kwargs.get( 'tool_submission_burst_at', '10' ) )
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool( kwargs.get( 'enable_beta_job_managers', 'False' ) )
         # These workflow modules should not be considered part of Galaxy's
@@ -259,6 +261,7 @@ class Configuration( object ):
         self.enable_old_display_applications = string_as_bool( kwargs.get( "enable_old_display_applications", "True" ) )
         self.brand = kwargs.get( 'brand', None )
         self.welcome_url = kwargs.get( 'welcome_url', '/static/welcome.html' )
+        self.show_welcome_with_login = string_as_bool( kwargs.get( "show_welcome_with_login", "False" ) )
         # Configuration for the message box directly below the masthead.
         self.message_box_visible = kwargs.get( 'message_box_visible', False )
         self.message_box_content = kwargs.get( 'message_box_content', None )

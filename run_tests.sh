@@ -68,7 +68,7 @@ ensure_grunt() {
 }
 
 
-DOCKER_DEFAULT_IMAGE='galaxy/testing-base:15.10.2'
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:15.10.3'
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
@@ -310,6 +310,10 @@ do
 done
 
 if [ -z "$skip_common_startup" ]; then
+    if [ -n "$GALAXY_TEST_DBURI" ]; then
+            GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION=$GALAXY_TEST_DBURI
+            export GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION
+    fi
     ./scripts/common_startup.sh $skip_venv --dev-wheels || exit 1
 fi
 

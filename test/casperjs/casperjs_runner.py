@@ -432,11 +432,6 @@ class Test_05_API( CasperJSTestCase ):
         """
         self.run_js_script( 'api-anon-history-permission-tests.js' )
 
-    def test_05_workflow_api( self ):
-        """Test API for workflows.
-        """
-        self.run_js_script( 'api-workflow-tests.js' )
-
     def test_06_visualization_api( self ):
         """Test API for visualizations.
         """

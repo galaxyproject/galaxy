@@ -791,6 +791,10 @@ use_interactive = True
 # Force everyone to log in (disable anonymous access).
 #require_login = False
 
+# Show the site's welcome page (see welcome_url) alongside the login page
+# (even if require_login is True)
+#show_welcome_with_login = False
+
 # Allow unregistered users to create new accounts (otherwise, they will have to
 # be created by an admin).
 #allow_user_creation = True
@@ -822,6 +826,8 @@ use_interactive = True
 #expose_user_email = False
 
 # -- Beta features
+# Enable new run workflow form
+#run_workflow_toolform_upgrade = False
 
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
@@ -831,6 +837,15 @@ use_interactive = True
 # in a future release).
 #enable_beta_tool_command_isolation = False
 
+
+# Set the following to a number of threads greater than 1 to spawn
+# a Python task queue for dealing with large tool submissions (either
+# through the tool form or as part of an individual workflow step across
+# large collection). The size of a "large" tool request is controlled by 
+# the second parameter below and defaults to 10. This affects workflow 
+# scheduling and web processes, not job handlers.
+#tool_submission_burst_threads = 1
+#tool_submission_burst_at = 10
 
 # Enable beta workflow modules that should not yet be considered part of Galaxy's
 # stable API.
