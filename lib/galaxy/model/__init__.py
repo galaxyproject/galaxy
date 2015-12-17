@@ -3486,7 +3486,7 @@ class Workflow( object, Dictifiable ):
 
     dict_collection_visible_keys = ( 'name', 'has_cycles', 'has_errors' )
     dict_element_visible_keys = ( 'name', 'has_cycles', 'has_errors' )
-    input_step_types = ['data_input', 'data_collection_input']
+    input_step_types = ['data_input', 'data_collection_input', 'parameter_input']
 
     def __init__( self, uuid=None ):
         self.user = None
@@ -3539,6 +3539,28 @@ class Workflow( object, Dictifiable ):
             for workflow_output in step.workflow_outputs:
                 yield workflow_output
 
+    @property
+    def top_level_workflow( self ):
+        """ If this workflow is not attached to stored workflow directly,
+        recursively grab its parents until it is the top level workflow
+        which must have a stored workflow associated with it.
+        """
+        top_level_workflow = self
+        if self.stored_workflow is None:
+            # TODO: enforce this at creation...
+            assert len(self.parent_workflow_steps) == 1
+            return self.parent_workflow_steps[0].workflow.top_level_workflow
+        return top_level_workflow
+
+    @property
+    def top_level_stored_workflow( self ):
+        """ If this workflow is not attached to stored workflow directly,
+        recursively grab its parents until it is the top level workflow
+        which must have a stored workflow associated with it and then
+        grab that stored workflow.
+        """
+        return self.top_level_workflow.stored_workflow
+
     def log_str(self):
         extra = ""
         if self.stored_workflow:
@@ -3558,7 +3580,19 @@ class WorkflowStep( object ):
         self.input_connections = []
         self.config = None
         self.uuid = uuid4()
+        self.worklfow_outputs = []
         self._input_connections_by_name = None
+
+    @property
+    def content_id( self ):
+        content_id = None
+        if self.type == "tool":
+            content_id = self.tool_id
+        elif self.type == "subworkflow":
+            content_id = self.subworkflow.id
+        else:
+            content_id = None
+        return content_id
 
     @property
     def input_connections_by_name(self):
@@ -3577,6 +3611,24 @@ class WorkflowStep( object ):
                 input_connections_by_name[input_name] = []
             input_connections_by_name[input_name].append(conn)
         self._input_connections_by_name = input_connections_by_name
+
+    def create_or_update_workflow_output(self, output_name, label, uuid):
+        output = self.workflow_output_for(output_name)
+        if output is None:
+            output = WorkflowOutput(workflow_step=self, output_name=output_name)
+        if uuid is not None:
+            output.uuid = uuid
+        if label is not None:
+            output.label = label
+        return output
+
+    def workflow_output_for(self, output_name):
+        target_output = None
+        for workflow_output in self.workflow_outputs:
+            if workflow_output.output_name == output_name:
+                target_output = workflow_output
+                break
+        return target_output
 
     def log_str(self):
         return "WorkflowStep[index=%d,type=%s]" % (self.order_index, self.type)
@@ -3608,9 +3660,14 @@ class WorkflowStepConnection( object ):
 
 class WorkflowOutput(object):
 
-    def __init__( self, workflow_step, output_name):
+    def __init__( self, workflow_step, output_name=None, label=None, uuid=None):
         self.workflow_step = workflow_step
         self.output_name = output_name
+        self.label = label
+        if uuid is None:
+            self.uuid = uuid4()
+        else:
+            self.uuid = UUID(str(uuid))
 
 
 class StoredWorkflowUserShareAssociation( object ):
@@ -3638,6 +3695,40 @@ class WorkflowInvocation( object, Dictifiable ):
         CANCELLED='cancelled',
         FAILED='failed',
     )
+
+    def __init__(self):
+        self.subworkflow_invocations = []
+        self.step_states = []
+        self.steps = []
+
+    def create_subworkflow_invocation_for_step( self, step ):
+        assert step.type == "subworkflow"
+        subworkflow_invocation = WorkflowInvocation()
+        return self.attach_subworkflow_invocation_for_step( step, subworkflow_invocation )
+
+    def attach_subworkflow_invocation_for_step( self, step, subworkflow_invocation ):
+        assert step.type == "subworkflow"
+        assoc = WorkflowInvocationToSubworkflowInvocationAssociation()
+        assoc.workflow_invocation = self
+        assoc.workflow_step = step
+        subworkflow_invocation.history = self.history
+        subworkflow_invocation.workflow = step.subworkflow
+        assoc.subworkflow_invocation = subworkflow_invocation
+        self.subworkflow_invocations.append(assoc)
+        return assoc
+
+    def get_subworkflow_invocation_for_step( self, step ):
+        assoc = self.get_subworkflow_invocation_association_for_step(step)
+        return assoc.subworkflow_invocation
+
+    def get_subworkflow_invocation_association_for_step( self, step ):
+        assert step.type == "subworkflow"
+        assoc = None
+        for subworkflow_invocation in self.subworkflow_invocations:
+            if subworkflow_invocation.workflow_step == step:
+                assoc = subworkflow_invocation
+                break
+        return assoc
 
     @property
     def active( self ):
@@ -3737,16 +3828,22 @@ class WorkflowInvocation( object, Dictifiable ):
         self.update_time = galaxy.model.orm.now.now()
 
     def add_input( self, content, step_id ):
-        if content.history_content_type == "dataset":
+        history_content_type = getattr(content, "history_content_type", None)
+        if history_content_type == "dataset":
             request_to_content = WorkflowRequestToInputDatasetAssociation()
             request_to_content.dataset = content
             request_to_content.workflow_step_id = step_id
             self.input_datasets.append( request_to_content )
-        else:
+        elif history_content_type == "dataset_collection":
             request_to_content = WorkflowRequestToInputDatasetCollectionAssociation()
             request_to_content.dataset_collection = content
             request_to_content.workflow_step_id = step_id
             self.input_dataset_collections.append( request_to_content )
+        else:
+            request_to_content = WorkflowRequestInputStepParmeter()
+            request_to_content.parameter_value = content
+            request_to_content.workflow_step_id = step_id
+            self.input_step_parameters.append( request_to_content )
 
     def has_input_for_step( self, step_id ):
         for content in self.input_datasets:
@@ -3756,6 +3853,11 @@ class WorkflowInvocation( object, Dictifiable ):
             if content.workflow_step_id == step_id:
                 return True
         return False
+
+
+class WorkflowInvocationToSubworkflowInvocationAssociation( object, Dictifiable ):
+    dict_collection_visible_keys = ( 'id', 'workflow_step_id', 'workflow_invocation_id', 'subworkflow_invocation_id' )
+    dict_element_visible_keys = ( 'id', 'workflow_step_id', 'workflow_invocation_id', 'subworkflow_invocation_id' )
 
 
 class WorkflowInvocationStep( object, Dictifiable ):
@@ -3835,6 +3937,12 @@ class WorkflowRequestToInputDatasetCollectionAssociation(object, Dictifiable):
     """ Workflow step input dataset collection parameters.
     """
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name' ]
+
+
+class WorkflowRequestInputStepParmeter(object, Dictifiable):
+    """ Workflow step parameter inputs.
+    """
+    dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'parameter_value' ]
 
 
 class MetadataFile( StorableObject ):

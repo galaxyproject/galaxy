@@ -6,8 +6,10 @@ from basic import DataCollectionToolParameter, DataToolParameter, SelectToolPara
 from grouping import Conditional, Repeat, Section, UploadDataset
 from galaxy.util.json import dumps, json_fix, loads
 
+REPLACE_ON_TRUTHY = object()
 
-def visit_input_values( inputs, input_values, callback, name_prefix="", label_prefix="" ):
+
+def visit_input_values( inputs, input_values, callback, name_prefix="", label_prefix="", no_replacement_value=REPLACE_ON_TRUTHY ):
     """
     Given a tools parameter definition (`inputs`) and a specific set of
     parameter `values`, call `callback` for each non-grouping parameter,
@@ -26,24 +28,29 @@ def visit_input_values( inputs, input_values, callback, name_prefix="", label_pr
                 index = d['__index__']
                 new_name_prefix = name_prefix + "%s_%d|" % ( input.name, index )
                 new_label_prefix = label_prefix + "%s %d > " % ( input.title, i + 1 )
-                visit_input_values( input.inputs, d, callback, new_name_prefix, new_label_prefix )
+                visit_input_values( input.inputs, d, callback, new_name_prefix, new_label_prefix, no_replacement_value=no_replacement_value )
         elif isinstance( input, Conditional ):
             values = input_values[ input.name ]
             current = values["__current_case__"]
             label_prefix = label_prefix
             new_name_prefix = name_prefix + input.name + "|"
-            visit_input_values( input.cases[current].inputs, values, callback, new_name_prefix, label_prefix )
+            visit_input_values( input.cases[current].inputs, values, callback, new_name_prefix, label_prefix, no_replacement_value=no_replacement_value )
         elif isinstance( input, Section ):
             values = input_values[ input.name ]
             label_prefix = label_prefix
             new_name_prefix = name_prefix + input.name + "|"
-            visit_input_values( input.inputs, values, callback, new_name_prefix, label_prefix )
+            visit_input_values( input.inputs, values, callback, new_name_prefix, label_prefix, no_replacement_value=no_replacement_value )
         else:
             new_value = callback( input,
                                   input_values[input.name],
                                   prefixed_name=name_prefix + input.name,
                                   prefixed_label=label_prefix + input.label )
-            if new_value:
+
+            if no_replacement_value is REPLACE_ON_TRUTHY:
+                replace = bool(new_value)
+            else:
+                replace = new_value != no_replacement_value
+            if replace:
                 input_values[input.name] = new_value
 
 
