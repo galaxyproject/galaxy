@@ -12,7 +12,7 @@ from cgi import escape
 
 from galaxy import util
 from galaxy.datatypes import metadata
-from galaxy.datatypes.checkers import is_gzip
+from galaxy.util.checkers import is_gzip
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers
 from galaxy.datatypes.util.image_util import check_image_type

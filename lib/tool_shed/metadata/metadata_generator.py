@@ -6,7 +6,7 @@ import tempfile
 from sqlalchemy import and_
 
 from galaxy import util
-from galaxy.datatypes import checkers
+from galaxy.util import checkers
 from galaxy.tools.data_manager.manager import DataManager
 from galaxy.tools.parser.interface import TestCollectionDef
 from galaxy.web import url_for
