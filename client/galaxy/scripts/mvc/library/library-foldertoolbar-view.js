@@ -550,7 +550,11 @@ var FolderToolbarView = Backbone.View.extend({
       },
       error: function(model, response){
         if (typeof response.responseJSON !== "undefined"){
-          mod_toastr.error(response.responseJSON.err_msg);
+          if (response.responseJSON.err_code === 404001){
+            mod_toastr.warning(response.responseJSON.err_msg);
+          } else{
+            mod_toastr.error(response.responseJSON.err_msg);
+          }
         } else {
           mod_toastr.error('An error ocurred.');
         }
