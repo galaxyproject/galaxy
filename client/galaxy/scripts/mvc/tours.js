@@ -56,7 +56,6 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
             });
         },
 
-        // DBTODO: THIS SHOULD PROBABLY NOT BE HERE -- but where?
         giveTour: function(tour_id){
             var url = Galaxy.root + 'api/tours/' + tour_id;
             $.getJSON( url, function( data ) {
@@ -78,8 +77,6 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
                 // Store tour steps in sessionStorage to easily persist w/o hackery.
                 sessionStorage.setItem('activeGalaxyTour', data);
                 var tour = new Tour({
-                    orphan: true,
-                    debug: true, // REMOVE ME WHEN DONE DEBUGGING
                     steps: data.steps
                 });
                 // Always clean restart, since this is a new, explicit giveTour execution.
