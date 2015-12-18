@@ -424,7 +424,7 @@ class RepositoryDependencyInstallManager( object ):
                                         is_present = False
                                         for repo_info_dict in all_repo_info_dicts:
                                             for k, v in repo_info_dict.items():
-                                                if required_repo_info_dict_key==k:
+                                                if required_repo_info_dict_key == k:
                                                     if tool_id == v[1]:
                                                         is_present = True
                                         if not is_present:
