@@ -10,12 +10,30 @@
 
 define(['libs/bootstrap-tour'],function(BootstrapTour) {
 
+    var hooked_tour_from_data = function(data){
+        _.each(data.steps, function(step) {
+            if (step.preclick){
+                step.onShow= function(){$(step.preclick).click()};
+            }
+            if (step.postclick){
+                step.onHide = function(){$(step.postclick).click()};
+            }
+            if (step.textinsert){
+                // Have to manually trigger a change here, for some
+                // elements which have additional logic, like the
+                // upload input box
+                step.onShown= function(){$(step.element).val(step.textinsert).trigger("change")};
+            }
+        });
+        return data;
+    }
+
     var TourItem = Backbone.Model.extend({
-      urlRoot: '/api/tours',
+      urlRoot: Galaxy.root + 'api/tours',
     });
 
     var Tours = Backbone.Collection.extend({
-      url: '/api/tours',
+      url: Galaxy.root + 'api/tours',
       model: TourItem,
     });
 
@@ -27,7 +45,6 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
             this.model = new Tours()
             this.model.fetch({
               success: function( model ){
-                console.log(model);
                 self.render();
               },
               error: function( model, response ){
@@ -60,24 +77,13 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
             var url = Galaxy.root + 'api/tours/' + tour_id;
             $.getJSON( url, function( data ) {
                 // Set hooks for additional click and data entry actions.
-                _.each(data.steps, function(step) {
-                    if (step.preclick){
-                        step.onShow= function(){$(step.preclick).click()};
-                    }
-                    if (step.postclick){
-                        step.onHide = function(){$(step.postclick).click()};
-                    }
-                    if (step.textinsert){
-                        // Have to manually trigger a change here, for some
-                        // elements which have additional logic, like the
-                        // upload input box
-                        step.onShown= function(){$(step.element).val(step.textinsert).trigger("change")};
-                    }
-                });
+                tourdata = hooked_tour_from_data(data);
+                sessionStorage.setItem('activeGalaxyTour', JSON.stringify(data));
                 // Store tour steps in sessionStorage to easily persist w/o hackery.
-                sessionStorage.setItem('activeGalaxyTour', data);
                 var tour = new Tour({
-                    steps: data.steps
+                    storage: window.sessionStorage,
+                    steps: tourdata.steps,
+                    debug: true
                 });
                 // Always clean restart, since this is a new, explicit giveTour execution.
                 tour.init();
@@ -85,9 +91,8 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
                 tour.restart();
             });
         },
-
-
     });
 
-    return {ToursView: ToursView}
+    return {ToursView: ToursView,
+            hooked_tour_from_data: hooked_tour_from_data}
 });

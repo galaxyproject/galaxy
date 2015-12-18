@@ -20,7 +20,7 @@ var POPUPMENU = require( 'ui/popupmenu' );
 window.make_popupmenu = POPUPMENU.make_popupmenu;
 window.make_popup_menus = POPUPMENU.make_popup_menus;
 window.init_tag_click_function = require( 'ui/autocom_tagging' );
-var TOURS = require( 'libs/bootstrap-tour' );
+var TOURS = require( 'mvc/tours' );
 // console.debug( 'galaxy globals loaded' );
 
 // ============================================================================
@@ -185,14 +185,21 @@ $(document).ready( function() {
         return anchor;
     });
 
-    et = sessionStorage.getItem('activeGalaxyTour');
-    if (et && et.steps){
-        // Needs serialize/deserialize before this will work, including the
-        // extra logic.
-        var tour = new Tour({
-            steps: et.steps
-        });
-        tour.init();
-        tour.start();
+    try{
+        et = JSON.parse(sessionStorage.getItem('activeGalaxyTour'));
+        if (et){
+            et = TOURS.hooked_tour_from_data(et);
+            if (et && et.steps){
+                var tour = new Tour({
+                    steps: et.steps,
+                    debug: true
+                });
+                tour.init();
+                tour.restart();
+            }
+        }
+    }
+    catch(ex){
+        console.log("Tour loading failure, you'll need to restart the tour manually." + ex);
     }
 });
