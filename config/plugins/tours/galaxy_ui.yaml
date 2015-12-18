@@ -1,5 +1,5 @@
 name: core.galaxy_ui
-description: A basic introduction to the Galaxy UI
+description: A gentle introduction to the Galaxy User Interface
 title_default: "Welcome to Galaxy"
 steps:
     - title: "Welcome to Galaxy"
@@ -29,7 +29,7 @@ steps:
     - element: "button#btn-start"
       intro: "Upload the data into your Galaxy history."
       position: "bottom"
-      preclick: "button#btn-start"
+      postclick: "button#btn-start"
     - element: "button#btn-close"
       intro: "Hit the close button in upload <b>Workflows</b>."
       position: "bottom"

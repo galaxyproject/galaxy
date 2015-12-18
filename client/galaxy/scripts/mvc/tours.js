@@ -38,12 +38,20 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
         return data;
     }
 
+    // DBTODO: there's probably a better way to do this for pages which don't
+    // have Galaxy objects.
+    if (typeof Galaxy != "undefined") {
+        var gxy_root = Galaxy.root;
+    }else{
+        var gxy_root = '/';
+    }
+
     var TourItem = Backbone.Model.extend({
-      urlRoot: Galaxy.root + 'api/tours',
+      urlRoot: gxy_root + 'api/tours',
     });
 
     var Tours = Backbone.Collection.extend({
-      url: Galaxy.root + 'api/tours',
+      url:  gxy_root + 'api/tours',
       model: TourItem,
     });
 
@@ -67,24 +75,26 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
         render: function(){
             var self = this;
             var tpl = _.template([
-                "<h2>Available Galaxy Tours</h2>",
+                "<h2>Galaxy Tours</h2>",
+                "<p>This page presents a list of interactive tours available on this Galaxy server.  ",
+                "Select any tour to get started (and remember, you can click 'End Tour' at any time).</p>",
                 "<ul>",
                 '<% _.each(tours, function(tour) { %>',
                     '<li>',
                         '<a href="#" class="tourItem" data-tour.id=<%- tour.id %>>',
-                            '<%- tour.id %>',
+                            '<%- tour.name || tour.id %>',
                         '</a>',
-                        '- <%- tour.attributes.description %>',
+                        ' - <%- tour.attributes.description || "No description given." %>',
                     '</li>',
                 '<% }); %>',
                 "</ul>"].join(''));
-            this.$el.html(tpl({tours: this.model.models, Galaxy: Galaxy})).on("click", ".tourItem", function(e){
+            this.$el.html(tpl({tours: this.model.models})).on("click", ".tourItem", function(e){
                 self.giveTour($(this).data("tour.id"));
             });
         },
 
         giveTour: function(tour_id){
-            var url = Galaxy.root + 'api/tours/' + tour_id;
+            var url = gxy_root + 'api/tours/' + tour_id;
             $.getJSON( url, function( data ) {
                 // Set hooks for additional click and data entry actions.
                 tourdata = hooked_tour_from_data(data);
