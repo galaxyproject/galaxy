@@ -50,16 +50,18 @@ class DatasetCollectionManager( object ):
         element_identifiers=None,
         elements=None,
         implicit_collection_info=None,
+        trusted_identifiers=None,  # Trust preloaded element objects
     ):
         """
         """
         # Trust embedded, newly created objects created by tool subsystem.
-        trusted_identifiers = implicit_collection_info is not None
+        if trusted_identifiers is None:
+            trusted_identifiers = implicit_collection_info is not None
 
         if element_identifiers and not trusted_identifiers:
             validate_input_element_identifiers( element_identifiers )
 
-        dataset_collection = self.__create_dataset_collection(
+        dataset_collection = self.create_dataset_collection(
             trans=trans,
             collection_type=collection_type,
             element_identifiers=element_identifiers,
@@ -75,6 +77,8 @@ class DatasetCollectionManager( object ):
                 for input_name, input_collection in implicit_collection_info[ "implicit_inputs" ]:
                     dataset_collection_instance.add_implicit_input_collection( input_name, input_collection )
                 for output_dataset in implicit_collection_info.get( "outputs" ):
+                    if output_dataset not in trans.sa_session:
+                        output_dataset = trans.sa_session.query( type( output_dataset ) ).get( output_dataset.id )
                     if isinstance( output_dataset, model.HistoryDatasetAssociation ):
                         output_dataset.hidden_beneath_collection_instance = dataset_collection_instance
                     elif isinstance( output_dataset, model.HistoryDatasetCollectionAssociation ):
@@ -105,18 +109,6 @@ class DatasetCollectionManager( object ):
         return self.__persist( dataset_collection_instance )
 
     def create_dataset_collection(
-        self,
-        trans,
-        collection_type,
-        elements=None,
-    ):
-        return self.__create_dataset_collection(
-            trans=trans,
-            collection_type=collection_type,
-            elements=elements,
-        )
-
-    def __create_dataset_collection(
         self,
         trans,
         collection_type,
@@ -157,6 +149,11 @@ class DatasetCollectionManager( object ):
 
         return dataset_collection
 
+    def collection_builder_for( self, dataset_collection ):
+        collection_type = dataset_collection.collection_type
+        collection_type_description = self.collection_type_descriptions.for_collection_type( collection_type )
+        return builder.BoundCollectionBuilder( dataset_collection, collection_type_description )
+
     def delete( self, trans, instance_type, id ):
         dataset_collection_instance = self.get_dataset_collection_instance( trans, instance_type, id, check_ownership=True )
         dataset_collection_instance.deleted = True
@@ -192,7 +189,7 @@ class DatasetCollectionManager( object ):
         parent.add_dataset_collection( new_hdca )
         trans.sa_session.add( new_hdca )
         trans.sa_session.flush()
-        return source_hdca
+        return new_hdca
 
     def _set_from_dict( self, trans, dataset_collection_instance, new_data ):
         # send what we can down into the model
@@ -246,7 +243,7 @@ class DatasetCollectionManager( object ):
 
             # element identifier is a dict with src new_collection...
             collection_type = element_identifier.get( "collection_type", None )
-            collection = self.__create_dataset_collection(
+            collection = self.create_dataset_collection(
                 trans=trans,
                 collection_type=collection_type,
                 element_identifiers=element_identifier[ "element_identifiers" ],
@@ -270,7 +267,12 @@ class DatasetCollectionManager( object ):
         # Previously created collection already found in request, just pass
         # through as is.
         if "__object__" in element_identifier:
-            return element_identifier[ "__object__" ]
+            the_object = element_identifier[ "__object__" ]
+            if the_object is not None and the_object.id:
+                context = self.model.context
+                if the_object not in context:
+                    the_object = context.query( type(the_object) ).get(the_object.id)
+            return the_object
 
         # dateset_identifier is dict {src=hda|ldda|hdca|new_collection, id=<encoded_id>}
         try:
@@ -279,7 +281,9 @@ class DatasetCollectionManager( object ):
             raise MessageException( "Dataset collection element definition (%s) not dictionary-like." % element_identifier )
         encoded_id = element_identifier.get( 'id', None )
         if not src_type or not encoded_id:
-            raise RequestParameterInvalidException( "Problem decoding element identifier %s" % element_identifier )
+            message_template = "Problem decoding element identifier %s - must contain a 'src' and a 'id'."
+            message = message_template % element_identifier
+            raise RequestParameterInvalidException( message )
 
         if src_type == 'hda':
             decoded_id = int( trans.app.security.decode_id( encoded_id ) )

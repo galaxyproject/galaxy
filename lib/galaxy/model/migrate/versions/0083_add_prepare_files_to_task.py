@@ -1,16 +1,13 @@
 """
 Migration script to add 'prepare_input_files_cmd' column to the task table and to rename a column.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Column, MetaData, String, Table, TEXT
+
+log = logging.getLogger( __name__ )
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -26,7 +23,7 @@ def upgrade(migrate_engine):
         log.debug( "Adding prepare_input_files_cmd column to task table failed: %s" % str( e ) )
     try:
         task_table = Table( "task", metadata, autoload=True )
-        c = Column( "working_directory", String ( 1024 ), nullable=True )
+        c = Column( "working_directory", String( 1024 ), nullable=True )
         c.create( task_table )
         assert c is task_table.c.working_directory
     except Exception, e:
@@ -38,6 +35,7 @@ def upgrade(migrate_engine):
         task_table.c.part_file.drop()
     except Exception, e:
         log.debug( "Deleting column 'part_file' from the 'task' table failed: %s" % ( str( e ) ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -56,7 +54,7 @@ def downgrade(migrate_engine):
         log.debug( "Dropping working_directory column from task table failed: %s" % str( e ) )
     try:
         task_table = Table( "task", metadata, autoload=True )
-        c = Column( "part_file", String ( 1024 ), nullable=True )
+        c = Column( "part_file", String( 1024 ), nullable=True )
         c.create( task_table )
         assert c is task_table.c.part_file
     except Exception, e:

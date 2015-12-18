@@ -17,8 +17,6 @@ from galaxy.util.sanitize_html import sanitize_html
 
 import dataproviders
 
-from galaxy import eggs
-eggs.require( "Paste" )
 import paste
 
 XSS_VULNERABLE_MIME_TYPES = [
@@ -345,7 +343,7 @@ class Data( object ):
                 self._clean_and_set_mime_type( trans, mime )
                 return open( file_path )
             else:
-                return trans.show_error_message( "Could not find '%s' on the extra files path %s." % ( filename, file_path ) )
+                return paste.httpexceptions.HTTPNotFound( "Could not find '%s' on the extra files path %s." % ( filename, file_path ) )
         self._clean_and_set_mime_type( trans, data.get_mime() )
 
         trans.log_event( "Display dataset id: %s" % str( data.id ) )
@@ -371,6 +369,10 @@ class Data( object ):
         if not preview or isinstance(data.datatype, datatypes.images.Image) or os.stat( data.file_name ).st_size < max_peek_size:
             if trans.app.config.sanitize_all_html and trans.response.get_content_type() == "text/html":
                 # Sanitize anytime we respond with plain text/html content.
+                # Check to see if this dataset's parent job is whitelisted
+                # We cannot currently trust imported datasets for rendering.
+                if not data.creating_job.imported and data.creating_job.tool_id in trans.app.config.sanitize_whitelist:
+                    return open(data.file_name).read()
                 return sanitize_html(open( data.file_name ).read())
             return open( data.file_name )
         else:
@@ -740,7 +742,7 @@ class Text( Data ):
                 data_lines += 1
         return data_lines
 
-    def set_peek( self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=[] ):
+    def set_peek( self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None ):
         """
         Set the peek.  This method is used by various subclasses of Text.
         """
@@ -948,7 +950,7 @@ def get_test_fname( fname ):
     return full_path
 
 
-def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipchars=[] ):
+def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipchars=None ):
     """
     Returns the first LINE_COUNT lines wrapped to WIDTH
 
@@ -962,6 +964,8 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
     # long lines.
     if WIDTH == 'unlimited':
         WIDTH = -1
+    if skipchars is None:
+        skipchars = []
     lines = []
     count = 0
     file_type = None

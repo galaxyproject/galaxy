@@ -2,16 +2,11 @@
 Migration script to add the includes_datatypes, has_repository_dependencies, includes_tools, includes_tool_dependencies and includes_workflows
 columns to the repository_metadata table.
 """
+import logging
+import sys
 
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
+from sqlalchemy import Boolean, Column, MetaData, Table
 
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
-
-import sys, logging
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -21,6 +16,7 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     print __doc__
@@ -78,6 +74,7 @@ def upgrade(migrate_engine):
         migrate_engine.execute( "UPDATE repository_metadata SET includes_workflows=%s" % default_false )
     except Exception, e:
         print "Adding includes_workflows column to the repository_metadata table failed: %s" % str( e )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

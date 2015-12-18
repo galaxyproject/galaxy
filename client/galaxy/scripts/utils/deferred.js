@@ -1,70 +1,57 @@
-// dependencies
-define(['utils/utils'], function(Utils) {
-
 /**
- *  This class provides an alternative way to handle deferred processes. It makes it easy to handle multiple and overlapping sets of deferred processes.
+ *  This class defines a queue to ensure that multiple deferred callbacks are executed sequentially.
  */
+define(['utils/utils'], function( Utils ) {
 return Backbone.Model.extend({
-    // callback queue
-    queue: [],
-    
-    // list of currently registered processes
-    process: {},
-    
-    // process counter
-    counter: 0,
-    
-    /** Initialize
-    */
     initialize: function(){
-        this.on('refresh', function() {
-            if (this.queue.length > 0 && this.ready()) {
-                var callback = this.queue[0];
-                this.queue.splice(0, 1);
-                callback && callback();
+        this.active = {};
+        this.last = null;
+    },
+
+    /** Adds a callback to the queue. Upon execution a deferred object is parsed to the callback i.e. callback( deferred ).
+     *  If the callback does not take any arguments, the deferred is resolved instantly.
+    */
+    execute: function( callback ) {
+        var self = this;
+        var id = Utils.uid();
+        var has_deferred = callback.length > 0;
+
+        // register process
+        this.active[ id ] = true;
+
+        // deferred process
+        var process = $.Deferred();
+        process.promise().always(function() {
+            delete self.active[ id ];
+            has_deferred && Galaxy.emit.debug( 'deferred::execute()', this.state().charAt(0).toUpperCase() + this.state().slice(1) + ' ' + id );
+        });
+
+        // deferred queue
+        $.when( this.last ).always(function() {
+            if ( self.active[ id ] ) {
+                has_deferred && Galaxy.emit.debug( 'deferred::execute()', 'Running ' + id );
+                callback( process );
+                !has_deferred && process.resolve();
+            } else {
+                process.reject();
             }
         });
+        this.last = process.promise();
     },
-    
-    /** This executes a callback once all processes are unregistered
-     *  The callback is expected to register/unregister new processes
-    */
-    execute: function(callback) {
-        this.queue.push(callback);
-        this.trigger('refresh');
-    },
-    
-    /** This is called to register a new process
-    */
-    register: function() {
-        var id = Utils.uid();
-        this.process[id] = true;
-        this.counter++;
-        console.debug('Deferred:register() - Register ' + id);
-        return id;
-    },
-    
-    /** This is called to unregister a particular process
-    */
-    done: function(id) {
-        if (this.process[id]) {
-            delete this.process[id];
-            this.counter--;
-            console.debug('Deferred:done() - Unregister ' + id);
-            this.trigger('refresh');
-        }
-    },
-    
-    /** Removes all callbacks from the current queue
+
+    /** Resets the promise queue. All currently queued but unexecuted callbacks/promises will be rejected.
     */
     reset: function() {
-        this.queue = [];
+        Galaxy.emit.debug('deferred::execute()', 'Reset');
+        for ( var i in this.active ) {
+            this.active[ i ] = false;
+        }
     },
-    
-    /** Returns true if no processes are currently executed
+
+    /** Returns true if all processes are done.
     */
     ready: function() {
-        return (this.counter == 0);
+        return $.isEmptyObject( this.active );
     }
 });
 

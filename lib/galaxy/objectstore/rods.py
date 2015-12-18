@@ -16,16 +16,13 @@ from galaxy.exceptions import ObjectNotFound
 from ..objectstore import DiskObjectStore, ObjectStore, local_extra_dirs
 
 try:
-    import galaxy.eggs
-    galaxy.eggs.require( 'PyRods' )
-except Exception:
-    pass
-try:
     import irods
 except ImportError:
     irods = None
 
-NO_PYRODS_ERROR_MESSAGE = "IRODS object store configured, but no PyRods dependency available. Please install and properly configure PyRods or modify object store configuration."
+
+IRODS_IMPORT_MESSAGE = ('The Python irods package is required to use this '
+                        'feature, please install it')
 
 log = logging.getLogger( __name__ )
 
@@ -35,9 +32,8 @@ class IRODSObjectStore( DiskObjectStore, ObjectStore ):
     Galaxy object store based on iRODS
     """
     def __init__( self, config, file_path=None, extra_dirs=None ):
-        if irods is None:
-            raise Exception(NO_PYRODS_ERROR_MESSAGE)
         super( IRODSObjectStore, self ).__init__( config, file_path=file_path, extra_dirs=extra_dirs )
+        assert irods is not None, IRODS_IMPORT_MESSAGE
         self.cache_path = config.object_store_cache_path
         self.default_resource = config.irods_default_resource or None
 
@@ -152,7 +148,7 @@ class IRODSObjectStore( DiskObjectStore, ObjectStore ):
                 # that we can prevent overwriting
                 doi = irods.dataObjInp_t()
                 doi.objPath = rods_path
-                doi.createMode = 0640
+                doi.createMode = 0o640
                 doi.dataSize = 0  # 0 actually means "unknown", although literally 0 would be preferable
                 irods.addKeyVal( doi.condInput, irods.DEST_RESC_NAME_KW, self.default_resource )
                 status = irods.rcDataObjCreate( self.rods_conn, doi )
@@ -195,7 +191,7 @@ class IRODSObjectStore( DiskObjectStore, ObjectStore ):
             return True
         except AttributeError:
             log.warning( 'delete(): operation failed: object does not exist: %s', rods_path )
-        except AssertionError, e:
+        except AssertionError as e:
             # delete() does not raise on deletion failure
             log.error( 'delete(): operation failed: %s', e )
         finally:
@@ -281,7 +277,7 @@ class IRODSObjectStore( DiskObjectStore, ObjectStore ):
         # put will create if necessary
         doi = irods.dataObjInp_t()
         doi.objPath = self.__get_rods_path( obj, **kwargs )
-        doi.createMode = 0640
+        doi.createMode = 0o640
         doi.dataSize = os.stat( file_name ).st_size
         doi.numThreads = 0
         irods.addKeyVal( doi.condInput, irods.DEST_RESC_NAME_KW, self.default_resource )

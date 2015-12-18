@@ -5,10 +5,12 @@ from .interface import InputSource
 from .util import error_on_exit_code
 
 from galaxy.tools.deps import requirements
-from galaxy.tools.parameters import output_collect
-from galaxy.tools.parameters.output import ToolOutputActionGroup
+from .output_collection_def import dataset_collector_descriptions_from_list
+from .output_actions import ToolOutputActionGroup
 from galaxy.util.odict import odict
-import galaxy.tools
+from .output_objects import (
+    ToolOutput
+)
 
 
 class YamlToolSource(ToolSource):
@@ -75,11 +77,11 @@ class YamlToolSource(ToolSource):
         for output in output_defs:
             outputs[output.name] = output
         # TODO: parse outputs collections
-        return output_defs, odict()
+        return outputs, odict()
 
     def _parse_output(self, tool, name, output_dict):
         # TODO: handle filters, actions, change_format
-        output = galaxy.tools.ToolOutput( name )
+        output = ToolOutput( name )
         output.format = output_dict.get("format", "data")
         output.change_format = []
         output.format_source = output_dict.get("format_source", None)
@@ -91,11 +93,12 @@ class YamlToolSource(ToolSource):
         output.tool = tool
         output.from_work_dir = output_dict.get("from_work_dir", None)
         output.hidden = output_dict.get("hidden", "")
+        # TODO: implement tool output action group fixes
         output.actions = ToolOutputActionGroup( output, None )
         discover_datasets_dicts = output_dict.get( "discover_datasets", [] )
         if isinstance( discover_datasets_dicts, dict ):
             discover_datasets_dicts = [ discover_datasets_dicts ]
-        output.dataset_collectors = output_collect.dataset_collectors_from_list( discover_datasets_dicts )
+        output.dataset_collector_descriptions = dataset_collector_descriptions_from_list( discover_datasets_dicts )
         return output
 
     def parse_tests_to_dict(self):
@@ -156,6 +159,8 @@ def _parse_test(i, test_dict):
         _ensure_has(attributes, defaults)
 
     test_dict["outputs"] = new_outputs
+    # TODO: implement output collections for YAML tools.
+    test_dict["output_collections"] = []
     test_dict["command"] = __to_test_assert_list( test_dict.get( "command", [] ) )
     test_dict["stdout"] = __to_test_assert_list( test_dict.get( "stdout", [] ) )
     test_dict["stderr"] = __to_test_assert_list( test_dict.get( "stderr", [] ) )
@@ -248,6 +253,16 @@ class YamlInputSource(InputSource):
             case_page_source = YamlPageSource(block)
             sources.append((value, case_page_source))
         return sources
+
+    def parse_static_options(self):
+        static_options = list()
+        input_dict = self.input_dict
+        for index, option in enumerate(input_dict.get("options", {})):
+            value = option.get( "value" )
+            label = option.get( "label", value )
+            selected = option.get( "selected", False )
+            static_options.append( ( label, value, selected ) )
+        return static_options
 
 
 def _ensure_has(dict, defaults):

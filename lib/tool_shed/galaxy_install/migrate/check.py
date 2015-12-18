@@ -2,20 +2,11 @@ import logging
 import os
 import subprocess
 import sys
-from galaxy import eggs
-eggs.require( "decorator" )
-eggs.require( "Tempita" )
-eggs.require( "six" )  # Required by sqlalchemy-migrate
-eggs.require( "sqlparse" )  # Required by sqlalchemy-migrate
-eggs.require( "SQLAlchemy" )
-eggs.require( "sqlalchemy_migrate" )
-from migrate.versioning import repository
-from migrate.versioning import schema
-from sqlalchemy import create_engine
-from sqlalchemy import MetaData
-from sqlalchemy import Table
+
+from migrate.versioning import repository, schema
+from sqlalchemy import create_engine, MetaData, Table
+
 from galaxy.util.odict import odict
-from galaxy.model.orm import dialect_to_egg
 from tool_shed.util import common_util
 
 log = logging.getLogger( __name__ )
@@ -24,26 +15,15 @@ log = logging.getLogger( __name__ )
 migrate_repository_directory = os.path.abspath(os.path.dirname( __file__ )).replace( os.getcwd() + os.path.sep, '', 1 )
 migrate_repository = repository.Repository( migrate_repository_directory )
 
-def verify_tools( app, url, galaxy_config_file, engine_options={} ):
+
+def verify_tools( app, url, galaxy_config_file=None, engine_options={} ):
     # Check the value in the migrate_tools.version database table column to verify that the number is in
     # sync with the number of version scripts in ~/lib/galaxy/tools/migrate/versions.
-    dialect = ( url.split( ':', 1 ) )[0]
-    try:
-        egg = dialect_to_egg[ dialect ]
-        try:
-            eggs.require( egg )
-            log.debug( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
-        except:
-            # If the module is in the path elsewhere (i.e. non-egg), it'll still load.
-            log.warning( "%s egg not found, but an attempt will be made to use %s anyway" % ( egg, dialect ) )
-    except KeyError:
-        # Let this go, it could possibly work with db's we don't support
-        log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
     # Create engine and metadata
     engine = create_engine( url, **engine_options )
     meta = MetaData( bind=engine )
     # The migrate_tools table was created in database version script 0092_add_migrate_tools_table.py.
-    version_table = Table( "migrate_tools", meta, autoload=True )
+    Table( "migrate_tools", meta, autoload=True )
     # Verify that the code and the database are in sync.
     db_schema = schema.ControlledSchema( engine, migrate_repository )
     latest_tool_migration_script_number = migrate_repository.versions.latest
@@ -72,13 +52,13 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
             if v:
                 have_tool_dependencies = True
                 break
-        config_arg = ''
-        if os.path.abspath( os.path.join( os.getcwd(), 'galaxy.ini' ) ) != galaxy_config_file:
-            config_arg = ' -c %s' % galaxy_config_file.replace( os.path.abspath( os.getcwd() ), '.' )
         if not app.config.running_functional_tests:
             if tool_shed_accessible:
                 # Automatically update the value of the migrate_tools.version database table column.
-                cmd = 'sh manage_tools.sh%s upgrade'  % config_arg
+                config_arg = ''
+                if galaxy_config_file:
+                    config_arg = " -c %s" % galaxy_config_file
+                cmd = 'sh manage_tools.sh%s upgrade' % config_arg
                 proc = subprocess.Popen( args=cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT )
                 return_code = proc.wait()
                 output = proc.stdout.read( 32768 )
@@ -155,6 +135,7 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
     else:
         log.info( "At migrate_tools version %d" % db_schema.version )
 
+
 def migrate_to_current_version( engine, schema ):
     # Changes to get to current version.
     changeset = schema.changeset( None )
@@ -162,13 +143,17 @@ def migrate_to_current_version( engine, schema ):
         nextver = ver + changeset.step
         log.info( 'Installing tools from version %s -> %s... ' % ( ver, nextver ) )
         old_stdout = sys.stdout
+
         class FakeStdout( object ):
             def __init__( self ):
                 self.buffer = []
+
             def write( self, s ):
                 self.buffer.append( s )
+
             def flush( self ):
                 pass
+
         sys.stdout = FakeStdout()
         try:
             schema.runchange( ver, change, changeset.step )

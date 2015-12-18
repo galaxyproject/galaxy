@@ -2,9 +2,7 @@
 import os
 import logging
 from galaxy import exceptions
-from galaxy import eggs
 from galaxy.exceptions import ObjectNotFound
-eggs.require( "Whoosh" )
 import whoosh.index
 from whoosh import scoring
 from whoosh.fields import Schema, STORED, TEXT
@@ -73,7 +71,7 @@ class ToolSearch( object ):
                 results[ 'hits' ] = []
                 for hit in hits:
                     hit_dict = {}
-                    hit_dict[ 'id' ] = trans.security.encode_id( hit.get( 'id' ) )
+                    hit_dict[ 'id' ] = hit.get( 'id' )
                     hit_dict[ 'repo_owner_username' ] = hit.get( 'repo_owner_username' )
                     hit_dict[ 'repo_name' ] = hit.get( 'repo_name' )
                     hit_dict[ 'name' ] = hit.get( 'name' )

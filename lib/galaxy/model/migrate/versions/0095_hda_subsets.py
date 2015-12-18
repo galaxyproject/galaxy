@@ -1,15 +1,11 @@
 """
 Migration script to create table for tracking history_dataset_association subsets.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Column, ForeignKey, Index, Integer, MetaData, Table, Unicode
+
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 # Table to add.
@@ -18,8 +14,8 @@ HistoryDatasetAssociationSubset_table = Table( "history_dataset_association_subs
                                                Column( "id", Integer, primary_key=True ),
                                                Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ) ),
                                                Column( "history_dataset_association_subset_id", Integer, ForeignKey( "history_dataset_association.id" ) ),
-                                               Column( "location", Unicode(255), index=True)
-)
+                                               Column( "location", Unicode(255), index=True) )
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -42,6 +38,7 @@ def upgrade(migrate_engine):
     except Exception, e:
         print str(e)
         log.debug( "Adding indices to table 'history_dataset_association_subset' table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

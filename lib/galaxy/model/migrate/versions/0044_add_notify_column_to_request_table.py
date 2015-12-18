@@ -1,15 +1,13 @@
 """
 Migration script to add a notify column to the request table.
 """
-
-from sqlalchemy import *
-from migrate import *
-from migrate.changeset import *
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Boolean, Column, MetaData, Table
+
+log = logging.getLogger( __name__ )
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -20,6 +18,7 @@ def upgrade(migrate_engine):
     c = Column( "notify", Boolean, default=False  )
     c.create( Request_table )
     assert c is Request_table.c.notify
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

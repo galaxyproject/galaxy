@@ -1,23 +1,11 @@
 from __future__ import print_function
 
-import os
-import sys
-
-new_path = [ os.path.join( os.path.dirname(__file__), os.pardir, "lib" ) ]
-new_path.extend( sys.path[1:] )  # remove scripts/ from the path
-sys.path = new_path
-
 try:
     from argparse import ArgumentParser
 except ImportError:
     ArgumentParser = None
 import re
 
-try:
-    from galaxy import eggs
-    eggs.require("numpy")
-except ImportError:
-    pass
 import numpy
 
 

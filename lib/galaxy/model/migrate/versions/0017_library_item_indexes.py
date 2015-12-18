@@ -2,10 +2,10 @@
 This script adds 3 indexes to table columns: library_folder.name,
 library_dataset.name, library_dataset_dataset_association.name.
 """
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-import sys, logging
+import logging
+import sys
+
+from sqlalchemy import Index, MetaData, Table
 
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
@@ -14,14 +14,15 @@ format = "%(name)s %(levelname)s %(asctime)s %(message)s"
 formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
-
 metadata = MetaData()
+
 
 def display_migration_details():
     print "========================================"
     print "This script adds 3 indexes to table columns: library_folder.name,"
     print "library_dataset.name, library_dataset_dataset_association.name."
     print "========================================"
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -49,6 +50,8 @@ def upgrade(migrate_engine):
         i.create()
     except Exception, e:
         log.debug( "Adding index 'ix_library_dataset_name' to library_dataset table failed: %s" % ( str( e ) ) )
+
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     log.debug( "Downgrade is not possible." )

@@ -1,18 +1,15 @@
 """
 Migration script for workflow request tables.
 """
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-from galaxy.model.custom_types import *
-
 import datetime
-now = datetime.datetime.utcnow
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Column, ForeignKey, Integer, MetaData, String, Table, TEXT, Unicode
+
+from galaxy.model.custom_types import JSONType, TrimmedString, UUIDType
+
+now = datetime.datetime.utcnow
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 
@@ -93,7 +90,7 @@ def upgrade(migrate_engine):
 
     WorkflowInvocationStepAction_column = Column( "action", JSONType, nullable=True )
     __add_column( WorkflowInvocationStepAction_column, "workflow_invocation_step", metadata )
- 
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

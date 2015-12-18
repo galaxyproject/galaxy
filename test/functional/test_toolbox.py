@@ -45,6 +45,7 @@ class ToolTestCase( TwillTestCase ):
         job_stdio = None
         job_output_exceptions = None
         tool_execution_exception = None
+        expected_failure_occurred = False
         try:
             try:
                 tool_response = galaxy_interactor.run_tool( testdef, test_history )
@@ -53,22 +54,26 @@ class ToolTestCase( TwillTestCase ):
             except RunToolException as e:
                 tool_inputs = e.inputs
                 tool_execution_exception = e
-                raise e
+                if not testdef.expect_failure:
+                    raise e
+                else:
+                    expected_failure_occurred = True
             except Exception as e:
                 tool_execution_exception = e
                 raise e
 
-            self.assertTrue( data_list or data_collection_list )
+            if not expected_failure_occurred:
+                self.assertTrue( data_list or data_collection_list )
 
-            try:
-                job_stdio = self._verify_outputs( testdef, test_history, jobs, shed_tool_id, data_list, data_collection_list, galaxy_interactor )
-            except JobOutputsError as e:
-                job_stdio = e.job_stdio
-                job_output_exceptions = e.output_exceptions
-                raise e
-            except Exception as e:
-                job_output_exceptions = [e]
-                raise e
+                try:
+                    job_stdio = self._verify_outputs( testdef, test_history, jobs, shed_tool_id, data_list, data_collection_list, galaxy_interactor )
+                except JobOutputsError as e:
+                    job_stdio = e.job_stdio
+                    job_output_exceptions = e.output_exceptions
+                    raise e
+                except Exception as e:
+                    job_output_exceptions = [e]
+                    raise e
         finally:
             job_data = {}
             if tool_inputs is not None:
@@ -191,8 +196,12 @@ class ToolTestCase( TwillTestCase ):
                 # the job completed so re-hit the API for more information.
                 data_collection_returned = data_collection_list[ name ]
                 data_collection = galaxy_interactor._get( "dataset_collections/%s" % data_collection_returned[ "id" ], data={"instance_type": "history"} ).json()
-                elements = data_collection[ "elements" ]
-                element_dict = dict( map(lambda e: (e["element_identifier"], e["object"]), elements) )
+
+                def get_element( elements, id ):
+                    for element in elements:
+                        if element["element_identifier"] == id:
+                            return element
+                    return False
 
                 expected_collection_type = output_collection_def.collection_type
                 if expected_collection_type:
@@ -202,20 +211,29 @@ class ToolTestCase( TwillTestCase ):
                         message = template % (name, expected_collection_type, collection_type)
                         raise AssertionError(message)
 
-                for element_identifier, ( element_outfile, element_attrib ) in output_collection_def.element_tests.items():
-                    if element_identifier not in element_dict:
-                        template = "Failed to find identifier [%s] for testing, tool generated collection with identifiers [%s]"
-                        message = template % (element_identifier, ",".join(element_dict.keys()))
-                        raise AssertionError(message)
-                    hda = element_dict[ element_identifier ]
+                def verify_elements( element_objects, element_tests ):
+                    for element_identifier, ( element_outfile, element_attrib ) in element_tests.items():
+                        element = get_element( element_objects, element_identifier )
+                        if not element:
+                            template = "Failed to find identifier [%s] for testing, tool generated collection elements [%s]"
+                            message = template % (element_identifier, element_objects)
+                            raise AssertionError(message)
 
-                    galaxy_interactor.verify_output_dataset(
-                        history,
-                        hda_id=hda["id"],
-                        outfile=element_outfile,
-                        attributes=element_attrib,
-                        shed_tool_id=shed_tool_id
-                    )
+                        element_type = element["element_type"]
+                        if element_type != "dataset_collection":
+                            hda = element[ "object" ]
+                            galaxy_interactor.verify_output_dataset(
+                                history,
+                                hda_id=hda["id"],
+                                outfile=element_outfile,
+                                attributes=element_attrib,
+                                shed_tool_id=shed_tool_id
+                            )
+                        if element_type == "dataset_collection":
+                            elements = element[ "object" ][ "elements" ]
+                            verify_elements( elements, element_attrib.get( "elements", {} ) )
+
+                verify_elements( data_collection[ "elements" ], output_collection_def.element_tests )
             except Exception as e:
                 register_exception(e)
 

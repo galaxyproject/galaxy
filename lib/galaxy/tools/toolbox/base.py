@@ -5,13 +5,11 @@ import string
 import tarfile
 import tempfile
 
-from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
+from urlparse import urlparse
 
-from galaxy.model.item_attrs import Dictifiable
+from galaxy.util.dictifiable import Dictifiable
 
 from galaxy.util.odict import odict
 from galaxy.util import listify
@@ -108,13 +106,14 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
         .. raw:: xml
 
             <toolbox>
-                <tool file="data_source/upload.xml"/>            # tools outside sections
-                <label text="Basic Tools" id="basic_tools" />    # labels outside sections
-                <workflow id="529fd61ab1c6cc36" />               # workflows outside sections
-                <section name="Get Data" id="getext">            # sections
-                    <tool file="data_source/biomart.xml" />      # tools inside sections
-                    <label text="In Section" id="in_section" />  # labels inside sections
-                    <workflow id="adb5f5c93f827949" />           # workflows inside sections
+                <tool file="data_source/upload.xml"/>                 # tools outside sections
+                <label text="Basic Tools" id="basic_tools" />         # labels outside sections
+                <workflow id="529fd61ab1c6cc36" />                    # workflows outside sections
+                <section name="Get Data" id="getext">                 # sections
+                    <tool file="data_source/biomart.xml" />           # tools inside sections
+                    <label text="In Section" id="in_section" />       # labels inside sections
+                    <workflow id="adb5f5c93f827949" />                # workflows inside sections
+                    <tool file="data_source/foo.xml" labels="beta" /> # label for a single tool
                 </section>
             </toolbox>
 
@@ -375,40 +374,52 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
         if get_all_versions and exact:
             raise AssertionError("Cannot specify get_tool with both get_all_versions and exact as True")
 
-        if tool_id in self._tools_by_id and not get_all_versions:
-            if tool_version and tool_version in self._tool_versions_by_id[ tool_id ]:
-                return self._tool_versions_by_id[ tool_id ][ tool_version ]
-            # tool_id exactly matches an available tool by id (which is 'old' tool_id or guid)
-            return self._tools_by_id[ tool_id ]
-        # exact tool id match not found, or all versions requested, search for other options, e.g. migrated tools or different versions
-        rval = []
-        tool_lineage = self._lineage_map.get( tool_id )
-        if tool_lineage:
-            lineage_tool_versions = tool_lineage.get_versions( )
-            for lineage_tool_version in lineage_tool_versions:
-                lineage_tool = self._tool_from_lineage_version( lineage_tool_version )
-                if lineage_tool:
-                    rval.append( lineage_tool )
-        if not rval:
-            # still no tool, do a deeper search and try to match by old ids
-            for tool in self._tools_by_id.itervalues():
-                if tool.old_id == tool_id:
-                    rval.append( tool )
-        if rval:
-            if get_all_versions:
-                return rval
-            else:
-                if tool_version:
-                    # return first tool with matching version
-                    for tool in rval:
-                        if tool.version == tool_version:
-                            return tool
-                # No tool matches by version, simply return the first available tool found
-                return rval[0]
-        # We now likely have a Toolshed guid passed in, but no supporting database entries
-        # If the tool exists by exact id and is loaded then provide exact match within a list
-        if tool_id in self._tools_by_id:
-            return[ self._tools_by_id[ tool_id ] ]
+        if "/repos/" in tool_id:  # test if tool came from a toolshed
+            tool_id_without_tool_shed = tool_id.split("/repos/")[1]
+            available_tool_sheds = self.app.tool_shed_registry.tool_sheds.values()
+            available_tool_sheds = [ urlparse(tool_shed) for tool_shed in available_tool_sheds ]
+            available_tool_sheds = [ url.geturl().replace(url.scheme + "://", '', 1) for url in available_tool_sheds]
+            tool_ids = [ tool_shed + "repos/" + tool_id_without_tool_shed for tool_shed in available_tool_sheds]
+            if tool_id in tool_ids:  # move original tool_id to the top of tool_ids
+                tool_ids.remove(tool_id)
+            tool_ids.insert(0, tool_id)
+        else:
+            tool_ids = [tool_id]
+        for tool_id in tool_ids:
+            if tool_id in self._tools_by_id and not get_all_versions:
+                if tool_version and tool_version in self._tool_versions_by_id[ tool_id ]:
+                    return self._tool_versions_by_id[ tool_id ][ tool_version ]
+                # tool_id exactly matches an available tool by id (which is 'old' tool_id or guid)
+                return self._tools_by_id[ tool_id ]
+            # exact tool id match not found, or all versions requested, search for other options, e.g. migrated tools or different versions
+            rval = []
+            tool_lineage = self._lineage_map.get( tool_id )
+            if tool_lineage:
+                lineage_tool_versions = tool_lineage.get_versions( )
+                for lineage_tool_version in lineage_tool_versions:
+                    lineage_tool = self._tool_from_lineage_version( lineage_tool_version )
+                    if lineage_tool:
+                        rval.append( lineage_tool )
+            if not rval:
+                # still no tool, do a deeper search and try to match by old ids
+                for tool in self._tools_by_id.itervalues():
+                    if tool.old_id == tool_id:
+                        rval.append( tool )
+            if rval:
+                if get_all_versions:
+                    return rval
+                else:
+                    if tool_version:
+                        # return first tool with matching version
+                        for tool in rval:
+                            if tool.version == tool_version:
+                                return tool
+                    # No tool matches by version, simply return the first available tool found
+                    return rval[0]
+            # We now likely have a Toolshed guid passed in, but no supporting database entries
+            # If the tool exists by exact id and is loaded then provide exact match within a list
+            if tool_id in self._tools_by_id:
+                return[ self._tools_by_id[ tool_id ] ]
         return None
 
     def has_tool( self, tool_id, tool_version=None, exact=False ):
@@ -619,6 +630,10 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                 self.__add_tool( tool, load_panel_dict, panel_dict )
             # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
             integrated_panel_dict.update_or_append( index, key, tool )
+            # If labels were specified in the toolbox config, attach them to
+            # the tool.
+            if "labels" in elem.attrib:
+                tool.labels = [ label.strip() for label in elem.attrib["labels"].split( "," ) ]
         except IOError:
             log.error( "Error reading tool configuration file from path: %s." % path )
         except Exception:
@@ -741,6 +756,10 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
             self._tool_watcher.watch_file( config_file, tool.id )
         return tool
 
+    def load_hidden_lib_tool( self, path ):
+        tool_xml = os.path.join( os.getcwd(), "lib", path )
+        return self.load_hidden_tool( tool_xml )
+
     def load_hidden_tool( self, config_file, **kwds ):
         """ Load a hidden tool (in this context meaning one that does not
         appear in the tool panel) and register it in _tools_by_id.
@@ -779,7 +798,7 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
             tool = self._tools_by_id[ tool_id ]
             tarball_files = []
             temp_files = []
-            tool_xml = file( os.path.abspath( tool.config_file ), 'r' ).read()
+            tool_xml = open( os.path.abspath( tool.config_file ), 'r' ).read()
             # Retrieve tool help images and rewrite the tool's xml into a temporary file with the path
             # modified to be relative to the repository root.
             image_found = False
@@ -801,7 +820,7 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
             if image_found:
                 fd, new_tool_config = tempfile.mkstemp( suffix='.xml' )
                 os.close( fd )
-                file( new_tool_config, 'w' ).write( tool_xml )
+                open( new_tool_config, 'w' ).write( tool_xml )
                 tool_tup = ( os.path.abspath( new_tool_config ), os.path.split( tool.config_file )[-1]  )
                 temp_files.append( os.path.abspath( new_tool_config ) )
             else:
@@ -861,7 +880,7 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                                 table_definition = table_definition % '\n'.join( data_table_definitions )
                                 fd, table_conf = tempfile.mkstemp()
                                 os.close( fd )
-                                file( table_conf, 'w' ).write( table_definition )
+                                open( table_conf, 'w' ).write( table_definition )
                                 tarball_files.append( ( table_conf, os.path.join( 'tool-data', 'tool_data_table_conf.xml.sample' ) ) )
                                 temp_files.append( table_conf )
             # Create the tarball.
@@ -912,9 +931,9 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
             #  _tools_by_id and _tool_versions_by_id
             self.register_tool( new_tool )
             message = "Reloaded the tool:<br/>"
-            message += "<b>name:</b> %s<br/>" % old_tool.name
-            message += "<b>id:</b> %s<br/>" % old_tool.id
-            message += "<b>version:</b> %s" % old_tool.version
+            message += "<b>name:</b> %s<br/>" % escape( old_tool.name )
+            message += "<b>id:</b> %s<br/>" % escape( old_tool.id )
+            message += "<b>version:</b> %s" % escape( old_tool.version )
             status = 'done'
         return message, status
 
@@ -946,9 +965,9 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                     del self.data_manager_tools[ tool_id ]
             # TODO: do we need to manually remove from the integrated panel here?
             message = "Removed the tool:<br/>"
-            message += "<b>name:</b> %s<br/>" % tool.name
-            message += "<b>id:</b> %s<br/>" % tool.id
-            message += "<b>version:</b> %s" % tool.version
+            message += "<b>name:</b> %s<br/>" % escape( tool.name )
+            message += "<b>id:</b> %s<br/>" % escape( tool.id )
+            message += "<b>version:</b> %s" % escape( tool.version )
             status = 'done'
         return message, status
 

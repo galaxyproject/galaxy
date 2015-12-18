@@ -1,22 +1,18 @@
 """
 Migration script to create a table for page-user share association.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table
+
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 PageUserShareAssociation_table = Table( "page_user_share_association", metadata,
                                         Column( "id", Integer, primary_key=True ),
                                         Column( "page_id", Integer, ForeignKey( "page.id" ), index=True ),
-                                        Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True )
-    )
+                                        Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ) )
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -29,6 +25,7 @@ def upgrade(migrate_engine):
     except Exception, e:
         print str(e)
         log.debug( "Creating page_user_share_association table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

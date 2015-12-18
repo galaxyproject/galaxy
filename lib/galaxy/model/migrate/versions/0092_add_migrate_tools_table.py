@@ -1,18 +1,16 @@
 """
 Migration script to create the migrate_tools table.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import datetime
-now = datetime.datetime.utcnow
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
+import logging
+import sys
 
-import sys, logging
+from sqlalchemy import Column, Integer, MetaData, Table, TEXT
+
+# Need our custom types, but don't import anything else from model
+from galaxy.model.custom_types import TrimmedString
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -28,6 +26,7 @@ MigrateTools_table = Table( "migrate_tools", metadata,
                             Column( "repository_path", TEXT ),
                             Column( "version", Integer ) )
 
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
@@ -40,6 +39,7 @@ def upgrade(migrate_engine):
         migrate_engine.execute( cmd )
     except Exception, e:
         log.debug( "Creating migrate_tools table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

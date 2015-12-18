@@ -1,17 +1,16 @@
 """
 Migration script to create initial tables.
 """
-
-from sqlalchemy import *
-from migrate import *
-
 import datetime
-now = datetime.datetime.utcnow
+import logging
+import sys
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, MetaData, String, Table, TEXT, UniqueConstraint
 
 # Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
+from galaxy.model.custom_types import TrimmedString
 
-import sys, logging
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -78,10 +77,9 @@ GalaxySession_table = Table( "galaxy_session", metadata,
                              Column( "remote_host", String( 255 ) ),
                              Column( "remote_addr", String( 255 ) ),
                              Column( "referer", TEXT ),
-                             Column( "session_key", TrimmedString( 255 ), index=True, unique=True ), # unique 128 bit random number coerced to a string
+                             Column( "session_key", TrimmedString( 255 ), index=True, unique=True ),  # unique 128 bit random number coerced to a string
                              Column( "is_valid", Boolean, default=False ),
-                             Column( "prev_session_id", Integer ) # saves a reference to the previous session so we have a way to chain them together
-    )
+                             Column( "prev_session_id", Integer ) )  # saves a reference to the previous session so we have a way to chain them together
 
 Tool_table = Table( "tool", metadata,
                     Column( "id", Integer, primary_key=True ),
@@ -145,11 +143,13 @@ ToolAnnotationAssociation_table = Table( "tool_annotation_association", metadata
                                          Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
                                          Column( "annotation", TEXT ) )
 
+
 def upgrade( migrate_engine ):
     print __doc__
     metadata.bind = migrate_engine
     metadata.create_all()
     Index( 'ix_tool_annotation_association_annotation', ToolAnnotationAssociation_table.c.annotation, mysql_length=767 ).create()
+
 
 def downgrade( migrate_engine ):
     # Operations to reverse the above upgrade go here.

@@ -1,0 +1,39 @@
+<tool id="dbkey_filter_input" name="dbkey_filter_input" version="0.1.0">
+    <description>Filter (single) input on a dbkey</description>
+    <command>
+        cat $inputs > $output
+    </command>
+    <inputs>
+        <param format="txt" name="inputs" type="data" label="Inputs" help="" />
+        <param name="index" type="select" label="Using reference genome">
+          <options from_data_table="test_fasta_indexes">
+            <filter type="data_meta" ref="inputs" key="dbkey" column="1" />
+            <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
+          </options>
+        </param>
+    </inputs>
+
+    <outputs>
+        <data format="txt" name="output" />
+    </outputs>
+
+    <tests>
+        <!-- can choose a dbkey if it matches input -->
+        <test>
+            <param name="inputs" value="simple_line.txt" dbkey="hg19" />
+            <param name="index" value="hg19" />
+            <output name="output" file="simple_line.txt"/>
+        </test>
+        <!-- cannot pick index otherwise -->
+        <!-- Does this make sense - if no dbkey is defined there is no option
+             available? -->
+        <test expect_failure="true">
+            <param name="inputs" value="simple_line.txt" />
+            <param name="index" value="hg18" />
+            <output name="output" file="simple_line.txt"/>
+        </test>
+    </tests>
+
+    <help>
+    </help>
+</tool>

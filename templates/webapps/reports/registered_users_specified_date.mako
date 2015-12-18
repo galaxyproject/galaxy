@@ -5,12 +5,22 @@
     ${render_msg( message, 'done' )}
 %endif
 
-<div class="toolForm">
-    <div class="toolFormBody">
-        <h3 align="center">User Registrations for ${day_label},&nbsp;${month_label}&nbsp;${day_of_month},&nbsp;${year_label}</h3>
+<div class="report">
+    <div class="reportBody">
+        <h3 align="center">
+            User Registrations for ${day_label},
+            &nbsp;${month_label}&nbsp;${day_of_month},
+            &nbsp;${year_label}
+        </h3>
         <table align="center" width="30%" class="colored">
             %if len( users ) == 0:
-                <tr><td colspan="2">There are no user registrations for ${day_label},&nbsp;${month_label}&nbsp;${day_of_month},&nbsp;${year_label}</td></tr>
+                <tr>
+                    <td colspan="2">
+                        There are no user registrations for ${day_label},
+                        &nbsp;${month_label}&nbsp;${day_of_month},
+                        &nbsp;${year_label}
+                    </td>
+                </tr>
             %else:
                 <tr class="header">
                     <td>Email</td>

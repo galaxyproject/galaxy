@@ -4,17 +4,17 @@ a user can select from a list of his addresses to associate with the request.  T
 drops the request.submitted column which was boolean and replaces it with a request.state column
 which is a string, allowing for more flexibility with request states.
 """
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from sqlalchemy.exc import *
-from galaxy.model.custom_types import *
-from migrate import *
-from migrate.changeset import *
 import datetime
-now = datetime.datetime.utcnow
-import sys, logging
-# Need our custom types, but don't import anything else from model
+import logging
+import sys
 
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
+from sqlalchemy.exc import NoSuchTableError
+
+# Need our custom types, but don't import anything else from model
+from galaxy.model.custom_types import TrimmedString
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -22,8 +22,8 @@ format = "%(name)s %(levelname)s %(asctime)s %(message)s"
 formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
-
 metadata = MetaData()
+
 
 def display_migration_details():
     print "========================================"
@@ -50,8 +50,8 @@ UserAddress_table = Table( "user_address", metadata,
                            Column( "deleted", Boolean, index=True, default=False ),
                            Column( "purged", Boolean, index=True, default=False ) )
 
+
 def upgrade(migrate_engine):
-    #raise Exception
     metadata.bind = migrate_engine
     display_migration_details()
     # Load existing tables
@@ -84,11 +84,12 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table request" )
     if Request_table is not None:
         if migrate_engine.name != 'sqlite':
-            #DBTODO drop from table doesn't work in sqlite w/ sqlalchemy-migrate .6+
+            # DBTODO drop from table doesn't work in sqlite w/ sqlalchemy-migrate .6+
             Request_table.c.submitted.drop()
         col = Column( "state", TrimmedString( 255 ), index=True  )
         col.create( Request_table, index_name='ix_request_state')
         assert col is Request_table.c.state
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

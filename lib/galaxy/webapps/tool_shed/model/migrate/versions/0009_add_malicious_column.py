@@ -1,13 +1,11 @@
 """
 Migration script to add the malicious column to the repository_metadata table.
 """
+import logging
+import sys
 
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
+from sqlalchemy import Boolean, Column, MetaData, Table
 
-import sys, logging
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -18,6 +16,7 @@ log.addHandler( handler )
 
 metadata = MetaData()
 
+
 def upgrade( migrate_engine ):
     print __doc__
     metadata.bind = migrate_engine
@@ -27,7 +26,7 @@ def upgrade( migrate_engine ):
     c = Column( "malicious", Boolean, default=False, index=True )
     try:
         # Create
-        c.create( Repository_metadata_table, index_name = "ix_repository_metadata_malicious")
+        c.create( Repository_metadata_table, index_name="ix_repository_metadata_malicious")
         assert c is Repository_metadata_table.c.malicious
         # Initialize.
         if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
@@ -38,6 +37,7 @@ def upgrade( migrate_engine ):
     except Exception, e:
         print "Adding malicious column to the repository_metadata table failed: %s" % str( e )
         log.debug( "Adding malicious column to the repository_metadata table failed: %s" % str( e ) )
+
 
 def downgrade( migrate_engine ):
     metadata.bind = migrate_engine

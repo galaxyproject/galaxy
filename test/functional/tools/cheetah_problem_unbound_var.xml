@@ -1,0 +1,16 @@
+<tool id="cheetah_problem_unbound_var" name="cheetah_problem_unbound_var" version="0.1.0">
+    <command>
+        echo "Moo" > $out_file2
+    </command>
+    <inputs>
+    </inputs>
+    <outputs>
+        <data name="out_file1" />
+    </outputs>
+    <tests>
+        <test expect_failure="true">
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

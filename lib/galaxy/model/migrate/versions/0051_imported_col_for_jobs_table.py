@@ -1,16 +1,13 @@
 """
 Migration script to add imported column for jobs table.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Boolean, Column, MetaData, Table
+
+log = logging.getLogger( __name__ )
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -26,7 +23,7 @@ def upgrade(migrate_engine):
         assert c is Jobs_table.c.imported
 
         # Initialize.
-        if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
+        if migrate_engine.name in ['mysql', 'sqlite']:
             default_false = "0"
         elif migrate_engine.name in ['postgres', 'postgresql']:
             default_false = "false"
@@ -35,6 +32,7 @@ def upgrade(migrate_engine):
     except Exception, e:
         print "Adding imported column to job table failed: %s" % str( e )
         log.debug( "Adding imported column to job table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

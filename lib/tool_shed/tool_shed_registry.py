@@ -1,9 +1,8 @@
 import logging
-import sys
 import urllib2
+
 from galaxy.util.odict import odict
-from tool_shed.util import common_util
-from tool_shed.util import xml_util
+from tool_shed.util import common_util, xml_util
 
 log = logging.getLogger( __name__ )
 

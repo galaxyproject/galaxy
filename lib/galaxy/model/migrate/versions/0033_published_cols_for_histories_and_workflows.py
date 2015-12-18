@@ -2,16 +2,13 @@
 Migration script to add necessary columns for distinguishing between viewing/importing and publishing histories, \
 workflows, and pages. Script adds published column to histories and workflows and importable column to pages.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Boolean, Column, Index, MetaData, Table
+
+log = logging.getLogger( __name__ )
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -27,7 +24,6 @@ def upgrade(migrate_engine):
     except Exception, e:
         print "Adding published column to history table failed: %s" % str( e )
         log.debug( "Adding published column to history table failed: %s" % str( e ) )
-
 
     if migrate_engine.name != 'sqlite':
         # Create index for published column in history table.
@@ -75,6 +71,7 @@ def upgrade(migrate_engine):
         except:
             # Mysql doesn't have a named index, but alter should work
             Page_table.c.importable.alter( unique=False )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

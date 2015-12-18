@@ -12,17 +12,18 @@ ross lazarus for rgenetics
 august 20 2007
 """
 
+import logging
 import os
 import sys
-import logging
-import data
-from cgi import escape
 import urllib
-from galaxy.web import url_for
+from cgi import escape
+
 from galaxy.datatypes import metadata
+from galaxy.datatypes.images import Html
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.tabular import Tabular
-from galaxy.datatypes.images import Html
+from galaxy.util import nice_size
+from galaxy.web import url_for
 
 gal_Log = logging.getLogger(__name__)
 verbose = False
@@ -162,11 +163,22 @@ class GenomeGraphs( Tabular ):
     def sniff( self, filename ):
         """
         Determines whether the file is in gg format
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'test_space.txt' )
+        >>> GenomeGraphs().sniff( fname )
+        False
+        >>> fname = get_test_fname( '1.gg' )
+        >>> GenomeGraphs().sniff( fname )
+        True
         """
         f = open(filename, 'r')
-        rows = [f.readline().split()[1:] for x in range(3)]  # small sample
-        # headers = get_headers( filename, '\t' )
+        f.readline()  # header
+        rows = [f.readline().split()[1:] for x in range(3)]  # small sample, trimming first column
         for row in rows:
+            if len(row) < 1:
+                # Must actually have at least one value
+                return False
             try:
                 [float(x) for x in row]  # first col has been removed
             except:
@@ -339,7 +351,7 @@ class SNPMatrix(Rgenetics):
     def set_peek( self, dataset, **kwd ):
         if not dataset.dataset.purged:
             dataset.peek = "Binary RGenetics file"
-            dataset.blurb = data.nice_size( dataset.get_size() )
+            dataset.blurb = nice_size( dataset.get_size() )
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -738,9 +750,9 @@ class RexpBase( Html ):
         Create HTML table, used for displaying peek
         """
         out = ['<table cellspacing="0" cellpadding="3">', ]
-        p = pp.split('\n')
         try:
             # Generate column header
+            p = pp.split('\n')
             for i, row in enumerate(p):
                 lrow = row.strip().split('\t')
                 if i == 0:

@@ -5,10 +5,14 @@ For the moment this depends on python's eval. In the future it should be
 replaced with a "safe" parser.
 """
 
-from UserDict import DictMixin
+try:
+    from UserDict import DictMixin as AbstractMapping
+except ImportError:
+    # PY3
+    from collections import MutableMapping as AbstractMapping
 
 
-class ExpressionContext( object, DictMixin ):
+class ExpressionContext( object, AbstractMapping ):
     def __init__( self, dict, parent=None ):
         """
         Create a new expression context that looks for values in the

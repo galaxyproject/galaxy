@@ -71,9 +71,6 @@ a.btn {
 ## ----------------------------------------------------------------------------
 <%def name="center_panel()">
 <%
-    imp_with_deleted_url = h.url_for( controller='history', action='imp', id=history[ 'id' ], all_datasets=True )
-    imp_without_deleted_url = h.url_for( controller='history', action='imp', id=history[ 'id' ] )
-
     structure_url = h.url_for( controller='history', action='display_structured', id=history[ 'id' ] )
 
     switch_to_url = h.url_for( controller='history', action='switch_to_history', hist_id=history[ 'id' ] )
@@ -90,10 +87,10 @@ a.btn {
     <div id="history-view-controls">
         <div class="pull-left">
             %if not history[ 'purged' ]:
-                %if user_is_owner:
+                %if not user_is_owner:
+                    <button id="import" class="btn btn-default">${ _( 'Import and start using history' ) }</button>
+                %elif not history_is_current:
                     <button id="switch" class="btn btn-default">${ _( 'Switch to this history' ) }</button>
-                %else:
-                    <button id="import" class="btn btn-default"></button>
                 %endif
                 <a id="structure" href="${ structure_url }" class="btn btn-default">${ _( 'Show structure' ) }</a>
             %endif
@@ -117,11 +114,6 @@ a.btn {
                 { mode: 'showing_deleted',      html: _l( 'Exclude deleted' ) },
                 { mode: 'not_showing_deleted',  html: _l( 'Include deleted' ) }
             ]
-        }).click( function(){
-            // allow the 'include/exclude deleted' button to control whether the 'import' button includes deleted
-            //  datasets when importing or not; when deleted datasets are shown, they'll be imported
-            $( '#import' ).modeButton( 'setMode',
-                $( this ).modeButton( 'current' ) === 'showing_deleted'? 'with_deleted': 'without_deleted' );
         });
 
         $( '#toggle-hidden' ).modeButton({
@@ -135,43 +127,28 @@ a.btn {
         $( '#switch' ).click( function( ev ){
             //##HACK:ity hack hack
             //##TODO: remove when out of iframe
-            var hpanel = Galaxy.currHistoryPanel
-                      || ( top.Galaxy && top.Galaxy.currHistoryPanel )? top.Galaxy.currHistoryPanel : null;
-            if( hpanel ){
-                hpanel.switchToHistory( "${ history[ 'id' ] }" );
+            var hview = Galaxy.currHistoryPanel
+                     || ( top.Galaxy && top.Galaxy.currHistoryPanel )? top.Galaxy.currHistoryPanel : null;
+            if( hview ){
+                hview.switchToHistory( "${ history[ 'id' ] }" );
             } else {
                 window.location = "${ switch_to_url }";
             }
         });
 
-        $( '#import' ).modeButton({
-            switchModesOnClick : false,
-            initialMode : "${ 'with_deleted' if show_deleted else 'without_deleted' }",
-            modes: [
-                { mode: 'with_deleted', html: _l( 'Import with deleted datasets and start using history' ),
-                    onclick: function importWithDeleted(){
-                        window.location = '${imp_with_deleted_url}';
-                    }
-                },
-                { mode: 'without_deleted', html: _l( 'Import and start using history' ),
-                    onclick: function importWithoutDeleted(){
-                        window.location = '${imp_without_deleted_url}';
-                    }
-                }
-            ]
-        });
     }
 
     // use_panels effects where the the center_panel() is rendered:
     //  w/o it renders to the body, w/ it renders to #center - we need to adjust a few things for scrolling to work
     var hasMasthead  = ${ 'true' if use_panels else 'false' },
         userIsOwner  = ${ 'true' if user_is_owner else 'false' },
+        isCurrent    = ${ 'true' if history_is_current else 'false' },
         historyJSON  = ${ h.dumps( history ) },
-        hdaJSON      = ${ h.dumps( hdas ) },
-        panelToUse   = ( userIsOwner )?
+        contentsJSON = ${ h.dumps( contents ) },
+        viewToUse   = ( userIsOwner )?
 //TODO: change class names
-            ({ location: 'mvc/history/history-panel-edit',  className: 'HistoryPanelEdit' }):
-            ({ location: 'mvc/history/history-panel',       className: 'HistoryPanel' });
+            ({ location: 'mvc/history/history-view-edit',  className: 'HistoryViewEdit' }):
+            ({ location: 'mvc/history/history-view',       className: 'HistoryView' });
 
     require.config({
         baseUrl : "${h.url_for( '/static/scripts' )}",
@@ -181,35 +158,52 @@ a.btn {
         urlArgs: 'v=${app.server_starttime}'
     })([
         'mvc/user/user-model',
-        panelToUse.location,
+        viewToUse.location,
+        'mvc/history/copy-dialog',
         'utils/localization',
         'ui/mode-button'
-    ], function( user, panelMod, _l ){
+    ], function( user, viewMod, historyCopyDialog, _l ){
         $(function(){
             setUpBehaviors();
+
             if( hasMasthead ){
                 $( '#center' ).css( 'overflow', 'auto' );
             }
-     
-            var panelClass = panelMod[ panelToUse.className ],
-                // history module is already in the dpn chain from the panel. We can re-scope it here.
-                historyModel = require( 'mvc/history/history-model' ),
-                history = new historyModel.History( historyJSON, hdaJSON );
 
-            window.historyPanel = new panelClass({
+            var viewClass = viewMod[ viewToUse.className ],
+                // history module is already in the dpn chain from the view. We can re-scope it here.
+                HISTORY = require( 'mvc/history/history-model' ),
+                historyModel = new HISTORY.History( historyJSON, contentsJSON );
+
+            // attach the copy dialog to the import button now that we have a history
+            $( '#import' ).click( function( ev ){
+                historyCopyDialog( historyModel, {
+                    useImport   : true,
+                    // use default datasets option to match the toggle-deleted button
+                    allDatasets : $( '#toggle-deleted' ).modeButton( 'getMode' ).mode === 'showing_deleted',
+                }).done( function(){
+                    if( window === window.parent ){
+                        window.location = Galaxy.root;
+                    } else if( Galaxy.currHistoryPanel ){
+                        Galaxy.currHistoryPanel.loadCurrentHistory();
+                    }
+                });
+            });
+
+            window.historyView = new viewClass({
                 show_deleted    : ${show_deleted_json},
                 show_hidden     : ${show_hidden_json},
                 purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
                 el              : $( "#history-" + historyJSON.id ),
                 $scrollContainer: hasMasthead? function(){ return this.$el.parent(); } : undefined,
-                model           : history
+                model           : historyModel
             }).render();
 
             $( '#toggle-deleted' ).on( 'click', function(){
-                historyPanel.toggleShowDeleted();
+                historyView.toggleShowDeleted();
             });
             $( '#toggle-hidden' ).on( 'click', function(){
-                historyPanel.toggleShowHidden();
+                historyView.toggleShowHidden();
             });
         });
     });

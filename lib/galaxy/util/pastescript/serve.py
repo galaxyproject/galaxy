@@ -16,6 +16,8 @@
 # code here, stripping out uneeded functionality.
 
 # All top level imports from each package moved here and organized
+from __future__ import print_function
+
 import ConfigParser
 import atexit
 import errno
@@ -359,20 +361,20 @@ class Command(object):
 class NotFoundCommand(Command):
 
     def run(self, args):
-        print ('Command %r not known (you may need to run setup.py egg_info)'
-               % self.command_name)
+        print('Command %r not known (you may need to run setup.py egg_info)'
+              % self.command_name)
         commands = list()
         commands.sort()
         if not commands:
-            print 'No commands registered.'
-            print 'Have you installed Paste Script?'
-            print '(try running python setup.py develop)'
+            print('No commands registered.')
+            print('Have you installed Paste Script?')
+            print('(try running python setup.py develop)')
             return 2
-        print 'Known commands:'
+        print('Known commands:')
         longest = max([len(n) for n, c in commands])
         for name, command in commands:
-            print '  %s  %s' % (self.pad(name, length=longest),
-                                command.load().summary)
+            print('  %s  %s' % (self.pad(name, length=longest),
+                                command.load().summary))
         return 2
 
 
@@ -536,7 +538,7 @@ class ServeCommand(Command):
                 if os.environ.get(self._reloader_environ_key):
                     from paste import reloader
                     if self.verbose > 1:
-                        print 'Running reloading file monitor'
+                        print('Running reloading file monitor')
                     reloader.install(int(self.options.reload_interval))
                     if self.requires_config_file:
                         reloader.watch_file(self.args[0])
@@ -553,7 +555,7 @@ class ServeCommand(Command):
         if cmd == 'restart' or cmd == 'stop':
             result = self.stop_daemon()
             if result:
-                print "Could not stop daemon"
+                print("Could not stop daemon")
                 # It's ok to continue trying to restart if stop_daemon returns
                 # a 1, otherwise shortcut and return.
                 if cmd == 'restart' and result != 1:
@@ -588,7 +590,7 @@ class ServeCommand(Command):
         if self.options.log_file:
             try:
                 writeable_log_file = open(self.options.log_file, 'a')
-            except IOError, ioe:
+            except IOError as ioe:
                 msg = 'Error: Unable to write to log file: %s' % ioe
                 raise BadCommand(msg)
             writeable_log_file.close()
@@ -597,7 +599,7 @@ class ServeCommand(Command):
         if self.options.pid_file:
             try:
                 writeable_pid_file = open(self.options.pid_file, 'a')
-            except IOError, ioe:
+            except IOError as ioe:
                 msg = 'Error: Unable to write to pid file: %s' % ioe
                 raise BadCommand(msg)
             writeable_pid_file.close()
@@ -605,9 +607,9 @@ class ServeCommand(Command):
         if getattr(self.options, 'daemon', False):
             try:
                 self.daemonize()
-            except DaemonizeException, ex:
+            except DaemonizeException as ex:
                 if self.verbose > 0:
-                    print str(ex)
+                    print(str(ex))
                 return
 
         if (self.options.monitor_restart and not
@@ -641,24 +643,31 @@ class ServeCommand(Command):
                 msg = 'Starting server in PID %i.' % os.getpid()
             else:
                 msg = 'Starting server.'
-            print msg
+            print(msg)
 
         def serve():
             try:
                 server(app)
-            except (SystemExit, KeyboardInterrupt), e:
+            except (SystemExit, KeyboardInterrupt) as e:
                 if self.verbose > 1:
                     raise
                 if str(e):
                     msg = ' ' + str(e)
                 else:
                     msg = ''
-                print 'Exiting%s (-v to see traceback)' % msg
+                print('Exiting%s (-v to see traceback)' % msg)
+            except AttributeError as e:
+                # Capturing bad error response from paste
+                if str(e) == "'WSGIThreadPoolServer' object has no attribute 'thread_pool'":
+                    import socket
+                    raise socket.error(98, 'Address already in use')
+                else:
+                    raise AttributeError(e)
 
         if jython_monitor:
             # JythonMonitor has to be ran from the main thread
             threading.Thread(target=serve).start()
-            print 'Starting Jython file monitor'
+            print('Starting Jython file monitor')
             jython_monitor.periodic_reload()
         else:
             serve()
@@ -671,7 +680,7 @@ class ServeCommand(Command):
                 % (pid, self.options.pid_file))
 
         if self.verbose > 0:
-            print 'Entering daemon mode'
+            print('Entering daemon mode')
         pid = os.fork()
         if pid:
             # The forked process also has a handle on resources, so we
@@ -710,7 +719,7 @@ class ServeCommand(Command):
     def record_pid(self, pid_file):
         pid = os.getpid()
         if self.verbose > 1:
-            print 'Writing PID %s to %s' % (pid, pid_file)
+            print('Writing PID %s to %s' % (pid, pid_file))
         f = open(pid_file, 'w')
         f.write(str(pid))
         f.close()
@@ -719,19 +728,19 @@ class ServeCommand(Command):
     def stop_daemon(self):
         pid_file = self.options.pid_file or 'paster.pid'
         if not os.path.exists(pid_file):
-            print 'No PID file exists in %s' % pid_file
+            print('No PID file exists in %s' % pid_file)
             return 1
         pid = read_pidfile(pid_file)
         if not pid:
-            print "Not a valid PID file in %s" % pid_file
+            print("Not a valid PID file in %s" % pid_file)
             return 1
         pid = live_pidfile(pid_file)
         if not pid:
-            print "PID in %s is not valid (deleting)" % pid_file
+            print("PID in %s is not valid (deleting)" % pid_file)
             try:
                 os.unlink(pid_file)
-            except (OSError, IOError), e:
-                print "Could not delete: %s" % e
+            except (OSError, IOError) as e:
+                print("Could not delete: %s" % e)
                 return 2
             return 1
         for j in range(10):
@@ -741,7 +750,7 @@ class ServeCommand(Command):
             os.kill(pid, signal.SIGTERM)
             time.sleep(1)
         else:
-            print "failed to kill web process %s" % pid
+            print("failed to kill web process %s" % pid)
             return 3
         if os.path.exists(pid_file):
             os.unlink(pid_file)
@@ -750,17 +759,17 @@ class ServeCommand(Command):
     def show_status(self):
         pid_file = self.options.pid_file or 'paster.pid'
         if not os.path.exists(pid_file):
-            print 'No PID file %s' % pid_file
+            print('No PID file %s' % pid_file)
             return 1
         pid = read_pidfile(pid_file)
         if not pid:
-            print 'No PID in file %s' % pid_file
+            print('No PID in file %s' % pid_file)
             return 1
         pid = live_pidfile(pid_file)
         if not pid:
-            print 'PID %s in %s is not running' % (pid, pid_file)
+            print('PID %s in %s is not running' % (pid, pid_file))
             return 1
-        print 'Server running in PID %s' % pid
+        print('Server running in PID %s' % pid)
         return 0
 
     def restart_with_reloader(self):
@@ -769,9 +778,9 @@ class ServeCommand(Command):
     def restart_with_monitor(self, reloader=False):
         if self.verbose > 0:
             if reloader:
-                print 'Starting subprocess with file monitor'
+                print('Starting subprocess with file monitor')
             else:
-                print 'Starting subprocess with monitor parent'
+                print('Starting subprocess with monitor parent')
         while 1:
             args = [self.quote_first_command_arg(sys.executable)] + sys.argv
             new_environ = os.environ.copy()
@@ -787,7 +796,7 @@ class ServeCommand(Command):
                     exit_code = proc.wait()
                     proc = None
                 except KeyboardInterrupt:
-                    print '^C caught in monitor process'
+                    print('^C caught in monitor process')
                     if self.verbose > 1:
                         raise
                     return 1
@@ -806,7 +815,7 @@ class ServeCommand(Command):
                 if exit_code != 3:
                     return exit_code
             if self.verbose > 0:
-                print '-' * 20, 'Restarting', '-' * 20
+                print('-' * 20, 'Restarting', '-' * 20)
 
     def change_user_group(self, user, group):
         if not user and not group:
@@ -839,8 +848,8 @@ class ServeCommand(Command):
                 gid = entry.pw_gid
             uid = entry.pw_uid
         if self.verbose > 0:
-            print 'Changing user to %s:%s (%s:%s)' % (
-                user, group or '(unknown)', uid, gid)
+            print('Changing user to %s:%s (%s:%s)' % (
+                user, group or '(unknown)', uid, gid))
         if hasattr(os, 'initgroups'):
             os.initgroups(user, gid)
         else:
@@ -900,7 +909,7 @@ def live_pidfile(pidfile):
         try:
             os.kill(int(pid), 0)
             return pid
-        except OSError, e:
+        except OSError as e:
             if e.errno == errno.EPERM:
                 return pid
     return None
@@ -936,26 +945,26 @@ def _remove_pid_file(written_pid, filename, verbosity):
         pass
     else:
         if pid_in_file != current_pid:
-            print "PID file %s contains %s, not expected PID %s" % (
-                filename, pid_in_file, current_pid)
+            print("PID file %s contains %s, not expected PID %s" % (
+                filename, pid_in_file, current_pid))
             return
     if verbosity > 0:
-        print "Removing PID file %s" % filename
+        print("Removing PID file %s" % filename)
     try:
         os.unlink(filename)
         return
-    except OSError, e:
+    except OSError as e:
         # Record, but don't give traceback
-        print "Cannot remove PID file: %s" % e
+        print("Cannot remove PID file: %s" % e)
     # well, at least lets not leave the invalid PID around...
     try:
         f = open(filename, 'w')
         f.write('')
         f.close()
-    except OSError, e:
-        print 'Stale PID left in file: %s (%e)' % (filename, e)
+    except OSError as e:
+        print('Stale PID left in file: %s (%e)' % (filename, e))
     else:
-        print 'Stale PID removed'
+        print('Stale PID removed')
 
 
 def ensure_port_cleanup(bound_addresses, maxtries=30, sleeptime=2):
@@ -981,7 +990,7 @@ def _cleanup_ports(bound_addresses, maxtries=30, sleeptime=2):
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
                 sock.connect(bound_address)
-            except socket.error, e:
+            except socket.error as e:
                 if e.args[0] != errno.ECONNREFUSED:
                     raise
                 break
@@ -1042,7 +1051,7 @@ def run(args=None):
     if options.do_help:
         args = ['help'] + args
     if not args:
-        print 'Usage: %s COMMAND' % sys.argv[0]
+        print('Usage: %s COMMAND' % sys.argv[0])
         args = ['help']
     command_name = args[0]
     if command_name not in commands:
@@ -1056,7 +1065,7 @@ def invoke(command, command_name, options, args):
     try:
         runner = command(command_name)
         exit_code = runner.run(args)
-    except BadCommand, e:
-        print e.message
+    except BadCommand as e:
+        print(e.message)
         exit_code = e.exit_code
     sys.exit(exit_code)

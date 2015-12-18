@@ -1,8 +1,6 @@
-#Dan Blankenberg
-#This script checks maf_index.loc file for inconsistencies between what is listed as available and what is really available.
-#Make sure that required dependencies (e.g. galaxy_root/lib and galaxy_root/eggs) are included in your PYTHONPATH
-from galaxy import eggs
-import pkg_resources; pkg_resources.require( "bx-python" )
+# Dan Blankenberg
+# This script checks maf_index.loc file for inconsistencies between what is listed as available and what is really available.
+# Make sure that required dependencies (e.g. galaxy_root/lib) are included in your PYTHONPATH
 import bx.align.maf
 from galaxy.tools.util import maf_utilities
 import sys

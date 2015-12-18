@@ -8,7 +8,7 @@
 #the directories in which those files are stored. The srma_index.loc 
 #file has this format (longer white space is the TAB character):
 #
-#<unique_build_id>	<dbkey>		<display_name>	<fasta_file_path>
+#<unique_build_id>	<dbkey>	<display_name>	<fasta_file_path>
 #
 #So, for example, if you had hg18 indexed and stored in 
 #/depot/data2/galaxy/srma/hg18/, 

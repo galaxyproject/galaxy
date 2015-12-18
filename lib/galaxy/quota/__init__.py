@@ -28,7 +28,7 @@ class NoQuotaAgent( object ):
         assert user is not False, "Could not determine user."
         if not user:
             assert history, "Could not determine anonymous user's history."
-            usage = history.get_disk_size()
+            usage = history.disk_size
         else:
             usage = user.total_disk_usage
         return usage

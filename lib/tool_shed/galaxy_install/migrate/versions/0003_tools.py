@@ -4,9 +4,10 @@ Galaxy tool shed at http://toolshed.g2.bx.psu.edu will be installed into your lo
 location discussed above by running the following command.
 """
 
-import sys
 
 def upgrade(migrate_engine):
     print __doc__
+
+
 def downgrade(migrate_engine):
     pass

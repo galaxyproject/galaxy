@@ -2,8 +2,6 @@ from __future__ import absolute_import
 
 import logging
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import false
 
 from galaxy.web.base.controller import BaseUIController, web

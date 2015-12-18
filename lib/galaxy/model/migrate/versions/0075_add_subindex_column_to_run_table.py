@@ -1,15 +1,12 @@
 """
 Migration script to add a 'subindex' column to the run table.
 """
+from sqlalchemy import Column, MetaData, Table
 
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
-from galaxy.model.custom_types import *
+from galaxy.model.custom_types import TrimmedString
 
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -22,6 +19,7 @@ def upgrade(migrate_engine):
         assert c is Run_table.c.subindex
     except Exception, e:
         print "Adding the subindex column to the run table failed: ", str( e )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

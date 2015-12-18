@@ -13,7 +13,6 @@ import socket
 import sys
 import tempfile
 import time
-from user import home
 
 # options
 if "DEBUG" in os.environ:
@@ -49,8 +48,7 @@ tools = {
 
 # handle arg(s)
 def usage():
-    print "usage: check_galaxy.py <server>"
-    sys.exit(1)
+    sys.exit("usage: check_galaxy.py <server>")
 
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'n' )
@@ -76,7 +74,7 @@ for o, a in opts:
         usage()
 
 # state information
-var_dir = os.path.join( home, ".check_galaxy", server )
+var_dir = os.path.join( os.path.expanduser('~'), ".check_galaxy", server )
 if not os.access( var_dir, os.F_OK ):
     os.makedirs( var_dir, 0700 )
 
@@ -85,23 +83,20 @@ login_file = os.path.join( var_dir, "login" )
 try:
     f = open( login_file, 'r' )
 except:
-    print "Please create the file:"
-    print " ", login_file
-    print "This should contain a username and password to log in to"
-    print "Galaxy with, on one line, separated by whitespace, e.g.:"
-    print ""
-    print "check_galaxy@example.com password"
-    print ""
-    print "If the user does not exist, check_galaxy will create it"
-    print "for you."
-    sys.exit(1)
+    message = """Please create the file:
+%s
+This should contain a username and password to log in to Galaxy with,
+on one line, separated by whitespace, e.g.:
+
+check_galaxy@example.com password
+
+If the user does not exist, check_galaxy will create it for you.""" % login_file
+    sys.exit(message)
 ( username, password ) = f.readline().split()
 
 # find/import twill
 lib_dir = os.path.join( scripts_dir, os.pardir, "lib" )
 sys.path.insert( 1, lib_dir )
-from galaxy import eggs
-eggs.require( "twill" )
 import twill
 import twill.commands as tc
 
@@ -170,8 +165,7 @@ class Browser:
                     dprint( "Galaxy is down, but a maint file was found, so not sending alert" )
                     sys.exit(0)
                 else:
-                    print "Galaxy is down (code 502)"
-                    sys.exit(1)
+                    sys.exit("Galaxy is down (code 502)")
             return(False)
 
     # checks for a maint file
@@ -419,7 +413,6 @@ if __name__ == "__main__":
         # by this point, everything else has succeeded.  there should be no maint.
         is_maint = b.check_maint()
         if is_maint:
-            print "Galaxy is up and fully functional, but a maint file is in place."
-            sys.exit(1)
+            sys.exit("Galaxy is up and fully functional, but a maint file is in place.")
 
     sys.exit(0)

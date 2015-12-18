@@ -225,8 +225,7 @@ class DatasetDeserializer( base.ModelDeserializer, deletable.PurgableDeserialize
         deletable.PurgableDeserializerMixin.add_deserializers( self )
 
         self.deserializers.update({
-            # TODO: do not enable until fully tested
-            # 'permissions' : self.deserialize_permissions,
+            'permissions' : self.deserialize_permissions,
         })
 
     def deserialize_permissions( self, dataset, key, permissions, user=None, **context ):
@@ -257,7 +256,7 @@ class DatasetDeserializer( base.ModelDeserializer, deletable.PurgableDeserialize
         return permissions
 
     def _list_of_roles_from_ids( self, id_list ):
-        # TODO: this manager may make more sense inside rbac_secured
+        # TODO: this may make more sense inside rbac_secured
         # note: no checking of valid roles is made
         return self.role_manager.by_ids( [ self.app.security.decode_id( id_ ) for id_ in id_list ] )
 
@@ -368,7 +367,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,
             # 'dataset_uuid'  : self._proxy_to_dataset( key='uuid' ),
             'file_name'     : self._proxy_to_dataset( serializer=self.dataset_serializer.serialize_file_name ),
             'extra_files_path' : self._proxy_to_dataset( serializer=self.dataset_serializer.serialize_extra_files_path ),
-            'permissions'   : self._proxy_to_dataset( serializer=self.dataset_serializer.serialize_permissions),
+            'permissions'   : self._proxy_to_dataset( serializer=self.dataset_serializer.serialize_permissions ),
             # TODO: do the sizes proxy accurately/in the same way?
             'size'          : lambda i, k, **c: int( i.get_size() ),
             'file_size'     : lambda i, k, **c: self.serializers[ 'size' ]( i, k, **c ),
@@ -384,6 +383,9 @@ class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,
             'meta_files'    : self.serialize_meta_files,
             'metadata'      : self.serialize_metadata,
 
+            'creating_job'  : self.serialize_creating_job,
+            'rerunnable'    : self.serialize_rerunnable,
+
             'parent_id'     : self.serialize_id,
             'designation'   : lambda i, k, **c: i.designation,
 
@@ -396,7 +398,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,
             # derived (not mapped) attributes
             'data_type'     : lambda i, k, **c: i.datatype.__class__.__module__ + '.' + i.datatype.__class__.__name__,
 
-            # TODO: conversions
+            'converted'     : self.serialize_converted_datasets,
             # TODO: metadata/extra files
         })
         # this an abstract superclass, so no views created
@@ -446,6 +448,40 @@ class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,
             metadata[ name ] = val
 
         return metadata
+
+    def serialize_creating_job( self, dataset, key, **context ):
+        """
+        Return the id of the Job that created this dataset (or its original)
+        or None if no `creating_job` is found.
+        """
+        if dataset.creating_job:
+            return self.serialize_id( dataset.creating_job, 'id' )
+        else:
+            return None
+
+    def serialize_rerunnable( self, dataset, key, **context ):
+        """
+        Return False if this tool that created this dataset can't be re-run
+        (e.g. upload).
+        """
+        if dataset.creating_job:
+            tool = self.app.toolbox.get_tool( dataset.creating_job.tool_id, dataset.creating_job.tool_version )
+            if tool and tool.is_workflow_compatible:
+                return True
+        return False
+
+    def serialize_converted_datasets( self, dataset_assoc, key, **context ):
+        """
+        Return a file extension -> converted dataset encoded id map with all
+        the existing converted datasets associated with this instance.
+
+        This filters out deleted associations.
+        """
+        id_map = {}
+        for converted in dataset_assoc.implicitly_converted_datasets:
+            if not converted.deleted and converted.dataset:
+                id_map[ converted.type ] = self.serialize_id( converted.dataset, 'id' )
+        return id_map
 
 
 class DatasetAssociationSerializer( _UnflattenedMetadataDatasetAssociationSerializer ):
@@ -565,7 +601,7 @@ class DatasetAssociationFilterParser( base.ModelFilterParser, deletable.Purgable
         """
         comparison_class = self.app.datatypes_registry.get_datatype_class_by_name( class_str )
         return ( comparison_class and
-                 dataset_assoc.datatype.__class__ == comparison_class )
+            dataset_assoc.datatype.__class__ == comparison_class )
 
     def isinstance_datatype( self, dataset_assoc, class_strs ):
         """
@@ -579,4 +615,4 @@ class DatasetAssociationFilterParser( base.ModelFilterParser, deletable.Purgable
             if datatype_class:
                 comparison_classes.append( datatype_class )
         return ( comparison_classes and
-                isinstance( dataset_assoc.datatype, comparison_classes ) )
+            isinstance( dataset_assoc.datatype, comparison_classes ) )

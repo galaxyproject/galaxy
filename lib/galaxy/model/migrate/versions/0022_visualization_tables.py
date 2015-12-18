@@ -2,17 +2,13 @@
 Migration script to add support for storing visualizations.
   1) Creates Visualization and VisualizationRevision tables
 """
-
-from sqlalchemy import *
-from migrate import *
-from migrate.changeset import *
-
 import datetime
-now = datetime.datetime.utcnow
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
+
+now = datetime.datetime.utcnow
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 Visualization_table = Table( "visualization", metadata,
@@ -23,8 +19,7 @@ Visualization_table = Table( "visualization", metadata,
                              Column( "latest_revision_id", Integer,
                                      ForeignKey( "visualization_revision.id", use_alter=True, name='visualization_latest_revision_id_fk' ), index=True ),
                              Column( "title", TEXT ),
-                             Column( "type", TEXT )
-    )
+                             Column( "type", TEXT ) )
 
 VisualizationRevision_table = Table( "visualization_revision", metadata,
                                      Column( "id", Integer, primary_key=True ),
@@ -32,8 +27,8 @@ VisualizationRevision_table = Table( "visualization_revision", metadata,
                                      Column( "update_time", DateTime, default=now, onupdate=now ),
                                      Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True, nullable=False ),
                                      Column( "title", TEXT ),
-                                     Column( "config", TEXT )
-    )
+                                     Column( "config", TEXT ) )
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -54,4 +49,3 @@ def downgrade(migrate_engine):
     metadata.reflect()
     Visualization_table.drop()
     VisualizationRevision_table.drop()
-

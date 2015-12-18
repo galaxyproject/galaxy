@@ -6,6 +6,8 @@ define([
     "utils/localization"
 ], function( LIST_ITEM, STATES, faIconButton, BASE_MVC, _l ){
 /* global Backbone */
+
+var logNamespace = 'dataset';
 /*==============================================================================
 TODO:
     straighten out state rendering and templates used
@@ -19,9 +21,7 @@ var _super = LIST_ITEM.ListItemView;
  */
 var DatasetListItemView = _super.extend(
 /** @lends DatasetListItemView.prototype */{
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger      : console,
+    _logNamespace : logNamespace,
 
     className   : _super.prototype.className + " dataset",
     //TODO:?? doesn't exactly match an hda's type_id
@@ -37,8 +37,6 @@ var DatasetListItemView = _super.extend(
 
         /** where should pages from links be displayed? (default to new tab/window) */
         this.linkTarget = attributes.linkTarget || '_blank';
-
-        this._setUpListeners();
     },
 
     /** event listeners */
@@ -60,7 +58,7 @@ var DatasetListItemView = _super.extend(
     },
 
     // ......................................................................... expandable
-    /** In this override, only get details if in the ready state.
+    /** In this override, only get details if in the ready state, get rerunnable if in other states.
      *  Note: fetch with no 'change' event triggering to prevent automatic rendering.
      */
     _fetchModelDetails : function(){
@@ -269,7 +267,7 @@ var DatasetListItemView = _super.extend(
         }
 
         return $([
-            '<a class="download-btn icon-btn" href="', this.model.urls.download, '" title="' + _l( 'Download' ) + '">',
+            '<a class="download-btn icon-btn" href="', this.model.urls.download, '" title="' + _l( 'Download' ) + '" download>',
                 '<span class="fa fa-floppy-o"></span>',
             '</a>'
         ].join( '' ));
@@ -285,7 +283,7 @@ var DatasetListItemView = _super.extend(
                     '<span class="fa fa-floppy-o"></span>',
                 '</a>',
                 '<ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">',
-                    '<li><a href="' + urls.download + '">', _l( 'Download dataset' ), '</a></li>',
+                    '<li><a href="' + urls.download + '" download>', _l( 'Download dataset' ), '</a></li>',
                     _.map( this.model.get( 'meta_files' ), function( meta_file ){
                         return [
                             '<li><a href="', urls.meta_download + meta_file.file_type, '">',
@@ -473,7 +471,7 @@ DatasetListItemView.prototype.templates = (function(){
                 '<span class="display-application-location"><%- app.label %></span> ',
                 '<span class="display-application-links">',
                     '<% _.each( app.links, function( link ){ %>',
-                        '<a target="<%= link.target %>" href="<%= link.href %>">',
+                        '<a target="<%- link.target %>" href="<%- link.href %>">',
                             '<% print( _l( link.text ) ); %>',
                         '</a> ',
                     '<% }); %>',

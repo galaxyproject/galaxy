@@ -8,8 +8,6 @@ import urllib
 from time import gmtime
 from time import strftime
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false
 
 import tool_shed.repository_types.util as rt_util
@@ -81,10 +79,10 @@ class ExportRepositoryManager( object ):
         try:
             repositories_archive = tarfile.open( repositories_archive_filename, "w:%s" % self.file_type )
             exported_repository_registry = ExportedRepositoryRegistry()
-            for index, repository_id in enumerate( ordered_repository_ids ):
+            for repository_id, ordered_repository, ordered_changeset_revision in zip( ordered_repository_ids,
+                                                                                      ordered_repositories,
+                                                                                      ordered_changeset_revisions ):
                 work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-export-er" )
-                ordered_repository = ordered_repositories[ index ]
-                ordered_changeset_revision = ordered_changeset_revisions[ index ]
                 repository_archive, error_message = self.generate_repository_archive( ordered_repository,
                                                                                       ordered_changeset_revision,
                                                                                       work_dir )
@@ -112,14 +110,19 @@ class ExportRepositoryManager( object ):
         except Exception, e:
             log.exception( str( e ) )
         finally:
+            if os.path.exists( tmp_export_info ):
+                os.remove( tmp_export_info )
+            if os.path.exists( tmp_manifest ):
+                os.remove( tmp_manifest )
             lock.release()
         if repositories_archive is not None:
             repositories_archive.close()
         if self.using_api:
             encoded_repositories_archive_name = encoding_util.tool_shed_encode( repositories_archive_filename )
-            params = '?encoded_repositories_archive_name=%s' % encoded_repositories_archive_name
-            download_url = common_util.url_join( web.url_for( '/', qualified=True ),
-                                                'repository/export_via_api%s' % params )
+            params = dict( encoded_repositories_archive_name=encoded_repositories_archive_name )
+            pathspec = [ 'repository', 'export_via_api' ]
+            tool_shed_url = web.url_for( '/', qualified=True )
+            download_url = common_util.url_join( tool_shed_url, pathspec=pathspec, params=params )
             return dict( download_url=download_url, error_messages=error_messages )
         return repositories_archive, error_messages
 

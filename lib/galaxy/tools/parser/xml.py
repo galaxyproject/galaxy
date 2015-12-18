@@ -19,13 +19,17 @@ from .util import (
     error_on_exit_code,
     aggressive_error_checks,
 )
+from .output_collection_def import dataset_collector_descriptions_from_elem
+from .output_actions import ToolOutputActionGroup
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
 from galaxy.tools.deps import requirements
-import galaxy.tools
-from galaxy.tools.parameters import output_collect
-from galaxy.tools.parameters import dynamic_options
-from galaxy.tools.parameters.output import ToolOutputActionGroup
+from .output_objects import (
+    ToolOutput,
+    ToolOutputCollection,
+    ToolOutputCollectionStructure
+)
+
 
 log = logging.getLogger( __name__ )
 
@@ -178,6 +182,7 @@ class XmlToolSource(ToolSource):
             label = xml_text( collection_elem, "label" )
             default_format = collection_elem.get( "format", "data" )
             collection_type = collection_elem.get( "type", None )
+            collection_type_source = collection_elem.get( "type_source", None )
             structured_like = collection_elem.get( "structured_like", None )
             inherit_format = False
             inherit_metadata = False
@@ -188,15 +193,16 @@ class XmlToolSource(ToolSource):
             default_metadata_source = collection_elem.get( "metadata_source", "" )
             filters = collection_elem.findall( 'filter' )
 
-            dataset_collectors = None
+            dataset_collector_descriptions = None
             if collection_elem.find( "discover_datasets" ) is not None:
-                dataset_collectors = output_collect.dataset_collectors_from_elem( collection_elem )
-            structure = galaxy.tools.ToolOutputCollectionStructure(
+                dataset_collector_descriptions = dataset_collector_descriptions_from_elem( collection_elem )
+            structure = ToolOutputCollectionStructure(
                 collection_type=collection_type,
+                collection_type_source=collection_type_source,
                 structured_like=structured_like,
-                dataset_collectors=dataset_collectors,
+                dataset_collector_descriptions=dataset_collector_descriptions,
             )
-            output_collection = galaxy.tools.ToolOutputCollection(
+            output_collection = ToolOutputCollection(
                 name,
                 structure,
                 label=label,
@@ -237,7 +243,7 @@ class XmlToolSource(ToolSource):
         default_format_source=None,
         default_metadata_source="",
     ):
-        output = galaxy.tools.ToolOutput( data_elem.get("name") )
+        output = ToolOutput( data_elem.get("name") )
         output_format = data_elem.get("format", default_format)
         auto_format = string_as_bool( data_elem.get( "auto_format", "false" ) )
         if auto_format and output_format != "data":
@@ -256,7 +262,7 @@ class XmlToolSource(ToolSource):
         output.from_work_dir = data_elem.get("from_work_dir", None)
         output.hidden = string_as_bool( data_elem.get("hidden", "") )
         output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
-        output.dataset_collectors = output_collect.dataset_collectors_from_elem( data_elem )
+        output.dataset_collector_descriptions = dataset_collector_descriptions_from_elem( data_elem )
         return output
 
     def parse_stdio(self):
@@ -300,11 +306,13 @@ def _test_elem_to_dict(test_elem, i):
         outputs=__parse_output_elems(test_elem),
         output_collections=__parse_output_collection_elems(test_elem),
         inputs=__parse_input_elems(test_elem, i),
+        expect_num_outputs=test_elem.get("expect_num_outputs"),
         command=__parse_assert_list_from_elem( test_elem.find("assert_command") ),
         stdout=__parse_assert_list_from_elem( test_elem.find("assert_stdout") ),
         stderr=__parse_assert_list_from_elem( test_elem.find("assert_stderr") ),
         expect_exit_code=test_elem.get("expect_exit_code"),
         expect_failure=string_as_bool(test_elem.get("expect_failure", False)),
+        maxseconds=test_elem.get("maxseconds", None),
     )
     _copy_to_dict_if_present(test_elem, rval, ["interactor", "num_outputs"])
     return rval
@@ -359,17 +367,22 @@ def __parse_output_collection_elem( output_collection_elem ):
     name = attrib.pop( 'name', None )
     if name is None:
         raise Exception( "Test output collection does not have a 'name'" )
+    element_tests = __parse_element_tests( output_collection_elem )
+    return TestCollectionOutputDef( name, attrib, element_tests )
+
+
+def __parse_element_tests( parent_element ):
     element_tests = {}
-    for element in output_collection_elem.findall("element"):
+    for element in parent_element.findall("element"):
         element_attrib = dict( element.attrib )
         identifier = element_attrib.pop( 'name', None )
         if identifier is None:
             raise Exception( "Test primary dataset does not have a 'identifier'" )
-        element_tests[ identifier ] = __parse_test_attributes( element, element_attrib )
-    return TestCollectionOutputDef( name, attrib, element_tests )
+        element_tests[ identifier ] = __parse_test_attributes( element, element_attrib, parse_elements=True )
+    return element_tests
 
 
-def __parse_test_attributes( output_elem, attrib ):
+def __parse_test_attributes( output_elem, attrib, parse_elements=False ):
     assert_list = __parse_assert_list( output_elem )
     file = attrib.pop( 'file', None )
     # File no longer required if an list of assertions was present.
@@ -390,12 +403,17 @@ def __parse_test_attributes( output_elem, attrib ):
     for metadata_elem in output_elem.findall( 'metadata' ):
         metadata[ metadata_elem.get('name') ] = metadata_elem.get( 'value' )
     md5sum = attrib.get("md5", None)
-    if not (assert_list or file or extra_files or metadata or md5sum):
+    element_tests = {}
+    if parse_elements:
+        element_tests = __parse_element_tests( output_elem )
+
+    if not (assert_list or file or extra_files or metadata or md5sum or element_tests):
         raise Exception( "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or md5 tests, etc...)")
     attributes['assert_list'] = assert_list
     attributes['extra_files'] = extra_files
     attributes['metadata'] = metadata
     attributes['md5'] = md5sum
+    attributes['elements'] = element_tests
     return file, attributes
 
 
@@ -808,16 +826,12 @@ class XmlInputSource(InputSource):
     def parse_validator_elems(self):
         return self.input_elem.findall("validator")
 
-    def parse_dynamic_options(self, param):
+    def parse_dynamic_options_elem(self):
         """ Return a galaxy.tools.parameters.dynamic_options.DynamicOptions
         if appropriate.
         """
         options_elem = self.input_elem.find( 'options' )
-        if options_elem is None:
-            options = None
-        else:
-            options = dynamic_options.DynamicOptions( options_elem, param )
-        return options
+        return options_elem
 
     def parse_static_options(self):
         static_options = list()

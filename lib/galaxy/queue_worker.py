@@ -5,16 +5,9 @@ reloading the toolbox, etc., across multiple processes.
 
 import logging
 import threading
-import sys
 
 import galaxy.queues
-from galaxy import eggs, util
-eggs.require('anyjson')
-if sys.version_info < (2, 7, 0):
-    # Kombu requires importlib and ordereddict to function under Python 2.6.
-    eggs.require('importlib')
-    eggs.require('ordereddict')
-eggs.require('kombu')
+from galaxy import util
 
 from kombu import Connection
 from kombu.mixins import ConsumerMixin
@@ -62,6 +55,11 @@ def reload_display_application(app, **kwargs):
     app.datatypes_registry.reload_display_applications( display_application_ids)
 
 
+def reload_sanitize_whitelist(app):
+    log.debug("Executing reload sanitize whitelist control task.")
+    app.config.reload_sanitize_whitelist()
+
+
 def reload_tool_data_tables(app, **kwargs):
     params = util.Params(kwargs)
     log.debug("Executing tool data table reload for %s" % params.get('table_names', 'all tables'))
@@ -80,7 +78,8 @@ def admin_job_lock(app, **kwargs):
 control_message_to_task = { 'reload_tool': reload_tool,
                             'reload_display_application': reload_display_application,
                             'reload_tool_data_tables': reload_tool_data_tables,
-                            'admin_job_lock': admin_job_lock}
+                            'admin_job_lock': admin_job_lock,
+                            'reload_sanitize_whitelist': reload_sanitize_whitelist}
 
 
 class GalaxyQueueWorker(ConsumerMixin, threading.Thread):

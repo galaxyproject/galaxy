@@ -3,16 +3,17 @@ Drops the tool, tool_category_association, event, tool_event_association, tool_r
 tool_tag_association and tool_annotation_association tables since they are no longer used in the
 next-gen tool shed.
 """
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from sqlalchemy.exc import *
-from migrate import *
-from migrate.changeset import *
-
 import datetime
-now = datetime.datetime.utcnow
+import logging
+import sys
 
-import sys, logging
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
+from sqlalchemy.exc import NoSuchTableError
+
+# Need our custom types, but don't import anything else from model
+from galaxy.model.custom_types import TrimmedString
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel( logging.DEBUG )
 handler = logging.StreamHandler( sys.stdout )
@@ -21,10 +22,8 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
-
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     print __doc__
@@ -94,6 +93,8 @@ def upgrade(migrate_engine):
         Tool_table.drop()
     except Exception, e:
         log.debug( "Dropping tool table failed: %s" % str( e ) )
+
+
 def downgrade(migrate_engine):
     # Load existing tables
     metadata.bind = migrate_engine

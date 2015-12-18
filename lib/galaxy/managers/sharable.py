@@ -26,7 +26,7 @@ log = logging.getLogger( __name__ )
 
 
 class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secured.AccessibleManagerMixin,
-                            taggable.TaggableManagerMixin, annotatable.AnnotatableManagerMixin, ratable.RatableManagerMixin ):
+        taggable.TaggableManagerMixin, annotatable.AnnotatableManagerMixin, ratable.RatableManagerMixin ):
     # e.g. histories, pages, stored workflows, visualizations
     # base.DeleteableModelMixin? (all four are deletable)
 
@@ -116,11 +116,11 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
 
     def _query_published( self, filters=None, **kwargs ):
         """
-        Query all published items.
+        Return a query for all published items.
         """
         published_filter = self.model_class.published == true()
         filters = self._munge_filters( published_filter, filters )
-        return self.list( filters=filters, **kwargs )
+        return self.query( filters=filters, **kwargs )
 
     def list_published( self, **kwargs ):
         """
@@ -185,17 +185,36 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
             self.session().flush()
         return user_share_assoc
 
-    # def _query_shared_with( self, user, filters=None, **kwargs ):
-    # TODO:
-    #    """
-    #    """
-    #    pass
+    def _query_shared_with( self, user, eagerloads=True, **kwargs ):
+        """
+        Return a query for this model already filtered to models shared
+        with a particular user.
+        """
+        query = self.session().query( self.model_class ).join( 'users_shared_with' )
+        if eagerloads is False:
+            query = query.enable_eagerloads( False )
+        # TODO: as filter in FilterParser also
+        query = query.filter( self.user_share_model.user == user )
+        return self._filter_and_order_query( query, **kwargs )
 
-    # def list_shared_with( self, user, **kwargs ):
-    #    """
-    #    """
-    #    query = self._query_shared_with( user, **kwargs )
-    #    return self.list( query=query, **kwargs )
+    def list_shared_with( self, user, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
+        """
+        Return a list of those models shared with a particular user.
+        """
+        # TODO: refactor out dupl-code btwn base.list
+        orm_filters, fn_filters = self._split_filters( filters )
+        if not fn_filters:
+            # if no fn_filtering required, we can use the 'all orm' version with limit offset
+            query = self._query_shared_with( user, filters=orm_filters,
+                order_by=order_by, limit=limit, offset=offset, **kwargs )
+            return self._orm_list( query=query, **kwargs )
+
+        # fn filters will change the number of items returnable by limit/offset - remove them here from the orm query
+        query = self._query_shared_with( user, filters=orm_filters,
+            order_by=order_by, limit=None, offset=None, **kwargs )
+        # apply limit and offset afterwards
+        items = self._apply_fn_filters_gen( query.all(), fn_filters )
+        return list( self._apply_fn_limit_offset_gen( items, limit, offset ) )
 
     # .... slugs
     # slugs are human readable strings often used to link to sharable resources (replacing ids)
@@ -303,7 +322,7 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
 
 
 class SharableModelSerializer( base.ModelSerializer,
-                               taggable.TaggableSerializerMixin, annotatable.AnnotatableSerializerMixin, ratable.RatableSerializerMixin ):
+       taggable.TaggableSerializerMixin, annotatable.AnnotatableSerializerMixin, ratable.RatableSerializerMixin ):
     # TODO: stub
     SINGLE_CHAR_ABBR = None
 
@@ -342,7 +361,7 @@ class SharableModelSerializer( base.ModelSerializer,
 
 
 class SharableModelDeserializer( base.ModelDeserializer,
-                                 taggable.TaggableDeserializerMixin, annotatable.AnnotatableDeserializerMixin, ratable.RatableDeserializerMixin ):
+        taggable.TaggableDeserializerMixin, annotatable.AnnotatableDeserializerMixin, ratable.RatableDeserializerMixin ):
 
     def add_deserializers( self ):
         super( SharableModelDeserializer, self ).add_deserializers()

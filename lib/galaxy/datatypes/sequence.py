@@ -2,28 +2,24 @@
 Sequence classes
 """
 
-from . import data
 import gzip
 import json
 import logging
 import os
 import re
 import string
-
 from cgi import escape
 
-from galaxy import eggs, util
+from galaxy import util
 from galaxy.datatypes import metadata
-from galaxy.datatypes.checkers import is_gzip
-from galaxy.datatypes.sniff import get_headers
+from galaxy.util.checkers import is_gzip
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.sniff import get_headers
 from galaxy.datatypes.util.image_util import check_image_type
+from galaxy.util import nice_size
+from . import data
 
-try:
-    eggs.require( "bx-python" )
-    import bx.align.maf
-except:
-    pass
+import bx.align.maf
 
 
 log = logging.getLogger(__name__)
@@ -103,7 +99,7 @@ class Sequence( data.Text ):
             if dataset.metadata.sequences:
                 dataset.blurb = "%s sequences" % util.commaify( str( dataset.metadata.sequences ) )
             else:
-                dataset.blurb = data.nice_size( dataset.get_size() )
+                dataset.blurb = nice_size( dataset.get_size() )
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -940,7 +936,7 @@ class RNADotPlotMatrix( data.Data ):
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             dataset.peek = 'RNA Dot Plot format (Postscript derivative)'
-            dataset.blurb = data.nice_size( dataset.get_size() )
+            dataset.blurb = nice_size( dataset.get_size() )
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'

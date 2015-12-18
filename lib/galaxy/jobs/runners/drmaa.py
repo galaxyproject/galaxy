@@ -1,6 +1,7 @@
 """
 Job control via the DRMAA API.
 """
+from __future__ import absolute_import
 
 import json
 import logging
@@ -9,20 +10,17 @@ import string
 import subprocess
 import time
 
-from galaxy import eggs
 from galaxy import model
 from galaxy.jobs import JobDestination
 from galaxy.jobs.handler import DEFAULT_JOB_PUT_FAILURE_MESSAGE
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 from galaxy.util import asbool
 
-eggs.require( "drmaa" )
+drmaa = None
 
 log = logging.getLogger( __name__ )
 
 __all__ = [ 'DRMAAJobRunner' ]
-
-drmaa = None
 
 DRMAA_jobTemplate_attributes = [ 'args', 'remoteCommand', 'outputPath', 'errorPath', 'nativeSpecification',
                                  'workingDirectory', 'jobName', 'email', 'project' ]
@@ -36,7 +34,6 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
 
     def __init__( self, app, nworkers, **kwargs ):
         """Start the job runner"""
-
         global drmaa
 
         runner_param_specs = dict(
@@ -57,9 +54,15 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             log.info( 'Overriding DRMAA_LIBRARY_PATH due to runner plugin parameter: %s', self.runner_params.drmaa_library_path )
             os.environ['DRMAA_LIBRARY_PATH'] = self.runner_params.drmaa_library_path
 
-        # We foolishly named this file the same as the name exported by the drmaa
-        # library... 'import drmaa' imports itself.
-        drmaa = __import__( "drmaa" )
+        # Import is delayed until runner initialization to allow for the
+        # drmaa_library_path plugin param to override $DRMAA_LIBRARY_PATH
+        try:
+            drmaa = __import__( "drmaa" )
+        except (ImportError, RuntimeError) as exc:
+            raise exc.__class__('The Python drmaa package is required to use this '
+                                'feature, please install it or correct the '
+                                'following error:\n%s: %s' %
+                                (exc.__class__.__name__, str(exc)))
 
         # Subclasses may need access to state constants
         self.drmaa_job_states = drmaa.JobState
@@ -147,10 +150,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         # fill in the DRM's job run template
         script = self.get_job_file(job_wrapper, exit_code_path=ajs.exit_code_file)
         try:
-            fh = file( ajs.job_file, "w" )
-            fh.write( script )
-            fh.close()
-            os.chmod( ajs.job_file, 0o755 )
+            self.write_executable_script( ajs.job_file, script )
         except:
             job_wrapper.fail( "failure preparing job script", exception=True )
             log.exception( "(%s) failure writing job script" % galaxy_id_tag )

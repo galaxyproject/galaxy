@@ -31,7 +31,7 @@ $().ready(function() {
             <select name="tool_id">
                 %for val in toolbox.tool_panel_contents( trans ):
                     %if isinstance( val, Tool ):
-                        <option value="${val.id}">${val.name|h}</option>
+                        <option value="${val.id|h}">${val.name|h}</option>
                     %elif isinstance( val, ToolSection ):
                         <optgroup label="${val.name|h}">
                         <% section = val %>
@@ -41,7 +41,7 @@ $().ready(function() {
                                 %if section_val.id == tool_id:
                                      <% selected_str = " selected=\"selected\"" %>
                                 %endif
-                                <option value="${section_val.id}"${selected_str}>${section_val.name|h}</option>
+                                <option value="${section_val.id|h}"${selected_str}>${section_val.name|h}</option>
                             %endif
                         %endfor
                     %endif

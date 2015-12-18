@@ -1,5 +1,4 @@
 import logging
-import os
 
 from galaxy.util.bunch import Bunch
 
@@ -9,11 +8,11 @@ log = logging.getLogger( __name__ )
 class RepositoryGridFilterManager( object ):
     """Provides filtered views of the many Tool SHed repository grids."""
 
-    filters = Bunch( CERTIFIED_LEVEL_ONE = 'certified_level_one',
-                     CERTIFIED_LEVEL_TWO = 'certified_level_two',
-                     CERTIFIED_LEVEL_ONE_SUITES = 'certified_level_one_suites',
-                     CERTIFIED_LEVEL_TWO_SUITES = 'certified_level_two_suites',
-                     SUITES = 'suites' )
+    filters = Bunch( CERTIFIED_LEVEL_ONE='certified_level_one',
+                     CERTIFIED_LEVEL_TWO='certified_level_two',
+                     CERTIFIED_LEVEL_ONE_SUITES='certified_level_one_suites',
+                     CERTIFIED_LEVEL_TWO_SUITES='certified_level_two_suites',
+                     SUITES='suites' )
 
     def get_grid_title( self, trans, trailing_string='', default='' ):
         filter = self.get_filter( trans )
@@ -47,4 +46,4 @@ class RepositoryGridFilterManager( object ):
         if filter is not None and self.is_valid_filter( filter ):
             trans.set_cookie( value=filter, name='toolshedrepogridfilter' )
         # if the filter is not valid, expire the cookie.
-        trans.set_cookie( value=filter,name='toolshedrepogridfilter', age=-1 )
+        trans.set_cookie( value=filter, name='toolshedrepogridfilter', age=-1 )

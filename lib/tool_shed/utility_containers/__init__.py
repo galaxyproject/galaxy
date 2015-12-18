@@ -1,14 +1,12 @@
 import logging
-import os
 import threading
 
 from galaxy import util
-
 from tool_shed.util import common_util
 from tool_shed.util import container_util
 from tool_shed.util import readme_util
 
-from tool_shed.utility_containers import utility_container_manager
+from . import utility_container_manager
 
 log = logging.getLogger( __name__ )
 
@@ -259,7 +257,7 @@ class ToolShedUtilityContainerManager( utility_container_manager.UtilityContaine
                                 valid_tools=None,
                                 workflows=None,
                                 valid_data_managers=None
-                                 )
+                                )
         if repository_metadata:
             metadata = repository_metadata.metadata
             lock = threading.Lock()
@@ -405,19 +403,19 @@ class ToolShedUtilityContainerManager( utility_container_manager.UtilityContaine
                     continue
                 # We have a dictionary that looks something like this:
                 # {
-                #  'missing_test_components': [], 
-                #  'failed_tests': [], 
-                #  'passed_tests': 
-                #        [{'tool_id': 'effectiveT3', 
-                #          'test_id': 'test_tool_000000 (functional.test_toolbox.TestForTool_testtoolshed.g2.bx.psu.edu/repos/...)', 
-                #          'tool_version': '0.0.12'}, 
-                #         {'tool_id': 'effectiveT3', 
-                #          'test_id': 'test_tool_000001 (functional.test_toolbox.TestForTool_testtoolshed.g2.bx.psu.edu/repos/...)', 
-                #          'tool_version': '0.0.12'}], 
-                # 'test_environment': 
-                #    {'python_version': '2.7.4', 'tool_shed_mercurial_version': '2.2.3', 'system': 'Linux 3.8.0-30-generic', 
-                #     'tool_shed_database_version': 21, 'architecture': 'x86_64', 'galaxy_revision': '11573:a62c54ddbe2a', 
-                #     'galaxy_database_version': 117, 'time_tested': '2013-12-03 09:11:48', 'tool_shed_revision': '11556:228156daa575'}, 
+                #  'missing_test_components': [],
+                #  'failed_tests': [],
+                #  'passed_tests':
+                #        [{'tool_id': 'effectiveT3',
+                #          'test_id': 'test_tool_000000 (functional.test_toolbox.TestForTool_testtoolshed.g2.bx.psu.edu/repos/...)',
+                #          'tool_version': '0.0.12'},
+                #         {'tool_id': 'effectiveT3',
+                #          'test_id': 'test_tool_000001 (functional.test_toolbox.TestForTool_testtoolshed.g2.bx.psu.edu/repos/...)',
+                #          'tool_version': '0.0.12'}],
+                # 'test_environment':
+                #    {'python_version': '2.7.4', 'tool_shed_mercurial_version': '2.2.3', 'system': 'Linux 3.8.0-30-generic',
+                #     'tool_shed_database_version': 21, 'architecture': 'x86_64', 'galaxy_revision': '11573:a62c54ddbe2a',
+                #     'galaxy_database_version': 117, 'time_tested': '2013-12-03 09:11:48', 'tool_shed_revision': '11556:228156daa575'},
                 # 'installation_errors': {'current_repository': [], 'repository_dependencies': [], 'tool_dependencies': []},
                 # 'successful_installations': {'current_repository': [], 'repository_dependencies': [], 'tool_dependencies': []}
                 # }
@@ -554,10 +552,10 @@ class ToolShedUtilityContainerManager( utility_container_manager.UtilityContaine
                     for missing_test_components_dict in missing_test_components_dicts:
                         missing_test_component_id += 1
                         try:
-                           missing_components = missing_test_components_dict.get( 'missing_components', '' )
-                           tool_guid = missing_test_components_dict.get( 'tool_guid', '' )
-                           tool_id = missing_test_components_dict.get( 'tool_id', '' )
-                           tool_version = missing_test_components_dict.get( 'tool_version', '' )
+                            missing_components = missing_test_components_dict.get( 'missing_components', '' )
+                            tool_guid = missing_test_components_dict.get( 'tool_guid', '' )
+                            tool_id = missing_test_components_dict.get( 'tool_id', '' )
+                            tool_version = missing_test_components_dict.get( 'tool_version', '' )
                         except Exception, e:
                             missing_components = str( e )
                             tool_guid = 'unknown'
@@ -572,17 +570,17 @@ class ToolShedUtilityContainerManager( utility_container_manager.UtilityContaine
                 installation_error_dict = tool_test_results_dict.get( 'installation_errors', {} )
                 if len( installation_error_dict ) > 0:
                     # 'installation_errors':
-                    #    {'current_repository': [], 
-                    #     'repository_dependencies': [], 
-                    #     'tool_dependencies': 
+                    #    {'current_repository': [],
+                    #     'repository_dependencies': [],
+                    #     'tool_dependencies':
                     #        [{'error_message': 'some traceback string' 'type': 'package', 'name': 'MIRA', 'version': '4.0'}]
                     #    }
                     current_repository_installation_error_dicts = installation_error_dict.get( 'current_repository', [] )
                     repository_dependency_installation_error_dicts = installation_error_dict.get( 'repository_dependencies', [] )
                     tool_dependency_installation_error_dicts = installation_error_dict.get( 'tool_dependencies', [] )
                     if len( current_repository_installation_error_dicts ) > 0 or \
-                        len( repository_dependency_installation_error_dicts ) > 0 or \
-                        len( tool_dependency_installation_error_dicts ) > 0:
+                            len( repository_dependency_installation_error_dicts ) > 0 or \
+                            len( tool_dependency_installation_error_dicts ) > 0:
                         repository_installation_error_id = 0
                         folder_id += 1
                         installation_error_base_folder = utility_container_manager.Folder( id=folder_id,
@@ -679,9 +677,9 @@ class ToolShedUtilityContainerManager( utility_container_manager.UtilityContaine
                 successful_installation_dict = tool_test_results_dict.get( 'successful_installations', {} )
                 if len( successful_installation_dict ) > 0:
                     # 'successful_installation':
-                    #    {'current_repository': [], 
-                    #     'repository_dependencies': [], 
-                    #     'tool_dependencies': 
+                    #    {'current_repository': [],
+                    #     'repository_dependencies': [],
+                    #     'tool_dependencies':
                     #        [{'installation_directory': 'some path' 'type': 'package', 'name': 'MIRA', 'version': '4.0'}]
                     #    }
                     # We won't display the current repository in this container.  I fit is not displaying installation errors,
@@ -689,7 +687,7 @@ class ToolShedUtilityContainerManager( utility_container_manager.UtilityContaine
                     repository_dependency_successful_installation_dicts = successful_installation_dict.get( 'repository_dependencies', [] )
                     tool_dependency_successful_installation_dicts = successful_installation_dict.get( 'tool_dependencies', [] )
                     if len( repository_dependency_successful_installation_dicts ) > 0 or \
-                        len( tool_dependency_successful_installation_dicts ) > 0:
+                            len( tool_dependency_successful_installation_dicts ) > 0:
                         repository_installation_success_id = 0
                         folder_id += 1
                         successful_installation_base_folder = \

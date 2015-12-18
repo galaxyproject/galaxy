@@ -42,8 +42,8 @@ def inherit(context):
     <script type="text/javascript">
         $(function(){
             //HACK: should happen before we get to this page - _before_ logged out of session
-            if( top.Galaxy && top.Galaxy.currUser ){
-                top.Galaxy.currUser.clearSessionStorage();
+            if( top.Galaxy && top.Galaxy.user ){
+                top.Galaxy.user.clearSessionStorage();
             }
         });
     </script>

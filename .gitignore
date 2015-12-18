@@ -43,6 +43,7 @@ reports_webapp.pid
 # Config files
 universe_wsgi.ini
 reports_wsgi.ini
+reports.ini
 tool_shed_wsgi.ini
 
 # Config files.
@@ -76,15 +77,20 @@ tool-data/shared/igv/igv_build_sites.txt
 tool-data/shared/rviewer/rviewer_build_sites.txt
 tool-data/shared/ncbi/builds.txt
 tool-data/shared/ucsc/builds.txt
+tool-data/shared/ucsc/manual_builds.txt
 tool-data/shared/ensembl/builds.txt
 tool-data/shared/ucsc/publicbuilds.txt
 tool-data/shared/ucsc/ucsc_build_sites.txt
 tool-data/*.loc
 tool-data/genome/*
 tool-data/*.sample
+tool-data/testtoolshed.g2.bx.psu.edu/
+tool-data/toolshed.g2.bx.psu.edu/
+
 
 # Test output
 test-data-cache
+run_framework_tests.html
 run_functional_tests.html
 run_api_tests.html
 test/tool_shed/tmp/*
@@ -106,7 +112,8 @@ tool-data/shared/jars/
 # CSS build artifacts.
 sprite-*.less
 
-# Local node_modules and bower_components directories
+# JS, Local node_modules, and bower_components directories
+static/scripts/bundled
 node_modules
 bower_components
 
@@ -118,4 +125,3 @@ doc/build
 .DS_Store
 *.rej
 *~
-

@@ -3,16 +3,16 @@ This script fixes a problem introduced in 0010_hda_display_at_atuhz_table.py.  M
 name length limit and thus the index "ix_hdadaa_history_dataset_association_id" has to be
 manually created.
 """
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from sqlalchemy.exc import *
-from migrate import *
-from migrate.changeset import *
-
 import datetime
-now = datetime.datetime.utcnow
+import logging
+import sys
 
-import sys, logging
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, MetaData, Table
+
+# Need our custom types, but don't import anything else from model
+from galaxy.model.custom_types import TrimmedString
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -20,11 +20,8 @@ format = "%(name)s %(levelname)s %(asctime)s %(message)s"
 formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
-
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
-
 metadata = MetaData()
+
 
 def display_migration_details():
     print "========================================"
@@ -41,6 +38,7 @@ HistoryDatasetAssociationDisplayAtAuthorization_table = Table( "history_dataset_
                                                                Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
                                                                Column( "site", TrimmedString( 255 ) ) )
 
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     display_migration_details()
@@ -52,6 +50,7 @@ def upgrade(migrate_engine):
             i.create()
         except Exception, e:
             log.debug( "Adding index 'ix_hdadaa_history_dataset_association_id' to table 'history_dataset_association_display_at_authorization' table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

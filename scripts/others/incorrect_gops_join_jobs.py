@@ -3,13 +3,10 @@
 Fetch gops_join wherein the use specified minimum coverage is not 1.
 """
 
-from galaxy import eggs
 import sys, os, ConfigParser, tempfile
 import galaxy.app
 import galaxy.model.mapping
-import pkg_resources
-        
-pkg_resources.require( "SQLAlchemy >= 0.4" )
+
 import sqlalchemy as sa
 
 assert sys.version_info[:2] >= ( 2, 4 )

@@ -8,7 +8,7 @@ import subprocess
 import socket
 import threading
 
-from galaxy.util import listify, json
+from galaxy.util import listify, json, sleeper
 
 log = logging.getLogger( __name__ )
 
@@ -24,7 +24,7 @@ class TransferManager( object ):
         if app.config.get_bool( 'enable_job_recovery', True ):
             # Only one Galaxy server process should be able to recover jobs! (otherwise you'll have nasty race conditions)
             self.running = True
-            self.sleeper = Sleeper()
+            self.sleeper = sleeper.Sleeper()
             self.restarter = threading.Thread( target=self.__restarter )
             self.restarter.start()
 
@@ -155,22 +155,3 @@ class TransferManager( object ):
     def shutdown( self ):
         self.running = False
         self.sleeper.wake()
-
-
-class Sleeper( object ):
-    """
-    Provides a 'sleep' method that sleeps for a number of seconds *unless*
-    the notify method is called (from a different thread).
-    """
-    def __init__( self ):
-        self.condition = threading.Condition()
-
-    def sleep( self, seconds ):
-        self.condition.acquire()
-        self.condition.wait( seconds )
-        self.condition.release()
-
-    def wake( self ):
-        self.condition.acquire()
-        self.condition.notify()
-        self.condition.release()

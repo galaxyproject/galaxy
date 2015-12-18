@@ -14,18 +14,18 @@ method (they'll have to be created manually, which can be done after the import)
 Here is a working example of how to use this script to install a repository from the test tool shed.
 ./import_capsule.py -a <api key> -u http://localhost:9009 -c capsule_localhost_colon_9009_filter_test1_8923f52d5c6d.tar.gz
 """
-import logging
-log = logging.getLogger(__name__)
-import os
-import sys
 import argparse
-sys.path.insert( 0, os.path.dirname( __file__ ) )
+import logging
+import sys
+
 from common import submit
+
+log = logging.getLogger(__name__)
+
 
 def main( options ):
     api_key = options.api
     base_tool_shed_url = options.tool_shed_url.rstrip( '/' )
-    capsule_file_name = options.capsule_file_name
     data = {}
     data[ 'tool_shed_url' ] = options.tool_shed_url
     data[ 'capsule_file_name' ] = options.capsule_file_name

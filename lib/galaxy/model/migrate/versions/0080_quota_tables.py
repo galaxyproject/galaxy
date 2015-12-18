@@ -1,20 +1,13 @@
 """
 Migration script to create tables for disk quotas.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-# from galaxy.model.orm.ext.assignmapper import *
-# from galaxy.model.custom_types import *
-
 import datetime
-now = datetime.datetime.utcnow
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, ForeignKey, Integer, MetaData, String, Table, TEXT
+
+now = datetime.datetime.utcnow
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 # Tables to add
@@ -50,6 +43,7 @@ DefaultQuotaAssociation_table = Table( "default_quota_association", metadata,
                                        Column( "type", String( 32 ), index=True, unique=True ),
                                        Column( "quota_id", Integer, ForeignKey( "quota.id" ), index=True ) )
 
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
@@ -78,18 +72,6 @@ def upgrade(migrate_engine):
         DefaultQuotaAssociation_table.create()
     except Exception, e:
         log.debug( "Creating default_quota_association table failed: %s" % str( e ) )
-
-    # Create the default quota record
-    #class Quota( object ):
-    #    def __init__( self, name, description, bytes, operation ):
-    #        self.name = name
-    #        self.description = description
-    #        self.bytes = bytes
-    #        self.operation = operation
-    #assign_mapper( db_session, Quota, Quota_table )
-    #default_quota = Quota( 'Default Quota', 'The base quota applied to all users', -1, '=' )
-    #db_session.add( default_quota )
-    #db_session.flush()
 
 
 def downgrade(migrate_engine):

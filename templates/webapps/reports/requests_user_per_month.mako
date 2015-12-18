@@ -12,20 +12,44 @@
     
 ${get_css()}
 
-<div class="toolForm">
-    <div class="toolFormBody">
-        <h3 align="center">Sequencing requests per month for user "${util.restore_text( email )}"</h3>
+<div class="report">
+    <div class="reportBody">
+        <h3 align="center">
+            Sequencing requests per month for user
+            "${util.restore_text( email )}"
+        </h3>
         <table align="center" width="60%" class="colored">
             %if len( requests ) == 0:
-                <tr><td colspan="2">There are no requests for user "${util.restore_text( email )}"</td></tr>
+                <tr>
+                    <td colspan="2">
+                        There are no requests for user
+                        "${util.restore_text( email )}"
+                    </td>
+                </tr>
             %else:
                 <tr class="header">
-                    <td>
-                        ${get_sort_url(sort_id, order, 'date', 'users' 'requests_users_per_month', 'Month')}
+                    <td class="half_width">
+                        ${
+                            get_sort_url(
+                                sort_id,
+                                order,
+                                'date',
+                                'users',
+                                'requests_users_per_month',
+                                'Month')
+                        }
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
-                    <td>Total
-                        ${get_sort_url(sort_id, order, 'num_users', 'users' 'requests_users_per_month', 'Month')}
+                    <td class="half_width">Total
+                        ${
+                            get_sort_url(
+                                sort_id,
+                                order,
+                                'num_users',
+                                'users',
+                                'requests_users_per_month',
+                                'Month')
+                        }
                         <span class='dir_arrow num_users'>${arrow}</span>
                     </td>
                 </tr>

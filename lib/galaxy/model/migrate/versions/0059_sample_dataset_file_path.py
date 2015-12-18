@@ -2,23 +2,16 @@
 Migration script to modify the 'file_path' field type in 'sample_dataset' table
 to 'TEXT' so that it can support large file paths exceeding 255 characters
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-from sqlalchemy.exc import *
-
-from galaxy.model.custom_types import *
-from galaxy.util.json import loads, dumps
-
 import datetime
-now = datetime.datetime.utcnow
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Column, MetaData, Table, TEXT
+from sqlalchemy.exc import NoSuchTableError
+
+now = datetime.datetime.utcnow
+log = logging.getLogger( __name__ )
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -53,6 +46,7 @@ def upgrade(migrate_engine):
         for id, file_path in filepath_dict.items():
             cmd = "update sample_dataset set file_path='%s' where id=%i" % (file_path, id)
             migrate_engine.execute( cmd )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

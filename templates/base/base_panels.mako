@@ -38,7 +38,6 @@
 
 ## Default javascripts
 <%def name="javascripts()">
-
     ## Send errors to Sntry server if configured
     %if app.config.sentry_dsn:
         ${h.js( "libs/tracekit", "libs/raven" )}
@@ -51,46 +50,42 @@
     %endif
 
     ${h.js(
-        'libs/jquery/jquery',
-        'libs/jquery/jquery.migrate',
-        'libs/jquery/select2',
-        'libs/bootstrap',
-        'libs/underscore',
-        'libs/backbone/backbone',
-        'libs/handlebars.runtime',
-        'galaxy.base',
-        'libs/require'
+        ## TODO: remove when all libs are required directly in modules
+        'bundled/libs.bundled',
+        'libs/require',
     )}
 
     <script type="text/javascript">
-        ## global configuration object
-        var galaxy_config =
-        {
-            root: '${h.url_for( "/" )}'
-        };
+        // configure require
+        // due to our using both script tags and require, we need to access the same jq in both for plugin retention
+        // source http://www.manuel-strehl.de/dev/load_jquery_before_requirejs.en.html
+        define( 'jquery', [], function(){ return jQuery; })
+        // TODO: use one system
 
-        //## load additional style sheet
-        //if (window != window.top)
-        //    $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
-
-        // console protection
-        window.console = window.console || {
-            log     : function(){},
-            debug   : function(){},
-            info    : function(){},
-            warn    : function(){},
-            error   : function(){},
-            assert  : function(){}
-        };
-
-        ## configure require
+        // shims and paths
         require.config({
             baseUrl: "${h.url_for('/static/scripts') }",
             shim: {
-                "libs/underscore": { exports: "_" },
-                "libs/backbone/backbone": { exports: "Backbone" }
+                "libs/underscore": {
+                    exports: "_"
+                },
+                "libs/backbone": {
+                    deps: [ 'jquery', 'libs/underscore' ],
+                    exports: "Backbone"
+                }
             },
-            urlArgs: 'v=${app.server_starttime}'
+            // cache busting using time server was restarted
+            urlArgs: 'v=${app.server_starttime}',
+            // this section allows us to require the compiled tool menu handlebars templates from compiled/ using requirejs
+            // even if they're formatted (with the extension) to load via handlebars-loader when using webpack
+            map: {
+                'mvc/tool/tools': {
+                    'templates/tool_form.handlebars'    : 'templates/compiled/tool_form',
+                    'templates/tool_search.handlebars'  : 'templates/compiled/tool_search',
+                    'templates/panel_section.handlebars': 'templates/compiled/panel_section',
+                    'templates/tool_link.handlebars'    : 'templates/compiled/tool_link',
+                },
+            },
         });
     </script>
 
@@ -105,23 +100,15 @@
 <%def name="late_javascripts()">
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout
-    ${h.js(
-        'libs/jquery/jquery.event.hover',
-        'libs/jquery/jquery.form',
-        'libs/jquery/jquery.rating',
-        'galaxy.panels'
-    )}
     <script type="text/javascript">
 
-    ensure_dd_helper();
-
     %if self.has_left_panel:
-        var lp = new Panel( { panel: $("#left"), center: $("#center"), drag: $("#left > .unified-panel-footer > .drag" ), toggle: $("#left > .unified-panel-footer > .panel-collapse" ) } );
+        var lp = new panels.LeftPanel({ el: '#left' });
         force_left_panel = function( x ) { lp.force_panel( x ) };
     %endif
 
     %if self.has_right_panel:
-        var rp = new Panel( { panel: $("#right"), center: $("#center"), drag: $("#right > .unified-panel-footer > .drag" ), toggle: $("#right > .unified-panel-footer > .panel-collapse" ), right: true } );
+        var rp = new panels.RightPanel({ el: '#right' });
         window.handle_minwidth_hint = function( x ) { rp.handle_minwidth_hint( x ) };
         force_right_panel = function( x ) { rp.force_panel( x ) };
     %endif
@@ -135,128 +122,6 @@
           ga('send', 'pageview');
     %endif
 
-    </script>
-    ## Handle AJAX (actually hidden iframe) upload tool
-    <script type="text/javascript">
-        var upload_form_error = function( msg ) {
-            var $galaxy_mainBody = $("iframe#galaxy_main").contents().find("body"),
-                $errMsg = $galaxy_mainBody.find( 'div.errormessage' );
-            if ( !$errMsg.size() ){
-                $errMsg = $( '<div/>' ).addClass( 'errormessage' ).prependTo( $galaxy_mainBody );
-            }
-            $errMsg.text( msg );
-        }
-
-        var uploads_in_progress = 0;
-        function decrementUploadsInProgress(){
-            uploads_in_progress -= 1;
-            if( uploads_in_progress === 0 ){
-                window.onbeforeunload = null;
-            }
-        }
-        jQuery( function() {
-            $("iframe#galaxy_main").load( function() {
-                $(this).contents().find("form").each( function() {
-                    if ( $(this).find("input[galaxy-ajax-upload]").length > 0 ){
-                        var $form = $( this );
-
-                        $(this).submit( function( event ) {
-                            // Only bother using a hidden iframe if there's a file (e.g. big data) upload
-                            var file_upload = false;
-                            $(this).find("input[galaxy-ajax-upload]").each( function() {
-                                if ( $(this).val() != '' ) {
-                                    file_upload = true;
-                                }
-                            });
-                            if ( ! file_upload ) {
-                                return true;
-                            }
-                            // Make a synchronous request to create the datasets first
-                            var async_datasets;
-                            var upload_error = false;
-
-                            //NOTE: in order for upload.py to match the datasets created below, we'll move the js File
-                            //  object's name into the file_data field (not in the form only for what we send to
-                            //  upload_async_create)
-                            var formData = $( this ).serializeArray();
-                            var name = function(){
-                                var $fileInput = $form.find( 'input[name="files_0|file_data"]' );
-                                if( /msie/.test( navigator.userAgent.toLowerCase() ) ){
-                                    return $fileInput.val().replace( 'C:\\fakepath\\', '' );
-                                } else {
-                                    return $fileInput.get( 0 ).files[0].name;
-                                }
-                            }
-                            formData.push({ name: "files_0|file_data", value: name });
-
-                            $.ajax( {
-                                async:      false,
-                                type:       "POST",
-                                url:        "${h.url_for(controller='/tool_runner', action='upload_async_create')}",
-                                data:       formData,
-                                dataType:   "json",
-                                success:    function(array_obj, status) {
-                                                if (array_obj.length > 0) {
-                                                    if (array_obj[0] == 'error') {
-                                                        upload_error = true;
-                                                        upload_form_error(array_obj[1]);
-                                                    } else {
-                                                        async_datasets = array_obj.join();
-                                                    }
-                                                } else {
-                                                    // ( gvk 1/22/10 ) FIXME: this block is never entered, so there may be a bug somewhere
-                                                    // I've done some debugging like checking to see if array_obj is undefined, but have not
-                                                    // tracked down the behavior that will result in this block being entered.  I believe the
-                                                    // intent was to have this block entered if the upload button is clicked on the upload
-                                                    // form but no file was selected.
-                                                    upload_error = true;
-                                                    upload_form_error( 'No data was entered in the upload form.  You may choose to upload a file, paste some data directly in the data box, or enter URL(s) to fetch data.' );
-                                                }
-                                            }
-                            } );
-
-                            // show the dataset we created above in the history panel
-                            Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.refreshContents();
-
-                            if (upload_error == true) {
-                                return false;
-                            } else {
-                                $(this).find("input[name=async_datasets]").val( async_datasets );
-                                $(this).append("<input type='hidden' name='ajax_upload' value='true'>");
-                            }
-                            // iframe submit is required for nginx (otherwise the encoding is wrong)
-                            $(this).ajaxSubmit({
-                                //iframe: true,
-                                error: function( xhr, msg, status ){
-                                    decrementUploadsInProgress();
-                                },
-                                success: function ( response, x, y, z ) {
-                                    decrementUploadsInProgress();
-                                }
-                            });
-                            uploads_in_progress++;
-                            window.onbeforeunload = function() {
-                                return "Navigating away from the Galaxy analysis interface will interrupt the "
-                                        + "file upload(s) currently in progress.  Do you really want to do this?";
-                            }
-                            if ( $(this).find("input[name='folder_id']").val() != undefined ) {
-                                var library_id = $(this).find("input[name='library_id']").val();
-                                var show_deleted = $(this).find("input[name='show_deleted']").val();
-                                if ( location.pathname.indexOf( 'admin' ) != -1 ) {
-                                    $("iframe#galaxy_main").attr("src","${h.url_for( controller='library_common', action='browse_library' )}?cntrller=library_admin&id=" + library_id + "&created_ldda_ids=" + async_datasets + "&show_deleted=" + show_deleted);
-                                } else {
-                                    $("iframe#galaxy_main").attr("src","${h.url_for( controller='library_common', action='browse_library' )}?cntrller=library&id=" + library_id + "&created_ldda_ids=" + async_datasets + "&show_deleted=" + show_deleted);
-                                }
-                            } else {
-                                $("iframe#galaxy_main").attr("src","${h.url_for(controller='tool_runner', action='upload_async_message')}");
-                            }
-                            event.preventDefault();
-                            return false;
-                        });
-                    }
-                });
-            });
-        });
     </script>
 </%def>
 
@@ -312,6 +177,8 @@
         <meta name = "viewport" content = "maximum-scale=1.0">
         ## Force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
         <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+        ## relative href for site root
+        <link rel="index" href="${ h.url_for( '/' ) }"/>
         ${self.stylesheets()}
         ${self.javascripts()}
         ${self.javascript_app()}
@@ -374,9 +241,10 @@
                 </div><!--end right-->
             %endif
         </div><!--end everything-->
+        <div id='dd-helper' style="display: none;"></div>
         ## Allow other body level elements
+        ## Scripts can be loaded later since they progressively add features to
+        ## the panels, but do not change layout
+        ${self.late_javascripts()}
     </body>
-    ## Scripts can be loaded later since they progressively add features to
-    ## the panels, but do not change layout
-    ${self.late_javascripts()}
 </html>

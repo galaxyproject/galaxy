@@ -14,8 +14,6 @@ import weakref
 
 from os.path import abspath
 
-from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy.orm import object_session
 
 import galaxy.model
@@ -799,6 +797,9 @@ class JobExternalOutputMetadataWrapper( object ):
                 # For now, we'll simply 'touch' dataset_association.dataset to force it back into memory.
                 dataset.dataset  # force dataset_association.dataset to be loaded before pickling
                 # A better fix could be setting 'expire_on_commit=False' on the session, or modifying where commits occur, or ?
+
+                # Touch also deferred column
+                dataset._metadata
 
                 cPickle.dump( dataset, open( metadata_files.filename_in, 'wb+' ) )
                 # file to store metadata results of set_meta()

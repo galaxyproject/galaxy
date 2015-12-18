@@ -23,7 +23,7 @@ class DatasetMatcher( object ):
         self.value = value
         self.current_user_roles = ROLES_UNSET
         filter_value = None
-        if param.options:
+        if param.options and other_values:
             try:
                 filter_value = param.options.get_options( trans, other_values )[0][0]
             except IndexError:
