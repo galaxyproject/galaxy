@@ -7,8 +7,7 @@ var jQuery = require( 'jquery' ),
     ToolPanel = require( './tool-panel' ),
     HistoryPanel = require( './history-panel' ),
     PAGE = require( 'layout/page' ),
-    ToolForm = require( 'mvc/tool/tool-form' ),
-    Tours = require('libs/bootstrap-tour');
+    ToolForm = require( 'mvc/tool/tool-form' );
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -75,35 +74,6 @@ window.app = function app( options, bootstrapped ){
             // TODO: Remove this line after select2 update
             $( '.select2-hidden-accessible' ).remove();
             centerPanel.display( view );
-        },
-        // DBTODO: THIS SHOULD PROBABLY NOT BE HERE -- but where?
-        giveTour: function(tour_id){
-            var url = Galaxy.root + 'api/tours/' + tour_id;
-            $.getJSON( url, function( data ) {
-                // Set hooks for additional click and data entry actions.
-                _.each(data.steps, function(step) {
-                    if (step.preclick){
-                        step.onShow= function(){$(step.preclick).click()};
-                    }
-                    if (step.postclick){
-                        step.onHide = function(){$(step.postclick).click()};
-                    }
-                    if (step.textinsert){
-                        step.onShown= function(){$(step.element).text(step.textinsert)};
-                    }
-                });
-                // Store tour steps in sessionStorage to easily persist w/o hackery.
-                sessionStorage.setItem('activeGalaxyTour', data);
-                var tour = new Tour({
-                    orphan: true,
-                    debug: true, // REMOVE ME WHEN DONE DEBUGGING
-                    steps: data.steps
-                });
-                // Always clean restart, since this is a new, explicit giveTour execution.
-                tour.init();
-                tour.goTo(0);
-                tour.restart();
-            });
         },
     };
 
