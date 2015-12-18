@@ -19,6 +19,8 @@ LOAD_FAILURE_ERROR = "Failed to load tool with path %s."
 TOOL_LOAD_ERROR = object()
 TOOL_REGEX = re.compile(r"<tool\s")
 
+YAML_EXTENSIONS = [".yaml", ".yml", ".json"]
+
 
 def load_exception_handler(path, exc_info):
     log.warn(LOAD_FAILURE_ERROR % path, exc_info=exc_info)
@@ -104,7 +106,7 @@ def looks_like_a_tool_xml(path):
 
 
 def looks_like_a_tool_yaml(path):
-    if not path.endswith(".yml") and not path.endswith(".json"):
+    if not _has_extension(path, YAML_EXTENSIONS):
         return False
 
     with open(path, "r") as f:
