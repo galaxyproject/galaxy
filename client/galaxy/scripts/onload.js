@@ -187,6 +187,8 @@ $(document).ready( function() {
 
     et = sessionStorage.getItem('activeGalaxyTour');
     if (et && et.steps){
+        // Needs serialize/deserialize before this will work, including the
+        // extra logic.
         var tour = new Tour({
             steps: et.steps
         });
