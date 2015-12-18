@@ -186,6 +186,10 @@ $(document).ready( function() {
     });
 
     try{
+        // So, depending on what elements your tour is hooked to, this may not
+        // work on some pages with some rendered content because of view
+        // rendering delays.
+        // Another option is to present an icon for 'continue-tour' somewhere?
         et = JSON.parse(sessionStorage.getItem('activeGalaxyTour'));
         if (et){
             et = TOURS.hooked_tour_from_data(et);
@@ -193,7 +197,6 @@ $(document).ready( function() {
                 var tour = new Tour({
                     storage: window.sessionStorage,
                     steps: et.steps,
-                    debug: true,
                     onEnd: function(){
                         sessionStorage.removeItem('activeGalaxyTour');
                     }

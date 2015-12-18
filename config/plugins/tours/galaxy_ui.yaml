@@ -1,7 +1,7 @@
 name: core.galaxy_ui
 description: A basic introduction to the Galaxy UI
+title_override: "Welcome to Galaxy"
 steps:
-    - intro: "Welcome to the <b>Galaxy RNA Workbench</b>."
     - element: "#left"
       intro: "This is your <b>Toolbar</b>."
       position: "right"
