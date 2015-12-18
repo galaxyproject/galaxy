@@ -416,7 +416,8 @@ class RepositoryDependencyInstallManager( object ):
                                         all_repo_info_dicts.append( required_repo_info_dict )
                                     else:
                                         # required_repo_info_dict_key corresponds to the repo name.
-                                        # A single install transaction might require the installation of the same repo by a different owner.
+                                        # A single install transaction might require the installation of 2 or more repos
+                                        # with the same repo name but different owners or versions.
                                         # Therefore, if required_repo_info_dict_key is already in all_repo_info_dicts,
                                         # check that the tool id is already present. If no it is not, we are dealing with the same repo name,
                                         # but a different owner/changeset revision or version and we add the repo to the list of repos to be installed.
@@ -427,6 +428,7 @@ class RepositoryDependencyInstallManager( object ):
                                                 if required_repo_info_dict_key == k:
                                                     if tool_id == v[1]:
                                                         is_present = True
+                                                        break
                                         if not is_present:
                                             all_repo_info_dicts.append( required_repo_info_dict )
                         all_required_repo_info_dict[ 'all_repo_info_dicts' ] = all_repo_info_dicts
