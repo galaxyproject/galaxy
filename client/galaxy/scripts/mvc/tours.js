@@ -83,7 +83,10 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
                 var tour = new Tour({
                     storage: window.sessionStorage,
                     steps: tourdata.steps,
-                    debug: true
+                    debug: true,
+                    onEnd: function(){
+                        sessionStorage.removeItem('activeGalaxyTour');
+                    }
                 });
                 // Always clean restart, since this is a new, explicit giveTour execution.
                 tour.init();

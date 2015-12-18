@@ -190,9 +190,14 @@ $(document).ready( function() {
         if (et){
             et = TOURS.hooked_tour_from_data(et);
             if (et && et.steps){
+                console.log("Resuming existing tour: " + et.name);
                 var tour = new Tour({
+                    storage: window.sessionStorage,
                     steps: et.steps,
-                    debug: true
+                    debug: true,
+                    onEnd: function(){
+                        sessionStorage.removeItem('activeGalaxyTour');
+                    }
                 });
                 tour.init();
                 tour.restart();
