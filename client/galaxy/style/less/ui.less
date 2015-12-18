@@ -67,6 +67,32 @@
     margin: 0px;
 }
 
+.ui-modal {
+    .modal-header.no-separator {
+        border: none !important;
+        padding-bottom: 0px !important;
+    }
+    .modal-backdrop {
+        z-index: -1;
+    }
+    .modal-body {
+        position: static;
+    }
+    .modal-footer {
+        .buttons {
+            float: right;
+        }
+    }
+}
+
+.ui-modal-styled {
+    &:extend(.ui-modal all);
+    ul {
+        list-style-type: square;
+        padding: 5px 25px;
+    }
+}
+
 // icons
 .ui-icon {
     font-size: 1.2em;
