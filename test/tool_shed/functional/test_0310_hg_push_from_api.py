@@ -1,7 +1,7 @@
-from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-
-
 import logging
+import os
+
+from tool_shed.base.twilltestcase import common, ShedTwillTestCase
 
 log = logging.getLogger( __name__ )
 
@@ -23,26 +23,27 @@ clone_path = None
 5. Verify that the changesets have been applied.
 '''
 
+
 class TestHgWebFeatures( ShedTwillTestCase ):
     '''Test http mercurial interface.'''
-    
+
     def test_0000_initiate_users( self ):
         """Create necessary user accounts and login as an admin user."""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
-        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
+        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
+        self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
         test_user_2 = self.test_db_util.get_user( common.test_user_2_email )
         assert test_user_2 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_2_email
-        test_user_2_private_role = self.test_db_util.get_private_role( test_user_2 )
+        self.test_db_util.get_private_role( test_user_2 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
-        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
+        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
+        self.test_db_util.get_private_role( admin_user )
 
     def test_0005_create_filtering_repository( self ):
         '''Create and populate the filtering_0310 repository.'''
@@ -53,37 +54,37 @@ class TestHgWebFeatures( ShedTwillTestCase ):
         category = self.create_category( name=category_name, description=category_description )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        repository = self.get_or_create_repository( name=repository_name, 
-                                                    description=repository_description, 
-                                                    long_description=repository_long_description, 
+        repository = self.get_or_create_repository( name=repository_name,
+                                                    description=repository_description,
+                                                    long_description=repository_long_description,
                                                     owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id( category.id ), 
+                                                    category_id=self.security.encode_id( category.id ),
                                                     strings_displayed=[] )
-        self.upload_file( repository, 
-                          filename='filtering/filtering_1.1.0.tar', 
+        self.upload_file( repository,
+                          filename='filtering/filtering_1.1.0.tar',
                           filepath=None,
                           valid_tools_only=True,
                           uncompress_file=True,
                           remove_repo_files_not_in_tar=True,
                           commit_message="Uploaded filtering 1.1.0.",
-                          strings_displayed=[], 
+                          strings_displayed=[],
                           strings_not_displayed=[] )
-        self.upload_file( repository, 
-                          filename='filtering/filtering_test_data.tar', 
+        self.upload_file( repository,
+                          filename='filtering/filtering_test_data.tar',
                           filepath=None,
                           valid_tools_only=True,
                           uncompress_file=True,
                           remove_repo_files_not_in_tar=False,
                           commit_message="Uploaded filtering test data.",
-                          strings_displayed=[], 
+                          strings_displayed=[],
                           strings_not_displayed=[] )
-        
+
     def test_0010_edit_and_commit( self ):
         '''Edit a file and attempt a push as a user that does not have write access.'''
         '''
         We are at step 3 - Change a file and try to push as non-owner.
         The repository should have the following files:
-        
+
         filtering.py
         filtering.xml
         test-data/
@@ -95,7 +96,7 @@ class TestHgWebFeatures( ShedTwillTestCase ):
         test-data/filter1_test2.bed
         test-data/filter1_test3.sam
         test-data/filter1_test4.bed
-        
+
         We will be prepending a comment to filtering.py.
         '''
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
@@ -118,7 +119,7 @@ class TestHgWebFeatures( ShedTwillTestCase ):
         '''
         We are at step 4 - Change another file and try to push as non-owner.
         The repository should have the following files:
-        
+
         filtering.py
         filtering.xml
         test-data/
@@ -130,7 +131,7 @@ class TestHgWebFeatures( ShedTwillTestCase ):
         test-data/filter1_test2.bed
         test-data/filter1_test3.sam
         test-data/filter1_test4.bed
-        
+
         We will be prepending a second comment to filtering.py.
         '''
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
@@ -147,23 +148,22 @@ class TestHgWebFeatures( ShedTwillTestCase ):
         # The repository is owned by test_user_1, so this operation should succeed.
         authorized = self.commit_and_push( repository, hgrepo, commit_options, username=common.test_user_1_name, password='testuser' )
         assert authorized is True, 'Test user 1 was not able to commit and push to the remote repository.'
-        
+
     def test_0020_verify_new_changelog( self ):
         '''Verify that the authorized commit was applied, and the unauthorized commit was not..'''
         '''
         We are at step 5 - Verify that the changeset has been applied.
-        
+
         The repository changelog should now look like:
-        
+
         0:nnnnnnnnnnnn: Uploaded filtering 1.1.0.
         1:nnnnnnnnnnnn: Uploaded filtering test data.
         2:nnnnnnnnnnnn: Added another line to filtering.py.
-        
+
         The commit from test_user_2 should not be present in the changelog, since the repositories were cloned to separate locations.
         '''
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         strings_displayed = [ 'Uploaded filtering 1.1.0.', 'Uploaded filtering test data.',
                               'Added another line to filtering.py.' ]
         strings_not_displayed = [ 'Added a line to filtering.py' ]
-        self.check_repository_changelog( repository, strings_displayed=strings_displayed, strings_not_displayed=[] )
-        
+        self.check_repository_changelog( repository, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )

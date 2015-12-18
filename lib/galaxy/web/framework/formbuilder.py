@@ -24,6 +24,9 @@ class FormBuilder( object ):
         self.inputs.append( FormInput( type, label, name, value, error, help, use_label ) )
         return self
 
+    def add_checkbox( self, name, label, value=None, error=None, help=None  ):
+        return self.add_input( 'checkbox', label, name, value, error, help )
+
     def add_text( self, name, label, value=None, error=None, help=None  ):
         return self.add_input( 'text', label, name, value, error, help )
 

@@ -38,8 +38,10 @@
                     <when value="true">
                         <param type="data" name="file" />
                     </when>
+                    <when value="false" />
                 </conditional>
             </when>
+            <when value="false" />
         </conditional>               
     </inputs>
     <outputs>

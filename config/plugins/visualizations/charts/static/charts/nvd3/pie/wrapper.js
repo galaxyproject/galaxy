@@ -10,7 +10,7 @@ return Backbone.View.extend(
         var request_dictionary = options.request_dictionary;
         var chart = options.chart;
         var canvas_list = options.canvas_list;
-        var process_id = options.process_id;
+        var process = options.process;
         
         // setup handler
         var self = this;
@@ -28,7 +28,7 @@ return Backbone.View.extend(
             chart.state('ok', 'Pie chart has been drawn.');
         
             // unregister process
-            app.deferred.done(process_id);
+            process.resolve();
         }
         
         // request data

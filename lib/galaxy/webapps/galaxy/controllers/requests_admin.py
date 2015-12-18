@@ -7,10 +7,16 @@ from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixi
 from galaxy.web.form_builder import build_select_field
 from galaxy.web.framework.helpers import time_ago, grids
 from .requests_common import RequestsGrid, invalid_id_redirect
-from galaxy import eggs
-eggs.require("amqp")
+from markupsafe import escape
 import amqp
-import pexpect
+
+try:
+    import pexpect
+except ImportError:
+    pexpect = None
+
+PEXPECT_IMPORT_MESSAGE = ('The Python pexpect package is required to use this '
+                          'feature, please install it')
 
 log = logging.getLogger( __name__ )
 
@@ -18,7 +24,7 @@ log = logging.getLogger( __name__ )
 class AdminRequestsGrid( RequestsGrid ):
     class UserColumn( grids.TextColumn ):
         def get_value( self, trans, grid, request ):
-            return request.user.email
+            return escape(request.user.email)
     # Grid definition
     columns = [ col for col in RequestsGrid.columns ]
     columns.append( UserColumn( "User",
@@ -40,7 +46,7 @@ class DataTransferGrid( grids.Grid ):
     # Custom column types
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, sample_dataset ):
-            return sample_dataset.name
+            return escape(sample_dataset.name)
 
     class SizeColumn( grids.TextColumn ):
         def get_value( self, trans, grid, sample_dataset ):
@@ -53,7 +59,7 @@ class DataTransferGrid( grids.Grid ):
     class ExternalServiceColumn( grids.TextColumn ):
         def get_value( self, trans, grid, sample_dataset ):
             try:
-                return sample_dataset.external_service.name
+                return escape(sample_dataset.external_service.name)
             except:
                 return 'None'
     # Grid definition
@@ -440,6 +446,8 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
+        if pexpect is None:
+            return PEXPECT_IMPORT_MESSAGE
         external_service = trans.sa_session.query( trans.model.ExternalService ).get( trans.security.decode_id( external_service_id ) )
         external_service.load_data_transfer_settings( trans )
         scp_configs = external_service.data_transfer[ trans.model.ExternalService.data_transfer_protocol.SCP ]
@@ -498,15 +506,20 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
         cmd = 'ssh %s@%s "ls -p \'%s\'"' % ( scp_configs[ 'user_name' ], scp_configs[ 'host' ], folder_path )
         # Handle the authentication message if keys are not set - the message is
         # something like: "Are you sure you want to continue connecting (yes/no)."
-        output = pexpect.run( cmd,
-                              events={ '\(yes\/no\)\.*' : 'yes\r\n',
-                                       '.ssword:*' : scp_configs[ 'password' ] + '\r\n',
-                                       pexpect.TIMEOUT : print_ticks },
-                              timeout=10 )
-        if 'No such file or directory' in output:
-            status = 'error'
-            message = "No folder named (%s) exists on the external service." % folder_path
-            ok = False
+        if pexpect is not None:
+            output = pexpect.run( cmd,
+                                  events={ '\(yes\/no\)\.*' : 'yes\r\n',
+                                           '.ssword:*' : scp_configs[ 'password' ] + '\r\n',
+                                           pexpect.TIMEOUT : print_ticks },
+                                  timeout=10 )
+            if 'No such file or directory' in output:
+                status = 'error'
+                message = "No folder named (%s) exists on the external service." % folder_path
+                ok = False
+        else:
+                status = 'error'
+                message = PEXPECT_IMPORT_MESSAGE
+                ok = False
         if ok:
             if 'assword:' in output:
                 # Eliminate the output created using ssh from the tree

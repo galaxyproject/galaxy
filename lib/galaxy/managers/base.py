@@ -25,12 +25,7 @@ attribute change to a model object.
 #   instead of the three separate classes. With no 'apparent' perfect scheme
 #   I'm opting to just keep them separate.
 
-import pkg_resources
-pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy
-
-pkg_resources.require("repoze.lru")  # used by Routes
-pkg_resources.require("Routes")
 import routes
 
 from galaxy import exceptions
@@ -117,6 +112,16 @@ def get_class( class_name ):
     return item_class
 
 
+def decode_id(app, id):
+    try:
+        # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
+        #   resulting in error for valid id
+        return app.security.decode_id( str( id ) )
+    except ( ValueError, TypeError ):
+        msg = "Malformed id ( %s ) specified, unable to decode" % ( str( id ) )
+        raise exceptions.MalformedId( msg, id=str( id ) )
+
+
 def get_object( trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None ):
     """
     Convenience method to get a model object with the specified checks. This is
@@ -124,11 +129,7 @@ def get_object( trans, id, class_name, check_ownership=False, check_accessible=F
     controller mixin code - however whenever possible the managers for a
     particular model should be used to load objects.
     """
-    try:
-        decoded_id = trans.security.decode_id( id )
-    except:
-        raise exceptions.MessageException( "Malformed %s id ( %s ) specified, unable to decode"
-                                           % ( class_name, str( id ) ), type='error' )
+    decoded_id = decode_id(trans.app, id)
     try:
         item_class = get_class( class_name )
         assert item_class is not None
@@ -178,7 +179,7 @@ class ModelManager( object ):
         return item
 
     # .... query foundation wrapper
-    def query( self, eagerloads=True, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
+    def query( self, eagerloads=True, **kwargs ):
         """
         Return a basic query from model_class, filters, order_by, and limit and offset.
 
@@ -188,7 +189,10 @@ class ModelManager( object ):
         # joined table loading
         if eagerloads is False:
             query = query.enable_eagerloads( False )
+        return self._filter_and_order_query( query, **kwargs )
 
+    def _filter_and_order_query( self, query, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
+        # TODO: not a lot of functional cohesion here
         query = self._apply_orm_filters( query, filters )
         query = self._apply_order_by( query, order_by )
         query = self._apply_orm_limit_offset( query, limit, offset )
@@ -299,21 +303,19 @@ class ModelManager( object ):
         return self.one( filters=id_filter, **kwargs )
 
     # .... multirow queries
-    def _orm_list( self, query=None, **kwargs ):
-        """
-        Sends kwargs to build the query return all models found.
-        """
-        query = query or self.query( **kwargs )
-        return query.all()
-
     def list( self, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
         """
         Returns all objects matching the given filters
         """
+        # list becomes a way of applying both filters generated in the orm (such as .user ==)
+        # and functional filters that aren't currently possible using the orm (such as instance calcluated values
+        # or annotations/tags). List splits those two filters and applies limits/offsets
+        # only after functional filters (if any) using python.
         orm_filters, fn_filters = self._split_filters( filters )
         if not fn_filters:
             # if no fn_filtering required, we can use the 'all orm' version with limit offset
-            return self._orm_list( filters=orm_filters, order_by=order_by, limit=limit, offset=offset, **kwargs )
+            return self._orm_list( filters=orm_filters, order_by=order_by,
+                limit=limit, offset=offset, **kwargs )
 
         # fn filters will change the number of items returnable by limit/offset - remove them here from the orm query
         query = self.query( filters=orm_filters, order_by=order_by, limit=None, offset=None, **kwargs )
@@ -346,6 +348,13 @@ class ModelManager( object ):
         Returns True if `filter_` is a functional filter to be applied after the SQL query.
         """
         return callable( filter_ )
+
+    def _orm_list( self, query=None, **kwargs ):
+        """
+        Sends kwargs to build the query return all models found.
+        """
+        query = query or self.query( **kwargs )
+        return query.all()
 
     def _apply_fn_filters_gen( self, items, filters ):
         """
@@ -383,6 +392,8 @@ class ModelManager( object ):
         """
         Returns an in-order list of models with the matching ids in `ids`.
         """
+        if not ids:
+            return []
         ids_filter = self.model_class.id.in_( ids )
         found = self.list( filters=self._munge_filters( ids_filter, filters ), **kwargs )
         # TODO: this does not order by the original 'ids' array

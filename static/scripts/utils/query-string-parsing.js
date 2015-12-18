@@ -1,0 +1,2 @@
+define([],function(){function a(a,b){b=b||window.location.search.substr(1);var c=new RegExp(a+"=([^&#$]+)"),d=b.match(c);return d&&d.length?(d=d.splice(1),1===d.length?d[0]:d):void 0}function b(a){if(!a)return{};var b={},c=a.split("&");return c.forEach(function(a){var c=a.split("=");b[c[0]]=decodeURI(c[1])}),b}return{get:a,parse:b}});
+//# sourceMappingURL=../../maps/utils/query-string-parsing.js.map

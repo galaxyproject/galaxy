@@ -11,28 +11,28 @@ set to the path of the dataset on which metadata is being set
 constructed automatically).
 """
 
-import logging
-logging.basicConfig()
-log = logging.getLogger( __name__ )
-
 import cPickle
 import json
+import logging
 import os
 import sys
+
+# insert *this* galaxy before all others on sys.path
+sys.path.insert( 1, os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) ) )
+
+from sqlalchemy.orm import clear_mappers
+
+import galaxy.model.mapping  # need to load this before we unpickle, in order to setup properties assigned by the mappers
+from galaxy.model.custom_types import total_size
+from galaxy.util import stringify_dictionary_keys
 
 # ensure supported version
 assert sys.version_info[:2] >= ( 2, 6 ) and sys.version_info[:2] <= ( 2, 7 ), 'Python version must be 2.6 or 2.7, this is: %s' % sys.version
 
-# insert *this* galaxy before all others on sys.path
-new_path = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
-sys.path.insert( 0, new_path )
-
-import galaxy.model.mapping  # need to load this before we unpickle, in order to setup properties assigned by the mappers
-from galaxy.model.custom_types import total_size
+logging.basicConfig()
+log = logging.getLogger( __name__ )
 
 galaxy.model.Job()  # this looks REAL stupid, but it is REQUIRED in order for SA to insert parameters into the classes defined by the mappers --> it appears that instantiating ANY mapper'ed class would suffice here
-from galaxy.util import stringify_dictionary_keys
-from sqlalchemy.orm import clear_mappers
 
 
 def set_meta_with_tool_provided( dataset_instance, file_dict, set_meta_kwds, datatypes_registry ):

@@ -286,15 +286,14 @@ class RepositoryDependencyInstallManager( object ):
         for the received repository which is installed into Galaxy.  This method is called only from Galaxy.
         """
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, str( repository.tool_shed ) )
-        params = '?name=%s&owner=%s&changeset_revision=%s' % ( str( repository.name ),
-                                                               str( repository.owner ),
-                                                               str( repository.changeset_revision ) )
-        url = common_util.url_join( tool_shed_url,
-                                    'repository/get_repository_dependencies%s' % params )
+        params = dict( name=str( repository.name ),
+                       owner=str( repository.owner ),
+                       changeset_revision=str( repository.changeset_revision ) )
+        pathspec = [ 'repository', 'get_repository_dependencies' ]
         try:
-            raw_text = common_util.tool_shed_get( app, tool_shed_url, url )
+            raw_text = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
         except Exception, e:
-            print "The URL\n%s\nraised the exception:\n%s\n" % ( url, str( e ) )
+            log.error("The URL\n%s\nraised the exception:\n%s\n", common_util.url_join( tool_shed_url, pathspec=pathspec, params=params ), str( e ) )
             return ''
         if len( raw_text ) > 2:
             encoded_text = json.loads( raw_text )
@@ -378,7 +377,8 @@ class RepositoryDependencyInstallManager( object ):
                     if suc.is_tool_shed_client( self.app ):
                         # Handle secure / insecure Tool Shed URL protocol changes and port changes.
                         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, tool_shed_url )
-                    url = common_util.url_join( tool_shed_url, '/repository/get_required_repo_info_dict' )
+                    pathspec = [ 'repository', 'get_required_repo_info_dict' ]
+                    url = common_util.url_join( tool_shed_url, pathspec=pathspec )
                     # Fix for handling 307 redirect not being handled nicely by urllib2.urlopen when the urllib2.Request has data provided
                     url = urllib2.urlopen( urllib2.Request( url ) ).geturl()
                     request = urllib2.Request( url, data=urllib.urlencode( dict( encoded_str=encoded_required_repository_str ) ) )
@@ -414,6 +414,23 @@ class RepositoryDependencyInstallManager( object ):
                                     all_repo_info_dicts_keys = [ d.keys()[ 0 ] for d in all_repo_info_dicts ]
                                     if required_repo_info_dict_key not in all_repo_info_dicts_keys:
                                         all_repo_info_dicts.append( required_repo_info_dict )
+                                    else:
+                                        # required_repo_info_dict_key corresponds to the repo name.
+                                        # A single install transaction might require the installation of 2 or more repos
+                                        # with the same repo name but different owners or versions.
+                                        # Therefore, if required_repo_info_dict_key is already in all_repo_info_dicts,
+                                        # check that the tool id is already present. If it is not, we are dealing with the same repo name,
+                                        # but a different owner/changeset revision or version and we add the repo to the list of repos to be installed.
+                                        tool_id = required_repo_info_dict[ required_repo_info_dict_key ][ 1 ]
+                                        is_present = False
+                                        for repo_info_dict in all_repo_info_dicts:
+                                            for k, v in repo_info_dict.items():
+                                                if required_repo_info_dict_key == k:
+                                                    if tool_id == v[1]:
+                                                        is_present = True
+                                                        break
+                                        if not is_present:
+                                            all_repo_info_dicts.append( required_repo_info_dict )
                         all_required_repo_info_dict[ 'all_repo_info_dicts' ] = all_repo_info_dicts
         return all_required_repo_info_dict
 

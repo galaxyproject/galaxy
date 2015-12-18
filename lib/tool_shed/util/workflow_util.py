@@ -267,6 +267,7 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
     for step_dict in workflow_dict[ 'steps' ].itervalues():
         # Create the model class for the step
         step = trans.model.WorkflowStep()
+        step.label = step_dict.get('label', None)
         step.name = step_dict[ 'name' ]
         step.position = step_dict[ 'position' ]
         module = module_factory.from_dict( trans, repository_id, changeset_revision, step_dict, tools_metadata=tools_metadata, secure=False )

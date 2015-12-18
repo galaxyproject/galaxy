@@ -4,6 +4,9 @@
 // Galaxy specific variables
 @import "galaxy_variables.less";
 
+// Galaxy Report Webapp
+@import "reports";
+
 @white: #fff;
 @black: #000;
 
@@ -134,14 +137,6 @@ body  {
 #left-border  {
     left: 250px;
 }
-.reports-panel-container {
-    position: absolute;
-    top: @panel_header_height;
-    bottom: 10px;
-    overflow: scroll;
-    width: 100%;
-    padding: 10px;
-}
 #center  {
     left:250 + @border-default-color_padding;
     right: 250 + @border-default-color_padding;
@@ -216,7 +211,7 @@ body.has-message-box.has-inactivity-box {
     height: @panel_footer_height;
     line-height: @panel_footer_height;
     width: 100%;
-    z-index: 1000; // Above #DD-helper
+    z-index: 1000; // Above #dd-helper
     border-top: solid @layout-border-color 1px;
     background: @navbar-default-bg;
 
@@ -295,10 +290,15 @@ div.unified-panel-body {
     top: @panel_header_height;
     bottom: 0;
     width: 100%;
+    padding: 0px;
+}
+div.unified-panel-body-background {
+    background: none repeat scroll 0 0 #DFE5F9;
 }
 
 #left > div.unified-panel-body, #right > div.unified-panel-body {
     bottom: @panel_footer_height;
+    overflow: auto;
 }
 
 .panel-header-button {
@@ -328,7 +328,7 @@ div.unified-panel-body {
 }
 
 // Used for dragging panels, popup menus, to deal with capturing clicks in iframes
-#DD-helper {
+#dd-helper {
     background: white;
     opacity: 0;
     z-index: 900; // Bootstrap elements start at 1000
@@ -762,7 +762,7 @@ input[type="submit"], button {
 
 // Messages
 
-.errormessagelarge, .warningmessagelarge, .donemessagelarge, .infomessagelarge {
+.errormessagelarge, .warningmessagelarge, .donemessagelarge, .infomessagelarge, .toolHelpBody .error, .toolHelpBody .warning, .toolHelpBody .note {
     .alert();
     min-height: 36px;
     padding-left: 52px;
@@ -800,7 +800,7 @@ input[type="submit"], button {
     background-image: none;
 }
 
-.errormessage, .warningmessage, .donemessage, .infomessage, .errormessagesmall, .warningmessagesmall, .donemessagesmall, .infomessagesmall {
+.errormessage, .warningmessage, .donemessage, .infomessage, .errormessagesmall, .warningmessagesmall, .donemessagesmall, .infomessagesmall, toolHelpBody .error, .toolHelpBody .warning, .toolHelpBody .note {
     .alert();
     padding: 5px;
     padding-left: 25px;
@@ -812,11 +812,11 @@ input[type="submit"], button {
     background-position: 5px 5px;
 }
 
-.errormessage, .errormessagesmall {
+.errormessage, .errormessagesmall, .toolHelpBody .error {
     .alert-danger();
 }
 
-.warningmessage, .warningmessagesmall {
+.warningmessage, .warningmessagesmall, .toolHelpBody .warning {
     .alert-warning();
     background-image: url(warn_small.png);
 }
@@ -826,7 +826,7 @@ input[type="submit"], button {
     background-image: url(ok_small.png);
 }
 
-.infomessage, .infomessagesmall {
+.infomessage, .infomessagesmall, .toolHelpBody .note {
     .alert-info();
     background-image: url(info_small.png);
 }
@@ -1065,6 +1065,15 @@ div.odd_row {
 
 // Tool panel stuff
 
+// Extra label colors
+.label-beta {
+  .label-warning();
+}
+
+.label-new {
+  .label-info();
+}
+
 span.toolParameterExpandableCollapsable {
     font-weight: bold;
     cursor: pointer;
@@ -1163,7 +1172,9 @@ button {
     .btn();
     .btn-default();
 }
-
+a.btn {
+    text-decoration: none;
+}
 .action-button {
     .btn();
     .btn-default();
@@ -1219,7 +1230,7 @@ a.action-button {
         text-decoration: none;
     }
 
-    .label, > label {
+    .menubutton-label, > label {
         position: relative;
         display: inline-block;
         border-right: none;
@@ -1232,7 +1243,7 @@ a.action-button {
         text-overflow: ellipsis;
     }
 
-    &.popup .label {
+    &.popup .menubutton-label {
         border-right: solid @btn-default-border 1px;
         padding-right: 6px;
     }
@@ -1511,6 +1522,10 @@ div.toolTitle
   margin-right: 10px;
   display: list-item;
   list-style: square outside;
+  .labels {
+    float: right;
+    margin-left: 2px;
+  }
 }
 
 div.toolSectionBody div.toolPanelLabel
@@ -1697,8 +1712,19 @@ div.toolTitleNoSection
     .sprite(@chevron-expand-bw);
 }
 
-// honeypot for registration form
+// noscript overlay - displayed when javascript is disabled
+.noscript-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: white;
+    z-index: 10000;
+    & > div {
+        margin: 64px 0px 0px 64px;
+    }
+}
 
+// honeypot for registration form
 #for_bears {
     display: none;
 }

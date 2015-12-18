@@ -7,13 +7,6 @@ import os
 import sys
 import urllib2
 
-new_path = [ os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, 'lib' ) ]
-new_path.extend( sys.path[1:] )
-sys.path = new_path
-
-from galaxy import eggs
-eggs.require( "pycrypto" )
-
 from Crypto.Cipher import Blowfish
 
 log = logging.getLogger( __name__ )

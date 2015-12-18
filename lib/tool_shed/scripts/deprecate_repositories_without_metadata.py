@@ -11,12 +11,8 @@ from datetime import datetime, timedelta
 from time import strftime
 from optparse import OptionParser
 
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] )
-sys.path = new_path
+sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
 
-from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
 from sqlalchemy import and_, distinct, false, not_
 
@@ -32,7 +28,7 @@ assert sys.version_info[:2] >= ( 2, 4 )
 
 
 def build_citable_url( host, repository ):
-    return url_join( host, 'view', repository.user.username, repository.name )
+    return url_join( host, pathspec=[ 'view', repository.user.username, repository.name ] )
 
 
 def main():
@@ -44,7 +40,10 @@ def main():
     parser.add_option( "-i", "--info_only", action="store_true", dest="info_only", help="info about the requested action", default=False )
     parser.add_option( "-v", "--verbose", action="store_true", dest="verbose", help="verbose mode, print the name of each repository", default=False )
     ( options, args ) = parser.parse_args()
-    ini_file = args[0]
+    try:
+        ini_file = args[0]
+    except IndexError:
+        sys.exit( "Usage: python %s <tool shed .ini file> [options]" % sys.argv[ 0 ] )
     config_parser = ConfigParser.ConfigParser( {'here': os.getcwd()} )
     config_parser.read( ini_file )
     config_dict = {}

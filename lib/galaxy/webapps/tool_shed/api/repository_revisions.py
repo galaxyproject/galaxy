@@ -1,8 +1,6 @@
 import datetime
 import logging
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, not_, select
 
 import tool_shed.util.shed_util_common as suc

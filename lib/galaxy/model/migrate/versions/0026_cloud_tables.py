@@ -1,16 +1,12 @@
-from sqlalchemy import *
-from migrate import *
-
 import datetime
-now = datetime.datetime.utcnow
-
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
+
+now = datetime.datetime.utcnow
+log = logging.getLogger( __name__ )
 metadata = MetaData()
+
 
 def display_migration_details():
     print
@@ -127,6 +123,7 @@ CloudProvider_table = Table( "cloud_provider", metadata,
                              Column( "path", TEXT ),
                              Column( "deleted", Boolean, default=False ) )
 
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     display_migration_details()
@@ -142,6 +139,7 @@ def upgrade(migrate_engine):
     CloudInstance_table.create()
     CloudStore_table.create()
     CloudSnapshot_table.create()
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

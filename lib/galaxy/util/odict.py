@@ -2,7 +2,7 @@
 Ordered dictionary implementation.
 """
 
-from UserDict import UserDict
+from six.moves import UserDict
 
 
 class odict(UserDict):

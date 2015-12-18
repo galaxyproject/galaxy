@@ -4,15 +4,12 @@ API operations on a history.
 .. seealso:: :class:`galaxy.model.History`
 """
 
-import pkg_resources
-pkg_resources.require( "Paste" )
-
-pkg_resources.require( "SQLAlchemy >= 0.4" )
-from sqlalchemy import true, false, desc
+from sqlalchemy import true, false
 
 from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web import _future_expose_api_raw as expose_api_raw
 
 from galaxy.web.base.controller import BaseAPIController
@@ -21,6 +18,7 @@ from galaxy.web.base.controller import ImportsHistoryMixin
 
 from galaxy.managers import histories, citations, users
 
+from galaxy import util
 from galaxy.util import string_as_bool
 from galaxy.util import restore_text
 from galaxy.web import url_for
@@ -90,6 +88,23 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
                     skip the first ( offset - 1 ) items and begin returning
                     at the Nth item
 
+        The list returned can be ordered using the optional parameter:
+            order:  string containing one of the valid ordering attributes followed
+                    (optionally) by '-asc' or '-dsc' for ascending and descending
+                    order respectively. Orders can be stacked as a comma-
+                    separated list of values.
+
+        ..example:
+            To sort by name descending then create time descending:
+                '?order=name-dsc,create_time'
+
+        The ordering attributes and their default orders are:
+            create_time defaults to 'create_time-dsc'
+            update_time defaults to 'update_time-dsc'
+            name    defaults to 'name-asc'
+
+        'order' defaults to 'create_time-dsc'
+
         ..example:
             limit and offset can be combined. Skip the first two and return five:
                 '?limit=5&offset=3'
@@ -116,8 +131,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         # and any sent in from the query string
         filters += self.history_filters.parse_filters( filter_params )
 
-        # TODO: eventually make order_by a param as well
-        order_by = desc( self.app.model.History.create_time )
+        order_by = self._parse_order_by( kwd.get( 'order', 'create_time-dsc' ) )
         histories = self.history_manager.list( filters=filters, order_by=order_by, limit=limit, offset=offset )
 
         rval = []
@@ -149,6 +163,13 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
 
         # otherwise, do the default filter of removing the deleted histories
         return [ self.app.model.History.deleted == false() ]
+
+    def _parse_order_by( self, order_by_string ):
+        ORDER_BY_SEP_CHAR = ','
+        manager = self.history_manager
+        if ORDER_BY_SEP_CHAR in order_by_string:
+            return [ manager.parse_order_by( o ) for o in order_by_string.split( ORDER_BY_SEP_CHAR ) ]
+        return manager.parse_order_by( order_by_string )
 
     @expose_api_anonymous
     def show( self, trans, id, deleted='False', **kwd ):
@@ -182,7 +203,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             history = self.history_manager.get_accessible( self.decode_id( history_id ), trans.user, current_history=trans.history )
 
         return self.history_serializer.serialize_to_view( history,
-                                                          user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+            user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api_anonymous
     def citations( self, trans, history_id, **kwd ):
@@ -201,7 +222,58 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         return map( lambda citation: citation.to_dict( "bibtex" ),
                     self.citations_manager.citations_for_tool_ids( tool_ids ) )
 
-    @expose_api
+    @expose_api_anonymous_and_sessionless
+    def published( self, trans, **kwd ):
+        """
+        published( self, trans, **kwd ):
+        * GET /api/histories/published:
+            return all histories that are published
+
+        :rtype:     list
+        :returns:   list of dictionaries containing summary history information
+
+        Follows the same filtering logic as the index() method above.
+        """
+        limit, offset = self.parse_limit_offset( kwd )
+        filter_params = self.parse_filter_params( kwd )
+        filters = self.history_filters.parse_filters( filter_params )
+        order_by = self._parse_order_by( kwd.get( 'order', 'create_time-dsc' ) )
+        histories = self.history_manager.list_published( filters=filters, order_by=order_by, limit=limit, offset=offset )
+        rval = []
+        for history in histories:
+            history_dict = self.history_serializer.serialize_to_view( history, user=trans.user, trans=trans,
+                **self._parse_serialization_params( kwd, 'summary' ) )
+            rval.append( history_dict )
+        return rval
+
+    # TODO: does this need to be anonymous_and_sessionless? Not just expose_api?
+    @expose_api_anonymous_and_sessionless
+    def shared_with_me( self, trans, **kwd ):
+        """
+        shared_with_me( self, trans, **kwd )
+        * GET /api/histories/shared_with_me:
+            return all histories that are shared with the current user
+
+        :rtype:     list
+        :returns:   list of dictionaries containing summary history information
+
+        Follows the same filtering logic as the index() method above.
+        """
+        current_user = trans.user
+        limit, offset = self.parse_limit_offset( kwd )
+        filter_params = self.parse_filter_params( kwd )
+        filters = self.history_filters.parse_filters( filter_params )
+        order_by = self._parse_order_by( kwd.get( 'order', 'create_time-dsc' ) )
+        histories = self.history_manager.list_shared_with( current_user,
+            filters=filters, order_by=order_by, limit=limit, offset=offset )
+        rval = []
+        for history in histories:
+            history_dict = self.history_serializer.serialize_to_view( history, user=current_user, trans=trans,
+                **self._parse_serialization_params( kwd, 'summary' ) )
+            rval.append( history_dict )
+        return rval
+
+    @expose_api_anonymous
     def create( self, trans, payload, **kwd ):
         """
         create( trans, payload )
@@ -212,6 +284,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         :param  payload: (optional) dictionary structure containing:
             * name:             the new history's name
             * history_id:       the id of the history to copy
+            * all_datasets:     copy deleted hdas/hdcas? 'True' or 'False', defaults to True
             * archive_source:   the url that will generate the archive to import
             * archive_type:     'url' (default)
 
@@ -226,6 +299,8 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             hist_name = restore_text( payload['name'] )
         copy_this_history_id = payload.get( 'history_id', None )
 
+        all_datasets = util.string_as_bool( payload.get( 'all_datasets', True ) )
+
         if "archive_source" in payload:
             archive_source = payload[ "archive_source" ]
             archive_type = payload.get( "archive_type", "url" )
@@ -238,7 +313,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             decoded_id = self.decode_id( copy_this_history_id )
             original_history = self.history_manager.get_accessible( decoded_id, trans.user, current_history=trans.history )
             hist_name = hist_name or ( "Copy of '%s'" % original_history.name )
-            new_history = original_history.copy( name=hist_name, target_user=trans.user )
+            new_history = original_history.copy( name=hist_name, target_user=trans.user, all_datasets=all_datasets )
 
         # otherwise, create a new empty history
         else:
@@ -247,8 +322,12 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         trans.sa_session.add( new_history )
         trans.sa_session.flush()
 
+        # an anonymous user can only have one history
+        if self.user_manager.is_anonymous( trans.user ):
+            self.history_manager.set_current( trans, new_history )
+
         return self.history_serializer.serialize_to_view( new_history,
-                                                          user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+            user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api
     def delete( self, trans, id, **kwd ):
@@ -287,7 +366,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             self.history_manager.purge( history )
 
         return self.history_serializer.serialize_to_view( history,
-                                                          user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+            user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api
     def undelete( self, trans, id, **kwd ):
@@ -305,12 +384,13 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         :rtype:     str
         :returns:   'OK' if the history was undeleted
         """
+        # TODO: remove at v2
         history_id = id
         history = self.history_manager.get_owned( self.decode_id( history_id ), trans.user, current_history=trans.history )
         self.history_manager.undelete( history )
 
         return self.history_serializer.serialize_to_view( history,
-                                                          user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+            user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api
     def update( self, trans, id, payload, **kwd ):

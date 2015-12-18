@@ -1,19 +1,15 @@
 """
 Migration script for the job state history table
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-from galaxy.model.custom_types import *
-
 import datetime
-now = datetime.datetime.utcnow
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, String, Table
+
+from galaxy.model.custom_types import TrimmedString
+
+now = datetime.datetime.utcnow
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 JobStateHistory_table = Table( "job_state_history", metadata,
@@ -22,8 +18,8 @@ JobStateHistory_table = Table( "job_state_history", metadata,
                                Column( "update_time", DateTime, default=now, onupdate=now ),
                                Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
                                Column( "state", String( 64 ), index=True ),
-                               Column( "info", TrimmedString( 255 ) )
-)
+                               Column( "info", TrimmedString( 255 ) ) )
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine

@@ -1,16 +1,15 @@
 """
 Migration script to add the cleanup_event* tables.
 """
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-import sys, logging
-from galaxy.model.custom_types import *
-from sqlalchemy.exc import *
 import datetime
-now = datetime.datetime.utcnow
+import logging
+import sys
 
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table
+
+from galaxy.model.custom_types import TrimmedString
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel( logging.DEBUG )
 handler = logging.StreamHandler( sys.stdout )
@@ -81,6 +80,7 @@ CleanupEventImplicitlyConvertedDatasetAssociationAssociation_table = Table( "cle
                                                                             Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
                                                                             Column( "icda_id", Integer, ForeignKey( "implicitly_converted_dataset_association.id" ), index=True ) )
 
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
@@ -98,6 +98,7 @@ def upgrade(migrate_engine):
         CleanupEventImplicitlyConvertedDatasetAssociationAssociation_table.create()
     except Exception, e:
         log.debug( "Creating table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

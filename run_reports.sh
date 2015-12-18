@@ -7,7 +7,7 @@
 # Description: This script can be used to start or stop the galaxy
 # reports web application. Passing in --sync-config as the first
 # argument to this will cause Galaxy's database and path parameters
-# from universe_wsgi.ini to be copied over into reports_wsgi.ini.
+# from galaxy.ini to be copied over into reports.ini.
 
 cd `dirname $0`
 
@@ -20,15 +20,23 @@ fi
 
 ./scripts/common_startup.sh --skip-samples
 
+if [ -d .venv ];
+then
+    printf "Activating virtualenv at %s/.venv\n" $(pwd)
+    . .venv/bin/activate
+fi
+
 if [ -z "$GALAXY_REPORTS_CONFIG" ]; then
     if [ -f reports_wsgi.ini ]; then
         GALAXY_REPORTS_CONFIG=reports_wsgi.ini
     elif [ -f config/reports_wsgi.ini ]; then
         GALAXY_REPORTS_CONFIG=config/reports_wsgi.ini
+    elif [ -f config/reports.ini ]; then
+        GALAXY_REPORTS_CONFIG=config/reports.ini
     else
-        GALAXY_REPORTS_CONFIG=config/reports_wsgi.ini.sample
-    export GALAXY_REPORTS_CONFIG
+        GALAXY_REPORTS_CONFIG=config/reports.ini.sample
     fi
+    export GALAXY_REPORTS_CONFIG
 fi
 
 GALAXY_REPORTS_PID=${GALAXY_REPORTS_PID:-reports_webapp.pid}

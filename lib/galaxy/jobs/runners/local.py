@@ -52,7 +52,7 @@ class LocalJobRunner( BaseJobRunner ):
 
         # slots would be cleaner name, but don't want deployers to see examples and think it
         # is going to work with other job runners.
-        slots = job_wrapper.job_destination.params.get( "local_slots", None )
+        slots = job_wrapper.job_destination.params.get( "local_slots", None ) or os.environ.get("GALAXY_SLOTS", None)
         if slots:
             slots_statement = 'GALAXY_SLOTS="%d"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;' % ( int( slots ) )
         else:
@@ -68,8 +68,7 @@ class LocalJobRunner( BaseJobRunner ):
             'working_directory': job_wrapper.working_directory,
         }
         job_file_contents = self.get_job_file( job_wrapper, **job_script_props )
-        open( job_file, 'w' ).write( job_file_contents )
-        os.chmod( job_file, 0o755 )
+        self.write_executable_script( job_file, job_file_contents )
         return job_file, exit_code_path
 
     def queue_job( self, job_wrapper ):

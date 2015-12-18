@@ -116,7 +116,7 @@ var LibraryDatasetView = Backbone.View.extend({
   },
 
   downloadDataset: function(){
-    var url = ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/libraries/datasets/download/uncompressed';
+    var url = Galaxy.root + 'api/libraries/datasets/download/uncompressed';
     var data = {'ld_ids' : this.id};
     this.processDownload(url, data);
   },
@@ -135,7 +135,7 @@ var LibraryDatasetView = Backbone.View.extend({
           //send request
           $('<form action="'+ url +'" method="'+ (method||'post') +'">'+inputs+'</form>')
           .appendTo('body').submit().remove();
-          
+
           mod_toastr.info('Your download will begin soon.');
         }
    },
@@ -183,16 +183,16 @@ var LibraryDatasetView = Backbone.View.extend({
       var historyItem = new mod_library_model.HistoryItem();
       historyItem.url = historyItem.urlRoot + history_id + '/contents';
 
-      // set the used history as current so user will see the last one 
+      // set the used history as current so user will see the last one
       // that he imported into in the history panel on the 'analysis' page
-      jQuery.getJSON( galaxy_config.root + 'history/set_as_current?id=' + history_id  );
+      jQuery.getJSON( Galaxy.root + 'history/set_as_current?id=' + history_id  );
 
       // save the dataset into selected history
-      historyItem.save({ content : this.id, source : 'library' }, { 
+      historyItem.save({ content : this.id, source : 'library' }, {
         success : function(){
             Galaxy.modal.hide();
           mod_toastr.success('Dataset imported. Click this to start analysing it.', '', {onclick: function() {window.location='/';}});
-        }, 
+        },
         error : function(model, response){
           if (typeof response.responseJSON !== "undefined"){
             mod_toastr.error('Dataset not imported. ' + response.responseJSON.err_msg);
@@ -224,15 +224,15 @@ var LibraryDatasetView = Backbone.View.extend({
     }
     // Select works different for admins
     var is_admin = false;
-    if (Galaxy.currUser){
-      is_admin = Galaxy.currUser.isAdmin();
+    if (Galaxy.user){
+      is_admin = Galaxy.user.isAdmin();
     }
     var template = this.templateDatasetPermissions();
     this.$el.html(template({item: this.model, is_admin: is_admin}));
 
     var self = this;
     if (this.options.fetched_permissions === undefined){
-      $.get( ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/libraries/datasets/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
+      $.get( Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
         self.prepareSelectBoxes({fetched_permissions:fetched_permissions, is_admin:is_admin});
       }).fail(function(){
           mod_toastr.error('An error occurred while attempting to fetch dataset permissions.');
@@ -263,7 +263,7 @@ var LibraryDatasetView = Backbone.View.extend({
         for (var i = 0; i < fetched_permissions.manage_dataset_roles.length; i++) {
             selected_manage_dataset_roles.push(fetched_permissions.manage_dataset_roles[i] + ':' + fetched_permissions.manage_dataset_roles[i]);
         }
-        
+
         // ACCESS PERMISSIONS
         if (is_admin){ // Admin has a special select that allows AJAX searching
             var access_select_options = {
@@ -273,7 +273,7 @@ var LibraryDatasetView = Backbone.View.extend({
               placeholder: 'Click to select a role',
               container: self.$el.find('#access_perm'),
               ajax: {
-                  url: ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/libraries/datasets/" + self.id + "/permissions?scope=available",
+                  url: Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=available",
                   dataType: 'json',
                   quietMillis: 100,
                   data: function (term, page) { // page is the one-based page number tracked by Select2
@@ -320,7 +320,7 @@ var LibraryDatasetView = Backbone.View.extend({
               placeholder: 'Click to select a role',
               container: self.$el.find('#modify_perm'),
               ajax: {
-                  url: ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/libraries/datasets/" + self.id + "/permissions?scope=available",
+                  url: Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=available",
                   dataType: 'json',
                   quietMillis: 100,
                   data: function (term, page) { // page is the one-based page number tracked by Select2
@@ -367,7 +367,7 @@ var LibraryDatasetView = Backbone.View.extend({
               placeholder: 'Click to select a role',
               container: self.$el.find('#manage_perm'),
               ajax: {
-                  url: ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/libraries/datasets/" + self.id + "/permissions?scope=available",
+                  url: Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=available",
                   dataType: 'json',
                   quietMillis: 100,
                   data: function (term, page) { // page is the one-based page number tracked by Select2
@@ -413,7 +413,7 @@ var LibraryDatasetView = Backbone.View.extend({
             self.manageSelectObject = new mod_select.View(manage_select_options);
         } else { // Non-admins have select with pre-loaded options
             var template = self.templateAccessSelect();
-            $.get( ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/libraries/datasets/" + self.id + "/permissions?scope=available", function( data ) {
+            $.get( Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=available", function( data ) {
                 $('.access_perm').html(template({options:data.roles}));
                 self.accessSelectObject = $('#access_select').select2();
             }).fail(function() {
@@ -436,7 +436,7 @@ var LibraryDatasetView = Backbone.View.extend({
 
   makeDatasetPrivate: function(){
     var self = this;
-    $.post( ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/libraries/datasets/" + self.id + "/permissions?action=make_private").done(function(fetched_permissions) {
+    $.post( Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?action=make_private").done(function(fetched_permissions) {
       self.model.set({is_unrestricted:false});
       self.showPermissions({fetched_permissions:fetched_permissions})
       mod_toastr.success('The dataset is now private to you.');
@@ -447,7 +447,7 @@ var LibraryDatasetView = Backbone.View.extend({
 
   removeDatasetRestrictions: function(){
     var self = this;
-    $.post( ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/libraries/datasets/" + self.id + "/permissions?action=remove_restrictions")
+    $.post( Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?action=remove_restrictions")
     .done(function(fetched_permissions) {
       self.model.set({is_unrestricted:true});
       self.showPermissions({fetched_permissions:fetched_permissions})
@@ -478,7 +478,7 @@ var LibraryDatasetView = Backbone.View.extend({
       modify_ids.push(modify_roles[i].id);
     };
 
-    $.post( ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/libraries/datasets/" + self.id + "/permissions?action=set_permissions", { 'access_ids[]': access_ids, 'manage_ids[]': manage_ids, 'modify_ids[]': modify_ids, } )
+    $.post( Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?action=set_permissions", { 'access_ids[]': access_ids, 'manage_ids[]': manage_ids, 'modify_ids[]': modify_ids, } )
     .done(function(fetched_permissions){
       //fetch dataset again
       self.showPermissions({fetched_permissions:fetched_permissions})
@@ -501,7 +501,7 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('   <% if (item.get("can_user_modify")) { %>');
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Modify library item" class="btn btn-default toolbtn_modify_dataset primary-button" type="button"><span class="fa fa-pencil"></span> Modify</span></button>');
     tmpl_array.push('   <% } %>');
-    
+
     tmpl_array.push('   <% if (item.get("can_user_manage")) { %>');
     tmpl_array.push('   <a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>/permissions"><button data-toggle="tooltip" data-placement="top" title="Manage permissions" class="btn btn-default toolbtn_change_permissions primary-button" type="button"><span class="fa fa-group"></span> Permissions</span></button></a>');
     // tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Share dataset" class="btn btn-default toolbtn-share-dataset primary-button" type="button"><span class="fa fa-share"></span> Share</span></button>');
@@ -644,7 +644,7 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('</div>');
 
     return _.template(tmpl_array.join(''));
-  }, 
+  },
 
   templateVersion : function(){
     var tmpl_array = [];
@@ -668,7 +668,7 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('</ol>');
 
     tmpl_array.push('  <div class="alert alert-warning">This is an expired version of the library dataset: <%= _.escape(item.get("name")) %></div>');
-    
+
     tmpl_array.push('<div class="dataset_table">');
 
     tmpl_array.push('   <table class="grid table table-striped table-condensed">');
@@ -847,7 +847,7 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('       <tr>');
     tmpl_array.push('           <th scope="row">Message</th>');
     tmpl_array.push('           <td scope="row"><%= _.escape(item.get("message")) %></td>');
-    tmpl_array.push('       </tr>');    
+    tmpl_array.push('       </tr>');
     tmpl_array.push('       <tr>');
     tmpl_array.push('           <th scope="row">Miscellaneous information</th>');
     tmpl_array.push('           <td scope="row"><%= _.escape(item.get("misc_info")) %></td>');
@@ -855,7 +855,7 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('       <tr>');
     tmpl_array.push('           <th scope="row">Miscellaneous blurb</th>');
     tmpl_array.push('           <td scope="row"><%= _.escape(item.get("misc_blurb")) %></td>');
-    tmpl_array.push('       </tr>');    
+    tmpl_array.push('       </tr>');
     tmpl_array.push('   </table>');
     tmpl_array.push('<div>');
     tmpl_array.push('   <pre class="peek">');
@@ -901,7 +901,7 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('You can assign any number of roles to any of the following permission types. However please read carefully the implications of such actions.');
     tmpl_array.push('<% } %>');
     tmpl_array.push('</div>');
-    
+
     tmpl_array.push('<div class="dataset_table">');
 
     tmpl_array.push('<h2>Library-related permissions</h2>');
@@ -966,7 +966,7 @@ var LibraryDatasetView = Backbone.View.extend({
 
     tmpl_array.push('<select id="access_select" multiple>');
 
-    tmpl_array.push('   <% _.each(options, function(option) { %>');    
+    tmpl_array.push('   <% _.each(options, function(option) { %>');
     tmpl_array.push('       <option value="<%- option.name %>"><%- option.name %></option>');
     tmpl_array.push('   <% }); %>');
 

@@ -1,7 +1,7 @@
 define([
     'libs/d3',
     'viz/visualization',
-    'mvc/data',
+    'mvc/dataset/data',
     'mvc/ui/icon-button'
 ], function(d3, visualization_mod, data_mod, mod_icon_btn) {
 
@@ -204,7 +204,7 @@ var PhyloTree = visualization_mod.Visualization.extend({
         this.set("dataset", new data_mod.Dataset({
             id: options.dataset_id
         }));
-        
+
     },
 
     root : {}, // Root has to be its own independent object because it is not part of the viz_config

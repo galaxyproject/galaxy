@@ -1,5 +1,5 @@
 define([
-    "galaxy.masthead",
+    "layout/masthead",
     "utils/utils",
     "libs/toastr",
     "mvc/library/library-model",
@@ -15,7 +15,8 @@ var FolderRowView = Backbone.View.extend({
   lastSelectedHistory: '',
 
   events: {
-    'click .undelete_dataset_btn'    : 'undelete_dataset'
+    'click .undelete_dataset_btn'    : 'undeleteDataset',
+    'click .undelete_folder_btn'     : 'undeleteFolder'
   },
 
   options: {
@@ -29,16 +30,23 @@ var FolderRowView = Backbone.View.extend({
 
   render: function(folder_item){
     var template = null;
-    if (folder_item.get('type') === 'folder'){
+    if (folder_item.get('type') === 'folder' || folder_item.get('model_class') === 'LibraryFolder'){
       this.options.type = 'folder';
-      template = this.templateRowFolder();
-    } else {
+      if (folder_item.get('deleted')){
+        template = this.templateRowDeletedFolder();
+      } else{
+        template = this.templateRowFolder();
+      }
+    } else if (folder_item.get('type') === 'file' || folder_item.get('model_class') === 'LibraryDatasetDatasetAssociation'){
       this.options.type = 'file';
       if (folder_item.get('deleted')){
         template = this.templateRowDeletedFile();
       } else {
         template = this.templateRowFile();
       }
+    } else {
+      console.error('Unknown library item type found.');
+      console.error(folder_item.get('type') || folder_item.get('model_class'));
     }
     this.setElement(template({content_item:folder_item}));
     this.$el.show();
@@ -52,27 +60,55 @@ var FolderRowView = Backbone.View.extend({
   /**
    * Undeletes the dataset on server and renders the row again.
    */
-  undelete_dataset : function(event){
+  undeleteDataset : function(event){
     $(".tooltip").hide();
     var that = this;
     var dataset_id = $(event.target).closest('tr')[0].id;
     var dataset = Galaxy.libraries.folderListView.collection.get(dataset_id);
     dataset.url = dataset.urlRoot + dataset.id + '?undelete=true';
-    dataset.destroy({ 
+    dataset.destroy({
         success : function(model, response){
           Galaxy.libraries.folderListView.collection.remove(dataset_id);
           var updated_dataset = new mod_library_model.Item(response);
           Galaxy.libraries.folderListView.collection.add(updated_dataset);
+          Galaxy.libraries.folderListView.collection.sortByNameAsc();
           mod_toastr.success('Dataset undeleted. Click this to see it.', '', {onclick: function() {
             var folder_id = that.model.get('folder_id');
             window.location='#folders/' + folder_id + '/datasets/' + that.id;
           }});
-        }, 
+        },
         error : function(model, response){
           if (typeof response.responseJSON !== "undefined"){
             mod_toastr.error('Dataset was not undeleted. ' + response.responseJSON.err_msg);
           } else {
             mod_toastr.error('An error occured! Dataset was not undeleted. Please try again.');
+          }
+        }
+  });
+  },
+
+  /**
+   * Undeletes the folder on server and renders the row again.
+   */
+  undeleteFolder : function(event){
+    $(".tooltip").hide();
+    var that = this;
+    var folder_id = $(event.target).closest('tr')[0].id;
+    var folder = Galaxy.libraries.folderListView.collection.get(folder_id);
+    folder.url = folder.urlRoot + folder.id + '?undelete=true';
+    folder.destroy({
+        success : function(model, response){
+          Galaxy.libraries.folderListView.collection.remove(folder_id);
+          var updated_folder = new mod_library_model.FolderAsModel(response);
+          Galaxy.libraries.folderListView.collection.add(updated_folder);
+          Galaxy.libraries.folderListView.collection.sortByNameAsc();
+          mod_toastr.success('Folder undeleted.');
+        },
+        error : function(model, response){
+          if (typeof response.responseJSON !== "undefined"){
+            mod_toastr.error('Folder was not undeleted. ' + response.responseJSON.err_msg);
+          } else {
+            mod_toastr.error('An error occured! Folder was not undeleted. Please try again.');
           }
         }
   });
@@ -121,7 +157,7 @@ var FolderRowView = Backbone.View.extend({
     tmpl_array.push('</tr>');
 
     return _.template(tmpl_array.join(''));
-  },  
+  },
 
   templateRowDeletedFile: function(){
     tmpl_array = [];
@@ -139,8 +175,28 @@ var FolderRowView = Backbone.View.extend({
     tmpl_array.push('</tr>');
 
     return _.template(tmpl_array.join(''));
+  },
+
+  templateRowDeletedFolder: function(){
+    tmpl_array = [];
+
+    tmpl_array.push('<tr class="active deleted_folder light library-row" id="<%- content_item.id %>">');
+    tmpl_array.push('  <td>');
+    tmpl_array.push('    <span title="Folder" class="fa fa-folder-o"></span>');
+    tmpl_array.push('  </td>');
+    tmpl_array.push('  <td></td>');
+    tmpl_array.push('  <td style="color:grey;">');
+    tmpl_array.push('    <%- content_item.get("name") %>');
+    tmpl_array.push('  </td>');
+    tmpl_array.push('  <td>folder</td>');
+    tmpl_array.push('  <td></td>');
+    tmpl_array.push('  <td><%= _.escape(content_item.get("update_time")) %></td>'); // time updated
+    tmpl_array.push('  <td><span data-toggle="tooltip" data-placement="top" title="Marked deleted" style="color:grey;" class="fa fa-ban fa-lg"> </span><button data-toggle="tooltip" data-placement="top" title="Undelete <%- content_item.get("name") %>" class="primary-button btn-xs undelete_folder_btn show_on_hover" type="button" style="display:none; margin-left:1em;"><span class="fa fa-unlock"> Undelete</span></button></td>');
+    tmpl_array.push('</tr>');
+
+    return _.template(tmpl_array.join(''));
   }
-   
+
 });
 
 return {

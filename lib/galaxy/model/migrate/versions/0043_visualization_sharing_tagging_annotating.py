@@ -1,15 +1,11 @@
 """
 Migration script to create tables and columns for sharing visualizations.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Boolean, Column, ForeignKey, Index, Integer, MetaData, Table, TEXT, Unicode
+
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 # Sharing visualizations.
@@ -17,8 +13,7 @@ metadata = MetaData()
 VisualizationUserShareAssociation_table = Table( "visualization_user_share_association", metadata,
                                                  Column( "id", Integer, primary_key=True ),
                                                  Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True ),
-                                                 Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True )
-    )
+                                                 Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ) )
 
 # Tagging visualizations.
 
@@ -43,7 +38,6 @@ VisualizationAnnotationAssociation_table = Table( "visualization_annotation_asso
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
-    db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
     metadata.reflect()
 
     Visualiation_table = Table( "visualization", metadata, autoload=True )
@@ -55,9 +49,9 @@ def upgrade(migrate_engine):
         log.debug( "Creating visualization_user_share_association table failed: %s" % str( e ) )
 
     # Get default boolean value 'false' so that columns can be initialized.
-    if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
+    if migrate_engine.name in ['mysql', 'sqlite']:
         default_false = "0"
-    elif migrate_engine.name == 'postgresql':
+    elif migrate_engine.name in ['postgres', 'postgresql']:
         default_false = "false"
 
     # Add columns & create indices for supporting sharing to visualization table.
@@ -68,12 +62,12 @@ def upgrade(migrate_engine):
 
     try:
         # Add column.
-        deleted_column.create( Visualiation_table, index_name = "ix_visualization_deleted")
+        deleted_column.create( Visualiation_table, index_name="ix_visualization_deleted")
         assert deleted_column is Visualiation_table.c.deleted
 
         # Fill column with default value.
         cmd = "UPDATE visualization SET deleted = %s" % default_false
-        db_session.execute( cmd )
+        migrate_engine.execute( cmd )
     except Exception, e:
         print "Adding deleted column to visualization table failed: %s" % str( e )
         log.debug( "Adding deleted column to visualization table failed: %s" % str( e ) )
@@ -85,7 +79,7 @@ def upgrade(migrate_engine):
 
         # Fill column with default value.
         cmd = "UPDATE visualization SET importable = %s" % default_false
-        db_session.execute( cmd )
+        migrate_engine.execute( cmd )
     except Exception, e:
         print "Adding importable column to visualization table failed: %s" % str( e )
         log.debug( "Adding importable column to visualization table failed: %s" % str( e ) )
@@ -101,7 +95,7 @@ def upgrade(migrate_engine):
         if migrate_engine.name == 'mysql':
             # Have to create index manually.
             cmd = "CREATE INDEX ix_visualization_slug ON visualization ( slug ( 100 ) )"
-            db_session.execute( cmd )
+            migrate_engine.execute( cmd )
         else:
             i = Index( "ix_visualization_slug", Visualiation_table.c.slug )
             i.create()
@@ -116,7 +110,7 @@ def upgrade(migrate_engine):
 
         # Fill column with default value.
         cmd = "UPDATE visualization SET published = %s" % default_false
-        db_session.execute( cmd )
+        migrate_engine.execute( cmd )
     except Exception, e:
         print "Adding published column to visualization table failed: %s" % str( e )
         log.debug( "Adding published column to visualization table failed: %s" % str( e ) )
@@ -137,16 +131,17 @@ def upgrade(migrate_engine):
 
     # Need to create index for visualization annotation manually to deal with errors.
     try:
-       if migrate_engine.name == 'mysql':
-           # Have to create index manually.
-           cmd = "CREATE INDEX ix_visualization_annotation_association_annotation ON visualization_annotation_association ( annotation ( 100 ) )"
-           db_session.execute( cmd )
-       else:
-           i = Index( "ix_visualization_annotation_association_annotation", VisualizationAnnotationAssociation_table.c.annotation )
-           i.create()
+        if migrate_engine.name == 'mysql':
+            # Have to create index manually.
+            cmd = "CREATE INDEX ix_visualization_annotation_association_annotation ON visualization_annotation_association ( annotation ( 100 ) )"
+            migrate_engine.execute( cmd )
+        else:
+            i = Index( "ix_visualization_annotation_association_annotation", VisualizationAnnotationAssociation_table.c.annotation )
+            i.create()
     except Exception, e:
-       print "Adding index 'ix_visualization_annotation_association_annotation' failed: %s" % str( e )
-       log.debug( "Adding index 'ix_visualization_annotation_association_annotation' failed: %s" % str( e ) )
+        print "Adding index 'ix_visualization_annotation_association_annotation' failed: %s" % str( e )
+        log.debug( "Adding index 'ix_visualization_annotation_association_annotation' failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

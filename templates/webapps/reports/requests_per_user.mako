@@ -5,16 +5,16 @@
     ${render_msg( message, 'done' )}
 %endif
 
-<div class="toolForm">
-    <div class="toolFormBody">
+<div class="report">
+    <div class="reportBody">
         <h3 align="center">Sequencing Requests Per User</h3>
         <table align="center" width="60%" class="colored">
             %if len( requests ) == 0:
                 <tr><td colspan="2">There are no requests</td></tr>
             %else:
                 <tr class="header">
-                    <td>User</td>
-                    <td>Total Requests</td>
+                    <td class="half_width">User</td>
+                    <td class="half_width">Total Requests</td>
                 </tr>
                 <% ctr = 0 %>
                 %for request in requests:

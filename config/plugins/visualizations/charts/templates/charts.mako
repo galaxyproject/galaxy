@@ -79,7 +79,9 @@
 
                 }
             });
-
+            window.onbeforeunload = function() {
+                return 'You are leaving Charts.';
+            };
             // application
             var app = null;
             $(function() {   

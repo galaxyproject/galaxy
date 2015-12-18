@@ -1,18 +1,11 @@
 """
 Migration script to update the migrate_tools.repository_path column to point to the new location lib/tool_shed/galaxy_install/migrate.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import datetime
-now = datetime.datetime.utcnow
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
+import logging
+import sys
 
-import sys, logging
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -20,6 +13,7 @@ format = "%(name)s %(levelname)s %(asctime)s %(message)s"
 formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
+
 
 def upgrade(migrate_engine):
     print __doc__
@@ -29,6 +23,7 @@ def upgrade(migrate_engine):
         migrate_engine.execute( cmd )
     except Exception, e:
         log.debug( "Updating migrate_tools.repository_path column to point to the new location lib/tool_shed/galaxy_install/migrate failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     try:

@@ -1,17 +1,16 @@
 """
 Migration script to add the skip_tool_test table and add the test_install_error column to the repository_metadata table.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
 import datetime
+import logging
+import sys
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
+from sqlalchemy.exc import NoSuchTableError
 
 # Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
+from galaxy.model.custom_types import TrimmedString
 
-import sys, logging
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -31,6 +30,7 @@ SkipToolTest_table = Table( "skip_tool_test", metadata,
                             Column( "repository_metadata_id", Integer, ForeignKey( "repository_metadata.id" ), index=True ),
                             Column( "initial_changeset_revision", TrimmedString( 255 ), index=True ),
                             Column( "comment" , TEXT ) )
+
 
 def upgrade( migrate_engine ):
     print __doc__
@@ -63,6 +63,7 @@ def upgrade( migrate_engine ):
         SkipToolTest_table.create()
     except Exception, e:
         print "Creating the skip_tool_test table failed: %s" % str( e )
+
 
 def downgrade( migrate_engine ):
     metadata.bind = migrate_engine

@@ -1,9 +1,8 @@
 /* global define, QUnit, module, test, ok, equal, deepEqual, notEqual */
 define([
-    "jquery",
-    "libs/jquery/jstorage",
-    "libs/bootstrap",
     "sinon-qunit",
+    "test-app",
+    'utils/utils',
     "mvc/workflow/workflow-view",
     "mvc/workflow/workflow-node",
     "mvc/workflow/workflow-view-node",
@@ -11,10 +10,9 @@ define([
     "mvc/workflow/workflow-view-terminals",
     "mvc/workflow/workflow-connector"
 ], function(
-    $,
-    jstorage,
-    bootstrap,
     sinon,
+    testApp,
+    Utils,
     App,
     Node,
     NodeView,
@@ -40,31 +38,21 @@ define([
         // build app
         return new App({
             id      : null,
-            urls    : { get_datatypes : galaxy_config.root + 'api/datatypes/mapping' }
+            urls    : { get_datatypes : Galaxy.root + 'api/datatypes/mapping' },
+            workflows : []
         });
-    };
-
-    // create server (fake)
-    var create_server = function() {
-        var server = sinon.fakeServer.create();
-        server.respondWith('GET', galaxy_config.root + 'api/datatypes/mapping', [200, { 'Content-Type': 'application/json' },
-                            '{"ext_to_class_name" : {"txt" : "Text", "data":"Data","tabular":"Tabular", "binary": "Binary", "bam": "Bam" }, "class_to_classes": { "Data": { "Data": true }, "Text": { "Text": true, "Data": true }, "Tabular": { "Tabular": true, "Text": true, "Data": true }, "Binary": { "Data": true, "Binary": true }, "Bam": { "Data": true, "Binary": true, "Bam": true }}}']);
-        server.respondWith('GET', galaxy_config.root + 'api/datatypes', [200, { 'Content-Type': 'application/json' },
-                            '["RData", "ab1", "affybatch", "txt"]']);
-        return server;
     };
 
     module( "Input terminal model test", {
         setup: function( ) {
-            this.server = create_server();
+            testApp.create();
             this.node = new Node( create_app(), {  } );
             this.input = { extensions: [ "txt" ], multiple: false };
             this.input_terminal = new Terminals.InputTerminal( { input: this.input } );
             this.input_terminal.node = this.node;
         },
         teardown: function() {
-            this.server.restore();
-            delete this.server;
+            testApp.destroy();
         },
         multiple: function( ) {
             this.input.multiple = true;
@@ -311,8 +299,8 @@ define([
         setup: function() {
             this.input_terminal = { destroy: sinon.spy(), redraw: sinon.spy() };
             this.output_terminal = { destroy: sinon.spy(), redraw: sinon.spy() };
-            this.element = $("<div><div class='toolFormBody'></div></div>");
             this.app = create_app();
+            this.element = this.app.$newNodeElement( "tool", "newnode" );
             this.node = new Node( this.app, { element: this.element } );
             this.node.input_terminals.i1 = this.input_terminal;
             this.node.output_terminals.o1 = this.output_terminal;
@@ -326,22 +314,24 @@ define([
             f();
             ok( node_changed_spy.calledWith( node ) );
         },
-        init_field_data_simple: function() {
-            var data = {
+        init_field_data_simple: function(option_overrides) {
+            var data = Utils.merge(option_overrides, {
                 data_inputs: [ {name: "input1", extensions: [ "data" ] } ],
                 data_outputs: [ {name: "output1", extensions: [ "data" ] } ],
-            };
+                label: null,
+            });
             this.node.init_field_data( data );
         },
-        update_field_data_with_new_input: function() {
-            var new_data = {
+        update_field_data_with_new_input: function(option_overrides) {
+            var new_data = Utils.merge(option_overrides, {
                 data_inputs: [
                     { name: "input1", extensions: [ "data" ] },
                     { name: "extra_0|input1", extensions: [ "data" ] },
                 ],
                 data_outputs: [ {name: "output1", extensions: [ "data" ] } ],
-                post_job_actions: "{}"
-            };
+                post_job_actions: "{}",
+                label: "New Label"
+            });
             this.node.update_field_data( new_data );
         }
     } );
@@ -382,7 +372,8 @@ define([
                 tool_errors: false,
                 tooltip: "tool tooltip",
                 annotation: "tool annotation",
-                workflow_outputs: [ "out1" ],
+                workflow_outputs: [ {"output_name": "out1"} ],
+                label: "Cat that data.",
             };
             node.init_field_data( data );
             equal( node.type, "tool" );
@@ -391,8 +382,9 @@ define([
             equal( node.tool_state, "ok" );
             equal( node.tooltip, "tool tooltip" );
             equal( node.annotation, "tool annotation" );
+            equal( node.label, "Cat that data." );
             deepEqual( node.post_job_actions, {} );
-            deepEqual( node.workflow_outputs, [ "out1" ] );
+            deepEqual( node.workflow_outputs, [  {"output_name": "out1"} ] );
         } );
     } );
 
@@ -409,8 +401,25 @@ define([
             equal( test.$( ".input-terminal" ).length, 1 );
             equal( test.$( ".rule" ).length, 1 );
             equal( test.$( ".toolFormBody" ).children().length, 3 );
+            equal( test.$( ".nodeTitle" ).text(), "newnode" );
+            ok( test.$( ".toolFormTitle" ).find("i").hasClass("fa-wrench") );
         } );
     } );
+
+    test( "node title behavior", function() {
+        var test = this;
+        this.expect_workflow_node_changed( function( ) {
+            // Node created with name newnode
+            equal( test.$( ".nodeTitle" ).text(), "newnode" );
+            // init_field_data_simple doesn't change label, so it should
+            // remain original name.
+            test.init_field_data_simple();
+            equal( test.$( ".nodeTitle" ).text(), "newnode" );
+            // Despite awkward name, update does change the label...
+            test.update_field_data_with_new_input();
+            equal( test.$( ".nodeTitle" ).text(), "New Label" );
+        });
+    });
 
     test( "update_field_data updated data inputs and outputs", function() {
         var test = this;
@@ -495,7 +504,7 @@ define([
 
             var outputTerminal = new Terminals.OutputTerminal( { name: "TestOuptut", datatypes: [ outputType ] } );
             outputTerminal.node = { markChanged: function() {}, post_job_actions: [], hasMappedOverInputTerminals: function() { return false; }, hasConnectedOutputTerminals: function() { return true; } };
-            outputTerminal.terminalMapping = { disableMapOver: function() {}, mapOver: Terminals.NULL_COLLECTION_TYPE_DESCRIPTION }; 
+            outputTerminal.terminalMapping = { disableMapOver: function() {}, mapOver: Terminals.NULL_COLLECTION_TYPE_DESCRIPTION };
             var c = new Connector( outputTerminal, terminal );
 
             return c;
@@ -875,7 +884,7 @@ define([
             }
 
             ok( inputTerminal.attachable( outputTerminal ) );
-            
+
             // Go further... make sure datatypes are being enforced
             inputTerminal.datatypes = [ "bam" ];
             outputTerminal.datatypes = [ "txt" ];

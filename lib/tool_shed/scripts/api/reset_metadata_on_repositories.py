@@ -11,20 +11,22 @@ usage: reset_metadata_on_repositories.py key <my_writable>
 Here is a working example of how to use this script to reset metadata on certain repositories in a specified Tool Shed.
 python ./reset_metadata_on_repositories.py -a 22be3b -m True -u http://localhost:9009/
 """
-import logging
-log = logging.getLogger(__name__)
 import argparse
+import logging
 import os
 import sys
-sys.path.insert( 0, os.path.dirname( __file__ ) )
-from common import get
-from common import submit
+
+from common import get, submit
+
+log = logging.getLogger(__name__)
+
 
 def string_as_bool( string ):
     if str( string ).lower() in [ 'true' ]:
         return True
     else:
         return False
+
 
 def read_skip_file( skip_file ):
     encoded_ids_to_skip = []
@@ -37,7 +39,8 @@ def read_skip_file( skip_file ):
                 continue
             encoded_ids_to_skip.append( line.rstrip( '\n' ) )
     return encoded_ids_to_skip
-    
+
+
 def main( options ):
     api_key = options.api
     base_tool_shed_url = options.tool_shed_url.rstrip( '/' )

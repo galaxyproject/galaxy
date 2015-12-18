@@ -130,7 +130,7 @@ class CycleError(Exception):
         return answer
 
 
-def topsort(pairlist):
+def _numpreds_and_successors_from_pairlist(pairlist):
     numpreds = OrderedDict()   # elt -> # of predecessors
     successors = OrderedDict()  # elt -> list of successors
     for first, second in pairlist:
@@ -152,6 +152,11 @@ def topsort(pairlist):
             successors[first].append(second)
         else:
             successors[first] = [second]
+    return numpreds, successors
+
+
+def topsort(pairlist):
+    numpreds, successors = _numpreds_and_successors_from_pairlist(pairlist)
 
     # suck up everything without a predecessor
     answer = filter(lambda x, numpreds=numpreds: numpreds[x] == 0,
@@ -182,27 +187,7 @@ def topsort(pairlist):
 
 
 def topsort_levels(pairlist):
-    numpreds = OrderedDict()  # elt -> # of predecessors
-    successors = OrderedDict()  # elt -> list of successors
-    for first, second in pairlist:
-        # make sure every elt is a key in numpreds
-        if first not in numpreds:
-            numpreds[first] = 0
-        if second not in numpreds:
-            numpreds[second] = 0
-
-        # if they're the same, there's no real dependence
-        if first == second:
-            continue
-
-        # since first < second, second gains a pred ...
-        numpreds[second] = numpreds[second] + 1
-
-        # ... and first gains a succ
-        if first in successors:
-            successors[first].append(second)
-        else:
-            successors[first] = [second]
+    numpreds, successors = _numpreds_and_successors_from_pairlist(pairlist)
 
     answer = []
 

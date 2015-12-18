@@ -1,5 +1,5 @@
 define([
-    "galaxy.masthead",
+    "layout/masthead",
     "utils/utils",
     "libs/toastr",
     "mvc/library/library-model",
@@ -102,7 +102,7 @@ var FolderListView = Backbone.View.extend({
           upper_folder_id = path[ path.length-2 ][ 0 ];
         }
 
-        this.$el.html( template( { 
+        this.$el.html( template( {
             path: this.folderContainer.attributes.metadata.full_path,
             parent_library_id: this.folderContainer.attributes.metadata.parent_library_id,
             id: this.options.id,
@@ -259,10 +259,15 @@ var FolderListView = Backbone.View.extend({
     },
 
     /**
-     *  Sorts the underlying collection according to the parameters received. 
-     *  Currently supports only sorting by name. 
+     *  Sorts the underlying collection according to the parameters received.
+     *  Currently supports only sorting by name.
      */
     sortFolder: function(sort_by, order){
+        console.log('sorting');
+        // default to asc sort by name
+        if (sort_by === 'undefined' && order === 'undefined'){
+            return this.collection.sortByNameAsc();
+        }
         if (sort_by === 'name'){
             if (order === 'asc'){
                 return this.collection.sortByNameAsc();
@@ -288,13 +293,13 @@ var FolderListView = Backbone.View.extend({
               that.makeDarkRow($row);
             } else {
               that.makeWhiteRow($row);
-            } 
+            }
         });
      },
 
-    /** 
-     * Check checkbox if user clicks on the whole row or 
-     *  on the checkbox itself 
+    /**
+     * Check checkbox if user clicks on the whole row or
+     *  on the checkbox itself
      */
     selectClickedRow : function (event) {
         var checkbox = '';
@@ -391,7 +396,7 @@ var FolderListView = Backbone.View.extend({
 
         return _.template(tmpl_array.join(''));
     }
-    
+
 });
 
 return {

@@ -1,18 +1,16 @@
 #!/usr/bin/env python
-
 """
-Read a maf and split blocks by unique species combinations 
+Read a maf and split blocks by unique species combinations
 """
 import sys
-from galaxy import eggs
-import pkg_resources; pkg_resources.require( "bx-python" )
+
 from bx.align import maf
+
 from galaxy.tools.util import maf_utilities
 from galaxy.util import string_as_bool
 
-assert sys.version_info[:2] >= ( 2, 4 )
 
-def __main__():    
+def __main__():
     try:
         maf_reader = maf.Reader( open( sys.argv[1] ) )
     except Exception, e:
@@ -25,7 +23,7 @@ def __main__():
         collapse_columns = string_as_bool( sys.argv[3] )
     except Exception, e:
         maf_utilities.tool_fail( "Error determining collapse columns value: %s" % e )
-    
+
     start_count = 0
     end_count = 0
     for start_count, start_block in enumerate( maf_reader ):
@@ -35,10 +33,11 @@ def __main__():
             out.write( block )
             end_count += 1
     out.close()
-    
+
     if end_count:
         print "%i alignment blocks created from %i original blocks." % ( end_count, start_count + 1 )
     else:
         print "No alignment blocks were created."
 
-if __name__ == "__main__": __main__()
+if __name__ == "__main__":
+    __main__()

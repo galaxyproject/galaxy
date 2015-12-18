@@ -4,6 +4,7 @@ set -e
 MYSQL_USER=galaxy
 MYSQL_PASSWORD=galaxy
 MYSQL_DATABASE=galaxy
+SHED_MYSQL_DATABASE=toolshed
 
 mkdir -p /var/lib/mysql
 chown -R mysql:mysql /var/lib/mysql
@@ -22,15 +23,22 @@ cat > "$tempSqlFile" <<-EOSQL
 EOSQL
 
 if [ "$MYSQL_DATABASE" ]; then
-	echo "CREATE DATABASE IF NOT EXISTS \`$MYSQL_DATABASE\` ;" >> "$tempSqlFile"
+    echo "CREATE DATABASE IF NOT EXISTS \`$MYSQL_DATABASE\` ;" >> "$tempSqlFile"
+fi
+
+if [ "$SHED_MYSQL_DATABASE" ]; then
+    echo "CREATE DATABASE IF NOT EXISTS \`$SHED_MYSQL_DATABASE\` ;" >> "$tempSqlFile"
 fi
 
 if [ "$MYSQL_USER" -a "$MYSQL_PASSWORD" ]; then
-	echo "CREATE USER '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD' ;" >> "$tempSqlFile"
+    echo "CREATE USER '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD' ;" >> "$tempSqlFile"
 
-	if [ "$MYSQL_DATABASE" ]; then
-		echo "GRANT ALL ON \`$MYSQL_DATABASE\`.* TO '$MYSQL_USER'@'%' ;" >> "$tempSqlFile"
-	fi
+    if [ "$MYSQL_DATABASE" ]; then
+        echo "GRANT ALL ON \`$MYSQL_DATABASE\`.* TO '$MYSQL_USER'@'%' ;" >> "$tempSqlFile"
+    fi
+    if [ "$SHED_MYSQL_DATABASE" ]; then
+        echo "GRANT ALL ON \`$SHED_MYSQL_DATABASE\`.* TO '$MYSQL_USER'@'%' ;" >> "$tempSqlFile"
+    fi
 fi
 
 echo 'FLUSH PRIVILEGES ;' >> "$tempSqlFile"

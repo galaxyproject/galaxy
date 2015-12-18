@@ -1,5 +1,4 @@
 import logging
-import os
 
 from tool_shed.util import common_util
 
@@ -7,6 +6,7 @@ log = logging.getLogger( __name__ )
 
 # String separator
 STRSEP = '__ESEP__'
+
 
 def generate_repository_dependencies_key_for_repository( toolshed_base_url, repository_name, repository_owner,
                                                          changeset_revision, prior_installation_required,
@@ -31,6 +31,7 @@ def generate_repository_dependencies_key_for_repository( toolshed_base_url, repo
                                         STRSEP,
                                         str( only_if_compiling_contained_td ) )
 
+
 def get_components_from_key( key ):
     """
     Assumes tool shed is current tool shed since repository dependencies across tool sheds is not
@@ -47,16 +48,14 @@ def get_components_from_key( key ):
     elif len( items ) == 6:
         prior_installation_required = items[ 4 ]
         only_if_compiling_contained_td = items[ 5 ]
-        return toolshed_base_url, \
-                repository_name, \
-                repository_owner, \
-                changeset_revision, \
-                prior_installation_required, \
-                only_if_compiling_contained_td
+        return toolshed_base_url, repository_name, repository_owner, \
+            changeset_revision, prior_installation_required, \
+            only_if_compiling_contained_td
     else:
         # For backward compatibility to the 12/20/12 Galaxy release we have to return the following, and callers
-        #$ must handle exceptions.
+        # must handle exceptions.
         return toolshed_base_url, repository_name, repository_owner, changeset_revision
+
 
 def print_folders( pad, folder ):
     # For debugging...
@@ -67,4 +66,4 @@ def print_folders( pad, folder ):
     for repository_dependency in folder.repository_dependencies:
         print '    %s%s' % ( pad_str, repository_dependency.listify )
     for sub_folder in folder.folders:
-        print_folders( pad+5, sub_folder )
+        print_folders( pad + 5, sub_folder )

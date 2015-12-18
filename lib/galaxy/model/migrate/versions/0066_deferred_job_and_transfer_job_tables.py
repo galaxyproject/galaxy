@@ -2,20 +2,15 @@
 Migration script to create table for storing deferred job and managed transfer
 information.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
-from galaxy.model.custom_types import *
-
 import datetime
-now = datetime.datetime.utcnow
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Column, DateTime, Integer, MetaData, String, Table
+
+from galaxy.model.custom_types import JSONType
+
+now = datetime.datetime.utcnow
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 # Table to add
@@ -36,6 +31,7 @@ TransferJob_table = Table( "transfer_job", metadata,
                            Column( "path", String( 1024 ) ),
                            Column( "params", JSONType ) )
 
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
@@ -52,6 +48,7 @@ def upgrade(migrate_engine):
         TransferJob_table.create()
     except Exception, e:
         log.error( "Creating transfer_job table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

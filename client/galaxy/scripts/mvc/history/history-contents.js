@@ -5,6 +5,8 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( HISTORY_CONTENT, HDA_MODEL, HDCA_MODEL, BASE_MVC, _l ){
+
+var logNamespace = 'history';
 //==============================================================================
 /** @class Backbone collection for history content.
  *      NOTE: history content seems like a dataset collection, but differs in that it is mixed:
@@ -14,18 +16,17 @@ define([
  *          HDAs or child dataset collections on one level.
  *      This is why this does not inherit from any of the DatasetCollections (currently).
  */
-var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend(
-/** @lends HistoryContents.prototype */{
+var HistoryContents = Backbone.Collection
+        .extend( BASE_MVC.LoggableMixin )
+        .extend(/** @lends HistoryContents.prototype */{
 //TODO:?? may want to inherit from some MixedModelCollection
 //TODO:?? also consider inheriting from a 'DatasetList'
 //TODO: can we decorate the mixed models using the model fn below (instead of having them build their own type_id)?
 
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
+    _logNamespace : logNamespace,
 
     /** since history content is a mix, override model fn into a factory, creating based on history_content_type */
     model : function( attrs, options ) {
-
 //TODO: can we move the type_id stuff here?
         //attrs.type_id = typeIdStr( attrs );
 
@@ -70,7 +71,7 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
     },
 
     /** root api url */
-    urlRoot : galaxy_config.root + 'api/histories',
+    urlRoot : Galaxy.root + 'api/histories',
     /** complete api url */
     url : function(){
         return this.urlRoot + '/' + this.historyId + '/contents';
@@ -134,11 +135,23 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
             return item.isVisible( show_deleted, show_hidden );
         }));
 
-        _.each( filters, function( filter_fn ){
-            if( !_.isFunction( filter_fn ) ){ return; }
-            filteredHdas = new HistoryContents( filteredHdas.filter( filter_fn ) );
+        _.each( filters, function( filterFn ){
+            if( !_.isFunction( filterFn ) ){ return; }
+            filteredHdas = new HistoryContents( filteredHdas.filter( filterFn ) );
         });
         return filteredHdas;
+    },
+
+    /** return a new contents collection of only hidden items */
+    hidden : function(){
+        function filterFn( c ){ return c.hidden(); }
+        return new HistoryContents( this.filter( filterFn ) );
+    },
+
+    /** return a new contents collection of only hidden items */
+    deleted : function(){
+        function filterFn( c ){ return c.get( 'deleted' ); }
+        return new HistoryContents( this.filter( filterFn ) );
     },
 
     /** return true if any contents don't have details */
@@ -244,6 +257,7 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
     // ........................................................................ misc
     /** override to ensure type id is set */
     set : function( models, options ){
+        models = _.isArray( models )? models : [ models ];
         _.each( models, function( model ){
             if( !model.type_id || !model.get || !model.get( 'type_id' ) ){
                 model.type_id = HISTORY_CONTENT.typeIdStr( model.history_content_type, model.id );

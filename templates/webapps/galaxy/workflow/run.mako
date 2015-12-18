@@ -1,11 +1,93 @@
 <%inherit file="/base.mako"/>
 
+## TEMPORARY SWITCH FOR THE NEW TOOL FORM
+%if util.string_as_bool(trans.app.config.get('run_workflow_toolform_upgrade',  False)):
+    ${h.js("libs/bibtex", "libs/jquery/jquery-ui")}
+    ${h.css('jquery-ui/smoothness/jquery-ui')}
+    <%
+        from galaxy.tools.parameters import params_to_incoming
+        from galaxy.jobs.actions.post import ActionBox
+        step_models = []
+        for i, step in enumerate( steps ):
+            step_model = None
+            if step.type in [ 'data_input', 'data_collection_input' ]:
+                type_filter = []
+                for oc in step.output_connections:
+                    for ic in oc.input_step.module.get_data_inputs():
+                        if 'extensions' in ic and ic[ 'name' ] == oc.input_name:
+                            type_filter += ic[ 'extensions' ]
+                if not type_filter:
+                    type_filter = [ 'data' ]
+                d = step.module.get_runtime_inputs( type_filter )
+                input = d[ 'input' ].to_dict( trans );
+                step_model = {
+                    'name'   : input[ 'label' ],
+                    'inputs' : [ input ]
+                }
+            elif step.type == 'tool':
+                incoming = {}
+                tool = trans.app.toolbox.get_tool( step.tool_id )
+                params_to_incoming( incoming, tool.inputs, step.state.inputs, trans.app, to_html=False )
+                step_model = tool.to_json( trans, incoming, workflow_mode=True )
+                step_model[ 'post_job_actions' ] = [{
+                    'short_str'         : ActionBox.get_short_str( pja ),
+                    'action_type'       : pja.action_type,
+                    'output_name'       : pja.output_name,
+                    'action_arguments'  : pja.action_arguments
+                } for pja in step.post_job_actions ]
+            step_model[ 'step_id' ] = step.id
+            step_model[ 'step_type' ] = step.type
+            step_model[ 'order_index' ] = step.order_index
+            step_model[ 'output_connections' ] = [ {
+                'input_step_id'     : oc.input_step_id,
+                'output_step_id'    : oc.output_step_id,
+                'input_name'        : oc.input_name,
+                'output_name'       : oc.output_name
+            } for oc in step.output_connections ]
+            if step.annotations:
+                step_model[ 'annotation' ] = step.annotations[0].annotation
+            step_models.append( step_model )
+        self.form_config = {
+            'id'                : app.security.encode_id( workflow.id ),
+            'name'              : workflow.name,
+            'history_id'        : history_id,
+            'steps'             : step_models
+        }
+    %>
+    <script>
+        require(['mvc/tool/tool-form-composite'], function( ToolForm ) {
+            $(function() {
+                var form = new ToolForm.View(${ h.dumps( self.form_config ) });
+            });
+        });
+    </script>
+%else:
+
 <%def name="javascripts()">
     ${parent.javascripts()}
     <script type="text/javascript">
-         $.fn.outerHTML = function(s) {
-             return s ? this.before(s).remove() : jQuery("<p>").append(this.eq(0).clone()).html();
-         };
+
+        // jQuery plugin to prevent double submission of forms
+        // Ref: http://stackoverflow.com/questions/2830542/prevent-double-submission-of-forms-in-jquery
+        jQuery.fn.preventDoubleSubmission = function() {
+            $(this).on('submit',function(e){
+                var $form = $(this);
+
+                if ($form.data('submitted') === true) {
+                    // Previously submitted - don't submit again
+                    e.preventDefault();
+                } else {
+                    // Mark it so that the next submit can be ignored
+                    $form.data('submitted', true);
+                }
+            });
+            // Keep chainability
+            return this;
+        };
+
+        $.fn.outerHTML = function(s) {
+            return s ? this.before(s).remove() : jQuery("<p>").append(this.eq(0).clone()).html();
+        };
         $( function() {
             function show_tool_body(title){
                 title.parent().show().css('border-bottom-width', '1px');
@@ -195,7 +277,7 @@
             // http://stackoverflow.com/a/2088430
             $(function(){
                 $(".multi-mode").each(function(){
-                    if($(this).val() == "matched") { 
+                    if($(this).val() == "matched") {
                         $(this).closest('.form-row').children('label').append($('<span class="icon-button link mode-icon" title="This input is linked and will be run in matched order with other input datasets (ex: use this for matching forward and reverse reads)."></span>')
                             .attr({id:$(this).attr("id")})
                             .css("display", $(this).css("display"))
@@ -434,8 +516,9 @@ if wf_parms:
                 replacements = []
                 if isinstance(p_text, basestring):
                     for rematch in re.findall('\$\{.+?\}', p_text):
-                        replacements.append('wf_parm__%s' % rematch[2:-1])
-                        p_text = p_text.replace(rematch, '<span style="background-color:%s" class="runtime-form-row wfpspan wf_parm__%s">%s</span>' % (wf_parms[rematch[2:-1]], rematch[2:-1], rematch[2:-1]))
+                        if rematch[2:-1] in wf_parms:
+                            replacements.append('wf_parm__%s' % rematch[2:-1])
+                            p_text = p_text.replace(rematch, '<span style="background-color:%s" class="runtime-form-row wfpspan wf_parm__%s">%s</span>' % (wf_parms[rematch[2:-1]], rematch[2:-1], rematch[2:-1]))
                 %>
                 %if replacements:
                     <span style="display:none" class="parm_wrap ${' '.join(replacements)}">
@@ -612,7 +695,7 @@ if wf_parms:
               if not type_filter:
                   type_filter = ['data']
               %>
-              ${do_inputs( module.get_runtime_inputs(type_filter), step.state.inputs, errors.get( step.id, dict() ), "", step, None, used_accumulator )}
+              ${do_inputs( module.get_runtime_inputs(filter_set=type_filter), step.state.inputs, errors.get( step.id, dict() ), "", step, None, used_accumulator )}
           </div>
       </div>
     %endif
@@ -625,3 +708,4 @@ if wf_parms:
 %endif
 <input type="submit" class="btn btn-primary" name="run_workflow" value="Run workflow" />
 </form>
+%endif

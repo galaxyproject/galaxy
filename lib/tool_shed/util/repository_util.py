@@ -3,8 +3,6 @@ import logging
 import os
 import re
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import false
 
 from galaxy import util

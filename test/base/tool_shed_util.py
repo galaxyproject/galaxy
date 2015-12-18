@@ -2,14 +2,8 @@ import logging
 import os
 import sys
 
-cwd = os.getcwd()
-if cwd not in sys.path:
-    sys.path.append( cwd )
-
-new_path = [ os.path.join( cwd, "lib" ) ]
-if new_path not in sys.path:
-    new_path.extend( sys.path )
-    sys.path = new_path
+galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
+sys.path.insert(1, os.path.join(galaxy_root, 'lib'))
 
 from galaxy.util import parse_xml
 
@@ -70,7 +64,7 @@ def parse_tool_panel_config( config, shed_tools_dict ):
                     has_test_data = True
                 if galaxy_test_file_dir != last_galaxy_test_file_dir:
                     if not os.path.isabs( galaxy_test_file_dir ):
-                        galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
+                        galaxy_test_file_dir = os.path.join( galaxy_root, galaxy_test_file_dir )
                 guid = elem.get( 'guid' )
                 shed_tools_dict[ guid ] = galaxy_test_file_dir
                 last_galaxy_test_file_dir = galaxy_test_file_dir
@@ -89,7 +83,7 @@ def parse_tool_panel_config( config, shed_tools_dict ):
                             has_test_data = True
                         if galaxy_test_file_dir != last_galaxy_test_file_dir:
                             if not os.path.isabs( galaxy_test_file_dir ):
-                                galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
+                                galaxy_test_file_dir = os.path.join( galaxy_root, galaxy_test_file_dir )
                         guid = section_elem.get( 'guid' )
                         shed_tools_dict[ guid ] = galaxy_test_file_dir
                         last_galaxy_test_file_dir = galaxy_test_file_dir

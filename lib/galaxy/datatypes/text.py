@@ -2,20 +2,18 @@
 """ Clearing house for generic text datatypes that are not XML or tabular.
 """
 
-from galaxy.datatypes.data import Text
-from galaxy.datatypes.data import get_file_peek
-from galaxy.datatypes.data import nice_size
-from galaxy.datatypes.metadata import MetadataElement
-from galaxy import util
-
-import tempfile
-import subprocess
-import json
 import gzip
+import json
+import logging
 import os
 import re
+import subprocess
+import tempfile
 
-import logging
+from galaxy.datatypes.data import get_file_peek, Text
+from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
+from galaxy.util import nice_size, string_as_bool
+
 log = logging.getLogger(__name__)
 
 
@@ -98,7 +96,7 @@ class Ipynb( Json ):
             return super(Ipynb, self).display_data( trans, dataset, preview=preview, fileame=filename, to_ext=to_ext, chunk=chunk, **kwd )
 
     def _display_data_trusted(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
-        preview = util.string_as_bool( preview )
+        preview = string_as_bool( preview )
         if chunk:
             return self.get_chunk(trans, dataset, chunk)
         elif to_ext or not preview:
@@ -122,6 +120,99 @@ class Ipynb( Json ):
         Set the number of models in dataset.
         """
         pass
+
+
+class Biom1( Json ):
+    """
+        BIOM version 1.0 file format description
+        http://biom-format.org/documentation/format_versions/biom-1.0.html
+    """
+    file_ext = "biom1"
+
+    MetadataElement( name="table_rows", default=[], desc="table_rows", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
+    MetadataElement( name="table_matrix_element_type", default="", desc="table_matrix_element_type", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value="" )
+    MetadataElement( name="table_format", default="", desc="table_format", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value="" )
+    MetadataElement( name="table_generated_by", default="", desc="table_generated_by", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="" )
+    MetadataElement( name="table_matrix_type", default="", desc="table_matrix_type", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value="" )
+    MetadataElement( name="table_shape", default=[], desc="table_shape", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
+    MetadataElement( name="table_format_url", default="", desc="table_format_url", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value="" )
+    MetadataElement( name="table_date", default="", desc="table_date", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="" )
+    MetadataElement( name="table_type", default="", desc="table_type", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="" )
+    MetadataElement( name="table_id", default=None, desc="table_id", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value=None )
+    MetadataElement( name="table_columns", default=[], desc="table_columns", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        super( Biom1, self ).set_peek( dataset, is_multi_byte )
+        if not dataset.dataset.purged:
+            dataset.blurb = "Biological Observation Matrix v1"
+
+    def sniff( self, filename ):
+        is_biom = False
+        if self._looks_like_json( filename ):
+            is_biom = self._looks_like_biom( filename )
+        return is_biom
+
+    def _looks_like_biom( self, filepath, load_size=50000 ):
+        """
+        @param filepath: [str] The path to the evaluated file.
+        @param load_size: [int] The size of the file block load in RAM (in
+                          bytes).
+        """
+        is_biom = False
+        segment_size = int( load_size / 2 )
+        try:
+            with open( filepath, "r" ) as fh:
+                prev_str = ""
+                segment_str = fh.read( segment_size )
+                if segment_str.strip().startswith( '{' ):
+                    while segment_str:
+                        current_str = prev_str + segment_str
+                        if '"format"' in current_str:
+                            current_str = re.sub( r'\s', '', current_str )
+                            if '"format":"BiologicalObservationMatrix' in current_str:
+                                is_biom = True
+                                break
+                        prev_str = segment_str
+                        segment_str = fh.read( segment_size )
+        except Exception:
+            pass
+        return is_biom
+
+    def set_meta( self, dataset, **kwd ):
+        """
+            Store metadata information from the BIOM file.
+        """
+        if dataset.has_data():
+            with open( dataset.file_name ) as fh:
+                try:
+                    json_dict = json.load( fh )
+                except Exception:
+                    return
+
+                def _transform_dict_list_ids( dict_list ):
+                    if dict_list:
+                        return [ x.get( 'id', None ) for x in dict_list ]
+                    return []
+
+                b_transform = { 'rows': _transform_dict_list_ids, 'columns': _transform_dict_list_ids }
+                for ( m_name, b_name ) in [ ('table_rows', 'rows'),
+                                            ('table_matrix_element_type', 'matrix_element_type'),
+                                            ('table_format', 'format'),
+                                            ('table_generated_by', 'generated_by'),
+                                            ('table_matrix_type', 'matrix_type'),
+                                            ('table_shape', 'shape'),
+                                            ('table_format_url', 'format_url'),
+                                            ('table_date', 'date'),
+                                            ('table_type', 'type'),
+                                            ('table_id', 'id'),
+                                            ('table_columns', 'columns') ]:
+                    try:
+                        metadata_value = json_dict.get( b_name, None )
+                        if b_name in b_transform:
+                            metadata_value = b_transform[ b_name ]( metadata_value )
+                        setattr( dataset.metadata, m_name, metadata_value )
+                    except Exception:
+                        pass
 
 
 class Obo( Text ):
