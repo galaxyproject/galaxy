@@ -1254,11 +1254,12 @@ class AdminToolshed( AdminGalaxy ):
         tsr_id = kwd.get( 'tsr_id', '' )
         json_data = json.loads( common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id ] ) )
         json_data[ 'metadata' ] = dict()
-        revisions = common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=[ 'api', 'repositories', 'get_ordered_installable_revisions' ], params=dict( tsr_id=tsr_id ) )
-        for revision in json.loads( revisions ):
-            pathspec = [ 'api', 'repositories', tsr_id, revision, 'metadata' ]
-            json_data[ 'metadata' ][ revision ] = json.loads( common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=pathspec ) )
-        log.debug( len( str( json_data ) ) )
+        revisions = common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=[ 'api', 'repositories', 'get_unordered_installable_revisions' ], params=dict( tsr_id=tsr_id ) )
+        for revision, changehash in json.loads( revisions ):
+            pathspec = [ 'api', 'repositories', tsr_id, changehash, 'metadata' ]
+            tools_path = [ 'api', 'repositories', tsr_id, changehash, 'show_tools' ]
+            json_data[ 'metadata' ][ '%s:%s' % ( revision, changehash ) ] = json.loads( common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=pathspec ) )
+            json_data[ 'metadata' ][ '%s:%s' % ( revision, changehash ) ][ 'tools' ] = json.loads( common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=tools_path ) )
         shed_tool_conf_select_field = tool_util.build_shed_tool_conf_select_field( trans.app )
         tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field( trans.app )
         return trans.fill_template( '/admin/tool_shed_repository/preview_repository.mako',

@@ -16,7 +16,17 @@
     ${render_msg( message, status )}
 %endif
 
-<table>
+<table class="grid">
+    <thead id="grid-table-header">
+        <tr>
+            <th id="name-header"><a>Name</a><span class="sort-arrow" /></th>
+            <th id="description-header"><a>Synopsis</a><span class="sort-arrow"></span></th>
+            <th id="null-header">Type<span class="sort-arrow"></span></th>
+            <th id="null-header">Revisions<span class="sort-arrow"></span></th>
+            <th id="null-header">Tools or<br>Package<br>Verified<span class="sort-arrow"></span></th>
+            <th id="User.username-header"><a>Owner</a><span class="sort-arrow"></span></th>
+        </tr>
+    </thead>
 %for repository in category['repositories']:
 	<tr>
 		<td>
@@ -24,6 +34,8 @@
 		</td>
         <td>${repository['description']}</td>
         <td>${repository['type']}</td>
+        <td>0</td>
+        <td>Yup</td>
         <td>${repository['owner']}</td>
 	</tr>
 %endfor

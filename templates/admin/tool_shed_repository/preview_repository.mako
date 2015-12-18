@@ -16,6 +16,10 @@
     ${render_msg( message, status )}
 %endif
 <script type="text/javascript">
+<%
+import json
+metadata_json = json.dumps(repository['metadata'])
+%>
     $(document).ready(function() {
         $('#install_repository').click(function() {
             var params = {};
@@ -32,6 +36,11 @@
                 window.location.href = data;
             });
 
+        });
+        $('#changeset').change(function() {
+            var metadata = ${metadata_json};
+            metadata_key = $(this).find("option:selected").text();
+            console.log(metadata[metadata_key]['tools'])
         });
     });
 </script>
@@ -67,23 +76,54 @@
         <div style="clear: both"></div>
     %endif
     <div class="form-row">
+        <label>Tool panel section:</label>
+        ${tool_panel_section_select_field.get_html()}
+    </div>
+    <div class="form-row">
         <label>Add new tool panel section:</label>
         <input id="new_tool_panel_section" name="new_tool_panel_section_label" type="textfield" value="" size="40"/>
         <div class="toolParamHelp" style="clear: both;">
             Add a new tool panel section to contain the installed tools (optional).
         </div>
     </div>
-    <div class="form-row">
-        <label>Select existing tool panel section:</label>
-        ${tool_panel_section_select_field.get_html()}
-        <div class="toolParamHelp" style="clear: both;">
-            Choose an existing section in your tool panel to contain the installed tools (optional).  
-        </div>
-    </div>
     <select id="changeset" name="changeset">
-        %for changeset in repository['metadata'].keys():
-            <option value="${changeset}">${changeset}</option>
+        %for changeset in sorted( repository['metadata'].keys(), key=lambda changeset: int( changeset.split( ':' )[ 0 ] ), reverse=True ):
+            <option value="${changeset.split(':')[1]}">${changeset}</option>
         %endfor
     </select>
+    <div class="toolForm">
+        <div class="toolFormTitle">Contents of this repository</div>
+        <div class="toolFormBody">
+            <table class="tables container-table" id="valid_tools" border="0" cellpadding="2" cellspacing="2" width="100%">
+                <tbody>
+                    <tr id="folder-ed01147b4aa1e8de" class="folderRow libraryOrFolderRow expanded" bgcolor="#D8D8D8">
+                        <td colspan="3" style="padding-left: 0px;">
+                            <span class="expandLink folder-ed01147b4aa1e8de-click">
+                                <div style="float: left; margin-left: 2px;" class="expandLink folder-ed01147b4aa1e8de-click">
+                                    <a class="folder-ed01147b4aa1e8de-click" href="javascript:void(0);">
+                                        Valid tools<i> - click the name to preview the tool and use the pop-up menu to inspect all metadata</i>
+                                    </a>
+                                </div>
+                            </span>
+                        </td>
+                    </tr>
+                    <tr style="display: table-row;" class="datasetRow" parent="0" id="libraryItem-rt-f9cad7b01a472135">
+                        <th style="padding-left: 40px;">Name</th>
+                        <th>Description</th>
+                        <th>Version</th>
+                    </tr>
+                    <tr style="display: table-row;" class="datasetRow" parent="0" id="libraryItem-rt-c9715d71689bf781">
+                            <td style="padding-left: 40px;">
+                                <div style="float:left;" class="menubutton split popup" id="tool-c9715d71689bf781-popup">
+                                    <a class="view-info">Kraken</a>
+                                </div>
+                            </td>
+                        <td>assign taxonomic labels to sequencing reads</td>
+                        <td>1.1.2</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
     <input type="button" id="install_repository" name="install_repository" value="Install" />
 </form>

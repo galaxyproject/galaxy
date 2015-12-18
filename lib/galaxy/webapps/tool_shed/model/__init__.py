@@ -257,10 +257,7 @@ class Repository( object, Dictifiable ):
         return tip_ctx.rev() < 0
 
     def ordered_installable_revisions( self, app ):
-        repo = hg.repository( ui.ui(), self.repo_path( app ) )
-        log.debug( repo )
-        ordered_installable_revisions = suc.get_ordered_metadata_changeset_revisions( self, repo, downloadable=True )
-        return ordered_installable_revisions
+        return suc.get_ordered_metadata_changeset_revisions( self, hg.repository( ui.ui(), self.repo_path( app ) ), downloadable=True )
 
     def repo_path( self, app ):
         return app.hgweb_config_manager.get_entry( os.path.join( "repos", self.user.username, self.name ) )
@@ -300,6 +297,9 @@ class Repository( object, Dictifiable ):
         if 'user_id' in rval:
             rval[ 'owner' ] = self.user.username
         return rval
+
+    def unordered_installable_revisions( self, app ):
+        return suc.get_unordered_metadata_changeset_revisions( self, hg.repository( ui.ui(), self.repo_path( app ) ), downloadable=True )
 
 
 class RepositoryMetadata( object, Dictifiable ):

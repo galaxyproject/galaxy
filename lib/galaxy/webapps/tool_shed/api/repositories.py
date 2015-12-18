@@ -97,7 +97,7 @@ class RepositoriesController( BaseAPIController ):
         Returns the ordered list of changeset revision hash strings that are associated with installable revisions.
         As in the changelog, the list is ordered oldest to newest.
         """
-        # Example URL: http://localhost:9009/api/repositories/get_installable_revisions?name=add_column&owner=test
+        # Example URL: http://localhost:9009/api/repositories/get_ordered_installable_revisions?name=add_column&owner=test
         name = kwd.get( 'name', None )
         owner = kwd.get( 'owner', None )
         tsr_id = kwd.get( 'tsr_id', None )
@@ -112,6 +112,26 @@ class RepositoriesController( BaseAPIController ):
             log.debug( error_message )
             return []
         return repository.ordered_installable_revisions( trans.app )
+
+    @web.expose_api_anonymous
+    def get_unordered_installable_revisions( self, trans, **kwd ):
+        """
+        GET /api/repositories/get_unordered_installable_revisions
+
+        :param tsr_id: the encoded toolshed ID of the repository
+
+        Returns a list of lists of changesets, in the format [ [ 0, fbb391dc803c ], [ 1, 9d9ec4d9c03e ], [ 2, 9b5b20673b89 ], [ 3, e8c99ce51292 ] ].
+        """
+        # Example URL: http://localhost:9009/api/repositories/get_unordered_installable_revisions?tsr_id=9d37e53072ff9fa4
+        tsr_id = kwd.get( 'tsr_id', None )
+        if tsr_id is not None:
+            repository = suc.get_repository_in_tool_shed( trans.app, tsr_id )
+        else:
+            error_message = "Error in the Tool Shed repositories API in get_ordered_installable_revisions: "
+            error_message += "missing or invalid parameter received." % ( str( name ), str( owner ) )
+            log.debug( error_message )
+            return []
+        return repository.unordered_installable_revisions( trans.app )
 
     @web.expose_api_anonymous
     def get_repository_revision_install_info( self, trans, name, owner, changeset_revision, **kwd ):
@@ -691,6 +711,37 @@ class RepositoriesController( BaseAPIController ):
         repository_dict[ 'category_ids' ] = \
             [ trans.security.encode_id( x.category.id ) for x in repository.categories ]
         return repository_dict
+
+    @expose_api_anonymous_and_sessionless
+    def show_tools( self, trans, id, changeset, **kwd ):
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
+                                                                                 id,
+                                                                                 changeset )
+        if repository_metadata is not None:
+            encoded_repository_metadata_id = trans.security.encode_id( repository_metadata.id )
+            repository_metadata_dict = repository_metadata.to_dict( view='collection',
+                                                                    value_mapper=self.__get_value_mapper( trans ) )
+            repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
+                                                             action='show',
+                                                             id=encoded_repository_metadata_id )
+            if 'tools' in repository_metadata.metadata:
+                repository_metadata_dict[ 'valid_tools' ] = repository_metadata.metadata[ 'tools' ]
+            # Get the repo_info_dict for installing the repository.
+            repo_info_dict, \
+                includes_tools, \
+                includes_tool_dependencies, \
+                includes_tools_for_display_in_tool_panel, \
+                has_repository_dependencies, \
+                has_repository_dependencies_only_if_compiling_contained_td = \
+                repository_util.get_repo_info_dict( trans.app,
+                                                    trans.user,
+                                                    id,
+                                                    changeset )
+            return repository_metadata_dict
+        else:
+            log.debug( "Unable to locate repository_metadata record for repository id %s and changeset_revision %s" %
+                       ( str( repository.id ), str( changeset_revision ) ) )
+            return {}
 
     @expose_api_anonymous_and_sessionless
     def metadata( self, trans, id, changeset, **kwd ):
