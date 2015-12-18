@@ -20,6 +20,7 @@ TOOL_LOAD_ERROR = object()
 TOOL_REGEX = re.compile(r"<tool\s")
 
 YAML_EXTENSIONS = [".yaml", ".yml", ".json"]
+CWL_EXTENSIONS = YAML_EXTENSIONS + [".cwl"]
 
 
 def load_exception_handler(path, exc_info):
@@ -122,6 +123,24 @@ def looks_like_a_tool_yaml(path):
     return file_class == "GalaxyTool"
 
 
+def looks_like_a_tool_cwl(path):
+    if _has_extension(path, CWL_EXTENSIONS):
+        return False
+
+    with open(path, "r") as f:
+        try:
+            as_dict = yaml.safe_load(f)
+        except Exception:
+            return False
+
+    if not isinstance(as_dict, dict):
+        return False
+
+    file_class = as_dict.get("class", None)
+    file_cwl_version = as_dict.get("cwlVersion", None)
+    return file_class == "CommandLineTool" and file_cwl_version
+
+
 def __find_tool_files(path, recursive):
     is_file = not os.path.isdir(path)
     if not os.path.exists(path):
@@ -136,6 +155,10 @@ def __find_tool_files(path, recursive):
         else:
             files = _find_files(path, "*.xml")
         return map(os.path.abspath, files)
+
+
+def _has_extension(path, extensions):
+    return any(map(lambda e: path.endswith(e), extensions))
 
 
 def _find_files(directory, pattern='*'):
@@ -153,4 +176,5 @@ def _find_files(directory, pattern='*'):
 
 BETA_TOOL_CHECKERS = {
     'yaml': looks_like_a_tool_yaml,
+    'cwl': looks_like_a_tool_cwl,
 }
