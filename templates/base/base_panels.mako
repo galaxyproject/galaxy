@@ -23,6 +23,7 @@
     ${h.css(
         'base',
         'jquery.rating',
+        'bootstrap-tour'
     )}
     <style type="text/css">
     #center {
