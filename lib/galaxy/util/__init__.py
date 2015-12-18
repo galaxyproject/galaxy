@@ -22,23 +22,23 @@ import sys
 import time
 import tempfile
 import threading
-import urlparse
+from six.moves.urllib import parse as urlparse
 
 from galaxy.util import json
 from datetime import datetime
 
-from email.MIMEText import MIMEText
+from six import string_types, text_type
+from six.moves import xrange
+from six.moves import email_mime_text
+from six.moves import zip
 
 from os.path import relpath
 from hashlib import md5
-from itertools import izip
 
 import docutils.core
 import docutils.writers.html4css1
 
 from xml.etree import ElementTree, ElementInclude
-
-import wchartype
 
 from .inflection import Inflector, English
 inflector = Inflector(English)
@@ -56,22 +56,6 @@ bz2_magic = 'BZh'
 DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
 NULL_CHAR = '\000'
 BINARY_CHARS = [ NULL_CHAR ]
-
-
-def is_multi_byte( chars ):
-    for char in chars:
-        try:
-            char = unicode( char )
-        except UnicodeDecodeError:
-            # Probably binary
-            return False
-        if ( wchartype.is_asian( char ) or wchartype.is_full_width( char ) or
-                wchartype.is_kanji( char ) or wchartype.is_hiragana( char ) or
-                wchartype.is_katakana( char ) or wchartype.is_half_katakana( char ) or
-                wchartype.is_hangul( char ) or wchartype.is_full_digit( char ) or
-                wchartype.is_full_letter( char )):
-            return True
-    return False
 
 
 def is_binary( value, binary_chars=None ):
@@ -138,7 +122,7 @@ def file_iter(fname, sep=None):
     >>> len(lines) !=  0
     True
     """
-    for line in file(fname):
+    for line in open(fname):
         if line and line[0] != '#':
             yield line.split(sep)
 
@@ -187,7 +171,7 @@ def xml_to_string( elem, pretty=False ):
         elem = pretty_print_xml( elem )
     try:
         return ElementTree.tostring( elem )
-    except TypeError, e:
+    except TypeError as e:
         # we assume this is a comment
         if hasattr( elem, 'text' ):
             return "<!-- %s -->\n" % ( elem.text )
@@ -347,7 +331,7 @@ def pretty_print_time_interval( time=False, precise=False ):
         diff = now - datetime.fromtimestamp( time )
     elif isinstance( time, datetime ):
         diff = now - time
-    elif isinstance( time, basestring ):
+    elif isinstance( time, string_types ):
         time = datetime.strptime( time, "%Y-%m-%dT%H:%M:%S.%f" )
         diff = now - time
     else:
@@ -401,7 +385,7 @@ def pretty_print_json(json_data, is_json_string=False):
     return json.dumps(json_data, sort_keys=True, indent=4)
 
 # characters that are valid
-valid_chars = set(string.letters + string.digits + " -=_.()/+*^,:?!")
+valid_chars = set(string.ascii_letters + string.digits + " -=_.()/+*^,:?!")
 
 # characters that are allowed but need to be escaped
 mapped_chars = { '>': '__gt__',
@@ -435,7 +419,7 @@ def sanitize_text( text, valid_characters=valid_chars, character_map=mapped_char
     """
     if isinstance( text, list ):
         return map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), text )
-    if not isinstance( text, basestring ):
+    if not isinstance( text, string_types ):
         text = smart_str( text )
     return _sanitize_text_helper( text, valid_characters=valid_characters, character_map=character_map )
 
@@ -470,7 +454,7 @@ def sanitize_lists_to_string( values, valid_characters=valid_chars, character_ma
 
 def sanitize_param( value, valid_characters=valid_chars, character_map=mapped_chars, invalid_character='X' ):
     """Clean incoming parameters (strings or lists)"""
-    if isinstance( value, basestring ):
+    if isinstance( value, string_types ):
         return sanitize_text( value, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character )
     elif isinstance( value, list ):
         return map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), value )
@@ -730,7 +714,7 @@ falsy = frozenset(['false', 'no', 'off', 'n', 'f', '0'])
 
 
 def asbool(obj):
-    if isinstance(obj, basestring):
+    if isinstance(obj, string_types):
         obj = obj.strip().lower()
         if obj in truthy:
             return True
@@ -776,7 +760,7 @@ def listify( item, do_strip=False ):
         return []
     elif isinstance( item, list ):
         return item
-    elif isinstance( item, basestring ) and item.count( ',' ):
+    elif isinstance( item, string_types ) and item.count( ',' ):
         if do_strip:
             return [token.strip() for token in item.split( ',' )]
         else:
@@ -809,10 +793,10 @@ def unicodify( value, encoding=DEFAULT_ENCODING, error='replace', default=None )
     Returns a unicode string or None
     """
 
-    if isinstance( value, unicode ):
+    if isinstance( value, text_type ):
         return value
     try:
-        return unicode( str( value ), encoding, error )
+        return text_type( str( value ), encoding, error )
     except:
         return default
 
@@ -827,12 +811,12 @@ def smart_str(s, encoding='utf-8', strings_only=False, errors='strict'):
     """
     if strings_only and isinstance(s, (type(None), int)):
         return s
-    if not isinstance(s, basestring):
+    if not isinstance(s, string_types):
         try:
             return str(s)
         except UnicodeEncodeError:
-            return unicode(s).encode(encoding, errors)
-    elif isinstance(s, unicode):
+            return text_type(s).encode(encoding, errors)
+    elif isinstance(s, text_type):
         return s.encode(encoding, errors)
     elif s and encoding != 'utf-8':
         return s.decode('utf-8', errors).encode(encoding, errors)
@@ -949,7 +933,7 @@ def read_dbnames(filename):
         man_builds.sort()
         man_builds = [(build, name) for name, build in man_builds]
         db_names = DBNames( db_names + man_builds )
-    except Exception, e:
+    except Exception as e:
         log.error( "ERROR: Unable to read builds file: %s", e )
     if len(db_names) < 1:
         db_names = DBNames( [( db_names.default_value, db_names.default_name )] )
@@ -1030,7 +1014,7 @@ def mkstemp_ln( src, prefix='mkstemp_ln_' ):
         try:
             os.link( src, file )
             return (os.path.abspath(file))
-        except OSError, e:
+        except OSError as e:
             if e.errno == errno.EEXIST:
                 continue  # try again
             raise
@@ -1044,14 +1028,14 @@ def umask_fix_perms( path, umask, unmasked_perms, gid=None ):
     perms = unmasked_perms & ~umask
     try:
         st = os.stat( path )
-    except OSError, e:
+    except OSError as e:
         log.exception( 'Unable to set permissions or group on %s' % path )
         return
     # fix modes
     if stat.S_IMODE( st.st_mode ) != perms:
         try:
             os.chmod( path, perms )
-        except Exception, e:
+        except Exception as e:
             log.warning( 'Unable to honor umask (%s) for %s, tried to set: %s but mode remains %s, error was: %s' % ( oct( umask ),
                                                                                                                       path,
                                                                                                                       oct( perms ),
@@ -1061,7 +1045,7 @@ def umask_fix_perms( path, umask, unmasked_perms, gid=None ):
     if gid is not None and st.st_gid != gid:
         try:
             os.chown( path, -1, gid )
-        except Exception, e:
+        except Exception as e:
             try:
                 desired_group = grp.getgrgid( gid )
                 current_group = grp.getgrgid( st.st_gid )
@@ -1165,7 +1149,7 @@ def send_mail( frm, to, subject, body, config ):
     Sends an email.
     """
     to = listify( to )
-    msg = MIMEText(  body.encode( 'ascii', 'replace' ) )
+    msg = email_mime_text(  body.encode( 'ascii', 'replace' ) )
     msg[ 'To' ] = ', '.join( to )
     msg[ 'From' ] = frm
     msg[ 'Subject' ] = subject
@@ -1183,26 +1167,26 @@ def send_mail( frm, to, subject, body, config ):
         try:
             s.starttls()
             log.debug( 'Initiated SSL/TLS connection to SMTP server: %s' % config.smtp_server )
-        except RuntimeError, e:
+        except RuntimeError as e:
             log.warning( 'SSL/TLS support is not available to your Python interpreter: %s' % e )
-        except smtplib.SMTPHeloError, e:
+        except smtplib.SMTPHeloError as e:
             log.error( "The server didn't reply properly to the HELO greeting: %s" % e )
             s.close()
             raise
-        except smtplib.SMTPException, e:
+        except smtplib.SMTPException as e:
             log.warning( 'The server does not support the STARTTLS extension: %s' % e )
     if config.smtp_username and config.smtp_password:
         try:
             s.login( config.smtp_username, config.smtp_password )
-        except smtplib.SMTPHeloError, e:
+        except smtplib.SMTPHeloError as e:
             log.error( "The server didn't reply properly to the HELO greeting: %s" % e )
             s.close()
             raise
-        except smtplib.SMTPAuthenticationError, e:
+        except smtplib.SMTPAuthenticationError as e:
             log.error( "The server didn't accept the username/password combination: %s" % e )
             s.close()
             raise
-        except smtplib.SMTPException, e:
+        except smtplib.SMTPException as e:
             log.error( "No suitable authentication method was found: %s" % e )
             s.close()
             raise
@@ -1213,7 +1197,7 @@ def send_mail( frm, to, subject, body, config ):
 def force_symlink( source, link_name ):
     try:
         os.symlink( source, link_name )
-    except OSError, e:
+    except OSError as e:
         if e.errno == errno.EEXIST:
             os.remove( link_name )
             os.symlink( source, link_name )
@@ -1240,7 +1224,7 @@ def safe_str_cmp(a, b):
     if len(a) != len(b):
         return False
     rv = 0
-    for x, y in izip(a, b):
+    for x, y in zip(a, b):
         rv |= ord(x) ^ ord(y)
     return rv == 0
 

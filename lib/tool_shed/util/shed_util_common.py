@@ -12,7 +12,7 @@ from sqlalchemy import and_, false, or_, true
 
 from galaxy import util
 from galaxy.web import url_for
-from galaxy.datatypes import checkers
+from galaxy.util import checkers
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util

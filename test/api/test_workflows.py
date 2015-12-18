@@ -132,6 +132,7 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
 
         label_map = {}
         inputs = {}
+        has_uploads = False
 
         for key, value in test_data.items():
             is_dict = isinstance( value, dict )
@@ -152,6 +153,7 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
                     hdca = self.dataset_collection_populator.create_pair_in_history( history_id, contents=elements ).json()
                 label_map[key] = self._ds_entry( hdca )
                 inputs[key] = hdca
+                has_uploads = True
             elif is_dict and "type" in value:
                 input_type = value["type"]
                 if input_type == "File":
@@ -160,9 +162,12 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
                     content = open(filename, "r").read()
                     hda = self.dataset_populator.new_dataset( history_id, content=content )
                     label_map[key] = self._ds_entry( hda )
+                    has_uploads = True
                 elif input_type == "raw":
+                    label_map[key] = value["value"]
                     inputs[key] = value["value"]
             elif not is_dict:
+                has_uploads = True
                 hda = self.dataset_populator.new_dataset( history_id, content=value )
                 label_map[key] = self._ds_entry( hda )
                 inputs[key] = hda
@@ -174,7 +179,7 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
         )
         workflow_request[ "inputs" ] = dumps( label_map )
         workflow_request[ "inputs_by" ] = 'name'
-        if inputs:
+        if has_uploads:
             self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         url = "workflows/%s/usage" % ( workflow_id )
         invocation_response = self._post( url, data=workflow_request )
@@ -425,7 +430,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
                 step,
                 'id',
                 'type',
-                'tool_id',
+                'content_id',
                 'name',
                 'tool_state',
                 'tooltip',
@@ -655,6 +660,57 @@ steps:
         content = self.dataset_populator.get_history_dataset_content( history_id, hid=7 )
         self.assertEquals(content.strip(), "samp1\t10.0\nsamp2\t20.0")
 
+    def test_run_subworkflow_simple( self ):
+        history_id = self.dataset_populator.new_history()
+        self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: outer_input
+steps:
+  - tool_id: cat1
+    label: first_cat
+    state:
+      input1:
+        $link: outer_input
+  - run:
+      class: GalaxyWorkflow
+      inputs:
+        - id: inner_input
+      outputs:
+        - id: workflow_output
+          source: random_lines#out_file1
+      steps:
+        - tool_id: random_lines1
+          label: random_lines
+          state:
+            num_lines: 1
+            input:
+              $link: inner_input
+            seed_source:
+              seed_source_selector: set_seed
+              seed: asdf
+              __current_case__: 1
+    label: nested_workflow
+    connect:
+      inner_input: first_cat#out_file1
+  - tool_id: cat1
+    label: second_cat
+    state:
+      input1:
+        $link: nested_workflow#workflow_output
+      queries:
+        - input2:
+            $link: nested_workflow#workflow_output
+
+test_data:
+  outer_input:
+    value: 1.bed
+    type: File
+""", history_id=history_id)
+
+        content = self.dataset_populator.get_history_dataset_content( history_id )
+        self.assertEquals("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\nchr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
+
     def test_workflow_request( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_queue" )
         workflow_request, history_id = self._setup_workflow_run( workflow )
@@ -826,6 +882,85 @@ test_data:
         self.__review_paused_steps( workflow_id, invocation_id, order_index=2, action=True )
         self.wait_for_invocation_and_jobs( history_id, workflow_id, invocation_id )
         assert len(  self._history_jobs( history_id ) ) == 4
+
+    def test_run_with_validated_parameter_connection_valid( self ):
+        history_id = self.dataset_populator.new_history()
+        run_summary = self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - label: text_input
+    type: text
+steps:
+- tool_id: validation_repeat
+  state:
+    r2:
+     - text:
+        $link: text_input
+test_data:
+  text_input:
+    value: "abd"
+    type: raw
+""", history_id=history_id, wait=True)
+        time.sleep(10)
+        self.wait_for_invocation( run_summary.workflow_id, run_summary.invocation_id )
+        jobs = self._history_jobs( history_id )
+        assert len(jobs) == 1
+
+    def test_run_with_validated_parameter_connection_invalid( self ):
+        history_id = self.dataset_populator.new_history()
+        run_summary = self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - label: text_input
+    type: text
+steps:
+- tool_id: validation_repeat
+  state:
+    r2:
+     - text:
+        $link: text_input
+test_data:
+  text_input:
+    value: ""
+    type: raw
+""", history_id=history_id, wait=False)
+        self.wait_for_invocation( run_summary.workflow_id, run_summary.invocation_id )
+        jobs = self._history_jobs( history_id )
+        assert len(jobs) == 0
+
+    def test_run_with_text_connection( self ):
+        history_id = self.dataset_populator.new_history()
+        self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - label: data_input
+    type: data
+  - label: text_input
+    type: text
+steps:
+- label: randomlines
+  tool_id: random_lines1
+  state:
+    num_lines: 1
+    input:
+      $link: data_input
+    seed_source:
+      seed_source_selector: set_seed
+      seed:
+        $link: text_input
+      __current_case__: 1
+test_data:
+  data_input:
+    value: 1.bed
+    type: File
+  text_input:
+    value: asdf
+    type: raw
+""", history_id=history_id)
+
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        content = self.dataset_populator.get_history_dataset_content( history_id )
+        self.assertEquals("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
 
     def wait_for_invocation_and_jobs( self, history_id, workflow_id, invocation_id, assert_ok=True ):
         self.wait_for_invocation( workflow_id, invocation_id )

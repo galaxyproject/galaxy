@@ -3,11 +3,15 @@ statistics for a given pid's process and process ancestors.
 """
 import collections
 import csv
+import sys
 import tempfile
 
 from galaxy import util
 
 from ..collectl import stats
+
+if sys.version_info > (3,):
+    long = int
 
 import logging
 log = logging.getLogger( __name__ )

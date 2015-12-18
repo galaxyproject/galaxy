@@ -4,9 +4,24 @@ Client Build System
 Builds and moves the client-side scripts necessary for running the Galaxy webapps. There's no need to use this system
 unless you are modifying or developing client-side scripts.
 
-You'll need Node and the Node Package Manager (npm): nodejs.org.
+The base dependencies you'll need are Node.js and the Node Package Manager
+(npm).  See nodejs.org for more information.
 
-Once npm is installed, install the grunt task manager and it's command line into your global scope:
+
+Simple Full Build
+=================
+
+The simplest way to rebuild the entire client to incorporate any local changes
+is to run the 'client' rule in the Galaxy makefile, which is in the repository
+root.  This will also ensure any local node modules are installed.
+
+    make client
+
+
+Detailed Build Instructions
+===========================
+
+Once npm is installed, install the grunt task manager and its command line into your global scope:
 
     npm install -g grunt grunt-cli
 
@@ -50,7 +65,7 @@ Changing Styles/CSS
 ===================
 
 The CSS and styling used by Galaxy is also controlled from this directory. Galaxy uses LESS, a superset of CSS that
-compiles to CSS, for its styling. LESS files are kept in client/galaxy/style/less. Compiled CSS is in statis/style/blue.
+compiles to CSS, for its styling. LESS files are kept in client/galaxy/style/less. Compiled CSS is in static/style/blue.
 
 Use grunt to recompile the LESS in into CSS (from the `client` directory):
 

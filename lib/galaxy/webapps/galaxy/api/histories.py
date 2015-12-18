@@ -246,6 +246,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             rval.append( history_dict )
         return rval
 
+    # TODO: does this need to be anonymous_and_sessionless? Not just expose_api?
     @expose_api_anonymous_and_sessionless
     def shared_with_me( self, trans, **kwd ):
         """
@@ -272,7 +273,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             rval.append( history_dict )
         return rval
 
-    @expose_api
+    @expose_api_anonymous
     def create( self, trans, payload, **kwd ):
         """
         create( trans, payload )
@@ -320,6 +321,10 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
 
         trans.sa_session.add( new_history )
         trans.sa_session.flush()
+
+        # an anonymous user can only have one history
+        if self.user_manager.is_anonymous( trans.user ):
+            self.history_manager.set_current( trans, new_history )
 
         return self.history_serializer.serialize_to_view( new_history,
             user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )

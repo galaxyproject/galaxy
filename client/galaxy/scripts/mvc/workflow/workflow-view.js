@@ -6,10 +6,11 @@ define([
     'mvc/workflow/workflow-canvas',
     'mvc/workflow/workflow-node',
     'mvc/tool/tool-form-workflow',
+    'mvc/ui/ui-misc',
     'utils/async-save-text',
     'libs/toastr',
     'ui/editable-text'
-], function( Utils, Globals, Workflow, WorkflowCanvas, Node, ToolForm, async_save_text, Toastr ){
+], function( Utils, Globals, Workflow, WorkflowCanvas, Node, ToolForm, Ui, async_save_text, Toastr ){
 
 // Reset tool search to start state.
 function reset_tool_search( initValue ) {
@@ -50,6 +51,7 @@ NODE_ICONS = {
     'tool': 'fa-wrench',
     'data_input': 'fa-file-o',
     'data_collection_input': 'fa-folder-o',
+    'subworkflow': 'fa-sitemap fa-rotate-270',
     'pause': 'fa-pause'
 }
 
@@ -67,6 +69,7 @@ add_node_icon = function($to_el, nodeType) {
 EditorFormView = Backbone.View.extend({
 
     initialize: function(options) {
+        var self = this;
         this.options = Utils.merge(options, {});
         var $el = $('<div/>'),
             workflowView = options.workflowView,
@@ -114,6 +117,7 @@ EditorFormView = Backbone.View.extend({
                     workflowView.showWorkflowParameters();
                 },
                 beforeSubmit: function( data ) {
+                    data.push( { name: 'content_id', value: node.content_id } );
                     data.push( { name: 'tool_state', value: node.tool_state } );
                     data.push( { name: '_', value: 'true' } );
                 }
@@ -347,14 +351,10 @@ EditorFormView = Backbone.View.extend({
             this.type_to_type = this.datatypes_mapping.class_to_classes;
 
             // Load workflow definition
-            $.ajax( {
-                url: self.urls.load_workflow,
-                data: { id: self.options.id, "_": "true" },
-                dataType: 'json',
-                cache: false,
+            this._workflowLoadAjax(self.options.id, {
                 success: function( data ) {
                      self.reset();
-                     self.workflow.from_simple( data );
+                     self.workflow.from_simple( data, true );
                      self.workflow.has_changes = false;
                      self.workflow.fit_canvas_to_nodes();
                      self.scroll_to_nodes();
@@ -416,7 +416,7 @@ EditorFormView = Backbone.View.extend({
                 var new_content = "";
                 for (var node_key in self.workflow.nodes){
                     var node = self.workflow.nodes[node_key];
-                    if(node.type == 'tool'){
+                    if(['tool', 'subworkflow'].indexOf(node.type) >= 0){
                         new_content += "<div class='toolForm' style='margin-bottom:5px;'><div class='toolFormTitle'>Step " + node.id + " - " + node.name + "</div>";
                         for (var ot_key in node.output_terminals){
                             var output = node.output_terminals[ot_key];
@@ -512,6 +512,8 @@ EditorFormView = Backbone.View.extend({
                 }
             };
 
+            this.options.workflows.length > 0 && $( "#left" ).find( ".toolMenu" ).append( this._buildToolPanelWorkflows() );
+
             // Tool menu
             $( "div.toolSectionBody" ).hide();
             $( "div.toolSectionTitle > span" ).wrap( "<a href='#'></a>" );
@@ -543,6 +545,76 @@ EditorFormView = Backbone.View.extend({
             async_save_text("workflow-annotation", "workflow-annotation", self.urls.annotate_async, "new_annotation", 25, true, 4);
         },
 
+        _buildToolPanelWorkflows: function() {
+            var self = this;
+            var $section = $(   '<div class="toolSectionWrapper">' +
+                                    '<div class="toolSectionTitle">' +
+                                        '<a href="#"><span>Workflows</span></a>' +
+                                    '</div>' +
+                                    '<div class="toolSectionBody">' +
+                                        '<div class="toolSectionBg"/>' +
+                                    '</div>' +
+                                '</div>' );
+            _.each( this.options.workflows, function( workflow ) {
+                if( workflow.id !== self.options.id ) {
+                    var copy = new Ui.ButtonIcon({
+                        icon        : 'fa fa-copy',
+                        cls         : 'ui-button-icon-plain',
+                        tooltip     : 'Copy and insert individual steps',
+                        onclick     : function() {
+                            if( workflow.step_count < 2 ) {
+                                self.copy_into_workflow( workflow.id, workflow.name );
+                            } else {
+                                // don't ruin the workflow by adding 50 steps unprompted.
+                                Galaxy.modal.show({
+                                    title   : 'Warning',
+                                    body    : 'This will copy ' + workflow.step_count + ' new steps into your workflow.',
+                                    buttons : {
+                                        'Cancel' : function() { Galaxy.modal.hide(); },
+                                        'Copy'   : function() { Galaxy.modal.hide(); self.copy_into_workflow( workflow.id, workflow.name ); }
+                                    }
+                                });
+                            }
+                        }
+                    });
+                    var $add = $( '<a/>' ).attr( 'href', '#' ).html( workflow.name ).on( 'click', function() {
+                        self.add_node_for_subworkflow( workflow.latest_id, workflow.name );
+                    });
+                    $section.find( '.toolSectionBg' ).append( $( '<div/>' ).addClass( 'toolTitle' ).append( $add ).append( copy.$el ) );
+                }
+            });
+            return $section;
+        },
+
+        copy_into_workflow: function(workflowId) {
+            // Load workflow definition
+            var self = this;
+            this._workflowLoadAjax(workflowId, {
+                success: function( data ) {
+                    self.workflow.from_simple( data, false );
+                    // Determine if any parameters were 'upgraded' and provide message
+                    upgrade_message = "";
+                    $.each( data.upgrade_messages, function( k, v ) {
+                       upgrade_message += ( "<li>Step " + ( parseInt(k, 10) + 1 ) + ": " + self.workflow.nodes[k].name + "<ul>");
+                       $.each( v, function( i, vv ) {
+                           upgrade_message += "<li>" + vv +"</li>";
+                       });
+                       upgrade_message += "</ul></li>";
+                    });
+                    if ( upgrade_message ) {
+                       window.show_modal( "Subworkflow embedded with changes",
+                                   "Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save.<ul>" + upgrade_message + "</ul>",
+                                   { "Continue" : hide_modal } );
+                    } else {
+                       hide_modal();
+                    }
+                },
+                beforeSubmit: function( data ) {
+                   show_message( "Importing workflow", "progress" );
+                }
+            });
+        },
+
         // Global state for the whole workflow
         reset: function() {
             if ( this.workflow ) {
@@ -566,6 +638,15 @@ EditorFormView = Backbone.View.extend({
                 top = 0;
             }
             cc.css( { left: left, top: top } );
+        },
+
+        _workflowLoadAjax: function(workflowId, options) {
+            $.ajax(Utils.merge(options, {
+                url: this.urls.load_workflow,
+                data: { id: workflowId, "_": "true" },
+                dataType: 'json',
+                cache: false
+            }));
         },
 
         _moduleInitAjax: function(node, request_data) {
@@ -596,7 +677,7 @@ EditorFormView = Backbone.View.extend({
         // Add a new step to the workflow by tool id
         add_node_for_subworkflow: function ( id, title ) {
             node = this.workflow.create_node( 'subworkflow', title, id );
-            this._moduleInitAjax(node, { type: "subworkflow", subworkflow_id: id, "_": "true" });
+            this._moduleInitAjax(node, { type: "subworkflow", content_id: id, "_": "true" });
         },
 
         add_node_for_module: function ( type, title ) {

@@ -3,6 +3,7 @@ Basic tool parameters.
 """
 
 import logging
+import re
 import os
 import os.path
 from xml.etree.ElementTree import XML
@@ -17,14 +18,27 @@ import validation
 import galaxy.tools.parser
 from ..parser import get_input_source as ensure_input_source
 from ..parameters import history_query
+from ..parameters import dynamic_options
 from .dataset_matcher import DatasetMatcher
 from .dataset_matcher import DatasetCollectionMatcher
 # For BaseURLToolParameter
 from galaxy.web import url_for
-from galaxy.model.item_attrs import Dictifiable
+from galaxy.util.dictifiable import Dictifiable
 import galaxy.model
 
 log = logging.getLogger(__name__)
+
+WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile( '''\$\{.+?\}''' )
+
+
+def contains_workflow_parameter(value, search=False):
+    if not isinstance( value, basestring ):
+        return False
+    if search and WORKFLOW_PARAMETER_REGULAR_EXPRESSION.search(value):
+        return True
+    if not search and WORKFLOW_PARAMETER_REGULAR_EXPRESSION.match(value):
+        return True
+    return False
 
 
 class ToolParameter( object, Dictifiable ):
@@ -195,7 +209,7 @@ class ToolParameter( object, Dictifiable ):
                 value = sanitize_param( value )
         return value
 
-    def validate( self, value, history=None, workflow_mode=False ):
+    def validate( self, value, history=None, workflow_building_mode=False ):
         if value == "" and self.optional:
             return
         for validator in self.validators:
@@ -277,8 +291,9 @@ class TextToolParameter( ToolParameter ):
         else:
             return self.to_string( value, app )
 
-    def validate( self, value, history=None, workflow_mode=True ):
-        if not ( workflow_mode and isinstance( value, basestring ) and value.startswith( '$' ) ):
+    def validate( self, value, history=None, workflow_building_mode=False ):
+        search = self.type == "text"
+        if not ( workflow_building_mode and contains_workflow_parameter(value, search=search) ):
             return super( TextToolParameter, self ).validate( value, history )
 
     def get_initial_value( self, trans, context, history=None ):
@@ -344,12 +359,11 @@ class IntegerToolParameter( TextToolParameter ):
         try:
             return int( value )
         except:
-            if isinstance( value, basestring ):
-                if value.startswith( "$" ) and ( trans is None or trans.workflow_building_mode ):
-                    return value
-            elif not value and self.optional:
+            if contains_workflow_parameter(value) and _allow_workflow_parameters_in_context(trans):
+                return value
+            if not value and self.optional:
                 return ""
-            if trans is None or trans.workflow_building_mode:
+            if _allow_workflow_parameters_in_context(trans):
                 raise ValueError( "An integer or workflow parameter e.g. ${name} is required" )
             else:
                 raise ValueError( "An integer is required" )
@@ -358,10 +372,9 @@ class IntegerToolParameter( TextToolParameter ):
         try:
             return int( value )
         except Exception, err:
-            if isinstance( value, basestring ):
-                if value.startswith( "$" ):
-                    return value
-            elif not value and self.optional:
+            if contains_workflow_parameter(value):
+                return value
+            if not value and self.optional:
                 return None
             raise err
 
@@ -425,12 +438,11 @@ class FloatToolParameter( TextToolParameter ):
         try:
             return float( value )
         except:
-            if isinstance( value, basestring ):
-                if value.startswith( "$" ) and ( trans is None or trans.workflow_building_mode ):
-                    return value
-            elif not value and self.optional:
+            if contains_workflow_parameter(value) and _allow_workflow_parameters_in_context(trans):
+                return value
+            if not value and self.optional:
                 return ""
-            if trans is None or trans.workflow_building_mode:
+            if _allow_workflow_parameters_in_context(trans):
                 raise ValueError( "A real number or workflow parameter e.g. ${name} is required" )
             else:
                 raise ValueError( "A real number is required" )
@@ -439,10 +451,9 @@ class FloatToolParameter( TextToolParameter ):
         try:
             return float( value )
         except Exception, err:
-            if isinstance( value, basestring ):
-                if value.startswith( "$" ):
-                    return value
-            elif not value and self.optional:
+            if contains_workflow_parameter(value):
+                return value
+            if not value and self.optional:
                 return None
             raise err
 
@@ -746,6 +757,15 @@ class BaseURLToolParameter( HiddenToolParameter ):
 DEFAULT_VALUE_MAP = lambda x: x
 
 
+def parse_dynamic_options(param, input_source):
+    options_elem = input_source.parse_dynamic_options_elem()
+    if options_elem is None:
+        options = None
+    else:
+        options = dynamic_options.DynamicOptions( options_elem, param )
+    return options
+
+
 class SelectToolParameter( ToolParameter ):
     """
     Parameter that takes on one (or many) or a specific set of values.
@@ -833,7 +853,7 @@ class SelectToolParameter( ToolParameter ):
         self.separator = input_source.get( 'separator', ',' )
         self.legal_values = set()
         self.dynamic_options = input_source.get( "dynamic_options", None )
-        self.options = input_source.parse_dynamic_options(self)
+        self.options = parse_dynamic_options( self, input_source )
         if self.options is not None:
             for validator in self.options.validators:
                 self.validators.append( validator )
@@ -1739,7 +1759,7 @@ class BaseDataToolParameter( ToolParameter ):
         #       only the special case key='build' of type='data_meta' is
         #       a valid filter
         self.options_filter_attribute = None
-        self.options = input_source.parse_dynamic_options( self )
+        self.options = parse_dynamic_options( self, input_source )
         if self.options:
             # TODO: Abstract away XML handling here.
             options_elem = input_source.elem().find('options')
@@ -2091,7 +2111,7 @@ class DataToolParameter( BaseDataToolParameter ):
                 pass
         return "No dataset"
 
-    def validate( self, value, history=None ):
+    def validate( self, value, history=None, workflow_building_mode=False ):
         dataset_count = 0
         for validator in self.validators:
             if value and self.multiple:
@@ -2393,7 +2413,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
             display_text = "No dataset collection."
         return display_text
 
-    def validate( self, value, history=None ):
+    def validate( self, value, history=None, workflow_building_mode=False ):
         return True  # TODO
 
     def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
@@ -2549,6 +2569,11 @@ class LibraryDatasetToolParameter( ToolParameter ):
         d = super( LibraryDatasetToolParameter, self ).to_dict( trans )
         d['multiple'] = self.multiple
         return d
+
+
+def _allow_workflow_parameters_in_context(trans):
+    return trans is None or trans.workflow_building_mode
+
 
 # class RawToolParameter( ToolParameter ):
 #     """

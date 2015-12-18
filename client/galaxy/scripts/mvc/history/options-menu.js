@@ -1,8 +1,11 @@
 define([
     "mvc/ui/popup-menu",
+    "mvc/history/copy-dialog",
     "mvc/base-mvc",
     "utils/localization"
-], function( PopupMenu, BASE_MVC, _l ){
+], function( PopupMenu, historyCopyDialog, BASE_MVC, _l ){
+
+"use strict";
 // ============================================================================
 var menu = [
     {
@@ -33,7 +36,12 @@ var menu = [
     },
     {
         html    : _l( 'Copy History' ),
-        href    : 'history/copy',
+        func    : function() {
+            historyCopyDialog( Galaxy.currHistoryPanel.model )
+                .done( function(){
+                    Galaxy.currHistoryPanel.loadCurrentHistory();
+                });
+        },
     },
     {
         html    : _l( 'Share or Publish' ),

@@ -6,7 +6,8 @@ import tools_support
 
 from galaxy import model
 from galaxy import util
-from galaxy.tools.parameters import output_collect
+from galaxy.tools.parser import output_collection_def
+
 
 DEFAULT_TOOL_OUTPUT = "out1"
 DEFAULT_EXTRA_NAME = "test1"
@@ -186,7 +187,11 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
         assert exception_thrown
 
     def _collect_default_extra( self, **kwargs ):
-        return self._collect( **kwargs )[ DEFAULT_TOOL_OUTPUT ][ DEFAULT_EXTRA_NAME ]
+        collected = self._collect( **kwargs )
+        assert DEFAULT_TOOL_OUTPUT in collected, "No such key [%s], in %s" % (DEFAULT_TOOL_OUTPUT, collected)
+        output_files = collected[DEFAULT_TOOL_OUTPUT]
+        assert DEFAULT_EXTRA_NAME in output_files, "No such key [%s]" % DEFAULT_EXTRA_NAME
+        return output_files[DEFAULT_EXTRA_NAME]
 
     def _collect( self, job_working_directory=None ):
         if not job_working_directory:
@@ -197,7 +202,7 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
         # Rewrite tool as if it had been created with output containing
         # supplied dataset_collector elem.
         elem = util.parse_xml_string( xml_str )
-        self.tool.outputs[ DEFAULT_TOOL_OUTPUT ].dataset_collectors = output_collect.dataset_collectors_from_elem( elem )
+        self.tool.outputs[ DEFAULT_TOOL_OUTPUT ].dataset_collector_descriptions = output_collection_def.dataset_collector_descriptions_from_elem( elem )
 
     def _append_job_json( self, object, output_path=None, line_type="new_primary_dataset" ):
         object[ "type" ] = line_type

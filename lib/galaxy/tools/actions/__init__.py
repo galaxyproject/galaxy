@@ -183,32 +183,42 @@ class DefaultToolAction( object ):
         tool.visit_inputs( param_values, visitor )
         return input_dataset_collections
 
-    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, set_output_history=True, history=None, job_params=None, rerun_remap_job_id=None, mapping_over_collection=False, execution_cache=None ):
-        """
-        Executes a tool, creating job and tool outputs, associating them, and
-        submitting the job to the job queue. If history is not specified, use
-        trans.history as destination for tool's output datasets.
-        """
-        app = trans.app
-        if execution_cache is None:
-            execution_cache = ToolExecutionCache(trans)
-        current_user_roles = execution_cache.current_user_roles
-
+    def _check_access( self, tool, trans ):
         assert tool.allow_user_access( trans.user ), "User (%s) is not allowed to access this tool." % ( trans.user )
+
+    def _collect_inputs( self, tool, trans, incoming, history, current_user_roles ):
+        """ Collect history as well as input datasets and collections. """
+        app = trans.app
         # Set history.
         if not history:
             history = tool.get_default_history_by_trans( trans, create=True )
         if history not in trans.sa_session:
             history = trans.sa_session.query( app.model.History ).get( history.id )
 
-        out_data = odict()
-        out_collections = {}
-        out_collection_instances = {}
         # Track input dataset collections - but replace with simply lists so collect
         # input datasets can process these normally.
         inp_dataset_collections = self.collect_input_dataset_collections( tool, incoming )
         # Collect any input datasets from the incoming parameters
         inp_data = self.collect_input_datasets( tool, incoming, trans, current_user_roles=current_user_roles )
+
+        return history, inp_data, inp_dataset_collections
+
+    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, set_output_history=True, history=None, job_params=None, rerun_remap_job_id=None, mapping_over_collection=False, execution_cache=None ):
+        """
+        Executes a tool, creating job and tool outputs, associating them, and
+        submitting the job to the job queue. If history is not specified, use
+        trans.history as destination for tool's output datasets.
+        """
+        self._check_access( tool, trans )
+        app = trans.app
+        if execution_cache is None:
+            execution_cache = ToolExecutionCache(trans)
+        current_user_roles = execution_cache.current_user_roles
+        history, inp_data, inp_dataset_collections = self._collect_inputs(tool, trans, incoming, history, current_user_roles)
+
+        out_data = odict()
+        out_collections = {}
+        out_collection_instances = {}
 
         # Deal with input dataset names, 'dbkey' and types
         input_names = []
@@ -442,60 +452,10 @@ class DefaultToolAction( object ):
             parent_dataset.children.append( child_dataset )
 
         # Create the job object
-        job = app.model.Job()
+        job, galaxy_session = self._new_job_for_session( trans, tool, history )
+        self._record_inputs( trans, tool, job, incoming, inp_data, inp_dataset_collections, current_user_roles )
+        self._record_outputs( job, out_data, out_collections, out_collection_instances )
 
-        if hasattr( trans, "get_galaxy_session" ):
-            galaxy_session = trans.get_galaxy_session()
-            # If we're submitting from the API, there won't be a session.
-            if type( galaxy_session ) == trans.model.GalaxySession:
-                job.session_id = galaxy_session.id
-        # Whole if above takes well less than a millisecond (0.024 ms)
-        # not worth optimizing.
-        if trans.user is not None:
-            job.user_id = trans.user.id
-        job.history_id = history.id
-        job.tool_id = tool.id
-        try:
-            # For backward compatibility, some tools may not have versions yet.
-            job.tool_version = tool.version
-        except:
-            job.tool_version = "1.0.0"
-        # FIXME: Don't need all of incoming here, just the defined parameters
-        #        from the tool. We need to deal with tools that pass all post
-        #        parameters to the command as a special case.
-        for name, dataset_collection_info_pairs in inp_dataset_collections.iteritems():
-            first_reduction = True
-            for ( dataset_collection, reduced ) in dataset_collection_info_pairs:
-                # TODO: update incoming for list...
-                if reduced and first_reduction:
-                    first_reduction = False
-                    incoming[ name ] = []
-                if reduced:
-                    incoming[ name ].append( "__collection_reduce__|%s" % dataset_collection.id )
-                # Should verify security? We check security of individual
-                # datasets below?
-                # TODO: verify can have multiple with same name, don't want to loose tracability
-                job.add_input_dataset_collection( name, dataset_collection )
-        for name, value in tool.params_to_strings( incoming, app ).iteritems():
-            job.add_parameter( name, value )
-        access_timer = ExecutionTimer()
-        for name, dataset in inp_data.iteritems():
-            if dataset:
-                if not app.security_agent.can_access_dataset( current_user_roles, dataset.dataset ):
-                    raise Exception("User does not have permission to use a dataset (%s) provided for input." % data.id)
-                if dataset in trans.sa_session:
-                    job.add_input_dataset( name, dataset=dataset )
-                else:
-                    job.add_input_dataset( name, dataset_id=dataset.id )
-            else:
-                job.add_input_dataset( name, None )
-        log.info("Verified access to datasets %s" % access_timer)
-        for name, dataset in out_data.iteritems():
-            job.add_output_dataset( name, dataset )
-        for name, dataset_collection in out_collections.iteritems():
-            job.add_implicit_output_dataset_collection( name, dataset_collection )
-        for name, dataset_collection_instance in out_collection_instances.iteritems():
-            job.add_output_dataset_collection( name, dataset_collection_instance )
         job.object_store_id = object_store_populator.object_store_id
         if job_params:
             job.params = dumps( job_params )
@@ -564,6 +524,69 @@ class DefaultToolAction( object ):
             app.job_queue.put( job.id, job.tool_id )
             trans.log_event( "Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
             return job, out_data
+
+    def _new_job_for_session( self, trans, tool, history ):
+        job = trans.app.model.Job()
+        galaxy_session = None
+
+        if hasattr( trans, "get_galaxy_session" ):
+            galaxy_session = trans.get_galaxy_session()
+            # If we're submitting from the API, there won't be a session.
+            if type( galaxy_session ) == trans.model.GalaxySession:
+                job.session_id = galaxy_session.id
+        if trans.user is not None:
+            job.user_id = trans.user.id
+        job.history_id = history.id
+        job.tool_id = tool.id
+        try:
+            # For backward compatibility, some tools may not have versions yet.
+            job.tool_version = tool.version
+        except:
+            job.tool_version = "1.0.0"
+        return job, galaxy_session
+
+    def _record_inputs( self, trans, tool, job, incoming, inp_data, inp_dataset_collections, current_user_roles ):
+        # FIXME: Don't need all of incoming here, just the defined parameters
+        #        from the tool. We need to deal with tools that pass all post
+        #        parameters to the command as a special case.
+        for name, dataset_collection_info_pairs in inp_dataset_collections.iteritems():
+            first_reduction = True
+            for ( dataset_collection, reduced ) in dataset_collection_info_pairs:
+                # TODO: update incoming for list...
+                if reduced and first_reduction:
+                    first_reduction = False
+                    incoming[ name ] = []
+                if reduced:
+                    incoming[ name ].append( "__collection_reduce__|%s" % dataset_collection.id )
+                # Should verify security? We check security of individual
+                # datasets below?
+                # TODO: verify can have multiple with same name, don't want to loose tracability
+                job.add_input_dataset_collection( name, dataset_collection )
+        for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
+            job.add_parameter( name, value )
+        self._check_input_data_access( trans, job, inp_data, current_user_roles )
+
+    def _record_outputs( self, job, out_data, out_collections, out_collection_instances ):
+        for name, dataset in out_data.iteritems():
+            job.add_output_dataset( name, dataset )
+        for name, dataset_collection in out_collections.iteritems():
+            job.add_implicit_output_dataset_collection( name, dataset_collection )
+        for name, dataset_collection_instance in out_collection_instances.iteritems():
+            job.add_output_dataset_collection( name, dataset_collection_instance )
+
+    def _check_input_data_access( self, trans, job, inp_data, current_user_roles ):
+        access_timer = ExecutionTimer()
+        for name, dataset in inp_data.iteritems():
+            if dataset:
+                if not trans.app.security_agent.can_access_dataset( current_user_roles, dataset.dataset ):
+                    raise Exception("User does not have permission to use a dataset (%s) provided for input." % dataset.id)
+                if dataset in trans.sa_session:
+                    job.add_input_dataset( name, dataset=dataset )
+                else:
+                    job.add_input_dataset( name, dataset_id=dataset.id )
+            else:
+                job.add_input_dataset( name, None )
+        log.info("Verified access to datasets %s" % access_timer)
 
     def get_output_name( self, output, dataset, tool, on_text, trans, incoming, history, params, job_params ):
         if output.label:
@@ -637,7 +660,7 @@ def filter_output(output, incoming):
 
 def determine_output_format(output, parameter_context, input_datasets, input_dataset_collections, random_input_ext):
     """ Determines the output format for a dataset based on an abstract
-    description of the output (galaxy.tools.ToolOutput), the parameter
+    description of the output (galaxy.tools.parser.ToolOutput), the parameter
     wrappers, a map of the input datasets (name => HDA), and the last input
     extensions in the tool form.
 

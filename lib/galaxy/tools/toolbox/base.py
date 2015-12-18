@@ -9,7 +9,7 @@ from sqlalchemy import and_
 from markupsafe import escape
 from urlparse import urlparse
 
-from galaxy.model.item_attrs import Dictifiable
+from galaxy.util.dictifiable import Dictifiable
 
 from galaxy.util.odict import odict
 from galaxy.util import listify
@@ -798,7 +798,7 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
             tool = self._tools_by_id[ tool_id ]
             tarball_files = []
             temp_files = []
-            tool_xml = file( os.path.abspath( tool.config_file ), 'r' ).read()
+            tool_xml = open( os.path.abspath( tool.config_file ), 'r' ).read()
             # Retrieve tool help images and rewrite the tool's xml into a temporary file with the path
             # modified to be relative to the repository root.
             image_found = False
@@ -820,7 +820,7 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
             if image_found:
                 fd, new_tool_config = tempfile.mkstemp( suffix='.xml' )
                 os.close( fd )
-                file( new_tool_config, 'w' ).write( tool_xml )
+                open( new_tool_config, 'w' ).write( tool_xml )
                 tool_tup = ( os.path.abspath( new_tool_config ), os.path.split( tool.config_file )[-1]  )
                 temp_files.append( os.path.abspath( new_tool_config ) )
             else:
@@ -880,7 +880,7 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                                 table_definition = table_definition % '\n'.join( data_table_definitions )
                                 fd, table_conf = tempfile.mkstemp()
                                 os.close( fd )
-                                file( table_conf, 'w' ).write( table_definition )
+                                open( table_conf, 'w' ).write( table_definition )
                                 tarball_files.append( ( table_conf, os.path.join( 'tool-data', 'tool_data_table_conf.xml.sample' ) ) )
                                 temp_files.append( table_conf )
             # Create the tarball.

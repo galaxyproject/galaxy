@@ -1,6 +1,6 @@
 import logging
 import os
-from galaxy.model.item_attrs import Dictifiable
+from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.bunch import Bunch
 from galaxy.util import asbool
 from tool_shed.util import common_util

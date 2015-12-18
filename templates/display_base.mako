@@ -48,7 +48,6 @@
         "autocomplete_tagging",
         "embed_item",
         "jquery.rating",
-        "trackster",
         "library",
         "jquery-ui/smoothness/jquery-ui"
     )}

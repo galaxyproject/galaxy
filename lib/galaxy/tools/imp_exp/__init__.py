@@ -18,18 +18,6 @@ from sqlalchemy.sql import expression
 log = logging.getLogger(__name__)
 
 
-def load_history_imp_exp_tools( toolbox ):
-    """ Adds tools for importing/exporting histories to archives. """
-
-    # Load export tool.
-    history_exp_tool = toolbox.load_hidden_lib_tool( "galaxy/tools/imp_exp/exp_history_to_archive.xml" )
-    log.debug( "Loaded history export tool: %s", history_exp_tool.id )
-
-    # Load import tool.
-    history_imp_tool = toolbox.load_hidden_lib_tool( "galaxy/tools/imp_exp/imp_history_from_archive.xml" )
-    log.debug( "Loaded history import tool: %s", history_imp_tool.id )
-
-
 class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
     """
         Class provides support for performing jobs that import a history from
