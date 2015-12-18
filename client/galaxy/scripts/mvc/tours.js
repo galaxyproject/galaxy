@@ -10,6 +10,14 @@
 
 define(['libs/bootstrap-tour'],function(BootstrapTour) {
 
+    var tour_opts = { storage: window.sessionStorage,
+                      onEnd: function(){
+                          sessionStorage.removeItem('activeGalaxyTour');
+                      },
+                      delay: 150, // Attempts to make it look natural
+                      orphan:true
+    }
+
     var hooked_tour_from_data = function(data){
         _.each(data.steps, function(step) {
             if (step.preclick){
@@ -22,7 +30,9 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
                 // Have to manually trigger a change here, for some
                 // elements which have additional logic, like the
                 // upload input box
-                step.onShown= function(){$(step.element).val(step.textinsert).trigger("change")};
+                step.onShown= function(){
+                    $(step.element).val(step.textinsert).trigger("change")
+                };
             }
         });
         return data;
@@ -78,15 +88,12 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
             $.getJSON( url, function( data ) {
                 // Set hooks for additional click and data entry actions.
                 tourdata = hooked_tour_from_data(data);
+                console.log(tourdata);
                 sessionStorage.setItem('activeGalaxyTour', JSON.stringify(data));
                 // Store tour steps in sessionStorage to easily persist w/o hackery.
-                var tour = new Tour({
-                    storage: window.sessionStorage,
+                var tour = new Tour(_.extend({
                     steps: tourdata.steps,
-                    onEnd: function(){
-                        sessionStorage.removeItem('activeGalaxyTour');
-                    }
-                });
+                }, tour_opts));
                 // Always clean restart, since this is a new, explicit giveTour execution.
                 tour.init();
                 tour.goTo(0);
@@ -96,5 +103,6 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
     });
 
     return {ToursView: ToursView,
-            hooked_tour_from_data: hooked_tour_from_data}
+            hooked_tour_from_data: hooked_tour_from_data,
+            tour_opts: tour_opts}
 });

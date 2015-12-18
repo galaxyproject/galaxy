@@ -194,13 +194,9 @@ $(document).ready( function() {
         if (et){
             et = TOURS.hooked_tour_from_data(et);
             if (et && et.steps){
-                var tour = new Tour({
-                    storage: window.sessionStorage,
+                var tour = new Tour(_.extend({
                     steps: et.steps,
-                    onEnd: function(){
-                        sessionStorage.removeItem('activeGalaxyTour');
-                    }
-                });
+                }, TOURS.tour_opts));
                 tour.init();
                 tour.restart();
             }

@@ -10,7 +10,7 @@ log = logging.getLogger( __name__ )
 
 def tour_loader(contents_dict):
     #  This *COULD* be done on the clientside.  Maybe even should?
-    title_override = contents_dict.get('title_override', None)
+    title_default = contents_dict.get('title_default', None)
     for step in contents_dict['steps']:
         if 'intro' in step:
             step['content'] = step.pop('intro')
@@ -26,8 +26,8 @@ def tour_loader(contents_dict):
         #     step['onShown'] = "$('%s').text('%s')" % (step['element'], step.pop('textinsert'))
         if 'element' not in step:
             step['orphan'] = True
-        if title_override:
-            step['title'] = title_override
+        if title_default:
+            step['title'] = title_default
     return contents_dict
 
 

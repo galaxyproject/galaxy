@@ -1,7 +1,9 @@
 name: core.galaxy_ui
 description: A basic introduction to the Galaxy UI
-title_override: "Welcome to Galaxy"
+title_default: "Welcome to Galaxy"
 steps:
+    - title: "Welcome to Galaxy"
+      content: "This short tour will walk you through Galaxy's user interface."
     - element: "#left"
       intro: "This is your <b>Toolbar</b>."
       position: "right"
@@ -24,7 +26,6 @@ steps:
       intro: "Insert data into Galaxy."
       position: "top"
       textinsert: 'https://raw.githubusercontent.com/arq5x/bedtools/master/test/merge/a.full.bed'
-      postclick: "textarea#text-content"
     - element: "button#btn-start"
       intro: "Upload the data into your Galaxy history."
       position: "bottom"
