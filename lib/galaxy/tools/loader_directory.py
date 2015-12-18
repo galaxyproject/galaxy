@@ -27,6 +27,28 @@ def load_exception_handler(path, exc_info):
     log.warn(LOAD_FAILURE_ERROR % path, exc_info=exc_info)
 
 
+def find_possible_tools_from_path(
+    path,
+    recursive=False,
+    enable_beta_formats=False,
+):
+    possible_tool_files = []
+    for possible_tool_file in __find_tool_files(
+        path, recursive=recursive,
+        enable_beta_formats=enable_beta_formats
+    ):
+        try:
+            does_look_like_a_tool = looks_like_a_tool(possible_tool_file)
+        except IOError:
+            # Some problem reading the tool file, skip.
+            continue
+
+        if does_look_like_a_tool:
+            possible_tool_files.append(possible_tool_file)
+
+    return possible_tool_files
+
+
 def load_tool_elements_from_path(
     path,
     load_exception_handler=load_exception_handler,
@@ -34,21 +56,18 @@ def load_tool_elements_from_path(
     register_load_errors=False,
 ):
     tool_elements = []
-    for file in __find_tool_files(path, recursive=recursive):
+    for possible_tool_file in find_possible_tools_from_path(
+        path,
+        recursive=recursive,
+        enable_beta_formats=False,
+    ):
         try:
-            does_look_like_a_tool = looks_like_a_tool(file)
-        except IOError:
-            # Some problem reading the tool file, skip.
-            continue
-
-        if does_look_like_a_tool:
-            try:
-                tool_elements.append((file, loader.load_tool(file)))
-            except Exception:
-                exc_info = sys.exc_info()
-                load_exception_handler(file, exc_info)
-                if register_load_errors:
-                    tool_elements.append((file, TOOL_LOAD_ERROR))
+            tool_elements.append((file, loader.load_tool(file)))
+        except Exception:
+            exc_info = sys.exc_info()
+            load_exception_handler(file, exc_info)
+            if register_load_errors:
+                tool_elements.append((file, TOOL_LOAD_ERROR))
     return tool_elements
 
 
@@ -141,7 +160,7 @@ def looks_like_a_tool_cwl(path):
     return file_class == "CommandLineTool" and file_cwl_version
 
 
-def __find_tool_files(path, recursive):
+def __find_tool_files(path, recursive, enable_beta_formats):
     is_file = not os.path.isdir(path)
     if not os.path.exists(path):
         raise Exception(PATH_DOES_NOT_EXIST_ERROR)
@@ -150,10 +169,16 @@ def __find_tool_files(path, recursive):
     elif is_file:
         return [os.path.abspath(path)]
     else:
-        if not recursive:
-            files = glob.glob(path + "/*.xml")
+        if enable_beta_formats:
+            if not recursive:
+                files = glob.glob(path + "/*")
+            else:
+                files = _find_files(path, "*")
         else:
-            files = _find_files(path, "*.xml")
+            if not recursive:
+                files = glob.glob(path + "/*.xml")
+            else:
+                files = _find_files(path, "*.xml")
         return map(os.path.abspath, files)
 
 
