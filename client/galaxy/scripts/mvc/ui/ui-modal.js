@@ -35,8 +35,8 @@ var View = Backbone.View.extend({
         options && this.render();
     },
 
-    /*
-        Displays modal
+    /**
+     * Displays modal
     */
     show: function( options ) {
         if ( options ) {

@@ -35,11 +35,6 @@ return Backbone.View.extend({
         this.render();
     },
 
-    // events
-    events: {
-        'mousedown' : function(e) { e.preventDefault(); }
-    },
-
     // render
     render: function() {
         // render states
