@@ -46,6 +46,11 @@ var View = Backbone.View.extend({
         if ( !this.visible ) {
             this.visible = true;
             this.$el.fadeIn( 'fast' );
+            if ( this.options.closing_events ) {
+                var self = this;
+                $( document ).on( 'keyup.ui-modal', function( e ) { e.keyCode == 27 && self.hide( true ) });
+                this.$backdrop.on( 'click', function() { self.hide( true ) } );
+            }
         }
     },
 
@@ -56,6 +61,8 @@ var View = Backbone.View.extend({
         this.visible = false;
         this.$el.fadeOut( 'fast' );
         this.options.closing_callback && this.options.closing_callback( canceled );
+        $( document ).off( 'keyup.ui-modal' );
+        this.$backdrop.off( 'click' );
     },
 
     /**
@@ -86,15 +93,6 @@ var View = Backbone.View.extend({
             });
         } else {
             this.$footer.hide();
-        }
-
-        // bind the ESC key and background click to hide() function
-        $( document ).off( 'keyup.ui-modal' );
-        if ( this.options.closing_events ) {
-            $( document ).on( 'keyup.ui-modal', function( e ) {
-                e.keyCode == 27 && self.hide( true );
-            });
-            this.$backdrop.off( 'click' ).on( 'click', function() { self.hide( true ) } );
         }
 
         // configure background, separator line
