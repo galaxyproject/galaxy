@@ -15,10 +15,6 @@ install:
   - git config --global user.email "galaxy_test@galaxyproject.org"
   - pip install tox coveralls
 
-matrix:
-  allow_failures:
-    - env: TOX_ENV=py34
-
 script: tox -e $TOX_ENV
 
 after_success:
