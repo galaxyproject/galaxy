@@ -1,0 +1,29 @@
+## Specify a default galaxy_root for test and server commands here.
+#galaxy_root: /home/user/galaxy
+
+## Specify github credentials for publishing gists links (e.g. with
+## the share_test command).
+#github:
+#  username: <username>
+#  password: <password>
+
+sheds:
+  # For each Tool Shed you wish to target enter the API key
+  # or both email and password.
+  toolshed:
+    key: "<TODO>"
+    #email: "<TODO>"
+    #password: "<TODO>"
+  testtoolshed:
+    key: "<TODO>"
+    #email: "<TODO>"
+    #password: "<TODO>"
+  local:
+    key: "<TODO>"
+    #email: "<TODO>"
+    #password: "<TODO>"
+  custom_shed:
+    key: "<TODO>"
+    url: "http://customurl/"
+    #email: "<TODO>"
+    #password: "<TODO>"

@@ -1,0 +1,21 @@
+# For testing
+tox
+nose
+coverage
+
+# For dev
+sphinx
+
+# Used to check readme.
+readme
+
+# For Python 2.6 tests
+unittest2
+
+# Used for code checking.
+pyflakes
+flake8
+
+# For release
+wheel
+twine

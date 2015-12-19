@@ -1,0 +1,4 @@
+#!/bin/sh
+
+make lint
+make quick-test
