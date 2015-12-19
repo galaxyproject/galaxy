@@ -7,7 +7,7 @@ import tempfile
 
 from sqlalchemy import and_
 from markupsafe import escape
-from urlparse import urlparse
+from six.moves.urllib.parse import urlparse
 
 from galaxy.util.dictifiable import Dictifiable
 
@@ -36,7 +36,7 @@ from galaxy.web.form_builder import SelectField
 log = logging.getLogger( __name__ )
 
 
-class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
+class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
     """
     Abstract container for managing a ToolPanel - containing tools and
     workflows optionally in labelled sections.
