@@ -21,6 +21,7 @@ define([
             window.Galaxy = new appBase.GalaxyApp( bootstrapped );
             window.Galaxy.currHistoryPanel = { model: new Backbone.Model() };
             window.fakeserver = sinon.fakeServer.create();
+            window.WAIT_FADE_FAST = 300;
             for (var route in serverdata) {
                 window.fakeserver.respondWith('GET', Galaxy.root + route, [ 200, { 'Content-Type': 'application/json' }, serverdata[ route ].data ]);
             }

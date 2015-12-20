@@ -291,8 +291,7 @@ return Backbone.View.extend({
         this.extension_popup && this.extension_popup.remove();
         this.extension_popup = new Popover.View({
             placement: options.placement || 'bottom',
-            container: $el,
-            destroy: true
+            container: $el
         });
 
         // add content and show popup

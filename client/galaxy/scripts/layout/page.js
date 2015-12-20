@@ -43,6 +43,7 @@ var PageLayoutView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
         this.log( this + '.render:' );
         this.$el.attr( 'scroll', 'no' );
         this.$el.html( this.template( this.options ) );
+        this.$el.append( this.modal.$el );
 
         //TODO: no render on masthead, needs init each time
         Galaxy.masthead = this.masthead = new MASTHEAD.GalaxyMasthead( _.extend( this.options.config, {
