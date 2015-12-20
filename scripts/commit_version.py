@@ -20,12 +20,12 @@ def main(argv):
     history = history.replace(".dev0", " (%s)" % today_str)
     open(history_path, "w").write(history)
 
-    planemo_mod_path = os.path.join(PROJECT_DIRECTORY, source_dir, "__init__.py")
-    mod = open(planemo_mod_path, "r").read()
+    source_mod_path = os.path.join(PROJECT_DIRECTORY, source_dir, "__init__.py")
+    mod = open(source_mod_path, "r").read()
     mod = re.sub("__version__ = '[\d\.]*\.dev0'",
                  "__version__ = '%s'" % version,
                  mod)
-    mod = open(planemo_mod_path, "w").write(mod)
+    mod = open(source_mod_path, "w").write(mod)
     shell(["git", "commit", "-m", "Version %s" % version,
            "HISTORY.rst", "%s/__init__.py" % source_dir])
     shell(["git", "tag", version])
