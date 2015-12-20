@@ -13,7 +13,8 @@ PROJECT_DIRECTORY = os.path.join(os.path.dirname(__file__), "..")
 def main(argv):
     source_dir = argv[1]
     old_version = StrictVersion(argv[2])
-    if argv.length > 3:
+    dot_at = 1
+    if len(argv) > 3:
         dot_at = int(argv[3])
     old_version_tuple = old_version.version
     new_version_tuple = list(old_version_tuple)
@@ -21,9 +22,9 @@ def main(argv):
         if i < dot_at:
             continue
         if dot_at == i:
-            new_version_tuple[1] = old_version_tuple[1] + 1
+            new_version_tuple[i] = old_version_tuple[i] + 1
         else:
-            new_version_tuple[2] = 0
+            new_version_tuple[i] = 0
     new_version = ".".join(map(str, new_version_tuple))
 
     history_path = os.path.join(PROJECT_DIRECTORY, "HISTORY.rst")
