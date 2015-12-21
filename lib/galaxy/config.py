@@ -744,18 +744,25 @@ class ConfiguresGalaxyMixin:
     def _configure_genome_builds( self, data_table_name="__dbkeys__", load_old_style=True ):
         self.genome_builds = GenomeBuilds( self, data_table_name=data_table_name, load_old_style=load_old_style )
 
-    def _configure_toolbox( self ):
+    def reload_toolbox(self):
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
+
         tool_configs = self.config.tool_configs
         if self.config.migrated_tools_config not in tool_configs:
             tool_configs.append( self.config.migrated_tools_config )
 
-        from galaxy.managers.citations import CitationsManager
-        self.citations_manager = CitationsManager( self )
-
         from galaxy import tools
         self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
         self.reindex_tool_search()
+
+    def _configure_toolbox( self ):
+        from galaxy.managers.citations import CitationsManager
+        self.citations_manager = CitationsManager( self )
+
+        from galaxy.tools.toolbox.cache import ToolCache
+        self.tool_cache = ToolCache()
+
+        self.reload_toolbox()
 
         from galaxy.tools.deps import containers
         galaxy_root_dir = os.path.abspath(self.config.root)

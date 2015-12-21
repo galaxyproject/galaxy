@@ -11,6 +11,7 @@ import logging
 
 from galaxy import util
 from galaxy.tools.toolbox import ToolSection
+from galaxy.tools.toolbox.parser import ensure_tool_conf_item
 from galaxy.util.odict import odict
 
 from tool_shed.galaxy_install import install_manager
@@ -272,7 +273,7 @@ class ToolMigrationManager( object ):
                         proprietary_tool_config = section_elem.get( 'file' )
                         if tool_config == proprietary_tool_config:
                             # The tool is loaded inside of the section_elem.
-                            tool_sections.append( ToolSection( proprietary_tool_panel_elem ) )
+                            tool_sections.append( ToolSection( ensure_tool_conf_item( proprietary_tool_panel_elem ) ) )
                             if not is_displayed:
                                 is_displayed = True
         return is_displayed, tool_sections

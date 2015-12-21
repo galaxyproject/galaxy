@@ -708,7 +708,12 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
     def load_tool( self, config_file, guid=None, repository_id=None, **kwds ):
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
         # Parse XML configuration file and get the root element
-        tool = self.create_tool( config_file=config_file, repository_id=repository_id, guid=guid, **kwds )
+        tool_cache = getattr( self.app, 'tool_cache', None )
+        tool = tool_cache and tool_cache.get_tool( config_file )
+        if tool is None:
+            tool = self.create_tool( config_file=config_file, repository_id=repository_id, guid=guid, **kwds )
+            if tool_cache:
+                self.app.tool_cache.cache_tool(config_file, tool)
         tool_id = tool.id
         if not tool_id.startswith("__"):
             # do not monitor special tools written to tmp directory - no reason
