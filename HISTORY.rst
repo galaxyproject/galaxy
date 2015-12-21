@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-16.1.2.dev0
+16.1.2 (2015-12-21)
 ---------------------
 
 * Fix for missing galaxy.tools.parser package in setup.py.
