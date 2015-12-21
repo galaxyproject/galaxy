@@ -9,12 +9,14 @@ History
 16.1.2.dev0
 ---------------------
 
-    
+* Fix for missing galaxy.tools.parser package in setup.py.
+* Fix LICENSE in repository.
 
 ---------------------
 16.1.1 (2015-12-20)
 ---------------------
 
+* Fix small issues with dependencies, naming, and versioning with first release.
 
 ---------------------
 16.1.0 (2015-12-20)
