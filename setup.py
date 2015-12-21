@@ -38,6 +38,7 @@ PACKAGES = [
     'galaxy.jobs.metrics.instrumenters',
     'galaxy.objectstore',
     'galaxy.tools',
+    'galaxy.tools.parser',
     'galaxy.tools.toolbox',
     'galaxy.tools.toolbox.filters',
     'galaxy.tools.toolbox.lineages',
