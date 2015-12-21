@@ -1,65 +1,76 @@
-name: core.galaxy_ui
+name: Galaxy UI
+tour_id: core.galaxy_ui
 description: A gentle introduction to the Galaxy User Interface
 title_default: "Welcome to Galaxy"
 steps:
     - title: "Welcome to Galaxy"
       content: "This short tour will walk you through Galaxy's user interface."
-    - element: "#left"
-      intro: "This is your <b>Toolbar</b>."
-      position: "right"
-    - element: "#tool-search-query"
-      intro: "Use the search field to search for Tools."
-      position: "right"
+      backdrop: true
+
     - element: ".upload-button"
       intro: "Use this button to upload your data."
       position: "right"
-      postclick: ".upload-button"
+      postclick:
+        - ".upload-button"
+
     - element: "button#btn-local"
       intro: "Upload data from your computer."
       position: "top"
-      postclick: "button#btn-new"
+      postclick:
+        - "button#btn-new"
     - element: "button#btn-new"
       intro: "Copy and Paste data or include URLs."
       position: "top"
-      preclick: ".upload-button"
+      preclick:
+        - ".upload-button"
+
     - element: "textarea#text-content"
       intro: "Insert data into Galaxy."
       position: "top"
-      textinsert: 'https://raw.githubusercontent.com/arq5x/bedtools/master/test/merge/a.full.bed'
+      textinsert: |
+        https://raw.githubusercontent.com/arq5x/bedtools/master/test/merge/a.full.bed
+        https://raw.githubusercontent.com/arq5x/bedtools/master/test/merge/a.full.bed
+        https://raw.githubusercontent.com/arq5x/bedtools/master/test/merge/a.full.bed
+
     - element: "button#btn-start"
       intro: "Upload the data into your Galaxy history."
       position: "bottom"
-      postclick: "button#btn-start"
+      postclick:
+        - "button#btn-start"
+
     - element: "button#btn-close"
       intro: "Hit the close button in upload <b>Workflows</b>."
       position: "bottom"
-      postclick: "#btn-close"
-    - element: "#center"
-      intro: "<i>Main</i> panel. Here you can configure your Tools and can inpect results."
-      position: "right"
-    - element: "#title_filter a"
-      intro: "Tools are grouped into categories to make them easier to find."
-      position: "right"
-      preclick: "#title_filter a"
+      postclick:
+        - "#btn-close"
+
+
     - element: 'a[href$="tool_runner?tool_id=Filter1"]'
       intro: "Tools are grouped into categories to make them easier to find."
       position: "right"
-      preclick: 'a[href$="tool_runner?tool_id=Filter1"]'
-      postclick: "#title_filter a"
+      preclick:
+        - 'a[href$="tool_runner?tool_id=Filter1"]'
+      postclick:
+        - "#title_filter a"
+
     - element: '#center-panel'
       intro: "This is your Filter tool."
       position: "right"
-      preclick: '#center-panel'
+      preclick:
+        - '#center-panel'
+
     - element: '#uid-0'
       intro: "Your tool parameters."
       position: "right"
+
     - element: 'div.toolHelp'
       intro: "Your tool parameters."
       position: "right"
     - element: '#execute'
       intro: "Send your tool to the Compute Cluster."
       position: "right"
-      preclick: '#execute'
+      preclick:
+        - '#execute'
     - element: "#right"
       intro: "This is your history! All anylysis steps will be recorded and can be redone at any time."
       position: "left"

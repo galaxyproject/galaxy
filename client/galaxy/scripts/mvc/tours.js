@@ -21,10 +21,20 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
     var hooked_tour_from_data = function(data){
         _.each(data.steps, function(step) {
             if (step.preclick){
-                step.onShow= function(){$(step.preclick).click()};
+                step.onShow= function(){
+                    _.each(step.preclick, function(preclick){
+                        // TODO: click delay between clicks
+                        $(preclick.click());
+                    });
+                };
             }
             if (step.postclick){
-                step.onHide = function(){$(step.postclick).click()};
+                step.onHide = function(){
+                    _.each(step.preclick, function(preclick){
+                        // TODO: click delay between clicks
+                        $(preclick.click());
+                    });
+                };
             }
             if (step.textinsert){
                 // Have to manually trigger a change here, for some
@@ -82,7 +92,7 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
                 '<% _.each(tours, function(tour) { %>',
                     '<li>',
                         '<a href="#" class="tourItem" data-tour.id=<%- tour.id %>>',
-                            '<%- tour.name || tour.id %>',
+                            '<%- tour.attributes.name || tour.id %>',
                         '</a>',
                         ' - <%- tour.attributes.description || "No description given." %>',
                     '</li>',

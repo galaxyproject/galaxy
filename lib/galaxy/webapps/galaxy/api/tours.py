@@ -25,7 +25,7 @@ class ToursController( BaseAPIController ):
     def show( self, trans, tour_id, **kwd ):
         """
         load_config( self, trans, Tour_config_file, **kwd )
-        * GET /api/tours/{tour_config_file}:
+        * GET /api/tours/{tour_id}:
             Read a yaml file containing the specified tour definition
 
         :returns:   tour definition

@@ -39,20 +39,25 @@ class ToursRegistry(object):
 
     def tours_by_id_with_description(self):
         return [{'id': k,
-                 'description': self.tours[k].get('description', None)}
+                 'description': self.tours[k].get('description', None),
+                 'name': self.tours[k].get('name', None)}
                 for k in self.tours.keys()]
 
     def load_tours(self):
         self.tours = {}
-        for f in os.listdir(self.tour_dir):
-            if f.endswith('.yaml'):
-                tour_path = os.path.join(self.tour_dir, f)
+        for filename in os.listdir(self.tour_dir):
+            if filename.endswith('.yaml'):
+                tour_path = os.path.join(self.tour_dir, filename)
                 with open(tour_path) as handle:
-                    conf = yaml.load(handle)
+                    try:
+                        conf = yaml.load(handle)
+                    except:
+                        log.warning("Tour '%s' could not be loaded, please check if your yaml syntax is valid." % filename)
+                        continue
                 # Could pop the following, but is there a good reason to?
                 # As long as they key doesn't conflict with tour keys, it's
                 # fine.
-                tour_id = conf.get('tour_id', f.strip('.yaml'))
+                tour_id = conf.get('tour_id', filename.rstrip('.yaml'))
                 self.tours[tour_id] = tour_loader(conf)
                 log.info("Loaded tour '%s'" % tour_id)
 
