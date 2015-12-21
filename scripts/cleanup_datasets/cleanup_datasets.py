@@ -18,6 +18,10 @@ new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] )  # remove scripts/ from the path
 sys.path = new_path
 
+# Activate .venv
+activate_venv_file = os.path.join( os.getcwd(), ".venv/bin/activate_this.py")
+execfile(activate_venv_file, dict(__file__=activate_venv_file))
+
 import galaxy.config
 import galaxy.model.mapping
 from galaxy.exceptions import ObjectNotFound
@@ -82,6 +86,7 @@ def main():
     parser.add_option( "-6", "--delete_datasets", action="store_true", dest="delete_datasets", default=False, help="mark deletable datasets as deleted and purge associated dataset instances" )
 
     ( options, args ) = parser.parse_args()
+
     if len(args) != 1 :
         parser.print_help()
         sys.exit()
