@@ -2,6 +2,7 @@ from abc import ABCMeta
 from abc import abstractmethod
 
 from galaxy.util import parse_xml
+import yaml
 
 
 class ToolConfSource(object):
@@ -34,6 +35,20 @@ class XmlToolConfSource(ToolConfSource):
         return map(ensure_tool_conf_item, self.root.getchildren())
 
 
+class YamlToolConfSource(ToolConfSource):
+
+    def __init__(self, config_filename):
+        with open(config_filename, "r") as f:
+            as_dict = yaml.load(f)
+        self.as_dict = as_dict
+
+    def parse_tool_path(self):
+        return self.as_dict.get('tool_path')
+
+    def parse_items(self):
+        return map(ToolConfItem.from_dict, self.as_dict.get('items'))
+
+
 class ToolConfItem(object):
     """ This interface represents an abstract source to parse tool
     information from.
@@ -43,6 +58,20 @@ class ToolConfItem(object):
         self.type = type
         self.attributes = attributes
         self._elem = elem
+
+    @classmethod
+    def from_dict(cls, _as_dict):
+        as_dict = _as_dict.copy()
+        type = as_dict.get('type')
+        del as_dict['type']
+        attributes = as_dict
+        if type == 'section':
+            items = map(cls.from_dict, as_dict['items'])
+            del as_dict['items']
+            item = ToolConfSection(attributes, items)
+        else:
+            item = ToolConfItem(type, attributes)
+        return item
 
     def get(self, key, default=None):
         return self.attributes.get(key, default)
@@ -73,7 +102,9 @@ class ToolConfSection(ToolConfItem):
 
 
 def ensure_tool_conf_item(xml_or_item):
-    if isinstance(xml_or_item, ToolConfItem):
+    if xml_or_item is None:
+        return None
+    elif isinstance(xml_or_item, ToolConfItem):
         return xml_or_item
     else:
         elem = xml_or_item
@@ -87,4 +118,8 @@ def ensure_tool_conf_item(xml_or_item):
 
 
 def get_toolbox_parser(config_filename):
-    return XmlToolConfSource(config_filename)
+    is_yaml = any(map(lambda e: config_filename.endswith(e), [".yml", ".yaml", ".json"]))
+    if is_yaml:
+        return YamlToolConfSource(config_filename)
+    else:
+        return XmlToolConfSource(config_filename)
