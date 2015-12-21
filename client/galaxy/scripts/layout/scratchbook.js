@@ -1,84 +1,51 @@
-// dependencies
-define(["mvc/ui/ui-frames"], function(Frames) {
-
 /** Frame manager uses the ui-frames to create the scratch book masthead icon and functionality **/
-var GalaxyFrame = Backbone.View.extend({
-    // base element
-    el_main: 'body',
-
-    // frame active/disabled
-    active: false,
-
-    // button active
-    button_active: null,
-
-    // button load
-    button_load  : null,
-
-    // initialize
-    initialize : function(options) {
-        options = options || {};
-
-        // add to masthead menu
+define([ 'mvc/ui/ui-frames' ], function( Frames ) {
+return Backbone.View.extend({
+    initialize : function( options ) {
         var self = this;
-
-        // create frames
-        this.frames = new Frames.View({
-            visible: false,
-        });
-
-        // add activate icon
-        this.button_active = new GalaxyMastheadIcon({
+        options = options || {};
+        this.frames = new Frames.View({ visible : false });
+        this.setElement( this.frames.$el );
+        this.buttonActive = options.collection.add({
             icon            : 'fa-th',
             tooltip         : 'Enable/Disable Scratchbook',
-            onclick         : function() { self._activate(); },
+            onclick         : function() {
+                self.active = !self.active;
+                self.buttonActive.set({
+                    toggle    : self.active,
+                    show_note : self.active,
+                    note_cls  : self.active && 'fa fa-check'
+                });
+                !self.active && self.frames.hide();
+            },
             onbeforeunload  : function() {
-                if (self.frames.length() > 0) {
-                    return "You opened " + self.frames.length() + " frame(s) which will be lost.";
+                if ( self.frames.length() > 0 ) {
+                    return 'You opened ' + self.frames.length() + ' frame(s) which will be lost.';
                 }
             }
         });
-
-        // add load icon
-        this.button_load = new GalaxyMastheadIcon({
-            icon        : 'fa-eye',
-            tooltip     : 'Show/Hide Scratchbook',
-            onclick     : function(e) {
-                if (self.frames.visible) {
-                    self.frames.hide();
-                } else {
-                    self.frames.show();
-                }
-            },
-            with_number : true
+        this.buttonLoad = options.collection.add({
+            icon            : 'fa-eye',
+            tooltip         : 'Show/Hide Scratchbook',
+            show_note       : true,
+            visible         : false,
+            onclick         : function( e ) {
+                self.frames.visible ? self.frames.hide() : self.frames.show();
+            }
         });
-
-        // add to masthead
-        if( options.masthead ){
-            options.masthead.append(this.button_active);
-            options.masthead.append(this.button_load);
-        }
-
-        // create
-        this.setElement(this.frames.$el);
-
-        // append to main
-        $(this.el_main).append(this.$el);
-
-        // refresh menu
-        this.frames.setOnChange(function() {
-            self._refresh();
+        this.frames.on( 'add remove', function() {
+            this.visible && this.length() == 0 && this.hide();
+            self.buttonLoad.set( { 'note': this.length(), 'visible': this.length() > 0 } );
+        }).on( 'show hide ', function() {
+            self.buttonLoad.set( { 'toggle': this.visible, 'icon': this.visible && 'fa-eye' || 'fa-eye-slash' } );
         });
-        this._refresh();
     },
 
-    /**
-     * Add a dataset to the frames.
-     */
-    add_dataset: function(dataset_id) {
+    /** Add a dataset to the frames */
+    addDataset: function( dataset_id ) {
         var self = this;
-        require(['mvc/dataset/data'], function(DATA) {
-            var dataset = new DATA.Dataset({ id: dataset_id });
+        require([ 'mvc/dataset/data' ], function( DATA ) {
+            var dataset = new DATA.Dataset( { id : dataset_id } );
             $.when( dataset.fetch() ).then( function() {
                 // Construct frame config based on dataset's type.
                 var frame_config = {
@@ -87,44 +54,38 @@ var GalaxyFrame = Backbone.View.extend({
                     // HACK: For now, assume 'tabular' and 'interval' are the only
                     // modules that contain tabular files. This needs to be replaced
                     // will a is_datatype() function.
-                    is_tabular = _.find(['tabular', 'interval'], function(data_type) {
-                        return dataset.get('data_type').indexOf(data_type) !== -1;
+                    is_tabular = _.find( [ 'tabular', 'interval' ] , function( data_type ) {
+                        return dataset.get( 'data_type' ).indexOf( data_type ) !== -1;
                     });
 
                 // Use tabular chunked display if dataset is tabular; otherwise load via URL.
-                if (is_tabular) {
-                    var tabular_dataset = new DATA.TabularDataset(dataset.toJSON());
-                    _.extend(frame_config, {
+                if ( is_tabular ) {
+                    var tabular_dataset = new DATA.TabularDataset( dataset.toJSON() );
+                    _.extend( frame_config, {
                         type: 'other',
                         content: function( parent_elt ) {
                             DATA.createTabularDatasetChunkedView({
-                                model: tabular_dataset,
-                                parent_elt: parent_elt,
-                                embedded: true,
-                                height: '100%'
+                                model       : tabular_dataset,
+                                parent_elt  : parent_elt,
+                                embedded    : true,
+                                height      : '100%'
                             });
                         }
                     });
                 }
                 else {
-                    _.extend(frame_config, {
-                        type: 'url',
-                        content: Galaxy.root + 'datasets/' +
-                                 dataset.id + '/display/?preview=True'
+                    _.extend( frame_config, {
+                        type    : 'url',
+                        content : Galaxy.root + 'datasets/' + dataset.id + '/display/?preview=True'
                     });
                 }
-
-                self.add(frame_config);
-
+                self.add( frame_config );
             });
         });
-
     },
 
-    /**
-     * Add a trackster visualization to the frames.
-     */
-    add_trackster_viz: function(viz_id) {
+    /** Add a trackster visualization to the frames. */
+    addTrackster: function(viz_id) {
         var self = this;
         require(['viz/visualization', 'viz/trackster'], function(visualization, trackster) {
             var viz = new visualization.Visualization({id: viz_id});
@@ -155,7 +116,6 @@ var GalaxyFrame = Backbone.View.extend({
                                     id: d.dataset_id
                                 };
                             });
-
                             view = ui.create_visualization(view_config,
                                                            latest_revision.config.viewport,
                                                            latest_revision.config.view.drawables,
@@ -163,183 +123,37 @@ var GalaxyFrame = Backbone.View.extend({
                                                            false);
                         }
                     };
-
                 self.add(frame_config);
             });
         });
     },
 
-    /**
-     * Add and display a new frame/window based on options.
-     */
-    add: function(options){
-        // open new tab
-        if (options.target == '_blank'){
-            window.open(options.content);
-            return;
-        }
-
-        // reload entire window
-        if (options.target == '_top' || options.target == '_parent' || options.target == '_self'){
-            window.location = options.content;
-            return;
-        }
-
-        // validate
-        if (!this.active){
-            // fix url if main frame is unavailable
-            var $galaxy_main = $(window.parent.document).find('#galaxy_main');
-            if (options.target == 'galaxy_main' || options.target == 'center'){
-                if ($galaxy_main.length === 0){
-                    var href = options.content;
-                    if (href.indexOf('?') == -1)
+    /** Add and display a new frame/window based on options. */
+    add: function( options ) {
+        if ( options.target == '_blank' ) {
+            window.open( options.url );
+        } else if ( options.target == '_top' || options.target == '_parent' || options.target == '_self' ) {
+            window.location = options.url;
+        } else if ( !this.active ) {
+            var $galaxy_main = $( window.parent.document ).find( '#galaxy_main' );
+            if ( options.target == 'galaxy_main' || options.target == 'center' ){
+                if ( $galaxy_main.length === 0 ){
+                    var href = options.url;
+                    if ( href.indexOf( '?' ) == -1 )
                         href += '?';
                     else
                         href += '&';
                     href += 'use_panels=True';
                     window.location = href;
                 } else {
-                    $galaxy_main.attr('src', options.content);
+                    $galaxy_main.attr( 'src', options.url );
                 }
             } else
-                window.location = options.content;
-
-            // stop
-            return;
-        }
-
-        // add to frames view
-        this.frames.add(options);
-    },
-
-    // activate/disable panel
-    _activate: function (){
-        // check
-        if (this.active){
-            // disable
-            this.active = false;
-
-            // toggle
-            this.button_active.untoggle();
-
-            // hide panel
-            this.frames.hide();
+                window.location = options.url;
         } else {
-            // activate
-            this.active = true;
-
-            // untoggle
-            this.button_active.toggle();
-        }
-    },
-
-    // update frame counter
-    _refresh: function(){
-        // update on screen counter
-        this.button_load.number(this.frames.length());
-
-        // check
-        if(this.frames.length() === 0)
-            this.button_load.hide();
-        else
-            this.button_load.show();
-
-        // check
-        if (this.frames.visible) {
-            this.button_load.toggle();
-        } else {
-            this.button_load.untoggle();
+            this.frames.add( options );
         }
     }
 });
-
-/** Masthead icon **/
-var GalaxyMastheadIcon = Backbone.View.extend({
-    // icon options
-    options:{
-        id              : '',
-        icon            : 'fa-cog',
-        tooltip         : '',
-        with_number     : false,
-        onclick         : function() { alert ('clicked') },
-        onunload        : null,
-        visible         : true
-    },
-
-    // location identifier for masthead class
-    location: 'iconbar',
-
-    // initialize
-    initialize: function (options){
-        // read in defaults
-        if (options)
-            this.options = _.defaults(options, this.options);
-
-        // add template for icon
-        this.setElement($(this._template(this.options)));
-
-        // configure icon
-        var self = this;
-        $(this.el).find('.icon').tooltip({title: this.options.tooltip, placement: 'bottom'})
-                                .on('mouseup', self.options.onclick);
-
-        // visiblity
-        if (!this.options.visible)
-            this.hide();
-    },
-
-    // show
-    show: function(){
-        $(this.el).css({visibility : 'visible'});
-    },
-
-    // show
-    hide: function(){
-        $(this.el).css({visibility : 'hidden'});
-    },
-
-    // switch icon
-    icon: function (new_icon){
-        // update icon class
-        $(this.el).find('.icon').removeClass(this.options.icon)
-                                .addClass(new_icon);
-
-        // update icon
-        this.options.icon = new_icon;
-    },
-
-    // toggle
-    toggle: function(){
-        $(this.el).addClass('toggle');
-    },
-
-    // untoggle
-    untoggle: function(){
-        $(this.el).removeClass('toggle');
-    },
-
-    // set/get number
-    number: function(new_number){
-        $(this.el).find('.number').text(new_number);
-    },
-
-    // fill template icon
-    _template: function (options){
-        var tmpl =  '<div id="' + options.id + '" class="symbol">' +
-                        '<div class="icon fa fa-2x ' + options.icon + '"></div>';
-        if (options.with_number)
-            tmpl+=      '<div class="number"></div>';
-        tmpl +=     '</div>';
-
-        // return template
-        return tmpl;
-    }
-});
-
-// return
-return {
-    GalaxyFrame: GalaxyFrame,
-    GalaxyMastheadIcon: GalaxyMastheadIcon
-};
 
 });
