@@ -40,7 +40,7 @@ class HasPanelItems:
             yield (panel_key, panel_type, panel_value)
 
 
-class ToolSection( object, Dictifiable, HasPanelItems ):
+class ToolSection( Dictifiable, HasPanelItems, object ):
     """
     A group of tools with similar type/purpose that will be displayed as a
     group in the user interface.
@@ -84,7 +84,7 @@ class ToolSection( object, Dictifiable, HasPanelItems ):
         return self.elems
 
 
-class ToolSectionLabel( object, Dictifiable ):
+class ToolSectionLabel( Dictifiable, object ):
     """
     A label for a set of tools that can be displayed above groups of tools
     and sections in the user interface
@@ -104,7 +104,7 @@ class ToolSectionLabel( object, Dictifiable ):
         return super( ToolSectionLabel, self ).to_dict()
 
 
-class ToolPanelElements( odict, HasPanelItems ):
+class ToolPanelElements( HasPanelItems, odict ):
     """ Represents an ordered dictionary of tool entries - abstraction
     used both by tool panel itself (normal and integrated) and its sections.
     """

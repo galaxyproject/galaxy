@@ -27,6 +27,7 @@ from six.moves.urllib import parse as urlparse
 from galaxy.util import json
 from datetime import datetime
 
+from six import PY3
 from six import string_types, text_type
 from six.moves import xrange
 from six.moves import email_mime_text
@@ -42,6 +43,13 @@ from xml.etree import ElementTree, ElementInclude
 
 from .inflection import Inflector, English
 inflector = Inflector(English)
+
+if PY3:
+    def list_map(f, input):
+        return list(map(f, input))
+else:
+    list_map = map
+
 
 log = logging.getLogger(__name__)
 _lock = threading.RLock()
@@ -145,7 +153,8 @@ def unique_id(KEY_SIZE=128):
     >>> len(set(ids))
     1000
     """
-    return md5(str( random.getrandbits( KEY_SIZE ) )).hexdigest()
+    random_bits = text_type(random.getrandbits(KEY_SIZE)).encode("UTF-8")
+    return md5(random_bits).hexdigest()
 
 
 def parse_xml( fname ):
@@ -418,7 +427,7 @@ def sanitize_text( text, valid_characters=valid_chars, character_map=mapped_char
     and lists of strings; non-string entities will be cast to strings.
     """
     if isinstance( text, list ):
-        return map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), text )
+        return list_map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), text )
     if not isinstance( text, string_types ):
         text = smart_str( text )
     return _sanitize_text_helper( text, valid_characters=valid_characters, character_map=character_map )
@@ -457,7 +466,7 @@ def sanitize_param( value, valid_characters=valid_chars, character_map=mapped_ch
     if isinstance( value, string_types ):
         return sanitize_text( value, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character )
     elif isinstance( value, list ):
-        return map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), value )
+        return list_map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), value )
     else:
         raise Exception('Unknown parameter type (%s)' % ( type( value ) ))
 
