@@ -117,7 +117,7 @@ def _parse_test(i, test_dict):
     inputs = test_dict["inputs"]
     if isinstance(inputs, dict):
         new_inputs = []
-        for key, value in inputs.iteritems():
+        for key, value in inputs.items():
             new_inputs.append((key, value, {}))
         test_dict["inputs"] = new_inputs
 
@@ -125,7 +125,7 @@ def _parse_test(i, test_dict):
 
     new_outputs = []
     if isinstance(outputs, dict):
-        for key, value in outputs.iteritems():
+        for key, value in outputs.items():
             if isinstance(value, dict):
                 attributes = value
                 file = attributes.get("file")
@@ -266,6 +266,6 @@ class YamlInputSource(InputSource):
 
 
 def _ensure_has(dict, defaults):
-    for key, value in defaults.iteritems():
+    for key, value in defaults.items():
         if key not in dict:
             dict[key] = value

@@ -7,6 +7,7 @@ import tempfile
 
 from markupsafe import escape
 from six.moves.urllib.parse import urlparse
+from six import iteritems
 
 from galaxy.util.dictifiable import Dictifiable
 
@@ -454,7 +455,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         return []
 
     def tools( self ):
-        return self._tools_by_id.iteritems()
+        return iteritems(self._tools_by_id)
 
     def dynamic_confs( self, include_migrated_tool_conf=False ):
         confs = []

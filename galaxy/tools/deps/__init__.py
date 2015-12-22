@@ -32,7 +32,7 @@ def build_dependency_manager( config ):
             'default_base_path': config.tool_dependency_dir,
             'conf_file': config.dependency_resolvers_config_file,
         }
-        for key, default_value in EXTRA_CONFIG_KWDS.iteritems():
+        for key, default_value in EXTRA_CONFIG_KWDS.items():
             dependency_manager_kwds[key] = getattr(config, key, default_value)
         dependency_manager = DependencyManager( **dependency_manager_kwds )
     else:

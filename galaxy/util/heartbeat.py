@@ -4,6 +4,8 @@ import traceback
 import os
 import sys
 
+from six import iteritems
+
 
 def get_current_thread_object_dict():
     """
@@ -59,7 +61,7 @@ class Heartbeat( threading.Thread ):
                 print >> self.file
                 # Print the thread states
                 threads = get_current_thread_object_dict()
-                for thread_id, frame in sys._current_frames().iteritems():
+                for thread_id, frame in iteritems(sys._current_frames()):
                     if thread_id in threads:
                         object = repr( threads[thread_id] )
                     else:
@@ -141,7 +143,7 @@ class Heartbeat( threading.Thread ):
         print >> self.file_nonsleeping
         all_threads_are_sleeping = True
         threads = get_current_thread_object_dict()
-        for thread_id, frame in sys._current_frames().iteritems():
+        for thread_id, frame in iteritems(sys._current_frames()):
             if thread_id in threads:
                 object = repr( threads[thread_id] )
             else:
