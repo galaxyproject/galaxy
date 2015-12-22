@@ -6,10 +6,10 @@ History
 .. to_doc
 
 ---------------------
-16.1.3.dev0
+16.1.3 (2015-12-22)
 ---------------------
 
-    
+* Python 3 fixes and updates for recent Galaxy dev commits.
 
 ---------------------
 16.1.2 (2015-12-21)
