@@ -9,7 +9,7 @@ History
 16.1.4.dev0
 ---------------------
 
-    
+* Another setup.py fix for job metrics module.
 
 ---------------------
 16.1.3 (2015-12-22)
