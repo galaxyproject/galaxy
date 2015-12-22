@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-16.1.5.dev0
+16.1.5 (2015-12-22)
 ---------------------
 
 * Fix another bug that was preventing dependency resolution from
