@@ -114,7 +114,7 @@ class ToolOutputCollection( ToolOutputBase ):
         # This line is probably not right - should verify structured_like
         # or have outputs and all outputs have name.
         if len( self.outputs ) > 1:
-            output_parts = [ToolOutputCollectionPart(self, k, v) for k, v in self.outputs.iteritems()]
+            output_parts = [ToolOutputCollectionPart(self, k, v) for k, v in self.outputs.items()]
         else:
             # either must have specified structured_like or something worse
             if self.structure.structured_like:
