@@ -33,11 +33,12 @@ TEST_DIR = 'tests'
 PROJECT_DESCRIPTION = 'Subset of Galaxy (http://galaxyproject.org/) core code base designed to be used a library.'
 PACKAGES = [
     'galaxy',
+    'galaxy.jobs', # Incomplete
     'galaxy.jobs.metrics',
     'galaxy.jobs.metrics.collectl',
     'galaxy.jobs.metrics.instrumenters',
     'galaxy.objectstore',
-    'galaxy.tools',
+    'galaxy.tools', # Incomplete
     'galaxy.tools.parser',
     'galaxy.tools.toolbox',
     'galaxy.tools.toolbox.filters',
@@ -45,7 +46,7 @@ PACKAGES = [
     'galaxy.tools.linters',
     'galaxy.tools.deps',
     'galaxy.tools.deps.resolvers',
-    'galaxy.util',
+    'galaxy.util', # Incomplete
 ]
 ENTRY_POINTS = '''
 '''
