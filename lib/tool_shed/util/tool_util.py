@@ -4,7 +4,7 @@ import shutil
 
 import galaxy.tools
 from galaxy import util
-from galaxy.datatypes import checkers
+from galaxy.util import checkers
 from galaxy.util.expressions import ExpressionContext
 from galaxy.web.form_builder import SelectField
 

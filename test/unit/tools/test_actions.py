@@ -2,7 +2,7 @@ import string
 import unittest
 
 from galaxy import model
-from galaxy.tools import ToolOutput
+from galaxy.tools.parser.output_objects import ToolOutput
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions import on_text_for_names
 from galaxy.tools.actions import determine_output_format

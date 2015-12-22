@@ -158,6 +158,8 @@ def __copy_if_exists_command(work_dir_output):
 class CommandsBuilder(object):
 
     def __init__(self, initial_command):
+        if not initial_command:
+            raise Exception("Attempting to run a tool with empty command definition.")
         # Remove trailing semi-colon so we can start hacking up this command.
         # TODO: Refactor to compose a list and join with ';', would be more clean.
         initial_command = util.unicodify(initial_command)

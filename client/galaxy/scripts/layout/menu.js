@@ -388,7 +388,8 @@ var GalaxyMastheadTab = Backbone.View.extend({
             type        : 'url',
             target      : '_parent',
             scratchbook : false,
-            divider     : false
+            divider     : false,
+            onclick     : undefined
         }
 
         // read in defaults
@@ -419,17 +420,26 @@ var GalaxyMastheadTab = Backbone.View.extend({
 
         // add events
         var self = this;
-        $item.on('click', function(e){
-            // prevent default
-            e.preventDefault();
 
-            // no modifications if new tab is requested
-            if (self.options.target === '_blank')
-                return true;
 
-            // load into frame
-            Galaxy.frame.add(options);
-        });
+        if (menuOptions.onclick !== undefined){
+            $item.on('click', function(e){
+                e.preventDefault();
+                menuOptions.onclick();
+            });
+        } else {
+            $item.on('click', function(e){
+                // prevent default
+                e.preventDefault();
+
+                // no modifications if new tab is requested
+                if (self.options.target === '_blank')
+                    return true;
+
+                // load into frame
+                Galaxy.frame.add(options);
+            });
+        }
 
         // append divider
         if (menuOptions.divider)

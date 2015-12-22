@@ -205,7 +205,7 @@ class FromFileToolOutputActionOption( ToolOutputActionOption ):
         try:
             if options:
                 return str( options[ self.offset ][ self.column ] )
-        except Exception, e:
+        except Exception as e:
             log.debug( "Error in FromFileToolOutputActionOption get_value: %s" % e )
         return None
 
@@ -253,7 +253,7 @@ class FromParamToolOutputActionOption( ToolOutputActionOption ):
         try:
             if options:
                 return str( options[ self.offset ][ self.column ] )
-        except Exception, e:
+        except Exception as e:
             log.debug( "Error in FromParamToolOutputActionOption get_value: %s" % e )
         return None
 
@@ -288,7 +288,7 @@ class FromDataTableOutputActionOption( ToolOutputActionOption ):
         try:
             if options:
                 return str( options[ self.offset ][ self.column ] )
-        except Exception, e:
+        except Exception as e:
             log.debug( "Error in FromDataTableOutputActionOption get_value: %s" % e )
         return None
 
@@ -383,7 +383,7 @@ class ParamValueToolOutputActionOptionFilter( ToolOutputActionOptionFilter ):
             try:
                 if self.keep == ( self.compare( self.cast( fields[self.column] ), value ) ):
                     rval.append( fields )
-            except Exception, e:
+            except Exception as e:
                 log.debug(e)
                 continue  # likely a bad cast or column out of range
         return rval

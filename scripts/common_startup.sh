@@ -105,7 +105,9 @@ if [ $FETCH_WHEELS -eq 1 ]; then
     # problems when there are conflicts with Galaxy's dependencies outside the
     # venv (e.g. virtualenv-burrito's pip and six)
     unset PYTHONPATH
-    pip install --pre --no-index --find-links ${GALAXY_WHEELS_INDEX_URL}/pip --upgrade pip
+    pip_version=`pip --version | awk '{print $2}'`
+    pre=`python -c "from pkg_resources import parse_version; from sys import stdout; stdout.write('--pre') if parse_version('$pip_version') >= parse_version('1.4') else stdout.write('')"`
+    pip install $pre --no-index --find-links ${GALAXY_WHEELS_INDEX_URL}/pip --upgrade pip
     # binary-compatibility.cfg may need to be created (e.g. on CentOS)
     [ ! -f ${VIRTUAL_ENV}/binary-compatibility.cfg ] && python ./scripts/binary_compatibility.py -o ${VIRTUAL_ENV}/binary-compatibility.cfg
     pip install -r requirements.txt --index-url ${GALAXY_WHEELS_INDEX_URL}
