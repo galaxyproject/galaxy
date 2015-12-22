@@ -44,7 +44,7 @@ class CondaContext(object):
     def __init__(self, conda_prefix=None, conda_exec=None,
                  shell_exec=None, debug=False, ensure_channels=''):
         conda_exec = conda_exec or commands.which("conda")
-        if self.conda_exec:
+        if conda_exec:
             conda_exec = os.path.normpath(conda_exec)
         self.conda_exec = conda_exec
         self.debug = debug
