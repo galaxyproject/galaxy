@@ -20,7 +20,7 @@
 import json
 metadata_json = json.dumps(repository['metadata'])
 %>
-var html = '                    <tr style="display: table-row;" class="tool_row" parent="0" id="libraryItem">\
+var tool_html = '                    <tr style="display: table-row;" class="tool_row" parent="0" id="libraryItem">\
                             <td style="padding-left: 40px;">\
                                 <div style="float:left;" class="menubutton split popup" id="tool">\
                                     <a class="view-info">__TOOL_NAME__</a>\
@@ -30,8 +30,27 @@ var html = '                    <tr style="display: table-row;" class="tool_row"
                         <td>__VERSION__</td>\
                     </tr>\
 ';
+var repository_dependency_html = '                    <tr style="display: table-row;" class="datasetRow repository_dependency_row">\
+                        <td style="padding-left: 60px;">Repository <b>__NAME__</b> revision <b>__REVISION__</b> owned by <b>__OWNER__</b> __PIR__</td>\
+                    </tr>\
+';
+var tool_dependency_html = '                    <tr style="display: table-row;" class="datasetRow tool_dependency_row">\
+                        <td style="padding-left: 40px;">__NAME__</td>\
+                        <td>__VERSION__</td>\
+                        <td>__TYPE__</td>\
+                    </tr>\
+'
     function check_tool_dependencies(metadata) {
         if (metadata['includes_tool_dependencies']) {
+            $(".tool_dependency_row").remove();
+            dependency_metadata = metadata['tool_dependencies'];
+            for (var dependency_key in dependency_metadata) {
+                dep = dependency_metadata[dependency_key];
+                dependency_html = tool_dependency_html.replace('__NAME__', dep['name']);
+                dependency_html = dependency_html.replace('__VERSION__', dep['version']);
+                dependency_html = dependency_html.replace('__TYPE__', dep['type']);
+                $("#tool_deps").append(dependency_html);
+            }
             $("#tool_dependencies").show();
             $("#install_tool_dependencies").prop('disabled', false);
         }
@@ -42,12 +61,47 @@ var html = '                    <tr style="display: table-row;" class="tool_row"
     }
     function check_repository_dependencies(metadata) {
         if (metadata['has_repository_dependencies']) {
+            $(".repository_dependency_row").remove();
+            dependency_metadata = metadata['repository_dependencies'];
+            for (var dependency_key in dependency_metadata) {
+                if (dependency_key != 'root_key' && dependency_key != 'description') {
+                    for (var dependency in dependency_metadata[dependency_key]) {
+                        dep = dependency_metadata[dependency_key][dependency];
+                        toolshed = dep[0];
+                        name = dep[1];
+                        owner = dep[2];
+                        changeset = dep[3];
+                        prior = dep[4];
+                        dependency_html = repository_dependency_html.replace('__NAME__', name);
+                        dependency_html = dependency_html.replace('__REVISION__', changeset);
+                        dependency_html = dependency_html.replace('__OWNER__', owner);
+                        if (prior) {
+                            dependency_html = dependency_html.replace('__PIR__', '(<i>prior installation required</i>)');
+                        }
+                        else {
+                            dependency_html = dependency_html.replace('__PIR__', '');
+                        }
+                        $("#repository_deps").append(dependency_html);
+                    }
+                }
+            }
             $("#repository_dependencies").show();
             $("#install_repository_dependencies").prop('disabled', false);
         }
         else {
             $("#repository_dependencies").hide();
             $("#install_repository_dependencies").prop('disabled', true);
+        }
+    }
+    function tool_panel_section() {
+        var tps_selection = $('#tool_panel_section_select').find("option:selected").text();
+        if (tps_selection == 'Create New') {
+            $("#new_tool_panel_section").prop('disabled', false);
+            $("#new_tps").show();
+        }
+        else {
+            $("#new_tool_panel_section").prop('disabled', true);
+            $("#new_tps").hide();
         }
     }
     function repository_metadata() {
@@ -61,10 +115,10 @@ var html = '                    <tr style="display: table-row;" class="tool_row"
         }
         check_tool_dependencies(metadata);
         check_repository_dependencies(metadata);
-        console.log(metadata);
+        // console.log(metadata['repository_dependencies']);
         $(".tool_row").remove();
         $.each(metadata['tools']['valid_tools'], function(idx) {
-            new_html = html.replace('__TOOL_NAME__', metadata['tools']['valid_tools'][idx]['name']);
+            new_html = tool_html.replace('__TOOL_NAME__', metadata['tools']['valid_tools'][idx]['name']);
             new_html = new_html.replace('__DESCRIPTION__', metadata['tools']['valid_tools'][idx]['description']);
             new_html = new_html.replace('__VERSION__', metadata['tools']['valid_tools'][idx]['version']);
             $("#tools_in_repo").append(new_html);
@@ -82,12 +136,12 @@ var html = '                    <tr style="display: table-row;" class="tool_row"
             params['changeset'] = $("#changeset").val();
             params['repo_dict'] = '${encoded_repository}';
             url = $('#repository_installation').attr('action');
-            console.log(url);
             $.post(url, params, function(data) {
                 window.location.href = data;
             });
         });
         $('#changeset').change(repository_metadata);
+        $("#tool_panel_section_select").change(tool_panel_section)
     });
 </script>
 <!--<pre>${json.dumps(repository['metadata'], indent=2)}</pre>-->
@@ -105,60 +159,6 @@ var html = '                    <tr style="display: table-row;" class="tool_row"
     </div>
     <input type="hidden" id="tsr_id" name="tsr_id" value="${repository['id']}" />
     <input type="hidden" id="tool_shed_url" name="tool_shed_url" value="${tool_shed_url}" />
-    <div class="toolForm" id="dependencies">
-        <div class="toolFormTitle">Dependencies of this repository</div>
-        <div class="toolFormBody">
-            <table class="tables container-table" id="repository_dependencies" border="0" cellpadding="2" cellspacing="2" width="100%">
-                <tbody id="repository_deps">
-                    <tr id="folder-529fd61ab1c6cc36" class="folderRow libraryOrFolderRow expanded" bgcolor="#D8D8D8">
-                        <td style="padding-left: 0px;">
-                            <label for="install_repository_dependencies">Install repository dependencies</label>
-                            <input type="checkbox" checked id="install_repository_dependencies" /><br />
-                            <span class="expandLink folder-529fd61ab1c6cc36-click">
-                                <div style="float: left; margin-left: 2px;" class="expandLink folder-529fd61ab1c6cc36-click">
-                                    <a class="folder-529fd61ab1c6cc36-click" href="javascript:void(0);">
-                                        Repository dependencies<i> - installation of these additional repositories is required</i>
-                                    </a>
-                                </div>
-                            </span>
-                        </td>
-                    </tr>
-                    <tr style="display: table-row;" class="datasetRow" parent="1" id="libraryItem-rrd-adb5f5c93f827949">
-                        <td style="padding-left: 60px;">
-                            Repository <b>package_ncurses_5_9</b> revision <b>14ee17fc7640</b> owned by <b>iuc</b> <i>(prior install required)</i>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            <table class="tables container-table" id="tool_dependencies" border="0" cellpadding="2" cellspacing="2" width="100%">
-                <tbody id="tool_deps">
-                    <tr id="folder-2234cb1fd1df4331" class="folderRow libraryOrFolderRow expanded" bgcolor="#D8D8D8">
-                        <td colspan="4" style="padding-left: 0px;">
-                            <label for="install_tool_dependencies">Install tool dependencies</label>
-                            <input type="checkbox" checked id="install_tool_dependencies" /><br />
-                            <span class="expandLink folder-2234cb1fd1df4331-click">
-                                <div style="float: left; margin-left: 2px;" class="expandLink folder-2234cb1fd1df4331-click">
-                                    <a class="folder-2234cb1fd1df4331-click" href="javascript:void(0);">
-                                        Tool dependencies<i> - repository tools require handling of these dependencies</i>
-                                    </a>
-                                </div>
-                            </span>
-                        </td>
-                    </tr>
-                    <tr style="display: table-row;" class="datasetRow" parent="0" id="libraryItem-rtd-adb5f5c93f827949">
-                        <th style="padding-left: 40px;">Name</th>
-                        <th>Version</th>
-                        <th>Type</th>
-                    </tr>
-                    <tr style="display: table-row;" class="datasetRow" parent="0" id="libraryItem-rtd-529fd61ab1c6cc36">
-                        <td style="padding-left: 40px;">samtools</td>
-                        <td>1.2</td>
-                        <td>package</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
     %if shed_tool_conf_select_field:
     <div class="toolForm">
         <div class="toolFormTitle">Shed tool configuration file:</div>
@@ -187,13 +187,57 @@ var html = '                    <tr style="display: table-row;" class="tool_row"
     <div class="form-row">
         ${tool_panel_section_select_field.get_html()}
     </div>
-    <div class="form-row">
+    <div class="form-row" id="new_tps">
         <input id="new_tool_panel_section" name="new_tool_panel_section_label" type="textfield" value="" size="40"/>
         <div class="toolParamHelp" style="clear: both;">
             Add a new tool panel section to contain the installed tools (optional).
         </div>
     </div>
     </div>
+    </div>
+    <div class="toolForm" id="dependencies">
+        <div class="toolFormTitle">Dependencies of this repository</div>
+        <div class="toolFormBody">
+            <table class="tables container-table" id="repository_dependencies" border="0" cellpadding="2" cellspacing="2" width="100%">
+                <tbody id="repository_deps">
+                    <tr id="folder-529fd61ab1c6cc36" class="folderRow libraryOrFolderRow expanded" bgcolor="#D8D8D8">
+                        <td style="padding-left: 0px;">
+                            <label for="install_repository_dependencies">Install repository dependencies</label>
+                            <input type="checkbox" checked id="install_repository_dependencies" /><br />
+                            <span class="expandLink folder-529fd61ab1c6cc36-click">
+                                <div style="float: left; margin-left: 2px;" class="expandLink folder-529fd61ab1c6cc36-click">
+                                    <a class="folder-529fd61ab1c6cc36-click" href="javascript:void(0);">
+                                        Repository dependencies<i> - installation of these additional repositories is required</i>
+                                    </a>
+                                </div>
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="tables container-table" id="tool_dependencies" border="0" cellpadding="2" cellspacing="2" width="100%">
+                <tbody id="tool_deps">
+                    <tr id="folder-2234cb1fd1df4331" class="folderRow libraryOrFolderRow expanded" bgcolor="#D8D8D8">
+                        <td colspan="4" style="padding-left: 0px;">
+                            <label for="install_tool_dependencies">Install tool dependencies</label>
+                            <input type="checkbox" checked id="install_tool_dependencies" /><br />
+                            <span class="expandLink folder-2234cb1fd1df4331-click">
+                                <div style="float: left; margin-left: 2px;" class="expandLink folder-2234cb1fd1df4331-click">
+                                    <a class="folder-2234cb1fd1df4331-click" href="javascript:void(0);">
+                                        Tool dependencies<i> - repository tools require handling of these dependencies</i>
+                                    </a>
+                                </div>
+                            </span>
+                        </td>
+                    </tr>
+                    <tr style="display: table-row;" class="datasetRow" parent="0" id="libraryItem-rtd-adb5f5c93f827949">
+                        <th style="padding-left: 40px;">Name</th>
+                        <th>Version</th>
+                        <th>Type</th>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
     <div class="toolForm">
         <div class="toolFormTitle">Contents of this repository</div>

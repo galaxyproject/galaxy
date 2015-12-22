@@ -299,8 +299,9 @@ class SelectField(BaseField):
     <div><input type="checkbox" name="bar" value="3" id="bar|3"><label class="inline" for="bar|3">automatic</label></div>
     <div><input type="checkbox" name="bar" value="4" id="bar|4" checked='checked'><label class="inline" for="bar|4">bazooty</label></div>
     """
-    def __init__( self, name, multiple=None, display=None, refresh_on_change=False, refresh_on_change_values=None, size=None ):
+    def __init__( self, name, multiple=None, display=None, refresh_on_change=False, refresh_on_change_values=None, size=None, field_id=None ):
         self.name = name
+        self.field_id = field_id
         self.multiple = multiple or False
         self.size = size
         self.options = list()
@@ -407,8 +408,12 @@ class SelectField(BaseField):
             rval.append( '<option value="%s"%s>%s</option>' % ( escape( unicodify( value ), quote=True ), selected_text, escape( unicodify( text ), quote=True ) ) )
         if last_selected_value:
             last_selected_value = ' last_selected_value="%s"' % escape( unicodify( last_selected_value ), quote=True )
-        rval.insert( 0, '<select name="%s%s"%s%s%s%s%s>'
-                     % ( prefix, self.name, multiple, size, self.refresh_on_change_text, last_selected_value, self.get_disabled_str( disabled ) ) )
+        if self.field_id is not None:
+            id_string = ' id="%s"' % self.field_id
+        else:
+            id_string = ''
+        rval.insert( 0, '<select name="%s%s"%s%s%s%s%s%s>'
+                     % ( prefix, self.name, multiple, size, self.refresh_on_change_text, last_selected_value, self.get_disabled_str( disabled ), id_string ) )
         rval.append( '</select>' )
         return unicodify( "\n".join( rval ) )
 

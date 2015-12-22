@@ -33,7 +33,7 @@ def build_tool_panel_section_select_field( app ):
     options = [ ( 'Create New', 'create_new' ), ( '', '' ) ]
     for section_id, section_name in app.toolbox.get_sections():
         options.append( ( section_name, section_id ) )
-    select_field = SelectField( name='tool_panel_section_id' )
+    select_field = SelectField( name='tool_panel_section_id', field_id='tool_panel_section_select' )
     for option_tup in options:
         select_field.add_option( option_tup[ 0 ], option_tup[ 1 ] )
     return select_field
