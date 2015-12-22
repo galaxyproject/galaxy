@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-16.1.4.dev0
+16.1.4 (2015-12-22)
 ---------------------
 
 * Another setup.py fix for job metrics module.
