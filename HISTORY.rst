@@ -9,7 +9,8 @@ History
 16.1.5.dev0
 ---------------------
 
-    
+* Fix another bug that was preventing dependency resolution from
+  working in Pulsar.
 
 ---------------------
 16.1.4 (2015-12-22)
