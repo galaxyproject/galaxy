@@ -5,9 +5,9 @@ import string
 import tarfile
 import tempfile
 
-from sqlalchemy import and_
 from markupsafe import escape
 from six.moves.urllib.parse import urlparse
+from six import iteritems
 
 from galaxy.util.dictifiable import Dictifiable
 
@@ -17,13 +17,13 @@ from galaxy.util import parse_xml
 from galaxy.util import string_as_bool
 from galaxy.util.bunch import Bunch
 
-from tool_shed.util import common_util
-
 from .panel import ToolPanelElements
 from .panel import ToolSectionLabel
 from .panel import ToolSection
 from .panel import panel_item_types
 from .integrated_panel import ManagesIntegratedToolPanelMixin
+
+from galaxy.tools.loader_directory import looks_like_a_tool
 
 from .lineages import LineageMap
 from .tags import tool_tag_manager
@@ -31,7 +31,6 @@ from .tags import tool_tag_manager
 from .filters import FilterFactory
 from .watcher import get_watcher
 
-from galaxy.web.form_builder import SelectField
 
 log = logging.getLogger( __name__ )
 
@@ -458,41 +457,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         return []
 
     def tools( self ):
-        return self._tools_by_id.iteritems()
-
-    def __get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
-        # We store only the port, if one exists, in the database.
-        tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
-        return self.app.install_model.context.query( self.app.install_model.ToolShedRepository ) \
-            .filter( and_( self.app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
-                           self.app.install_model.ToolShedRepository.table.c.name == name,
-                           self.app.install_model.ToolShedRepository.table.c.owner == owner,
-                           self.app.install_model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
-            .first()
-
-    def get_tool_components( self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
-        """
-        Retrieve all loaded versions of a tool from the toolbox and return a select list enabling
-        selection of a different version, the list of the tool's loaded versions, and the specified tool.
-        """
-        toolbox = self
-        tool_version_select_field = None
-        tools = []
-        tool = None
-        # Backwards compatibility for datasource tools that have default tool_id configured, but which
-        # are now using only GALAXY_URL.
-        tool_ids = listify( tool_id )
-        for tool_id in tool_ids:
-            if get_loaded_tools_by_lineage:
-                tools = toolbox.get_loaded_tools_by_lineage( tool_id )
-            else:
-                tools = toolbox.get_tool( tool_id, tool_version=tool_version, get_all_versions=True )
-            if tools:
-                tool = toolbox.get_tool( tool_id, tool_version=tool_version, get_all_versions=False )
-                if len( tools ) > 1:
-                    tool_version_select_field = self.build_tool_version_select_field( tools, tool.id, set_selected )
-                break
-        return tool_version_select_field, tools, tool
+        return iteritems(self._tools_by_id)
 
     def dynamic_confs( self, include_migrated_tool_conf=False ):
         confs = []
@@ -509,22 +474,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         """
         for dynamic_tool_conf_dict in self.dynamic_confs( include_migrated_tool_conf=include_migrated_tool_conf ):
             yield dynamic_tool_conf_dict[ 'config_filename' ]
-
-    def build_tool_version_select_field( self, tools, tool_id, set_selected ):
-        """Build a SelectField whose options are the ids for the received list of tools."""
-        options = []
-        refresh_on_change_values = []
-        for tool in tools:
-            options.insert( 0, ( tool.version, tool.id ) )
-            refresh_on_change_values.append( tool.id )
-        select_field = SelectField( name='tool_id', refresh_on_change=True, refresh_on_change_values=refresh_on_change_values )
-        for option_tup in options:
-            selected = set_selected and option_tup[ 1 ] == tool_id
-            if selected:
-                select_field.add_option( 'version %s' % option_tup[ 0 ], option_tup[ 1 ], selected=True )
-            else:
-                select_field.add_option( 'version %s' % option_tup[ 0 ], option_tup[ 1 ] )
-        return select_field
 
     def remove_from_panel( self, tool_id, section_key='', remove_from_config=True ):
 
@@ -599,10 +548,10 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     # Backward compatibility issue - the tag used to be named 'changeset_revision'.
                     installed_changeset_revision_elem = elem.find( "changeset_revision" )
                 installed_changeset_revision = installed_changeset_revision_elem.text
-                tool_shed_repository = self.__get_tool_shed_repository( tool_shed,
-                                                                        repository_name,
-                                                                        repository_owner,
-                                                                        installed_changeset_revision )
+                tool_shed_repository = self._get_tool_shed_repository( tool_shed,
+                                                                       repository_name,
+                                                                       repository_owner,
+                                                                       installed_changeset_revision )
 
                 if tool_shed_repository:
                     # Only load tools if the repository is not deactivated or uninstalled.
@@ -638,6 +587,11 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             log.error( "Error reading tool configuration file from path: %s." % path )
         except Exception:
             log.exception( "Error reading tool from path: %s" % path )
+
+    def _get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
+        # Abstract class does't have a dependency on the database, for full tool shed
+        # support the actual Galaxy ToolBox implement this method and return a ToolShd repository.
+        return None
 
     def __add_tool( self, tool, load_panel_dict, panel_dict ):
         # Allow for the same tool to be loaded into multiple places in the
@@ -739,7 +693,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             child_path = os.path.join(directory, name)
             if os.path.isdir(child_path) and recursive:
                 self.__watch_directory(child_path, elems, integrated_elems, load_panel_dict, recursive)
-            elif name.endswith( ".xml" ):
+            elif looks_like_a_tool(child_path, enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False)):
                 quick_load( child_path, async=False )
                 tool_loaded = True
         if tool_loaded or force_watch:

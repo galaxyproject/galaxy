@@ -4,6 +4,10 @@ import os
 import re
 from ..tools import loader
 
+import yaml
+
+from galaxy.util import checkers
+
 import sys
 
 import logging
@@ -29,12 +33,12 @@ def load_tool_elements_from_path(
     tool_elements = []
     for file in __find_tool_files(path, recursive=recursive):
         try:
-            looks_like_a_tool = __looks_like_a_tool(file)
+            does_look_like_a_tool = looks_like_a_tool(file)
         except IOError:
             # Some problem reading the tool file, skip.
             continue
 
-        if looks_like_a_tool:
+        if does_look_like_a_tool:
             try:
                 tool_elements.append((file, loader.load_tool(file)))
             except Exception:
@@ -49,12 +53,71 @@ def is_tool_load_error(obj):
     return obj is TOOL_LOAD_ERROR
 
 
-def __looks_like_a_tool(path):
+def looks_like_a_tool(path, invalid_names=[], enable_beta_formats=False):
+    """ Whether true in a strict sense or not, lets say the intention and
+    purpose of this procedure is to serve as a filter - all valid tools must
+    "looks_like_a_tool" but not everything that looks like a tool is actually
+    a valid tool.
+
+    invalid_names may be supplid in the context of the tool shed to quickly
+    rule common tool shed XML files.
+    """
+    looks = False
+
+    if os.path.basename(path) in invalid_names:
+        return False
+
+    if looks_like_a_tool_xml(path):
+        looks = True
+
+    if not looks and enable_beta_formats:
+        for tool_checker in BETA_TOOL_CHECKERS.values():
+            if tool_checker(path):
+                looks = True
+                break
+
+    return looks
+
+
+def looks_like_a_tool_xml(path):
+    full_path = os.path.abspath(path)
+
+    if not full_path.endswith(".xml"):
+        return False
+
+    if not os.path.getsize(full_path):
+        return False
+
+    if(checkers.check_binary(full_path) or
+       checkers.check_image(full_path) or
+       checkers.check_gzip(full_path)[0] or
+       checkers.check_bz2(full_path)[0] or
+       checkers.check_zip(full_path)):
+        return False
+
     with open(path, "r") as f:
         start_contents = f.read(5 * 1024)
         if TOOL_REGEX.search(start_contents):
             return True
+
     return False
+
+
+def looks_like_a_tool_yaml(path):
+    if not path.endswith(".yml") and not path.endswith(".json"):
+        return False
+
+    with open(path, "r") as f:
+        try:
+            as_dict = yaml.safe_load(f)
+        except Exception:
+            return False
+
+    if not isinstance(as_dict, dict):
+        return False
+
+    file_class = as_dict.get("class", None)
+    return file_class == "GalaxyTool"
 
 
 def __find_tool_files(path, recursive):
@@ -84,3 +147,8 @@ def _find_files(directory, pattern='*'):
             if fnmatch.filter([full_path], pattern):
                 matches.append(os.path.join(root, filename))
     return matches
+
+
+BETA_TOOL_CHECKERS = {
+    'yaml': looks_like_a_tool_yaml,
+}
