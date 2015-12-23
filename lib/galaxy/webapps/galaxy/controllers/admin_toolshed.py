@@ -218,6 +218,9 @@ class AdminToolshed( AdminGalaxy ):
         url = common_util.url_join( tool_shed_url )
         log.debug( url )
         json_data = json.loads( common_util.tool_shed_get( trans.app, url, pathspec=[ 'api', 'categories', category_id ], params={ 'show_repositories': True } ) )
+        for idx, repository in enumerate( json_data[ 'repositories' ] ):
+            metadata = json.loads( common_util.tool_shed_get( trans.app, url, pathspec=[ 'api', 'repositories', repository[ 'id' ], 'metadata' ] ) )
+            json_data[ 'repositories' ][ idx ][ 'metadata' ] = metadata
         return trans.fill_template( '/admin/tool_shed_repository/browse_category.mako', tool_shed_url=tool_shed_url, category=json_data )
 
     @web.expose

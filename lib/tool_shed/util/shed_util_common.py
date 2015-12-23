@@ -340,7 +340,9 @@ def get_ids_of_tool_shed_repositories_being_installed( app, as_string=False ):
     return installing_repository_ids
 
 
-def get_latest_downloadable_changeset_revision( app, repository, repo ):
+def get_latest_downloadable_changeset_revision( app, repository, repo=None ):
+    if repo is None:
+        repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
     repository_tip = repository.tip( app )
     repository_metadata = get_repository_metadata_by_changeset_revision( app, app.security.encode_id( repository.id ), repository_tip )
     if repository_metadata and repository_metadata.downloadable:

@@ -86,6 +86,34 @@ class RepositoriesController( BaseAPIController ):
             % ( name, owner )
         return response_dict
 
+    @expose_api_anonymous_and_sessionless
+    def get_latest_metadata( self, trans, id, **kwd ):
+        """
+        GET /api/repositories/{encoded_repository_id}/metadata
+        Returns information about a repository in the Tool Shed.
+
+        Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135/metadata
+
+        :param id: the encoded id of the Repository object
+        :type  id: encoded str
+
+        :returns:   the given changeset's metadata
+
+        :raises:  ObjectNotFound, MalformedId
+        """
+        try:
+            trans.security.decode_id( id )
+        except Exception:
+            raise MalformedId( 'The given id is invalid.' )
+
+        repository = suc.get_repository_in_tool_shed( trans.app, id )
+        changeset = suc.get_latest_downloadable_changeset_revision( trans.app, repository )
+        metadata = suc.get_current_repository_metadata_for_changeset_revision( trans.app, repository, changeset )
+        if metadata is None:
+            raise ObjectNotFound( 'Unable to locate metadata for the given..' )
+        metadata_dict = metadata.to_dict( value_mapper={ 'id': trans.security.encode_id, 'repository_id': trans.security.encode_id } )
+        return metadata_dict
+
     @web.expose_api_anonymous
     def get_ordered_installable_revisions( self, trans, **kwd ):
         """
@@ -112,26 +140,6 @@ class RepositoriesController( BaseAPIController ):
             log.debug( error_message )
             return []
         return repository.ordered_installable_revisions( trans.app )
-
-    @web.expose_api_anonymous
-    def get_unordered_installable_revisions( self, trans, **kwd ):
-        """
-        GET /api/repositories/get_unordered_installable_revisions
-
-        :param tsr_id: the encoded toolshed ID of the repository
-
-        Returns a list of lists of changesets, in the format [ [ 0, fbb391dc803c ], [ 1, 9d9ec4d9c03e ], [ 2, 9b5b20673b89 ], [ 3, e8c99ce51292 ] ].
-        """
-        # Example URL: http://localhost:9009/api/repositories/get_unordered_installable_revisions?tsr_id=9d37e53072ff9fa4
-        tsr_id = kwd.get( 'tsr_id', None )
-        if tsr_id is not None:
-            repository = suc.get_repository_in_tool_shed( trans.app, tsr_id )
-        else:
-            error_message = "Error in the Tool Shed repositories API in get_ordered_installable_revisions: "
-            error_message += "missing or invalid parameter received." % ( str( name ), str( owner ) )
-            log.debug( error_message )
-            return []
-        return repository.unordered_installable_revisions( trans.app )
 
     @web.expose_api_anonymous
     def get_repository_revision_install_info( self, trans, name, owner, changeset_revision, **kwd ):
@@ -258,6 +266,26 @@ class RepositoriesController( BaseAPIController ):
                 ( str( name ), str( owner ), str( changeset_revision ) )
             log.debug( debug_msg )
             return {}, {}, {}
+
+    @web.expose_api_anonymous
+    def get_unordered_installable_revisions( self, trans, **kwd ):
+        """
+        GET /api/repositories/get_unordered_installable_revisions
+
+        :param tsr_id: the encoded toolshed ID of the repository
+
+        Returns a list of lists of changesets, in the format [ [ 0, fbb391dc803c ], [ 1, 9d9ec4d9c03e ], [ 2, 9b5b20673b89 ], [ 3, e8c99ce51292 ] ].
+        """
+        # Example URL: http://localhost:9009/api/repositories/get_unordered_installable_revisions?tsr_id=9d37e53072ff9fa4
+        tsr_id = kwd.get( 'tsr_id', None )
+        if tsr_id is not None:
+            repository = suc.get_repository_in_tool_shed( trans.app, tsr_id )
+        else:
+            error_message = "Error in the Tool Shed repositories API in get_ordered_installable_revisions: "
+            error_message += "missing or invalid parameter received." % ( str( name ), str( owner ) )
+            log.debug( error_message )
+            return []
+        return repository.unordered_installable_revisions( trans.app )
 
     def __get_value_mapper( self, trans ):
         value_mapper = { 'id' : trans.security.encode_id,
