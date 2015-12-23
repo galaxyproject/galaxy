@@ -28,7 +28,8 @@ from .lineages import LineageMap
 from .tags import tool_tag_manager
 
 from .filters import FilterFactory
-from .watcher import get_watcher
+from .watcher import get_tool_watcher
+from .watcher import get_tool_conf_watcher
 
 # Extra tool dependency not used by AbstractToolBox but by
 # BaseGalaxyToolBox
@@ -72,7 +73,8 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         # (e.g., shed_tool_conf.xml) files include the tool_path attribute within the <toolbox> tag.
         self._tool_root_dir = tool_root_dir
         self.app = app
-        self._tool_watcher = get_watcher( self, app.config )
+        self._tool_watcher = get_tool_watcher( self, app.config )
+        self._tool_conf_watcher = get_tool_conf_watcher( lambda: app.reload_toolbox() )
         self._filter_factory = FilterFactory( self )
         self._tool_tag_manager = tool_tag_manager( app )
         self._init_tools_from_configs( config_filenames )
@@ -153,6 +155,9 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                                         tool_path=tool_path,
                                         config_elems=config_elems )
             self._dynamic_tool_confs.append( shed_tool_conf_dict )
+
+        if tool_conf_source.parse_monitor():
+            self._tool_conf_watcher.watch_file(config_filename)
 
     def load_item( self, item, tool_path, panel_dict=None, integrated_panel_dict=None, load_panel_dict=True, guid=None, index=None, internal=False ):
         item = ensure_tool_conf_item(item)
@@ -1002,6 +1007,21 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             rval = tools
 
         return rval
+
+    def shutdown(self):
+        exception = None
+        try:
+            self._tool_watcher.shutdown()
+        except Exception as e:
+            exception = e
+
+        try:
+            self._tool_conf_watcher.shutdown()
+        except Exception as e:
+            exception = exception or e
+
+        if exception:
+            raise exception
 
     def _lineage_in_panel( self, panel_dict, tool=None, tool_lineage=None ):
         """ If tool with same lineage already in panel (or section) - find

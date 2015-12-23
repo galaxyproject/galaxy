@@ -13,6 +13,7 @@ import socket
 import string
 import sys
 import tempfile
+import threading
 from datetime import timedelta
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
@@ -752,8 +753,12 @@ class ConfiguresGalaxyMixin:
             tool_configs.append( self.config.migrated_tools_config )
 
         from galaxy import tools
-        self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
-        self.reindex_tool_search()
+        with self._toolbox_lock:
+            old_toolbox = self.toolbox
+            self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
+            self.reindex_tool_search()
+            if old_toolbox:
+                old_toolbox.shutdown()
 
     def _configure_toolbox( self ):
         from galaxy.managers.citations import CitationsManager
@@ -762,6 +767,8 @@ class ConfiguresGalaxyMixin:
         from galaxy.tools.toolbox.cache import ToolCache
         self.tool_cache = ToolCache()
 
+        self._toolbox_lock = threading.Lock()
+        self.toolbox = None
         self.reload_toolbox()
 
         from galaxy.tools.deps import containers

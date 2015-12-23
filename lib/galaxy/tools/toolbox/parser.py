@@ -1,8 +1,10 @@
 from abc import ABCMeta
 from abc import abstractmethod
 
-from galaxy.util import parse_xml
+from galaxy.util import parse_xml, string_as_bool
 import yaml
+
+DEFAULT_MONITOR = False
 
 
 class ToolConfSource(object):
@@ -21,6 +23,11 @@ class ToolConfSource(object):
         """ Return tool_path for tools in this toolbox.
         """
 
+    def parse_monitor(self):
+        """ Monitor the toolbox configuration source for changes and
+        reload. """
+        return DEFAULT_MONITOR
+
 
 class XmlToolConfSource(ToolConfSource):
 
@@ -33,6 +40,9 @@ class XmlToolConfSource(ToolConfSource):
 
     def parse_items(self):
         return map(ensure_tool_conf_item, self.root.getchildren())
+
+    def parse_monitor(self):
+        return string_as_bool(self.root.get('monitor', DEFAULT_MONITOR))
 
 
 class YamlToolConfSource(ToolConfSource):
@@ -47,6 +57,9 @@ class YamlToolConfSource(ToolConfSource):
 
     def parse_items(self):
         return map(ToolConfItem.from_dict, self.as_dict.get('items'))
+
+    def parse_monitor(self):
+        return self.as_dict.get('monitor', DEFAULT_MONITOR)
 
 
 class ToolConfItem(object):
