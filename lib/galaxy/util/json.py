@@ -10,7 +10,7 @@ import math
 import random
 import string
 
-from six import text_type, string_types
+from six import text_type, string_types, iteritems
 
 dumps = json.dumps
 loads = json.loads
@@ -25,7 +25,7 @@ def json_fix( val ):
     if isinstance( val, list ):
         return [ json_fix( v ) for v in val ]
     elif isinstance( val, dict ):
-        return dict( [ ( json_fix( k ), json_fix( v ) ) for ( k, v ) in val.iteritems() ] )
+        return dict( [ ( json_fix( k ), json_fix( v ) ) for ( k, v ) in iteritems(val) ] )
     elif isinstance( val, text_type ):
         return val.encode( "utf8" )
     else:
@@ -42,7 +42,7 @@ def swap_inf_nan( val ):
     elif isinstance( val, collections.Sequence ):
         return [ swap_inf_nan( v ) for v in val ]
     elif isinstance( val, collections.Mapping ):
-        return dict( [ ( swap_inf_nan( k ), swap_inf_nan( v ) ) for ( k, v ) in val.iteritems() ] )
+        return dict( [ ( swap_inf_nan( k ), swap_inf_nan( v ) ) for ( k, v ) in iteritems(val) ] )
     elif isinstance(val, float):
         if math.isnan(val):
             return "__NaN__"

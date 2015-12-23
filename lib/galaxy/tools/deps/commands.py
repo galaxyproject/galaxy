@@ -1,16 +1,49 @@
 import os
 import subprocess
+import sys as _sys
 
 
-def shell(cmds, env=None):
-    p = shell_process(cmds, env)
-    return p.wait()
+def redirecting_io(sys=_sys):
+    assert sys is not None
+    # We are redirecting standard out and standard error.
+    return not hasattr(sys.stdout, "fileno")
+
+
+def redirect_aware_commmunicate(p, sys=_sys):
+    assert sys is not None
+    out, err = p.communicate()
+    if redirecting_io(sys=sys):
+        if out:
+            sys.stdout.write(out)
+            out = None
+        if err:
+            sys.stderr.write(err)
+            err = None
+    return out, err
+
+
+def shell(cmds, env=None, **kwds):
+    sys = kwds.get("sys", _sys)
+    assert sys is not None
+    p = shell_process(cmds, env, **kwds)
+    if redirecting_io(sys=sys):
+        redirect_aware_commmunicate(p, sys=sys)
+        exit = p.returncode
+        return exit
+    else:
+        return p.wait()
 
 
 def shell_process(cmds, env=None, **kwds):
+    sys = kwds.get("sys", _sys)
     popen_kwds = dict(
         shell=True,
     )
+    if kwds.get("stdout", None) is None and redirecting_io(sys=sys):
+        popen_kwds["stdout"] = subprocess.PIPE
+    if kwds.get("stderr", None) is None and redirecting_io(sys=sys):
+        popen_kwds["stderr"] = subprocess.PIPE
+
     popen_kwds.update(**kwds)
     if env:
         new_env = os.environ.copy()
@@ -39,6 +72,16 @@ def __wait(cmds, **popen_kwds):
     if p.returncode != 0:
         raise CommandLineException(" ".join(cmds), stdout, stderr)
     return stdout
+
+
+def download_command(url, quote_url=False):
+    if quote_url:
+        url = "'%s'" % url
+    if which("wget"):
+        download_cmd = ["wget", "-q", "--recursive", "-O" "-", url]
+    else:
+        download_cmd = ["curl", "-L", url]
+    return download_cmd
 
 
 class CommandLineException(Exception):

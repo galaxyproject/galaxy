@@ -4,6 +4,7 @@ from galaxy.util.odict import odict
 from galaxy.util import bunch
 from galaxy.util.dictifiable import Dictifiable
 
+from six import iteritems
 
 panel_item_types = bunch.Bunch(
     TOOL="TOOL",
@@ -27,7 +28,7 @@ class HasPanelItems:
         """ Iterate through panel items each represented as a tuple of
         (panel_key, panel_type, panel_content).
         """
-        for panel_key, panel_value in self.panel_items().iteritems():
+        for panel_key, panel_value in iteritems(self.panel_items()):
             if panel_value is None:
                 continue
             panel_type = panel_item_types.SECTION

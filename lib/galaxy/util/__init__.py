@@ -23,6 +23,7 @@ import time
 import tempfile
 import threading
 from six.moves.urllib import parse as urlparse
+from six import iteritems
 
 from galaxy.util import json
 from datetime import datetime
@@ -226,17 +227,17 @@ def xml_element_to_dict( elem ):
     if sub_elems:
         sub_elem_dict = dict()
         for sub_sub_elem_dict in map( xml_element_to_dict, sub_elems ):
-            for key, value in sub_sub_elem_dict.iteritems():
+            for key, value in iteritems(sub_sub_elem_dict):
                 if key not in sub_elem_dict:
                     sub_elem_dict[ key ] = []
                 sub_elem_dict[ key ].append( value )
-        for key, value in sub_elem_dict.iteritems():
+        for key, value in iteritems(sub_elem_dict):
             if len( value ) == 1:
                 rval[ elem.tag ][ key ] = value[0]
             else:
                 rval[ elem.tag ][ key ] = value
     if elem.attrib:
-        for key, value in elem.attrib.iteritems():
+        for key, value in iteritems(elem.attrib):
             rval[ elem.tag ][ "@%s" % key ] = value
 
     if elem.text:
@@ -1010,14 +1011,14 @@ def stringify_dictionary_keys( in_dict ):
     # changes unicode keys into strings, only works on top level (does not recurse)
     # unicode keys are not valid for expansion into keyword arguments on method calls
     out_dict = {}
-    for key, value in in_dict.iteritems():
+    for key, value in iteritems(in_dict):
         out_dict[ str( key ) ] = value
     return out_dict
 
 
 def recursively_stringify_dictionary_keys( d ):
     if isinstance(d, dict):
-        return dict([(k.encode( DEFAULT_ENCODING ), recursively_stringify_dictionary_keys(v)) for k, v in d.iteritems()])
+        return dict([(k.encode( DEFAULT_ENCODING ), recursively_stringify_dictionary_keys(v)) for k, v in iteritems(d)])
     elif isinstance(d, list):
         return [recursively_stringify_dictionary_keys(x) for x in d]
     else:
