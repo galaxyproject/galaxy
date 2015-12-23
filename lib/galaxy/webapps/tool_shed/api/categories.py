@@ -62,6 +62,29 @@ class CategoriesController( BaseAPIController ):
         return category_dict
 
     @expose_api_anonymous_and_sessionless
+    def get_repositories( self, trans, category_id, **kwd ):
+        """
+        GET /api/categories/{encoded_category_id}/repositories
+        Return information about the provided category and the repositories in that category.
+
+        :param id: the encoded id of the Category object
+
+        Example: GET localhost:9009/api/categories/f9cad7b01a472135/repositories
+        """
+        category = suc.get_category( trans.app, category_id )
+        if category is None:
+            category_dict = dict( message='Unable to locate category record for id %s.' % ( str( id ) ),
+                                  status='error' )
+            return category_dict
+        category_dict = category.to_dict( view='element',
+                                          value_mapper=self.__get_value_mapper( trans ) )
+        category_dict[ 'url' ] = web.url_for( controller='categories',
+                                              action='show',
+                                              id=trans.security.encode_id( category.id ) )
+        category_dict[ 'repositories' ] = suc.get_repositories_by_category( trans.app, category.id )
+        return category_dict
+
+    @expose_api_anonymous_and_sessionless
     def index( self, trans, deleted=False, **kwd ):
         """
         GET /api/categories
@@ -107,6 +130,4 @@ class CategoriesController( BaseAPIController ):
         category_dict[ 'url' ] = web.url_for( controller='categories',
                                               action='show',
                                               id=trans.security.encode_id( category.id ) )
-        if util.asbool( kwd.get( 'show_repositories', False ) ):
-            category_dict[ 'repositories' ] = suc.get_repositories_by_category( trans.app, category.id )
         return category_dict

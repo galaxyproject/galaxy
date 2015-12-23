@@ -109,6 +109,11 @@ def app_factory( global_conf, **kwargs ):
                             name_prefix='category_',
                             path_prefix='/api',
                             parent_resources=dict( member_name='category', collection_name='categories' ) )
+    webapp.mapper.connect( 'repositories_in_category',
+                           '/api/categories/{category_id}/repositories',
+                           controller='categories',
+                           action='get_repositories',
+                           conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.resource( 'repository',
                             'repositories',
                             controller='repositories',
