@@ -236,20 +236,16 @@ class ToolShedRepositoriesController( BaseAPIController ):
         POST /api/tool_shed_repositories/install
         Initiate the installation of one or more repositories.
 
-        :param reinstalling (required): False if this is a fresh install, otherwise True
         :param encoded_kwd (required): The encoded dict describing the repositories to be installed.
         :param install_tool_dependencies (required): True to install tool dependencies.
         :param tool_shed_repository_ids (required): Encoded tool shed repository IDs for installation.
         """
         params = dict()
         irm = InstallRepositoryManager( trans.app )
-        reinstalling = util.string_as_bool( kwd.get( 'reinstalling', False ) )
         repository = kwd.get( 'repo_dict', None )
         if repository is not None:
             repository = encoding_util.tool_shed_decode( repository )
             log.debug( json.dumps( repository, indent=2 ) )
-        name = repository[ 'name' ]
-        owner = repository[ 'owner' ]
         changeset = kwd.get( 'changeset', None )
         tool_shed_url = kwd.get( 'tool_shed_url', None )
         params[ 'tool_panel_section_id' ] = kwd.get( 'tool_panel_section_id', None )
@@ -274,11 +270,6 @@ class ToolShedRepositoriesController( BaseAPIController ):
             except RepositoriesInstalledException as e:
                 return dict( message=e.message,
                              status='error' )
-        else:
-            names = [ repo[ 'name' ] for repo in repositories ]
-            owners = [ repo[ 'owner' ] for repo in repositories ]
-            changeset_revisions = [ repo[ 'revision' ] for repo in repositories ]
-            return names, owners, changeset_revisions
 
     @expose_api
     def install_repository_revision( self, trans, payload, **kwd ):

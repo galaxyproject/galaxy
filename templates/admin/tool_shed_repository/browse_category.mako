@@ -27,10 +27,10 @@
         </tr>
     </thead>
 %for repository in category['repositories']:
-	<tr>
-		<td>
-			<a href="${h.url_for( controller='admin_toolshed', action='preview_repository', tool_shed_url=tool_shed_url, tsr_id=repository['id'] )}">${repository['name']}</a>
-		</td>
+    <tr>
+        <td>
+            <a href="${h.url_for( controller='admin_toolshed', action='preview_repository', tool_shed_url=tool_shed_url, tsr_id=repository['id'] )}">${repository['name']}</a>
+        </td>
         <td>${repository['description']}</td>
         <td>${repository['type']}</td>
         %if repository['metadata']['tools_functionally_correct']:
@@ -39,6 +39,6 @@
             <td>No</td>
         %endif
         <td>${repository['owner']}</td>
-	</tr>
+    </tr>
 %endfor
 </table>

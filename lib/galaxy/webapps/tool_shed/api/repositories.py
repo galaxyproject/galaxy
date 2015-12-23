@@ -282,7 +282,7 @@ class RepositoriesController( BaseAPIController ):
             repository = suc.get_repository_in_tool_shed( trans.app, tsr_id )
         else:
             error_message = "Error in the Tool Shed repositories API in get_ordered_installable_revisions: "
-            error_message += "missing or invalid parameter received." % ( str( name ), str( owner ) )
+            error_message += "missing or invalid parameter received."
             log.debug( error_message )
             return []
         return repository.unordered_installable_revisions( trans.app )
@@ -768,7 +768,7 @@ class RepositoriesController( BaseAPIController ):
             return repository_metadata_dict
         else:
             log.debug( "Unable to locate repository_metadata record for repository id %s and changeset_revision %s" %
-                       ( str( repository.id ), str( changeset_revision ) ) )
+                       ( str( id ), str( changeset ) ) )
             return {}
 
     @expose_api_anonymous_and_sessionless
