@@ -11,7 +11,8 @@ IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 # TODO: add this upstream as a remote if it doesn't already exist.
 UPSTREAM?=galaxyproject
 SOURCE_DIR?=galaxy
-VERSION?=$(shell python scripts/print_version_for_release.py $(SOURCE_DIR))
+BUILD_SCRIPTS_DIR=scripts
+VERSION?=$(shell python $(BUILD_SCRIPTS_DIR)/print_version_for_release.py $(SOURCE_DIR))
 DOC_URL?=https://galaxy-lib.readthedocs.org
 PROJECT_URL?=https://github.com/galaxyproject/galaxy-lib
 PROJECT_NAME?=galaxy-lib
@@ -39,6 +40,8 @@ help:
 	@echo "open-project - open project on github"
 	@echo "release - package, review, and upload a release"
 	@echo "dist - package"
+	@echo "setup-git-hook-lint - setup precommit hook for linting project"
+	@echo "setup-git-hook-lint-and-test - setup precommit hook for linting and testing project"
 	@echo "update-extern - update external artifacts copied locally"
 
 clean: clean-build clean-pyc clean-test
@@ -64,10 +67,10 @@ setup-venv:
 	$(IN_VENV) pip install -r requirements.txt && pip install -r dev-requirements.txt
 
 setup-git-hook-lint:
-	cp scripts/pre-commit-lint .git/hooks/pre-commit
+	cp $(BUILD_SCRIPTS_DIR)/pre-commit-lint .git/hooks/pre-commit
 
 setup-git-hook-lint-and-test:
-	cp scripts/pre-commit-lint-and-test .git/hooks/pre-commit
+	cp $(BUILD_SCRIPTS_DIR)/pre-commit-lint-and-test .git/hooks/pre-commit
 
 flake8:
 	$(IN_VENV) flake8 --max-complexity 15 $(SOURCE_DIR)  $(TEST_DIR)
@@ -85,7 +88,7 @@ tox:
 	$(IN_VENV) tox -e $(ENV) -- $(ARGS)
 
 coverage:
-	coverage run --source galaxy setup.py test
+	coverage run --source $(SOURCE_DIR) setup.py $(TEST_DIR)
 	coverage report -m
 	coverage html
 	open htmlcov/index.html || xdg-open htmlcov/index.html
@@ -123,10 +126,10 @@ release-aritfacts: release-test-artifacts
 	$(IN_VENV) twine upload dist/*
 
 commit-version:
-	$(IN_VENV) python scripts/commit_version.py $(SOURCE_DIR) $(VERSION)
+	$(IN_VENV) python $(BUILD_SCRIPTS_DIR)/commit_version.py $(SOURCE_DIR) $(VERSION)
 
 new-version:
-	$(IN_VENV) python scripts/new_version.py $(SOURCE_DIR) $(VERSION) 2
+	$(IN_VENV) python $(BUILD_SCRIPTS_DIR)/new_version.py $(SOURCE_DIR) $(VERSION) 2
 
 release-local: commit-version release-aritfacts new-version
 
