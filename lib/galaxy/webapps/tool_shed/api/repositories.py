@@ -110,7 +110,7 @@ class RepositoriesController( BaseAPIController ):
         changeset = suc.get_latest_downloadable_changeset_revision( trans.app, repository )
         metadata = suc.get_current_repository_metadata_for_changeset_revision( trans.app, repository, changeset )
         if metadata is None:
-            raise ObjectNotFound( 'Unable to locate metadata for the given..' )
+            raise ObjectNotFound( 'Unable to locate metadata for the given ID.' )
         metadata_dict = metadata.to_dict( value_mapper={ 'id': trans.security.encode_id, 'repository_id': trans.security.encode_id } )
         return metadata_dict
 
