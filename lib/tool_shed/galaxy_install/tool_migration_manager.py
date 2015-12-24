@@ -290,7 +290,7 @@ class ToolMigrationManager( object ):
                     filename = basic_util.strip_path( name )
                     if filename == tool_config_filename:
                         full_path = str( os.path.abspath( os.path.join( root, name ) ) )
-                        tool = self.toolbox.load_tool( full_path )
+                        tool = self.toolbox.load_tool( full_path, use_cached=False )
                         return suc.generate_tool_guid( repository_clone_url, tool )
         # Not quite sure what should happen here, throw an exception or what?
         return None

@@ -710,12 +710,12 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         if tool_loaded or force_watch:
             self._tool_watcher.watch_directory( directory, quick_load )
 
-    def load_tool( self, config_file, guid=None, repository_id=None, **kwds ):
+    def load_tool( self, config_file, guid=None, repository_id=None, use_cached=True, **kwds ):
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
         # Parse XML configuration file and get the root element
         tool_cache = getattr( self.app, 'tool_cache', None )
-        tool = tool_cache and tool_cache.get_tool( config_file )
-        if tool is None:
+        tool = use_cached and tool_cache and tool_cache.get_tool( config_file )
+        if not tool:
             tool = self.create_tool( config_file=config_file, repository_id=repository_id, guid=guid, **kwds )
             if tool_cache:
                 self.app.tool_cache.cache_tool(config_file, tool)
@@ -921,6 +921,9 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         else:
             tool = self._tools_by_id[ tool_id ]
             del self._tools_by_id[ tool_id ]
+            tool_cache = getattr( self.app, 'tool_cache', None )
+            if tool_cache:
+                tool_cache.expire_tool( tool_id )
             if remove_from_panel:
                 tool_key = 'tool_' + tool_id
                 for key, val in self._tool_panel.items():
