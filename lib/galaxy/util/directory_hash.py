@@ -1,6 +1,7 @@
 
 from galaxy.util import is_uuid
 
+
 def directory_hash_id( id ):
     """
 
