@@ -1,11 +1,11 @@
 from os.path import abspath, join, exists
 
 from .resolver_mixins import UsesInstalledRepositoriesMixin
-from .galaxy_packages import GalaxyPackageDependencyResolver, GalaxyPackageDependency
+from .galaxy_packages import BaseGalaxyPackageDependencyResolver, GalaxyPackageDependency
 from ..resolvers import INDETERMINATE_DEPENDENCY
 
 
-class ToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver, UsesInstalledRepositoriesMixin):
+class ToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, UsesInstalledRepositoriesMixin):
     resolver_type = "tool_shed_packages"
     # Resolution of these dependencies depends on more than just the requirement
     # tag, it depends on the tool installation context - therefore these are

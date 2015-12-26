@@ -22,7 +22,7 @@ See bottom for instructions on how to add this resolver.
 from os import listdir
 from os.path import join, exists, getmtime
 
-from .galaxy_packages import GalaxyPackageDependencyResolver
+from .galaxy_packages import BaseGalaxyPackageDependencyResolver
 from ..resolvers import INDETERMINATE_DEPENDENCY, Dependency
 
 import logging
@@ -32,8 +32,8 @@ MANUAL = "manual"
 PREFERRED_OWNERS = MANUAL + ",iuc,devteam"
 
 
-class UnlinkedToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver):
-    dict_collection_visible_keys = GalaxyPackageDependencyResolver.dict_collection_visible_keys + ['preferred_owners', 'select_by_owner']
+class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver):
+    dict_collection_visible_keys = BaseGalaxyPackageDependencyResolver.dict_collection_visible_keys + ['preferred_owners', 'select_by_owner']
     resolver_type = "unlinked_tool_shed_packages"
 
     def __init__(self, dependency_manager, **kwds):

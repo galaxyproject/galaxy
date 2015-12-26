@@ -1,15 +1,20 @@
+from os import listdir
 from os.path import join, islink, realpath, basename, exists
 
-from ..resolvers import DependencyResolver, INDETERMINATE_DEPENDENCY, Dependency
+from ..resolvers import (
+    DependencyResolver,
+    INDETERMINATE_DEPENDENCY,
+    Dependency,
+    ListableDependencyResolver,
+)
 from .resolver_mixins import UsesToolDependencyDirMixin
 
 import logging
 log = logging.getLogger( __name__ )
 
 
-class GalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependencyDirMixin):
+class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependencyDirMixin):
     dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['base_path', 'versionless']
-    resolver_type = "galaxy_packages"
 
     def __init__(self, dependency_manager, **kwds):
         # Galaxy tool shed requires explicit versions on XML elements,
@@ -53,6 +58,26 @@ class GalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependencyDirM
         elif exists( join( path, 'bin' ) ):
             return GalaxyPackageDependency(None, path, version, exact)
         return INDETERMINATE_DEPENDENCY
+
+
+class GalaxyPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, ListableDependencyResolver):
+    resolver_type = "galaxy_packages"
+
+    def list_dependencies(self):
+        base_path = self.base_path
+        for package_name in listdir(base_path):
+            package_dir = join(base_path, package_name)
+            for version in listdir(package_dir):
+                version_dir = join(package_dir, version)
+                if version == "default":
+                    version = None
+                valid_dependency = _is_dependency_directory(version_dir)
+                if valid_dependency:
+                    yield self._to_requirement(package_name, version)
+
+
+def _is_dependency_directory(directory):
+    return exists(join(directory, 'env.sh')) or exists(join(directory, 'bin'))
 
 
 class GalaxyPackageDependency(Dependency):

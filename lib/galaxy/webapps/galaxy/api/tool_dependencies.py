@@ -95,3 +95,41 @@ class ToolDependenciesAPIController( BaseAPIController ):
                     if no match was found.
         """
         return self._view.manager_dependency(**kwds)
+
+    @expose_api
+    @require_admin
+    def resolver_requirements(self, trans, id, **kwds):
+        """
+        GET /api/dependencies_resolver/{index}/requirements
+
+        Find all "simple" requirements that could be resolved "exactly"
+        by this dependency resolver. The dependency resolver must implement
+        ListDependencyResolver.
+
+        :type   index:    int
+        :param  index:    index of the dependncy resolver
+
+        :rtype:     dict
+        :returns:   a dictified description of the requirement that could
+                    be resolved.
+        """
+        return self._view.resolver_requirements(id)
+
+    @expose_api
+    @require_admin
+    def manager_requirements(self, trans, **kwds):
+        """
+        GET /api/dependencies_resolver/requirements
+
+        Find all "simple" requirements that could be resolved "exactly"
+        by all dependency resolvers that support this operation.
+
+        :type   index:    int
+        :param  index:    index of the dependncy resolver
+
+        :rtype:     dict
+        :returns:   a dictified description of the requirement that could
+                    be resolved (keyed on 'requirement') and the index of
+                    the corresponding resolver (keyed on 'index').
+        """
+        return self._view.manager_requirements()

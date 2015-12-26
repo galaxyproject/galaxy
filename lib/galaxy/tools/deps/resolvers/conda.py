@@ -10,6 +10,7 @@ from ..resolvers import (
     DependencyResolver,
     INDETERMINATE_DEPENDENCY,
     Dependency,
+    ListableDependencyResolver,
 )
 from ..conda_util import (
     CondaContext,
@@ -18,6 +19,7 @@ from ..conda_util import (
     is_conda_target_installed,
     install_conda_target,
     build_isolated_environment,
+    installed_conda_targets,
 )
 
 DEFAULT_BASE_PATH_DIRECTORY = "_conda"
@@ -27,7 +29,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class CondaDependencyResolver(DependencyResolver):
+class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver):
     dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['conda_prefix', 'versionless', 'ensure_channels', 'auto_install']
     resolver_type = "conda"
 
@@ -120,6 +122,12 @@ class CondaDependencyResolver(DependencyResolver):
             )
         else:
             raise Exception("Conda dependency seemingly installed but failed to build job environment.")
+
+    def list_dependencies(self):
+        for install_target in installed_conda_targets(self.conda_context):
+            name = install_target.package
+            version = install_target.version
+            yield self._to_requirement(name, version)
 
     @property
     def prefix(self):

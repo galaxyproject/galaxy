@@ -1,5 +1,7 @@
 from galaxy.util.dictifiable import Dictifiable
 
+from ..requirements import ToolRequirement
+
 from abc import ABCMeta, abstractmethod, abstractproperty
 
 
@@ -34,6 +36,23 @@ class DependencyResolver(Dictifiable, object):
             return dependency_resolver.extra_config.get(global_key)
         else:
             return default
+
+
+class ListableDependencyResolver:
+    """ Mix this into a ``DependencyResolver`` and implement to indicate
+    the dependency resolver can iterate over its dependencies and generate
+    requirements.
+    """
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def list_dependencies(self):
+        """ List the "simple" requirements that may be resolved "exact"-ly
+        by this dependency resolver.
+        """
+
+    def _to_requirement(self, name, version=None):
+        return ToolRequirement(name=name, type="package", version=version)
 
 
 class Dependency(Dictifiable, object):
