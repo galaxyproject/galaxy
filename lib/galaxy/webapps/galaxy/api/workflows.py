@@ -77,7 +77,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                 message = "Workflow is neither importable, nor owned by or shared with current user"
                 raise exceptions.ItemAccessibilityException( message )
-        return self.workflow_contents_manager.workflow_to_dict( trans, stored_workflow, style="instance" )
+        if kwd.get("legacy", False):
+            style = "legacy"
+        else:
+            style = "instance"
+        return self.workflow_contents_manager.workflow_to_dict( trans, stored_workflow, style=style )
 
     @expose_api
     def create(self, trans, payload, **kwd):

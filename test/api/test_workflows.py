@@ -222,11 +222,21 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         super( WorkflowsApiTestCase, self ).setUp()
 
     def test_show_valid( self ):
+        workflow_id = self.workflow_populator.simple_workflow( "dummy" )
         workflow_id = self.workflow_populator.simple_workflow( "test_regular" )
-        show_response = self._get( "workflows/%s" % workflow_id )
+        show_response = self._get( "workflows/%s" % workflow_id, {"style": "instance"} )
         workflow = show_response.json()
         self._assert_looks_like_instance_workflow_representation( workflow )
         assert len(workflow["steps"]) == 3
+        self.assertEquals(sorted([step["id"] for step in workflow["steps"].values()]), [0, 1, 2])
+
+        show_response = self._get( "workflows/%s" % workflow_id, {"legacy": True} )
+        workflow = show_response.json()
+        self._assert_looks_like_instance_workflow_representation( workflow )
+        assert len(workflow["steps"]) == 3
+        # Can't reay say what the legacy IDs are but must be greater than 3 because dummy
+        # workflow was created first in this instance.
+        self.assertNotEquals(sorted([step["id"] for step in workflow["steps"].values()]), [0, 1, 2])
 
     def test_show_invalid_key_is_400( self ):
         show_response = self._get( "workflows/%s" % self._random_key() )
