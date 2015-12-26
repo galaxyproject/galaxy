@@ -23,13 +23,16 @@ from .panel import ToolSection
 from .panel import panel_item_types
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 
-from galaxy.tools.loader_directory import looks_like_a_tool
-
 from .lineages import LineageMap
 from .tags import tool_tag_manager
 
 from .filters import FilterFactory
 from .watcher import get_watcher
+
+# Extra tool dependency not used by AbstractToolBox but by
+# BaseGalaxyToolBox
+from galaxy.tools.loader_directory import looks_like_a_tool
+from galaxy.tools.deps import build_dependency_manager
 
 
 log = logging.getLogger( __name__ )
@@ -693,7 +696,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             child_path = os.path.join(directory, name)
             if os.path.isdir(child_path) and recursive:
                 self.__watch_directory(child_path, elems, integrated_elems, load_panel_dict, recursive)
-            elif looks_like_a_tool(child_path, enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False)):
+            elif self._looks_like_a_tool(child_path):
                 quick_load( child_path, async=False )
                 tool_loaded = True
         if tool_loaded or force_watch:
@@ -957,13 +960,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         stored = self.app.model.context.query( self.app.model.StoredWorkflow ).get( id )
         return stored.latest_workflow
 
-    @property
-    def sa_session( self ):
-        """
-        Returns a SQLAlchemy session
-        """
-        return self.app.model.context
-
     def tool_panel_contents( self, trans, **kwds ):
         """ Filter tool_panel contents for displaying for user.
         """
@@ -1096,3 +1092,29 @@ def _filter_for_panel( item, item_type, filters, context ):
                 return copy
 
     return None
+
+
+class BaseGalaxyToolBox(AbstractToolBox):
+    """
+    Extend the AbstractToolBox with more Galaxy tooling-specific
+    functionality. Adds dependencies on dependency resolution and
+    tool loading modules, that an abstract description of panels
+    shouldn't really depend on.
+    """
+
+    def __init__(self, config_filenames, tool_root_dir, app):
+        super(BaseGalaxyToolBox, self).__init__(config_filenames, tool_root_dir, app)
+        self._init_dependency_manager()
+
+    @property
+    def sa_session( self ):
+        """
+        Returns a SQLAlchemy session
+        """
+        return self.app.model.context
+
+    def _looks_like_a_tool(self, path):
+        return looks_like_a_tool(path, enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False))
+
+    def _init_dependency_manager( self ):
+        self.dependency_manager = build_dependency_manager( self.app.config )
