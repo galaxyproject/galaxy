@@ -251,6 +251,10 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.connect( '/api/tools/{id:.+?}', action='show', controller="tools" )
     webapp.mapper.resource( 'tool', 'tools', path_prefix='/api' )
 
+    webapp.mapper.connect( '/api/dependency_resolvers/dependency', action="manager_dependency", controller="tool_dependencies" )
+    webapp.mapper.connect( '/api/dependency_resolvers/{id}/dependency', action="resolver_dependency", controller="tool_dependencies" )
+    webapp.mapper.resource( 'dependency_resolver', 'dependency_resolvers', controller="tool_dependencies", path_prefix='api' )
+
     webapp.mapper.resource_with_deleted( 'user', 'users', path_prefix='/api' )
     webapp.mapper.resource( 'genome', 'genomes', path_prefix='/api' )
     webapp.mapper.resource( 'visualization', 'visualizations', path_prefix='/api' )

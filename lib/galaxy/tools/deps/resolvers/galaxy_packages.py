@@ -8,6 +8,7 @@ log = logging.getLogger( __name__ )
 
 
 class GalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependencyDirMixin):
+    dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['base_path', 'versionless']
     resolver_type = "galaxy_packages"
 
     def __init__(self, dependency_manager, **kwds):
@@ -54,6 +55,8 @@ class GalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependencyDirM
 
 
 class GalaxyPackageDependency(Dependency):
+    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['script', 'path', 'version']
+    dependency_type = 'galaxy_package'
 
     def __init__( self, script, path, version ):
         self.script = script

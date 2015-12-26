@@ -28,6 +28,7 @@ log = logging.getLogger(__name__)
 
 
 class CondaDependencyResolver(DependencyResolver):
+    dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['conda_prefix', 'versionless', 'ensure_channels', 'auto_install']
     resolver_type = "conda"
 
     def __init__(self, dependency_manager, **kwds):
@@ -55,6 +56,7 @@ class CondaDependencyResolver(DependencyResolver):
             debug=debug,
             ensure_channels=ensure_channels,
         )
+        self.ensure_channels = ensure_channels
 
         # Conda operations options (these define how resolution will occur)
         auto_init = _string_as_bool(get_option("auto_init"))
@@ -117,8 +119,14 @@ class CondaDependencyResolver(DependencyResolver):
         else:
             raise Exception("Conda dependency seemingly installed but failed to build job environment.")
 
+    @property
+    def prefix(self):
+        return self.conda_context.conda_prefix
+
 
 class CondaDepenency(Dependency):
+    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['environment_path']
+    dependency_type = 'conda'
 
     def __init__(self, activate, environment_path):
         self.activate = activate

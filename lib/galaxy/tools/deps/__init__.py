@@ -49,6 +49,7 @@ def build_dependency_manager( config ):
 
 
 class NullDependencyManager( object ):
+    dependency_resolvers = []
 
     def uses_tool_shed_dependencies(self):
         return False
@@ -107,7 +108,11 @@ class DependencyManager( object ):
 
     def find_dep( self, name, version=None, type='package', **kwds ):
         log.debug('Find dependency %s version %s' % (name, version))
-        for resolver in self.dependency_resolvers:
+        index = kwds.get('index', None)
+        for i, resolver in enumerate(self.dependency_resolvers):
+            if index is not None and i != index:
+                continue
+
             dependency = resolver.resolve( name, version, type, **kwds )
             log.debug('Resolver %s returned %s (isnull? %s)' % (resolver.resolver_type, dependency,
                                                                 dependency == INDETERMINATE_DEPENDENCY))

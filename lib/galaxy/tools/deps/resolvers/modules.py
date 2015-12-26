@@ -24,6 +24,7 @@ UNKNOWN_FIND_BY_MESSAGE = "ModuleDependencyResolver does not know how to find mo
 
 
 class ModuleDependencyResolver(DependencyResolver):
+    dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['base_path', 'modulepath']
     resolver_type = "modules"
 
     def __init__(self, dependency_manager, **kwds):
@@ -151,6 +152,9 @@ class ModuleDependency(Dependency):
     Using Environment Modules' 'modulecmd' (specifically 'modulecmd sh load') to
     convert module specifications into shell expressions for inclusion in
     the script used to run a tool in Galaxy."""
+    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['module_name', 'module_version']
+    dependency_type = 'module'
+
     def __init__(self, module_dependency_resolver, module_name, module_version=None):
         self.module_dependency_resolver = module_dependency_resolver
         self.module_name = module_name

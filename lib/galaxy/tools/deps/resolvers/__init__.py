@@ -1,7 +1,15 @@
+from galaxy.util.dictifiable import Dictifiable
+
 from abc import ABCMeta, abstractmethod
 
 
-class DependencyResolver( object ):
+class DependencyResolver(Dictifiable, object):
+    # Keys for dictification.
+    dict_collection_visible_keys = ['resolver_type', 'resolves_simple_dependencies']
+    # A "simple" dependency is one that does not depend on the the tool
+    # resolving the dependency. Classic tool shed dependencies are non-simple
+    # because the tool shed install.
+    resolves_simple_dependencies = True
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -28,7 +36,8 @@ class DependencyResolver( object ):
             return default
 
 
-class Dependency( object ):
+class Dependency(Dictifiable, object):
+    dict_collection_visible_keys = ['dependency_type']
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -39,6 +48,7 @@ class Dependency( object ):
 
 
 class NullDependency( Dependency ):
+    dependency_type = None
 
     def shell_commands( self, requirement ):
         return None

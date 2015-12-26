@@ -1118,3 +1118,6 @@ class BaseGalaxyToolBox(AbstractToolBox):
 
     def _init_dependency_manager( self ):
         self.dependency_manager = build_dependency_manager( self.app.config )
+
+    def reload_dependency_manager(self):
+        self._init_dependency_manager()

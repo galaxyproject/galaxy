@@ -23,7 +23,7 @@ from os import listdir
 from os.path import join, exists, getmtime
 
 from .galaxy_packages import GalaxyPackageDependencyResolver
-from ..resolvers import INDETERMINATE_DEPENDENCY
+from ..resolvers import INDETERMINATE_DEPENDENCY, Dependency
 
 import logging
 log = logging.getLogger( __name__ )
@@ -33,6 +33,7 @@ PREFERRED_OWNERS = MANUAL + ",iuc,devteam"
 
 
 class UnlinkedToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver):
+    dict_collection_visible_keys = GalaxyPackageDependencyResolver.dict_collection_visible_keys + ['preferred_owners', 'select_by_owner']
     resolver_type = "unlinked_tool_shed_packages"
 
     def __init__(self, dependency_manager, **kwds):
@@ -132,7 +133,9 @@ class UnlinkedToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver)
     """
 
 
-class CandidateDepenency():
+class CandidateDepenency(Dependency):
+    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['dependency', 'path', 'owner']
+    dependency_type = 'unlinked_tool_shed_package'
 
     def __init__(self, dependency, path, owner=MANUAL):
         self.dependency = dependency

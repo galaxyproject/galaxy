@@ -7,6 +7,10 @@ from ..resolvers import INDETERMINATE_DEPENDENCY
 
 class ToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver, UsesInstalledRepositoriesMixin):
     resolver_type = "tool_shed_packages"
+    # Resolution of these dependencies depends on more than just the requirement
+    # tag, it depends on the tool installation context - therefore these are
+    # non-simple.
+    resolves_simple_dependencies = False
 
     def __init__(self, dependency_manager, **kwds):
         super(ToolShedPackageDependencyResolver, self).__init__(dependency_manager, **kwds)
