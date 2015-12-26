@@ -85,6 +85,7 @@ class CondaDependencyResolver(DependencyResolver):
             log.warn("Conda dependency resolver not sent job directory.")
             return INDETERMINATE_DEPENDENCY
 
+        exact = not self.versionless or version is None
         if self.versionless:
             version = None
 
@@ -114,7 +115,8 @@ class CondaDependencyResolver(DependencyResolver):
         if not exit_code:
             return CondaDepenency(
                 self.conda_context.activate,
-                conda_environment
+                conda_environment,
+                exact,
             )
         else:
             raise Exception("Conda dependency seemingly installed but failed to build job environment.")
@@ -128,9 +130,14 @@ class CondaDepenency(Dependency):
     dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['environment_path']
     dependency_type = 'conda'
 
-    def __init__(self, activate, environment_path):
+    def __init__(self, activate, environment_path, exact):
         self.activate = activate
         self.environment_path = environment_path
+        self._exact = exact
+
+    @property
+    def exact(self):
+        return self._exact
 
     def shell_commands(self, requirement):
         return """[ "$CONDA_DEFAULT_ENV" = "%s" ] || source %s '%s'""" % (

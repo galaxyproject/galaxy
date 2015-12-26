@@ -136,6 +136,11 @@ class UnlinkedToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver)
 class CandidateDepenency(Dependency):
     dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['dependency', 'path', 'owner']
     dependency_type = 'unlinked_tool_shed_package'
+    _exact = True
+
+    @property
+    def exact(self):
+        return self._exact
 
     def __init__(self, dependency, path, owner=MANUAL):
         self.dependency = dependency

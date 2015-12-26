@@ -61,6 +61,9 @@ class ToolDependenciesAPIController( BaseAPIController ):
         :param  name:     name of the requirement to find a dependency for (required)
         :type   version:  str
         :param  version:  version of the requirement to find a dependency for (required)
+        :type   exact:    bool
+        :param  version:  require an exact match to specify requirement (do not discard
+                          version information to resolve dependency).
 
         :rtype:     dict
         :returns:   a dictified description of the dependency, with type: null
@@ -83,6 +86,9 @@ class ToolDependenciesAPIController( BaseAPIController ):
         :param  name:     name of the requirement to find a dependency for (required)
         :type   version:  str
         :param  version:  version of the requirement to find a dependency for (required)
+        :type   exact:    bool
+        :param  version:  require an exact match to specify requirement (do not discard
+                          version information to resolve dependency).
 
         :rtype:     dict
         :returns:   a dictified description of the dependency, with type: null

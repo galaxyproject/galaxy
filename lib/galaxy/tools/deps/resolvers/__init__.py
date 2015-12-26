@@ -1,6 +1,6 @@
 from galaxy.util.dictifiable import Dictifiable
 
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta, abstractmethod, abstractproperty
 
 
 class DependencyResolver(Dictifiable, object):
@@ -37,7 +37,7 @@ class DependencyResolver(Dictifiable, object):
 
 
 class Dependency(Dictifiable, object):
-    dict_collection_visible_keys = ['dependency_type']
+    dict_collection_visible_keys = ['dependency_type', 'exact']
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -46,11 +46,19 @@ class Dependency(Dictifiable, object):
         Return shell commands to enable this dependency.
         """
 
+    @abstractproperty
+    def exact( self ):
+        """ Return true if version information wasn't discarded to resolve
+        the dependency.
+        """
+
 
 class NullDependency( Dependency ):
     dependency_type = None
+    exact = True
 
     def shell_commands( self, requirement ):
         return None
+
 
 INDETERMINATE_DEPENDENCY = NullDependency()

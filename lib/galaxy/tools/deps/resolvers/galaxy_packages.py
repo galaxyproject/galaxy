@@ -26,31 +26,32 @@ class GalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependencyDirM
         symbolic link (if found). Returns a triple of: env_script, base_path, real_version
         """
         if version is None or self.versionless:
-            return self._find_dep_default( name, type=type, **kwds )
+            exact = not self.versionless or version is None
+            return self._find_dep_default( name, type=type, exact=exact, **kwds )
         else:
             return self._find_dep_versioned( name, version, type=type, **kwds )
 
     def _find_dep_versioned( self, name, version, type='package', **kwds ):
         base_path = self.base_path
         path = join( base_path, name, version )
-        return self._galaxy_package_dep(path, version)
+        return self._galaxy_package_dep(path, version, True)
 
-    def _find_dep_default( self, name, type='package', **kwds ):
+    def _find_dep_default( self, name, type='package', exact=True, **kwds ):
         base_path = self.base_path
         path = join( base_path, name, 'default' )
         if islink( path ):
             real_path = realpath( path )
             real_version = basename( real_path )
-            return self._galaxy_package_dep(real_path, real_version)
+            return self._galaxy_package_dep(real_path, real_version, exact)
         else:
             return INDETERMINATE_DEPENDENCY
 
-    def _galaxy_package_dep( self, path, version ):
+    def _galaxy_package_dep( self, path, version, exact ):
         script = join( path, 'env.sh' )
         if exists( script ):
-            return GalaxyPackageDependency(script, path, version)
+            return GalaxyPackageDependency(script, path, version, exact)
         elif exists( join( path, 'bin' ) ):
-            return GalaxyPackageDependency(None, path, version)
+            return GalaxyPackageDependency(None, path, version, exact)
         return INDETERMINATE_DEPENDENCY
 
 
@@ -58,10 +59,15 @@ class GalaxyPackageDependency(Dependency):
     dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['script', 'path', 'version']
     dependency_type = 'galaxy_package'
 
-    def __init__( self, script, path, version ):
+    def __init__( self, script, path, version, exact=True ):
         self.script = script
         self.path = path
         self.version = version
+        self._exact = exact
+
+    @property
+    def exact(self):
+        return self._exact
 
     def shell_commands( self, requirement ):
         base_path = self.path
