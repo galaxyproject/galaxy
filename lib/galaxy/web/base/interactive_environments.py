@@ -236,7 +236,6 @@ class InteractiveEnviornmentRequest(object):
             decoded_id = self.trans.security.decode_id(id)
             dataset = self.trans.sa_session.query(model.HistoryDatasetAssociation).get(decoded_id)
             # TODO: do we need to check if the user has access?
-            print dir(dataset)
             volumes.append(self.volume(dataset.get_file_name(), '/import/{}.{}'.format(dataset.name, dataset.ext)))
         return volumes
 
