@@ -16,8 +16,7 @@
 #command = docker {docker_args}
 
 # The docker image name that should be started.
-image = jupyter
-#bgruening/docker-ipython-notebook:15.10.1
+image = bgruening/docker-jupyter-notebook:16.01
 
 # Additional arguments that are passed to the `docker run` command.
 command_inject = --sig-proxy=true -e DEBUG=false -e DEFAULT_CONTAINER_RUNTIME=120
