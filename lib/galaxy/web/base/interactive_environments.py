@@ -39,7 +39,7 @@ class InteractiveEnviornmentRequest(object):
         self.attr.HOST = trans.request.host.rsplit(':', 1)[0]
 
         self.load_deploy_config()
-        self.load_allowed_images())
+        self.load_allowed_images()
         self.attr.docker_hostname = self.attr.viz_config.get("docker", "docker_hostname")
 
         # Generate per-request passwords the IE plugin can use to configure
@@ -71,19 +71,19 @@ class InteractiveEnviornmentRequest(object):
             self.attr.proxy_prefix = ''
 
     def load_allowed_images(self):
-        if os.path.exists(os.path.join(self.attr.our_config_dir, 'allowed_images.ini')):
-            fn = os.path.join(self.attr.our_config_dir, 'allowed_images.ini')
-        elif os.path.exists(os.path.join(self.attr.our_config_dir, 'allowed_images.ini')):
-            fn = os.path.join(self.attr.our_config_dir, 'allowed_images.ini')
+        if os.path.exists(os.path.join(self.attr.our_config_dir, 'allowed_images.txt')):
+            fn = os.path.join(self.attr.our_config_dir, 'allowed_images.txt')
+        elif os.path.exists(os.path.join(self.attr.our_config_dir, 'allowed_images.txt.sample')):
+            fn = os.path.join(self.attr.our_config_dir, 'allowed_images.txt.sample')
         else:
-            raise Exception("Could not find allowed_images.ini file for " + self.attr.viz_id)
+            raise Exception("Could not find allowed_images.txt file for " + self.attr.viz_id)
 
         with open(fn, 'r') as handle:
             self.allowed_images = [x.strip() for x in handle.readlines()
                                    if not x.startswith('#') and len(x.strip()) > 0]
 
             if len(self.allowed_images) == 0:
-                raise Exception("No allowed images specified for " + self.attr.viz_id
+                raise Exception("No allowed images specified for " + self.attr.viz_id)
 
             self.default_image = self.allowed_images[0]
 
