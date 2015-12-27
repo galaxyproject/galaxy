@@ -27,19 +27,19 @@ gie_list = os.listdir(gie_dir)
 gie_list.remove('interactive_environments.dtd')
 gie_list.remove('common')
 
-gie_tag_map = {}
+gie_image_map = {}
 
 # TODO: memoize/calc once on startup
 for gie in gie_list:
-    if os.path.exists(gie_config_dir(gie, 'allowed_tags.ini')):
-        tag_file = gie_config_dir(gie, 'allowed_tags.ini')
-    elif os.path.exists(gie_config_dir(gie, 'allowed_tags.ini.sample')):
-        tag_file = gie_config_dir(gie, 'allowed_tags.ini.sample')
+    if os.path.exists(gie_config_dir(gie, 'allowed_images.ini')):
+        image_file = gie_config_dir(gie, 'allowed_images.ini')
+    elif os.path.exists(gie_config_dir(gie, 'allowed_images.ini.sample')):
+        image_file = gie_config_dir(gie, 'allowed_images.ini.sample')
     else:
         continue
 
-    with open(tag_file, 'r') as handle:
-        gie_tag_map[gie] = [tag.strip() for tag in handle.readlines()]
+    with open(image_file, 'r') as handle:
+        gie_image_map[gie] = [image.strip() for image in handle.readlines() if not image.startswith('#')]
 
 %>
 <html>
@@ -64,14 +64,14 @@ for gie in gie_list:
 <div class="content">
 <h1>Galaxy Interactive Environment Launcher</h1>
 <form id='launcher' action="NONE" method="GET">
-    <b>Image: </b>
-    <span id="image_name" style="min-width:100px">
+    <b>GIE: </b>
+    <span id="image_name" style="min-width:200px">
     <input id="image_name_hidden" type="hidden" name="image_tag" value="NONE" />
     </span>
     <br/>
     <br/>
-    <b>Version: </b>
-    <span id="image_tag" style="min-width:100px">
+    <b>Image: </b>
+    <span id="image_tag" style="min-width:400px">
     <input id="image_tag_hidden" type="hidden" name="image_tag" value="NONE" />
     </span>
     <br/>
@@ -110,9 +110,9 @@ for gie in gie_list:
 <script type="text/javascript">
 $(document).ready(function(){
 var gie_image_map = {
-    % for image_name in gie_tag_map.keys():
+    % for image_name in gie_image_map.keys():
         "${image_name}": [
-            % for image_tag in gie_tag_map[image_name]:
+            % for image_tag in gie_image_map[image_name]:
                 "${image_tag}",
             % endfor
         ],
@@ -120,7 +120,7 @@ var gie_image_map = {
 }
 
 var images = [
-    % for image_name in gie_tag_map.keys():
+    % for image_name in gie_image_map.keys():
     {
         id: "${image_name}",
         text: "${image_name}"
