@@ -15,8 +15,8 @@
 # usual group/sudo changes.
 #command = docker {docker_args}
 
+# The image argument was moved to "allowed_images.txt.sample"
 # The docker image name that should be started.
-image = qiaoy/iobio-bundle.bam-iobio:1.0-ondemand
 
 # Additional arguments that are passed to the `docker run` command.
 #command_inject = --sig-proxy=true -e DEBUG=false
