@@ -12,15 +12,10 @@ ie_request.attr.import_volume = False
 bam = ie_request.volume(hda.file_name, '/input/bamfile.bam', how='ro')
 bam_index = ie_request.volume(hda.metadata.bam_index.file_name, '/input/bamfile.bam.bai', how='ro')
 
-ie_request.launch(
-    image=trans.request.params.get('image_tag', None),
-    additional_ids=trans.request.params.get('additional_dataset_ids', None),
-    volumes=[bam, bam_index],
-    env_override={
-        'PUB_HTTP_PORT': ie_request.attr.galaxy_config.dynamic_proxy_bind_port,
-        'PUB_HOSTNAME': ie_request.attr.HOST,
-    }
-)
+ie_request.launch(volumes=[bam, bam_index], env_override={
+    'PUB_HTTP_PORT': ie_request.attr.galaxy_config.dynamic_proxy_bind_port,
+    'PUB_HOSTNAME': ie_request.attr.HOST,
+})
 
 notebook_access_url = ie_request.url_template('${PROXY_URL}/?bam=http://localhost/tmp/bamfile.bam')
 
