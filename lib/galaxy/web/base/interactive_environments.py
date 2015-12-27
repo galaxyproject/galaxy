@@ -268,7 +268,7 @@ class InteractiveEnviornmentRequest(object):
         if image not in self.allowed_images:
             # Now that we're allowing users to specify images, we need to ensure that they aren't
             # requesting images we have not specifically allowed.
-            raise Exception("Attempting to launch disallowed image! %s not in list of allowed images [%s]" \
+            raise Exception("Attempting to launch disallowed image! %s not in list of allowed images [%s]"
                             % (image, ', '.join(self.allowed_images)))
 
         if additional_ids is not None:
