@@ -1,4 +1,5 @@
 <%
+import yaml
 import os
 
 def detect_gie_path(path):
@@ -31,15 +32,15 @@ gie_image_map = {}
 
 # TODO: memoize/calc once on startup
 for gie in gie_list:
-    if os.path.exists(gie_config_dir(gie, 'allowed_images.txt')):
-        image_file = gie_config_dir(gie, 'allowed_images.txt')
-    elif os.path.exists(gie_config_dir(gie, 'allowed_images.txt.sample')):
-        image_file = gie_config_dir(gie, 'allowed_images.txt.sample')
+    if os.path.exists(gie_config_dir(gie, 'allowed_images.yml')):
+        image_file = gie_config_dir(gie, 'allowed_images.yml')
+    elif os.path.exists(gie_config_dir(gie, 'allowed_images.yml.sample')):
+        image_file = gie_config_dir(gie, 'allowed_images.yml.sample')
     else:
         continue
 
     with open(image_file, 'r') as handle:
-        gie_image_map[gie] = [image.strip().split('\t') for image in handle.readlines() if not image.startswith('#')]
+        gie_image_map[gie] = yaml.load(handle)
 
 %>
 <html>
@@ -115,18 +116,16 @@ $(document).ready(function(){
     var gie_image_map = {
         % for image_name in gie_image_map.keys():
             "${image_name}": [
-                % for (image_tag, image_desc) in gie_image_map[image_name]:
+                % for image in gie_image_map[image_name]:
                 {
-                    id: "${image_tag}",
-                    text: "${image_tag}",
-                    extra: "${image_desc}",
+                    id: "${image['image']}",
+                    text: "${image['image']}",
+                    extra: "${image['description']}",
                 },
                 % endfor
             ],
         % endfor
     }
-
-    console.log(gie_image_map)
 
     var images = [
         % for image_name in gie_image_map.keys():

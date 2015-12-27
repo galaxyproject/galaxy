@@ -2,6 +2,7 @@ import ConfigParser
 
 import os
 import json
+import yaml
 import stat
 import random
 import tempfile
@@ -71,16 +72,15 @@ class InteractiveEnviornmentRequest(object):
             self.attr.proxy_prefix = ''
 
     def load_allowed_images(self):
-        if os.path.exists(os.path.join(self.attr.our_config_dir, 'allowed_images.txt')):
-            fn = os.path.join(self.attr.our_config_dir, 'allowed_images.txt')
-        elif os.path.exists(os.path.join(self.attr.our_config_dir, 'allowed_images.txt.sample')):
-            fn = os.path.join(self.attr.our_config_dir, 'allowed_images.txt.sample')
+        if os.path.exists(os.path.join(self.attr.our_config_dir, 'allowed_images.yml')):
+            fn = os.path.join(self.attr.our_config_dir, 'allowed_images.yml')
+        elif os.path.exists(os.path.join(self.attr.our_config_dir, 'allowed_images.yml.sample')):
+            fn = os.path.join(self.attr.our_config_dir, 'allowed_images.yml.sample')
         else:
-            raise Exception("Could not find allowed_images.txt file for " + self.attr.viz_id)
+            raise Exception("Could not find allowed_images.yml file for " + self.attr.viz_id)
 
         with open(fn, 'r') as handle:
-            self.allowed_images = [x.strip().split('\t')[0] for x in handle.readlines()
-                                   if not x.startswith('#') and len(x.strip()) > 0]
+            self.allowed_images = [x['image'] for x in yaml.load(handle)]
 
             if len(self.allowed_images) == 0:
                 raise Exception("No allowed images specified for " + self.attr.viz_id)
