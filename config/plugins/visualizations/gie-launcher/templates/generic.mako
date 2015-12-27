@@ -62,99 +62,98 @@ for gie in gie_list:
 </head>
 <body>
 <div class="content">
-<h1>Galaxy Interactive Environment Launcher</h1>
-<form id='launcher' action="NONE" method="GET">
-    <b>GIE: </b>
-    <span id="image_name" style="min-width:200px">
-    </span>
-    <br/>
-    <br/>
-    <b>Image: </b>
-    <span id="image_tag" style="min-width:400px">
-    <input id="image_tag_hidden" type="hidden" name="image_tag" value="NONE" />
-    </span>
-    <br/>
-    <br/>
+    <h1>Galaxy Interactive Environment Launcher</h1>
+    <form id='launcher' action="NONE" method="GET">
+        <b>GIE: </b>
+        <span id="image_name" style="min-width:200px">
+        </span>
+        <br/>
+        <br/>
+        <b>Image: </b>
+        <span id="image_tag" style="min-width:400px">
+        <input id="image_tag_hidden" type="hidden" name="image_tag" value="NONE" />
+        </span>
+        <br/>
+        <br/>
 
-    <b>Datasets<b>
-    <br/>
-    <input type="hidden" name="dataset_id" value="${ trans.security.encode_id(hda.dataset_id) }" />
-    <br/>
+        <b>Datasets<b>
+        <br/>
+        <input type="hidden" name="dataset_id" value="${ trans.security.encode_id(hda.dataset_id) }" />
+        <br/>
 
-% for dataset in hda.history.datasets:
-    % if not dataset.deleted:
-    <label>
-        <input
-            type="checkbox"
-            name="additional_dataset_ids"
-            value="${ trans.security.encode_id(dataset.dataset_id) }"
-            %if dataset.dataset_id == hda.dataset_id:
-            disabled
-            checked=true
-            %endif
-        >
-        ${ dataset.id }: ${ dataset.name }
-    </label><br/>
-    % endif
-% endfor
+    % for dataset in hda.history.datasets:
+        % if not dataset.deleted:
+        <label>
+            <input
+                type="checkbox"
+                name="additional_dataset_ids"
+                value="${ trans.security.encode_id(dataset.dataset_id) }"
+                %if dataset.dataset_id == hda.dataset_id:
+                disabled
+                checked=true
+                %endif
+            >
+            ${ dataset.id }: ${ dataset.name }
+        </label><br/>
+        % endif
+    % endfor
 
-    <br/>
-    <br/>
-    <input type="submit" class="button" value="Launch"  disabled>
-</form>
+        <br/>
+        <br/>
+        <input type="submit" class="button" value="Launch"  disabled>
+    </form>
 
 
 </div>
-
 <script type="text/javascript">
-$(document).ready(function(){
-var gie_image_map = {
-    % for image_name in gie_image_map.keys():
-        "${image_name}": [
-            % for image_tag in gie_image_map[image_name]:
-                "${image_tag}",
-            % endfor
-        ],
-    % endfor
-}
+    $(document).ready(function(){
+    var gie_image_map = {
+        % for image_name in gie_image_map.keys():
+            "${image_name}": [
+                % for image_tag in gie_image_map[image_name]:
+                    "${image_tag}",
+                % endfor
+            ],
+        % endfor
+    }
 
-var images = [
-    % for image_name in gie_image_map.keys():
-    {
-        id: "${image_name}",
-        text: "${image_name}"
-    },
-    % endfor
-]
+    var images = [
+        % for image_name in gie_image_map.keys():
+        {
+            id: "${image_name}",
+            text: "${image_name}"
+        },
+        % endfor
+    ]
 
-$('#image_name').select2({
-    placeholder: "Select Image",
-    data: images
-}).on('change', function(e){
-    // Get the versions for this image name
-    image_versions = gie_image_map[e.val]
-    // Update the action
-    $("#launcher").attr("action", e.val)
-    // Update the hidden input
-    $("#image_name_hidden").val(e.val)
+    $('#image_name').select2({
+        placeholder: "Select Image",
+        data: images
+    }).on('change', function(e){
+        // Get the versions for this image name
+        image_versions = gie_image_map[e.val]
+        // Update the action
+        $("#launcher").attr("action", e.val)
+        // Update the hidden input
+        $("#image_name_hidden").val(e.val)
 
-    // Create our select2 appropriately
-    image_tags = $("#image_tag").select2({
-        placholder: "Image Version",
-        data: $.map(image_versions, function(n){
-            return {id: n, text: n};
+        // Create our select2 appropriately
+        image_tags = $("#image_tag").select2({
+            placholder: "Image Version",
+            data: $.map(image_versions, function(n){
+                return {id: n, text: n};
+            })
+        }).on('change', function(e2){
+            // Inner actions, update the hidden input
+            $("#image_tag_hidden").val(e2.val)
+            // Enable the button
+            $('input[type="submit"]').removeAttr('disabled');
+
         })
-    }).on('change', function(e2){
-        // Inner actions, update the hidden input
-        $("#image_tag_hidden").val(e2.val)
-        // Enable the button
-        $('input[type="submit"]').removeAttr('disabled');
+    })
+
 
     })
-})
-
-
-})
 </script>
 </body>
 </html>
