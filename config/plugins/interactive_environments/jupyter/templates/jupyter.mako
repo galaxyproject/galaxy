@@ -47,6 +47,12 @@ var notebook_login_url = '${ notebook_login_url }';
 var notebook_access_url = '${ notebook_access_url }';
 ${ ie.plugin_require_config() }
 
+// Keep container running
+requirejs(['interactive_environments', 'plugin/jupyter'], function(){
+    keep_alive();
+});
+
+
 // Load notebook
 
 requirejs(['interactive_environments', 'plugin/jupyter'], function(){
@@ -54,36 +60,8 @@ requirejs(['interactive_environments', 'plugin/jupyter'], function(){
 });
 
 
-// This is needed to keep the container alive. If the user leaves this site
-// this function is not constantly pinging the container, the container will
-// terminate itself.
-var request_count = 0;
-interval = setInterval(function(){
-    $.ajax({
-        url: notebook_access_url,
-        xhrFields: {
-            withCredentials: true
-        },
-        type: "GET",
-        timeout: 500,
-        success: function(){
-            console.log("Connected to IE, returning");
-        },
-        error: function(jqxhr, status, error){
-            request_count++;
-            console.log("Request " + request_count);
-            if(request_count > 30){
-                clearInterval(interval);
-                clear_main_area();
-                toastr.error(
-                    "Could not connect to IE, contact your administrator",
-                    "Error",
-                    {'closeButton': true, 'timeOut': 20000, 'tapToDismiss': false}
-                );
-            }
-        }
-    });
-}, 30000);
+
+
 
 </script>
 <div id="main" width="100%" height="100%">
