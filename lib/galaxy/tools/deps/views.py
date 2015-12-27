@@ -45,23 +45,42 @@ class DependencyResolversView(object):
     def resolver_dependency(self, index, **kwds):
         return self._dependency(**kwds)
 
+    def install_dependency(self, index, payload):
+        resolver = self._dependency_resolver(index)
+        if not hasattr(resolver, "install_dependency"):
+            raise NotImplemented()
+
+        name, version, type, extra_kwds = self._parse_dependency_info(payload)
+        return resolver.install_dependency(
+            name=name,
+            version=version,
+            type=type,
+            **extra_kwds
+        )
+
     def _dependency(self, index=None, **kwds):
         if index is not None:
             index = int(index)
 
-        name = kwds.get("name", None)
-        if name is None:
-            raise RequestParameterMissingException("Missing 'name' parameter required for resolution.")
-        version = kwds.get("version", None)
-        type = kwds.get("type", "package")
+        name, version, type, extra_kwds = self._parse_dependency_info(kwds)
         resolve_kwds = dict(
             job_directory="/path/to/example/job_directory",
             index=index,
+            **extra_kwds
         )
         dependency = self._dependency_manager.find_dep(
             name, version=version, type=type, **resolve_kwds
         )
         return dependency.to_dict()
+
+    def _parse_dependency_info(self, kwds):
+        extra_kwds = kwds.copy()
+        name = extra_kwds.pop("name", None)
+        if name is None:
+            raise RequestParameterMissingException("Missing 'name' parameter required for resolution.")
+        version = extra_kwds.pop("version", None)
+        type = extra_kwds.pop("type", "package")
+        return name, version, type, extra_kwds
 
     def _dependency_resolver(self, index):
         index = int(index)

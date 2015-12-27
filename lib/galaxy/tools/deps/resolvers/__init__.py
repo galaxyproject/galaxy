@@ -55,6 +55,19 @@ class ListableDependencyResolver:
         return ToolRequirement(name=name, type="package", version=version)
 
 
+class InstallableDependencyResolver:
+    """ Mix this into a ``DependencyResolver`` and implement to indicate
+    the dependency resolver can attempt to install new dependencies.
+    """
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def install_dependency(self, name, version, type, **kwds):
+        """ Attempt to install this dependency if a recipe to do so
+        has been registered in some way.
+        """
+
+
 class Dependency(Dictifiable, object):
     dict_collection_visible_keys = ['dependency_type', 'exact']
     __metaclass__ = ABCMeta

@@ -6,11 +6,14 @@ incompatible changes coming.
 
 import os
 
+from galaxy.exceptions import NotImplemented
+
 from ..resolvers import (
     DependencyResolver,
     INDETERMINATE_DEPENDENCY,
     Dependency,
     ListableDependencyResolver,
+    InstallableDependencyResolver,
 )
 from ..conda_util import (
     CondaContext,
@@ -29,7 +32,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver):
+class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, InstallableDependencyResolver):
     dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['conda_prefix', 'versionless', 'ensure_channels', 'auto_install']
     resolver_type = "conda"
 
@@ -128,6 +131,17 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver):
             name = install_target.package
             version = install_target.version
             yield self._to_requirement(name, version)
+
+    def install_dependency(self, name, version, type, **kwds):
+        if type != "package":
+            raise NotImplemented("Can only install dependencies of type '%s'" % type)
+
+        if self.versionless:
+            version = None
+        conda_target = CondaTarget(name, version=version)
+
+        if install_conda_target(conda_target, conda_context=self.conda_context):
+            raise Exception("Failed to install conda recipe.")
 
     @property
     def prefix(self):
