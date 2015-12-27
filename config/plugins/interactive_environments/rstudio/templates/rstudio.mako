@@ -17,7 +17,8 @@ if hda.datatype.__class__.__name__ == "RData":
     shutil.copy( hda.file_name, os.path.join(temp_dir, '.RData') )
 
 ie_request.launch(
-    image=trans.request.params['image_tag'],
+    image=trans.request.params.get('image_tag', None),
+    additional_ids=trans.request.params.get('additional_dataset_ids', None),
     env_override={
         'notebook_username': USERNAME,
         'notebook_password': PASSWORD,

@@ -67,7 +67,7 @@ for gie in gie_list:
     <div class="col-xs-6">
         <div class="row">
             <h1>Galaxy Interactive Environment Launcher</h1>
-            <form id='launcher' action="NONE" method="GET">
+            <form id='launcher' action="NONE" method="POST">
 
                 <table class="table table-striped">
                     <tr>
@@ -86,23 +86,12 @@ for gie in gie_list:
                     <tr>
                         <td>Additional Datasets: </td>
                         <td>
-                            <input type="hidden" name="dataset_id" value="${ trans.security.encode_id(hda.dataset_id) }" />
-                            % for dataset in hda.history.datasets:
-                                % if not dataset.deleted and dataset.dataset_id !=  hda.dataset_id:
-                                <label>
-                                    <input
-                                        type="checkbox"
-                                        name="additional_dataset_ids"
-                                        value="${ trans.security.encode_id(dataset.dataset_id) }"
-                                    >
-                                    ${ dataset.id }: ${ dataset.name }
-                                </label><br/>
-                                % endif
-                            % endfor
+                            <span id="additional_datasets" style="width: 100%"></span>
+                            <input id="additional_dataset_ids" name="additional_dataset_ids" type="hidden">
                         </td>
                     </tr>
                 </table>
-                <input type="submit" class="button" value="Launch"  disabled>
+                <input type="submit" class="button" value="Launch" disabled>
             </form>
         </div>
     </div>
@@ -110,7 +99,7 @@ for gie in gie_list:
     </div>
 </div>
 <script type="text/javascript">
-    $(document).ready(function(){
+$(document).ready(function(){
     var gie_image_map = {
         % for image_name in gie_image_map.keys():
             "${image_name}": [
@@ -130,6 +119,21 @@ for gie in gie_list:
         % endfor
     ]
 
+    var datasets = [
+        % for dataset in hda.history.datasets:
+            % if not dataset.deleted and dataset.dataset_id !=  hda.dataset_id:
+            { id: "${ trans.security.encode_id(dataset.dataset_id) }", text: "${ dataset.id } : ${ dataset.name }" },
+            % endif
+        % endfor
+    ]
+
+    $("#additional_datasets").select2({
+        multiple: true,
+        data: datasets
+    }).on('change', function(e){
+        $("#additional_dataset_ids").val($("#additional_datasets").val())
+    })
+
     $('#image_name').select2({
         placeholder: "Select Image",
         data: images
@@ -137,7 +141,7 @@ for gie in gie_list:
         // Get the versions for this image name
         image_versions = gie_image_map[e.val]
         // Update the action
-        $("#launcher").attr("action", e.val)
+        $("#launcher").attr("action", e.val + '?dataset_id=${ trans.security.encode_id(hda.dataset_id) }')
         // Update the hidden input
         $("#image_name_hidden").val(e.val)
 
@@ -157,7 +161,7 @@ for gie in gie_list:
     })
 
 
-    })
+})
 </script>
 </body>
 </html>

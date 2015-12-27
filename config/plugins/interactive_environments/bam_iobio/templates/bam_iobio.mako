@@ -14,7 +14,8 @@ bam_index = ie_request.volume(hda.metadata.bam_index.file_name, '/input/bamfile.
 
 ie_request.launch(
     image=trans.request.params.get('image_tag', None),
-    volumes=[bam, bam_index], 
+    additional_ids=trans.request.params.get('additional_dataset_ids', None),
+    volumes=[bam, bam_index],
     env_override={
         'PUB_HTTP_PORT': ie_request.attr.galaxy_config.dynamic_proxy_bind_port,
         'PUB_HOSTNAME': ie_request.attr.HOST,

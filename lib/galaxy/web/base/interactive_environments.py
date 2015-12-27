@@ -8,7 +8,7 @@ import tempfile
 from subprocess import Popen, PIPE
 
 from galaxy.util.bunch import Bunch
-from galaxy import web
+from galaxy import web, model
 from galaxy.managers import api_keys
 from galaxy.tools.deps.docker_util import DockerVolume
 
@@ -223,9 +223,29 @@ class InteractiveEnviornmentRequest(object):
         )
         return command
 
-    def launch(self, image=None, raw_cmd=None, env_override={}, volumes=[]):
+    def _idsToVolumes(self, ids):
+        if len(ids.strip()) == 0:
+            return []
+
+        # They come as a comma separated list
+        ids = ids.split(',')
+
+        # Next we need to turn these into volumes
+        volumes = []
+        for id in ids:
+            decoded_id = self.trans.security.decode_id(id)
+            dataset = self.trans.sa_session.query(model.HistoryDatasetAssociation).get(decoded_id)
+            # TODO: do we need to check if the user has access?
+            print dir(dataset)
+            volumes.append(self.volume(dataset.get_file_name(), '/import/{}.{}'.format(dataset.name, dataset.ext)))
+        return volumes
+
+    def launch(self, image=None, additional_ids=None, raw_cmd=None, env_override={}, volumes=[]):
         if image is None:
             image = self.default_image
+
+        if additional_ids is not None:
+            volumes += self._idsToVolumes(additional_ids)
 
         if image not in self.allowed_images:
             # Now that we're allowing users to specify images, we need to ensure that they aren't
