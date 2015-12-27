@@ -79,7 +79,7 @@ class InteractiveEnviornmentRequest(object):
             raise Exception("Could not find allowed_images.txt file for " + self.attr.viz_id)
 
         with open(fn, 'r') as handle:
-            self.allowed_images = [x.strip() for x in handle.readlines()
+            self.allowed_images = [x.strip().split('\t')[0] for x in handle.readlines()
                                    if not x.startswith('#') and len(x.strip()) > 0]
 
             if len(self.allowed_images) == 0:

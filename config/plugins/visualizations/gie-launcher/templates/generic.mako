@@ -39,7 +39,7 @@ for gie in gie_list:
         continue
 
     with open(image_file, 'r') as handle:
-        gie_image_map[gie] = [image.strip() for image in handle.readlines() if not image.startswith('#')]
+        gie_image_map[gie] = [image.strip().split('\t') for image in handle.readlines() if not image.startswith('#')]
 
 %>
 <html>
@@ -83,25 +83,27 @@ for gie in gie_list:
                     <tr>
                         <td>GIE: </td>
                         <td>
-                            <span id="image_name" style="width: 100%" />
+                            <span id="image_name" style="width: 400px" />
                         </td>
                     </tr>
                     <tr>
                         <td>Image: </td>
                         <td>
-                            <span id="image_tag" style="width: 100%" />
+                            <span id="image_tag" style="width:400px" />
                             <input id="image_tag_hidden" type="hidden" name="image_tag" value="NONE" />
+                            <p id="image_desc">
+                            </p>
                         </td>
                     </tr>
                     <tr>
                         <td>Additional Datasets: </td>
                         <td>
-                            <span id="additional_datasets" style="width: 100%"></span>
+                            <span id="additional_datasets" style="width:400px"></span>
                             <input id="additional_dataset_ids" name="additional_dataset_ids" type="hidden">
                         </td>
                     </tr>
                 </table>
-                <input type="submit" class="button" value="Launch" disabled>
+                <input type="submit" class="button" value="Launch" disabled="">
             </form>
         </div>
     </div>
@@ -113,12 +115,18 @@ $(document).ready(function(){
     var gie_image_map = {
         % for image_name in gie_image_map.keys():
             "${image_name}": [
-                % for image_tag in gie_image_map[image_name]:
-                    "${image_tag}",
+                % for (image_tag, image_desc) in gie_image_map[image_name]:
+                {
+                    id: "${image_tag}",
+                    text: "${image_tag}",
+                    extra: "${image_desc}",
+                },
                 % endfor
             ],
         % endfor
     }
+
+    console.log(gie_image_map)
 
     var images = [
         % for image_name in gie_image_map.keys():
@@ -144,6 +152,11 @@ $(document).ready(function(){
         $("#additional_dataset_ids").val($("#additional_datasets").val())
     })
 
+    function formatter(v){
+        if(!v.id) return v.text;
+        return "<b>" + v.id + "</b><p>" + v.extra + "</p>"
+    }
+
     $('#image_name').select2({
         placeholder: "Select Image",
         data: images
@@ -158,9 +171,10 @@ $(document).ready(function(){
         // Create our select2 appropriately
         image_tags = $("#image_tag").select2({
             placholder: "Image Version",
-            data: $.map(image_versions, function(n){
-                return {id: n, text: n};
-            })
+            formatResult: formatter,
+            formatSelection: formatter,
+            escapeMarkup: function(m) { return m; },
+            data: image_versions
         }).on('change', function(e2){
             // Inner actions, update the hidden input
             $("#image_tag_hidden").val(e2.val)
