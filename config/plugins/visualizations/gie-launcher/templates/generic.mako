@@ -31,10 +31,10 @@ gie_image_map = {}
 
 # TODO: memoize/calc once on startup
 for gie in gie_list:
-    if os.path.exists(gie_config_dir(gie, 'allowed_images.ini')):
-        image_file = gie_config_dir(gie, 'allowed_images.ini')
-    elif os.path.exists(gie_config_dir(gie, 'allowed_images.ini.sample')):
-        image_file = gie_config_dir(gie, 'allowed_images.ini.sample')
+    if os.path.exists(gie_config_dir(gie, 'allowed_images.txt')):
+        image_file = gie_config_dir(gie, 'allowed_images.txt')
+    elif os.path.exists(gie_config_dir(gie, 'allowed_images.txt.sample')):
+        image_file = gie_config_dir(gie, 'allowed_images.txt.sample')
     else:
         continue
 
@@ -61,49 +61,53 @@ for gie in gie_list:
             'libs/require')}
 </head>
 <body>
-<div class="content">
-    <h1>Galaxy Interactive Environment Launcher</h1>
-    <form id='launcher' action="NONE" method="GET">
-        <b>GIE: </b>
-        <span id="image_name" style="min-width:200px">
-        </span>
-        <br/>
-        <br/>
-        <b>Image: </b>
-        <span id="image_tag" style="min-width:400px">
-        <input id="image_tag_hidden" type="hidden" name="image_tag" value="NONE" />
-        </span>
-        <br/>
-        <br/>
+<div class="row" style="max-width: 100%">
+    <div class="col-xs-3">
+    </div>
+    <div class="col-xs-6">
+        <div class="row">
+            <h1>Galaxy Interactive Environment Launcher</h1>
+            <form id='launcher' action="NONE" method="GET">
 
-        <b>Datasets<b>
-        <br/>
-        <input type="hidden" name="dataset_id" value="${ trans.security.encode_id(hda.dataset_id) }" />
-        <br/>
-
-    % for dataset in hda.history.datasets:
-        % if not dataset.deleted:
-        <label>
-            <input
-                type="checkbox"
-                name="additional_dataset_ids"
-                value="${ trans.security.encode_id(dataset.dataset_id) }"
-                %if dataset.dataset_id == hda.dataset_id:
-                disabled
-                checked=true
-                %endif
-            >
-            ${ dataset.id }: ${ dataset.name }
-        </label><br/>
-        % endif
-    % endfor
-
-        <br/>
-        <br/>
-        <input type="submit" class="button" value="Launch"  disabled>
-    </form>
-
-
+                <table class="table table-striped">
+                    <tr>
+                        <td>GIE: </td>
+                        <td>
+                            <span id="image_name" style="width: 100%" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Image: </td>
+                        <td>
+                            <span id="image_tag" style="width: 100%" />
+                            <input id="image_tag_hidden" type="hidden" name="image_tag" value="NONE" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Additional Datasets: </td>
+                        <td>
+                            <input type="hidden" name="dataset_id" value="${ trans.security.encode_id(hda.dataset_id) }" />
+                            % for dataset in hda.history.datasets:
+                                % if not dataset.deleted and dataset.dataset_id !=  hda.dataset_id:
+                                <label>
+                                    <input
+                                        type="checkbox"
+                                        name="additional_dataset_ids"
+                                        value="${ trans.security.encode_id(dataset.dataset_id) }"
+                                    >
+                                    ${ dataset.id }: ${ dataset.name }
+                                </label><br/>
+                                % endif
+                            % endfor
+                        </td>
+                    </tr>
+                </table>
+                <input type="submit" class="button" value="Launch"  disabled>
+            </form>
+        </div>
+    </div>
+    <div class="col-xs-3">
+    </div>
 </div>
 <script type="text/javascript">
     $(document).ready(function(){
