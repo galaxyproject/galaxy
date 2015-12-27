@@ -4,4 +4,4 @@
 # for your users to run. E.g. maybe you need a geosciences flavour,
 # you can create the image based on our default image and add the
 # appropriate `apt-get/pip install` statements.
-erasche/docker-rstudio-notebook:15.10
+erasche/docker-rstudio-notebook:15.10	If you've ever done R analysis, you probably used RStudio. This familiar R analysis software suite will let you explore your datasets in depth. Comes with ggplot2, RODBC, maps, shinyapps, knitr, LaTeX, bioconductor, cummeRbund, and many more pre-installed packages.
