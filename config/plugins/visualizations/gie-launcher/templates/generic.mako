@@ -67,6 +67,16 @@ for gie in gie_list:
     <div class="col-xs-6">
         <div class="row">
             <h1>Galaxy Interactive Environment Launcher</h1>
+            <p>
+                Galaxy Interactive Environments (GIEs) launch embedded,
+                dockerized versions of popular data analysis suites such as
+                Jupyter and RStudio, right from within Galaxy. They allow you
+                to dynamically interact with your data, right on the server. No
+                more uploading and downloading between various platforms just
+                to get your work done!
+                <br />
+                <a href="https://docs.galaxyproject.org/en/master/admin/interactive_environments.html">Admin Docs</a>
+            </p>
             <form id='launcher' action="NONE" method="POST">
 
                 <table class="table table-striped">
