@@ -39,6 +39,7 @@ class InteractiveEnviornmentRequest(object):
         self.attr.HOST = trans.request.host.rsplit(':', 1)[0]
 
         self.load_deploy_config()
+        self.load_allowed_images())
         self.attr.docker_hostname = self.attr.viz_config.get("docker", "docker_hostname")
 
         # Generate per-request passwords the IE plugin can use to configure
@@ -68,6 +69,23 @@ class InteractiveEnviornmentRequest(object):
                 self.attr.galaxy_config.dynamic_proxy_prefix)
         else:
             self.attr.proxy_prefix = ''
+
+    def load_allowed_images(self):
+        if os.path.exists(os.path.join(self.attr.our_config_dir, 'allowed_images.ini')):
+            fn = os.path.join(self.attr.our_config_dir, 'allowed_images.ini')
+        elif os.path.exists(os.path.join(self.attr.our_config_dir, 'allowed_images.ini')):
+            fn = os.path.join(self.attr.our_config_dir, 'allowed_images.ini')
+        else:
+            raise Exception("Could not find allowed_images.ini file for " + self.attr.viz_id)
+
+        with open(fn, 'r') as handle:
+            self.allowed_images = [x.strip() for x in handle.readlines()
+                                   if not x.startswith('#') and len(x.strip()) > 0]
+
+            if len(self.allowed_images) == 0:
+                raise Exception("No allowed images specified for " + self.attr.viz_id
+
+            self.default_image = self.allowed_images[0]
 
     def load_deploy_config(self, default_dict={}):
         # For backwards compat, any new variables added to the base .ini file
@@ -178,7 +196,7 @@ class InteractiveEnviornmentRequest(object):
     def volume(self, host_path, container_path, **kwds):
         return DockerVolume(host_path, container_path, **kwds)
 
-    def docker_cmd(self, env_override={}, volumes=[]):
+    def docker_cmd(self, image, env_override={}, volumes=[]):
         """
             Generate and return the docker command to execute
         """
@@ -201,13 +219,23 @@ class InteractiveEnviornmentRequest(object):
             environment=env_str,
             import_volume_str=import_volume_str,
             volume_str=volume_str,
-            image=self.attr.viz_config.get("docker", "image")
+            image=image,
         )
         return command
 
-    def launch(self, raw_cmd=None, env_override={}, volumes=[]):
+    def launch(self, image=None, raw_cmd=None, env_override={}, volumes=[]):
+        if image is None:
+            image = self.default_image
+
+        if image not in self.allowed_images:
+            # Now that we're allowing users to specify images, we need to ensure that they aren't
+            # requesting images we have not specifically allowed.
+            raise Exception("Attempting to launch disallowed image! %s not in list of allowed images [%s]" \
+                            % (image, ', '.join(self.allowed_images)))
+
         if raw_cmd is None:
-            raw_cmd = self.docker_cmd(env_override=env_override, volumes=volumes)
+            raw_cmd = self.docker_cmd(image, env_override=env_override, volumes=volumes)
+
         log.info("Starting docker container for IE {0} with command [{1}]".format(
             self.attr.viz_id,
             raw_cmd

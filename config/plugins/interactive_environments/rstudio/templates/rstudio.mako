@@ -16,10 +16,13 @@ USERNAME = "galaxy"
 if hda.datatype.__class__.__name__ == "RData":
     shutil.copy( hda.file_name, os.path.join(temp_dir, '.RData') )
 
-ie_request.launch(env_override={
-    'notebook_username': USERNAME,
-    'notebook_password': PASSWORD,
-})
+ie_request.launch(
+    image=trans.request.params['image_tag'],
+    env_override={
+        'notebook_username': USERNAME,
+        'notebook_password': PASSWORD,
+    }
+)
 
 ## General IE specific
 # Access URLs for the notebook from within galaxy.

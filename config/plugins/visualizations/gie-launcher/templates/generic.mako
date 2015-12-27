@@ -66,7 +66,6 @@ for gie in gie_list:
 <form id='launcher' action="NONE" method="GET">
     <b>GIE: </b>
     <span id="image_name" style="min-width:200px">
-    <input id="image_name_hidden" type="hidden" name="image_tag" value="NONE" />
     </span>
     <br/>
     <br/>
