@@ -120,7 +120,7 @@ $(document).ready(function(){
                 {
                     id: "${image['image']}",
                     text: "${image['image']}",
-                    extra: "${image['description']}",
+                    extra: "${image['description'].replace('\n', ' ')}",
                 },
                 % endfor
             ],
