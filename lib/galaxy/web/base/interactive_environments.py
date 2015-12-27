@@ -240,17 +240,39 @@ class InteractiveEnviornmentRequest(object):
         return volumes
 
     def launch(self, image=None, additional_ids=None, raw_cmd=None, env_override={}, volumes=[]):
+        """Launch a docker image.
+
+        :type image: str
+        :param image: Optional image name. If not provided, self.default_image
+                      is used, which is the first image listed in the
+                      allowed_images.txt{,.sample} file.
+
+        :type additional_ids: str
+        :param additional_ids: comma separated list of encoded HDA IDs. These
+                               are transformed into Volumes and added to that
+                               argument
+
+        :type raw_cmd: str
+        :param raw_cmd: raw docker command. Usually generated with self.docker_cmd()
+
+        :type env_override: dict
+        :param env_override: dictionary of environment variables to add.
+
+        :type volumes: list of galaxy.tools.deps.docker_util.DockerVolume
+        :param volumes: dictionary of docker volume mounts
+
+        """
         if image is None:
             image = self.default_image
-
-        if additional_ids is not None:
-            volumes += self._idsToVolumes(additional_ids)
 
         if image not in self.allowed_images:
             # Now that we're allowing users to specify images, we need to ensure that they aren't
             # requesting images we have not specifically allowed.
             raise Exception("Attempting to launch disallowed image! %s not in list of allowed images [%s]" \
                             % (image, ', '.join(self.allowed_images)))
+
+        if additional_ids is not None:
+            volumes += self._idsToVolumes(additional_ids)
 
         if raw_cmd is None:
             raw_cmd = self.docker_cmd(image, env_override=env_override, volumes=volumes)
