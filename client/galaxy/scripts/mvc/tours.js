@@ -65,6 +65,25 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
       model: TourItem,
     });
 
+
+    var giveTour =  function(tour_id){
+        var url = gxy_root + 'api/tours/' + tour_id;
+        $.getJSON( url, function( data ) {
+            // Set hooks for additional click and data entry actions.
+            tourdata = hooked_tour_from_data(data);
+            console.log(tourdata);
+            sessionStorage.setItem('activeGalaxyTour', JSON.stringify(data));
+            // Store tour steps in sessionStorage to easily persist w/o hackery.
+            var tour = new Tour(_.extend({
+                steps: tourdata.steps,
+            }, tour_opts));
+            // Always clean restart, since this is a new, explicit giveTour execution.
+            tour.init();
+            tour.goTo(0);
+            tour.restart();
+        });
+    }
+
     var ToursView = Backbone.View.extend({
         // initialize
         initialize: function(options) {
@@ -101,28 +120,11 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
             this.$el.html(tpl({tours: this.model.models})).on("click", ".tourItem", function(e){
                 self.giveTour($(this).data("tour.id"));
             });
-        },
-
-        giveTour: function(tour_id){
-            var url = gxy_root + 'api/tours/' + tour_id;
-            $.getJSON( url, function( data ) {
-                // Set hooks for additional click and data entry actions.
-                tourdata = hooked_tour_from_data(data);
-                console.log(tourdata);
-                sessionStorage.setItem('activeGalaxyTour', JSON.stringify(data));
-                // Store tour steps in sessionStorage to easily persist w/o hackery.
-                var tour = new Tour(_.extend({
-                    steps: tourdata.steps,
-                }, tour_opts));
-                // Always clean restart, since this is a new, explicit giveTour execution.
-                tour.init();
-                tour.goTo(0);
-                tour.restart();
-            });
-        },
+        }
     });
 
     return {ToursView: ToursView,
             hooked_tour_from_data: hooked_tour_from_data,
-            tour_opts: tour_opts}
+            tour_opts: tour_opts,
+            giveTour: giveTour}
 });
