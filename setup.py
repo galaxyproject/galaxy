@@ -34,6 +34,7 @@ PROJECT_DESCRIPTION = 'Subset of Galaxy (http://galaxyproject.org/) core code ba
 PACKAGES = [
     'galaxy',
     'galaxy.jobs', # Incomplete
+    'galaxy.exceptions',
     'galaxy.jobs.metrics',
     'galaxy.jobs.metrics.collectl',
     'galaxy.jobs.metrics.instrumenters',
@@ -53,6 +54,7 @@ ENTRY_POINTS = '''
 PACKAGE_DATA = {
     'galaxy': [
         'util/docutils_template.txt',
+        'exceptions/error_codes.json',
     ],
 }
 PACKAGE_DIR = {
