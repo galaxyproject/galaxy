@@ -641,11 +641,22 @@ class Tool( object, Dictifiable ):
         root = tool_source.root
         conf_parent_elem = root.find("configfiles")
         if conf_parent_elem is not None:
+            inputs_elem = conf_parent_elem.find( "inputs" )
+            if inputs_elem is not None:
+                name = inputs_elem.get( "name" )
+                filename = inputs_elem.get( "filename", None )
+                format = inputs_elem.get("format", "json")
+                version_str = inputs_elem.get("version", "1")
+                if not version_str:
+                    raise ValueError("inputs configfile tag must define a version attribute")
+                version = int(version_str)
+                content = dict(format=format, version=version)
+                self.config_files.append( ( name, filename, content ) )
             for conf_elem in conf_parent_elem.findall( "configfile" ):
                 name = conf_elem.get( "name" )
                 filename = conf_elem.get( "filename", None )
-                text = conf_elem.text
-                self.config_files.append( ( name, filename, text ) )
+                content = conf_elem.text
+                self.config_files.append( ( name, filename, content ) )
 
     def __parse_trackster_conf(self, tool_source):
         self.trackster_conf = None

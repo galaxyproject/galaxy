@@ -1,0 +1,79 @@
+<tool id="inputs_as_json" name="inputs_as_json" version="1.0.0">
+    <configfiles>
+        <inputs name="inputs" format="json" version="1" />
+        <configfile name="check_inputs"><![CDATA[
+import json
+import sys
+
+input_json_path = sys.argv[1]
+test_case = sys.argv[2]
+as_dict = json.load(open(input_json_path, "r"))
+
+
+def assert_equals(x, y):
+    assert x == y, "%s != %s" % (x, y)
+
+if test_case == "1":
+    assert_equals(as_dict["test_case"], 1)
+    assert_equals(as_dict["text_test"], "foo")
+    assert_equals(as_dict["booltest"], True)
+    assert_equals(as_dict["inttest"], 12456)
+    assert_equals(as_dict["floattest"], 6.789)
+    assert_equals(as_dict["radio_select"], "a_radio")
+elif test_case == "2":
+    assert_equals(as_dict["test_case"], 2)
+    assert_equals(as_dict["text_test"], "bar")
+    assert_equals(as_dict["booltest"], False)
+    assert_equals(as_dict["inttest"], None)
+    assert_equals(as_dict["floattest"], 1.0)
+    assert_equals(as_dict["radio_select"], "a_radio")
+
+with open("output", "w") as f:
+    f.write("okay\n")
+]]></configfile>
+    </configfiles>
+    <command>
+        python $check_inputs $inputs $test_case
+    </command>
+    <inputs>
+        <param name="test_case" type="integer" value="0" />
+        <param name="text_test" type="text" />
+        <param name="booltest" truevalue="booltrue" falsevalue="boolfalse" checked="false" type="boolean" />
+        <param name="inttest" type="integer" optional="true" />
+        <param name="floattest" value="1.0" type="float" />
+        <param name="radio_select" type="select" display="radio">
+            <option value="a_radio" selected="true">A Radio</option>
+            <option value="b_radio">B Radio</option>
+            <option value="c_radio">C Radio</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="out_file1" from_work_dir="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="test_case" value="1" />
+            <param name="text_test" value="foo" />
+            <param name="booltest" value="true" />
+            <param name="inttest" value="12456" />
+            <param name="floattest" value="6.789" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="okay" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="test_case" value="2" />
+            <param name="text_test" value="bar" />
+            <param name="booltest" value="false" />
+            <!-- Testing null integers -->
+            <!-- <param name="inttest" value="12456" /> -->
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="okay" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
