@@ -1,5 +1,4 @@
 name: Galaxy UI
-tour_id: core.galaxy_ui
 description: A gentle introduction to the Galaxy User Interface
 title_default: "Welcome to Galaxy"
 steps:

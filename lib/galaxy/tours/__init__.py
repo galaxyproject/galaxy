@@ -16,14 +16,6 @@ def tour_loader(contents_dict):
             step['content'] = step.pop('intro')
         if 'position' in step:
             step['placement'] = step.pop('position')
-        # Handle these hooks on the client side, instead of trying to ship
-        # functions as strings and eval
-        # if 'preclick' in step:
-        #     step['onShow'] = "$('%s').click()" % step.pop('preclick')
-        # if 'postclick' in step:
-        #     step['onHide'] = "$('%s').click()" % step.pop('postclick')
-        # if 'textinsert' in step:
-        #     step['onShown'] = "$('%s').text('%s')" % (step['element'], step.pop('textinsert'))
         if 'element' not in step:
             step['orphan'] = True
         if title_default:
@@ -57,7 +49,7 @@ class ToursRegistry(object):
                 # Could pop the following, but is there a good reason to?
                 # As long as they key doesn't conflict with tour keys, it's
                 # fine.
-                tour_id = conf.get('tour_id', filename.rstrip('.yaml'))
+                tour_id = filename.rstrip('.yaml')
                 self.tours[tour_id] = tour_loader(conf)
                 log.info("Loaded tour '%s'" % tour_id)
 
