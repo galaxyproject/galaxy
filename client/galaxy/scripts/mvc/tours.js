@@ -118,7 +118,7 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
                 '<% }); %>',
                 "</ul>"].join(''));
             this.$el.html(tpl({tours: this.model.models})).on("click", ".tourItem", function(e){
-                self.giveTour($(this).data("tour.id"));
+                giveTour($(this).data("tour.id"));
             });
         }
     });
