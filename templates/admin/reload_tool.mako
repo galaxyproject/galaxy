@@ -18,10 +18,7 @@ $().ready(function() {
     $("#reload_toolbox").click(function(){
         $.ajax({
             url: "${h.url_for(controller="/api/configuration", action="toolbox")}",
-            type: 'PUT',
-            success: function(result) {
-                alert("Toolbox reloaded.");
-            }
+            type: 'PUT'
         });
     });
 });
