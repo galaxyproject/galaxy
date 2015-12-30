@@ -3,7 +3,10 @@
         python $check_inputs $inputs $test_case
     </command>
     <configfiles>
-        <inputs name="inputs" format="json" version="1" />
+        <inputs name="inputs" />
+        <!-- Can specify with fixed path in working directory instead:
+        <inputs name="inputs" filename="input.json" />
+        -->
         <configfile name="check_inputs"><![CDATA[
 import json
 import sys
