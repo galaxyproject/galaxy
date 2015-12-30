@@ -533,8 +533,11 @@ class ToolEvaluator( object ):
         if isinstance( content, basestring ):
             return content, True
 
-        assert content["format"] == "json"
-        assert content["version"] == 1
+        content_format = content["format"]
+        if content_format != "json":
+            template = "Galaxy can only currently convert inputs to json, format [%s] is unhandled"
+            message = template % content_format
+            raise Exception(message)
 
         return json.dumps(wrapped_json.json_wrap(self.tool.inputs, self.param_dict)), False
 

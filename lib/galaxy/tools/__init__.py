@@ -646,11 +646,7 @@ class Tool( object, Dictifiable ):
                 name = inputs_elem.get( "name" )
                 filename = inputs_elem.get( "filename", None )
                 format = inputs_elem.get("format", "json")
-                version_str = inputs_elem.get("version", "1")
-                if not version_str:
-                    raise ValueError("inputs configfile tag must define a version attribute")
-                version = int(version_str)
-                content = dict(format=format, version=version)
+                content = dict(format=format)
                 self.config_files.append( ( name, filename, content ) )
             for conf_elem in conf_parent_elem.findall( "configfile" ):
                 name = conf_elem.get( "name" )
