@@ -55,7 +55,7 @@ def _json_wrap_input(input, value, handle_files="SKIP"):
         if handle_files == "SKIP":
             return SKIP_INPUT
         raise NotImplementedError()
-    elif input_type == "select" or input_type == "text" or input_type == "color":
+    elif input_type in ["select", "text", "color", "hidden"]:
         json_value = _cast_if_not_none(value, str)
     elif input_type == "float":
         json_value = _cast_if_not_none(value, float, empty_to_none=True)
