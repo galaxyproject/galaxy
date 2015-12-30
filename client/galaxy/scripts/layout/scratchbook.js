@@ -62,7 +62,6 @@ return Backbone.View.extend({
                 if ( is_tabular ) {
                     var tabular_dataset = new DATA.TabularDataset( dataset.toJSON() );
                     _.extend( frame_config, {
-                        type: 'other',
                         content: function( parent_elt ) {
                             DATA.createTabularDatasetChunkedView({
                                 model       : tabular_dataset,
@@ -75,8 +74,7 @@ return Backbone.View.extend({
                 }
                 else {
                     _.extend( frame_config, {
-                        type    : 'url',
-                        content : Galaxy.root + 'datasets/' + dataset.id + '/display/?preview=True'
+                        url: Galaxy.root + 'datasets/' + dataset.id + '/display/?preview=True'
                     });
                 }
                 self.add( frame_config );

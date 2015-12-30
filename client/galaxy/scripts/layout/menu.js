@@ -59,7 +59,7 @@ var Collection = Backbone.Collection.extend({
                 },{
                     title   : 'Published Pages',
                     url     : 'page/list_published'
-                }]
+            }]
         });
 
         //
@@ -77,7 +77,7 @@ var Collection = Backbone.Collection.extend({
                 },{
                     title   : 'Help',
                     url     : options.lims_doc_url
-                }]
+            }]
         });
 
         //
@@ -97,7 +97,7 @@ var Collection = Backbone.Collection.extend({
                     title   : 'Saved Visualizations',
                     url     : 'visualization/list',
                     target  : '_frame'
-                }]
+            }]
         });
 
         //
@@ -171,9 +171,9 @@ var Collection = Backbone.Collection.extend({
                 cls             : 'loggedout-only',
                 tooltip         : 'Account registration or login',
                 menu            : [{
-                    title   : 'Login',
-                    url     : 'user/login',
-                    target  : 'galaxy_main'
+                    title       : 'Login',
+                    url         : 'user/login',
+                    target      : 'galaxy_main'
                 }]
             };
             options.allow_user_creation && userTab.menu.push({
@@ -366,7 +366,7 @@ var Tab = Backbone.View.extend({
 
     /** Url formatting */
     _formatUrl: function( url ) {
-        return typeof url == 'string' && url.indexOf( '//' ) === -1 && !url.startsWith( Galaxy.root ) ? Galaxy.root + url : url;
+        return typeof url == 'string' && url.indexOf( '//' ) === -1 && url.charAt( 0 ) != Galaxy.root ? Galaxy.root + url : url;
     },
 
     /** body tempate */
