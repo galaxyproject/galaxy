@@ -38,6 +38,8 @@ The default configuration of dependency resolvers is equivalent to the following
   <!-- then look for env.sh files profile according to the "galaxy packages" schema -->
     <galaxy_packages />
     <galaxy_packages versionless="true" />
+    <conda />
+    <conda versionless="true" />
   </dependency_resolvers>
 
 This default dependency resolver configuration contains three items. First, the *tool shed dependency resolver* is used,
@@ -144,5 +146,49 @@ is added to the script that is run to run the tool. E.g. ``modulecmd sh load bed
 used, they'll be used in the ``load`` command e.g. ``modulecmd sh load bwa/0.7.10.039ea20639``.
 
 
+Homebrew Dependency Resolver
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This dependency resolver uses homebrew packages to resolve requirements.
 
 
+Brew Tool Shed Package Resolver
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This dependency resolver would resolve tool shed packages that had been
+auto converted to the tool shed. It is highly experimental, undocumented,
+and will almost certainy be removed from the code base.
+
+
+Conda Dependency Resolver
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The conda XML tag can be used to configure a conda dependency resolver.
+This resolver can be configured with the following options.
+
+prefix
+    The conda_prefix used to locate dependencies in (default: ``<tool_dependency_dir>/_conda``).
+
+exec
+    The conda executable to use, it will default to the one on the
+    PATH (if available) and then to ``<conda_prefix>/bin/conda``.
+
+versionless
+    whether to resolve tools using a version string or not (default: *false*)
+
+debug
+    Pass debug flag to conda commands (default: false).
+
+ensure_channels
+    conda channels to enable by default. See
+    http://conda.pydata.org/docs/custom-channels.html for more
+    information about channels. (default: r,bioconda).
+
+auto_install
+    Set to True to instruct Galaxy to look for and install missing tool
+    dependencies before each job runs. (default: False)
+
+auto_init
+    Set to True to instruct Galaxy to install conda from the web
+    automatically if it cannot find a local copy and conda_exec is not
+    configured.

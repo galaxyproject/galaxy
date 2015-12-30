@@ -1807,12 +1807,13 @@ class Tool( object, Dictifiable ):
             message = e.message
         return message
 
-    def build_dependency_shell_commands( self ):
+    def build_dependency_shell_commands( self, job_directory=None ):
         """Return a list of commands to be run to populate the current environment to include this tools requirements."""
         return self.app.toolbox.dependency_manager.dependency_shell_commands(
             self.requirements,
             installed_tool_dependencies=self.installed_tool_dependencies,
             tool_dir=self.tool_dir,
+            job_directory=job_directory,
         )
 
     @property

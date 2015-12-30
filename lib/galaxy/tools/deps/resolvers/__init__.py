@@ -15,6 +15,18 @@ class DependencyResolver( object ):
         version for instance if the request version is 'default'.)
         """
 
+    def _get_config_option(self, key, dependency_resolver, default=None, prefix=None, **kwds):
+        """ Look in resolver-specific settings for option and then fallback to
+        global settings.
+        """
+        global_key = "%s_%s" % (prefix, key)
+        if key in kwds:
+            return kwds.get(key)
+        elif global_key in dependency_resolver.extra_config:
+            return dependency_resolver.extra_config.get(global_key)
+        else:
+            return default
+
 
 class Dependency( object ):
     __metaclass__ = ABCMeta
