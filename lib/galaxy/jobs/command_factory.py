@@ -48,21 +48,20 @@ def build_command(
     if not container:
         __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params)
 
-    if container or job_wrapper.commands_in_new_shell:
-        externalized_commands = __externalize_commands(job_wrapper, commands_builder, remote_command_params)
-        if container:
-            # Stop now and build command before handling metadata and copying
-            # working directory files back. These should always happen outside
-            # of docker container - no security implications when generating
-            # metadata and means no need for Galaxy to be available to container
-            # and not copying workdir outputs back means on can be more restrictive
-            # of where container can write to in some circumstances.
-            run_in_container_command = container.containerize_command(
-                externalized_commands
-            )
-            commands_builder = CommandsBuilder( run_in_container_command )
-        else:
-            commands_builder = CommandsBuilder( externalized_commands )
+    externalized_commands = __externalize_commands(job_wrapper, commands_builder, remote_command_params)
+    if container:
+        # Stop now and build command before handling metadata and copying
+        # working directory files back. These should always happen outside
+        # of docker container - no security implications when generating
+        # metadata and means no need for Galaxy to be available to container
+        # and not copying workdir outputs back means on can be more restrictive
+        # of where container can write to in some circumstances.
+        run_in_container_command = container.containerize_command(
+            externalized_commands
+        )
+        commands_builder = CommandsBuilder( run_in_container_command )
+    else:
+        commands_builder = CommandsBuilder( externalized_commands )
 
     if include_work_dir_outputs:
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)

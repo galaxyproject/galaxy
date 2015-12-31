@@ -786,10 +786,6 @@ class JobWrapper( object ):
         return self.tool.parallelism
 
     @property
-    def commands_in_new_shell(self):
-        return self.app.config.commands_in_new_shell
-
-    @property
     def galaxy_lib_dir(self):
         if self.__galaxy_lib_dir is None:
             self.__galaxy_lib_dir = os.path.abspath( "lib" )  # cwd = galaxy root

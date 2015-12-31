@@ -859,12 +859,6 @@ use_interactive = True
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
 
-# Separate tool command from rest of job script so tool dependencies
-# don't interfer with metadata generation (this will be the default
-# in a future release).
-#enable_beta_tool_command_isolation = False
-
-
 # Set the following to a number of threads greater than 1 to spawn
 # a Python task queue for dealing with large tool submissions (either
 # through the tool form or as part of an individual workflow step across
