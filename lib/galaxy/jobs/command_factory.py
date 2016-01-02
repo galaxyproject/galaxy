@@ -78,15 +78,16 @@ def build_command(
 
 def __externalize_commands(job_wrapper, commands_builder, remote_command_params, script_name="tool_script.sh"):
     local_container_script = join( job_wrapper.working_directory, script_name )
+    tool_commands = commands_builder.build()
     with open( local_container_script, "w" ) as f:
-        script_contents = u"#!%s\n%s" % (DEFAULT_SHELL, commands_builder.build())
+        script_contents = u"#!%s\n%s" % (DEFAULT_SHELL, tool_commands)
         f.write(script_contents.encode(util.DEFAULT_ENCODING))
     chmod( local_container_script, 0755 )
 
     commands = local_container_script
     if 'working_directory' in remote_command_params:
         commands = "%s %s" % (DEFAULT_SHELL, join(remote_command_params['working_directory'], script_name))
-    log.info("Built script [%s] for tool command[%s]" % (local_container_script, commands))
+    log.info("Built script [%s] for tool command[%s]" % (local_container_script, tool_commands))
     return commands
 
 
