@@ -1569,6 +1569,7 @@ class JobWrapper( object ):
     def setup_external_metadata( self, exec_dir=None, tmp_dir=None,
                                  dataset_files_path=None, config_root=None,
                                  config_file=None, datatypes_config=None,
+                                 resolve_metadata_dependencies=False,
                                  set_extension=True, **kwds ):
         # extension could still be 'auto' if this is the upload tool.
         job = self.get_job()
@@ -1589,19 +1590,27 @@ class JobWrapper( object ):
             config_file = self.app.config.config_file
         if datatypes_config is None:
             datatypes_config = self.app.datatypes_registry.integrated_datatypes_configs
-        return self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for
-                                                                        output_dataset_assoc in
-                                                                        job.output_datasets + job.output_library_datasets ],
-                                                                      self.sa_session,
-                                                                      exec_dir=exec_dir,
-                                                                      tmp_dir=tmp_dir,
-                                                                      dataset_files_path=dataset_files_path,
-                                                                      config_root=config_root,
-                                                                      config_file=config_file,
-                                                                      datatypes_config=datatypes_config,
-                                                                      job_metadata=os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE ),
-                                                                      max_metadata_value_size=self.app.config.max_metadata_value_size,
-                                                                      **kwds )
+        base_command = self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for
+                                                                                output_dataset_assoc in
+                                                                                job.output_datasets + job.output_library_datasets ],
+                                                                              self.sa_session,
+                                                                              exec_dir=exec_dir,
+                                                                              tmp_dir=tmp_dir,
+                                                                              dataset_files_path=dataset_files_path,
+                                                                              config_root=config_root,
+                                                                              config_file=config_file,
+                                                                              datatypes_config=datatypes_config,
+                                                                              job_metadata=os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE ),
+                                                                              max_metadata_value_size=self.app.config.max_metadata_value_size,
+                                                                              **kwds )
+        command = base_command
+        if resolve_metadata_dependencies:
+            metadata_tool = self.app.toolbox.get_tool("__SET_METADATA__")
+            dependency_shell_commands = metadata_tool.build_dependency_shell_commands(job_directory=self.working_directory)
+            if dependency_shell_commands:
+                dependency_shell_commands = "; ".join(dependency_shell_commands)
+                command = "%s; %s" % (dependency_shell_commands, command)
+        return command
 
     @property
     def user( self ):
