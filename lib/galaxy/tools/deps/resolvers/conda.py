@@ -23,9 +23,11 @@ from ..conda_util import (
     install_conda_target,
     build_isolated_environment,
     installed_conda_targets,
+    USE_PATH_EXEC_DEFAULT,
 )
 
 DEFAULT_BASE_PATH_DIRECTORY = "_conda"
+DEFAULT_CONDARC_OVERRIDE = "_condarc"
 DEFAULT_ENSURE_CHANNELS = "r,bioconda"
 
 import logging
@@ -49,9 +51,20 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
                 dependency_manager.default_base_path, DEFAULT_BASE_PATH_DIRECTORY
             )
 
+        condarc_override = get_option("condarc_override")
+        if condarc_override is None:
+            condarc_override = os.path.join(
+                dependency_manager.default_base_path, DEFAULT_CONDARC_OVERRIDE
+            )
+
         conda_exec = get_option("exec")
         debug = _string_as_bool(get_option("debug"))
         ensure_channels = get_option("ensure_channels")
+        use_path_exec = get_option("use_path_exec")
+        if use_path_exec is None:
+            use_path_exec = USE_PATH_EXEC_DEFAULT
+        else:
+            use_path_exec = _string_as_bool(use_path_exec)
         if ensure_channels is None:
             ensure_channels = DEFAULT_ENSURE_CHANNELS
 
@@ -60,6 +73,8 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
             conda_exec=conda_exec,
             debug=debug,
             ensure_channels=ensure_channels,
+            condarc_override=condarc_override,
+            use_path_exec=use_path_exec,
         )
         self.ensure_channels = ensure_channels
 
