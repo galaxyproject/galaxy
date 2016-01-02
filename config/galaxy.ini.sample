@@ -860,9 +860,10 @@ use_interactive = True
 #enable_sequencer_communication = False
 
 # Separate tool command from rest of job script so tool dependencies
-# don't interfer with metadata generation (this will be the default
-# in a future release).
-#enable_beta_tool_command_isolation = False
+# don't interfer with metadata generation.
+# Despite the name, this feature is enabled by default
+# in 16.01 and the option will go away in the future.
+#enable_beta_tool_command_isolation = True
 
 
 # Set the following to a number of threads greater than 1 to spawn
