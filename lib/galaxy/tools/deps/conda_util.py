@@ -188,7 +188,8 @@ class CondaContext(object):
 
 def installed_conda_targets(conda_context):
     envs_path = conda_context.envs_path
-    for name in os.listdir(envs_path):
+    dir_contents = os.listdir(envs_path) if os.path.exists(envs_path) else []
+    for name in dir_contents:
         versioned_match = VERSIONED_ENV_DIR_NAME.match(name)
         if versioned_match:
             yield CondaTarget(versioned_match.group(1), versioned_match.group(2))
