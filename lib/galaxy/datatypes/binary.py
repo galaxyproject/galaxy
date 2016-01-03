@@ -16,7 +16,7 @@ from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_
 
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter, ListParameter, DictParameter
 from galaxy.datatypes import metadata
-from galaxy.util import nice_size, sqlite
+from galaxy.util import nice_size, sqlite, which
 from . import data, dataproviders
 
 
@@ -173,6 +173,11 @@ class Bam( Binary ):
         # Determine the version of samtools being used.  Wouldn't it be nice if
         # samtools provided a version flag to make this much simpler?
         version = '0.0.0'
+        samtools_exec = which('samtools')
+        if not samtools_exec:
+            message = 'Attempting to use functionality requiring samtools, but it cannot be located on Galaxy\'s PATH.'
+            raise Exception(message)
+
         output = subprocess.Popen( [ 'samtools' ], stderr=subprocess.PIPE, stdout=subprocess.PIPE ).communicate()[1]
         lines = output.split( '\n' )
         for line in lines:
