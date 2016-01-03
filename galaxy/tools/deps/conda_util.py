@@ -1,7 +1,7 @@
 import functools
 import hashlib
 import json
-import os.path
+import os
 import re
 import shutil
 from sys import platform as _platform
@@ -20,6 +20,8 @@ IS_OS_X = _platform == "darwin"
 
 # BSD 3-clause
 CONDA_LICENSE = "http://docs.continuum.io/anaconda/eula"
+VERSIONED_ENV_DIR_NAME = re.compile(r"__package__(.*)@__version__(.*)")
+UNVERSIONED_ENV_DIR_NAME = re.compile(r"__package__(.*)@__unversioned__")
 
 
 def conda_link():
@@ -135,7 +137,11 @@ class CondaContext(object):
         ])
 
     def env_path(self, env_name):
-        return os.path.join(self.conda_prefix, "envs", env_name)
+        return os.path.join(self.envs_path, env_name)
+
+    @property
+    def envs_path(self):
+        return os.path.join(self.conda_prefix, "envs")
 
     def has_env(self, env_name):
         env_path = self.env_path(env_name)
@@ -151,6 +157,18 @@ class CondaContext(object):
 
     def _bin(self, name):
         return os.path.join(self.conda_prefix, "bin", name)
+
+
+def installed_conda_targets(conda_context):
+    envs_path = conda_context.envs_path
+    for name in os.listdir(envs_path):
+        versioned_match = VERSIONED_ENV_DIR_NAME.match(name)
+        if versioned_match:
+            yield CondaTarget(versioned_match.group(1), versioned_match.group(2))
+
+        unversioned_match = UNVERSIONED_ENV_DIR_NAME.match(name)
+        if unversioned_match:
+            yield CondaTarget(unversioned_match.group(1))
 
 
 @six.python_2_unicode_compatible
@@ -197,7 +215,7 @@ class CondaTarget(object):
         if self.version:
             return "__package__%s@__version__%s" % (self.package, self.version)
         else:
-            return "__package__%s@__unversion__" % (self.package)
+            return "__package__%s@__unversioned__" % (self.package)
 
 
 def hash_conda_packages(conda_packages, conda_target=None):
@@ -210,13 +228,21 @@ def hash_conda_packages(conda_packages, conda_target=None):
     return h.hexdigest()
 
 
+# shell makes sense for planemo, in Galaxy this should just execute
+# these commands as Python
 def install_conda(conda_context=None):
     conda_context = _ensure_conda_context(conda_context)
     download_cmd = " ".join(commands.download_command(conda_link(), quote_url=True))
-    download_cmd = "%s > /tmp/conda.bash" % download_cmd
-    install_cmd = "bash /tmp/conda.bash -b -p '%s'" % conda_context.conda_prefix
+    f, script_path = tempfile.mkstemp(suffix=".bash", prefix="conda_install")
+    os.close(f)
+    download_cmd = "%s >> '%s'" % (download_cmd, script_path)
+    install_cmd = "bash '%s' -b -p '%s'" % (script_path, conda_context.conda_prefix)
     full_command = "%s; %s" % (download_cmd, install_cmd)
-    return conda_context.shell_exec(full_command)
+    try:
+        return conda_context.shell_exec(full_command)
+    finally:
+        if os.path.exists(script_path):
+            os.remove(script_path)
 
 
 def install_conda_target(conda_target, conda_context=None):

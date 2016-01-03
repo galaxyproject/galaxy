@@ -25,6 +25,8 @@ EXTRA_CONFIG_KWDS = {
     'conda_auto_init': False,
 }
 
+CONFIG_VAL_NOT_FOUND = object()
+
 
 def build_dependency_manager( config ):
     if getattr( config, "use_tool_dependencies", False ):
@@ -33,7 +35,12 @@ def build_dependency_manager( config ):
             'conf_file': config.dependency_resolvers_config_file,
         }
         for key, default_value in EXTRA_CONFIG_KWDS.items():
-            dependency_manager_kwds[key] = getattr(config, key, default_value)
+            value = getattr(config, key, CONFIG_VAL_NOT_FOUND)
+            if value is CONFIG_VAL_NOT_FOUND and hasattr(config, "config_dict"):
+                value = config.config_dict.get(key, CONFIG_VAL_NOT_FOUND)
+            if value is CONFIG_VAL_NOT_FOUND:
+                value = default_value
+            dependency_manager_kwds[key] = value
         dependency_manager = DependencyManager( **dependency_manager_kwds )
     else:
         dependency_manager = NullDependencyManager()

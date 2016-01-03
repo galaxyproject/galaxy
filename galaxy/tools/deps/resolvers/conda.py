@@ -6,7 +6,11 @@ incompatible changes coming.
 
 import os
 
-from ..resolvers import DependencyResolver, INDETERMINATE_DEPENDENCY
+from ..resolvers import (
+    DependencyResolver,
+    INDETERMINATE_DEPENDENCY,
+    Dependency,
+)
 from ..conda_util import (
     CondaContext,
     CondaTarget,
@@ -16,6 +20,7 @@ from ..conda_util import (
     build_isolated_environment,
 )
 
+DEFAULT_BASE_PATH_DIRECTORY = "_conda"
 DEFAULT_ENSURE_CHANNELS = "r,bioconda"
 
 import logging
@@ -33,6 +38,11 @@ class CondaDependencyResolver(DependencyResolver):
 
         # Conda context options (these define the environment)
         conda_prefix = get_option("prefix")
+        if conda_prefix is None:
+            conda_prefix = os.path.join(
+                dependency_manager.default_base_path, DEFAULT_BASE_PATH_DIRECTORY
+            )
+
         conda_exec = get_option("exec")
         debug = _string_as_bool(get_option("debug"))
         ensure_channels = get_option("ensure_channels")
@@ -52,7 +62,8 @@ class CondaDependencyResolver(DependencyResolver):
         copy_dependencies = _string_as_bool(get_option("copy_dependencies"))
 
         if auto_init and not os.path.exists(conda_context.conda_prefix):
-            install_conda(conda_context)
+            if install_conda(conda_context):
+                raise Exception("Conda installation requested and failed.")
 
         self.conda_context = conda_context
         self.auto_install = auto_install
@@ -80,7 +91,7 @@ class CondaDependencyResolver(DependencyResolver):
             conda_target, conda_context=self.conda_context
         )
         if not is_installed and self.auto_install:
-            install_conda_target(conda_target)
+            install_conda_target(conda_target, conda_context=self.conda_context)
 
             # Recheck if installed
             is_installed = is_conda_target_installed(
@@ -107,7 +118,7 @@ class CondaDependencyResolver(DependencyResolver):
             raise Exception("Conda dependency seemingly installed but failed to build job environment.")
 
 
-class CondaDepenency():
+class CondaDepenency(Dependency):
 
     def __init__(self, activate, environment_path):
         self.activate = activate
