@@ -9,13 +9,15 @@ History
 16.1.7.dev0
 ---------------------
 
-    
+* Update against Galaxy's dev branch - including conda updates,
+  dependency resolution changes, and toolbox updates.
 
 ---------------------
 16.1.6 (2015-12-28)
 ---------------------
 
-    
+* Additional fixes to setup.py and updates for recent changes to
+  Galaxy's dev branch.
 
 ---------------------
 16.1.5 (2015-12-22)
