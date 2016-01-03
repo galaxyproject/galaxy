@@ -1,12 +1,16 @@
 from os.path import abspath, join, exists
 
 from .resolver_mixins import UsesInstalledRepositoriesMixin
-from .galaxy_packages import GalaxyPackageDependencyResolver, GalaxyPackageDependency
+from .galaxy_packages import BaseGalaxyPackageDependencyResolver, GalaxyPackageDependency
 from ..resolvers import INDETERMINATE_DEPENDENCY
 
 
-class ToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver, UsesInstalledRepositoriesMixin):
+class ToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, UsesInstalledRepositoriesMixin):
     resolver_type = "tool_shed_packages"
+    # Resolution of these dependencies depends on more than just the requirement
+    # tag, it depends on the tool installation context - therefore these are
+    # non-simple.
+    resolves_simple_dependencies = False
 
     def __init__(self, dependency_manager, **kwds):
         super(ToolShedPackageDependencyResolver, self).__init__(dependency_manager, **kwds)
@@ -15,7 +19,7 @@ class ToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver, UsesIns
         installed_tool_dependency = self._get_installed_dependency( name, type, version=version, **kwds )
         if installed_tool_dependency:
             path = self._get_package_installed_dependency_path( installed_tool_dependency, name, version )
-            return self._galaxy_package_dep(path, version)
+            return self._galaxy_package_dep(path, version, True)
         else:
             return INDETERMINATE_DEPENDENCY
 
@@ -28,7 +32,7 @@ class ToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver, UsesIns
                 has_script_dep = is_galaxy_dep and dependency.script and dependency.path
                 if has_script_dep:
                     # Environment settings do not use versions.
-                    return GalaxyPackageDependency(dependency.script, dependency.path, None)
+                    return GalaxyPackageDependency(dependency.script, dependency.path, None, True)
         return INDETERMINATE_DEPENDENCY
 
     def _get_package_installed_dependency_path( self, installed_tool_dependency, name, version ):
@@ -54,7 +58,7 @@ class ToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver, UsesIns
                               tool_shed_repository.installed_changeset_revision ) )
         if exists( path ):
             script = join( path, 'env.sh' )
-            return GalaxyPackageDependency(script, path, None)
+            return GalaxyPackageDependency(script, path, None, True)
         return INDETERMINATE_DEPENDENCY
 
 

@@ -30,6 +30,7 @@ def test_conda_resolution():
             dependency_manager,
             auto_init=True,
             auto_install=True,
+            use_path_exec=False,  # For the test ensure this is always a clean install
         )
         conda_context = resolver.conda_context
         assert len(list(conda_util.installed_conda_targets(conda_context))) == 0

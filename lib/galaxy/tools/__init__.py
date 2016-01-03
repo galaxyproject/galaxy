@@ -25,7 +25,6 @@ from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.upload import UploadToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
-from galaxy.tools.deps import build_dependency_manager
 from galaxy.tools.parameters import params_to_incoming, check_param, params_from_strings, params_to_strings, visit_input_values
 from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
@@ -39,7 +38,7 @@ from galaxy.tools.test import parse_tests
 from galaxy.tools.parser import get_tool_source
 from galaxy.tools.parser.xml import XmlPageSource
 from galaxy.tools.parser import ToolOutputCollectionPart
-from galaxy.tools.toolbox import AbstractToolBox
+from galaxy.tools.toolbox import BaseGalaxyToolBox
 from galaxy.util import rst_to_html, string_as_bool
 from galaxy.util import ExecutionTimer
 from galaxy.util import listify
@@ -98,7 +97,7 @@ class ToolNotFoundException( Exception ):
     pass
 
 
-class ToolBox( AbstractToolBox ):
+class ToolBox( BaseGalaxyToolBox ):
     """ A derivative of AbstractToolBox with knowledge about Tool internals -
     how to construct them, action types, dependency management, etc....
     """
@@ -109,7 +108,6 @@ class ToolBox( AbstractToolBox ):
             tool_root_dir=tool_root_dir,
             app=app,
         )
-        self._init_dependency_manager()
 
     @property
     def tools_by_id( self ):
@@ -157,9 +155,6 @@ class ToolBox( AbstractToolBox ):
             ToolClass = Tool
         tool = ToolClass( config_file, tool_source, self.app, guid=guid, repository_id=repository_id, **kwds )
         return tool
-
-    def _init_dependency_manager( self ):
-        self.dependency_manager = build_dependency_manager( self.app.config )
 
     def handle_datatypes_changed( self ):
         """ Refresh upload tools when new datatypes are added. """

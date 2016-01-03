@@ -22,6 +22,7 @@ IS_OS_X = _platform == "darwin"
 CONDA_LICENSE = "http://docs.continuum.io/anaconda/eula"
 VERSIONED_ENV_DIR_NAME = re.compile(r"__package__(.*)@__version__(.*)")
 UNVERSIONED_ENV_DIR_NAME = re.compile(r"__package__(.*)@__unversioned__")
+USE_PATH_EXEC_DEFAULT = False
 
 
 def conda_link():
@@ -44,8 +45,11 @@ def find_conda_prefix(conda_prefix=None):
 class CondaContext(object):
 
     def __init__(self, conda_prefix=None, conda_exec=None,
-                 shell_exec=None, debug=False, ensure_channels=''):
-        conda_exec = conda_exec or commands.which("conda")
+                 shell_exec=None, debug=False, ensure_channels='',
+                 condarc_override=None, use_path_exec=USE_PATH_EXEC_DEFAULT):
+        self.condarc_override = condarc_override
+        if not conda_exec and use_path_exec:
+            conda_exec = commands.which("conda")
         if conda_exec:
             conda_exec = os.path.normpath(conda_exec)
         self.conda_exec = conda_exec
@@ -65,13 +69,21 @@ class CondaContext(object):
         if ensure_channels:
             if not isinstance(ensure_channels, list):
                 ensure_channels = [c for c in ensure_channels.split(",") if c]
+        else:
+            ensure_channels = None
+        self.ensure_channels = ensure_channels
+        self.ensured_channels = False
+
+    def ensure_channels_configured(self):
+        if not self.ensured_channels:
+            self.ensured_channels = True
 
             changed = False
             conda_conf = self.load_condarc()
             if "channels" not in conda_conf:
                 conda_conf["channels"] = []
             channels = conda_conf["channels"]
-            for channel in ensure_channels:
+            for channel in self.ensure_channels:
                 if channel not in channels:
                     changed = True
                     channels.append(channel)
@@ -97,12 +109,23 @@ class CondaContext(object):
 
     def save_condarc(self, conf):
         condarc = self.condarc
-        with open(condarc, "w") as f:
-            return yaml.safe_dump(conf, f)
+        try:
+            with open(condarc, "w") as f:
+                return yaml.safe_dump(conf, f)
+        except IOError:
+            template = ("Failed to update write to path [%s] while attempting to update conda configuration, "
+                        "please update the configuration to override the condarc location or "
+                        "grant this application write to the parent directory.")
+            message = template % condarc
+            raise Exception(message)
 
     @property
     def condarc(self):
-        return os.path.join(os.path.expanduser("~"), ".condarc")
+        if self.condarc_override:
+            return self.condarc_override
+        else:
+            home = os.path.expanduser("~")
+            return os.path.join(home, ".condarc")
 
     def command(self, operation, args):
         if isinstance(args, list):
@@ -114,7 +137,11 @@ class CondaContext(object):
 
     def exec_command(self, operation, args):
         command = self.command(operation, args)
-        self.shell_exec(command)
+        env = {}
+        condarc_override = self.condarc_override
+        if condarc_override:
+            env["CONDARC"] = condarc_override
+        self.shell_exec(command, env=env)
 
     def exec_create(self, args):
         create_base_args = [
@@ -161,7 +188,8 @@ class CondaContext(object):
 
 def installed_conda_targets(conda_context):
     envs_path = conda_context.envs_path
-    for name in os.listdir(envs_path):
+    dir_contents = os.listdir(envs_path) if os.path.exists(envs_path) else []
+    for name in dir_contents:
         versioned_match = VERSIONED_ENV_DIR_NAME.match(name)
         if versioned_match:
             yield CondaTarget(versioned_match.group(1), versioned_match.group(2))
@@ -249,6 +277,7 @@ def install_conda_target(conda_target, conda_context=None):
     """ Install specified target into a its own environment.
     """
     conda_context = _ensure_conda_context(conda_context)
+    conda_context.ensure_channels_configured()
     create_args = [
         "--name", conda_target.install_environment,  # enviornment for package
         conda_target.package_specifier,
