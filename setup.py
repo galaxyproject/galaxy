@@ -40,6 +40,7 @@ PACKAGES = [
     'galaxy.jobs.metrics.instrumenters',
     'galaxy.objectstore',
     'galaxy.tools', # Incomplete
+    'galaxy.tools.cwl',
     'galaxy.tools.parser',
     'galaxy.tools.toolbox',
     'galaxy.tools.toolbox.filters',
