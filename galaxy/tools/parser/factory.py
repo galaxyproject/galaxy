@@ -5,6 +5,7 @@ import yaml
 from .yaml import YamlToolSource
 from .xml import XmlToolSource
 from .xml import XmlInputSource
+from .cwl import CwlToolSource
 from .interface import InputSource
 
 
@@ -27,6 +28,9 @@ def get_tool_source(config_file, enable_beta_formats=True):
         with open(config_file, "r") as f:
             as_dict = ordered_load(f)
             return YamlToolSource(as_dict)
+    elif config_file.endswith(".json") or config_file.endswith(".cwl"):
+        log.info("Loading CWL tool - this is experimental - tool likely will not function in future at least in same way.")
+        return CwlToolSource(config_file)
     else:
         tree = load_tool_xml(config_file)
         root = tree.getroot()
