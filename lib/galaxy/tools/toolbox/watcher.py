@@ -70,8 +70,9 @@ class ToolConfWatcher(object):
             self.thread.start()
 
     def shutdown(self):
-        self._active = False
-        self.thread.join()
+        if self._active:
+            self._active = False
+            self.thread.join()
 
     def check(self):
         while self._active:
