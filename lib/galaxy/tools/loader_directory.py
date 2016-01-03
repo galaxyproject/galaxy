@@ -62,12 +62,12 @@ def load_tool_elements_from_path(
         enable_beta_formats=False,
     ):
         try:
-            tool_elements.append((file, loader.load_tool(file)))
+            tool_elements.append((possible_tool_file, loader.load_tool(possible_tool_file)))
         except Exception:
             exc_info = sys.exc_info()
-            load_exception_handler(file, exc_info)
+            load_exception_handler(possible_tool_file, exc_info)
             if register_load_errors:
-                tool_elements.append((file, TOOL_LOAD_ERROR))
+                tool_elements.append((possible_tool_file, TOOL_LOAD_ERROR))
     return tool_elements
 
 
