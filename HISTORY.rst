@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-16.1.7.dev0
+16.1.7 (2016-01-03)
 ---------------------
 
 * Update against Galaxy's dev branch - including conda updates,
