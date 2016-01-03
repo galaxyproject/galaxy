@@ -54,7 +54,7 @@ class ToolDependenciesAPIController( BaseAPIController ):
         Resolve described requirement against specified dependency resolver.
 
         :type   index:    int
-        :param  index:    index of the dependncy resolver
+        :param  index:    index of the dependency resolver
         :type   kwds:     dict
         :param  kwds:     dictionary structure containing extra parameters
         :type   name:     str
@@ -62,12 +62,12 @@ class ToolDependenciesAPIController( BaseAPIController ):
         :type   version:  str
         :param  version:  version of the requirement to find a dependency for (required)
         :type   exact:    bool
-        :param  version:  require an exact match to specify requirement (do not discard
+        :param  exact:    require an exact match to specify requirement (do not discard
                           version information to resolve dependency).
 
         :rtype:     dict
-        :returns:   a dictified description of the dependency, with type: null
-                    if no match was found.
+        :returns:   a dictified description of the dependency, with attribute
+                    ``dependency_type: null`` if no match was found.
         """
         return self._view.resolver_dependency(id, **kwds)
 
@@ -79,7 +79,7 @@ class ToolDependenciesAPIController( BaseAPIController ):
         the match with highest priority.
 
         :type   index:    int
-        :param  index:    index of the dependncy resolver
+        :param  index:    index of the dependency resolver
         :type   kwds:     dict
         :param  kwds:     dictionary structure containing extra parameters
         :type   name:     str
@@ -87,7 +87,7 @@ class ToolDependenciesAPIController( BaseAPIController ):
         :type   version:  str
         :param  version:  version of the requirement to find a dependency for (required)
         :type   exact:    bool
-        :param  version:  require an exact match to specify requirement (do not discard
+        :param  exact:    require an exact match to specify requirement (do not discard
                           version information to resolve dependency).
 
         :rtype:     dict
@@ -107,7 +107,7 @@ class ToolDependenciesAPIController( BaseAPIController ):
         ListDependencyResolver.
 
         :type   index:    int
-        :param  index:    index of the dependncy resolver
+        :param  index:    index of the dependency resolver
 
         :rtype:     dict
         :returns:   a dictified description of the requirement that could
@@ -125,7 +125,7 @@ class ToolDependenciesAPIController( BaseAPIController ):
         by all dependency resolvers that support this operation.
 
         :type   index:    int
-        :param  index:    index of the dependncy resolver
+        :param  index:    index of the dependency resolver
 
         :rtype:     dict
         :returns:   a dictified description of the requirement that could

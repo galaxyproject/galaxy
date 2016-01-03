@@ -10,7 +10,9 @@ class DependencyResolver(Dictifiable, object):
     dict_collection_visible_keys = ['resolver_type', 'resolves_simple_dependencies']
     # A "simple" dependency is one that does not depend on the the tool
     # resolving the dependency. Classic tool shed dependencies are non-simple
-    # because the tool shed install.
+    # because the repository install context is used in dependency resolution
+    # so the same requirement tags in different tools will have very different
+    # resolution.
     resolves_simple_dependencies = True
     __metaclass__ = ABCMeta
 
