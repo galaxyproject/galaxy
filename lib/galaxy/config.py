@@ -13,6 +13,7 @@ import socket
 import string
 import sys
 import tempfile
+import threading
 from datetime import timedelta
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
@@ -744,18 +745,31 @@ class ConfiguresGalaxyMixin:
     def _configure_genome_builds( self, data_table_name="__dbkeys__", load_old_style=True ):
         self.genome_builds = GenomeBuilds( self, data_table_name=data_table_name, load_old_style=load_old_style )
 
-    def _configure_toolbox( self ):
+    def reload_toolbox(self):
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
+
         tool_configs = self.config.tool_configs
         if self.config.migrated_tools_config not in tool_configs:
             tool_configs.append( self.config.migrated_tools_config )
 
+        from galaxy import tools
+        with self._toolbox_lock:
+            old_toolbox = self.toolbox
+            self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
+            self.reindex_tool_search()
+            if old_toolbox:
+                old_toolbox.shutdown()
+
+    def _configure_toolbox( self ):
         from galaxy.managers.citations import CitationsManager
         self.citations_manager = CitationsManager( self )
 
-        from galaxy import tools
-        self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
-        self.reindex_tool_search()
+        from galaxy.tools.toolbox.cache import ToolCache
+        self.tool_cache = ToolCache()
+
+        self._toolbox_lock = threading.Lock()
+        self.toolbox = None
+        self.reload_toolbox()
 
         from galaxy.tools.deps import containers
         galaxy_root_dir = os.path.abspath(self.config.root)

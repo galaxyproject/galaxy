@@ -277,6 +277,12 @@ def populate_api_routes( webapp, app ):
         controller="configuration",
         action="tool_lineages"
     )
+    webapp.mapper.connect(
+        '/api/configuration/toolbox',
+        controller="configuration",
+        action="reload_toolbox",
+        conditions=dict( method=["PUT"] )
+    )
     webapp.mapper.resource( 'configuration', 'configuration', path_prefix='/api' )
     webapp.mapper.connect( "configuration_version",
                            "/api/version", controller="configuration",
