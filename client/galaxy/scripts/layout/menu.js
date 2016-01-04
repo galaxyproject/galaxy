@@ -366,7 +366,7 @@ var Tab = Backbone.View.extend({
 
     /** Url formatting */
     _formatUrl: function( url ) {
-        return typeof url == 'string' && url.indexOf( '//' ) === -1 && url.charAt( 0 ) != Galaxy.root ? Galaxy.root + url : url;
+        return typeof url == 'string' && url.indexOf( '//' ) === -1 && url.charAt( 0 ) != '/' ? Galaxy.root + url : url;
     },
 
     /** body tempate */
