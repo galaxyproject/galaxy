@@ -344,11 +344,11 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
 
     def test_tool_collection(self):
         param = self._parameter_for(xml="""
-            <param name="datac" type="data_collection" collection_type="list" format="txt">
+            <param name="datac" type="data_collection" collection_type="list,list:paired" format="txt">
             </param>
         """)
         assert param.type == "data_collection"
-        assert param.collection_type == "list"
+        assert param.collection_types == ["list", "list:paired"]
 
     def test_library(self):
         param = self._parameter_for(xml="""
