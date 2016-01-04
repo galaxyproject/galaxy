@@ -51,9 +51,14 @@
                 root     : '${root}',
                 app_root : '${app_root}'
             };
-            
+
             // link galaxy
-            var Galaxy = Galaxy || parent.Galaxy;
+            var Galaxy = Galaxy || parent.Galaxy || {
+                root    : '${root}',
+                emit    : {
+                    debug: function() {}
+                }
+            };
 
             // console protection
             window.console = window.console || {
