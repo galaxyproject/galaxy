@@ -455,6 +455,14 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
                 'label',
             )
 
+    def test_import_missing_tool( self ):
+        workflow = self.workflow_populator.load_workflow_from_resource( name="test_workflow_missing_tool" )
+        workflow_id = self.workflow_populator.create_workflow( workflow )
+        workflow_description = self._show_workflow( workflow_id )
+        steps = workflow_description["steps"]
+        missing_tool_steps = filter(lambda v: v['tool_id'] == 'cat_missing_tool', steps.values())
+        assert len(missing_tool_steps) == 1
+
     def test_import_export_with_runtime_inputs( self ):
         workflow = self.workflow_populator.load_workflow_from_resource( name="test_workflow_with_runtime_input" )
         workflow_id = self.workflow_populator.create_workflow( workflow )
