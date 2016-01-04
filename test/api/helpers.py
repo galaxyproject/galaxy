@@ -145,18 +145,24 @@ class BaseDatasetPopulator( object ):
         return tool_response.json()
 
     def get_history_dataset_content( self, history_id, wait=True, **kwds ):
-        dataset_id = self.__history_dataset_id( history_id, wait=wait, **kwds )
+        dataset_id = self.__history_content_id( history_id, wait=wait, **kwds )
         display_response = self.__get_contents_request( history_id, "/%s/display" % dataset_id )
         assert display_response.status_code == 200, display_response.content
         return display_response.content
 
     def get_history_dataset_details( self, history_id, **kwds ):
-        dataset_id = self.__history_dataset_id( history_id, **kwds )
+        dataset_id = self.__history_content_id( history_id, **kwds )
         details_response = self.__get_contents_request( history_id, "/datasets/%s" % dataset_id )
         assert details_response.status_code == 200
         return details_response.json()
 
-    def __history_dataset_id( self, history_id, wait=True, **kwds ):
+    def get_history_collection_details( self, history_id, **kwds ):
+        hdca_id = self.__history_content_id( history_id, **kwds )
+        details_response = self.__get_contents_request( history_id, "/dataset_collections/%s" % hdca_id )
+        assert details_response.status_code == 200, details_response.content
+        return details_response.json()
+
+    def __history_content_id( self, history_id, wait=True, **kwds ):
         if wait:
             assert_ok = kwds.get( "assert_ok", True )
             self.wait_for_history( history_id, assert_ok=assert_ok )

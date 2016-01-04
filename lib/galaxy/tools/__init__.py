@@ -28,6 +28,7 @@ from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.upload import UploadToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
+from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.parameters import params_to_incoming, check_param, params_from_strings, params_to_strings, visit_input_values
 from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
@@ -42,6 +43,7 @@ from galaxy.tools.parser import get_tool_source
 from galaxy.tools.parser.xml import XmlPageSource
 from galaxy.tools.parser import ToolOutputCollectionPart
 from galaxy.tools.toolbox import BaseGalaxyToolBox
+from galaxy.tools import expressions
 from galaxy.util import rst_to_html, string_as_bool
 from galaxy.util import ExecutionTimer
 from galaxy.util import listify
@@ -74,6 +76,12 @@ JOB_RESOURCE_CONDITIONAL_XML = """<conditional name="__job_resource">
     </when>
 </conditional>"""
 
+REQUIRES_JS_RUNTIME_MESSAGE = ("The tool [%s] requires a nodejs runtime to execute "
+                               "but node nor nodejs could be found on Galaxy's PATH and "
+                               "no runtime was configured using the nodejs_path option in "
+                               "galaxy.ini.")
+
+
 HELP_UNINITIALIZED = threading.Lock()
 
 
@@ -94,6 +102,10 @@ class ToolErrorLog:
 
 
 global_tool_errors = ToolErrorLog()
+
+
+class ToolInputsNotReadyException( Exception ):
+    pass
 
 
 class ToolNotFoundException( Exception ):
@@ -571,6 +583,10 @@ class Tool( object, Dictifiable ):
             module, cls = action
             mod = __import__( module, globals(), locals(), [cls])
             self.tool_action = getattr( mod, cls )()
+            if getattr(self.tool_action, "requires_js_runtime", False):
+                if expressions.find_engine(self.app.config) is None:
+                    message = REQUIRES_JS_RUNTIME_MESSAGE % self.tool_id
+                    raise Exception(message)
         # Tests
         self.__parse_tests(tool_source)
 
@@ -1200,6 +1216,8 @@ class Tool( object, Dictifiable ):
         except httpexceptions.HTTPFound, e:
             # if it's a paste redirect exception, pass it up the stack
             raise e
+        except ToolInputsNotReadyException as e:
+            return False, e
         except Exception, e:
             log.exception('Exception caught while attempting tool execution:')
             message = 'Error executing tool: %s' % str(e)
@@ -2830,10 +2848,192 @@ class DataManagerTool( OutputParameterJSONTool ):
             log.debug( "User (%s) attempted to access a data manager tool (%s), but is not an admin.", user, self.id )
         return False
 
+
+class DatabaseOperationTool( Tool ):
+    default_tool_action = ModelOperationToolAction
+    require_dataset_ok = True
+
+    def check_inputs_ready( self, input_datasets, input_dataset_collections ):
+        def check_dataset_instance( input_dataset ):
+            if input_dataset.is_pending:
+                raise ToolInputsNotReadyException()
+
+            if self.require_dataset_ok:
+                if input_dataset.state != input_dataset.dataset.states.OK:
+                    raise ValueError("Tool requires inputs to be in valid state.")
+
+        for input_dataset in input_datasets.values():
+            check_dataset_instance( input_dataset )
+
+        for input_dataset_collection in input_dataset_collections.values():
+            if not input_dataset_collection.collection.populated:
+                raise ToolInputsNotReadyException()
+
+            map( check_dataset_instance, input_dataset_collection.dataset_instances )
+
+    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
+        return self._outputs_dict()
+
+    def _outputs_dict( self ):
+        return odict()
+
+
+class UsesExpressions:
+    requires_js_runtime = True
+
+    def _expression_environment( self, hda ):
+        raw_as_dict = hda.to_dict()
+        filtered_as_dict = {}
+        # We are more conservative with the API provided to tools
+        # than the API exposed via the web API, so cut down on what
+        # is supplied to the tool. Also, no reason to leak unneeded
+        # data prematurely regardless.
+        for key, value in raw_as_dict.iteritems():
+            include = False
+            if key.startswith("metadata_"):
+                include = True
+            elif key in FilterTool.exposed_hda_keys:
+                include = True
+            if include:
+                filtered_as_dict[key] = value
+        return filtered_as_dict
+
+    def _eval_expression(self, expression, environment_dict):
+        environment = expressions.jshead([], environment_dict)
+        result = expressions.execjs(self.app.config, expression, environment)
+        return result
+
+
+class UnzipCollectionTool( DatabaseOperationTool ):
+    tool_type = 'unzip_collection'
+
+    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
+        hdca = incoming[ "input" ]
+        assert hdca.collection.collection_type == "paired"
+        forward_o, reverse_o = hdca.collection.dataset_instances
+        forward, reverse = forward_o.copy(), reverse_o.copy()
+        # TODO: rename...
+        history.add_dataset( forward, set_hid=True )
+        history.add_dataset( reverse, set_hid=True )
+        out_data["forward"] = forward
+        out_data["reverse"] = reverse
+
+
+class ZipCollectionTool( DatabaseOperationTool ):
+    tool_type = 'zip_collection'
+
+    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
+        forward_o = incoming[ "input_forward" ]
+        reverse_o = incoming[ "input_reverse" ]
+
+        forward, reverse = forward_o.copy(), reverse_o.copy()
+        new_elements = odict()
+        new_elements["forward"] = forward
+        new_elements["reverse"] = reverse
+
+        output_collections.create_collection(
+            self.outputs.values()[0], "output", elements=new_elements
+        )
+
+
+class FilterFailedDatasetsTool( DatabaseOperationTool ):
+    tool_type = 'filter_failed_datasets_collection'
+    require_dataset_ok = False
+
+    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
+        hdca = incoming[ "input" ]
+        assert hdca.collection.collection_type == "list"
+        new_elements = odict()
+        for dce in hdca.collection.elements:
+            element = dce.element_object
+            if element.is_ok:
+                element_identifier = dce.element_identifier
+                new_elements[element_identifier] = element.copy()
+
+        output_collections.create_collection(
+            self.outputs.values()[0], "output", elements=new_elements
+        )
+
+
+class FilterTool( DatabaseOperationTool, UsesExpressions ):
+    exposed_hda_keys = ['file_size', 'file_ext', 'genome_build']
+    tool_type = 'filter_collection'
+
+    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
+        hdca = incoming[ "input" ]
+        expression = incoming[ "expression" ]
+        assert hdca.collection.collection_type == "list"
+        new_elements = odict()
+        for dce in hdca.collection.elements:
+            element = dce.element_object
+            environment_dict = self._expression_environment(element)
+            result = self._eval_expression(expression, environment_dict)
+            if result:
+                element_identifier = dce.element_identifier
+                new_elements[element_identifier] = element.copy()
+
+        output_collections.create_collection(
+            self.outputs.values()[0], "output", elements=new_elements
+        )
+
+
+class FlattenTool( DatabaseOperationTool ):
+    tool_type = 'flatten_collection'
+
+    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
+        hdca = incoming[ "input" ]
+        join_identifier = incoming["join_identifier"]
+        new_elements = odict()
+
+        def add_elements(collection, prefix=""):
+            for dce in collection.elements:
+                dce_object = dce.element_object
+                dce_identifier = dce.element_identifier
+                identifier = "%s%s%s" % (prefix, join_identifier, dce_identifier) if prefix else dce_identifier
+                if dce.is_collection:
+                    add_elements(dce_object, prefix=identifier)
+                else:
+                    new_elements[identifier] = dce_object.copy()
+
+        add_elements(hdca.collection)
+        output_collections.create_collection(
+            self.outputs.values()[0], "output", elements=new_elements
+        )
+
+
+class GroupTool( DatabaseOperationTool, UsesExpressions ):
+    tool_type = 'group_collection'
+
+    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
+        hdca = incoming[ "input" ]
+        expression = incoming[ "expression" ]
+        new_elements = odict()
+        for dce in hdca.collection.elements:
+            element = dce.element_object
+            environment_dict = self._expression_environment(element)
+            result = str(self._eval_expression(expression, environment_dict))
+            if not result:
+                continue
+
+            if result not in new_elements:
+                result_elements = {}
+                result_elements["src"] = "new_collection"
+                result_elements["collection_type"] = "list"
+                result_elements["elements"] = odict()
+                new_elements[result] = result_elements
+
+            new_elements[result]["elements"][dce.element_identifier] = element.copy()
+
+        output_collections.create_collection(
+            self.outputs.values()[0], "output", elements=new_elements
+        )
+
+
 # Populate tool_type to ToolClass mappings
 tool_types = {}
 for tool_class in [ Tool, SetMetadataTool, OutputParameterJSONTool,
                     DataManagerTool, DataSourceTool, AsyncDataSourceTool,
+                    UnzipCollectionTool, ZipCollectionTool,
                     DataDestinationTool ]:
     tool_types[ tool_class.tool_type ] = tool_class
 

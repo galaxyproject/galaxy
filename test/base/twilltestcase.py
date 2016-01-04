@@ -2498,6 +2498,7 @@ class TwillTestCase( unittest.TestCase ):
         return temp_local, temp_temp
 
     def _format_stream( self, output, stream, format ):
+        output = output or ''
         if format:
             msg = "---------------------- >> begin tool %s << -----------------------\n" % stream
             msg += output + "\n"
