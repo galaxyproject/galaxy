@@ -409,6 +409,12 @@ def populate_api_routes( webapp, app ):
                            action='show',
                            conditions=dict( method=[ "GET" ] ) )
 
+    webapp.mapper.connect( 'update_tour',
+                           '/api/tours/{tour_id}',
+                           controller='tours',
+                           action='update_tour',
+                           conditions=dict( method=[ "POST" ] ) )
+
     # =======================
     # ===== LIBRARY API =====
     # =======================

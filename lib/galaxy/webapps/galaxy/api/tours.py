@@ -3,6 +3,8 @@ API Controller providing Galaxy Tours
 """
 import logging
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
+from galaxy.web import require_admin
+from galaxy.web import expose_api
 from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger( __name__ )
@@ -32,3 +34,14 @@ class ToursController( BaseAPIController ):
         :rtype:     dictionary
         """
         return trans.app.tour_registry.tour_contents(tour_id)
+
+    @expose_api
+    @require_admin
+    def update_tour( self, trans, tour_id, **kwd ):
+        """
+        This simply reloads tours right now.  It's a quick hack.
+
+        TODO: allow creation of new tours (which get written to the
+        filesystem).
+        """
+        return trans.app.tour_registry.load_tour(tour_id)
