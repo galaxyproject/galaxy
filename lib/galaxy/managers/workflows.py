@@ -216,7 +216,12 @@ class WorkflowContentsManager(UsesAnnotations):
             module, step = self.__track_module_from_dict( trans, steps, steps_by_external_id, step_dict, secure=False )
             if module.type == 'tool' and module.tool is None:
                 # A required tool is not available in the local Galaxy instance.
-                missing_tool_tup = ( step_dict[ 'content_id' ], step_dict[ 'name' ], step_dict[ 'tool_version' ] )
+                if 'content_id' in step_dict:
+                    tool_id = step_dict[ 'content_id' ]
+                else:
+                    # Support legacy workflows... (created pre 16.01)
+                    tool_id = step_dict[ 'tool_id' ]
+                missing_tool_tup = ( tool_id, step_dict[ 'name' ], step_dict[ 'tool_version' ])
                 if missing_tool_tup not in missing_tool_tups:
                     missing_tool_tups.append( missing_tool_tup )
                 # Save the entire step_dict in the unused config field, be parsed later
