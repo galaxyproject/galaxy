@@ -38,6 +38,7 @@ class ConfigSerializer( base.ModelSerializer ):
             'brand'                     : _defaults_to( '' ),
             # TODO: this doesn't seem right
             'logo_url'                  : lambda i, k, **c: self.url_for( i.get( k, '/' ) ),
+            'logo_src'                  : lambda i, k, **c: self.url_for( '/static/images/galaxyIcon_noText.png' ),
             'terms_url'                 : _defaults_to( '' ),
 
             # TODO: don't hardcode here - hardcode defaults once in config.py
