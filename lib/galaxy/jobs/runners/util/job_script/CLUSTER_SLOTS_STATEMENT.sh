@@ -1,5 +1,14 @@
 export GALAXY_SLOTS_CONFIGURED="1"
-if [ -n "$SLURM_NTASKS" ] || [ -n "$SLURM_CPUS_PER_TASK" ]; then
+if [ -n "$SLURM_CPUS_ON_NODE" ]; then
+    # This should be valid on SLURM except in the case that srun is used to
+    # submit additional job steps under an existing allocation, which we do not
+    # currently do.
+    GALAXY_SLOTS="$SLURM_CPUS_ON_NODE"
+elif [ -n "$SLURM_NTASKS" ] || [ -n "$SLURM_CPUS_PER_TASK" ]; then
+    # $SLURM_CPUS_ON_NODE should be set correctly on SLURM (even on old
+    # installations), but keep the $SLURM_NTASKS logic as a backup since this
+    # was the previous method under SLURM.
+    #
     # Multiply these values since SLURM_NTASKS is total tasks over all nodes.
     # GALAXY_SLOTS maps to CPUS on a single node and shouldn't be used for
     # multi-node requests.
