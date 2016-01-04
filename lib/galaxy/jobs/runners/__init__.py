@@ -264,7 +264,7 @@ class BaseJobRunner( object ):
                                                                             kwds={ 'overwrite' : False } )
             external_metadata_script = "%s %s %s" % (lib_adjust, venv, external_metadata_script)
             if resolve_requirements:
-                dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands()
+                dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands(job_directory=job_wrapper.working_directory)
                 if dependency_shell_commands:
                     if isinstance( dependency_shell_commands, list ):
                         dependency_shell_commands = "&&".join( dependency_shell_commands )

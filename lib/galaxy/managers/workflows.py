@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 from collections import namedtuple
+import logging
 import json
 import uuid
 
@@ -21,6 +22,8 @@ from galaxy.workflow.modules import module_factory, is_tool_module_type, ToolMod
 from galaxy.tools.parameters.basic import DataToolParameter, DataCollectionToolParameter
 from galaxy.tools.parameters import visit_input_values
 from galaxy.web import url_for
+
+log = logging.getLogger( __name__ )
 
 
 class WorkflowsManager( object ):
@@ -213,7 +216,12 @@ class WorkflowContentsManager(UsesAnnotations):
             module, step = self.__track_module_from_dict( trans, steps, steps_by_external_id, step_dict, secure=False )
             if module.type == 'tool' and module.tool is None:
                 # A required tool is not available in the local Galaxy instance.
-                missing_tool_tup = ( step_dict[ 'content_id' ], step_dict[ 'name' ], step_dict[ 'tool_version' ] )
+                if 'content_id' in step_dict:
+                    tool_id = step_dict[ 'content_id' ]
+                else:
+                    # Support legacy workflows... (created pre 16.01)
+                    tool_id = step_dict[ 'tool_id' ]
+                missing_tool_tup = ( tool_id, step_dict[ 'name' ], step_dict[ 'tool_version' ])
                 if missing_tool_tup not in missing_tool_tups:
                     missing_tool_tups.append( missing_tool_tup )
                 # Save the entire step_dict in the unused config field, be parsed later
@@ -327,8 +335,10 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         if style == "editor":
             return self._workflow_to_dict_editor( trans, stored )
+        elif style == "legacy":
+            return self._workflow_to_dict_instance( stored, legacy=True )
         elif style == "instance":
-            return self._workflow_to_dict_instance( stored )
+            return self._workflow_to_dict_instance( stored, legacy=False )
         else:
             return self._workflow_to_dict_export( trans, stored )
 
@@ -622,7 +632,7 @@ class WorkflowContentsManager(UsesAnnotations):
             data['steps'][step.order_index] = step_dict
         return data
 
-    def _workflow_to_dict_instance(self, stored):
+    def _workflow_to_dict_instance(self, stored, legacy=True):
         encode = self.app.security.encode_id
         sa_session = self.app.model.context
         item = stored.to_dict( view='element', value_mapper={ 'id': encode } )
@@ -639,14 +649,24 @@ class WorkflowContentsManager(UsesAnnotations):
             elif step_type == "data_collection_input":
                 label = "Input Dataset Collection"
             else:
-                raise ValueError("Invalid/unknown input step_type %s" % step_type)
-            inputs[step.id] = {'label': label, 'value': ""}
+                raise ValueError("Invalid step_type %s" % step_type)
+            if legacy:
+                index = step.id
+            else:
+                index = step.order_index
+            step_uuid = str(step.uuid) if step.uuid else None
+            inputs[index] = {'label': label, 'value': "", "uuid": step_uuid}
         item['inputs'] = inputs
         item['annotation'] = self.get_item_annotation_str( sa_session, stored.user, stored )
         steps = {}
+        steps_to_order_index = {}
         for step in workflow.steps:
+            steps_to_order_index[step.id] = step.order_index
+        for step in workflow.steps:
+            step_uuid = str(step.uuid) if step.uuid else None
+            step_id = step.id if legacy else step.order_index
             step_type = step.type
-            step_dict = {'id': step.id,
+            step_dict = {'id': step_id,
                          'type': step_type,
                          'tool_id': step.tool_id,
                          'tool_version': step.tool_version,
@@ -663,9 +683,14 @@ class WorkflowContentsManager(UsesAnnotations):
                 step_dict['workflow_id'] = encode(workflow.id)
 
             for conn in step.input_connections:
-                step_dict['input_steps'][conn.input_name] = {'source_step': conn.output_step_id,
+                step_id = step.id if legacy else step.order_index
+                source_id = conn.output_step_id
+                source_step = source_id if legacy else steps_to_order_index[source_id]
+                step_dict['input_steps'][conn.input_name] = {'source_step': source_step,
                                                              'step_output': conn.output_name}
-            steps[step.id] = step_dict
+
+            steps[step_id] = step_dict
+
         item['steps'] = steps
         return item
 

@@ -83,7 +83,7 @@ class ToolDataTableManager( object ):
                     # TODO: Do more here than logging an exception.
                     log.debug( message )
             # Reload the tool into the local list of repository_tools_tups.
-            repository_tool = self.app.toolbox.load_tool( os.path.join( tool_path, tup_path ), guid=guid )
+            repository_tool = self.app.toolbox.load_tool( os.path.join( tool_path, tup_path ), guid=guid, use_cached=False )
             repository_tools_tups[ index ] = ( tup_path, guid, repository_tool )
             # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
             self.reset_tool_data_tables()

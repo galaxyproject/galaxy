@@ -33,6 +33,9 @@ def build_command(
     base_command_line = job_wrapper.get_command_line()
     # job_id = job_wrapper.job_id
     # log.debug( 'Tool evaluation for job (%s) produced command-line: %s' % ( job_id, base_command_line ) )
+    if not base_command_line:
+        raise Exception("Attempting to run a tool with empty command definition.")
+
     commands_builder = CommandsBuilder(base_command_line)
 
     # All job runners currently handle this case which should never occur
@@ -75,15 +78,16 @@ def build_command(
 
 def __externalize_commands(job_wrapper, commands_builder, remote_command_params, script_name="tool_script.sh"):
     local_container_script = join( job_wrapper.working_directory, script_name )
+    tool_commands = commands_builder.build()
     with open( local_container_script, "w" ) as f:
-        script_contents = "#!%s\n%s" % (DEFAULT_SHELL, commands_builder.build())
-        f.write( script_contents )
+        script_contents = u"#!%s\n%s" % (DEFAULT_SHELL, tool_commands)
+        f.write(script_contents.encode(util.DEFAULT_ENCODING))
     chmod( local_container_script, 0755 )
 
     commands = local_container_script
     if 'working_directory' in remote_command_params:
         commands = "%s %s" % (DEFAULT_SHELL, join(remote_command_params['working_directory'], script_name))
-    log.info("Built script [%s] for tool command[%s]" % (local_container_script, commands))
+    log.info("Built script [%s] for tool command[%s]" % (local_container_script, tool_commands))
     return commands
 
 
@@ -132,6 +136,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
     config_file = metadata_kwds.get( 'config_file', None )
     datatypes_config = metadata_kwds.get( 'datatypes_config', None )
     compute_tmp_dir = metadata_kwds.get( 'compute_tmp_dir', None )
+    resolve_metadata_dependencies = job_wrapper.commands_in_new_shell
     metadata_command = job_wrapper.setup_external_metadata(
         exec_dir=exec_dir,
         tmp_dir=tmp_dir,
@@ -142,6 +147,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
         config_file=config_file,
         datatypes_config=datatypes_config,
         compute_tmp_dir=compute_tmp_dir,
+        resolve_metadata_dependencies=resolve_metadata_dependencies,
         kwds={ 'overwrite': False }
     ) or ''
     metadata_command = metadata_command.strip()
@@ -157,9 +163,7 @@ def __copy_if_exists_command(work_dir_output):
 
 class CommandsBuilder(object):
 
-    def __init__(self, initial_command):
-        if not initial_command:
-            raise Exception("Attempting to run a tool with empty command definition.")
+    def __init__(self, initial_command=u''):
         # Remove trailing semi-colon so we can start hacking up this command.
         # TODO: Refactor to compose a list and join with ';', would be more clean.
         initial_command = util.unicodify(initial_command)

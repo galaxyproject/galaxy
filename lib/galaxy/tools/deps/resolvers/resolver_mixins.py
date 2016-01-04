@@ -28,7 +28,7 @@ class UsesHomebrewMixin:
         # Just grab newest installed version - may make sense some day to find
         # the linked version instead.
         default_version = sorted(installed_versions, reverse=True)[0]
-        return self._find_dep_versioned(name, default_version)
+        return self._find_dep_versioned(name, default_version, exact=version is None)
 
     def _installed_versions(self, recipe):
         recipe_base_path = os.path.join(self.cellar_root, recipe)
@@ -62,8 +62,13 @@ class UsesInstalledRepositoriesMixin:
 
 class HomebrewDependency(Dependency):
 
-    def __init__(self, commands):
+    def __init__(self, commands, exact=True):
         self.commands = commands
+        self._exact = exact
+
+    @property
+    def exact(self):
+        return self._exact
 
     def shell_commands(self, requirement):
         raw_commands = self.commands.replace("\n", ";")

@@ -161,7 +161,7 @@ var DatasetListItemView = _super.extend(
             displayBtnData.onclick = function( ev ){
                 if (Galaxy.frame && Galaxy.frame.active) {
                     // Add dataset to frames.
-                    Galaxy.frame.add_dataset(self.model.get('id'));
+                    Galaxy.frame.addDataset(self.model.get('id'));
                     ev.preventDefault();
                 }
             };

@@ -555,6 +555,15 @@ def ready_name_for_url( raw_name ):
     return slug_base
 
 
+def which(file):
+    # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
+    for path in os.environ["PATH"].split(":"):
+        if os.path.exists(path + "/" + file):
+                return path + "/" + file
+
+    return None
+
+
 def in_directory( file, directory, local_path_module=os.path ):
     """
     Return true, if the common prefix of both is equal to directory

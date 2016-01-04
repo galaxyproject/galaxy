@@ -5,7 +5,7 @@ import zipfile
 import binascii
 import imghdr
 from galaxy import util
-from StringIO import StringIO
+from six import StringIO
 
 HTML_CHECK_LINES = 100
 
