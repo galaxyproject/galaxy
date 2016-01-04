@@ -9,7 +9,7 @@ log = logging.getLogger( __name__ )
 
 
 def tour_loader(contents_dict):
-    #  This *COULD* be done on the clientside.  Maybe even should?
+    #  Some of this can be done on the clientside.  Maybe even should?
     title_default = contents_dict.get('title_default', None)
     for step in contents_dict['steps']:
         if 'intro' in step:
@@ -35,23 +35,28 @@ class ToursRegistry(object):
                  'name': self.tours[k].get('name', None)}
                 for k in self.tours.keys()]
 
+    def load_tour(self, tour_id):
+        tour_path = os.path.join(self.tour_dir, tour_id + ".yaml")
+        try:
+            with open(tour_path) as handle:
+                conf = yaml.load(handle)
+                tour = tour_loader(conf)
+                self.tours[tour_id] = tour_loader(conf)
+                log.info("Loaded tour '%s'" % tour_id)
+                return tour
+        except IOError:
+            log.exception("Tour '%s' could not be loaded, error reading file." % tour_id)
+        except yaml.error.YAMLError:
+            log.exception("Tour '%s' could not be loaded, error within file.  Please check your yaml syntax." % tour_id)
+        return None
+
     def load_tours(self):
         self.tours = {}
         for filename in os.listdir(self.tour_dir):
             if filename.endswith('.yaml'):
-                tour_path = os.path.join(self.tour_dir, filename)
-                with open(tour_path) as handle:
-                    try:
-                        conf = yaml.load(handle)
-                    except:
-                        log.warning("Tour '%s' could not be loaded, please check if your yaml syntax is valid." % filename)
-                        continue
-                # Could pop the following, but is there a good reason to?
-                # As long as they key doesn't conflict with tour keys, it's
-                # fine.
-                tour_id = filename.rstrip('.yaml')
-                self.tours[tour_id] = tour_loader(conf)
-                log.info("Loaded tour '%s'" % tour_id)
+                tour_id = filename[:-5]
+                self.load_tour(tour_id)
+        return self.tours_by_id_with_description()
 
     def tour_contents(self, tour_id):
         # Extra format translation could happen here (like the previous intro_to_tour)
