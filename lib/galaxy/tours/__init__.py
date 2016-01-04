@@ -37,6 +37,25 @@ class ToursRegistry(object):
 
     def load_tour(self, tour_id):
         tour_path = os.path.join(self.tour_dir, tour_id + ".yaml")
+        if not os.path.exists(tour_path):
+            tour_path = os.path.join(self.tour_dir, tour_id + ".yml")
+        return self._load_tour_from_path(tour_path)
+
+    def load_tours(self):
+        self.tours = {}
+        for filename in os.listdir(self.tour_dir):
+            if filename.endswith('.yaml') or filename.endswith('.yml'):
+                self._load_tour_from_path(os.path.join(self.tour_dir, filename))
+        return self.tours_by_id_with_description()
+
+    def tour_contents(self, tour_id):
+        # Extra format translation could happen here (like the previous intro_to_tour)
+        # For now just return the loaded contents.
+        return self.tours.get(tour_id, None)
+
+    def _load_tour_from_path(self, tour_path):
+        filename = os.path.basename(tour_path)
+        tour_id = os.path.splitext(filename)[0]
         try:
             with open(tour_path) as handle:
                 conf = yaml.load(handle)
@@ -49,16 +68,3 @@ class ToursRegistry(object):
         except yaml.error.YAMLError:
             log.exception("Tour '%s' could not be loaded, error within file.  Please check your yaml syntax." % tour_id)
         return None
-
-    def load_tours(self):
-        self.tours = {}
-        for filename in os.listdir(self.tour_dir):
-            if filename.endswith('.yaml'):
-                tour_id = filename[:-5]
-                self.load_tour(tour_id)
-        return self.tours_by_id_with_description()
-
-    def tour_contents(self, tour_id):
-        # Extra format translation could happen here (like the previous intro_to_tour)
-        # For now just return the loaded contents.
-        return self.tours.get(tour_id, None)
