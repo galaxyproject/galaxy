@@ -455,14 +455,14 @@ class ToolShedRepositoriesController( BaseAPIController ):
 
     def __parse_repository_from_payload( self, payload, include_changeset=False ):
         # Get the information about the repository to be installed from the payload.
-        tool_shed_url = payload.get( 'tool_shed_url', None )
-        name = payload.get( 'name', None )
-        owner = payload.get( 'owner', None )
-        if tool_shed_url is None:
+        tool_shed_url = payload.get( 'tool_shed_url', '' )
+        if not tool_shed_url:
             raise exceptions.RequestParameterMissingException( "Missing required parameter 'tool_shed_url'." )
-        if name is None:
+        name = payload.get( 'name', '' )
+        if not name:
             raise exceptions.RequestParameterMissingException( "Missing required parameter 'name'." )
-        if owner is None:
+        owner = payload.get( 'owner', '' )
+        if not owner:
             raise exceptions.RequestParameterMissingException( "Missing required parameter 'owner'." )
         if not include_changeset:
             return tool_shed_url, name, owner
