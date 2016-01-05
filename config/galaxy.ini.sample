@@ -172,7 +172,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # from the Tool Shed will fail.
 #tool_dependency_dir = None
 
-# The dependency resolves config file specifies an ordering and options for how 
+# The dependency resolves config file specifies an ordering and options for how
 # Galaxy resolves tool dependencies (requirement tags in Tool XML). The default
 # ordering is to the use the tool shed for tools installed that way, use local
 # Galaxy packages, and then use conda if available.
@@ -657,7 +657,7 @@ nglims_config_file = tool-data/nglims.yaml
 # header of the request if that Origin hostname matches one of the strings or
 # regular expressions listed here. This is a comma separated list of hostname
 # strings or regular expressions beginning and ending with /.
-# E.g. mysite.com,google.com,usegalaxy.org,/example\.*.com/
+# E.g. mysite.com,google.com,usegalaxy.org,/^[\w\.]*example\.com/
 # See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS
 #allowed_origin_hostnames = None
 

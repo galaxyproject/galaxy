@@ -75,6 +75,9 @@ class MockTrans( object ):
         self.security = self.app.security
         self.history = history
 
+        self.request = Bunch( headers={} )
+        self.response = Bunch( headers={} )
+
     def get_user( self ):
         if self.galaxy_session:
             return self.galaxy_session.user

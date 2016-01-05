@@ -225,13 +225,16 @@ class WebApplication( object ):
 
         # singular match
         def matches_allowed_origin( origin, allowed_origin ):
-            if isinstance( allowed_origin, basestring ):
+            if isinstance( allowed_origin, str ):
                 return origin == allowed_origin
-            # note str() returns an empty string (a suitable default function)
-            return getattr( allowed_origin.match( origin ), 'group', str )() == origin
+            match = allowed_origin.match( origin )
+            return match and match.group() == origin
 
         # check for '*' or compare to list of allowed
         def is_allowed_origin( origin ):
+            # localhost uses no origin header (== null)
+            if not origin:
+                return False
             for allowed_origin in trans.app.config.allowed_origin_hostnames:
                 if( allowed_origin == '*'
                 or( matches_allowed_origin( origin, allowed_origin ) ) ):
@@ -242,7 +245,6 @@ class WebApplication( object ):
         origin = urlparse.urlparse( origin_header ).hostname
         # check against the list of allowed strings/regexp hostnames, echo original if cleared
         if is_allowed_origin( origin ):
-            log.info( 'sending Access-Control-Allow-Origin header to: %s', origin_header )
             trans.response.headers[ 'Access-Control-Allow-Origin' ] = origin_header
             # TODO: see the to do on ALLOWED_METHODS above
             # trans.response.headers[ 'Access-Control-Allow-Methods' ] = ', '.join( ALLOWED_METHODS )

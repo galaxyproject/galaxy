@@ -680,10 +680,11 @@ class Configuration( object ):
         def parse( string ):
             # a string enclosed in fwd slashes will be parsed as a regexp: e.g. /<some val>/
             if string[0] == '/' and string[-1] == '/':
-                return re.compile( string[1:-1] )
+                string = string[1:-1]
+                return re.compile( string, flags=( re.UNICODE | re.LOCALE ) )
             return string
 
-        return [ parse( v ) for v in allowed_origin_hostnames ]
+        return [ parse( v ) for v in allowed_origin_hostnames if v ]
 
 
 def get_database_engine_options( kwargs, model_prefix='' ):
