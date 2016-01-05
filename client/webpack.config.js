@@ -19,6 +19,7 @@ var webpack = require( 'webpack' ),
         'libs/jquery.sparklines',
         'libs/jquery/jquery-ui',
         'libs/bootstrap',
+        'libs/bootstrap-tour',
         // mvc
         'libs/underscore',
         'libs/backbone',

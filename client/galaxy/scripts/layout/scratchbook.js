@@ -7,6 +7,7 @@ return Backbone.View.extend({
         this.frames = new Frames.View({ visible : false });
         this.setElement( this.frames.$el );
         this.buttonActive = options.collection.add({
+            id              : 'enable-scratchbook',
             icon            : 'fa-th',
             tooltip         : 'Enable/Disable Scratchbook',
             onclick         : function() {
@@ -25,6 +26,7 @@ return Backbone.View.extend({
             }
         });
         this.buttonLoad = options.collection.add({
+            id              : 'show-scratchbook',
             icon            : 'fa-eye',
             tooltip         : 'Show/Hide Scratchbook',
             show_note       : true,
