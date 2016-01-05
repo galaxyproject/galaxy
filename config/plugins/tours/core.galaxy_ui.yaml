@@ -1,0 +1,96 @@
+name: Galaxy UI
+description: A gentle introduction to the Galaxy User Interface
+title_default: "Welcome to Galaxy"
+steps:
+    - title: "Welcome to Galaxy"
+      content: "This short tour will walk you through Galaxy's user interface."
+      backdrop: true
+
+    - element: ".upload-button"
+      intro: "Use this button to upload your data."
+      position: "right"
+      postclick:
+        - ".upload-button"
+
+    - element: "button#btn-local"
+      intro: "Upload data from your computer."
+      position: "top"
+      postclick:
+        - "button#btn-new"
+    - element: "button#btn-new"
+      intro: "Copy and Paste data or include URLs."
+      position: "top"
+      preclick:
+        - ".upload-button"
+
+    - element: "textarea#text-content"
+      intro: "Insert data into Galaxy."
+      position: "top"
+      textinsert: |
+        https://raw.githubusercontent.com/arq5x/bedtools/master/test/merge/a.full.bed
+        https://raw.githubusercontent.com/arq5x/bedtools/master/test/merge/a.full.bed
+        https://raw.githubusercontent.com/arq5x/bedtools/master/test/merge/a.full.bed
+
+    - element: "button#btn-start"
+      intro: "Upload the data into your Galaxy history."
+      position: "bottom"
+      postclick:
+        - "button#btn-start"
+
+    - element: "button#btn-close"
+      intro: "Hit the close button in upload."
+      position: "bottom"
+      postclick:
+        - "#btn-close"
+
+
+    - element: 'a[href$="tool_runner?tool_id=Filter1"]'
+      intro: "Tools are grouped into categories to make them easier to find."
+      position: "right"
+      preclick:
+        - 'a[href$="tool_runner?tool_id=Filter1"]'
+      postclick:
+        - "#title_filter a"
+
+    - element: '#center-panel'
+      intro: "This is your Filter tool."
+      position: "right"
+      preclick:
+        - '#center-panel'
+
+    - element: '#uid-0'
+      intro: "Your tool parameters."
+      position: "right"
+
+    - element: 'div.toolHelp'
+      intro: "Your tool parameters."
+      position: "right"
+    - element: '#execute'
+      intro: "Send your tool to the Compute Cluster."
+      position: "right"
+      preclick:
+        - '#execute'
+    - element: "#right"
+      intro: "This is your history! All anylysis steps will be recorded and can be redone at any time."
+      position: "left"
+    - element: "#masthead"
+      intro: "Your top panel will give you access to a lot of useful things."
+      position: "bottom"
+    - element: "#analysis"
+      intro: "Start your <b>analysis</b> from here."
+      position: "bottom"
+    - element: "#workflow"
+      intro: "Manage, Import, Export and Share your <b>Workflows</b>."
+      position: "bottom"
+    - element: "#shared"
+      intro: "Get access to all <b>Workflows, <b>Histories</b>, <b>Pages</b>, <b>Visualizations</b> and you <b>Data Library</b> that are shared with you."
+      position: "bottom"
+    - element: "#visualization"
+      intro: "Want to start visualize your data in Trackster? Start here!"
+      position: "bottom"
+    - element: "#help"
+      intro: "Here you get more help from the Galaxy <b>Community</b> with Videos and a QA board."
+      position: "bottom"
+    - element: "#user"
+      intro: "Login and start your analysis!"
+      position: "bottom"

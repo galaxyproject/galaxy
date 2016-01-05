@@ -1,5 +1,5 @@
 /** Masthead Collection **/
-define([], function() {
+define(['mvc/tours'], function( Tours ) {
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
         defaults: {
@@ -142,6 +142,12 @@ var Collection = Backbone.Collection.extend({
                     title   : 'How to Cite Galaxy',
                     url     : options.citation_url,
                     target  : '_blank'
+                },{
+                    title   : 'Interactive Tours',
+                    onclick : function(c){
+                        Galaxy.app.display(new Tours.ToursView());
+                    },
+                    target  : 'galaxy_main'
             }]
         };
         options.terms_url && helpTab.menu.push({
@@ -244,6 +250,7 @@ var Tab = Backbone.View.extend({
         this.$menu      = this.$( '.dropdown-menu' );
         this.$note      = this.$( '.dropdown-note' );
         this.model = options.model;
+        this.$el.attr( 'id', this.model.id );
         this.model.on( 'init change:title', function() {
             this.get( 'title' ) && self.$toggle.html( this.get( 'title' ) );
         }).on( 'init change:visible', function() {
@@ -323,8 +330,11 @@ var Tab = Backbone.View.extend({
                        .on( 'click', function( e ) {
                             e.preventDefault();
                             self.model.set( 'show_menu', false );
-                            options.onclick && options.onclick();
-                            Galaxy.frame.add( options );
+                            if (options.onclick){
+                                options.onclick();
+                            } else {
+                                Galaxy.frame.add( options );
+                            }
                        })
         );
     },

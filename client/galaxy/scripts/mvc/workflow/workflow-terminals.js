@@ -396,11 +396,15 @@ define(['mvc/workflow/workflow-globals'], function( Globals ) {
             this.multiple = false;
             this.collection = true;
             this.datatypes = input.extensions;
-            if( input.collection_type ) {
-                this.collectionType = new CollectionTypeDescription( input.collection_type );
+            var collectionTypes = [];
+            if( input.collection_types ) {
+                _.each(input.collection_types, function(collectionType) {
+                    collectionTypes.push( new CollectionTypeDescription( collectionType ) );
+                });
             } else {
-                this.collectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
+                collectionTypes.push(ANY_COLLECTION_TYPE_DESCRIPTION);
             }
+            this.collectionTypes = collectionTypes;
         },
         connect: function( connector ) {
             BaseInputTerminal.prototype.connect.call( this, connector );
@@ -413,32 +417,39 @@ define(['mvc/workflow/workflow-globals'], function( Globals ) {
             this.setMapOver( effectiveMapOver );
         },
         _effectiveMapOver: function( other ) {
-            var collectionType = this.collectionType;
+            var collectionTypes = this.collectionTypes;
             var otherCollectionType = this._otherCollectionType( other );
-            if( ! collectionType.canMatch( otherCollectionType ) ) {
-                return otherCollectionType.effectiveMapOver( collectionType );
-            } else {
-                return NULL_COLLECTION_TYPE_DESCRIPTION;
+            var canMatch = _.some(collectionTypes, function( collectionType) { return collectionType.canMatch( otherCollectionType ); });
+
+            if( ! canMatch ) {
+                for( var collectionTypeIndex in collectionTypes ) {
+                    var collectionType = collectionTypes[collectionTypeIndex];
+                    var effectiveMapOver = otherCollectionType.effectiveMapOver( collectionType );
+                    if( effectiveMapOver != NULL_COLLECTION_TYPE_DESCRIPTION ) {
+                        return effectiveMapOver;
+                    }
+                }
             }
+            return NULL_COLLECTION_TYPE_DESCRIPTION;
         },
-        _effectiveCollectionType: function( ) {
-            var collectionType = this.collectionType;
+        _effectiveCollectionTypes: function( ) {
             var thisMapOver = this.mapOver();
-            return thisMapOver.append( collectionType );
+            return _.map(this.collectionTypes, function(t) { return thisMapOver.append(t); });
         },
         attachable: function ( other ) {
             var otherCollectionType = this._otherCollectionType( other );
             if( otherCollectionType.isCollection ) {
-                var effectiveCollectionType = this._effectiveCollectionType( );
+                var effectiveCollectionTypes = this._effectiveCollectionTypes( );
                 var thisMapOver = this.mapOver();
-                if( effectiveCollectionType.canMatch( otherCollectionType ) ) {
+                var canMatch = _.some(effectiveCollectionTypes, function( effectiveCollectionType) { return effectiveCollectionType.canMatch( otherCollectionType ); });
+                if( canMatch ) {
                     // Only way a direct match...
                     return this._producesAcceptableDatatype( other );
                     // Otherwise we need to mapOver
                 } else if( thisMapOver.isCollection ) {
                     // In this case, mapOver already set and we didn't match skipping...
                     return false;
-                } else if( otherCollectionType.canMapOver( this.collectionType ) ) {
+                } else if( _.some(this.collectionTypes, function(collectionType) { return otherCollectionType.canMapOver( collectionType ); }) ) {
                     var effectiveMapOver = this._effectiveMapOver( other );
                     if( ! effectiveMapOver.isCollection ) {
                         return false;
