@@ -209,9 +209,8 @@ var DatasetListItemEdit = _super.extend(
         $links.click( function( ev ){
             if( Galaxy.frame && Galaxy.frame.active ){
                 Galaxy.frame.add({
-                    title       : "Visualization",
-                    type        : "url",
-                    content     : $( this ).attr( 'href' )
+                    title       : 'Visualization',
+                    url         : $( this ).attr( 'href' )
                 });
                 ev.preventDefault();
                 ev.stopPropagation();

@@ -23,10 +23,12 @@ import time
 import tempfile
 import threading
 from six.moves.urllib import parse as urlparse
+from six import iteritems
 
 from galaxy.util import json
 from datetime import datetime
 
+from six import PY3
 from six import string_types, text_type
 from six.moves import xrange
 from six.moves import email_mime_text
@@ -43,6 +45,13 @@ from xml.etree import ElementTree, ElementInclude
 from .inflection import Inflector, English
 inflector = Inflector(English)
 
+if PY3:
+    def list_map(f, input):
+        return list(map(f, input))
+else:
+    list_map = map
+
+
 log = logging.getLogger(__name__)
 _lock = threading.RLock()
 
@@ -56,6 +65,21 @@ bz2_magic = 'BZh'
 DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
 NULL_CHAR = '\000'
 BINARY_CHARS = [ NULL_CHAR ]
+
+
+def remove_protocol_from_url( url ):
+    """ Supplied URL may be null, if not ensure http:// or https://
+    etc... is stripped off.
+    """
+    if url is None:
+        return url
+
+    # We have a URL
+    if url.find( '://' ) > 0:
+        new_url = url.split( '://' )[1]
+    else:
+        new_url = url
+    return new_url.rstrip( '/' )
 
 
 def is_binary( value, binary_chars=None ):
@@ -145,7 +169,8 @@ def unique_id(KEY_SIZE=128):
     >>> len(set(ids))
     1000
     """
-    return md5(str( random.getrandbits( KEY_SIZE ) )).hexdigest()
+    random_bits = text_type(random.getrandbits(KEY_SIZE)).encode("UTF-8")
+    return md5(random_bits).hexdigest()
 
 
 def parse_xml( fname ):
@@ -202,17 +227,17 @@ def xml_element_to_dict( elem ):
     if sub_elems:
         sub_elem_dict = dict()
         for sub_sub_elem_dict in map( xml_element_to_dict, sub_elems ):
-            for key, value in sub_sub_elem_dict.iteritems():
+            for key, value in iteritems(sub_sub_elem_dict):
                 if key not in sub_elem_dict:
                     sub_elem_dict[ key ] = []
                 sub_elem_dict[ key ].append( value )
-        for key, value in sub_elem_dict.iteritems():
+        for key, value in iteritems(sub_elem_dict):
             if len( value ) == 1:
                 rval[ elem.tag ][ key ] = value[0]
             else:
                 rval[ elem.tag ][ key ] = value
     if elem.attrib:
-        for key, value in elem.attrib.iteritems():
+        for key, value in iteritems(elem.attrib):
             rval[ elem.tag ][ "@%s" % key ] = value
 
     if elem.text:
@@ -418,7 +443,7 @@ def sanitize_text( text, valid_characters=valid_chars, character_map=mapped_char
     and lists of strings; non-string entities will be cast to strings.
     """
     if isinstance( text, list ):
-        return map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), text )
+        return list_map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), text )
     if not isinstance( text, string_types ):
         text = smart_str( text )
     return _sanitize_text_helper( text, valid_characters=valid_characters, character_map=character_map )
@@ -457,7 +482,7 @@ def sanitize_param( value, valid_characters=valid_chars, character_map=mapped_ch
     if isinstance( value, string_types ):
         return sanitize_text( value, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character )
     elif isinstance( value, list ):
-        return map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), value )
+        return list_map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), value )
     else:
         raise Exception('Unknown parameter type (%s)' % ( type( value ) ))
 
@@ -528,6 +553,15 @@ def ready_name_for_url( raw_name ):
     if slug_base.endswith('-'):
         slug_base = slug_base[:-1]
     return slug_base
+
+
+def which(file):
+    # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
+    for path in os.environ["PATH"].split(":"):
+        if os.path.exists(path + "/" + file):
+                return path + "/" + file
+
+    return None
 
 
 def in_directory( file, directory, local_path_module=os.path ):
@@ -986,14 +1020,14 @@ def stringify_dictionary_keys( in_dict ):
     # changes unicode keys into strings, only works on top level (does not recurse)
     # unicode keys are not valid for expansion into keyword arguments on method calls
     out_dict = {}
-    for key, value in in_dict.iteritems():
+    for key, value in iteritems(in_dict):
         out_dict[ str( key ) ] = value
     return out_dict
 
 
 def recursively_stringify_dictionary_keys( d ):
     if isinstance(d, dict):
-        return dict([(k.encode( DEFAULT_ENCODING ), recursively_stringify_dictionary_keys(v)) for k, v in d.iteritems()])
+        return dict([(k.encode( DEFAULT_ENCODING ), recursively_stringify_dictionary_keys(v)) for k, v in iteritems(d)])
     elif isinstance(d, list):
         return [recursively_stringify_dictionary_keys(x) for x in d]
     else:

@@ -2250,14 +2250,17 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         input_source = ensure_input_source( input_source )
         super(DataCollectionToolParameter, self).__init__( tool, input_source, trans )
         self._parse_formats( trans, tool, input_source )
-        self._collection_type = input_source.get("collection_type", None)
+        collection_types = input_source.get("collection_type", None)
+        if collection_types:
+            collection_types = [t.strip() for t in collection_types.split(",")]
+        self._collection_types = collection_types
         self.multiple = False  # Accessed on DataToolParameter a lot, may want in future
         self.is_dynamic = True
         self._parse_options( input_source )  # TODO: Review and test.
 
     @property
-    def collection_type( self ):
-        return self._collection_type
+    def collection_types( self ):
+        return self._collection_types
 
     def _history_query( self, trans ):
         dataset_collection_type_descriptions = trans.app.dataset_collections_service.collection_type_descriptions

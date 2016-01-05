@@ -127,25 +127,6 @@ function init_refresh_on_change () {
 window.init_refresh_on_change = init_refresh_on_change;
 
 $(document).ready( function() {
-
-    // Masthead dropdown menus
-    var $dropdowns = $("#masthead ul.nav > li.dropdown > .dropdown-menu");
-    $("body").on( "click.nav_popups", function( e ) {
-        $dropdowns.hide();
-        $("#dd-helper").hide();
-        // If the target is in the menu, treat normally
-        if ( $(e.target).closest( "#masthead ul.nav > li.dropdown > .dropdown-menu" ).length ) {
-            return;
-        }
-        // Otherwise, was the click in a tab
-        var $clicked = $(e.target).closest( "#masthead ul.nav > li.dropdown" );
-        if ( $clicked.length ) {
-            $("#dd-helper").show();
-            $clicked.children( ".dropdown-menu" ).show();
-            e.preventDefault();
-        }
-    });
-
     // Refresh events for form fields.
     init_refresh_on_change();
 

@@ -7,6 +7,9 @@
      in Galaxy's config/galaxy.ini -->
   <galaxy_packages />
   <galaxy_packages versionless="true" />
+  <conda />
+  <conda versionless="true" />
+
 <!-- Example configuration of modules dependency resolver, uses Environment Modules -->
 <!--
   <modules modulecmd="/opt/Modules/3.2.9/bin/modulecmd" />
