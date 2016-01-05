@@ -132,7 +132,7 @@ class CondaContext(object):
             args = " ".join(args)
         conda_prefix = self.conda_exec
         if self.debug:
-            conda_prefix = "%s --debug"
+            conda_prefix += " --debug"
         return "%s %s %s" % (conda_prefix, operation, args)
 
     def exec_command(self, operation, args):
