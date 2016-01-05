@@ -4,7 +4,7 @@ define([], function() {
 // tool form templates
 return {
     help: function( options ) {
-        var $tmpl = $( '<div style="overflow: auto;"/>' ).append( options.help );
+        var $tmpl = $( '<div/>' ).addClass( 'ui-form-help' ).append( options.help );
         $tmpl.find( 'a' ).attr( 'target', '_blank' );
         return $tmpl;
     },
