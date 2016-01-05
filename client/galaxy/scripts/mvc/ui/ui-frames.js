@@ -559,7 +559,7 @@ var View = Backbone.View.extend({
         return  '<div id="' + id + '" class="frame corner">' +
                     '<div class="f-header corner">' +
                         '<span class="f-title">' + ( title || '' ) + '</span>' +
-                        '<span class="f-icon f-close fa fa-trash-o"/>' +
+                        '<span class="f-icon f-close fa fa-close"/>' +
                         '<span class="f-icon f-pin fa fa-thumb-tack"/>' +
                     '</div>' +
                     '<div class="f-content">' +
