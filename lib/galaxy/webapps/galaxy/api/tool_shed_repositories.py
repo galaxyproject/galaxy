@@ -234,27 +234,31 @@ class ToolShedRepositoriesController( BaseAPIController ):
     def install( self, trans, payload, **kwd ):
         """
         POST /api/tool_shed_repositories/install
-        Initiate the installation of one or more repositories.
+        Initiate the installation of a repository.
 
-        :param encoded_kwd (required): The encoded dict describing the repositories to be installed.
-        :param install_tool_dependencies (required): True to install tool dependencies.
-        :param tool_shed_repository_ids (required): Encoded tool shed repository IDs for installation.
+        :param repo_dict: A dictionary describing the repository to install
+        :param install_tool_dependencies: True to install tool dependencies.
+        :param install_repository_dependencies: True to install repository dependencies.
+        :param tool_panel_section_id: The unique identifier for an existing tool panel section
+        :param new_tool_panel_section_label: Create a new tool panel section with this label
+        :param shed_tool_conf: The shed tool config file to use for this installation
+        :param tool_shed_url: The URL for the toolshed whence this repository is being installed
+        :param changeset: The changeset to update to after cloning the repository
         """
         params = dict()
         irm = InstallRepositoryManager( self.app )
         repository = kwd.get( 'repo_dict', None )
         if repository is not None:
             repository = encoding_util.tool_shed_decode( repository )
-            log.debug( json.dumps( repository, indent=2 ) )
         changeset = kwd.get( 'changeset', None )
         tool_shed_url = kwd.get( 'tool_shed_url', None )
         params[ 'tool_panel_section_id' ] = kwd.get( 'tool_panel_section_id', None )
+        params[ 'new_tool_panel_section_label' ] = kwd.get( 'new_tool_panel_section', None )
         params[ 'install_tool_dependencies' ] = util.asbool( kwd.get( 'install_tool_dependencies', False ) )
         params[ 'install_repository_dependencies' ] = util.asbool( kwd.get( 'install_repository_dependencies', False ) )
         params[ 'shed_tool_conf' ] = kwd.get( 'shed_tool_conf', None )
         params[ 'tool_path' ] = suc.get_tool_path_by_shed_tool_conf_filename( self.app, params[ 'shed_tool_conf' ] )
         async = util.string_as_bool( kwd.get( 'async', True ) )
-        # def install( self, tool_shed_url, name, owner, changeset_revision, install_options ):
         if async:
             try:
                 tool_shed_repositories = irm.install(
@@ -264,6 +268,9 @@ class ToolShedRepositoriesController( BaseAPIController ):
                     changeset,
                     params
                 )
+                if tool_shed_repositories is None:
+                    message = "No repositories were installed, possibly because the selected repository has already been installed."
+                    return dict( status="ok", message=message )
                 tsr_ids_for_monitoring = [ trans.security.encode_id( tsr.id ) for tsr in tool_shed_repositories ]
                 url = web.url_for( controller='admin_toolshed', action='monitor_repository_installation', tool_shed_repository_ids=','.join( tsr_ids_for_monitoring ) )
                 return url

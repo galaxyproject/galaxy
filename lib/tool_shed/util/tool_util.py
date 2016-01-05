@@ -30,7 +30,7 @@ def build_shed_tool_conf_select_field( app ):
 
 def build_tool_panel_section_select_field( app ):
     """Build a SelectField whose options are the sections of the current in-memory toolbox."""
-    options = [ ( 'Create New', 'create_new' ), ( '', '' ) ]
+    options = []
     for section_id, section_name in app.toolbox.get_sections():
         options.append( ( section_name, section_id ) )
     select_field = SelectField( name='tool_panel_section_id', field_id='tool_panel_section_select' )

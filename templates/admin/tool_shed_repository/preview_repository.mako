@@ -11,6 +11,7 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
 </%def>
+${javascripts()}
 
 %if message:
     ${render_msg( message, status )}
@@ -115,7 +116,6 @@ var tool_dependency_html = '                    <tr style="display: table-row;" 
         }
         check_tool_dependencies(metadata);
         check_repository_dependencies(metadata);
-        // console.log(metadata['repository_dependencies']);
         $(".tool_row").remove();
         $.each(metadata['tools']['valid_tools'], function(idx) {
             new_html = tool_html.replace('__TOOL_NAME__', metadata['tools']['valid_tools'][idx]['name']);
@@ -124,15 +124,37 @@ var tool_dependency_html = '                    <tr style="display: table-row;" 
             $("#tools_in_repo").append(new_html);
         });
     }
-    $(document).ready(function() {
+    function tps_switcher() {
+        if ($(this).attr('id') == 'create_new') {
+            $("#new_tool_panel_section").prop('disabled', false);
+            $("#tool_panel_section_select").prop('disabled', true);
+            $("#select_tps").hide(150);
+            $("#new_tps").show(150);
+        }
+        else {
+            $("#new_tool_panel_section").prop('disabled', true);
+            $("#tool_panel_section_select").prop('disabled', false);
+            $("#new_tps").hide(150);
+            $("#select_tps").show(150);
+        }
+    }
+    $(function() {
         repository_metadata();
+        $("#new_tps").hide();
+        $("#new_tool_panel_section").prop('disabled', true);
+        $("#tool_panel_section_select").prop('disabled', false);
         $('#install_repository').click(function() {
+            console.log($('#tool_panel_section_select').prop('disabled'));
             var params = {};
             params['tool_shed_url'] = $("#tool_shed_url").val();
             params['install_tool_dependencies'] = $("#install_tool_dependencies").val();
             params['install_repository_dependencies'] = $("#install_repository_dependencies").val();
-            params['tool_panel_section_id'] = $("#tool_panel_section_id").val();
-            params['new_tool_panel_section_label'] = $("#new_tool_panel_section").val();
+            if ($('#tool_panel_section_select').prop('disabled')) {
+                params['new_tool_panel_section'] = $("#new_tool_panel_section").val();
+            }
+            else{
+                params['tool_panel_section_id'] = $('#tool_panel_section_select').find("option:selected").val();
+            }
             params['changeset'] = $("#changeset").val();
             params['repo_dict'] = '${encoded_repository}';
             url = $('#repository_installation').attr('action');
@@ -140,11 +162,12 @@ var tool_dependency_html = '                    <tr style="display: table-row;" 
                 window.location.href = data;
             });
         });
+        $("#select_existing").click(tps_switcher);
+        $("#create_new").click(tps_switcher);
         $('#changeset').change(repository_metadata);
         $("#tool_panel_section_select").change(tool_panel_section)
     });
 </script>
-<!--<pre>${json.dumps(repository['metadata'], indent=2)}</pre>-->
 <h1>${repository['owner']}/${repository['name']}</h1>
 <form id="repository_installation" action="${h.url_for(controller='/api/tool_shed_repositories', action='install', async=True)}">
     <div class="toolForm">
@@ -184,16 +207,21 @@ var tool_dependency_html = '                    <tr style="display: table-row;" 
     <div class="toolForm">
         <div class="toolFormTitle">Tool panel section:</div>
         <div class="toolFormBody">
-    <div class="form-row">
-        ${tool_panel_section_select_field.get_html()}
-    </div>
-    <div class="form-row" id="new_tps">
-        <input id="new_tool_panel_section" name="new_tool_panel_section_label" type="textfield" value="" size="40"/>
-        <div class="toolParamHelp" style="clear: both;">
-            Add a new tool panel section to contain the installed tools (optional).
+            <a class="toolformswitcher" id="select_existing">Select existing</a>
+            <a class="toolformswitcher" id="create_new">Create new</a>
+            <div class="form-row" id="select_tps">
+                ${tool_panel_section_select_field.get_html()}
+                <div class="toolParamHelp" style="clear: both;">
+                    Select a new tool panel section to contain the installed tools (optional).
+                </div>
+            </div>
+            <div class="form-row" id="new_tps">
+                <input id="new_tool_panel_section" name="new_tool_panel_section" type="textfield" value="" size="40"/>
+                <div class="toolParamHelp" style="clear: both;">
+                    Add a new tool panel section to contain the installed tools (optional).
+                </div>
+            </div>
         </div>
-    </div>
-    </div>
     </div>
     <div class="toolForm" id="dependencies">
         <div class="toolFormTitle">Dependencies of this repository</div>
