@@ -79,7 +79,7 @@ def __normalize_parameters_against_fixture( params ):
     __workflow_fixure( trans )
 
     workflow = __workflow_fixure( trans )
-    normalized_params = normalize_step_parameters( workflow.steps, params )
+    normalized_params = normalize_step_parameters( workflow.steps, params, legacy=True )
     return normalized_params
 
 

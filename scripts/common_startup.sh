@@ -4,12 +4,16 @@ set -e
 DEV_WHEELS=0
 FETCH_WHEELS=1
 SET_VENV=1
+CREATE_VENV=1
+REPLACE_PIP=1
 COPY_SAMPLE_FILES=1
 for arg in "$@"; do
     [ "$arg" = "--skip-eggs" ] && FETCH_WHEELS=0
     [ "$arg" = "--skip-wheels" ] && FETCH_WHEELS=0
     [ "$arg" = "--dev-wheels" ] && DEV_WHEELS=1
     [ "$arg" = "--skip-venv" ] && SET_VENV=0
+    [ "$arg" = "--no-create-venv" ] && CREATE_VENV=0
+    [ "$arg" = "--no-replace-pip" ] && REPLACE_PIP=0
     [ "$arg" = "--stop-daemon" ] && FETCH_WHEELS=0
     [ "$arg" = "--skip-samples" ] && COPY_SAMPLE_FILES=0
 done
@@ -57,7 +61,7 @@ if [ ! -f $GALAXY_CONFIG_FILE ]; then
     GALAXY_CONFIG_FILE=config/galaxy.ini.sample
 fi
 
-if [ $SET_VENV -eq 1 ]; then
+if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
     # If .venv does not exist, attempt to create it.
     if [ ! -d .venv ]
     then
@@ -66,48 +70,68 @@ if [ $SET_VENV -eq 1 ]; then
         if command -v virtualenv >/dev/null; then
             virtualenv .venv
         else
-            vvers=13.1.0
+            vvers=13.1.2
             vurl="https://pypi.python.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
+            vsha="aabc8ef18cddbd8a2a9c7f92bc43e2fea54b1147330d65db920ef3ce9812e3dc"
             vtmp=`mktemp -d -t galaxy-virtualenv-XXXXXX`
             vsrc="$vtmp/`basename $vurl`"
-            ( if command -v curl >/dev/null; then
-                curl --silent -o $vsrc $vurl
+            # SSL certificates are not checked to prevent problems with messed
+            # up client cert environments. We verify the download using a known
+            # good sha256 sum instead.
+            echo "Fetching $vurl"
+            if command -v curl >/dev/null; then
+                curl --insecure -L -o $vsrc $vurl
             elif command -v wget >/dev/null; then
-                wget --quiet -O $vsrc $vurl
+                wget --no-check-certificate -O $vsrc $vurl
             else
                 python -c "import urllib; urllib.urlretrieve('$vurl', '$vsrc')"
-            fi ) &&
-            tar zxf $vsrc -C $vtmp &&
-            python $vtmp/virtualenv-$vvers/virtualenv.py .venv &&
+            fi
+            echo "Verifying $vsrc checksum is $vsha"
+            if command -v sha256sum >/dev/null; then
+                echo "$vsha $vsrc" | sha256sum -c --strict
+            else
+                python -c "import hashlib; assert hashlib.sha256(open('$vsrc', 'rb').read()).hexdigest() == '$vsha', '$vsrc: invalid checksum'"
+            fi
+            tar zxf $vsrc -C $vtmp
+            python $vtmp/virtualenv-$vvers/virtualenv.py .venv
             rm -rf $vtmp
         fi
     fi
+fi
 
+if [ $SET_VENV -eq 1 ]; then
     # If there is a .venv/ directory, assume it contains a virtualenv that we
     # should run this instance in.
     if [ -d .venv ];
     then
         printf "Activating virtualenv at %s/.venv\n" $(pwd)
         . .venv/bin/activate
+        # Because it's a virtualenv, we assume $PYTHONPATH is unnecessary for
+        # anything in the venv to work correctly, and having it set can cause
+        # problems when there are conflicts with Galaxy's dependencies outside
+        # the venv (e.g. virtualenv-burrito's pip and six).
+        #
+        # If you are skipping the venv setup we shall assume you know what
+        # you're doing and will deal with any conflicts.
+        unset PYTHONPATH
+    fi
+
+    if [ -z "$VIRTUAL_ENV" ]; then
+        echo "ERROR: A virtualenv cannot be found. Please create a virtualenv in .venv, or activate one."
+        exit 1
     fi
 fi
 
-if [ -z "$VIRTUAL_ENV" ]; then
-    echo "ERROR: A virtualenv cannot be found or created. Please create a virtualenv in .venv, or activate one."
-    exit 1
+: ${GALAXY_WHEELS_INDEX_URL:="https://wheels.galaxyproject.org/simple"}
+if [ $SET_VENV -eq 1 -a $REPLACE_PIP -eq 1 ]; then
+    pip_version=`pip --version | awk '{print $2}'`
+    pre=`python -c "from pkg_resources import parse_version; from sys import stdout; stdout.write('--pre') if parse_version('$pip_version') >= parse_version('1.4') else stdout.write('')"`
+    pip install $pre --no-index --find-links ${GALAXY_WHEELS_INDEX_URL}/pip --upgrade pip
+    # binary-compatibility.cfg may need to be created (e.g. on CentOS)
+    [ -n "$VIRTUAL_ENV" -a ! -f ${VIRTUAL_ENV}/binary-compatibility.cfg ] && python ./scripts/binary_compatibility.py -o ${VIRTUAL_ENV}/binary-compatibility.cfg
 fi
 
-
-: ${GALAXY_WHEELS_INDEX_URL:="https://wheels.galaxyproject.org/simple"}
 if [ $FETCH_WHEELS -eq 1 ]; then
-    # Because it's a virtualenv, we assume $PYTHONPATH is unnecessary for
-    # anything in the venv to work correctly, and having it set can cause
-    # problems when there are conflicts with Galaxy's dependencies outside the
-    # venv (e.g. virtualenv-burrito's pip and six)
-    unset PYTHONPATH
-    pip install --pre --no-index --find-links ${GALAXY_WHEELS_INDEX_URL}/pip --upgrade pip
-    # binary-compatibility.cfg may need to be created (e.g. on CentOS)
-    [ ! -f ${VIRTUAL_ENV}/binary-compatibility.cfg ] && python ./scripts/binary_compatibility.py -o ${VIRTUAL_ENV}/binary-compatibility.cfg
     pip install -r requirements.txt --index-url ${GALAXY_WHEELS_INDEX_URL}
     GALAXY_CONDITIONAL_DEPENDENCIES=`PYTHONPATH=lib python -c "import galaxy.dependencies; print '\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE'))"`
     [ -z "$GALAXY_CONDITIONAL_DEPENDENCIES" ] || echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | pip install -r /dev/stdin --index-url ${GALAXY_WHEELS_INDEX_URL}

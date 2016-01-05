@@ -337,18 +337,7 @@ def remove_protocol_and_user_from_clone_url( repository_clone_url ):
 
 def remove_protocol_from_tool_shed_url( tool_shed_url ):
     """Return a partial Tool Shed URL, eliminating the protocol if it exists."""
-    try:
-        if tool_shed_url.find( '://' ) > 0:
-            new_tool_shed_url = tool_shed_url.split( '://' )[1]
-        else:
-            new_tool_shed_url = tool_shed_url
-        return new_tool_shed_url.rstrip( '/' )
-    except Exception, e:
-        # We receive a lot of calls here where the tool_shed_url is None.  The container_util uses
-        # that value when creating a header row.  If the tool_shed_url is not None, we have a problem.
-        if tool_shed_url is not None:
-            log.exception( "Handled exception removing the protocol from Tool Shed URL %s:\n%s", str( tool_shed_url ), e )
-        return tool_shed_url
+    return util.remove_protocol_from_url( tool_shed_url )
 
 
 def tool_shed_get( app, base_url, pathspec=[], params={} ):

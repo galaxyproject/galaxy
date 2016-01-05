@@ -74,7 +74,7 @@ __WRAP_MAPPINGS__ = ( dict, UserDict, )
 
 # Define the set of characters that are not sanitized, and define a set of mappings for those that are.
 # characters that are valid
-VALID_CHARACTERS = set( string.letters + string.digits + " -=_.()/+*^,:?!@" )
+VALID_CHARACTERS = set( string.ascii_letters + string.digits + " -=_.()/+*^,:?!@" )
 
 # characters that are allowed but need to be escaped
 CHARACTER_MAP = { '>': '__gt__',

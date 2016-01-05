@@ -88,7 +88,7 @@ def _expand_tokens_for_el(element, tokens):
         new_value = _expand_tokens_str(element.text, tokens)
         if not (new_value is value):
             element.text = new_value
-    for key, value in element.attrib.iteritems():
+    for key, value in element.attrib.items():
         new_value = _expand_tokens_str(value, tokens)
         if not (new_value is value):
             element.attrib[key] = new_value
@@ -96,7 +96,7 @@ def _expand_tokens_for_el(element, tokens):
 
 
 def _expand_tokens_str(str, tokens):
-    for key, value in tokens.iteritems():
+    for key, value in tokens.items():
         if str.find(key) > -1:
             str = str.replace(key, value)
     return str

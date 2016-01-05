@@ -74,7 +74,7 @@ class InstalledRepositoryMetadataManager( metadata_generator.MetadataGenerator )
                     load_relative_path = os.path.join( shed_conf_dict.get( 'tool_path' ), relative_path )
                 guid = tool_dict.get( 'guid', None )
                 if relative_path and guid:
-                    tool = self.app.toolbox.load_tool( os.path.abspath( load_relative_path ), guid=guid )
+                    tool = self.app.toolbox.load_tool( os.path.abspath( load_relative_path ), guid=guid, use_cached=False )
                 else:
                     tool = None
                 if tool:

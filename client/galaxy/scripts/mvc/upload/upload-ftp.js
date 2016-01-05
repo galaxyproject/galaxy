@@ -34,11 +34,6 @@ return Backbone.View.extend({
         });
     },
 
-    // events
-    events: {
-        'mousedown': function(e) { e.preventDefault(); }
-    },
-
     // fill table
     _fill: function(ftp_files) {
         if (ftp_files && ftp_files.length > 0) {

@@ -198,12 +198,11 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
     @web.expose_api_raw
     @web.require_admin
     def download( self, trans, id, **kwds ):
-        tool_tarball, success, message = trans.app.toolbox.package_tool( trans, id )
-        if success:
-            trans.response.set_content_type( 'application/x-gzip' )
-            download_file = open( tool_tarball )
-            trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.tgz"' % ( id )
-            return download_file
+        tool_tarball = trans.app.toolbox.package_tool(trans, id)
+        trans.response.set_content_type('application/x-gzip')
+        download_file = open(tool_tarball, "rb")
+        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.tgz"' % (id)
+        return download_file
 
     @expose_api_anonymous
     def create( self, trans, payload, **kwd ):
