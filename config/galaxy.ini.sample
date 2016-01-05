@@ -277,8 +277,9 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #interactive_environment_plugins_directory =
 
 # Interactive tour directory: where to store interactive tour definition files.
-# Set to config/plugins/tours to load the default tours that ship with Galaxy.
-#tour_config_dir =
+# Galaxy ships with several basic interface tours enabled, though a different
+# directory with custom tours can be specified here.
+#tour_config_dir = config/plugins/tours
 
 # Each job is given a unique empty directory as its current working directory.
 # This option defines in what parent directory those directories will be
