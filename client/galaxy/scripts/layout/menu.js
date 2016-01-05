@@ -250,6 +250,7 @@ var Tab = Backbone.View.extend({
         this.$menu      = this.$( '.dropdown-menu' );
         this.$note      = this.$( '.dropdown-note' );
         this.model = options.model;
+        this.$el.attr( 'id', this.model.id );
         this.model.on( 'init change:title', function() {
             this.get( 'title' ) && self.$toggle.html( this.get( 'title' ) );
         }).on( 'init change:visible', function() {
