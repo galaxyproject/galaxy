@@ -946,7 +946,7 @@ class CSV( TabularData ):
 
 
 @dataproviders.decorators.has_dataproviders
-class Base_CSV( CSV ):
+class BaseCSV( CSV ):
     """
     Delimiter-separated table data.
     This includes CSV, TSV and other dialects understood by the
@@ -954,42 +954,37 @@ class Base_CSV( CSV ):
     Must be extended to define the dialect to use, strict_width: and file_ext.
     See Python module csv for documentation of dialect settings
     """
-    #dialect Set by subclass
-    #file_ext Set by subclass
-    #strict_width Set by subclass
-        #If set sniff fails is a single row is incorrect.
-        #Python's csv is more tollerant
     big_peek_size = 10240  # Large File chunk used for sniffing CSV dialect
 
     def sniff( self, filename ):
         """ Return True if if recognizes dialect and header. """
         try:
-            #check the dialect works
+            # check the dialect works
             reader = csv.reader(open(filename, 'r'), self.dialect)
-            #Check we can read header and get columns
+            # Check we can read header and get columns
             header_row = reader.next()
             if len(header_row) < 2:
-                #No columns so not seperated by this dialect.
+                # No columns so not seperated by this dialect.
                 return False
 
-            #check all rows can be read as otherwise set_meta throws an exception
+            # check all rows can be read as otherwise set_meta throws an exception
             if self.strict_width:
                 num_columns = len(header_row)
                 for data_row in reader:
-                    #All columns must be the same length
+                    # All columns must be the same length
                     if num_columns != len(data_row):
                         return False
             else:
-                #Check the next row as it is used by set_meta
+                # Check the next row as it is used by set_meta
                 data_row = reader.next()
                 if len(data_row) < 2:
-                    #No columns so not seperated by this dialect.
+                    # No columns so not seperated by this dialect.
                     return False
-                #ignore the length in the rest
+                # ignore the length in the rest
                 for data_row in reader:
                     pass
 
-            #Optional: Check Python's csv comes up with a similar dialect
+            # Optional: Check Python's csv comes up with a similar dialect
             auto_dialect = csv.Sniffer().sniff(open(filename, 'r').read(self.big_peek_size))
             if (auto_dialect.delimiter != self.dialect.delimiter):
                 return False
@@ -1010,7 +1005,7 @@ class Base_CSV( CSV ):
 
             return True
         except:
-            #Not readable by Python's csv using this dialect
+            # Not readable by Python's csv using this dialect
             return False
 
     def set_meta( self, dataset, **kwd ):
@@ -1042,25 +1037,21 @@ class Base_CSV( CSV ):
 
 
 @dataproviders.decorators.has_dataproviders
-class Excell_CSV( Base_CSV ):
+class ExcelCSV( BaseCSV ):
     """
     Comma separated table data.
     Only sniffs comma seperated files with at least 2 columns
     """
 
     def __init__(self, **kwd):
-        Base_CSV.__init__( self, **kwd )
+        BaseCSV.__init__( self, **kwd )
         self.dialect = csv.excel  # This is the default
-            #delimiter = ','
-            #quotechar = '"'
-            #doublequote = True
-            #skipinitialspace = False
         self.file_ext = 'csv'  # File extension
         self.strict_width = False  # Previous csv type did not check column width
 
 
 @dataproviders.decorators.has_dataproviders
-class Excell_TSV( Base_CSV ):
+class ExcelTSV( BaseCSV ):
     """
     Comma separated table data.
     Only sniff tab seperated files with at least two columns
@@ -1073,12 +1064,8 @@ class Excell_TSV( Base_CSV ):
     """
 
     def __init__(self, **kwd):
-        Base_CSV.__init__( self, **kwd )
+        BaseCSV.__init__( self, **kwd )
         self.dialect = csv.excel_tab
-            #delimiter = '\t'
-            #quotechar = '"'
-            #doublequote = True
-            #skipinitialspace = False
         self.file_ext = 'tsv'  # File extension
         self.strict_width = True  # Leave files with different width to tabular
 

@@ -51,9 +51,8 @@
       <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
     </datatype>
-    <!-- MSI added Datatypes -->
-    <datatype extension="csv" type="galaxy.datatypes.tabular:CSV" display_in_upload="true" />
-    <!-- End MSI added Datatypes -->
+    <datatype extension="csv" type="galaxy.datatypes.tabular:ExcelCSV" display_in_upload="true" />
+    <datatype extension="tsv" type="galaxy.datatypes.tabular:ExcelCSV" display_in_upload="true" />
     <datatype extension="customtrack" type="galaxy.datatypes.interval:CustomTrack"/>
     <datatype extension="bowtie_color_index" type="galaxy.datatypes.ngsindex:BowtieColorIndex" mimetype="text/html" display_in_upload="False"/>
     <datatype extension="bowtie_base_index" type="galaxy.datatypes.ngsindex:BowtieBaseIndex" mimetype="text/html" display_in_upload="False"/>
@@ -494,7 +493,8 @@
     <sniffer type="galaxy.datatypes.sequence:RNADotPlotMatrix"/>
     <sniffer type="galaxy.datatypes.sequence:DotBracket"/>
     <sniffer type="galaxy.datatypes.tabular:ConnectivityTable"/>
-    <sniffer type="galaxy.datatypes.tabular:CSV"/>
+    <sniffer type="galaxy.datatypes.tabular:ExcelCSV"/>
+    <sniffer type="galaxy.datatypes.tabular:ExcelTSV"/>
     <sniffer type="galaxy.datatypes.msa:Hmmer2" />
     <sniffer type="galaxy.datatypes.msa:Hmmer3" />
     <sniffer type="galaxy.datatypes.msa:Stockholm_1_0" />
