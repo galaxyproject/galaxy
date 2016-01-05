@@ -5,6 +5,9 @@ This module manages loading/etc of Galaxy interactive tours.
 import os
 import yaml
 import logging
+
+from galaxy import util
+
 log = logging.getLogger( __name__ )
 
 
@@ -25,8 +28,8 @@ def tour_loader(contents_dict):
 
 class ToursRegistry(object):
 
-    def __init__(self, tour_dir):
-        self.tour_dir = tour_dir
+    def __init__(self, tour_directories):
+        self.tour_directories = util.config_directories_from_setting( tour_directories )
         self.load_tours()
 
     def tours_by_id_with_description(self):
@@ -36,16 +39,23 @@ class ToursRegistry(object):
                 for k in self.tours.keys()]
 
     def load_tour(self, tour_id):
-        tour_path = os.path.join(self.tour_dir, tour_id + ".yaml")
-        if not os.path.exists(tour_path):
-            tour_path = os.path.join(self.tour_dir, tour_id + ".yml")
-        return self._load_tour_from_path(tour_path)
+        for tour_dir in self.tour_directories:
+            tour_path = os.path.join(self.tour_dir, tour_id + ".yaml")
+            if not os.path.exists(tour_path):
+                tour_path = os.path.join(self.tour_dir, tour_id + ".yml")
+            if os.path.exists(tour_path):
+                break
+        if os.path.exists(tour_path):
+            return self._load_tour_from_path(tour_path)
+        else:
+            return None
 
     def load_tours(self):
         self.tours = {}
-        for filename in os.listdir(self.tour_dir):
-            if filename.endswith('.yaml') or filename.endswith('.yml'):
-                self._load_tour_from_path(os.path.join(self.tour_dir, filename))
+        for tour_dir in self.tour_directories:
+            for filename in os.listdir(tour_dir):
+                if filename.endswith('.yaml') or filename.endswith('.yml'):
+                    self._load_tour_from_path(os.path.join(tour_dir, filename))
         return self.tours_by_id_with_description()
 
     def tour_contents(self, tour_id):
