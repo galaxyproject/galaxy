@@ -21,7 +21,7 @@ def tour_loader(contents_dict):
             step['placement'] = step.pop('position')
         if 'element' not in step:
             step['orphan'] = True
-        if title_default:
+        if title_default and 'title' not in step:
             step['title'] = title_default
     return contents_dict
 
