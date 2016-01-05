@@ -329,8 +329,11 @@ var Tab = Backbone.View.extend({
                        .on( 'click', function( e ) {
                             e.preventDefault();
                             self.model.set( 'show_menu', false );
-                            options.onclick && options.onclick();
-                            Galaxy.frame.add( options );
+                            if (options.onclick){
+                                options.onclick && options.onclick();
+                            } else {
+                                Galaxy.frame.add( options );
+                            }
                        })
         );
     },
