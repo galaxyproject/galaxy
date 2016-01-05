@@ -273,12 +273,16 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # environment plugins.  By default none will be loaded.  Set to
 # config/plugins/interactive_environments to load Galaxy's stock plugins
 # (currently just IPython).  These will require Docker to be configured and
-# have security considerations, so proceed with caution.
+# have security considerations, so proceed with caution. The path is relative to the 
+# Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a comma
+# separated list.
 #interactive_environment_plugins_directory =
 
 # Interactive tour directory: where to store interactive tour definition files.
 # Galaxy ships with several basic interface tours enabled, though a different
-# directory with custom tours can be specified here.
+# directory with custom tours can be specified here. The path is relative to the 
+# Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a comma
+# separated list.
 #tour_config_dir = config/plugins/tours
 
 # Each job is given a unique empty directory as its current working directory.
