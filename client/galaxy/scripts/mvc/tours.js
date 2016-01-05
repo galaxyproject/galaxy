@@ -24,15 +24,15 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
                 step.onShow= function(){
                     _.each(step.preclick, function(preclick){
                         // TODO: click delay between clicks
-                        $(preclick.click());
+                        $(preclick).click();
                     });
                 };
             }
             if (step.postclick){
                 step.onHide = function(){
-                    _.each(step.preclick, function(preclick){
+                    _.each(step.postclick, function(postclick){
                         // TODO: click delay between clicks
-                        $(preclick.click());
+                        $(postclick).click();
                     });
                 };
             }
