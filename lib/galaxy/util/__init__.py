@@ -37,8 +37,12 @@ from six.moves import zip
 from os.path import relpath
 from hashlib import md5
 
-import docutils.core
-import docutils.writers.html4css1
+try:
+    import docutils.core as docutils_core
+    import docutils.writers.html4css1 as docutils_html4css1
+except ImportError:
+    docutils_core = None
+    docutils_html4css1 = None
 
 from xml.etree import ElementTree, ElementInclude
 
@@ -707,6 +711,9 @@ def rst_to_html( s ):
     """Convert a blob of reStructuredText to HTML"""
     log = logging.getLogger( "docutils" )
 
+    if docutils_core is None:
+        raise Exception("Attempted to use rst_to_html but docutils unavailable.")
+
     class FakeStream( object ):
         def write( self, str ):
             if len( str ) > 0 and not str.isspace():
@@ -720,8 +727,8 @@ def rst_to_html( s ):
                                   # number of sections in help content.
     }
 
-    return unicodify( docutils.core.publish_string( s,
-                      writer=docutils.writers.html4css1.Writer(),
+    return unicodify( docutils_core.publish_string( s,
+                      writer=docutils_html4css1.Writer(),
                       settings_overrides=settings_overrides ) )
 
 

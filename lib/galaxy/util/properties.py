@@ -42,8 +42,6 @@ def load_app_properties(
     return properties
 
 
-# pastescript's NicerConfigParser, replicated here so this module doesn't
-# need to depend on WSGI.
 class NicerConfigParser(ConfigParser):
 
     def __init__(self, filename, *args, **kw):
@@ -99,4 +97,4 @@ class NicerConfigParser(ConfigParser):
                 raise
 
 
-__all__ = ['load_app_properties']
+__all__ = ['load_app_properties', 'NicerConfigParser']
