@@ -21,7 +21,7 @@ class ToursController( BaseAPIController ):
         *GET /api/tours/
         Displays available tours
         """
-        return trans.app.tour_registry.tours_by_id_with_description()
+        return self.app.tour_registry.tours_by_id_with_description()
 
     @expose_api_anonymous_and_sessionless
     def show( self, trans, tour_id, **kwd ):
@@ -33,7 +33,7 @@ class ToursController( BaseAPIController ):
         :returns:   tour definition
         :rtype:     dictionary
         """
-        return trans.app.tour_registry.tour_contents(tour_id)
+        return self.app.tour_registry.tour_contents(tour_id)
 
     @expose_api
     @require_admin
@@ -44,4 +44,4 @@ class ToursController( BaseAPIController ):
         TODO: allow creation of new tours (which get written to the
         filesystem).
         """
-        return trans.app.tour_registry.load_tour(tour_id)
+        return self.app.tour_registry.load_tour(tour_id)
