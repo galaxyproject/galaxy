@@ -38,7 +38,7 @@ steps:
         - "button#btn-start"
 
     - element: "button#btn-close"
-      intro: "Hit the close button in upload <b>Workflows</b>."
+      intro: "Hit the close button in upload."
       position: "bottom"
       postclick:
         - "#btn-close"
