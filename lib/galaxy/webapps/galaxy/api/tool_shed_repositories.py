@@ -467,8 +467,8 @@ class ToolShedRepositoriesController( BaseAPIController ):
         if not include_changeset:
             return tool_shed_url, name, owner
 
-        changeset_revision = payload.get( 'changeset_revision', None )
-        if changeset_revision is None:
+        changeset_revision = payload.get( 'changeset_revision', '' )
+        if not changeset_revision:
             raise HTTPBadRequest( detail="Missing required parameter 'changeset_revision'." )
 
         return tool_shed_url, name, owner, changeset_revision
