@@ -26,7 +26,7 @@ spaceghost.test.begin( 'Testing registration of new users', 0, function suite( t
         this.user._submitRegistration( email, password, username, confirm );
     });
     spaceghost.openHomePage( function(){
-        this.clickLabel( 'User' );
+        this.click( xpath( spaceghost.data.selectors.masthead.user ) )
         var loggedInAs = this.fetchText( xpath( spaceghost.data.selectors.masthead.userMenu.userEmail_xpath ) );
         this.test.assert( loggedInAs.indexOf( email ) !== -1, 'found proper email in user menu: ' + loggedInAs );
     });
