@@ -139,7 +139,6 @@ User.prototype.registerUser = function registerUser( email, password, username )
  */
 User.prototype.login = function login( email, password ){
     var spaceghost = this.spaceghost;
-    spaceghost.debug( '(' + spaceghost.getCurrentUrl() + ') attempting login with ' + email + ' using password ' + password );
 
     this._submitLogin( email, password );
     //spaceghost.withMainPanel( function mainAfterLogin(){
@@ -193,7 +192,6 @@ User.prototype.logout = function logout(){
     this.spaceghost.openHomePage( function(){
         if( spaceghost.user.loggedInAs() ){
             this.click( xpath( spaceghost.data.selectors.masthead.user ) )
-            //spaceghost.clickLabel( spaceghost.data.labels.masthead.menus.user );
             spaceghost.clickLabel( spaceghost.data.labels.masthead.userMenu.logout );
             spaceghost.waitForNavigation( 'user/logout', function _toLogoutPage() {
                 spaceghost.clickLabel( 'go to the home page' );
