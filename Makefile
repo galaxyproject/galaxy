@@ -1,5 +1,6 @@
 RELEASE_CURR:=16.01
 RELEASE_NEXT:=16.04
+RELEASE_UPSTREAM:=upstream
 GRUNT_DOCKER_NAME:=galaxy/client-builder:16.01
 
 all:
@@ -32,11 +33,11 @@ clean-grunt-docker-image:
 # Release Targets
 create_release_rc:
 	git checkout dev
-	git pull upstream dev
+	git pull ${RELEASE_UPSTREAM} dev
 	git push origin dev
 	git checkout -b release_$(RELEASE_CURR)
 	git push origin release_$(RELEASE_CURR)
-	git push upstream release_$(RELEASE_CURR)
+	git push ${RELEASE_UPSTREAM} release_$(RELEASE_CURR)
 	git checkout -b version-$(RELEASE_CURR)
 	sed -i "s/^VERSION_MAJOR = .*/VERSION_MAJOR = \"$(RELEASE_CURR)\"/" lib/galaxy/version.py
 	sed -i "s/^VERSION_MINOR = .*/VERSION_MINOR = \"rc1\"/" lib/galaxy/version.py
