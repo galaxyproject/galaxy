@@ -30,7 +30,7 @@ clean-grunt-docker-image:
 
 
 # Release Targets
-create_release:
+create_release_rc:
 	git checkout dev
 	git pull upstream dev
 	git push origin dev
@@ -39,6 +39,7 @@ create_release:
 	git push upstream release_$(RELEASE_CURR)
 	git checkout -b version-$(RELEASE_CURR)
 	sed -i "s/^VERSION_MAJOR = .*/VERSION_MAJOR = \"$(RELEASE_CURR)\"/" lib/galaxy/version.py
+	sed -i "s/^VERSION_MINOR = .*/VERSION_MINOR = \"rc1\"/" lib/galaxy/version.py
 	git add lib/galaxy/version.py
 	git commit -m "Update version to $(RELEASE_CURR).rc1"
 	git checkout dev
