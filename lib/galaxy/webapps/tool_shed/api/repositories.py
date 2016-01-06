@@ -11,7 +11,7 @@ from sqlalchemy import and_, false
 
 from galaxy import util
 from galaxy import web
-from galaxy.datatypes import checkers
+from galaxy.util import checkers
 from galaxy.exceptions import ActionInputError
 from galaxy.exceptions import ConfigDoesNotAllowException
 from galaxy.exceptions import InsufficientPermissionsException

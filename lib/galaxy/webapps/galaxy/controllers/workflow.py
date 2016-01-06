@@ -610,10 +610,14 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         if not id:
             error( "Invalid workflow id" )
         stored = self.get_stored_workflow( trans, id )
-        return trans.fill_template( "workflow/editor.mako", stored=stored, annotation=self.get_item_annotation_str( trans.sa_session, trans.user, stored ) )
+        workflows = trans.sa_session.query( model.StoredWorkflow ) \
+            .filter_by( user=trans.user, deleted=False ) \
+            .order_by( desc( model.StoredWorkflow.table.c.update_time ) ) \
+            .all()
+        return trans.fill_template( "workflow/editor.mako", workflows=workflows, stored=stored, annotation=self.get_item_annotation_str( trans.sa_session, trans.user, stored ) )
 
     @web.json
-    def editor_form_post( self, trans, type='tool', tool_id=None, annotation=None, label=None, **incoming ):
+    def editor_form_post( self, trans, type='tool', content_id=None, annotation=None, label=None, **incoming ):
         """
         Accepts a tool state and incoming values, and generates a new tool
         form and some additional information, packed into a json dictionary.
@@ -624,9 +628,10 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         trans.workflow_building_mode = True
         module = module_factory.from_dict( trans, {
             'type': type,
-            'tool_id': tool_id,
+            'content_id': content_id,
             'tool_state': tool_state,
             'label': label or None,
+            'tool_state': tool_state
         } )
         # update module state
         module.update_state( incoming )
@@ -667,7 +672,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         return {
             'type': module.type,
             'name': module.get_name(),
-            'tool_id': module.get_content_id(),
+            'content_id': module.get_content_id(),
             'tool_state': module.get_state(),
             'tool_model': tool_model,
             'tooltip': module.get_tooltip( static_path=url_for( '/static' ) ),

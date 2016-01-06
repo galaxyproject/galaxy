@@ -11,8 +11,8 @@ function( Connector, Toastr ) {
         this.name = null;
         this.has_changes = false;
         this.active_form_has_changes = false;
-        this.nodeLabels = {}; // TODO: track and enforce output labels also
-
+        this.nodeLabels = {};
+        this.workflowOutputLabels = {};
     }
     $.extend( Workflow.prototype, {
         canLabelNodeWith: function( label ) {
@@ -47,6 +47,44 @@ function( Connector, Toastr ) {
         attemptUpdateNodeLabel: function( node, label ) {
             if( this.canLabelNodeWith( label ) ) {
                 node.setLabel( label );
+                return true;
+            } else {
+                return false;
+            }
+        },
+        canLabelOutputWith: function( label ) {
+            if( label ) {
+                return ! (label in this.workflowOutputLabels);
+            } else {
+                // empty labels are non-exclusive, so allow this one.
+                return true;
+            }
+        },
+        registerOutputLabel: function( label ) {
+            if( label ) {
+                this.workflowOutputLabels[label] = true;
+            }
+        },
+        unregisterOutputLabel: function( label ) {
+            if( label ) {
+                delete this.workflowOutputLabels[label];
+            }
+        },
+        updateOutputLabel: function( fromLabel, toLabel ) {
+            if( fromLabel ) {
+                this.unregisterOutputLabel( fromLabel );
+            }
+            if( ! this.canLabelOutputWith( toLabel ) ) {
+                Toastr.warning("Workflow contains duplicate workflow output labels " + toLabel + ". This must be fixed before it can be saved.");
+            }
+            if( toLabel ) {
+                this.registerOutputLabel( toLabel );
+            }
+        },
+        attemptUpdateOutputLabel: function( node, outputName, label ) {
+            if( this.canLabelOutputWith( label ) ) {
+                node.labelWorkflowOutput( outputName, label );
+                node.nodeView.redrawWorkflowOutputs();
                 return true;
             } else {
                 return false;
@@ -151,7 +189,12 @@ function( Connector, Toastr ) {
                     // really a sneaky if statement
                     var cons = []
                     $.each( t.connectors, function ( i, c ) {
-                        cons[i] = { id: c.handle1.node.id, output_name: c.handle1.name };
+                        var con_dict = { id: c.handle1.node.id, output_name: c.handle1.name };
+                        var input_subworkflow_step_id = t.attributes.input.input_subworkflow_step_id;
+                        if( input_subworkflow_step_id !== undefined ) {
+                            con_dict["input_subworkflow_step_id"] = input_subworkflow_step_id;
+                        }
+                        cons[i] = con_dict;
                         input_connections[ t.name ] = cons;
                     });
                 });
@@ -174,7 +217,7 @@ function( Connector, Toastr ) {
                 var node_data = {
                     id : node.id,
                     type : node.type,
-                    tool_id : node.content_id,
+                    content_id : node.content_id,
                     tool_state : node.tool_state,
                     tool_errors : node.tool_errors,
                     input_connections : input_connections,
@@ -189,29 +232,43 @@ function( Connector, Toastr ) {
             });
             return { steps: nodes };
         },
-        from_simple : function ( data ) {
+        from_simple : function ( data, initialImport_ ) {
+            var initialImport = (initialImport_ === undefined) ? true : initialImport_;
             wf = this;
-            var max_id = 0;
-            wf.name = data.name;
+            var offset = 0;
+            if( initialImport ) {
+                wf.name = data.name;
+            } else {
+                offset = Object.keys(wf.nodes).length;
+            }
+            var max_id = offset;
             // First pass, nodes
             var using_workflow_outputs = false;
             $.each( data.steps, function( id, step ) {
-                var node = wf.app.prebuildNode( step.type, step.name, step.tool_id );
+                var node = wf.app.prebuildNode( step.type, step.name, step.content_id );
+                // If workflow being copied into another, wipe UUID and let
+                // Galaxy assign new ones.
+                if( ! initialImport ) {
+                    step.uuid = null;
+                    $.each(step.workflow_outputs, function( name, workflow_output ) {
+                        workflow_output.uuid = null;
+                    });
+                }
                 node.init_field_data( step );
                 if ( step.position ) {
                     node.element.css( { top: step.position.top, left: step.position.left } );
                 }
-                node.id = step.id;
+                node.id = parseInt(step.id) + offset;
                 wf.nodes[ node.id ] = node;
-                max_id = Math.max( max_id, parseInt( id ) );
+                max_id = Math.max( max_id, parseInt( id ) + offset );
                 // For older workflows, it's possible to have HideDataset PJAs, but not WorkflowOutputs.
                 // Check for either, and then add outputs in the next pass.
-                if (!using_workflow_outputs && node.type === 'tool'){
+                if (!using_workflow_outputs){
                     if (node.workflow_outputs.length > 0){
                         using_workflow_outputs = true;
                     }
                     else{
-                        $.each(node.post_job_actions, function(pja_id, pja){
+                        $.each(node.post_job_actions || [], function(pja_id, pja){
                             if (pja.action_type === "HideDatasetAction"){
                                 using_workflow_outputs = true;
                             }
@@ -222,14 +279,14 @@ function( Connector, Toastr ) {
             wf.id_counter = max_id + 1;
             // Second pass, connections
             $.each( data.steps, function( id, step ) {
-                var node = wf.nodes[id];
+                var node = wf.nodes[parseInt(id) + offset];
                 $.each( step.input_connections, function( k, v ) {
                     if ( v ) {
                         if ( ! $.isArray( v ) ) {
                             v = [ v ];
                         }
                         $.each( v, function( l, x ) {
-                            var other_node = wf.nodes[ x.id ];
+                            var other_node = wf.nodes[ parseInt(x.id) + offset ];
                             var c = new Connector();
                             c.connect( other_node.output_terminals[ x.output_name ],
                                        node.input_terminals[ k ] );
@@ -237,7 +294,7 @@ function( Connector, Toastr ) {
                         });
                     }
                 });
-                if(using_workflow_outputs && node.type === 'tool'){
+                if(using_workflow_outputs){
                     // Ensure that every output terminal has a WorkflowOutput or HideDatasetAction.
                     $.each(node.output_terminals, function(ot_id, ot){
                         if(node.post_job_actions['HideDatasetAction'+ot.name] === undefined){

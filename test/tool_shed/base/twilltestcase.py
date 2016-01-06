@@ -539,7 +539,8 @@ class ShedTwillTestCase( TwillTestCase ):
         self.submit_form( 'export_repository', 'export_repository_button' )
         fd, capsule_filename = tempfile.mkstemp()
         os.close( fd )
-        file( capsule_filename, 'w' ).write( self.last_page() )
+        with open( capsule_filename, 'w' ) as f:
+            f.write( self.last_page() )
         return capsule_filename
 
     def fill_review_form( self, review_contents_dict, strings_displayed=[], strings_not_displayed=[] ):

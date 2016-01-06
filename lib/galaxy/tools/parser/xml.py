@@ -24,7 +24,12 @@ from .output_actions import ToolOutputActionGroup
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
 from galaxy.tools.deps import requirements
-import galaxy.tools
+from .output_objects import (
+    ToolOutput,
+    ToolOutputCollection,
+    ToolOutputCollectionStructure
+)
+
 
 log = logging.getLogger( __name__ )
 
@@ -191,13 +196,13 @@ class XmlToolSource(ToolSource):
             dataset_collector_descriptions = None
             if collection_elem.find( "discover_datasets" ) is not None:
                 dataset_collector_descriptions = dataset_collector_descriptions_from_elem( collection_elem )
-            structure = galaxy.tools.ToolOutputCollectionStructure(
+            structure = ToolOutputCollectionStructure(
                 collection_type=collection_type,
                 collection_type_source=collection_type_source,
                 structured_like=structured_like,
                 dataset_collector_descriptions=dataset_collector_descriptions,
             )
-            output_collection = galaxy.tools.ToolOutputCollection(
+            output_collection = ToolOutputCollection(
                 name,
                 structure,
                 label=label,
@@ -238,7 +243,7 @@ class XmlToolSource(ToolSource):
         default_format_source=None,
         default_metadata_source="",
     ):
-        output = galaxy.tools.ToolOutput( data_elem.get("name") )
+        output = ToolOutput( data_elem.get("name") )
         output_format = data_elem.get("format", default_format)
         auto_format = string_as_bool( data_elem.get( "auto_format", "false" ) )
         if auto_format and output_format != "data":

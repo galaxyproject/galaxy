@@ -4,6 +4,10 @@ import os
 import re
 from ..tools import loader
 
+import yaml
+
+from galaxy.util import checkers
+
 import sys
 
 import logging
@@ -15,9 +19,34 @@ LOAD_FAILURE_ERROR = "Failed to load tool with path %s."
 TOOL_LOAD_ERROR = object()
 TOOL_REGEX = re.compile(r"<tool\s")
 
+YAML_EXTENSIONS = [".yaml", ".yml", ".json"]
+CWL_EXTENSIONS = YAML_EXTENSIONS + [".cwl"]
+
 
 def load_exception_handler(path, exc_info):
     log.warn(LOAD_FAILURE_ERROR % path, exc_info=exc_info)
+
+
+def find_possible_tools_from_path(
+    path,
+    recursive=False,
+    enable_beta_formats=False,
+):
+    possible_tool_files = []
+    for possible_tool_file in __find_tool_files(
+        path, recursive=recursive,
+        enable_beta_formats=enable_beta_formats
+    ):
+        try:
+            does_look_like_a_tool = looks_like_a_tool(possible_tool_file)
+        except IOError:
+            # Some problem reading the tool file, skip.
+            continue
+
+        if does_look_like_a_tool:
+            possible_tool_files.append(possible_tool_file)
+
+    return possible_tool_files
 
 
 def load_tool_elements_from_path(
@@ -27,21 +56,18 @@ def load_tool_elements_from_path(
     register_load_errors=False,
 ):
     tool_elements = []
-    for file in __find_tool_files(path, recursive=recursive):
+    for possible_tool_file in find_possible_tools_from_path(
+        path,
+        recursive=recursive,
+        enable_beta_formats=False,
+    ):
         try:
-            looks_like_a_tool = __looks_like_a_tool(file)
-        except IOError:
-            # Some problem reading the tool file, skip.
-            continue
-
-        if looks_like_a_tool:
-            try:
-                tool_elements.append((file, loader.load_tool(file)))
-            except Exception:
-                exc_info = sys.exc_info()
-                load_exception_handler(file, exc_info)
-                if register_load_errors:
-                    tool_elements.append((file, TOOL_LOAD_ERROR))
+            tool_elements.append((possible_tool_file, loader.load_tool(possible_tool_file)))
+        except Exception:
+            exc_info = sys.exc_info()
+            load_exception_handler(possible_tool_file, exc_info)
+            if register_load_errors:
+                tool_elements.append((possible_tool_file, TOOL_LOAD_ERROR))
     return tool_elements
 
 
@@ -49,15 +75,92 @@ def is_tool_load_error(obj):
     return obj is TOOL_LOAD_ERROR
 
 
-def __looks_like_a_tool(path):
+def looks_like_a_tool(path, invalid_names=[], enable_beta_formats=False):
+    """ Whether true in a strict sense or not, lets say the intention and
+    purpose of this procedure is to serve as a filter - all valid tools must
+    "looks_like_a_tool" but not everything that looks like a tool is actually
+    a valid tool.
+
+    invalid_names may be supplid in the context of the tool shed to quickly
+    rule common tool shed XML files.
+    """
+    looks = False
+
+    if os.path.basename(path) in invalid_names:
+        return False
+
+    if looks_like_a_tool_xml(path):
+        looks = True
+
+    if not looks and enable_beta_formats:
+        for tool_checker in BETA_TOOL_CHECKERS.values():
+            if tool_checker(path):
+                looks = True
+                break
+
+    return looks
+
+
+def looks_like_a_tool_xml(path):
+    full_path = os.path.abspath(path)
+
+    if not full_path.endswith(".xml"):
+        return False
+
+    if not os.path.getsize(full_path):
+        return False
+
+    if(checkers.check_binary(full_path) or
+       checkers.check_image(full_path) or
+       checkers.check_gzip(full_path)[0] or
+       checkers.check_bz2(full_path)[0] or
+       checkers.check_zip(full_path)):
+        return False
+
     with open(path, "r") as f:
         start_contents = f.read(5 * 1024)
         if TOOL_REGEX.search(start_contents):
             return True
+
     return False
 
 
-def __find_tool_files(path, recursive):
+def looks_like_a_tool_yaml(path):
+    if not _has_extension(path, YAML_EXTENSIONS):
+        return False
+
+    with open(path, "r") as f:
+        try:
+            as_dict = yaml.safe_load(f)
+        except Exception:
+            return False
+
+    if not isinstance(as_dict, dict):
+        return False
+
+    file_class = as_dict.get("class", None)
+    return file_class == "GalaxyTool"
+
+
+def looks_like_a_tool_cwl(path):
+    if _has_extension(path, CWL_EXTENSIONS):
+        return False
+
+    with open(path, "r") as f:
+        try:
+            as_dict = yaml.safe_load(f)
+        except Exception:
+            return False
+
+    if not isinstance(as_dict, dict):
+        return False
+
+    file_class = as_dict.get("class", None)
+    file_cwl_version = as_dict.get("cwlVersion", None)
+    return file_class == "CommandLineTool" and file_cwl_version
+
+
+def __find_tool_files(path, recursive, enable_beta_formats):
     is_file = not os.path.isdir(path)
     if not os.path.exists(path):
         raise Exception(PATH_DOES_NOT_EXIST_ERROR)
@@ -66,11 +169,21 @@ def __find_tool_files(path, recursive):
     elif is_file:
         return [os.path.abspath(path)]
     else:
-        if not recursive:
-            files = glob.glob(path + "/*.xml")
+        if enable_beta_formats:
+            if not recursive:
+                files = glob.glob(path + "/*")
+            else:
+                files = _find_files(path, "*")
         else:
-            files = _find_files(path, "*.xml")
+            if not recursive:
+                files = glob.glob(path + "/*.xml")
+            else:
+                files = _find_files(path, "*.xml")
         return map(os.path.abspath, files)
+
+
+def _has_extension(path, extensions):
+    return any(map(lambda e: path.endswith(e), extensions))
 
 
 def _find_files(directory, pattern='*'):
@@ -84,3 +197,9 @@ def _find_files(directory, pattern='*'):
             if fnmatch.filter([full_path], pattern):
                 matches.append(os.path.join(root, filename))
     return matches
+
+
+BETA_TOOL_CHECKERS = {
+    'yaml': looks_like_a_tool_yaml,
+    'cwl': looks_like_a_tool_cwl,
+}

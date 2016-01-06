@@ -4,7 +4,7 @@ from various states, tracking results, and building implicit dataset
 collections from matched collections.
 """
 import collections
-import galaxy.tools
+from galaxy.tools.parser import ToolOutputCollectionPart
 from galaxy.util import ExecutionTimer
 from galaxy.tools.actions import on_text_for_names, ToolExecutionCache
 from threading import Thread
@@ -104,7 +104,7 @@ class ToolExecutionTracker( object ):
         self.successful_jobs.append( job )
         self.output_datasets.extend( outputs )
         for output_name, output_dataset in outputs:
-            if galaxy.tools.ToolOutputCollectionPart.is_named_collection_part_name( output_name ):
+            if ToolOutputCollectionPart.is_named_collection_part_name( output_name ):
                 # Skip known collection outputs, these will be covered by
                 # output collections.
                 continue

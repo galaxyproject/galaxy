@@ -4,6 +4,26 @@
 <%
     self.active_view="workflow"
     self.overlay_visible=True
+    self.editor_config = {
+        'id'      : trans.security.encode_id( stored.id ),
+        'urls'    : {
+            'tool_search'         : h.url_for( '/api/tools' ),
+            'get_datatypes'       : h.url_for( '/api/datatypes/mapping' ),
+            'load_workflow'       : h.url_for( controller='workflow', action='load_workflow' ),
+            'run_workflow'        : h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id(stored.id)),
+            'rename_async'        : h.url_for( controller='workflow', action='rename_async', id=trans.security.encode_id(stored.id) ),
+            'annotate_async'      : h.url_for( controller='workflow', action='annotate_async', id=trans.security.encode_id(stored.id) ),
+            'get_new_module_info' : h.url_for(controller='workflow', action='get_new_module_info' ),
+            'workflow_index'      : h.url_for( controller='workflow', action='index' ),
+            'save_workflow'       : h.url_for(controller='workflow', action='save_workflow' )
+        },
+        'workflows' : [{
+            'id'                  : trans.security.encode_id( workflow.id ),
+            'latest_id'           : trans.security.encode_id( workflow.latest_workflow.id ),
+            'step_count'          : len( workflow.latest_workflow.steps ),
+            'name'                : h.to_unicode( workflow.name )
+        } for workflow in workflows ]
+    }
 %>
 </%def>
 
@@ -23,26 +43,9 @@
     <script type='text/javascript'>
         workflow_view = null;
         console.debug( 'bibtex?', window.BibtexParser );
-
-        // URLs used by galaxy.workflows.js
-        var config = {
-            id      : "${trans.security.encode_id( stored.id ) }",
-            urls    : {
-                tool_search         : "${h.url_for( '/api/tools' )}",
-                get_datatypes       : "${h.url_for( '/api/datatypes/mapping' )}",
-                load_workflow       : "${h.url_for( controller='workflow', action='load_workflow' )}",
-                run_workflow        : "${h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id(stored.id))}",
-                rename_async        : "${h.url_for( controller='workflow', action='rename_async', id=trans.security.encode_id(stored.id) )}",
-                annotate_async      : "${h.url_for( controller='workflow', action='annotate_async', id=trans.security.encode_id(stored.id) )}",
-                get_new_module_info : "${h.url_for(controller='workflow', action='get_new_module_info' )}",
-                workflow_index      : "${h.url_for( controller='workflow', action='index' )}",
-                save_workflow       : "${h.url_for(controller='workflow', action='save_workflow' )}"
-            }
-        };
-
         $( function() {
             require(['mvc/workflow/workflow-view'], function(Workflow){
-                workflow_view = new Workflow(config);
+                workflow_view = new Workflow(${h.dumps(self.editor_config)});
             });
         });
     </script>

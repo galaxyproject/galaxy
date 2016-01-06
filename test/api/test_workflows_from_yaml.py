@@ -137,7 +137,8 @@ class: GalaxyWorkflow
 inputs:
   - id: input1
 outputs:
-  - source: first_cat#out_file1
+  - id: wf_output_1
+    source: first_cat#out_file1
 steps:
   - tool_id: cat1
     label: first_cat
@@ -153,6 +154,72 @@ test_data:
 """)
         workflow = self._get("workflows/%s/download" % workflow_id).json()
         self.assertEquals(workflow["steps"]["1"]["workflow_outputs"][0]["output_name"], "out_file1")
+        self.assertEquals(workflow["steps"]["1"]["workflow_outputs"][0]["label"], "wf_output_1")
+
+    def test_subworkflow_simple( self ):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  - id: outer_input
+steps:
+  - tool_id: cat1
+    label: first_cat
+    state:
+      input1:
+        $link: outer_input
+  - run:
+      class: GalaxyWorkflow
+      inputs:
+        - id: inner_input
+      steps:
+        - tool_id: random_lines1
+          state:
+            num_lines: 1
+            input:
+              $link: inner_input
+            seed_source:
+              seed_source_selector: set_seed
+              seed: asdf
+              __current_case__: 1
+    label: nested_workflow
+    connect:
+      inner_input: first_cat#out_file1
+
+test_data:
+  outer_input:
+    value: 1.bed
+    type: File
+""")
+        workflow = self._get("workflows/%s/download" % workflow_id).json()
+        by_label = self._steps_by_label(workflow)
+        if "nested_workflow" not in by_label:
+            template = "Workflow [%s] does not contain label 'nested_workflow'."
+            message = template % workflow
+            raise AssertionError(message)
+
+        subworkflow_step = by_label["nested_workflow"]
+        assert subworkflow_step["type"] == "subworkflow"
+        assert len(subworkflow_step["subworkflow"]["steps"]) == 2
+
+        subworkflow_connections = subworkflow_step["input_connections"]
+        assert len(subworkflow_connections) == 1
+        subworkflow_connection = subworkflow_connections["inner_input"]
+        assert subworkflow_connection["input_subworkflow_step_id"] == 0
+
+        workflow_reupload_id = self.import_workflow(workflow)["id"]
+        workflow_reupload = self._get("workflows/%s/download" % workflow_reupload_id).json()
+        by_label = self._steps_by_label(workflow_reupload)
+        subworkflow_step = by_label["nested_workflow"]
+        assert subworkflow_step["type"] == "subworkflow"
+        assert len(subworkflow_step["subworkflow"]["steps"]) == 2
+
+        subworkflow_connections = subworkflow_step["input_connections"]
+        assert len(subworkflow_connections) == 1
+        subworkflow_connection = subworkflow_connections["inner_input"]
+        assert subworkflow_connection["input_subworkflow_step_id"] == 0
+
+        # content = self.dataset_populator.get_history_dataset_content( history_id )
+        # self.assertEquals("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
 
     def test_pause( self ):
         workflow_id = self._upload_yaml_workflow("""
@@ -209,3 +276,9 @@ steps:
 """)
         workflow = self._get("workflows/%s/download" % workflow_id).json()
         print workflow
+
+    def _steps_by_label(self, workflow_as_dict):
+        by_label = {}
+        for step in workflow_as_dict["steps"].values():
+            by_label[step['label']] = step
+        return by_label

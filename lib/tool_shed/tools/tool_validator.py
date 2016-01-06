@@ -292,7 +292,7 @@ class ToolValidator( object ):
 
     def load_tool_from_config( self, repository_id, full_path ):
         try:
-            tool = self.app.toolbox.load_tool( full_path, repository_id=repository_id, allow_code_files=False )
+            tool = self.app.toolbox.load_tool( full_path, repository_id=repository_id, allow_code_files=False, use_cached=False )
             valid = True
             error_message = None
         except KeyError, e:
