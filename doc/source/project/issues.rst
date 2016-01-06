@@ -155,7 +155,7 @@ special purpose.
    outside the committers group should have this tag applied because
    these pull requests must be highlighted in the release notes.
 
-* ``major`` is a special tag used to generate release notes. In practice
+-  ``major`` is a special tag used to generate release notes. In practice
    this should be applied to at most a couple dozen pull requests each
    release and is used to prioritize important items of note for the
    top of release notes sections.
