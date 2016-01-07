@@ -1618,7 +1618,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         owner = kwd.get( 'owner', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
-        dependencies = repository.get_repository_dependencies( changeset_revision )
+        # get_repository_dependencies( self, app, changeset, toolshed_url )
+        dependencies = repository.get_repository_dependencies( trans.app, changeset_revision, web.url_for( '/', qualified=True ) )
         if dependencies:
             return encoding_util.tool_shed_encode( dependencies )
         return ''
