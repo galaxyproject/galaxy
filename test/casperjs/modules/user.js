@@ -45,7 +45,7 @@ User.prototype._submitRegistration = function _submitRegistration( email, passwo
         };
 
     spaceghost.openHomePage( function(){
-        this.clickLabel( spaceghost.data.labels.masthead.menus.user );
+        this.click( xpath( spaceghost.data.selectors.masthead.user ) )
         this.clickLabel( spaceghost.data.labels.masthead.userMenu.register );
 
         this.waitForNavigation( 'user/create', function beforeRegister(){
@@ -83,7 +83,7 @@ User.prototype._submitLogin = function _submitLogin( email, password ){
         };
 
     spaceghost.openHomePage( function(){
-        this.clickLabel( spaceghost.data.labels.masthead.menus.user );
+        this.click( xpath( spaceghost.data.selectors.masthead.user ) )
         this.clickLabel( spaceghost.data.labels.masthead.userMenu.login );
 
         this.waitForNavigation( 'user/login', function beforeLogin(){
@@ -191,7 +191,7 @@ User.prototype.logout = function logout(){
     var spaceghost = this.spaceghost;
     this.spaceghost.openHomePage( function(){
         if( spaceghost.user.loggedInAs() ){
-            spaceghost.clickLabel( spaceghost.data.labels.masthead.menus.user );
+            this.click( xpath( spaceghost.data.selectors.masthead.user ) )
             spaceghost.clickLabel( spaceghost.data.labels.masthead.userMenu.logout );
             spaceghost.waitForNavigation( 'user/logout', function _toLogoutPage() {
                 spaceghost.clickLabel( 'go to the home page' );
