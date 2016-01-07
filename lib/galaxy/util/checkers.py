@@ -131,6 +131,24 @@ def check_zip( file_path ):
         return True
     return False
 
+def check_zip_multi_files( file_path ):
+    if not check_zip(file_path):
+        return False
+    z = zipfile.ZipFile( file_path )
+    zipped_files = z.namelist()    
+    # skip directory in the count
+    r_directory = re.compile('.*/$')
+    zipped_files = [ i for i in zipped_files if not i in filter(r_directory.match, zipped_files )]
+    # skip __MACOSX directories and subfiles in the count
+    r_mac = re.compile('.*__MACOSX.*')
+    zipped_files = [ i for i in zipped_files if not i in filter(r_mac.match, zipped_files )]
+    # skip desktop.ini from Microsoft Windows in the count
+    r_windows = re.compile('.*/?desktop.ini')
+    zipped_files = [ i for i in zipped_files if not i in filter(r_windows.match, zipped_files ) ]
+
+    if len(zipped_files) > 1:
+        return True
+    return False
 
 def is_bz2( file_path ):
     is_bz2, is_valid = check_bz2( file_path )
