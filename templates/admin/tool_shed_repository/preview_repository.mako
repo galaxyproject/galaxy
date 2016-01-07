@@ -152,7 +152,7 @@ var tool_dependency_html = '                    <tr style="display: table-row;" 
             if ($('#tool_panel_section_select').prop('disabled')) {
                 params['new_tool_panel_section'] = $("#new_tool_panel_section").val();
             }
-            else{
+            else {
                 params['tool_panel_section_id'] = $('#tool_panel_section_select').find("option:selected").val();
             }
             params['changeset'] = $("#changeset").val();
