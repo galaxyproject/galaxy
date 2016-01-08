@@ -9,6 +9,7 @@ try:
     from watchdog.observers.polling import PollingObserver
     can_watch = True
 except ImportError:
+    Observer = None
     FileSystemEventHandler = object
     PollingObserver = object
     can_watch = False
