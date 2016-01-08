@@ -256,6 +256,9 @@ class Repository( object, Dictifiable ):
         tip_ctx = repo.changectx( repo.changelog.tip() )
         return tip_ctx.rev() < 0
 
+    def installable_revisions( self, app ):
+        return suc.get_metadata_changeset_revisions( self, hg.repository( ui.ui(), self.repo_path( app ) ) )
+
     def ordered_installable_revisions( self, app ):
         return suc.get_ordered_metadata_changeset_revisions( self, hg.repository( ui.ui(), self.repo_path( app ) ), downloadable=True )
 
@@ -297,9 +300,6 @@ class Repository( object, Dictifiable ):
         if 'user_id' in rval:
             rval[ 'owner' ] = self.user.username
         return rval
-
-    def unordered_installable_revisions( self, app ):
-        return suc.get_unordered_metadata_changeset_revisions( self, hg.repository( ui.ui(), self.repo_path( app ) ), downloadable=True )
 
 
 class RepositoryMetadata( object, Dictifiable ):

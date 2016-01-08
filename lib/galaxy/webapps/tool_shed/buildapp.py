@@ -120,7 +120,7 @@ def app_factory( global_conf, **kwargs ):
                             collection={ 'add_repository_registry_entry': 'POST',
                                          'get_repository_revision_install_info': 'GET',
                                          'get_ordered_installable_revisions': 'GET',
-                                         'get_unordered_installable_revisions': 'GET',
+                                         'get_installable_revisions': 'GET',
                                          'remove_repository_registry_entry': 'POST',
                                          'repository_ids_for_setting_metadata': 'GET',
                                          'reset_metadata_on_repositories': 'POST',

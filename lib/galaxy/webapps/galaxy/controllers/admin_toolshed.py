@@ -1259,7 +1259,7 @@ class AdminToolshed( AdminGalaxy ):
         tsr_id = kwd.get( 'tsr_id', '' )
         json_data = json.loads( common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id ] ) )
         json_data[ 'metadata' ] = dict()
-        revisions = common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=[ 'api', 'repositories', 'get_unordered_installable_revisions' ], params=dict( tsr_id=tsr_id ) )
+        revisions = common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=[ 'api', 'repositories', 'get_installable_revisions' ], params=dict( tsr_id=tsr_id ) )
         for revision, changehash in json.loads( revisions ):
             pathspec = [ 'api', 'repositories', tsr_id, changehash, 'metadata' ]
             tools_path = [ 'api', 'repositories', tsr_id, changehash, 'show_tools' ]

@@ -268,7 +268,7 @@ class RepositoriesController( BaseAPIController ):
             return {}, {}, {}
 
     @web.expose_api_anonymous
-    def get_unordered_installable_revisions( self, trans, **kwd ):
+    def get_installable_revisions( self, trans, **kwd ):
         """
         GET /api/repositories/get_unordered_installable_revisions
 
@@ -285,7 +285,7 @@ class RepositoriesController( BaseAPIController ):
             error_message += "missing or invalid parameter received."
             log.debug( error_message )
             return []
-        return repository.unordered_installable_revisions( self.app )
+        return repository.installable_revisions( self.app )
 
     def __get_value_mapper( self, trans ):
         value_mapper = { 'id': trans.security.encode_id,
