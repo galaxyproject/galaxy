@@ -438,7 +438,7 @@ def get_metadata_revisions( repository, repo, sort_revisions=True, reverse=False
             rev = -1
         changeset_tups.append( ( rev, repository_metadata.changeset_revision ) )
     if sort_revisions:
-        changeset_tups = sorted( changeset_tups, key=itemgetter( 0 ), reverse=reverse )
+        changeset_tups.sort( key=itemgetter( 0 ), reverse=reverse )
         if not include_numeric:
             retval = [ str( changeset[ 1 ] ) for changeset in changeset_tups ]
             changeset_tups = retval
