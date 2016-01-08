@@ -11,7 +11,7 @@ try:
 except ImportError:
     Observer = None
     FileSystemEventHandler = object
-    PollingObserver = object
+    PollingObserver = None
     can_watch = False
 
 log = logging.getLogger( __name__ )
