@@ -346,7 +346,7 @@ def get_latest_downloadable_changeset_revision( app, repository, repo ):
     repository_metadata = get_repository_metadata_by_changeset_revision( app, app.security.encode_id( repository.id ), repository_tip )
     if repository_metadata and repository_metadata.downloadable:
         return repository_tip
-    changeset_revisions = get_metadata_revisions( repository, repo, include_numeric=False, downloadable=True )
+    changeset_revisions = get_metadata_revisions( repository, repo, include_hash=False, downloadable=True )
     if changeset_revisions:
         return changeset_revisions[ -1 ]
     return hg_util.INITIAL_CHANGELOG_HASH
@@ -370,7 +370,7 @@ def get_next_downloadable_changeset_revision( repository, repo, after_changeset_
     Return the installable changeset_revision in the repository changelog after the changeset to which
     after_changeset_revision refers.  If there isn't one, return None.
     """
-    changeset_revisions = get_metadata_revisions( repository, repo, include_numeric=False, downloadable=True )
+    changeset_revisions = get_metadata_revisions( repository, repo, include_hash=False, downloadable=True )
     if len( changeset_revisions ) == 1:
         changeset_revision = changeset_revisions[ 0 ]
         if changeset_revision == after_changeset_revision:
@@ -421,7 +421,7 @@ def get_next_prior_import_or_install_required_dict_entry( prior_required_dict, p
         return key
 
 
-def get_metadata_revisions( repository, repo, sort_revisions=True, reverse=False, include_numeric=True, downloadable=True ):
+def get_metadata_revisions( repository, repo, sort_revisions=True, reverse=False, include_hash=False, downloadable=True ):
     """
     Return a list of changesets for the provided repository.
     """
@@ -433,14 +433,14 @@ def get_metadata_revisions( repository, repo, sort_revisions=True, reverse=False
     for repository_metadata in metadata_revisions:
         ctx = hg_util.get_changectx_for_changeset( repo, repository_metadata.changeset_revision )
         if ctx:
-            rev = ctx.rev()
+            rev = '%04d' % str( ctx.rev() )
         else:
             rev = -1
         changeset_tups.append( ( rev, repository_metadata.changeset_revision ) )
     if sort_revisions:
         changeset_tups.sort( key=itemgetter( 0 ), reverse=reverse )
-        if not include_numeric:
-            retval = [ str( changeset[ 1 ] ) for changeset in changeset_tups ]
+        if not include_hash:
+            retval = [ str( changeset[ 0 ] ) for changeset in changeset_tups ]
             changeset_tups = retval
     return changeset_tups
 

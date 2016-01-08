@@ -2946,7 +2946,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 else:
                     tool_shed_status_dict[ 'revision_update' ] = 'False'
             # Handle revision upgrades.
-            metadata_revisions = suc.get_metadata_revisions( repository, repo, include_numeric=False, downloadable=True )
+            metadata_revisions = suc.get_metadata_revisions( repository, repo, include_hash=False, downloadable=True )
             num_metadata_revisions = len( metadata_revisions )
             for index, metadata_revision in enumerate( metadata_revisions ):
                 if index == num_metadata_revisions:
