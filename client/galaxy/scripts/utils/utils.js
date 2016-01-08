@@ -123,9 +123,8 @@ function request (options) {
         data        : options.data || {},
         url         : options.url
     }
-
     // encode data into url
-    if (ajaxConfig.type == 'GET' || ajaxConfig.type == 'DELETE') {
+    if ( !($.isEmptyObject(ajaxConfig.data)) && (ajaxConfig.type == 'GET' || ajaxConfig.type == 'DELETE' ) ) {
         if (ajaxConfig.url.indexOf('?') == -1) {
             ajaxConfig.url += '?';
         } else {
