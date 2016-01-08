@@ -2212,14 +2212,15 @@ class DataToolParameter( BaseDataToolParameter ):
             return d
 
         # add datasets
+        visible_hda = other_values.get( self.name )
         for hda in history.active_datasets_children_and_roles:
-            match = dataset_matcher.hda_match( hda )
+            match = dataset_matcher.hda_match( hda, ensure_visible=visible_hda != hda )
             if match:
                 m = match.hda
                 d['options']['hda'].append({
                     'id'            : trans.security.encode_id( m.id ),
                     'hid'           : m.hid,
-                    'name'          : m.name,
+                    'name'          : m.name if m.visible else '(hidden) %s' % m.name,
                     'src'           : 'hda'
                 })
 
