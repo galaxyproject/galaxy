@@ -6,6 +6,7 @@ import shutil
 import socket
 import string
 from urllib2 import HTTPError
+from operator import itemgetter
 
 import sqlalchemy.orm.exc
 from sqlalchemy import and_, false, or_, true
@@ -345,7 +346,7 @@ def get_latest_downloadable_changeset_revision( app, repository, repo ):
     repository_metadata = get_repository_metadata_by_changeset_revision( app, app.security.encode_id( repository.id ), repository_tip )
     if repository_metadata and repository_metadata.downloadable:
         return repository_tip
-    changeset_revisions = get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
+    changeset_revisions = get_metadata_revisions( repository, repo, include_numeric=False, downloadable=True )
     if changeset_revisions:
         return changeset_revisions[ -1 ]
     return hg_util.INITIAL_CHANGELOG_HASH
@@ -369,7 +370,7 @@ def get_next_downloadable_changeset_revision( repository, repo, after_changeset_
     Return the installable changeset_revision in the repository changelog after the changeset to which
     after_changeset_revision refers.  If there isn't one, return None.
     """
-    changeset_revisions = get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
+    changeset_revisions = get_metadata_revisions( repository, repo, include_numeric=False, downloadable=True )
     if len( changeset_revisions ) == 1:
         changeset_revision = changeset_revisions[ 0 ]
         if changeset_revision == after_changeset_revision:
@@ -420,10 +421,9 @@ def get_next_prior_import_or_install_required_dict_entry( prior_required_dict, p
         return key
 
 
-def get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True ):
+def get_metadata_revisions( repository, repo, sort_revisions=True, reverse=False, include_numeric=True, downloadable=True ):
     """
-    Return an ordered list of changeset_revisions that are associated with metadata
-    where order is defined by the repository changelog.
+    Return a list of changesets for the provided repository.
     """
     if downloadable:
         metadata_revisions = repository.downloadable_revisions
@@ -431,16 +431,18 @@ def get_ordered_metadata_changeset_revisions( repository, repo, downloadable=Tru
         metadata_revisions = repository.metadata_revisions
     changeset_tups = []
     for repository_metadata in metadata_revisions:
-        changeset_revision = repository_metadata.changeset_revision
-        ctx = hg_util.get_changectx_for_changeset( repo, changeset_revision )
+        ctx = hg_util.get_changectx_for_changeset( repo, repository_metadata.changeset_revision )
         if ctx:
-            rev = '%04d' % ctx.rev()
+            rev = ctx.rev()
         else:
-            rev = '-1'
-        changeset_tups.append( ( rev, changeset_revision ) )
-    sorted_changeset_tups = sorted( changeset_tups )
-    sorted_changeset_revisions = [ str( changeset_tup[ 1 ] ) for changeset_tup in sorted_changeset_tups ]
-    return sorted_changeset_revisions
+            rev = -1
+        changeset_tups.append( ( rev, repository_metadata.changeset_revision ) )
+    if sort_revisions:
+        changeset_tups = sorted( changeset_tups, key=itemgetter( 0 ), reverse=reverse )
+        if not include_numeric:
+            retval = [ str( changeset[ 1 ] ) for changeset in changeset_tups ]
+            changeset_tups = retval
+    return changeset_tups
 
 
 def get_prior_import_or_install_required_dict( app, tsr_ids, repo_info_dicts ):
