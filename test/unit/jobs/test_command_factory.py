@@ -168,6 +168,7 @@ class MockJobWrapper(object):
                 check_job_script_integrity=False,
             )
         )
+        self.shell = "/bin/sh"
 
     def get_command_line(self):
         return self.command_line

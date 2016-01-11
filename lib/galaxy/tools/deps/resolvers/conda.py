@@ -177,7 +177,7 @@ class CondaDepenency(Dependency):
         return self._exact
 
     def shell_commands(self, requirement):
-        return """[ "$CONDA_DEFAULT_ENV" = "%s" ] || source %s '%s'""" % (
+        return """[ "$CONDA_DEFAULT_ENV" = "%s" ] || . %s '%s'""" % (
             self.environment_path,
             self.activate,
             self.environment_path

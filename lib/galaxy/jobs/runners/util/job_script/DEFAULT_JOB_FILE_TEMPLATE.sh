@@ -1,4 +1,4 @@
-#!/bin/sh
+#!$shell
 
 $integrity_injection
 $headers
