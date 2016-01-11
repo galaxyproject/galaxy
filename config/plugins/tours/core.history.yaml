@@ -131,7 +131,7 @@ steps:
 
     - element: "#history-options-button"
       title: "History Options"
-      intro: "In the History menue you will find a lot more useful History options."
+      intro: "In the History menu you will find a lot more useful History options."
       position: "left"
       postclick:
         - "#history-options-button"
