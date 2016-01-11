@@ -433,7 +433,7 @@ def get_metadata_revisions( repository, repo, sort_revisions=True, reverse=False
     for repository_metadata in metadata_revisions:
         ctx = hg_util.get_changectx_for_changeset( repo, repository_metadata.changeset_revision )
         if ctx:
-            rev = '%04d' % str( ctx.rev() )
+            rev = '%04d' % ctx.rev()
         else:
             rev = -1
         changeset_tups.append( ( rev, repository_metadata.changeset_revision ) )
