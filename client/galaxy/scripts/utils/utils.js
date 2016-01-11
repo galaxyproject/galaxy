@@ -124,13 +124,15 @@ function request (options) {
         url         : options.url
     }
     // encode data into url
-    if ( !($.isEmptyObject(ajaxConfig.data)) && (ajaxConfig.type == 'GET' || ajaxConfig.type == 'DELETE' ) ) {
-        if (ajaxConfig.url.indexOf('?') == -1) {
-            ajaxConfig.url += '?';
-        } else {
-            ajaxConfig.url += '&';
+    if ( (ajaxConfig.type == 'GET' || ajaxConfig.type == 'DELETE' ) ) {
+        if ( !$.isEmptyObject(ajaxConfig.data)) {
+            if (ajaxConfig.url.indexOf('?') == -1) {
+                ajaxConfig.url += '?';
+            } else {
+                ajaxConfig.url += '&';
+            }
+            ajaxConfig.url      = ajaxConfig.url + $.param(ajaxConfig.data, true);
         }
-        ajaxConfig.url      = ajaxConfig.url + $.param(ajaxConfig.data, true);
         ajaxConfig.data     = null;
     } else {
         ajaxConfig.dataType = 'json';
