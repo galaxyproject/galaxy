@@ -17,6 +17,7 @@ from galaxy.util import string_as_bool
 from galaxy.util.bunch import Bunch
 
 from .parser import get_toolbox_parser, ensure_tool_conf_item
+
 from .panel import ToolPanelElements
 from .panel import ToolSectionLabel
 from .panel import ToolSection
