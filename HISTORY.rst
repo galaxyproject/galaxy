@@ -9,7 +9,7 @@ History
 16.1.8.dev0
 ---------------------
 
-    
+* Update against Galaxy's release_16.01 branch.
 
 ---------------------
 16.1.7 (2016-01-03)
