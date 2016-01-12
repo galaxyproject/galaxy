@@ -61,29 +61,19 @@
         require([
             'layout/masthead',
             'mvc/ui/ui-modal',
-            'mvc/upload/upload-view',
             'mvc/user/user-model'
-        ], function( mod_masthead, mod_modal, GalaxyUpload, user ){
-            if( !Galaxy.user ){
+        ], function( Masthead, Modal, user ){
+            if( !Galaxy.user ) {
                 // this doesn't need to wait for the page being readied
                 Galaxy.user = new user.User(${ h.dumps( masthead_config[ 'user_json' ], indent=2 ) });
             }
 
             $(function() {
-                // check if masthead is available
-                if (Galaxy.masthead){
-                    return;
+                if (!Galaxy.masthead) {
+                    Galaxy.masthead = new Masthead.View(${ h.dumps( masthead_config ) });
+                    Galaxy.modal = new Modal.View();
+                    $('body').append( Galaxy.masthead.render().$el );
                 }
-
-                // get configuration
-                var masthead_config = ${ h.dumps( masthead_config ) };
-
-                // load global galaxy objects
-                Galaxy.masthead = new mod_masthead.GalaxyMasthead(masthead_config);
-                Galaxy.modal = new mod_modal.View();
-
-                // add upload plugin
-                Galaxy.upload = new GalaxyUpload(masthead_config);
             });
         });
     </script>

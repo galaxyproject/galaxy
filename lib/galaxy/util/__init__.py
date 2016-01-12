@@ -23,10 +23,12 @@ import time
 import tempfile
 import threading
 from six.moves.urllib import parse as urlparse
+from six import iteritems
 
 from galaxy.util import json
 from datetime import datetime
 
+from six import PY3
 from six import string_types, text_type
 from six.moves import xrange
 from six.moves import email_mime_text
@@ -35,13 +37,24 @@ from six.moves import zip
 from os.path import relpath
 from hashlib import md5
 
-import docutils.core
-import docutils.writers.html4css1
+try:
+    import docutils.core as docutils_core
+    import docutils.writers.html4css1 as docutils_html4css1
+except ImportError:
+    docutils_core = None
+    docutils_html4css1 = None
 
 from xml.etree import ElementTree, ElementInclude
 
 from .inflection import Inflector, English
 inflector = Inflector(English)
+
+if PY3:
+    def list_map(f, input):
+        return list(map(f, input))
+else:
+    list_map = map
+
 
 log = logging.getLogger(__name__)
 _lock = threading.RLock()
@@ -56,6 +69,21 @@ bz2_magic = 'BZh'
 DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
 NULL_CHAR = '\000'
 BINARY_CHARS = [ NULL_CHAR ]
+
+
+def remove_protocol_from_url( url ):
+    """ Supplied URL may be null, if not ensure http:// or https://
+    etc... is stripped off.
+    """
+    if url is None:
+        return url
+
+    # We have a URL
+    if url.find( '://' ) > 0:
+        new_url = url.split( '://' )[1]
+    else:
+        new_url = url
+    return new_url.rstrip( '/' )
 
 
 def is_binary( value, binary_chars=None ):
@@ -145,7 +173,8 @@ def unique_id(KEY_SIZE=128):
     >>> len(set(ids))
     1000
     """
-    return md5(str( random.getrandbits( KEY_SIZE ) )).hexdigest()
+    random_bits = text_type(random.getrandbits(KEY_SIZE)).encode("UTF-8")
+    return md5(random_bits).hexdigest()
 
 
 def parse_xml( fname ):
@@ -202,17 +231,17 @@ def xml_element_to_dict( elem ):
     if sub_elems:
         sub_elem_dict = dict()
         for sub_sub_elem_dict in map( xml_element_to_dict, sub_elems ):
-            for key, value in sub_sub_elem_dict.iteritems():
+            for key, value in iteritems(sub_sub_elem_dict):
                 if key not in sub_elem_dict:
                     sub_elem_dict[ key ] = []
                 sub_elem_dict[ key ].append( value )
-        for key, value in sub_elem_dict.iteritems():
+        for key, value in iteritems(sub_elem_dict):
             if len( value ) == 1:
                 rval[ elem.tag ][ key ] = value[0]
             else:
                 rval[ elem.tag ][ key ] = value
     if elem.attrib:
-        for key, value in elem.attrib.iteritems():
+        for key, value in iteritems(elem.attrib):
             rval[ elem.tag ][ "@%s" % key ] = value
 
     if elem.text:
@@ -418,7 +447,7 @@ def sanitize_text( text, valid_characters=valid_chars, character_map=mapped_char
     and lists of strings; non-string entities will be cast to strings.
     """
     if isinstance( text, list ):
-        return map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), text )
+        return list_map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), text )
     if not isinstance( text, string_types ):
         text = smart_str( text )
     return _sanitize_text_helper( text, valid_characters=valid_characters, character_map=character_map )
@@ -457,7 +486,7 @@ def sanitize_param( value, valid_characters=valid_chars, character_map=mapped_ch
     if isinstance( value, string_types ):
         return sanitize_text( value, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character )
     elif isinstance( value, list ):
-        return map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), value )
+        return list_map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), value )
     else:
         raise Exception('Unknown parameter type (%s)' % ( type( value ) ))
 
@@ -528,6 +557,15 @@ def ready_name_for_url( raw_name ):
     if slug_base.endswith('-'):
         slug_base = slug_base[:-1]
     return slug_base
+
+
+def which(file):
+    # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
+    for path in os.environ["PATH"].split(":"):
+        if os.path.exists(path + "/" + file):
+                return path + "/" + file
+
+    return None
 
 
 def in_directory( file, directory, local_path_module=os.path ):
@@ -673,6 +711,9 @@ def rst_to_html( s ):
     """Convert a blob of reStructuredText to HTML"""
     log = logging.getLogger( "docutils" )
 
+    if docutils_core is None:
+        raise Exception("Attempted to use rst_to_html but docutils unavailable.")
+
     class FakeStream( object ):
         def write( self, str ):
             if len( str ) > 0 and not str.isspace():
@@ -686,8 +727,8 @@ def rst_to_html( s ):
                                   # number of sections in help content.
     }
 
-    return unicodify( docutils.core.publish_string( s,
-                      writer=docutils.writers.html4css1.Writer(),
+    return unicodify( docutils_core.publish_string( s,
+                      writer=docutils_html4css1.Writer(),
                       settings_overrides=settings_overrides ) )
 
 
@@ -986,14 +1027,14 @@ def stringify_dictionary_keys( in_dict ):
     # changes unicode keys into strings, only works on top level (does not recurse)
     # unicode keys are not valid for expansion into keyword arguments on method calls
     out_dict = {}
-    for key, value in in_dict.iteritems():
+    for key, value in iteritems(in_dict):
         out_dict[ str( key ) ] = value
     return out_dict
 
 
 def recursively_stringify_dictionary_keys( d ):
     if isinstance(d, dict):
-        return dict([(k.encode( DEFAULT_ENCODING ), recursively_stringify_dictionary_keys(v)) for k, v in d.iteritems()])
+        return dict([(k.encode( DEFAULT_ENCODING ), recursively_stringify_dictionary_keys(v)) for k, v in iteritems(d)])
     elif isinstance(d, list):
         return [recursively_stringify_dictionary_keys(x) for x in d]
     else:
@@ -1233,6 +1274,35 @@ galaxy_root_path = os.path.join(__path__[0], "..", "..", "..")
 
 def galaxy_directory():
     return os.path.abspath(galaxy_root_path)
+
+
+def config_directories_from_setting( directories_setting, galaxy_root=galaxy_root_path ):
+    """
+    Parse the ``directories_setting`` into a list of relative or absolute
+    filesystem paths that will be searched to discover plugins.
+
+    :type   galaxy_root:    string
+    :param  galaxy_root:    the root path of this galaxy installation
+    :type   directories_setting: string (default: None)
+    :param  directories_setting: the filesystem path (or paths)
+        to search for plugins. Can be CSV string of paths. Will be treated as
+        absolute if a path starts with '/', relative otherwise.
+    :rtype:                 list of strings
+    :returns:               list of filesystem paths
+    """
+    directories = []
+    if not directories_setting:
+        return directories
+
+    for directory in listify( directories_setting ):
+        directory = directory.strip()
+        if not directory.startswith( '/' ):
+            directory = os.path.join( galaxy_root, directory )
+        if not os.path.exists( directory ):
+            log.warn( 'directory not found: %s', directory )
+            continue
+        directories.append( directory )
+    return directories
 
 
 def parse_int(value, min_val=None, max_val=None, default=None, allow_none=False):

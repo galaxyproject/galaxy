@@ -2946,13 +2946,13 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 else:
                     tool_shed_status_dict[ 'revision_update' ] = 'False'
             # Handle revision upgrades.
-            ordered_metadata_changeset_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
-            num_metadata_revisions = len( ordered_metadata_changeset_revisions )
-            for index, metadata_changeset_revision in enumerate( ordered_metadata_changeset_revisions ):
+            metadata_revisions = [ revision[ 1 ] for revision in suc.get_metadata_revisions( repository, repo ) ]
+            num_metadata_revisions = len( metadata_revisions )
+            for index, metadata_revision in enumerate( metadata_revisions ):
                 if index == num_metadata_revisions:
                     tool_shed_status_dict[ 'revision_upgrade' ] = 'False'
                     break
-                if metadata_changeset_revision == changeset_revision:
+                if metadata_revision == changeset_revision:
                     if num_metadata_revisions - index > 1:
                         tool_shed_status_dict[ 'revision_upgrade' ] = 'True'
                     else:

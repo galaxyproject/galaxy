@@ -7,6 +7,9 @@ import glob
 import json
 import logging
 import os
+import re
+import tarfile
+import tempfile
 import threading
 import urllib
 from datetime import datetime
@@ -24,7 +27,6 @@ from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.upload import UploadToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
-from galaxy.tools.deps import build_dependency_manager
 from galaxy.tools.parameters import params_to_incoming, check_param, params_from_strings, params_to_strings, visit_input_values
 from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
@@ -38,9 +40,10 @@ from galaxy.tools.test import parse_tests
 from galaxy.tools.parser import get_tool_source
 from galaxy.tools.parser.xml import XmlPageSource
 from galaxy.tools.parser import ToolOutputCollectionPart
-from galaxy.tools.toolbox import AbstractToolBox
+from galaxy.tools.toolbox import BaseGalaxyToolBox
 from galaxy.util import rst_to_html, string_as_bool
 from galaxy.util import ExecutionTimer
+from galaxy.util import listify
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
@@ -48,6 +51,7 @@ from galaxy.util.hash_util import hmac_new
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
+from galaxy.web.form_builder import SelectField
 from galaxy.util.dictifiable import Dictifiable
 from tool_shed.util import common_util
 from tool_shed.util import shed_util_common as suc
@@ -95,7 +99,7 @@ class ToolNotFoundException( Exception ):
     pass
 
 
-class ToolBox( AbstractToolBox ):
+class ToolBox( BaseGalaxyToolBox ):
     """ A derivative of AbstractToolBox with knowledge about Tool internals -
     how to construct them, action types, dependency management, etc....
     """
@@ -106,7 +110,6 @@ class ToolBox( AbstractToolBox ):
             tool_root_dir=tool_root_dir,
             app=app,
         )
-        self._init_dependency_manager()
 
     @property
     def tools_by_id( self ):
@@ -155,15 +158,64 @@ class ToolBox( AbstractToolBox ):
         tool = ToolClass( config_file, tool_source, self.app, guid=guid, repository_id=repository_id, **kwds )
         return tool
 
-    def _init_dependency_manager( self ):
-        self.dependency_manager = build_dependency_manager( self.app.config )
-
     def handle_datatypes_changed( self ):
         """ Refresh upload tools when new datatypes are added. """
         for tool_id in self._tools_by_id:
             tool = self._tools_by_id[ tool_id ]
             if isinstance( tool.tool_action, UploadToolAction ):
                 self.reload_tool_by_id( tool_id )
+
+    def get_tool_components( self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
+        """
+        Retrieve all loaded versions of a tool from the toolbox and return a select list enabling
+        selection of a different version, the list of the tool's loaded versions, and the specified tool.
+        """
+        toolbox = self
+        tool_version_select_field = None
+        tools = []
+        tool = None
+        # Backwards compatibility for datasource tools that have default tool_id configured, but which
+        # are now using only GALAXY_URL.
+        tool_ids = listify( tool_id )
+        for tool_id in tool_ids:
+            if get_loaded_tools_by_lineage:
+                tools = toolbox.get_loaded_tools_by_lineage( tool_id )
+            else:
+                tools = toolbox.get_tool( tool_id, tool_version=tool_version, get_all_versions=True )
+            if tools:
+                tool = toolbox.get_tool( tool_id, tool_version=tool_version, get_all_versions=False )
+                if len( tools ) > 1:
+                    tool_version_select_field = self.__build_tool_version_select_field( tools, tool.id, set_selected )
+                break
+        return tool_version_select_field, tools, tool
+
+    def _get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
+        # Abstract toolbox doesn't have a dependency on the the database, so
+        # override _get_tool_shed_repository here to provide this information.
+
+        return suc.get_installed_repository(
+            self.app,
+            tool_shed=tool_shed,
+            name=name,
+            owner=owner,
+            installed_changeset_revision=installed_changeset_revision
+        )
+
+    def __build_tool_version_select_field( self, tools, tool_id, set_selected ):
+        """Build a SelectField whose options are the ids for the received list of tools."""
+        options = []
+        refresh_on_change_values = []
+        for tool in tools:
+            options.insert( 0, ( tool.version, tool.id ) )
+            refresh_on_change_values.append( tool.id )
+        select_field = SelectField( name='tool_id', refresh_on_change=True, refresh_on_change_values=refresh_on_change_values )
+        for option_tup in options:
+            selected = set_selected and option_tup[ 1 ] == tool_id
+            if selected:
+                select_field.add_option( 'version %s' % option_tup[ 0 ], option_tup[ 1 ], selected=True )
+            else:
+                select_field.add_option( 'version %s' % option_tup[ 0 ], option_tup[ 1 ] )
+        return select_field
 
 
 class DefaultToolState( object ):
@@ -585,11 +637,18 @@ class Tool( object, Dictifiable ):
         root = tool_source.root
         conf_parent_elem = root.find("configfiles")
         if conf_parent_elem is not None:
+            inputs_elem = conf_parent_elem.find( "inputs" )
+            if inputs_elem is not None:
+                name = inputs_elem.get( "name" )
+                filename = inputs_elem.get( "filename", None )
+                format = inputs_elem.get("format", "json")
+                content = dict(format=format)
+                self.config_files.append( ( name, filename, content ) )
             for conf_elem in conf_parent_elem.findall( "configfile" ):
                 name = conf_elem.get( "name" )
                 filename = conf_elem.get( "filename", None )
-                text = conf_elem.text
-                self.config_files.append( ( name, filename, text ) )
+                content = conf_elem.text
+                self.config_files.append( ( name, filename, content ) )
 
     def __parse_trackster_conf(self, tool_source):
         self.trackster_conf = None
@@ -1614,7 +1673,7 @@ class Tool( object, Dictifiable ):
                 if isinstance( input, Conditional ):
                     cond_messages = {}
                     if not input.is_job_resource_conditional:
-                        cond_messages = { input.test_param.name: "No value found for '%s%s', using default" % ( prefix, input.label ) }
+                        cond_messages = { input.test_param.name: "No value found for '%s%s', using default" % ( prefix, input.test_param.label ) }
                         messages[ input.name ] = cond_messages
                     test_value = input.test_param.get_initial_value( trans, context )
                     current_case = input.get_current_case( test_value, trans )
@@ -1628,6 +1687,7 @@ class Tool( object, Dictifiable ):
                             messages[ input.name ].append( rep_dict )
                             self.check_and_update_param_values_helper( input.inputs, {}, trans, rep_dict, context, rep_prefix, allow_workflow_parameters=allow_workflow_parameters )
                 elif isinstance( input, Section ):
+                    messages[ input.name ] = {}
                     self.check_and_update_param_values_helper( input.inputs, {}, trans, messages[ input.name ], context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 else:
                     messages[ input.name ] = "No value found for '%s%s', using default" % ( prefix, input.label )
@@ -1657,7 +1717,8 @@ class Tool( object, Dictifiable ):
                         current = group_values["__current_case__"]
                         self.check_and_update_param_values_helper( input.cases[current].inputs, group_values, trans, messages, context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 elif isinstance( input, Section ):
-                    self.check_and_update_param_values_helper( input.inputs, values[ input.name ], trans, messages, context, prefix, allow_workflow_parameters=allow_workflow_parameters )
+                    messages[ input.name ] = {}
+                    self.check_and_update_param_values_helper( input.inputs, values[ input.name ], trans, messages[ input.name ], context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 else:
                     # Regular tool parameter, no recursion needed
                     try:
@@ -1744,12 +1805,13 @@ class Tool( object, Dictifiable ):
             message = e.message
         return message
 
-    def build_dependency_shell_commands( self ):
+    def build_dependency_shell_commands( self, job_directory=None ):
         """Return a list of commands to be run to populate the current environment to include this tools requirements."""
         return self.app.toolbox.dependency_manager.dependency_shell_commands(
             self.requirements,
             installed_tool_dependencies=self.installed_tool_dependencies,
             tool_dir=self.tool_dir,
+            job_directory=job_directory,
         )
 
     @property
@@ -1919,6 +1981,108 @@ class Tool( object, Dictifiable ):
         """ Find files corresponding to dynamically structured collections.
         """
         return output_collect.collect_dynamic_collections( self, output, **kwds )
+
+    def to_archive(self):
+        tool = self.tool
+        tarball_files = []
+        temp_files = []
+        tool_xml = open( os.path.abspath( tool.config_file ), 'r' ).read()
+        # Retrieve tool help images and rewrite the tool's xml into a temporary file with the path
+        # modified to be relative to the repository root.
+        image_found = False
+        if tool.help is not None:
+            tool_help = tool.help._source
+            # Check each line of the rendered tool help for an image tag that points to a location under static/
+            for help_line in tool_help.split( '\n' ):
+                image_regex = re.compile( 'img alt="[^"]+" src="\${static_path}/([^"]+)"' )
+                matches = re.search( image_regex, help_line )
+                if matches is not None:
+                    tool_help_image = matches.group(1)
+                    tarball_path = tool_help_image
+                    filesystem_path = os.path.abspath( os.path.join( self.app.config.root, 'static', tool_help_image ) )
+                    if os.path.exists( filesystem_path ):
+                        tarball_files.append( ( filesystem_path, tarball_path ) )
+                        image_found = True
+                        tool_xml = tool_xml.replace( '${static_path}/%s' % tarball_path, tarball_path )
+        # If one or more tool help images were found, add the modified tool XML to the tarball instead of the original.
+        if image_found:
+            fd, new_tool_config = tempfile.mkstemp( suffix='.xml' )
+            os.close( fd )
+            open( new_tool_config, 'w' ).write( tool_xml )
+            tool_tup = ( os.path.abspath( new_tool_config ), os.path.split( tool.config_file )[-1]  )
+            temp_files.append( os.path.abspath( new_tool_config ) )
+        else:
+            tool_tup = ( os.path.abspath( tool.config_file ), os.path.split( tool.config_file )[-1]  )
+        tarball_files.append( tool_tup )
+        # TODO: This feels hacky.
+        tool_command = tool.command.strip().split()[0]
+        tool_path = os.path.dirname( os.path.abspath( tool.config_file ) )
+        # Add the tool XML to the tuple that will be used to populate the tarball.
+        if os.path.exists( os.path.join( tool_path, tool_command ) ):
+            tarball_files.append( ( os.path.join( tool_path, tool_command ), tool_command ) )
+        # Find and add macros and code files.
+        for external_file in tool.get_externally_referenced_paths( os.path.abspath( tool.config_file ) ):
+            external_file_abspath = os.path.abspath( os.path.join( tool_path, external_file ) )
+            tarball_files.append( ( external_file_abspath, external_file ) )
+        if os.path.exists( os.path.join( tool_path, "Dockerfile" ) ):
+            tarball_files.append( ( os.path.join( tool_path, "Dockerfile" ), "Dockerfile" ) )
+        # Find tests, and check them for test data.
+        tests = tool.tests
+        if tests is not None:
+            for test in tests:
+                # Add input file tuples to the list.
+                for input in test.inputs:
+                    for input_value in test.inputs[ input ]:
+                        input_path = os.path.abspath( os.path.join( 'test-data', input_value ) )
+                        if os.path.exists( input_path ):
+                            td_tup = ( input_path, os.path.join( 'test-data', input_value ) )
+                            tarball_files.append( td_tup )
+                # And add output file tuples to the list.
+                for label, filename, _ in test.outputs:
+                    output_filepath = os.path.abspath( os.path.join( 'test-data', filename ) )
+                    if os.path.exists( output_filepath ):
+                        td_tup = ( output_filepath, os.path.join( 'test-data', filename ) )
+                        tarball_files.append( td_tup )
+        for param in tool.input_params:
+            # Check for tool data table definitions.
+            if hasattr( param, 'options' ):
+                if hasattr( param.options, 'tool_data_table' ):
+                    data_table = param.options.tool_data_table
+                    if hasattr( data_table, 'filenames' ):
+                        data_table_definitions = []
+                        for data_table_filename in data_table.filenames:
+                            # FIXME: from_shed_config seems to always be False.
+                            if not data_table.filenames[ data_table_filename ][ 'from_shed_config' ]:
+                                tar_file = data_table.filenames[ data_table_filename ][ 'filename' ] + '.sample'
+                                sample_file = os.path.join( data_table.filenames[ data_table_filename ][ 'tool_data_path' ],
+                                                            tar_file )
+                                # Use the .sample file, if one exists. If not, skip this data table.
+                                if os.path.exists( sample_file ):
+                                    tarfile_path, tarfile_name = os.path.split( tar_file )
+                                    tarfile_path = os.path.join( 'tool-data', tarfile_name )
+                                    tarball_files.append( ( sample_file, tarfile_path ) )
+                                data_table_definitions.append( data_table.xml_string )
+                        if len( data_table_definitions ) > 0:
+                            # Put the data table definition XML in a temporary file.
+                            table_definition = '<?xml version="1.0" encoding="utf-8"?>\n<tables>\n    %s</tables>'
+                            table_definition = table_definition % '\n'.join( data_table_definitions )
+                            fd, table_conf = tempfile.mkstemp()
+                            os.close( fd )
+                            open( table_conf, 'w' ).write( table_definition )
+                            tarball_files.append( ( table_conf, os.path.join( 'tool-data', 'tool_data_table_conf.xml.sample' ) ) )
+                            temp_files.append( table_conf )
+        # Create the tarball.
+        fd, tarball_archive = tempfile.mkstemp( suffix='.tgz' )
+        os.close( fd )
+        tarball = tarfile.open( name=tarball_archive, mode='w:gz' )
+        # Add the files from the previously generated list.
+        for fspath, tarpath in tarball_files:
+            tarball.add( fspath, arcname=tarpath )
+        tarball.close()
+        # Delete any temporary files that were generated.
+        for temp_file in temp_files:
+            os.remove( temp_file )
+        return tarball_archive
 
     def to_dict( self, trans, link_details=False, io_details=False ):
         """ Returns dict of tool. """

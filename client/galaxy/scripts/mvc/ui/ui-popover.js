@@ -1,108 +1,125 @@
-// dependencies
-define(['utils/utils'], function(Utils) {
-
+/**
+ * Popover wrapper
+*/
+define([ 'utils/utils' ], function( Utils ) {
 var View = Backbone.View.extend({
-
-    // default options
     optionsDefault: {
         with_close  : true,
-        container   : 'body',
         title       : null,
-        placement   : 'top'
+        placement   : 'top',
+        container   : 'body',
+        body        : null
     },
 
-    // visibility flag
-    visible: false,
-
-    // initialize
-    initialize: function (options) {
-        // link this
-        var self = this;
-
-        // update options
-        this.options = _.defaults(options, this.optionsDefault);
-
-        // set element
-        this.setElement(this._template(this.options));
-
-        // attach popover to parent
-        this.options.container.parent().append(this.$el);
-
-        // attach close
-        if (this.options.with_close) {
-            this.$el.find('#close').on('click', function() { self.hide(); });
-        }
-
-        // generate unique id
+    initialize: function ( options ) {
+        this.setElement( this._template() );
         this.uid = Utils.uid();
+        this.options = _.defaults( options || {}, this.optionsDefault );
+        this.options.container.parent().append( this.el );
+        this.$title = this.$( '.popover-title-label' );
+        this.$close = this.$( '.popover-close' );
+        this.$body  = this.$( '.popover-content' );
 
-        // add event to hide if click is outside of popup
+        // add initial content
+        this.options.body && this.append( this.options.body );
+
+        // add event to hide if click is outside of popup and not on container
         var self = this;
-        $('body').on('mousedown.' + this.uid,  function(e) { self._hide(e) });
+        $( 'body' ).on( 'mousedown.' + this.uid,  function( e ) {
+            // the 'is' for buttons that trigger popups
+            // the 'has' for icons within a button that triggers a popup
+            self.visible && !$( self.options.container ).is( e.target ) && !$( self.el ).is( e.target ) &&
+                $( self.el ).has( e.target ).length === 0 && self.hide();
+        });
     },
 
-    // title
-    title: function(val) {
-        if (val !== undefined) {
-            this.$el.find('.popover-title-label').html(val);
+    /**
+     * Render popover
+    */
+    render: function() {
+        this.$title.html( this.options.title );
+        this.$el.removeClass().addClass( 'ui-popover popover fade in' ).addClass( this.options.placement );
+        this.$el.css( this._get_placement( this.options.placement ) );
+
+        // configure close option
+        var self = this;
+        if ( this.options.with_close ) {
+            this.$close.on( 'click', function() { self.hide() } ).show();
+        } else {
+            this.$close.off().hide();
         }
     },
 
-    // show
-    show: function () {
-        // show popover
+    /**
+     * Set the popover title
+     * @params{ String }    newTitle    - New popover title
+    */
+    title: function( newTitle ) {
+        if ( newTitle !== undefined ) {
+            this.options.title = newTitle;
+            this.$title.html( newTitle );
+        }
+    },
+
+    /**
+     * Show popover
+    */
+    show: function() {
+        this.render();
         this.$el.show();
         this.visible = true;
-
-        // calculate position
-        var position = this._get_placement(this.options.placement);
-
-        // set position
-        this.$el.css(position);
     },
 
-    // hide
-    hide: function () {
+    /**
+     * Hide popover
+    */
+    hide: function() {
         this.$el.hide();
         this.visible = false;
     },
 
-    // append new doms to popover content
-    append: function($el) {
-        this.$el.find('.popover-content').append($el);
+    /**
+     * Append new content to the popover
+     * @params{ Object }  $el - Dom element
+    */
+    append: function( $el ) {
+        this.$body.append( $el );
     },
 
-    // empty popover content
-    empty: function($el) {
-        this.$el.find('.popover-content').empty();
+    /**
+     * Remove all content
+    */
+    empty: function() {
+        this.$body.empty();
     },
 
-    // remove event handler and dom
+    /**
+     * Remove popover
+    */
     remove: function() {
-        $('body').off('mousedown.' + this.uid);
+        $( 'body' ).off( 'mousedown.' + this.uid );
         this.$el.remove();
     },
 
-    // calculate position and error
-    _get_placement: function(placement) {
+    /**
+     * Improve popover location/placement
+    */
+    _get_placement: function( placement ) {
         // get popover dimensions
-        var width               = this._get_width(this.$el);
+        var width               = this._get_width( this.$el );
         var height              = this.$el.height();
 
         // get container details
         var $container = this.options.container;
-        var container_width     = this._get_width($container);
-        var container_height    = this._get_height($container);
+        var container_width     = this._get_width( $container );
+        var container_height    = this._get_height( $container );
         var container_position  = $container.position();
 
-        // initialize position
-        var top  = 0;
-        var left = 0;
-
-        // calculate position
-        if (['top', 'bottom'].indexOf(placement) != -1) {
-            left = container_position.left - width + (container_width + width) / 2;
-            switch (placement) {
+        // get position
+        var top  = left = 0;
+        if ([ 'top', 'bottom' ].indexOf( placement ) != -1) {
+            left = container_position.left - width + ( container_width + width ) / 2;
+            switch ( placement ) {
                 case 'top':
                     top = container_position.top - height - 5;
                     break;
@@ -111,54 +128,43 @@ var View = Backbone.View.extend({
                     break;
             }
         } else {
-            top = container_position.top - height + (container_height + height) / 2;
-            switch (placement) {
+            top = container_position.top - height + ( container_height + height ) / 2;
+            switch ( placement ) {
                 case 'right':
                     left = container_position.left + container_width;
                     break;
             }
         }
-
-        // return
-        return {top: top, left: left};
+        return { top: top, left: left };
     },
 
-    // width
-    _get_width: function($el) {
-        return $el.width() + parseInt($el.css('padding-left')) + parseInt($el.css('padding-right'))
+    /**
+     * Returns padding/margin corrected width
+    */
+    _get_width: function( $el ) {
+        return $el.width() + parseInt( $el.css( 'padding-left' ) ) + parseInt( $el.css( 'margin-left' ) ) +
+                             parseInt( $el.css( 'padding-right' ) ) + parseInt( $el.css( 'margin-right' ) );
     },
 
-    // height
-    _get_height: function($el) {
-        return $el.height() + parseInt($el.css('padding-top')) + parseInt($el.css('padding-bottom'))
+    /**
+     * Returns padding corrected height
+    */
+    _get_height: function( $el ) {
+        return $el.height() + parseInt( $el.css( 'padding-top' ) ) + parseInt( $el.css( 'padding-bottom' ) );
     },
 
-    // remove
-    _hide : function(e) {
-        // the 'is' for buttons that trigger popups
-        // the 'has' for icons within a button that triggers a popup
-        if (!$(this.options.container).is(e.target) &&
-            !$(this.el).is(e.target) &&
-            $(this.el).has(e.target).length === 0) {
-                this.hide();
-        }
-    },
-
-    // template
-    _template: function(options) {
-        var tmpl =  '<div class="ui-popover popover fade ' + options.placement + ' in">' +
-                        '<div class="arrow"/>' +
-                        '<div class="popover-title">' +
-                            '<div class="popover-title-label">' +
-                                options.title +
-                            '</div>';
-        if (options.with_close) {
-            tmpl +=         '<div id="close" class="popover-close fa fa-times-circle"/>';
-        }
-        tmpl +=         '</div>' +
-                        '<div class="popover-content"/>' +
-                    '</div>';
-        return tmpl;
+    /**
+     * Return the popover template
+    */
+    _template: function( options ) {
+        return  '<div class="ui-popover popover fade in">' +
+                    '<div class="arrow"/>' +
+                    '<div class="popover-title">' +
+                        '<div class="popover-title-label"/>' +
+                        '<div class="popover-close fa fa-times-circle"/>' +
+                    '</div>' +
+                    '<div class="popover-content"/>' +
+                '</div>';
     }
 });
 

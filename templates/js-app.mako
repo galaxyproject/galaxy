@@ -17,6 +17,7 @@
             'jquery-ui/smoothness/jquery-ui',
             ## base needs to come after jquery-ui because of ui-button, ui- etc. name collision
             'base',
+            'bootstrap-tour',
         )}
         ${ page_setup() }
     </head>

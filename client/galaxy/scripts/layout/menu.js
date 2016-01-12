@@ -1,513 +1,399 @@
-// dependencies
-define([], function() {
+/** Masthead Collection **/
+define(['mvc/tours'], function( Tours ) {
+var Collection = Backbone.Collection.extend({
+    model: Backbone.Model.extend({
+        defaults: {
+            visible         : true,
+            target          : '_parent'
+        }
+    }),
+    fetch: function( options ){
+        options = options || {};
+        this.reset();
 
-/** GalaxyMenu uses the GalaxyMasthead class in order to add menu items and icons to the Masthead **/
-var GalaxyMenu = Backbone.Model.extend({
-    initialize: function( options ) {
-        this.options = options.config;
-        this.masthead  = options.masthead;
-        this.create();
-    },
-
-    // default menu
-    create: function() {
         //
         // Analyze data tab.
         //
-        var tab_analysis = new GalaxyMastheadTab({
+        this.add({
             id              : 'analysis',
             title           : 'Analyze Data',
-            content         : '',
-            title_attribute : 'Analysis home view'
+            url             : '',
+            tooltip         : 'Analysis home view'
         });
-        this.masthead.append( tab_analysis );
 
         //
         // Workflow tab.
         //
-
-        var workflow_options = {
+        this.add({
             id              : 'workflow',
             title           : 'Workflow',
-            content         : 'workflow',
-            title_attribute : 'Chain tools into workflows'
-        }
-        if ( !Galaxy.user.id ) {
-            workflow_options.disabled = true; // disable workflows for anonymous users
-        }
-
-        var tab_workflow = new GalaxyMastheadTab( workflow_options );
-        this.masthead.append( tab_workflow );
+            url             : 'workflow',
+            tooltip         : 'Chain tools into workflows',
+            disabled        : !Galaxy.user.id
+        });
 
         //
         // 'Shared Items' or Libraries tab.
         //
-        var tab_shared = new GalaxyMastheadTab({
+        this.add({
             id              : 'shared',
             title           : 'Shared Data',
-            content         : 'library/index',
-            title_attribute : 'Access published resources'
+            url             : 'library/index',
+            tooltip         : 'Access published resources',
+            menu            : [{
+                    title   : 'Data Libraries deprecated',
+                    url     : 'library/index'
+                },{
+                    title   : 'Data Libraries',
+                    url     : 'library/list',
+                    divider : true
+                },{
+                    title   : 'Published Histories',
+                    url     : 'history/list_published'
+                },{
+                    title   : 'Published Workflows',
+                    url     : 'workflow/list_published'
+                },{
+                    title   : 'Published Visualizations',
+                    url     : 'visualization/list_published'
+                },{
+                    title   : 'Published Pages',
+                    url     : 'page/list_published'
+            }]
         });
-
-        tab_shared.add({
-            title   : 'Data Libraries deprecated',
-            content : 'library/index'
-        });
-
-        tab_shared.add({
-            title   : 'Data Libraries',
-            content : 'library/list',
-            divider : true
-        });
-
-        tab_shared.add({
-            title   : 'Published Histories',
-            content : 'history/list_published'
-        });
-
-        tab_shared.add({
-            title   : 'Published Workflows',
-            content : 'workflow/list_published'
-
-        });
-
-        tab_shared.add({
-            title   : 'Published Visualizations',
-            content : 'visualization/list_published'
-        });
-
-        tab_shared.add({
-            title   : 'Published Pages',
-            content : 'page/list_published'
-        });
-
-        this.masthead.append(tab_shared);
 
         //
         // Lab menu.
         //
-        if ( this.options.user_requests ) {
-            var tab_lab = new GalaxyMastheadTab({
-                id      : 'lab',
-                title   : 'Lab'
-            });
-            tab_lab.add({
-                title   : 'Sequencing Requests',
-                content : 'requests/index'
-            });
-            tab_lab.add({
-                title   : 'Find Samples',
-                content : 'requests/find_samples_index'
-            });
-            tab_lab.add({
-                title   : 'Help',
-                content : this.options.lims_doc_url
-            });
-            this.masthead.append( tab_lab );
-        }
+        options.user_requests && this.add({
+            id              : 'lab',
+            title           : 'Lab',
+            menu            : [{
+                    title   : 'Sequencing Requests',
+                    url     : 'requests/index'
+                },{
+                    title   : 'Find Samples',
+                    url     : 'requests/find_samples_index'
+                },{
+                    title   : 'Help',
+                    url     : options.lims_doc_url
+            }]
+        });
 
         //
         // Visualization tab.
         //
-
-        var visualization_options = {
+        this.add({
             id              : 'visualization',
             title           : 'Visualization',
-            content         : 'visualization/list',
-            title_attribute : 'Visualize datasets'
-        }
-
-        // disable visualizations for anonymous users
-        if ( !Galaxy.user.id ) {
-            visualization_options.disabled = true;
-        }
-        var tab_visualization = new GalaxyMastheadTab( visualization_options );
-
-        // add submenu only when user is logged in
-        if ( Galaxy.user.id ) {
-            tab_visualization.add({
-                title   : 'New Track Browser',
-                content : 'visualization/trackster',
-                target  : '_frame'
-            });
-            tab_visualization.add({
-                title   : 'Saved Visualizations',
-                content : 'visualization/list',
-                target  : '_frame'
-            });
-        }
-        this.masthead.append( tab_visualization );
+            url             : 'visualization/list',
+            tooltip         : 'Visualize datasets',
+            disabled        : !Galaxy.user.id,
+            menu            : [{
+                    title   : 'New Track Browser',
+                    url     : 'visualization/trackster',
+                    target  : '_frame'
+                },{
+                    title   : 'Saved Visualizations',
+                    url     : 'visualization/list',
+                    target  : '_frame'
+            }]
+        });
 
         //
         // Admin.
         //
-        if ( Galaxy.user.get( 'is_admin' ) ) {
-            var tab_admin = new GalaxyMastheadTab({
-                id              : 'admin',
-                title           : 'Admin',
-                content         : 'admin',
-                extra_class     : 'admin-only',
-                title_attribute : 'Administer this Galaxy'
-            });
-            this.masthead.append( tab_admin );
-        }
+        Galaxy.user.get( 'is_admin' ) && this.add({
+            id              : 'admin',
+            title           : 'Admin',
+            url             : 'admin',
+            tooltip         : 'Administer this Galaxy',
+            cls             : 'admin-only'
+        });
 
         //
         // Help tab.
         //
-        var tab_help = new GalaxyMastheadTab({
+        var helpTab = {
             id              : 'help',
             title           : 'Help',
-            title_attribute : 'Support, contact, and community hubs'
-        });
-        if ( this.options.biostar_url ){
-            tab_help.add({
-                title   : 'Galaxy Biostar',
-                content : this.options.biostar_url_redirect,
-                target  : '_blank'
-            });
-            tab_help.add({
-                title   : 'Ask a question',
-                content : 'biostar/biostar_question_redirect',
-                target  : '_blank'
-            });
-        }
-        tab_help.add({
-            title   : 'Support',
-            content : this.options.support_url,
+            tooltip         : 'Support, contact, and community hubs',
+            menu            : [{
+                    title   : 'Support',
+                    url     : options.support_url,
+                    target  : '_blank'
+                },{
+                    title   : 'Search',
+                    url     : options.search_url,
+                    target  : '_blank'
+                },{
+                    title   : 'Mailing Lists',
+                    url     : options.mailing_lists,
+                    target  : '_blank'
+                },{
+                    title   : 'Videos',
+                    url     : options.screencasts_url,
+                    target  : '_blank'
+                },{
+                    title   : 'Wiki',
+                    url     : options.wiki_url,
+                    target  : '_blank'
+                },{
+                    title   : 'How to Cite Galaxy',
+                    url     : options.citation_url,
+                    target  : '_blank'
+                },{
+                    title   : 'Interactive Tours',
+                    onclick : function(c){
+                        Galaxy.app.display(new Tours.ToursView());
+                    },
+                    target  : 'galaxy_main'
+            }]
+        };
+        options.terms_url && helpTab.menu.push({
+            title   : 'Terms and Conditions',
+            url     : options.terms_url,
             target  : '_blank'
         });
-        tab_help.add({
-            title   : 'Search',
-            content : this.options.search_url,
+        options.biostar_url && helpTab.menu.unshift({
+            title   : 'Ask a question',
+            url     : 'biostar/biostar_question_redirect',
             target  : '_blank'
         });
-        tab_help.add({
-            title   : 'Mailing Lists',
-            content : this.options.mailing_lists,
+        options.biostar_url && helpTab.menu.unshift({
+            title   : 'Galaxy Biostar',
+            url     : options.biostar_url_redirect,
             target  : '_blank'
         });
-        tab_help.add({
-            title   : 'Videos',
-            content : this.options.screencasts_url,
-            target  : '_blank'
-        });
-        tab_help.add({
-            title   : 'Wiki',
-            content : this.options.wiki_url,
-            target  : '_blank'
-        });
-        tab_help.add({
-            title   : 'How to Cite Galaxy',
-            content : this.options.citation_url,
-            target  : '_blank'
-        });
-        if (this.options.terms_url){
-            tab_help.add({
-                title   : 'Terms and Conditions',
-                content : this.options.terms_url,
-                target  : '_blank'
-            });
-        }
-        this.masthead.append( tab_help );
+        this.add( helpTab );
 
         //
         // User tab.
         //
         if ( !Galaxy.user.id ){
-            var tab_user = new GalaxyMastheadTab({
+            var userTab = {
                 id              : 'user',
-                title           : 'User',
-                extra_class     : 'loggedout-only',
-                title_attribute : 'Account registration or login'
-            });
-
-            // login
-            tab_user.add({
-                title   : 'Login',
-                content : 'user/login',
+                icon            : 'fa-user',
+                cls             : 'loggedout-only',
+                tooltip         : 'Account registration or login',
+                menu            : [{
+                    title       : 'Login',
+                    url         : 'user/login',
+                    target      : 'galaxy_main'
+                }]
+            };
+            options.allow_user_creation && userTab.menu.push({
+                title   : 'Register',
+                url     : 'user/create',
                 target  : 'galaxy_main'
             });
-
-            // register
-            if ( this.options.allow_user_creation ){
-                tab_user.add({
-                    title   : 'Register',
-                    content : 'user/create',
-                    target  : 'galaxy_main'
-                });
-            }
-
-            // add to masthead
-            this.masthead.append( tab_user );
+            this.add( userTab );
         } else {
-            var tab_user = new GalaxyMastheadTab({
+            var userTab = {
                 id              : 'user',
-                title           : 'User',
-                extra_class     : 'loggedin-only',
-                title_attribute : 'Account preferences and saved data'
-            });
-
-            // show user logged in info
-            tab_user.add({
-                title   : 'Logged in as ' + Galaxy.user.get( 'email' )
-            });
-
-            tab_user.add({
-                title   : 'Preferences',
-                content : 'user?cntrller=user',
+                icon            : 'fa-user',
+                cls             : 'loggedin-only',
+                tooltip         : 'Account preferences and saved data',
+                menu            : [{
+                        title   : 'Logged in as ' + Galaxy.user.get( 'email' )
+                    },{
+                        title   : 'Preferences',
+                        url     : 'user?cntrller=user',
+                        target  : 'galaxy_main'
+                    },{
+                        title   : 'Custom Builds',
+                        url     : 'user/dbkeys',
+                        target  : 'galaxy_main'
+                    },{
+                        title   : 'Logout',
+                        url     : 'user/logout',
+                        target  : '_top',
+                        divider : true
+                    },{
+                        title   : 'Saved Histories',
+                        url     : 'history/list',
+                        target  : 'galaxy_main'
+                    },{
+                        title   : 'Saved Datasets',
+                        url     : 'dataset/list',
+                        target  : 'galaxy_main'
+                    },{
+                        title   : 'Saved Pages',
+                        url     : 'page/list',
+                        target  : '_top'
+                    },{
+                        title   : 'API Keys',
+                        url     : 'user/api_keys?cntrller=user',
+                        target  : 'galaxy_main'
+                }]
+            };
+            options.use_remote_user && userTab.menu.push({
+                title   : 'Public Name',
+                url     : 'user/edit_username?cntrller=user',
                 target  : 'galaxy_main'
             });
-
-            tab_user.add({
-                title   : 'Custom Builds',
-                content : 'user/dbkeys',
-                target  : 'galaxy_main'
-            });
-
-            tab_user.add({
-                title   : 'Logout',
-                content : 'user/logout',
-                target  : '_top',
-                divider : true
-            });
-
-            // default tabs
-            tab_user.add({
-                title   : 'Saved Histories',
-                content : 'history/list',
-                target  : 'galaxy_main'
-            });
-            tab_user.add({
-                title   : 'Saved Datasets',
-                content : 'dataset/list',
-                target  : 'galaxy_main'
-            });
-            tab_user.add({
-                title   : 'Saved Pages',
-                content : 'page/list',
-                target  : '_top'
-            });
-
-            tab_user.add({
-                title   : 'API Keys',
-                content : 'user/api_keys?cntrller=user',
-                target  : 'galaxy_main'
-            });
-
-            if ( this.options.use_remote_user ){
-                tab_user.add({
-                    title   : 'Public Name',
-                    content : 'user/edit_username?cntrller=user',
-                    target  : 'galaxy_main'
-                });
-            }
-
-            // add to masthead
-            this.masthead.append( tab_user );
+            this.add( userTab );
         }
-
-        // identify active tab
-        if ( this.options.active_view ) {
-            this.masthead.highlight( this.options.active_view );
-        }
+        var activeView = this.get( options.active_view );
+        activeView && activeView.set( 'active', true );
+        return new jQuery.Deferred().resolve().promise();
     }
 });
 
 /** Masthead tab **/
-var GalaxyMastheadTab = Backbone.View.extend({
-    // main options
-    options:{
-        id              : '',
-        title           : '',
-        target          : '_parent',
-        content         : '',
-        type            : 'url',
-        scratchbook     : false,
-        onunload        : null,
-        visible         : true,
-        disabled        : false,
-        title_attribute : ''
-    },
-
-    // location
-    location: 'navbar',
-
-    // optional sub menu
-    $menu: null,
-
-    // events
-    events:{
-        'click .head' : '_head'
-    },
-
-    // initialize
-    initialize: function ( options ){
-        // read in defaults
-        if ( options ){
-            this.options = _.defaults( options, this.options );
-        }
-
-        // update url
-        if ( this.options.content !== undefined && this.options.content.indexOf( '//' ) === -1 ){
-            this.options.content = Galaxy.root + this.options.content;
-        }
-
-        // add template for tab
-        this.setElement( $( this._template( this.options ) ) );
-
-        // disable menu items that are not available to anonymous user
-        // also show title to explain why they are disabled
-        if ( this.options.disabled ){
-            $( this.el ).find( '.root' ).addClass( 'disabled' );
-            this._attachPopover();
-        }
-
-        // visiblity
-        if ( !this.options.visible ){
-            this.hide();
-        }
-    },
-
-    // show
-    show: function(){
-        $(this.el).css({visibility : 'visible'});
-    },
-
-    // show
-    hide: function(){
-        $(this.el).css({visibility : 'hidden'});
-    },
-
-    // add menu item
-    add: function (options){
-        // menu option defaults
-        var menuOptions = {
-            title       : 'Title',
-            content     : '',
-            type        : 'url',
-            target      : '_parent',
-            scratchbook : false,
-            divider     : false,
-            onclick     : undefined
-        }
-
-        // read in defaults
-        if (options)
-            menuOptions = _.defaults(options, menuOptions);
-
-        // update url
-        if (menuOptions.content && menuOptions.content.indexOf('//') === -1)
-            menuOptions.content = Galaxy.root + menuOptions.content;
-
-        // check if submenu element is available
-        if (!this.$menu){
-            // insert submenu element into root
-            $(this.el).find('.root').append(this._templateMenu());
-
-            // show caret
-            $(this.el).find('.symbol').addClass('caret');
-
-            // update element link
-            this.$menu = $(this.el).find('.popup');
-        }
-
-        // create
-        var $item = $(this._templateMenuItem(menuOptions));
-
-        // append menu
-        this.$menu.append($item);
-
-        // add events
+var Tab = Backbone.View.extend({
+    initialize: function ( options ) {
         var self = this;
-
-
-        if (menuOptions.onclick !== undefined){
-            $item.on('click', function(e){
-                e.preventDefault();
-                menuOptions.onclick();
-            });
-        } else {
-            $item.on('click', function(e){
-                // prevent default
-                e.preventDefault();
-
-                // no modifications if new tab is requested
-                if (self.options.target === '_blank')
-                    return true;
-
-                // load into frame
-                Galaxy.frame.add(options);
-            });
-        }
-
-        // append divider
-        if (menuOptions.divider)
-            this.$menu.append($(this._templateDivider()));
+        this.setElement( this._template() );
+        this.$dropdown  = this.$( '.dropdown' );
+        this.$toggle    = this.$( '.dropdown-toggle' );
+        this.$menu      = this.$( '.dropdown-menu' );
+        this.$note      = this.$( '.dropdown-note' );
+        this.model = options.model;
+        this.$el.attr( 'id', this.model.id );
+        this.model.on( 'init change:title', function() {
+            this.get( 'title' ) && self.$toggle.html( this.get( 'title' ) );
+        }).on( 'init change:visible', function() {
+            self.$el.css( { visibility : this.get( 'visible' ) && 'visible' || 'hidden' } );
+        }).on( 'init change:note', function() {
+            self.$note.html( this.get( 'note' ) );
+        }).on( 'init change:note_cls', function() {
+            this._prevNoteCls && self.$note.removeClass( this._prevNoteCls );
+            this.get( 'note_cls' ) && self.$note.addClass( this._prevNoteCls = this.get( 'note_cls' ) );
+        }).on( 'init change:show_note', function() {
+            self.$note.css( { 'display' : this.get( 'show_note' ) && 'block' || 'none' } );
+        }).on( 'init change:target', function() {
+            self.$toggle.attr( 'target', this.get( 'target' ) );
+        }).on( 'init change:url', function() {
+            this.set( 'url', self._formatUrl( this.get( 'url' ) ) );
+            self.$toggle.attr( 'href', this.get( 'url' ) );
+        }).on( 'init change:tooltip', function() {
+            $( '.tooltip' ).remove();
+            self.$toggle.tooltip( 'destroy' ).attr( 'title', this.get( 'tooltip' ) );
+            this.get( 'tooltip' ) && self.$toggle.tooltip( { placement: 'bottom' } );
+        }).on( 'init change:cls', function() {
+            this._prevCls && self.$toggle.removeClass( this._prevCls );
+            this.get( 'cls' ) && self.$toggle.addClass( this._prevCls = this.get( 'cls' ) );
+        }).on( 'init change:icon', function() {
+            this._prevIcon && self.$toggle.removeClass( this._prevIcon );
+            this.get( 'icon' ) && self.$toggle.addClass( this._prevIcon = 'fa fa-2x ' + this.get( 'icon' ) );
+        }).on( 'init change:toggle', function() {
+            self.$toggle[ this.get( 'toggle' ) && 'addClass' || 'removeClass' ]( 'toggle' );
+        }).on( 'init change:disabled', function() {
+            self.$toggle[ this.get( 'disabled' ) && 'addClass' || 'removeClass' ]( 'disabled' );
+            self._configurePopover();
+        }).on( 'init change:active', function() {
+            self.$dropdown[ this.get( 'active' ) && 'addClass' || 'removeClass' ]( 'active' );
+        }).on( 'init change:show_menu', function() {
+            if ( this.get( 'menu' ) && this.get( 'show_menu' ) ) {
+                self.$menu.show();
+                $( '#dd-helper' ).show().off().on( 'click',  function() {
+                    $( '#dd-helper' ).hide();
+                    self.model.set( 'show_menu', false );
+                });
+            } else {
+                self.$menu.hide();
+                $( '#dd-helper' ).hide();
+            }
+        }).on( 'init change:menu', function() {
+            self.$menu.empty().removeClass( 'dropdown-menu' );
+            self.$toggle.find( 'b' ).remove();
+            if ( this.get( 'menu' ) ) {
+                _.each( this.get( 'menu' ), function( menuItem ) {
+                    self.$menu.append( self._buildMenuItem( menuItem ) );
+                    menuItem.divider && self.$menu.append( $( '<li/>' ).addClass( 'divider' ) );
+                });
+                self.$menu.addClass( 'dropdown-menu' );
+                self.$toggle.append( $( '<b/>' ).addClass( 'caret' ) );
+            }
+        }).trigger( 'init' );
     },
 
-    // show menu on header click
-    _head: function(e){
-        // prevent default
-        e.preventDefault();
-
-        if (this.options.disabled){
-            return // prevent link following if menu item is disabled
-        }
-
-        // check for menu options
-        if (!this.$menu) {
-            Galaxy.frame.add(this.options);
-        }
+    /** Attach events */
+    events: {
+        'click .dropdown-toggle' : '_toggleClick'
     },
 
-    _attachPopover : function(){
-        var $popover_element = $(this.el).find('.head');
-        $popover_element.popover({
-            html: true,
-            content: 'Please <a href="' + Galaxy.root + 'user/login?use_panels=True">log in</a> or <a href="' + Galaxy.root + 'user/create?use_panels=True">register</a> to use this feature.',
-            placement: 'bottom'
-        }).on('shown.bs.popover', function() { // hooking on bootstrap event to automatically hide popovers after delay
-            setTimeout(function() {
-                $popover_element.popover('hide');
-            }, 5000);
+    /** Add new menu item */
+    _buildMenuItem: function ( options ) {
+        var self = this;
+        options = _.defaults( options || {}, {
+            title       : '',
+            url         : '',
+            target      : '_parent'
         });
-     },
-
-    // fill template header
-    _templateMenuItem: function (options){
-        return '<li><a href="' + options.content + '" target="' + options.target + '">' + options.title + '</a></li>';
+        options.url = self._formatUrl( options.url );
+        return $( '<li/>' ).append(
+            $( '<a/>' ).attr( 'href', options.url )
+                       .attr( 'target', options.target )
+                       .html( options.title )
+                       .on( 'click', function( e ) {
+                            e.preventDefault();
+                            self.model.set( 'show_menu', false );
+                            if (options.onclick){
+                                options.onclick();
+                            } else {
+                                Galaxy.frame.add( options );
+                            }
+                       })
+        );
     },
 
-    // fill template header
-    _templateMenu: function (){
-        return '<ul class="popup dropdown-menu"></ul>';
+    /** Handle click event */
+    _toggleClick: function( e ) {
+        var self = this;
+        var model = this.model;
+        e.preventDefault();
+        $( '.tooltip' ).hide();
+        model.trigger( 'dispatch', function( m ) {
+            model.id !== m.id && m.get( 'menu' ) && m.set( 'show_menu', false );
+        });
+        if ( !model.get( 'disabled' ) ) {
+            if ( !model.get( 'menu' ) ) {
+                model.get( 'onclick' ) ? model.get( 'onclick' )() : Galaxy.frame.add( model.attributes );
+            } else {
+                model.set( 'show_menu', true );
+            }
+        }
     },
 
-    _templateDivider: function(){
-        return '<li class="divider"></li>';
+    /** Configures login notification/popover */
+    _configurePopover: function() {
+        var self = this;
+        function buildLink( label, url ) {
+            return $( '<div/>' ).append( $( '<a/>' ).attr( 'href', Galaxy.root + url ).html( label ) ).html()
+        }
+        this.$toggle.popover && this.$toggle.popover( 'destroy' );
+        this.model.get( 'disabled' ) && this.$toggle.popover({
+            html        : true,
+            placement   : 'bottom',
+            content     : 'Please ' + buildLink( 'login', 'user/login?use_panels=True' ) + ' or ' +
+                                      buildLink( 'register', 'user/create?use_panels=True' ) + ' to use this feature.'
+        }).on( 'shown.bs.popover', function() {
+            setTimeout( function() { self.$toggle.popover( 'hide' ) }, 5000 );
+        });
     },
 
-    // fill template
-    _template: function (options){
-        // start template
-        var tmpl =  '<ul id="' + options.id + '" class="nav navbar-nav" border="0" cellspacing="0">' +
-                        '<li class="root dropdown" style="">' +
-                            '<a class="head dropdown-toggle" data-toggle="dropdown" target="' + options.target + '" href="' + options.content + '" title="' + options.title_attribute + '">' +
-                                options.title + '<b class="symbol"></b>' +
-                            '</a>' +
-                        '</li>' +
-                    '</ul>';
+    /** Url formatting */
+    _formatUrl: function( url ) {
+        return typeof url == 'string' && url.indexOf( '//' ) === -1 && url.charAt( 0 ) != '/' ? Galaxy.root + url : url;
+    },
 
-        // return template
-        return tmpl;
+    /** body tempate */
+    _template: function () {
+        return  '<ul class="nav navbar-nav">' +
+                    '<li class="dropdown">' +
+                        '<a class="dropdown-toggle"/>' +
+                        '<ul class="dropdown-menu"/>' +
+                        '<div class="dropdown-note"/>' +
+                    '</li>' +
+                '</ul>';
     }
 });
 
-// return
 return {
-    GalaxyMenu: GalaxyMenu,
-    GalaxyMastheadTab: GalaxyMastheadTab
+    Collection  : Collection,
+    Tab         : Tab
 };
 
 });

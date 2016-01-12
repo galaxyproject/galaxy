@@ -22,7 +22,6 @@
             </a>
         </h4>
         %if hasattr( item, "annotation") and item.annotation:
-        <% print type( item.annotation ), item.annotation %>
         <div class="annotation">${ item.annotation | h }</div>
         %endif
     </div>

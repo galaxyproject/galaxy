@@ -2212,14 +2212,15 @@ class DataToolParameter( BaseDataToolParameter ):
             return d
 
         # add datasets
+        visible_hda = other_values.get( self.name )
         for hda in history.active_datasets_children_and_roles:
-            match = dataset_matcher.hda_match( hda )
+            match = dataset_matcher.hda_match( hda, ensure_visible=visible_hda != hda )
             if match:
                 m = match.hda
                 d['options']['hda'].append({
                     'id'            : trans.security.encode_id( m.id ),
                     'hid'           : m.hid,
-                    'name'          : m.name,
+                    'name'          : m.name if m.visible else '(hidden) %s' % m.name,
                     'src'           : 'hda'
                 })
 
@@ -2250,14 +2251,17 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         input_source = ensure_input_source( input_source )
         super(DataCollectionToolParameter, self).__init__( tool, input_source, trans )
         self._parse_formats( trans, tool, input_source )
-        self._collection_type = input_source.get("collection_type", None)
+        collection_types = input_source.get("collection_type", None)
+        if collection_types:
+            collection_types = [t.strip() for t in collection_types.split(",")]
+        self._collection_types = collection_types
         self.multiple = False  # Accessed on DataToolParameter a lot, may want in future
         self.is_dynamic = True
         self._parse_options( input_source )  # TODO: Review and test.
 
     @property
-    def collection_type( self ):
-        return self._collection_type
+    def collection_types( self ):
+        return self._collection_types
 
     def _history_query( self, trans ):
         dataset_collection_type_descriptions = trans.app.dataset_collections_service.collection_type_descriptions
