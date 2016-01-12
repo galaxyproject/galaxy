@@ -1,19 +1,24 @@
 #!/bin/bash
 set -e
 
+SET_VENV=1
+for arg in "$@"; do
+    [ "$arg" = "--skip-venv" ] && SET_VENV=0
+done
+
 DEV_WHEELS=0
 FETCH_WHEELS=1
-SET_VENV=1
 CREATE_VENV=1
-REPLACE_PIP=1
+REPLACE_PIP=$SET_VENV
 COPY_SAMPLE_FILES=1
+
 for arg in "$@"; do
     [ "$arg" = "--skip-eggs" ] && FETCH_WHEELS=0
     [ "$arg" = "--skip-wheels" ] && FETCH_WHEELS=0
     [ "$arg" = "--dev-wheels" ] && DEV_WHEELS=1
-    [ "$arg" = "--skip-venv" ] && SET_VENV=0
     [ "$arg" = "--no-create-venv" ] && CREATE_VENV=0
     [ "$arg" = "--no-replace-pip" ] && REPLACE_PIP=0
+    [ "$arg" = "--replace-pip" ] && REPLACE_PIP=1
     [ "$arg" = "--stop-daemon" ] && FETCH_WHEELS=0
     [ "$arg" = "--skip-samples" ] && COPY_SAMPLE_FILES=0
 done
@@ -123,7 +128,7 @@ if [ $SET_VENV -eq 1 ]; then
 fi
 
 : ${GALAXY_WHEELS_INDEX_URL:="https://wheels.galaxyproject.org/simple"}
-if [ $SET_VENV -eq 1 -a $REPLACE_PIP -eq 1 ]; then
+if [ $REPLACE_PIP -eq 1 ]; then
     pip_version=`pip --version | awk '{print $2}'`
     pre=`python -c "from pkg_resources import parse_version; from sys import stdout; stdout.write('--pre') if parse_version('$pip_version') >= parse_version('1.4') else stdout.write('')"`
     pip install $pre --no-index --find-links ${GALAXY_WHEELS_INDEX_URL}/pip --upgrade pip
