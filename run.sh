@@ -56,11 +56,12 @@ done
 
 # If there is a .venv/ directory, assume it contains a virtualenv that we
 # should run this instance in.
-if [ -d .venv -a -z "$skip_venv" ];
+GALAXY_VIRTUAL_ENV="${GALAXY_VIRTUAL_ENV:-.venv}"
+if [ -d "$GALAXY_VIRTUAL_ENV" -a -z "$skip_venv" ];
 then
     [ -n "$PYTHONPATH" ] && { echo 'Unsetting $PYTHONPATH'; unset PYTHONPATH; }
-    printf "Activating virtualenv at %s/.venv\n" $(pwd)
-    . .venv/bin/activate
+    printf "Activating virtualenv at $GALAXY_VIRTUAL_ENV\n"
+    . "$GALAXY_VIRTUAL_ENV/bin/activate"
 fi
 
 # If you are using --skip-venv we assume you know what you are doing but warn

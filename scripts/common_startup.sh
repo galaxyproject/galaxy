@@ -66,14 +66,16 @@ if [ ! -f $GALAXY_CONFIG_FILE ]; then
     GALAXY_CONFIG_FILE=config/galaxy.ini.sample
 fi
 
+: ${GALAXY_VIRTUAL_ENV:=.venv}
+
 if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
     # If .venv does not exist, attempt to create it.
-    if [ ! -d .venv ]
+    if [ ! -d "$GALAXY_VIRTUAL_ENV" ]
     then
         # Ensure Python is a supported version before creating .venv
         python ./scripts/check_python.py || exit 1
         if command -v virtualenv >/dev/null; then
-            virtualenv .venv
+            virtualenv "$GALAXY_VIRTUAL_ENV"
         else
             vvers=13.1.2
             vurl="https://pypi.python.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
@@ -98,7 +100,7 @@ if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
                 python -c "import hashlib; assert hashlib.sha256(open('$vsrc', 'rb').read()).hexdigest() == '$vsha', '$vsrc: invalid checksum'"
             fi
             tar zxf $vsrc -C $vtmp
-            python $vtmp/virtualenv-$vvers/virtualenv.py .venv
+            python $vtmp/virtualenv-$vvers/virtualenv.py "$GALAXY_VIRTUAL_ENV"
             rm -rf $vtmp
         fi
     fi
@@ -107,10 +109,10 @@ fi
 if [ $SET_VENV -eq 1 ]; then
     # If there is a .venv/ directory, assume it contains a virtualenv that we
     # should run this instance in.
-    if [ -d .venv ];
+    if [ -d "$GALAXY_VIRTUAL_ENV" ];
     then
-        printf "Activating virtualenv at %s/.venv\n" $(pwd)
-        . .venv/bin/activate
+        printf "Activating virtualenv at $GALAXY_VIRTUAL_ENV\n"
+        . "$GALAXY_VIRTUAL_ENV/bin/activate"
         # Because it's a virtualenv, we assume $PYTHONPATH is unnecessary for
         # anything in the venv to work correctly, and having it set can cause
         # problems when there are conflicts with Galaxy's dependencies outside
@@ -122,7 +124,7 @@ if [ $SET_VENV -eq 1 ]; then
     fi
 
     if [ -z "$VIRTUAL_ENV" ]; then
-        echo "ERROR: A virtualenv cannot be found. Please create a virtualenv in .venv, or activate one."
+        echo "ERROR: A virtualenv cannot be found. Please create a virtualenv in $GALAXY_VIRTUAL_ENV, or activate one."
         exit 1
     fi
 fi
