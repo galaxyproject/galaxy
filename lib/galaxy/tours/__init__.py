@@ -40,9 +40,9 @@ class ToursRegistry(object):
 
     def load_tour(self, tour_id):
         for tour_dir in self.tour_directories:
-            tour_path = os.path.join(self.tour_dir, tour_id + ".yaml")
+            tour_path = os.path.join(tour_dir, tour_id + ".yaml")
             if not os.path.exists(tour_path):
-                tour_path = os.path.join(self.tour_dir, tour_id + ".yml")
+                tour_path = os.path.join(tour_dir, tour_id + ".yml")
             if os.path.exists(tour_path):
                 break
         if os.path.exists(tour_path):

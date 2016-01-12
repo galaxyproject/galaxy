@@ -144,7 +144,6 @@
 
     ## alternate call where the module calls itself when included (no call to GalaxyApp()) - the above won't be needed
     ##precondition: module must call jq onready itself
-    ##<% app_config = self.galaxy_config[ 'app' ]; print app_config %>
     ##${ galaxy_client.load( app=( app_config[ 'jscript' ] if 'jscript' in app_config else None )) }
 
     ##TODO: at that point, we can think about optimizing the various apps
