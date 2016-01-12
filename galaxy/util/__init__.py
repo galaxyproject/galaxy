@@ -37,8 +37,12 @@ from six.moves import zip
 from os.path import relpath
 from hashlib import md5
 
-import docutils.core
-import docutils.writers.html4css1
+try:
+    import docutils.core as docutils_core
+    import docutils.writers.html4css1 as docutils_html4css1
+except ImportError:
+    docutils_core = None
+    docutils_html4css1 = None
 
 from xml.etree import ElementTree, ElementInclude
 
@@ -555,6 +559,15 @@ def ready_name_for_url( raw_name ):
     return slug_base
 
 
+def which(file):
+    # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
+    for path in os.environ["PATH"].split(":"):
+        if os.path.exists(path + "/" + file):
+                return path + "/" + file
+
+    return None
+
+
 def in_directory( file, directory, local_path_module=os.path ):
     """
     Return true, if the common prefix of both is equal to directory
@@ -698,6 +711,9 @@ def rst_to_html( s ):
     """Convert a blob of reStructuredText to HTML"""
     log = logging.getLogger( "docutils" )
 
+    if docutils_core is None:
+        raise Exception("Attempted to use rst_to_html but docutils unavailable.")
+
     class FakeStream( object ):
         def write( self, str ):
             if len( str ) > 0 and not str.isspace():
@@ -711,8 +727,8 @@ def rst_to_html( s ):
                                   # number of sections in help content.
     }
 
-    return unicodify( docutils.core.publish_string( s,
-                      writer=docutils.writers.html4css1.Writer(),
+    return unicodify( docutils_core.publish_string( s,
+                      writer=docutils_html4css1.Writer(),
                       settings_overrides=settings_overrides ) )
 
 
@@ -1258,6 +1274,35 @@ galaxy_root_path = os.path.join(__path__[0], "..", "..", "..")
 
 def galaxy_directory():
     return os.path.abspath(galaxy_root_path)
+
+
+def config_directories_from_setting( directories_setting, galaxy_root=galaxy_root_path ):
+    """
+    Parse the ``directories_setting`` into a list of relative or absolute
+    filesystem paths that will be searched to discover plugins.
+
+    :type   galaxy_root:    string
+    :param  galaxy_root:    the root path of this galaxy installation
+    :type   directories_setting: string (default: None)
+    :param  directories_setting: the filesystem path (or paths)
+        to search for plugins. Can be CSV string of paths. Will be treated as
+        absolute if a path starts with '/', relative otherwise.
+    :rtype:                 list of strings
+    :returns:               list of filesystem paths
+    """
+    directories = []
+    if not directories_setting:
+        return directories
+
+    for directory in listify( directories_setting ):
+        directory = directory.strip()
+        if not directory.startswith( '/' ):
+            directory = os.path.join( galaxy_root, directory )
+        if not os.path.exists( directory ):
+            log.warn( 'directory not found: %s', directory )
+            continue
+        directories.append( directory )
+    return directories
 
 
 def parse_int(value, min_val=None, max_val=None, default=None, allow_none=False):

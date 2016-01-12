@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys as _sys
+from galaxy.util import which
 
 
 def redirecting_io(sys=_sys):
@@ -57,15 +58,6 @@ def execute(cmds):
     return __wait(cmds, shell=False)
 
 
-def which(file):
-    # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
-    for path in os.environ["PATH"].split(":"):
-        if os.path.exists(path + "/" + file):
-                return path + "/" + file
-
-    return None
-
-
 def __wait(cmds, **popen_kwds):
     p = subprocess.Popen(cmds, **popen_kwds)
     stdout, stderr = p.communicate()
@@ -101,3 +93,15 @@ class CommandLineException(Exception):
 
     def __str__(self):
         return self.message
+
+
+__all__ = [
+    'CommandLineException',
+    'download_command',
+    'execute',
+    'redirect_aware_commmunicate',
+    'redirecting_io',
+    'shell',
+    'shell_process',
+    'which',
+]
