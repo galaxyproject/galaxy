@@ -42,7 +42,7 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         """
         Returns both types of contents: filtered and in some order.
         """
-        # WIP
+        # WIP - good god! this would be a lot easier using one table
         # TODO: this is undoubtedly better solved in the actual SQL layer
         # create a union of common columns for the subclasses ids which can be filtered/limited
         subclasses = ( self.contained_class, self.subcontainer_class )
@@ -89,12 +89,11 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
             result_type = str( result[ TYPE_COLUMN ] )
             if result_type == 'dataset':
                 content = id_map[ self.contained_class.__name__ ][ result[ ID_COLUMN ] ]
-                contents.append( content )
             elif result_type == 'collection':
                 content = id_map[ self.subcontainer_class.__name__ ][ result[ ID_COLUMN ] ]
-                contents.append( content )
             else:
                 raise TypeError( 'Unknown contents type:', result_type )
+            contents.append( content )
         return contents
 
     def _subclass_id_query( self, subclass, history_id ):

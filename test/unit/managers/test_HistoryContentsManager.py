@@ -12,6 +12,7 @@ test_utils = imp.load_source( 'test_utils',
 from galaxy import eggs
 eggs.require( 'SQLAlchemy >= 0.4' )
 from sqlalchemy import true
+from sqlalchemy.sql import text
 
 from base import BaseTestCase
 from base import CreatesCollectionsMixin
@@ -52,7 +53,7 @@ class HistoryAsContainerTestCase( BaseTestCase, CreatesCollectionsMixin ):
         history = self.history_manager.create( name='history', user=user2 )
 
         self.log( "calling contents on an empty history should return an empty list" )
-        self.assertEqual( [], list( self.history_manager.contents( history ) ) )
+        self.assertEqual( [], list( self.contents_manager.contents( history ) ) )
 
         self.log( "calling contents on an history with hdas should return those in order of their hids" )
         hdas = [ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ]
@@ -70,7 +71,7 @@ class HistoryAsContainerTestCase( BaseTestCase, CreatesCollectionsMixin ):
         history = self.history_manager.create( name='history', user=user2 )
 
         self.log( "calling contained on an empty history should return an empty list" )
-        self.assertEqual( [], list( self.history_manager.contained( history ) ) )
+        self.assertEqual( [], list( self.contents_manager.contained( history ) ) )
 
         self.log( "calling contained on an history with both hdas and collections should return only hdas" )
         hdas = [ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ]
@@ -82,7 +83,7 @@ class HistoryAsContainerTestCase( BaseTestCase, CreatesCollectionsMixin ):
         history = self.history_manager.create( name='history', user=user2 )
 
         self.log( "calling subcontainers on an empty history should return an empty list" )
-        self.assertEqual( [], list( self.history_manager.subcontainers( history ) ) )
+        self.assertEqual( [], list( self.contents_manager.subcontainers( history ) ) )
 
         self.log( "calling subcontainers on an history with both hdas and collections should return only collections" )
         hdas = [ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ]
@@ -123,10 +124,11 @@ class HistoryAsContainerTestCase( BaseTestCase, CreatesCollectionsMixin ):
         contents[6].deleted = True
         deleted = [ contents[1], contents[4], contents[6] ]
         self.app.model.context.flush()
-        for content in self.contents_manager.contents( history, filters=[ 'anon_1.deleted = 1' ] ):
-            print content.hid, content.history_content_type, content.id, content.name
+        filters = [ text( 'anon_1.deleted = 1' ) ]
+        # for content in self.contents_manager.contents( history, filters=filters ):
+        #     print content.hid, content.history_content_type, content.id, content.name
         # weird filter language at this low level
-        self.assertEqual( self.contents_manager.contents( history, filters=[ 'anon_1.deleted = 1' ] ), deleted )
+        self.assertEqual( self.contents_manager.contents( history, filters=filters ), deleted )
         # even stranger that sqlalx can use the first model in the union (HDA) for column names accross the union
         HDA = self.hda_manager.model_class
         self.assertEqual( self.contents_manager.contents( history, filters=[ HDA.deleted == true() ] ), deleted )
