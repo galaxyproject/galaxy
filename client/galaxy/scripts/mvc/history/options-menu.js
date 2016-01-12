@@ -5,7 +5,8 @@ define([
     "utils/localization"
 ], function( PopupMenu, historyCopyDialog, BASE_MVC, _l ){
 
-"use strict";
+'use strict';
+
 // ============================================================================
 var menu = [
     {

@@ -6,6 +6,8 @@ define([
     "utils/localization"
 ], function( HISTORY_CONTENTS, UTILS, BASE_MVC, _l ){
 
+'use strict';
+
 var logNamespace = 'history';
 //==============================================================================
 /** @class Model for a Galaxy history resource - both a record of user
@@ -78,7 +80,7 @@ var History = Backbone.Model
             if( this.contents ){
                 this.contents.historyId = newId;
             }
-        }, this );
+        });
     },
 
     //TODO: see base-mvc
@@ -540,7 +542,7 @@ var HistoryCollection = Backbone.Collection
                 this.trigger( 'no-longer-current', oldCurrentId );
                 this.currentHistoryId = history.id;
             }
-        }, this );
+        });
     },
 
     /** override to allow passing options.order and setting the sort order to one of sortOrders */
