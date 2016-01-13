@@ -7,9 +7,8 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
     // create form view
     var View = ToolFormBase.extend({
         initialize: function(options) {
-            // link this
             var self = this;
-            this.hasLabelListeners = false;
+            this.workflow = options.workflow;
 
             // link with node representation in workflow module
             this.node = options.node;
@@ -40,7 +39,6 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
                     // module information for the tool to update the workflow
                     // state stored on the client with. User needs to save
                     // for this to take effect.
-                    self.initializeLabelListener();
                     self.node.update_field_data(data);
                     self.errors(data && data.tool_model)
                 }
@@ -72,29 +70,6 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
             // create final tool form
             ToolFormBase.prototype.initialize.call(this, options);
         },
-
-        initializeLabelListener: function() {
-            var self = this;
-            if(this.hasLabelListeners !== false) {
-                return;
-            }
-            this.hasLabelListeners = [];
-            var outputSections = _.where(this.options.inputs, {outputSection: true});
-            var labelInputs = outputSections.map(function(entry) {
-                var sectionId = entry.id;
-                var outputId = entry.outputId;
-                var $section = $("#" + sectionId);
-                var $labelRow = $section.find(".section-row").first();
-                var labelTextInput = $labelRow.find("input")[0];
-                $(labelTextInput).bind('input propertychange', function() {
-                    var newLabel = $(labelTextInput).val();
-                    var workflow = self.node.app.workflow;
-                    workflow.attemptUpdateOutputLabel( self.node, outputId, newLabel );
-                });
-            });
-
-        },
-
 
         /** Builds all sub sections
         */
@@ -150,6 +125,7 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
         */
         _makeSection: function(output_id, datatypes){
             // format datatypes
+            var self = this;
             var extensions = [];
             var input_terminal_names = [];
 
@@ -188,15 +164,14 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
                 title   : 'Configure Output: \'' + output_id + '\'',
                 type    : 'section',
                 flat    : true,
-                outputSection: true,
-                outputId   : output_id,
                 inputs  : [{
-                    action      : 'Label',
                     label       : 'Label',
                     type        : 'text',
-                    value       : '',
-                    ignore      : '',
-                    help        : 'This will provide a short name to describe the output - this must be unique across workflows.'
+                    value       : ( output = this.node.getWorkflowOutput( output_id ) ) && output.label || '',
+                    help        : 'This will provide a short name to describe the output - this must be unique across workflows.',
+                    onchange    : function( new_value ) {
+                        self.workflow.attemptUpdateOutputLabel( self.node, output_id, new_value );
+                    }
                 },{
                     action      : 'RenameDatasetAction',
                     pja_arg     : 'newname',
@@ -267,21 +242,13 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
             };
 
             // visit input nodes and enrich by name/value pairs from server data
-            var self = this;
             function visit (head, head_list) {
                 head_list = head_list || [];
                 head_list.push(head);
                 for (var i in head.inputs) {
                     var input = head.inputs[i];
                     var action = input.action;
-                    if ( action == "Label") {
-                        var workflowOutput = self.node.getWorkflowOutput(output_id);
-                        if ( workflowOutput ) {
-                            input.value = workflowOutput['label'] || '';
-                        } else{
-                            input.value = '';
-                        }
-                    } else if (action) {
+                    if (action) {
                         // construct identifier as expected by backend
                         input.name = 'pja__' + output_id + '__' + input.action;
                         if (input.pja_arg) {
