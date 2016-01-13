@@ -3,8 +3,6 @@ Heterogenous lists/contents are difficult to query properly since unions are
 not easily made.
 """
 
-import operator
-
 import pkg_resources
 pkg_resources.require( "SQLAlchemy" )
 from sqlalchemy import literal
@@ -92,12 +90,12 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         #   2. extract the ids returned from 1 for each class, query each content class by that id list
         #   3. use the results/order from 1 to recombine/merge the 2+ query result lists from 2, return that
 
-        # query 1: create a union of common columns for which the subclasses can be filtered/limited
-        subclasses = ( self.contained_class, self.subcontainer_class )
-        contents_query = None
-        for subclass in subclasses:
-            subquery = self._contents_common_query( subclass, container.id )
-            contents_query = subquery if contents_query is None else contents_query.union( subquery )
+        # note: I'm trying to keep these private functions as generic as possible in order to move them toward base later
+
+        # query 1: create a union of common columns for which the component_classes can be filtered/limited
+        contained_query = self._contents_common_query_for_contained( container.id )
+        subcontainer_query = self._contents_common_query_for_subcontainer( container.id )
+        contents_query = contained_query.union( subcontainer_query )
 
         # TODO: this needs the same fn/orm split that happens in the main query
         for orm_filter in ( filters or [] ):
@@ -114,8 +112,8 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         # for r in contents_results:
         #     print r
 
-        # partition ids into a map of { subclass names -> list of ids } from the above union query
-        id_map = { subclass.__name__: [] for subclass in subclasses }
+        # partition ids into a map of { component_class names -> list of ids } from the above union query
+        id_map = dict( (( self.contained_class.__name__, [] ), ( self.subcontainer_class.__name__, [] )) )
         get_unioned_typestr = lambda c: str( c[ 1 ] )
         get_unioned_id = lambda c: c[ 2 ]
         for result in contents_results:
@@ -129,11 +127,11 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         # for tuple_ in id_map.items():
         #     print tuple_
 
-        # query 2 & 3: use the ids to query each subclass
+        # query 2 & 3: use the ids to query each component_class
         # query the contained classes using the id_lists for each
-        for subclass in subclasses:
-            id_list = id_map[ subclass.__name__ ]
-            id_map[ subclass.__name__ ] = self._by_ids( subclass, id_list )
+        for component_class in ( self.contained_class, self.subcontainer_class ):
+            id_list = id_map[ component_class.__name__ ]
+            id_map[ component_class.__name__ ] = self._by_ids( component_class, id_list )
         # for tuple_ in id_map.items():
         #     print tuple_
 
@@ -147,63 +145,60 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
             contents.append( content )
         return contents
 
-    def _contents_common_query( self, subclass, history_id ):
-        if subclass == self.contained_class:
-            return ( self.session().query( *self._common_columns_in_contained() )
-                                   .filter( subclass.history_id == history_id ) )
+    common_columns = (
+        "history_id",
+        "model_class",
+        "id",
+        "collection_id",
+        "hid",
+        "name",
+        "deleted",
+        "purged",
+        "visible",
+        "create_time",
+        "update_time",
+    )
 
+    def _contents_common_columns( self, component_class, **kwargs ):
+        columns = []
+        # pull column from class by name or override with kwargs if listed there, then label
+        for column_name in self.common_columns:
+            if column_name in kwargs:
+                column = kwargs.get( column_name, None )
+            elif column_name == "model_class":
+                column = literal( component_class.__name__ )
+            else:
+                column = getattr( component_class, column_name )
+            column = column.label( column_name )
+            columns.append( column )
+        return columns
+
+    def _contents_common_query_for_contained( self, history_id ):
+        component_class = self.contained_class
+        columns = self._contents_common_columns( component_class,
+            # gen. do not have inner collections
+            collection_id=literal( None )
+        )
+        return self.session().query( *columns ).filter( component_class.history_id == history_id )
+
+    def _contents_common_query_for_subcontainer( self, history_id ):
+        component_class = self.subcontainer_class
+        columns = self._contents_common_columns( component_class,
+            # TODO: should be purgable? fix
+            purged=literal( False ),
+            # these are attached instead to the inner collection
+            create_time=model.DatasetCollection.create_time,
+            update_time=model.DatasetCollection.update_time
+        )
+        subquery = self.session().query( *columns )
         # for the HDCA's we need to join the DatasetCollection since it has update/create times
-        subquery = self.session().query( *self._common_columns_in_subcontainer() )
         subquery = subquery.join( model.DatasetCollection,
-            model.DatasetCollection.id == self.subcontainer_class.collection_id )
-        subquery = subquery.filter( subclass.history_id == history_id )
-        # print subquery
+            model.DatasetCollection.id == component_class.collection_id )
+        subquery = subquery.filter( component_class.history_id == history_id )
         return subquery
 
-    def _common_columns_in_contained( self ):
-        subclass = self.contained_class
-        return (
-            # container (history_id), type, id
-            subclass.history_id,
-            literal( subclass.__name__ ),
-            subclass.id,
-            # no collection id for nonsubcontainers
-            literal( None ),
-
-            # all the common columns that can be filtered/ordered by
-            subclass.hid.label( 'hid' ),
-            subclass.name,
-            subclass.deleted.label( 'deleted' ),
-            # TODO: fix
-            subclass.purged,
-            subclass.visible,
-            subclass.create_time,
-            subclass.update_time
-        )
-
-    def _common_columns_in_subcontainer( self ):
-        subclass = self.subcontainer_class
-        return (
-            # container (history_id), type, id
-            subclass.history_id,
-            literal( subclass.__name__ ),
-            subclass.id,
-            subclass.collection_id,
-
-            # all the common columns that can be filtered/ordered by
-            subclass.hid.label( 'hid' ),
-            subclass.name,
-            subclass.deleted.label( 'deleted' ),
-            # TODO: should be purgable right? fix
-            literal( False ),
-            subclass.visible,
-            # join is necessary for this to work
-            model.DatasetCollection.create_time,
-            model.DatasetCollection.update_time
-        )
-
-    def _by_ids( self, subclass, id_list ):
+    def _by_ids( self, component_class, id_list ):
         if not id_list:
             return []
-        query = self.session().query( subclass ).filter( subclass.id.in_( id_list ) )
-        return { row.id: row for row in query.all() }
+        query = self.session().query( component_class ).filter( component_class.id.in_( id_list ) )
+        return dict( ( row.id, row ) for row in query.all() )
