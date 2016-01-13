@@ -123,16 +123,13 @@ function request (options) {
         data        : options.data || {},
         url         : options.url
     }
-
     // encode data into url
-    if (ajaxConfig.type == 'GET' || ajaxConfig.type == 'DELETE') {
-        if (ajaxConfig.url.indexOf('?') == -1) {
-            ajaxConfig.url += '?';
-        } else {
-            ajaxConfig.url += '&';
+    if ( ajaxConfig.type == 'GET' || ajaxConfig.type == 'DELETE' ) {
+        if ( !$.isEmptyObject(ajaxConfig.data) ) {
+            ajaxConfig.url += ajaxConfig.url.indexOf('?') == -1 ? '?' : '&';
+            ajaxConfig.url += $.param(ajaxConfig.data, true);
         }
-        ajaxConfig.url      = ajaxConfig.url + $.param(ajaxConfig.data, true);
-        ajaxConfig.data     = null;
+        ajaxConfig.data = null;
     } else {
         ajaxConfig.dataType = 'json';
         ajaxConfig.url      = ajaxConfig.url;
