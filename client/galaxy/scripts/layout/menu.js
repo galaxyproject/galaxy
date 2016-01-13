@@ -173,7 +173,7 @@ var Collection = Backbone.Collection.extend({
         if ( !Galaxy.user.id ){
             var userTab = {
                 id              : 'user',
-                icon            : 'fa-user',
+                title           : 'User',
                 cls             : 'loggedout-only',
                 tooltip         : 'Account registration or login',
                 menu            : [{
@@ -191,7 +191,7 @@ var Collection = Backbone.Collection.extend({
         } else {
             var userTab = {
                 id              : 'user',
-                icon            : 'fa-user',
+                title           : 'User',
                 cls             : 'loggedin-only',
                 tooltip         : 'Account preferences and saved data',
                 menu            : [{
