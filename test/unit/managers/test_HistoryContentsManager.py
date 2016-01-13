@@ -100,8 +100,19 @@ class HistoryAsContainerTestCase( BaseTestCase, CreatesCollectionsMixin ):
         contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 4, 6 ) ])
         contents.append( self.add_list_collection_to_history( history, contents[4:6] ) )
 
+        # _subquery = self.contents_manager._contents_common_query( self.contents_manager.subcontainer_class, history.id )
+        # _subquery = self.contents_manager._contents_common_query( self.contents_manager.contained_class, history.id )
+        # print _subquery
+        # for row in _subquery.all():
+        #     print row
+
         self.log( "should be able to limit and offset" )
-        self.assertEqual( self.contents_manager.contents( history ), contents )
+        results = self.contents_manager.contents( history )
+        # print [ r.id for r in results ]
+        # print '--'
+        # print [ c.id for c in contents ]
+        self.assertEqual( results, contents )
+
         self.assertEqual( self.contents_manager.contents( history, limit=4 ), contents[0:4] )
         self.assertEqual( self.contents_manager.contents( history, offset=3 ), contents[3:] )
         self.assertEqual( self.contents_manager.contents( history, limit=4, offset=4 ), contents[4:8] )
@@ -124,14 +135,15 @@ class HistoryAsContainerTestCase( BaseTestCase, CreatesCollectionsMixin ):
         contents[6].deleted = True
         deleted = [ contents[1], contents[4], contents[6] ]
         self.app.model.context.flush()
+        # weird filter language at this low level
         filters = [ text( 'anon_1.deleted = 1' ) ]
         # for content in self.contents_manager.contents( history, filters=filters ):
         #     print content.hid, content.history_content_type, content.id, content.name
-        # weird filter language at this low level
         self.assertEqual( self.contents_manager.contents( history, filters=filters ), deleted )
-        # even stranger that sqlalx can use the first model in the union (HDA) for column names accross the union
+        # even stranger that sqlalx can use the first model in the union (HDA) for columns across the union
         HDA = self.hda_manager.model_class
-        self.assertEqual( self.contents_manager.contents( history, filters=[ HDA.deleted == true() ] ), deleted )
+        self.assertEqual( self.contents_manager.contents( history,
+            filters=[ HDA.deleted == true() ] ), deleted )
         filter_limited_contents = self.contents_manager.contents( history,
             filters=[ HDA.deleted == true() ], limit=2, offset=1 )
         self.assertEqual( filter_limited_contents, deleted[1:] )

@@ -12,6 +12,7 @@ import operator
 from galaxy import model
 import galaxy.exceptions
 import galaxy.util
+
 import logging
 log = logging.getLogger( __name__ )
 
@@ -32,8 +33,8 @@ class ContainerManagerMixin( object ):
     #: the classes that can be contained
     contained_class = None
     subcontainer_class = None
-    #: how any contents lists produced are ordered
-    order_contents_on = None
+    #: how any contents lists produced are ordered - (string) attribute name to sort on or tuple of attribute names
+    default_order_by = None
 
     # ---- interface
     def contents( self, container ):
