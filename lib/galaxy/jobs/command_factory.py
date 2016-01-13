@@ -80,7 +80,7 @@ def __externalize_commands(job_wrapper, commands_builder, remote_command_params,
     local_container_script = join( job_wrapper.working_directory, script_name )
     tool_commands = commands_builder.build()
     with open( local_container_script, "w" ) as f:
-        script_contents = u"#!%s\n%s" % (DEFAULT_SHELL, tool_commands)
+        script_contents = u'#!%s\nif [ -n "$ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ" ]; then\n    exit 42\nfi\n%s' % (DEFAULT_SHELL, tool_commands)
         f.write(script_contents.encode(util.DEFAULT_ENCODING))
     chmod( local_container_script, 0755 )
 

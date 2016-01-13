@@ -4,6 +4,10 @@
 # to ensure this script is runnable before running it directly
 # or submitting it to a cluster manager.
 if [ -n "$ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ" ]; then
+    $command
+    if [ $? -ne 42 ]; then
+        exit $?
+    fi
     exit 42
 fi
 
