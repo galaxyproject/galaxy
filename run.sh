@@ -18,7 +18,7 @@ fi
 while :
 do
     case "$1" in
-        --skip-eggs|--skip-wheels|--skip-samples|--dev-wheels|--no-create-venv|--no-replace-pip)
+        --skip-eggs|--skip-wheels|--skip-samples|--dev-wheels|--no-create-venv|--no-replace-pip|--replace-pip)
             common_startup_args="$common_startup_args $1"
             shift
             ;;
