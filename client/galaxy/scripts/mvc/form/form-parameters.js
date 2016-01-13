@@ -179,14 +179,13 @@ define(['utils/utils',
                     }
                 }
             }
-
             // create input element
             var self = this;
             return new Ui.Input({
                 id          : 'field-' + input_def.id,
                 area        : input_def.area,
-                onchange    : function() {
-                    self.app.trigger('change');
+                onchange    : function( new_value ) {
+                    input_def.onchange ? input_def.onchange( new_value ) : self.app.trigger( 'change' );
                 }
             });
         },
