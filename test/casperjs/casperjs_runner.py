@@ -112,8 +112,10 @@ class CasperJSTestCase( unittest.TestCase ):
         process_command_list = self.build_command_line( rel_script_path, *args, **kwargs )
         log.debug( 'process_command_list: %s', str( process_command_list ) )
         try:
-            process = subprocess.Popen( process_command_list, shell=False,
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+            process = subprocess.Popen( process_command_list,
+                                        shell=False,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE )
 
             # output from the browser (stderr only) immediately
             while process.poll() is None:
@@ -145,9 +147,9 @@ class CasperJSTestCase( unittest.TestCase ):
         #   provide information (as it won't be included by default with galaxy)
         except OSError, os_err:
             if os_err.errno == errno.ENOENT:
-                log.error( 'No path to headless browser executable: %s\n'
-                    + 'These tests were designed to use the following headless browser:\n%s',
-                    self.exec_path, self.casper_info )
+                log.error( 'No path to headless browser executable: %s\n' +
+                           'These tests were designed to use the following headless browser:\n%s',
+                           self.exec_path, self.casper_info )
             raise
 
         return self.handle_js_results( stdout_output )
@@ -206,7 +208,7 @@ class CasperJSTestCase( unittest.TestCase ):
             js_test_results = json.loads( stdout_output )
             last_error = get_error( js_test_results )
             err_string = ( "%s\n%s" % ( get_msg( last_error ),
-                self.browser_backtrace_to_string( get_trace( last_error ) ) ) )
+                           self.browser_backtrace_to_string( get_trace( last_error ) ) ) )
 
         # if we couldn't parse json from what's returned on the error, dump stdout
         except ValueError, val_err:
@@ -250,8 +252,8 @@ class CasperJSTestCase( unittest.TestCase ):
             js_test_results = json.loads( results )
             failures = js_test_results[ 'failures' ]
             assert len( failures ) == 0, (
-                "%d assertions failed in the headless browser tests" % ( len( failures ) )
-                + " (see the log for details)" )
+                "%d assertions failed in the headless browser tests" % ( len( failures ) ) +
+                " (see the log for details)" )
 
     # ---------------------------------------------------------------- TestCase overrides
     def setUp( self ):
