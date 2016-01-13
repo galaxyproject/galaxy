@@ -136,7 +136,7 @@ def get_sequencer_id( migrate_engine, sequencer_info ):
             continue
         values = loads( values )
         # proceed only if sequencer_info is a valid list
-        if values and type( values ) == type( dict() ):
+        if values and isinstance(values, dict):
             if sequencer_info.get( 'host', '' ) == values.get( 'field_0', '' ) \
                and sequencer_info.get( 'username', '' ) == values.get( 'field_1', '' ) \
                and sequencer_info.get( 'password', '' ) == values.get( 'field_2', '' ) \
@@ -236,7 +236,7 @@ def upgrade(migrate_engine):
                 continue
             sequencer_info = loads( sequencer_info.strip() )
             # proceed only if sequencer_info is a valid dict
-            if sequencer_info and type( sequencer_info ) == type( dict() ):
+            if sequencer_info and isinstance(sequencer_info, dict):
                 # check if this sequencer has already been added to the sequencer table
                 sequencer_id = get_sequencer_id( migrate_engine, sequencer_info )
                 if not sequencer_id:
