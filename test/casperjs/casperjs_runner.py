@@ -200,15 +200,12 @@ class CasperJSTestCase( unittest.TestCase ):
         """Converts the headless' error from JSON into a more informative
         python HeadlessJSJavascriptError.
         """
-        get_error = lambda d: d[ 'errors' ][0]
-        get_msg = lambda err: err[ 'msg' ]
-        get_trace = lambda err: err[ 'backtrace' ]
         try:
             # assume it's json and located in errors (and first)
             js_test_results = json.loads( stdout_output )
-            last_error = get_error( js_test_results )
-            err_string = ( "%s\n%s" % ( get_msg( last_error ),
-                           self.browser_backtrace_to_string( get_trace( last_error ) ) ) )
+            last_error = js_test_results['errors'][0]
+            err_string = ( "%s\n%s" % ( last_error['msg'],
+                           self.browser_backtrace_to_string( last_error['backtrace'] ) ) )
 
         # if we couldn't parse json from what's returned on the error, dump stdout
         except ValueError, val_err:
