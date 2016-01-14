@@ -4,6 +4,7 @@ import subprocess
 import time
 from pkg_resources import resource_string
 
+from six import text_type
 from galaxy.util import unicodify
 
 DEFAULT_SHELL = '/bin/sh'
@@ -96,7 +97,7 @@ def check_script_integrity(config):
 
 def write_script(path, contents, config, mode=0o755):
     with open(path, 'w') as f:
-        if isinstance(contents, unicode):
+        if isinstance(contents, text_type):
             contents = contents.encode("UTF-8")
         f.write(contents)
     os.chmod(path, mode)
