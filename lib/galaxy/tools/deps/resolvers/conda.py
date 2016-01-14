@@ -42,7 +42,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
 
         def get_option(name):
-            return self._get_config_option(name, dependency_manager, prefix="conda", **kwds)
+            return self._get_config_option(name, dependency_manager, config_prefix="conda", **kwds)
 
         # Conda context options (these define the environment)
         conda_prefix = get_option("prefix")
@@ -177,7 +177,7 @@ class CondaDepenency(Dependency):
         return self._exact
 
     def shell_commands(self, requirement):
-        return """[ "$CONDA_DEFAULT_ENV" = "%s" ] || source %s '%s'""" % (
+        return """[ "$CONDA_DEFAULT_ENV" = "%s" ] || . %s '%s'""" % (
             self.environment_path,
             self.activate,
             self.environment_path

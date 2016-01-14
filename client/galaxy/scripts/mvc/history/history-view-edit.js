@@ -497,16 +497,14 @@ var HistoryViewEdit = _super.extend(
     },
     /**  */
     drop : function( ev ){
-        //console.warn( 'dataTransfer:', ev.dataTransfer.getData( 'text' ) );
-        //console.warn( 'dataTransfer:', ev.originalEvent.dataTransfer.getData( 'text' ) );
         ev.preventDefault();
         //ev.stopPropagation();
-        ev.dataTransfer.dropEffect = 'move';
 
-        //console.debug( 'ev.dataTransfer:', ev.dataTransfer );
+        var dataTransfer = ev.originalEvent.dataTransfer;
+        dataTransfer.dropEffect = 'move';
 
         var panel = this,
-            data = ev.dataTransfer.getData( "text" );
+            data = dataTransfer.getData( "text" );
         try {
             data = JSON.parse( data );
 

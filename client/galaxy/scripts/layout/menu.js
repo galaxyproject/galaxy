@@ -173,7 +173,7 @@ var Collection = Backbone.Collection.extend({
         if ( !Galaxy.user.id ){
             var userTab = {
                 id              : 'user',
-                icon            : 'fa-user',
+                title           : 'User',
                 cls             : 'loggedout-only',
                 tooltip         : 'Account registration or login',
                 menu            : [{
@@ -191,7 +191,7 @@ var Collection = Backbone.Collection.extend({
         } else {
             var userTab = {
                 id              : 'user',
-                icon            : 'fa-user',
+                title           : 'User',
                 cls             : 'loggedin-only',
                 tooltip         : 'Account preferences and saved data',
                 menu            : [{
@@ -243,75 +243,62 @@ var Collection = Backbone.Collection.extend({
 /** Masthead tab **/
 var Tab = Backbone.View.extend({
     initialize: function ( options ) {
-        var self = this;
+        this.model = options.model;
         this.setElement( this._template() );
         this.$dropdown  = this.$( '.dropdown' );
         this.$toggle    = this.$( '.dropdown-toggle' );
         this.$menu      = this.$( '.dropdown-menu' );
         this.$note      = this.$( '.dropdown-note' );
-        this.model = options.model;
-        this.$el.attr( 'id', this.model.id );
-        this.model.on( 'init change:title', function() {
-            this.get( 'title' ) && self.$toggle.html( this.get( 'title' ) );
-        }).on( 'init change:visible', function() {
-            self.$el.css( { visibility : this.get( 'visible' ) && 'visible' || 'hidden' } );
-        }).on( 'init change:note', function() {
-            self.$note.html( this.get( 'note' ) );
-        }).on( 'init change:note_cls', function() {
-            this._prevNoteCls && self.$note.removeClass( this._prevNoteCls );
-            this.get( 'note_cls' ) && self.$note.addClass( this._prevNoteCls = this.get( 'note_cls' ) );
-        }).on( 'init change:show_note', function() {
-            self.$note.css( { 'display' : this.get( 'show_note' ) && 'block' || 'none' } );
-        }).on( 'init change:target', function() {
-            self.$toggle.attr( 'target', this.get( 'target' ) );
-        }).on( 'init change:url', function() {
-            this.set( 'url', self._formatUrl( this.get( 'url' ) ) );
-            self.$toggle.attr( 'href', this.get( 'url' ) );
-        }).on( 'init change:tooltip', function() {
-            $( '.tooltip' ).remove();
-            self.$toggle.tooltip( 'destroy' ).attr( 'title', this.get( 'tooltip' ) );
-            this.get( 'tooltip' ) && self.$toggle.tooltip( { placement: 'bottom' } );
-        }).on( 'init change:cls', function() {
-            this._prevCls && self.$toggle.removeClass( this._prevCls );
-            this.get( 'cls' ) && self.$toggle.addClass( this._prevCls = this.get( 'cls' ) );
-        }).on( 'init change:icon', function() {
-            this._prevIcon && self.$toggle.removeClass( this._prevIcon );
-            this.get( 'icon' ) && self.$toggle.addClass( this._prevIcon = 'fa fa-2x ' + this.get( 'icon' ) );
-        }).on( 'init change:toggle', function() {
-            self.$toggle[ this.get( 'toggle' ) && 'addClass' || 'removeClass' ]( 'toggle' );
-        }).on( 'init change:disabled', function() {
-            self.$toggle[ this.get( 'disabled' ) && 'addClass' || 'removeClass' ]( 'disabled' );
-            self._configurePopover();
-        }).on( 'init change:active', function() {
-            self.$dropdown[ this.get( 'active' ) && 'addClass' || 'removeClass' ]( 'active' );
-        }).on( 'init change:show_menu', function() {
-            if ( this.get( 'menu' ) && this.get( 'show_menu' ) ) {
-                self.$menu.show();
-                $( '#dd-helper' ).show().off().on( 'click',  function() {
-                    $( '#dd-helper' ).hide();
-                    self.model.set( 'show_menu', false );
-                });
-            } else {
-                self.$menu.hide();
-                $( '#dd-helper' ).hide();
-            }
-        }).on( 'init change:menu', function() {
-            self.$menu.empty().removeClass( 'dropdown-menu' );
-            self.$toggle.find( 'b' ).remove();
-            if ( this.get( 'menu' ) ) {
-                _.each( this.get( 'menu' ), function( menuItem ) {
-                    self.$menu.append( self._buildMenuItem( menuItem ) );
-                    menuItem.divider && self.$menu.append( $( '<li/>' ).addClass( 'divider' ) );
-                });
-                self.$menu.addClass( 'dropdown-menu' );
-                self.$toggle.append( $( '<b/>' ).addClass( 'caret' ) );
-            }
-        }).trigger( 'init' );
+        this.listenTo( this.model, 'change', this.render, this );
     },
 
-    /** Attach events */
     events: {
         'click .dropdown-toggle' : '_toggleClick'
+    },
+
+    render: function() {
+        var self = this;
+        $( '.tooltip' ).remove();
+        this.$el.attr( 'id', this.model.id )
+                .css( { visibility : this.model.get( 'visible' ) && 'visible' || 'hidden' } );
+        this.model.set( 'url', this._formatUrl( this.model.get( 'url' ) ) );
+        this.$note.html( this.model.get( 'note' ) || '' )
+                  .removeClass().addClass( 'dropdown-note' )
+                  .addClass( this.model.get( 'note_cls' ) )
+                  .css( { 'display' : this.model.get( 'show_note' ) && 'block' || 'none' } )
+        this.$toggle.html( this.model.get( 'title' ) || '' )
+                    .removeClass().addClass( 'dropdown-toggle' )
+                    .addClass( this.model.get( 'cls' ) )
+                    .addClass( this.model.get( 'icon' ) && 'fa fa-2x ' + this.model.get( 'icon' ) )
+                    .addClass( this.model.get( 'toggle' ) && 'toggle' )
+                    .attr( 'target', this.model.get( 'target' ) )
+                    .attr( 'href', this.model.get( 'url' ) )
+                    .attr( 'title', this.model.get( 'tooltip' ) )
+                    .tooltip( 'destroy' );
+        this.model.get( 'tooltip' ) && this.$toggle.tooltip( { placement: 'bottom' } );
+        this.$dropdown.removeClass().addClass( 'dropdown' )
+                      .addClass( this.model.get( 'disabled' ) && 'disabled' )
+                      .addClass( this.model.get( 'active' ) && 'active' );
+        if ( this.model.get( 'menu' ) && this.model.get( 'show_menu' ) ) {
+            this.$menu.show();
+            $( '#dd-helper' ).show().off().on( 'click',  function() {
+                $( '#dd-helper' ).hide();
+                self.model.set( 'show_menu', false );
+            });
+        } else {
+            self.$menu.hide();
+            $( '#dd-helper' ).hide();
+        }
+        this.$menu.empty().removeClass( 'dropdown-menu' );
+        if ( this.model.get( 'menu' ) ) {
+            _.each( this.model.get( 'menu' ), function( menuItem ) {
+                self.$menu.append( self._buildMenuItem( menuItem ) );
+                menuItem.divider && self.$menu.append( $( '<li/>' ).addClass( 'divider' ) );
+            });
+            self.$menu.addClass( 'dropdown-menu' );
+            self.$toggle.append( $( '<b/>' ).addClass( 'caret' ) );
+        }
+        return this;
     },
 
     /** Add new menu item */
@@ -354,24 +341,19 @@ var Tab = Backbone.View.extend({
             } else {
                 model.set( 'show_menu', true );
             }
+        } else {
+            function buildLink( label, url ) {
+                return $( '<div/>' ).append( $( '<a/>' ).attr( 'href', Galaxy.root + url ).html( label ) ).html()
+            }
+            this.$toggle.popover && this.$toggle.popover( 'destroy' );
+            this.$toggle.popover({
+                html        : true,
+                placement   : 'bottom',
+                content     : 'Please ' + buildLink( 'login', 'user/login?use_panels=True' ) + ' or ' +
+                                          buildLink( 'register', 'user/create?use_panels=True' ) + ' to use this feature.'
+            }).popover( 'show' );
+            setTimeout( function() { self.$toggle.popover( 'destroy' ) }, 5000 );
         }
-    },
-
-    /** Configures login notification/popover */
-    _configurePopover: function() {
-        var self = this;
-        function buildLink( label, url ) {
-            return $( '<div/>' ).append( $( '<a/>' ).attr( 'href', Galaxy.root + url ).html( label ) ).html()
-        }
-        this.$toggle.popover && this.$toggle.popover( 'destroy' );
-        this.model.get( 'disabled' ) && this.$toggle.popover({
-            html        : true,
-            placement   : 'bottom',
-            content     : 'Please ' + buildLink( 'login', 'user/login?use_panels=True' ) + ' or ' +
-                                      buildLink( 'register', 'user/create?use_panels=True' ) + ' to use this feature.'
-        }).on( 'shown.bs.popover', function() {
-            setTimeout( function() { self.$toggle.popover( 'hide' ) }, 5000 );
-        });
     },
 
     /** Url formatting */

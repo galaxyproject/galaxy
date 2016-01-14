@@ -232,7 +232,8 @@ def total_size(o, handlers={}, verbose=False):
 
     Recipe from:  https://code.activestate.com/recipes/577504-compute-memory-footprint-of-an-object-and-its-cont/
     """
-    dict_handler = lambda d: chain.from_iterable(d.items())
+    def dict_handler(d):
+        return chain.from_iterable(d.items())
     all_handlers = { tuple: iter,
                      list: iter,
                      deque: iter,

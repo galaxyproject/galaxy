@@ -139,6 +139,7 @@ User.prototype.registerUser = function registerUser( email, password, username )
  */
 User.prototype.login = function login( email, password ){
     var spaceghost = this.spaceghost;
+    spaceghost.debug( '(' + spaceghost.getCurrentUrl() + ') attempting login with ' + email + ' using password ' + password );
 
     this._submitLogin( email, password );
     //spaceghost.withMainPanel( function mainAfterLogin(){
