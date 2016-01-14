@@ -22,7 +22,7 @@ from galaxy.datatypes.registry import Registry
 from galaxy.datatypes.util.image_util import get_image_ext
 from galaxy.util.json import dumps, loads
 from galaxy.util import multi_byte
-from galaxy.util.checkers import check_binary, check_bz2, check_gzip, check_html, check_image, check_zip
+from galaxy.util.checkers import check_binary, check_bz2, check_gzip, check_html, check_image, check_zip, check_zip_multi_files
 
 try:
     import Image as PIL
@@ -215,54 +215,59 @@ def add_file( dataset, registry, json_file, output_path ):
                         uncompressed = None
                         uncompressed_name = None
                         unzipped = False
-                        z = zipfile.ZipFile( dataset.path )
-                        for name in z.namelist():
-                            if name.endswith('/'):
-                                continue
-                            if unzipped:
-                                stdout = 'ZIP file contained more than one file, only the first file was added to Galaxy.'
-                                break
-                            fd, uncompressed = tempfile.mkstemp( prefix='data_id_%s_upload_zip_' % dataset.dataset_id, dir=os.path.dirname( output_path ), text=False )
-                            if sys.version_info[:2] >= ( 2, 6 ):
-                                zipped_file = z.open( name )
-                                while 1:
+                        if check_zip_multi_files( dataset.path ):
+                            dataset.ext = 'zip'
+                            stdout = 'ZIP file contained more than one file. So, the compression is kept.'
+                            data_type = 'zip_multi_files'
+                        else:
+                            z = zipfile.ZipFile( dataset.path )
+                            for name in z.namelist():
+                                if name.endswith('/'):
+                                    continue
+                                if unzipped:
+                                    stdout = 'ZIP file contained more than one file, only the first file was added to Galaxy.'
+                                    break
+                                fd, uncompressed = tempfile.mkstemp( prefix='data_id_%s_upload_zip_' % dataset.dataset_id, dir=os.path.dirname( output_path ), text=False )
+                                if sys.version_info[:2] >= ( 2, 6 ):
+                                    zipped_file = z.open( name )
+                                    while 1:
+                                        try:
+                                            chunk = zipped_file.read( CHUNK_SIZE )
+                                        except IOError:
+                                            os.close( fd )
+                                            os.remove( uncompressed )
+                                            file_err( 'Problem decompressing zipped data', dataset, json_file )
+                                            return
+                                        if not chunk:
+                                            break
+                                        os.write( fd, chunk )
+                                    os.close( fd )
+                                    zipped_file.close()
+                                    uncompressed_name = name
+                                    unzipped = True
+                                else:
+                                    # python < 2.5 doesn't have a way to read members in chunks(!)
                                     try:
-                                        chunk = zipped_file.read( CHUNK_SIZE )
+                                        outfile = open( uncompressed, 'wb' )
+                                        outfile.write( z.read( name ) )
+                                        outfile.close()
+                                        uncompressed_name = name
+                                        unzipped = True
                                     except IOError:
                                         os.close( fd )
                                         os.remove( uncompressed )
                                         file_err( 'Problem decompressing zipped data', dataset, json_file )
                                         return
-                                    if not chunk:
-                                        break
-                                    os.write( fd, chunk )
-                                os.close( fd )
-                                zipped_file.close()
-                                uncompressed_name = name
-                                unzipped = True
-                            else:
-                                # python < 2.5 doesn't have a way to read members in chunks(!)
-                                try:
-                                    outfile = open( uncompressed, 'wb' )
-                                    outfile.write( z.read( name ) )
-                                    outfile.close()
-                                    uncompressed_name = name
-                                    unzipped = True
-                                except IOError:
-                                    os.close( fd )
-                                    os.remove( uncompressed )
-                                    file_err( 'Problem decompressing zipped data', dataset, json_file )
-                                    return
-                        z.close()
-                        # Replace the zipped file with the decompressed file if it's safe to do so
-                        if uncompressed is not None:
-                            if dataset.type in ( 'server_dir', 'path_paste' ) or not in_place:
-                                dataset.path = uncompressed
-                            else:
-                                shutil.move( uncompressed, dataset.path )
-                            os.chmod(dataset.path, 0644)
-                            dataset.name = uncompressed_name
-                    data_type = 'zip'
+                            z.close()
+                            # Replace the zipped file with the decompressed file if it's safe to do so
+                            if uncompressed is not None:
+                                if dataset.type in ( 'server_dir', 'path_paste' ) or not in_place:
+                                    dataset.path = uncompressed
+                                else:
+                                    shutil.move( uncompressed, dataset.path )
+                                os.chmod(dataset.path, 0644)
+                                dataset.name = uncompressed_name
+                            data_type = 'zip'
             if not data_type:
                 # TODO refactor this logic.  check_binary isn't guaranteed to be
                 # correct since it only looks at whether the first 100 chars are
@@ -287,7 +292,7 @@ def add_file( dataset, registry, json_file, output_path ):
                 if check_html( dataset.path ):
                     file_err( 'The uploaded file contains inappropriate HTML content', dataset, json_file )
                     return
-            if data_type != 'binary':
+            if data_type not in [ 'binary', 'zip_multi_files' ]:
                 if link_data_only == 'copy_files':
                     if dataset.type in ( 'server_dir', 'path_paste' ) and data_type not in [ 'gzip', 'bz2', 'zip' ]:
                         in_place = False
