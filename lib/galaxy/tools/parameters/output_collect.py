@@ -347,6 +347,7 @@ class DatasetCollector( object ):
         # built from the tool parsing module - see galaxy.tools.parser.output_colleciton_def
         self.sort_key = dataset_collection_description.sort_key
         self.sort_reverse = dataset_collection_description.sort_reverse
+        self.sort_comp = dataset_collection_description.sort_comp
         self.pattern = dataset_collection_description.pattern
         self.default_dbkey = dataset_collection_description.default_dbkey
         self.default_ext = dataset_collection_description.default_ext
@@ -371,8 +372,18 @@ class DatasetCollector( object ):
     def sort( self, matches ):
         reverse = self.sort_reverse
         sort_key = self.sort_key
+        sort_comp = self.sort_comp
         assert sort_key in ["filename", "dbkey", "name", "designation"]
-        return sorted( matches, key=operator.attrgetter(sort_key), reverse=reverse )
+        assert sort_comp in ["lexical", "numeric"]
+        key = operator.attrgetter(sort_key)
+        if sort_comp == "numeric":
+            key = _compose(int, key)
+
+        return sorted(matches, key=key, reverse=reverse)
+
+
+def _compose(f, g):
+    return lambda x: f(g(x))
 
 
 class CollectedDatasetMatch( object ):

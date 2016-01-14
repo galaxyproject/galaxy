@@ -81,6 +81,21 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
         # Test default order of collection.
         assert list(datasets[ DEFAULT_TOOL_OUTPUT ].keys()) == ["test1", "test2", "test3"]
 
+    def test_collect_sorted_numeric( self ):
+        self._replace_output_collectors( '''<output>
+            <discover_datasets pattern="[abc](?P&lt;name&gt;.*)" directory="subdir_for_name_discovery" sort_by="numeric_name" ext="txt" />
+        </output>''')
+        # Setup filenames in reverse order and ensure name is used as key.
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="c1" )
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="b10" )
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="a100" )
+
+        datasets = self._collect()
+        assert DEFAULT_TOOL_OUTPUT in datasets
+
+        # Test default order of collection.
+        assert list(datasets[ DEFAULT_TOOL_OUTPUT ].keys()) == ["1", "10", "100"]
+
     def test_collect_hidden( self ):
         self._setup_extra_file( visible="hidden" )
         created_hda = self._collect_default_extra()

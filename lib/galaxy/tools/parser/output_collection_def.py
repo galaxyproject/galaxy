@@ -6,6 +6,7 @@ from galaxy.util import asbool
 
 DEFAULT_EXTRA_FILENAME_PATTERN = r"primary_DATASET_ID_(?P<designation>[^_]+)_(?P<visible>[^_]+)_(?P<ext>[^_]+)(_(?P<dbkey>[^_]+))?"
 DEFAULT_SORT_BY = "filename"
+DEFAULT_SORT_COMP = "lexical"
 
 
 # XML can describe custom patterns, but these literals describe named
@@ -51,6 +52,11 @@ class DatasetCollectionDescription(object):
             sort_by = sort_by[len("reverse_"):]
         else:
             self.sort_reverse = False
+        if "_" in sort_by:
+            sort_comp, sort_by = sort_by.split("_", 1)
+            assert sort_comp in ["lexical", "numeric"]
+        else:
+            sort_comp = DEFAULT_SORT_COMP
         assert sort_by in [
             "filename",
             "name",
@@ -58,5 +64,6 @@ class DatasetCollectionDescription(object):
             "dbkey"
         ]
         self.sort_key = sort_by
+        self.sort_comp = sort_comp
 
 DEFAULT_DATASET_COLLECTOR_DESCRIPTION = DatasetCollectionDescription()
