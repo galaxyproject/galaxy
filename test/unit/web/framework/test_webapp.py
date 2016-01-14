@@ -13,7 +13,6 @@ test_utils = imp.load_source( 'test_utils',
 import galaxy_mock
 
 import re
-import tempfile
 from galaxy.web.framework import webapp as Webapp
 import galaxy.config
 
@@ -23,20 +22,21 @@ class StubGalaxyWebTransaction( Webapp.GalaxyWebTransaction ):
         pass
 
 
+class CORSParsingMockConfig( galaxy_mock.MockAppConfig ):
+    # we can't use the actual Configuration for parsing*, so steal the parser for the mock instead
+    # *It causes problems when it's change to tempfile.tempdir persists across tests
+    _parse_allowed_origin_hostnames = galaxy.config.Configuration._parse_allowed_origin_hostnames.__func__
+
+    def __init__( self, **kwargs ):
+        super( CORSParsingMockConfig, self ).__init__( **kwargs )
+        self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames( kwargs )
+
+
 class GalaxyWebTransaction_Headers_TestCase( test_utils.unittest.TestCase ):
-
-    def setUp( self ):
-        # galaxy uses the tempfile.tempdir interface of the tempfile module, changing this value when a Configuration
-        # is created. This change persists across tests (since it's scoped to the module) and breaks following tests.
-        # TODO: most likely this should be changed at the core level to remove tempfile.tempdir - then remove this
-        self._saved_tempfile_tempdir = tempfile.tempdir
-
-    def teardown( self ):
-        tempfile.tempdir = self._saved_tempfile_tempdir
 
     def _new_trans( self, allowed_origin_hostnames=None ):
         app = galaxy_mock.MockApp()
-        app.config = galaxy.config.Configuration(
+        app.config = CORSParsingMockConfig(
             allowed_origin_hostnames=allowed_origin_hostnames
         )
         webapp = galaxy_mock.MockWebapp()
@@ -45,20 +45,14 @@ class GalaxyWebTransaction_Headers_TestCase( test_utils.unittest.TestCase ):
         return trans
 
     def assert_cors_header_equals( self, headers, should_be ):
-        self.assertEqual( headers[ 'access-control-allow-origin' ], should_be )
+        self.assertEqual( headers.get( 'access-control-allow-origin', None ), should_be )
 
     def assert_cors_header_missing( self, headers ):
         self.assertFalse( 'access-control-allow-origin' in headers )
 
-    def test_default_allowed_origin_hostnames( self ):
-        """Shouldn't have any allowed"""
-        config = galaxy.config.Configuration()
-        self.assertTrue( isinstance( config, galaxy.config.Configuration ) )
-        self.assertEqual( config.allowed_origin_hostnames, None )
-
     def test_parse_allowed_origin_hostnames( self ):
         """Should return a list of (possibly) mixed strings and regexps"""
-        config = galaxy.config.Configuration()
+        config = CORSParsingMockConfig()
 
         # falsy listify value should return None
         self.assertEqual( config._parse_allowed_origin_hostnames({
