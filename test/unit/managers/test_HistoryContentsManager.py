@@ -12,6 +12,8 @@ test_utils = imp.load_source( 'test_utils',
 from galaxy import eggs
 eggs.require( 'SQLAlchemy >= 0.4' )
 from sqlalchemy import true
+from sqlalchemy import false
+from sqlalchemy import desc
 from sqlalchemy.sql import text
 
 from base import BaseTestCase
@@ -129,17 +131,19 @@ class HistoryAsContainerTestCase( BaseTestCase, CreatesCollectionsMixin ):
         contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 4, 6 ) ])
         contents.append( self.add_list_collection_to_history( history, contents[4:6] ) )
 
-        self.log( "should be filter on deleted" )
+        self.log( "should allow filter on deleted" )
         self.hda_manager.delete( contents[1] )
         self.hda_manager.delete( contents[4] )
         contents[6].deleted = True
         deleted = [ contents[1], contents[4], contents[6] ]
         self.app.model.context.flush()
-        # weird filter language at this low level
-        filters = [ text( 'anon_1.deleted = 1' ) ]
+
+        # TODO: cross db compat?
+        filters = [ text( 'deleted = 1' ) ]
         # for content in self.contents_manager.contents( history, filters=filters ):
         #     print content.hid, content.history_content_type, content.id, content.name
         self.assertEqual( self.contents_manager.contents( history, filters=filters ), deleted )
+
         # even stranger that sqlalx can use the first model in the union (HDA) for columns across the union
         HDA = self.hda_manager.model_class
         self.assertEqual( self.contents_manager.contents( history,
@@ -147,6 +151,86 @@ class HistoryAsContainerTestCase( BaseTestCase, CreatesCollectionsMixin ):
         filter_limited_contents = self.contents_manager.contents( history,
             filters=[ HDA.deleted == true() ], limit=2, offset=1 )
         self.assertEqual( filter_limited_contents, deleted[1:] )
+
+        self.log( "should allow filter on visible" )
+        contents[2].visible = False
+        contents[5].visible = False
+        contents[6].visible = False
+        invisible = [ contents[2], contents[5], contents[6] ]
+        # for content in invisible:
+        #     print content.id, content.__class__.__name__, content
+        self.app.model.context.flush()
+
+        filters = [ text( 'visible = 0' ) ]
+        self.assertEqual( self.contents_manager.contents( history, filters=filters ), invisible )
+        self.assertEqual( self.contents_manager.contents( history,
+            filters=[ HDA.visible == false() ] ), invisible )
+        filter_limited_contents = self.contents_manager.contents( history,
+            filters=[ HDA.visible == false() ], limit=2, offset=1 )
+        self.assertEqual( filter_limited_contents, invisible[1:] )
+
+        self.log( "should allow filtering more than one attribute" )
+        deleted_and_invisible = [ contents[6] ]
+
+        filters = [ text( 'deleted = 1' ), text( 'visible = 0' ) ]
+        self.assertEqual( self.contents_manager.contents( history, filters=filters ), deleted_and_invisible )
+        self.assertEqual( self.contents_manager.contents( history,
+            filters=[ HDA.deleted == true(), HDA.visible == false() ] ), deleted_and_invisible )
+        offset_too_far = self.contents_manager.contents( history,
+            filters=[ HDA.deleted == true(), HDA.visible == false() ], limit=2, offset=1 )
+        self.assertEqual( offset_too_far, [] )
+
+        self.log( "should allow filtering more than one attribute" )
+        deleted_and_invisible = [ contents[6] ]
+        # note the two syntaxes both work
+        self.assertEqual( self.contents_manager.contents( history,
+            filters=[ text( 'deleted = 1' ), text( 'visible = 0' ) ] ), deleted_and_invisible )
+        self.assertEqual( self.contents_manager.contents( history,
+            filters=[ HDA.deleted == true(), HDA.visible == false() ] ), deleted_and_invisible )
+        offset_too_far = self.contents_manager.contents( history,
+            filters=[ HDA.deleted == true(), HDA.visible == false() ], limit=2, offset=1 )
+        self.assertEqual( offset_too_far, [] )
+
+        self.log( "should allow filtering using like" )
+        # find 'hda-4'
+        self.assertEqual( [ contents[4] ],
+            self.contents_manager.contents( history, filters=[ HDA.name.like( '%-4' ) ] ) )
+        # the collections added above have the default name 'test collection'
+        self.assertEqual( self.contents_manager.subcontainers( history ),
+            self.contents_manager.contents( history, filters=[ HDA.name.like( '%collect%' ) ] ) )
+
+    def test_order_by( self ):
+        user2 = self.user_manager.create( **user2_data )
+        history = self.history_manager.create( name='history', user=user2 )
+        contents = []
+        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ])
+        contents.append( self.add_list_collection_to_history( history, contents[:3] ) )
+        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 4, 6 ) ])
+        contents.append( self.add_list_collection_to_history( history, contents[4:6] ) )
+
+        self.log( "should default to hid order_by" )
+        self.assertEqual( self.contents_manager.contents( history ), contents )
+
+        self.log( "should allow asc, desc order_by" )
+        self.assertEqual( self.contents_manager.contents( history, order_by=desc( 'hid' ) ), contents[::-1] )
+
+        def get_create_time( item ):
+            create_time = getattr( item, 'create_time', None )
+            if not create_time:
+                create_time = item.collection.create_time
+            return create_time
+
+        self.log( "should allow create_time order_by" )
+        newest_first = sorted( contents, key=get_create_time, reverse=True )
+        results = self.contents_manager.contents( history, order_by=desc( 'create_time' ) )
+        self.assertEqual( newest_first, results )
+
+        self.log( "should allow update_time order_by" )
+        # change the oldest created to update the update_time
+        contents[0].name = 'zany and/or wacky'
+        self.app.model.context.flush()
+        results = self.contents_manager.contents( history, order_by=desc( 'update_time' ) )
+        self.assertEqual( contents[0], results[0] )
 
 
 # =============================================================================

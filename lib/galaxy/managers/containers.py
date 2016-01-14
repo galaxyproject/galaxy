@@ -65,7 +65,7 @@ class ContainerManagerMixin( object ):
         query = self.session().query( content_class ).filter( container_filter )
         return query
 
-    def _filter_to_contained( self, container, content_class ):
+    def _get_filter_for_contained( self, container, content_class ):
         raise galaxy.exceptions.NotImplemented( 'Abstract class' )
 
     def _content_manager( self, content ):
@@ -81,7 +81,7 @@ class LibraryFolderAsContainerManagerMixin( ContainerManagerMixin ):
     # subcontainer_class = model.LibraryDatasetCollectionAssociation
     order_contents_on = operator.attrgetter( 'create_time' )
 
-    def _filter_to_contained( self, container, content_class ):
+    def _get_filter_for_contained( self, container, content_class ):
         if content_class == self.subcontainer_class:
             return self.subcontainer_class.parent == container
         return self.contained_class.folder == container
@@ -102,7 +102,7 @@ class DatasetCollectionAsContainerManagerMixin( ContainerManagerMixin ):
     subcontainer_class = model.DatasetCollection
     order_contents_on = operator.attrgetter( 'element_index' )
 
-    def _filter_to_contained( self, container, content_class ):
+    def _get_filter_for_contained( self, container, content_class ):
         return content_class.collection == container
 
     def _content_manager( self, content ):

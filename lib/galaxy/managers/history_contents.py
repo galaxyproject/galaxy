@@ -37,7 +37,7 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         """
         Returns non-subcontainer objects within `container`.
         """
-        filter_to_inside_container = self._filter_to_contained( container, self.contained_class )
+        filter_to_inside_container = self._get_filter_for_contained( container, self.contained_class )
         filters = base.munge_lists( filter_to_inside_container, filters )
         return self.contained_manager.list( filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs )
 
@@ -45,7 +45,7 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         """
         Returns only the containers within `container`.
         """
-        filter_to_inside_container = self._filter_to_contained( container, self.subcontainer_class )
+        filter_to_inside_container = self._get_filter_for_contained( container, self.subcontainer_class )
         filters = base.munge_lists( filter_to_inside_container, filters )
         # TODO: collections.DatasetCollectionManager doesn't have the list
         # return self.subcontainer_manager.list( filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs )
@@ -64,24 +64,22 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
     def session( self ):
         return self.app.model.context
 
-    # not limited or offset contents query
     def _filter_to_contents_query( self, container, content_class, **kwargs ):
         # TODO: use list (or by_history etc.)
-        container_filter = self._filter_to_contained( container, content_class )
+        container_filter = self._get_filter_for_contained( container, content_class )
         query = self.session().query( content_class ).filter( container_filter )
         return query
 
-    def _filter_to_contained( self, container, content_class ):
+    def _get_filter_for_contained( self, container, content_class ):
         return content_class.history == container
 
-    # limited and offset query
     def _union_of_contents( self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs ):
         """
         Returns a limited and offset list of both types of contents, filtered
         and in some order.
         """
-        order_by = order_by or self.default_order_by
-        order_by = order_by if isinstance( order_by, tuple ) else ( order_by, )
+        order_by = order_by if order_by is not None else self.default_order_by
+        order_by = order_by if isinstance( order_by, ( tuple, list ) ) else ( order_by, )
 
         # TODO: 3 queries and 3 iterations over results - this is undoubtedly better solved in the actual SQL layer
         # via one common table for contents, Some Yonder Resplendent and Fanciful Join, or ORM functionality
@@ -114,11 +112,9 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
 
         # partition ids into a map of { component_class names -> list of ids } from the above union query
         id_map = dict( (( self.contained_class.__name__, [] ), ( self.subcontainer_class.__name__, [] )) )
-        get_unioned_typestr = lambda c: str( c[ 1 ] )
-        get_unioned_id = lambda c: c[ 2 ]
         for result in contents_results:
-            result_type = get_unioned_typestr( result )
-            contents_id = get_unioned_id( result )
+            result_type = self._get_union_classstr( result )
+            contents_id = self._get_union_id( result )
             if result_type in id_map:
                 id_map[ result_type ].append( contents_id )
             else:
@@ -139,12 +135,14 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         contents = []
         # TODO: or as generator?
         for result in contents_results:
-            result_type = get_unioned_typestr( result )
-            contents_id = get_unioned_id( result )
+            result_type = self._get_union_classstr( result )
+            contents_id = self._get_union_id( result )
             content = id_map[ result_type ][ contents_id ]
             contents.append( content )
         return contents
 
+    #: the columns which are common to both subcontainers and non-subcontainers.
+    #  Also the attributes that may be filtered or orderered_by.
     common_columns = (
         "history_id",
         "model_class",
@@ -186,7 +184,7 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         columns = self._contents_common_columns( component_class,
             # TODO: should be purgable? fix
             purged=literal( False ),
-            # these are attached instead to the inner collection
+            # these are attached instead to the inner collection joined below
             create_time=model.DatasetCollection.create_time,
             update_time=model.DatasetCollection.update_time
         )
@@ -196,6 +194,14 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
             model.DatasetCollection.id == component_class.collection_id )
         subquery = subquery.filter( component_class.history_id == history_id )
         return subquery
+
+    def _get_union_classstr( self, union ):
+        """Return the string name of the class for this row in the union results"""
+        return str( union[ 1 ] )
+
+    def _get_union_id( self, union ):
+        """Return the id for this row in the union results"""
+        return union[ 2 ]
 
     def _by_ids( self, component_class, id_list ):
         if not id_list:
