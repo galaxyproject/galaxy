@@ -53,6 +53,20 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
         assert created_hda_1.visible
         assert created_hda_1.dbkey == "?"
 
+    def test_collect_sorted_reverse( self ):
+        self._replace_output_collectors( '''<output>
+            <discover_datasets pattern="__name__" directory="subdir_for_name_discovery" sort_by="reverse_filename" ext="txt" />
+        </output>''')
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="test1" )
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="test2" )
+
+        datasets = self._collect()
+        assert DEFAULT_TOOL_OUTPUT in datasets
+        self.assertEquals( len( datasets[ DEFAULT_TOOL_OUTPUT ] ), 2 )
+
+        # Test default order of collection.
+        assert list(datasets[ DEFAULT_TOOL_OUTPUT ].keys()) == ["test2", "test1"]
+
     def test_collect_hidden( self ):
         self._setup_extra_file( visible="hidden" )
         created_hda = self._collect_default_extra()

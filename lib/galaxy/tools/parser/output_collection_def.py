@@ -5,6 +5,7 @@ dataset collection after jobs are finished.
 from galaxy.util import asbool
 
 DEFAULT_EXTRA_FILENAME_PATTERN = r"primary_DATASET_ID_(?P<designation>[^_]+)_(?P<visible>[^_]+)_(?P<ext>[^_]+)(_(?P<dbkey>[^_]+))?"
+DEFAULT_SORT_BY = "filename"
 
 
 # XML can describe custom patterns, but these literals describe named
@@ -44,5 +45,18 @@ class DatasetCollectionDescription(object):
         self.default_visible = asbool( kwargs.get( "visible", None ) )
         self.directory = kwargs.get( "directory", None )
         self.assign_primary_output = asbool( kwargs.get( 'assign_primary_output', False ) )
+        sort_by = kwargs.get( "sort_by", DEFAULT_SORT_BY )
+        if sort_by.startswith("reverse_"):
+            self.sort_reverse = True
+            sort_by = sort_by[len("reverse_"):]
+        else:
+            self.sort_reverse = False
+        assert sort_by in [
+            "filename",
+            # "name",
+            # "designation",
+            # "dbkey"
+        ]
+        self.sort_key = sort_by
 
 DEFAULT_DATASET_COLLECTOR_DESCRIPTION = DatasetCollectionDescription()

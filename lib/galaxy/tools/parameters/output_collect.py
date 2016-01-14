@@ -322,7 +322,8 @@ def walk_over_extra_files( extra_file_collectors, job_working_directory, matchab
             path = os.path.join( directory, filename )
             if not os.path.isfile( path ):
                 continue
-            if extra_file_collector.match( matchable, filename ):
+            match = extra_file_collector.match( matchable, filename )
+            if match:
                 paths[filename] = path
 
         for filename in extra_file_collector.sort(paths.keys()):
@@ -343,6 +344,8 @@ class DatasetCollector( object ):
     def __init__( self, dataset_collection_description ):
         # dataset_collection_description is an abstract description
         # built from the tool parsing module - see galaxy.tools.parser.output_colleciton_def
+        self.sort_key = dataset_collection_description.sort_key
+        self.sort_reverse = dataset_collection_description.sort_reverse
         self.pattern = dataset_collection_description.pattern
         self.default_dbkey = dataset_collection_description.default_dbkey
         self.default_ext = dataset_collection_description.default_ext
@@ -361,18 +364,22 @@ class DatasetCollector( object ):
         re_match = re.match( pattern, filename )
         match_object = None
         if re_match:
-            match_object = CollectedDatasetMatch( re_match, self )
+            match_object = CollectedDatasetMatch( re_match, self, filename )
         return match_object
 
     def sort( self, filenames ):
-        return sorted( filenames )
+        reverse = self.sort_reverse
+        sort_key = self.sort_key
+        assert sort_key == "filename"
+        return sorted( filenames, reverse=reverse )
 
 
 class CollectedDatasetMatch( object ):
 
-    def __init__( self, re_match, collector ):
+    def __init__( self, re_match, collector, filename ):
         self.re_match = re_match
         self.collector = collector
+        self.filename = filename
 
     @property
     def designation( self ):
