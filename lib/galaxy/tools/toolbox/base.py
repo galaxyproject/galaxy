@@ -172,7 +172,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         if integrated_panel_dict is None:
             integrated_panel_dict = self._integrated_tool_panel
         if item_type == 'tool':
-            self._load_tool_tag_set( item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, tool_path=tool_path, load_panel_dict=load_panel_dict, guid=guid, index=index )
+            self._load_tool_tag_set( item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, tool_path=tool_path, load_panel_dict=load_panel_dict, guid=guid, index=index, internal=internal )
         elif item_type == 'workflow':
             self._load_workflow_tag_set( item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, load_panel_dict=load_panel_dict, index=index )
         elif item_type == 'section':
@@ -539,7 +539,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         else:
             remove_from_dict( self._tool_panel, self._integrated_tool_panel )
 
-    def _load_tool_tag_set( self, item, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None, index=None ):
+    def _load_tool_tag_set( self, item, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None, index=None, internal=False ):
         try:
             path = item.get( "file" )
             repository_id = None
@@ -581,7 +581,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     repository_id = self.app.security.encode_id( tool_shed_repository.id )
                 # Else there is not yet a tool_shed_repository record, we're in the process of installing
                 # a new repository, so any included tools can be loaded into the tool panel.
-            tool = self.load_tool( os.path.join( tool_path, path ), guid=guid, repository_id=repository_id )
+            tool = self.load_tool( os.path.join( tool_path, path ), guid=guid, repository_id=repository_id, use_cached=internal )
             if string_as_bool(item.get( 'hidden', False )):
                 tool.hidden = True
             key = 'tool_%s' % str( tool.id )
@@ -723,7 +723,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         if tool_loaded or force_watch:
             self._tool_watcher.watch_directory( directory, quick_load )
 
-    def load_tool( self, config_file, guid=None, repository_id=None, use_cached=True, **kwds ):
+    def load_tool( self, config_file, guid=None, repository_id=None, use_cached=False, **kwds ):
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
         # Parse XML configuration file and get the root element
         tool_cache = getattr( self.app, 'tool_cache', None )
@@ -791,7 +791,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             status = 'error'
         else:
             old_tool = self._tools_by_id[ tool_id ]
-            new_tool = self.load_tool( old_tool.config_file )
+            new_tool = self.load_tool( old_tool.config_file, use_cached=False )
             # The tool may have been installed from a tool shed, so set the tool shed attributes.
             # Since the tool version may have changed, we don't override it here.
             new_tool.id = old_tool.id
