@@ -20,7 +20,7 @@ define([ 'test-app', 'mvc/ui/ui-misc'
         ok( input.tagName === 'input', 'Created input.' );
         ok( input.value() === undefined, 'Input empty.' );
         input.model.set( 'value', '_value' );
-        ok( input.$el.val() === '_value', 'Input empty.' );
+        ok( input.$el.val() === '_value', 'Input with value.' );
         ok( !input.$el.hasClass( '_cls' ), 'Has no custom class.' );
         input.model.set( 'cls', '_cls' );
         ok( input.$el.hasClass( '_cls' ), 'Has custom class.' );
@@ -62,7 +62,7 @@ define([ 'test-app', 'mvc/ui/ui-misc'
         ok( message.$el.hasClass( 'alert-info' ), 'Alert info.' );
         ok( message.$el.html() === '_message', 'Correct message.' );
         message.model.set( 'message', '_new_message' );
-        ok( message.$el.html() === '_new_message', 'Correct message.' );
+        ok( message.$el.html() === '_new_message', 'Correct new message.' );
     } );
 
     test( 'hidden', function() {

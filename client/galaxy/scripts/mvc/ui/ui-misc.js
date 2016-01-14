@@ -13,7 +13,7 @@ define(['utils/utils',
     /** Label wrapper */
     var Label = Backbone.View.extend({
         tagName: 'label',
-        initialize : function( options ) {
+        initialize: function( options ) {
             this.model = options && options.model || new Backbone.Model( options );
             this.tagName = options.tagName || this.tagName;
             this.setElement( $( '<' + this.tagName + '/>' ) );
@@ -79,7 +79,7 @@ define(['utils/utils',
 
     /** Renders an input element used e.g. in the tool form */
     var Input = Backbone.View.extend({
-        initialize : function( options ) {
+        initialize: function( options ) {
             this.model = options && options.model || new Backbone.Model({
                 type            : 'text',
                 placeholder     : '',
@@ -96,7 +96,7 @@ define(['utils/utils',
         events: {
             'input': '_onchange'
         },
-        value: function ( new_val ) {
+        value: function( new_val ) {
             new_val !== undefined && this.model.set( 'value', typeof new_val === 'string' ? new_val : '' );
             return this.model.get( 'value' );
         },
@@ -127,7 +127,7 @@ define(['utils/utils',
             this.listenTo( this.model, 'change', this.render, this );
             this.render();
         },
-        value: function ( new_val ) {
+        value: function( new_val ) {
             new_val !== undefined && this.model.set( 'value', new_val );
             return this.model.get( 'value' );
         },
