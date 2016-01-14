@@ -23,10 +23,9 @@ try:
 except ImportError:
     shellescape = None
 
-if job is not None:
-    needs_shell_quoting = job.needs_shell_quoting
-else:
-    needs_shell_quoting = None
+import re
+
+needs_shell_quoting = re.compile(r"""(^$|[\s|&;()<>\'"$@])""").search
 
 
 def ensure_cwltool_available():
