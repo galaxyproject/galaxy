@@ -79,9 +79,9 @@ define([ "test-app", "layout/masthead"
         this.tab.set( 'toggle', false );
         ok( !this.$toggle.hasClass( 'toggle' ), 'Untoggled' );
         this.tab.set( 'disabled', true );
-        ok( this.$toggle.hasClass( 'disabled' ), 'Correctly disabled' );
+        ok( this.$tab.hasClass( 'disabled' ), 'Correctly disabled' );
         this.tab.set( 'disabled', false );
-        ok( !this.$toggle.hasClass( 'disabled' ), 'Correctly enabled' );
+        ok( !this.$tab.hasClass( 'disabled' ), 'Correctly enabled' );
         ok( this.$tab.hasClass( 'active' ), 'Highlighted' );
         this.tab.set( 'active', false );
         ok( !this.$tab.hasClass( 'active' ), 'Not highlighted' );

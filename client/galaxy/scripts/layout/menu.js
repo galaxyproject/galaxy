@@ -173,7 +173,7 @@ var Collection = Backbone.Collection.extend({
         if ( !Galaxy.user.id ){
             var userTab = {
                 id              : 'user',
-                icon            : 'fa-user',
+                title           : 'User',
                 cls             : 'loggedout-only',
                 tooltip         : 'Account registration or login',
                 menu            : [{
@@ -191,7 +191,7 @@ var Collection = Backbone.Collection.extend({
         } else {
             var userTab = {
                 id              : 'user',
-                icon            : 'fa-user',
+                title           : 'User',
                 cls             : 'loggedin-only',
                 tooltip         : 'Account preferences and saved data',
                 menu            : [{
@@ -280,7 +280,7 @@ var Tab = Backbone.View.extend({
         }).on( 'init change:toggle', function() {
             self.$toggle[ this.get( 'toggle' ) && 'addClass' || 'removeClass' ]( 'toggle' );
         }).on( 'init change:disabled', function() {
-            self.$toggle[ this.get( 'disabled' ) && 'addClass' || 'removeClass' ]( 'disabled' );
+            self.$dropdown[ this.get( 'disabled' ) && 'addClass' || 'removeClass' ]( 'disabled' );
             self._configurePopover();
         }).on( 'init change:active', function() {
             self.$dropdown[ this.get( 'active' ) && 'addClass' || 'removeClass' ]( 'active' );

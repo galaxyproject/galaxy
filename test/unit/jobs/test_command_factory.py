@@ -163,6 +163,12 @@ class MockJobWrapper(object):
         self.working_directory = job_dir
         self.prepare_input_files_cmds = None
         self.commands_in_new_shell = False
+        self.app = Bunch(
+            config=Bunch(
+                check_job_script_integrity=False,
+            )
+        )
+        self.shell = "/bin/sh"
 
     def get_command_line(self):
         return self.command_line

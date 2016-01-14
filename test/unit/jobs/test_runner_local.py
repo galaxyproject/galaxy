@@ -121,6 +121,7 @@ class MockJobWrapper( object ):
         self.mock_metadata_path = os.path.abspath( os.path.join( test_directory, "METADATA_SET" ) )
         self.metadata_command = "touch %s" % self.mock_metadata_path
         self.galaxy_virtual_env = None
+        self.shell = "/bin/bash"
 
         # Cruft for setting metadata externally, axe at some point.
         self.external_output_metadata = bunch.Bunch(
