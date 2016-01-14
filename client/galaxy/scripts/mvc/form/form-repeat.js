@@ -5,9 +5,8 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc']
 /** This class creates a ui component which enables the dynamic creation of portlets
 */
 var View = Backbone.View.extend({
-    /** Initialize
-    */
     initialize : function(options) {
+        var self = this;
         this.options = Utils.merge(options, {
             title       : 'Section',
             empty_text  : 'Not available.',
@@ -15,13 +14,12 @@ var View = Backbone.View.extend({
             min         : null
         });
         this.setElement('<div/>');
-        var self = this;
 
         // create button
         this.button_new = new Ui.ButtonIcon({
             icon    : 'fa-plus',
-            title   : 'Insert ' + options.title_new,
-            tooltip : 'Add new ' + options.title_new + ' block',
+            title   : 'Insert ' + this.options.title_new,
+            tooltip : 'Add new ' + this.options.title_new + ' block',
             floating: 'clear',
             onclick : function() {
                 if (options.onnew) {
