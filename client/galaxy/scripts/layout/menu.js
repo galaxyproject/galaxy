@@ -280,7 +280,7 @@ var Tab = Backbone.View.extend({
         }).on( 'init change:toggle', function() {
             self.$toggle[ this.get( 'toggle' ) && 'addClass' || 'removeClass' ]( 'toggle' );
         }).on( 'init change:disabled', function() {
-            self.$toggle[ this.get( 'disabled' ) && 'addClass' || 'removeClass' ]( 'disabled' );
+            self.$dropdown[ this.get( 'disabled' ) && 'addClass' || 'removeClass' ]( 'disabled' );
             self._configurePopover();
         }).on( 'init change:active', function() {
             self.$dropdown[ this.get( 'active' ) && 'addClass' || 'removeClass' ]( 'active' );
