@@ -310,6 +310,7 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
 
 def walk_over_extra_files( extra_file_collectors, job_working_directory, matchable ):
     for extra_file_collector in extra_file_collectors:
+        paths = {}
         directory = job_working_directory
         if extra_file_collector.directory:
             directory = os.path.join( directory, extra_file_collector.directory )
@@ -317,12 +318,15 @@ def walk_over_extra_files( extra_file_collectors, job_working_directory, matchab
                 raise Exception( "Problem with tool configuration, attempting to pull in datasets from outside working directory." )
         if not os.path.isdir( directory ):
             continue
-        for filename in sorted( os.listdir( directory ) ):
+        for filename in os.listdir( directory ):
             path = os.path.join( directory, filename )
             if not os.path.isfile( path ):
                 continue
             if extra_file_collector.match( matchable, filename ):
-                yield path, extra_file_collector
+                paths[filename] = path
+
+        for filename in extra_file_collector.sort(paths.keys()):
+            yield paths[filename], extra_file_collector
 
 
 def dataset_collector( dataset_collection_description ):
@@ -359,6 +363,9 @@ class DatasetCollector( object ):
         if re_match:
             match_object = CollectedDatasetMatch( re_match, self )
         return match_object
+
+    def sort( self, filenames ):
+        return sorted( filenames )
 
 
 class CollectedDatasetMatch( object ):
