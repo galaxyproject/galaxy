@@ -1,9 +1,13 @@
 from os import getcwd
-from os import chmod
 from os.path import join
 from os.path import abspath
 
 from galaxy import util
+from galaxy.jobs.runners.util.job_script import (
+    INTEGRITY_INJECTION,
+    write_script,
+    check_script_integrity,
+)
 
 from logging import getLogger
 log = getLogger( __name__ )
@@ -79,11 +83,12 @@ def build_command(
 def __externalize_commands(job_wrapper, commands_builder, remote_command_params, script_name="tool_script.sh"):
     local_container_script = join( job_wrapper.working_directory, script_name )
     tool_commands = commands_builder.build()
-    with open( local_container_script, "w" ) as f:
-        script_contents = u"#!%s\n%s" % (DEFAULT_SHELL, tool_commands)
-        f.write(script_contents.encode(util.DEFAULT_ENCODING))
-    chmod( local_container_script, 0755 )
-
+    config = job_wrapper.app.config
+    integrity_injection = ""
+    if check_script_integrity(config):
+        integrity_injection = INTEGRITY_INJECTION
+    script_contents = u"#!%s\n%s%s" % (DEFAULT_SHELL, integrity_injection, tool_commands)
+    write_script(local_container_script, script_contents, config)
     commands = local_container_script
     if 'working_directory' in remote_command_params:
         commands = "%s %s" % (DEFAULT_SHELL, join(remote_command_params['working_directory'], script_name))
