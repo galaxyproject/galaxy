@@ -2,6 +2,7 @@
 """
 import os
 import re
+import operator
 import glob
 import json
 
@@ -310,7 +311,7 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
 
 def walk_over_extra_files( extra_file_collectors, job_working_directory, matchable ):
     for extra_file_collector in extra_file_collectors:
-        paths = {}
+        matches = []
         directory = job_working_directory
         if extra_file_collector.directory:
             directory = os.path.join( directory, extra_file_collector.directory )
@@ -322,12 +323,12 @@ def walk_over_extra_files( extra_file_collectors, job_working_directory, matchab
             path = os.path.join( directory, filename )
             if not os.path.isfile( path ):
                 continue
-            match = extra_file_collector.match( matchable, filename )
+            match = extra_file_collector.match( matchable, filename, path=path )
             if match:
-                paths[filename] = path
+                matches.append(match)
 
-        for filename in extra_file_collector.sort(paths.keys()):
-            yield paths[filename], extra_file_collector
+        for match in extra_file_collector.sort(matches):
+            yield match.path, extra_file_collector
 
 
 def dataset_collector( dataset_collection_description ):
@@ -359,27 +360,28 @@ class DatasetCollector( object ):
             token_replacement = str( dataset_instance.id )
         return self.pattern.replace( DATASET_ID_TOKEN, token_replacement )
 
-    def match( self, dataset_instance, filename ):
+    def match( self, dataset_instance, filename, path=None ):
         pattern = self.pattern_for_dataset( dataset_instance )
         re_match = re.match( pattern, filename )
         match_object = None
         if re_match:
-            match_object = CollectedDatasetMatch( re_match, self, filename )
+            match_object = CollectedDatasetMatch( re_match, self, filename, path=path )
         return match_object
 
-    def sort( self, filenames ):
+    def sort( self, matches ):
         reverse = self.sort_reverse
         sort_key = self.sort_key
-        assert sort_key == "filename"
-        return sorted( filenames, reverse=reverse )
+        assert sort_key in ["filename", "dbkey", "name", "designation"]
+        return sorted( matches, key=operator.attrgetter(sort_key), reverse=reverse )
 
 
 class CollectedDatasetMatch( object ):
 
-    def __init__( self, re_match, collector, filename ):
+    def __init__( self, re_match, collector, filename, path=None ):
         self.re_match = re_match
         self.collector = collector
         self.filename = filename
+        self.path = path
 
     @property
     def designation( self ):

@@ -53,9 +53,9 @@ class DatasetCollectionDescription(object):
             self.sort_reverse = False
         assert sort_by in [
             "filename",
-            # "name",
-            # "designation",
-            # "dbkey"
+            "name",
+            "designation",
+            "dbkey"
         ]
         self.sort_key = sort_by
 
