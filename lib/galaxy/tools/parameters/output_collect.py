@@ -220,7 +220,7 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
                 primary_output_assigned = True
                 continue
             if name not in primary_datasets:
-                primary_datasets[ name ] = {}
+                primary_datasets[ name ] = odict.odict()
             visible = fields_match.visible
             ext = fields_match.ext
             if ext == "input":
