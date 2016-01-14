@@ -53,6 +53,7 @@ PACKAGES = [
 ENTRY_POINTS = '''
 '''
 PACKAGE_DATA = {
+    # Be sure to update MANIFEST.in for source dist.
     'galaxy': [
         'util/docutils_template.txt',
         'exceptions/error_codes.json',
