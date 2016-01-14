@@ -271,13 +271,13 @@ var Tab = Backbone.View.extend({
                     .addClass( this.model.get( 'cls' ) )
                     .addClass( this.model.get( 'icon' ) && 'fa fa-2x ' + this.model.get( 'icon' ) )
                     .addClass( this.model.get( 'toggle' ) && 'toggle' )
-                    .addClass( this.model.get( 'disabled' ) && 'disabled' )
                     .attr( 'target', this.model.get( 'target' ) )
                     .attr( 'href', this.model.get( 'url' ) )
                     .attr( 'title', this.model.get( 'tooltip' ) )
                     .tooltip( 'destroy' );
         this.model.get( 'tooltip' ) && this.$toggle.tooltip( { placement: 'bottom' } );
         this.$dropdown.removeClass().addClass( 'dropdown' )
+                      .addClass( this.model.get( 'disabled' ) && 'disabled' )
                       .addClass( this.model.get( 'active' ) && 'active' );
         if ( this.model.get( 'menu' ) && this.model.get( 'show_menu' ) ) {
             this.$menu.show();
