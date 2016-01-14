@@ -254,6 +254,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         tool_shed_url = kwd.get( 'tool_shed_url', None )
         params[ 'tool_panel_section_id' ] = kwd.get( 'tool_panel_section_id', None )
         params[ 'new_tool_panel_section_label' ] = kwd.get( 'new_tool_panel_section', None )
+        params[ 'tool_panel_section_mapping' ] = json.loads( kwd.get( 'tool_panel_section', '{}' ) )
         params[ 'install_tool_dependencies' ] = util.asbool( kwd.get( 'install_tool_dependencies', False ) )
         params[ 'install_repository_dependencies' ] = util.asbool( kwd.get( 'install_repository_dependencies', False ) )
         params[ 'shed_tool_conf' ] = kwd.get( 'shed_tool_conf', None )

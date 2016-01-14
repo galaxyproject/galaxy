@@ -551,12 +551,6 @@ def populate_api_routes( webapp, app ):
                            action='set_permissions',
                            conditions=dict( method=[ "POST" ] ) )
 
-    webapp.mapper.connect( 'install_repository',
-                           '/api/tool_shed_repositories/install',
-                           controller='tool_shed_repositories',
-                           action='install',
-                           conditions=dict( method=[ 'POST' ] ) )
-
     webapp.mapper.resource( 'content',
                             'contents',
                             controller='folder_contents',
@@ -616,6 +610,12 @@ def populate_api_routes( webapp, app ):
                            controller='tool_shed_repositories',
                            action='status',
                            conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'install_repository',
+                           '/api/tool_shed_repositories/install',
+                           controller='tool_shed_repositories',
+                           action='install',
+                           conditions=dict( method=[ 'POST' ] ) )
 
     # ==== Trace/Metrics Logger
     # Connect logger from app
