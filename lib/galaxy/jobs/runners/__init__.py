@@ -167,7 +167,7 @@ class BaseJobRunner( object ):
             job_wrapper.runner_command_line = self.build_command_line(
                 job_wrapper,
                 include_metadata=include_metadata,
-                include_work_dir_outputs=include_work_dir_outputs
+                include_work_dir_outputs=include_work_dir_outputs,
             )
         except:
             log.exception("(%s) Failure preparing job" % job_id)
@@ -298,6 +298,7 @@ class BaseJobRunner( object ):
             env_setup_commands=env_setup_commands,
             working_directory=os.path.abspath( job_wrapper.working_directory ),
             command=command_line,
+            shell=job_wrapper.shell,
         )
         # Additional logging to enable if debugging from_work_dir handling, metadata
         # commands, etc... (or just peak in the job script.)

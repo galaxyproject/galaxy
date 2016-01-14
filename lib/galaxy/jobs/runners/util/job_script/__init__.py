@@ -6,6 +6,8 @@ from pkg_resources import resource_string
 
 from galaxy.util import unicodify
 
+DEFAULT_SHELL = '/bin/sh'
+
 DEFAULT_JOB_FILE_TEMPLATE = Template(
     resource_string(__name__, 'DEFAULT_JOB_FILE_TEMPLATE.sh').decode('UTF-8')
 )
@@ -40,6 +42,7 @@ OPTIONAL_TEMPLATE_PARAMS = {
     'instrument_pre_commands': '',
     'instrument_post_commands': '',
     'integrity_injection': INTEGRITY_INJECTION,
+    'shell': DEFAULT_SHELL,
 }
 
 

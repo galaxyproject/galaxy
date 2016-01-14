@@ -43,6 +43,9 @@ log = logging.getLogger( __name__ )
 # and should eventually become API'd
 TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
 
+# Override with config.default_job_shell.
+DEFAULT_JOB_SHELL = '/bin/sh'
+
 
 class JobDestination( Bunch ):
     """
@@ -55,6 +58,7 @@ class JobDestination( Bunch ):
         self['runner'] = None
         self['legacy'] = False
         self['converted'] = False
+        self['shell'] = None
         self['env'] = []
         self['resubmit'] = []
         # dict is appropriate (rather than a bunch) since keys may not be valid as attributes
@@ -784,6 +788,10 @@ class JobWrapper( object ):
 
     def get_parallelism(self):
         return self.tool.parallelism
+
+    @property
+    def shell(self):
+        return self.job_destination.shell or getattr(self.app.config, 'default_job_shell', DEFAULT_JOB_SHELL)
 
     @property
     def commands_in_new_shell(self):
