@@ -469,6 +469,8 @@ class ToolPanelManager( object ):
 
     def update_tool_panel_dict( self, tool_panel_dict, tool_panel_section_mapping, repository_tools_tups ):
         for tool_guid in tool_panel_dict:
+            if tool_guid not in tool_panel_section_mapping:
+                continue
             for idx, tool in enumerate( tool_panel_dict[ tool_guid ] ):
                 section_name = tool_panel_section_mapping[ tool_guid ][ 'tool_panel_section' ]
                 section_id = str( tool_panel_section_mapping[ tool_guid ][ 'tool_panel_section' ].lower().replace( ' ', '_' ) )
