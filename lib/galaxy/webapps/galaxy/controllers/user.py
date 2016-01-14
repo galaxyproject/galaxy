@@ -788,8 +788,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     subject = 'Join Mailing List'
                     try:
                         util.send_mail( frm, to, subject, body, trans.app.config )
-                    except Exception, e:
-                        log.error( 'Subscribing to the mailing list has failed.', e )
+                    except Exception:
+                        log.exception( 'Subscribing to the mailing list has failed.' )
                         error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed."
             if not error and not is_admin:
                 # The handle_user_login() method has a call to the history_set_default_permissions() method
@@ -848,8 +848,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         try:
             util.send_mail( frm, to, subject, body, trans.app.config )
             return True
-        except Exception, e:
-            log.error( 'Unable to send the activation email.', e )
+        except Exception:
+            log.exception( 'Unable to send the activation email.' )
             return False
 
     def prepare_activation_link( self, trans, email ):
