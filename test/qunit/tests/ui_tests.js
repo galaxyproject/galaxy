@@ -27,6 +27,14 @@ define([ 'test-app', 'mvc/ui/ui-misc'
         ok( !input.$el.attr( 'placeholder' ), 'Has no placeholder' );
         input.model.set( 'placeholder', '_placeholder' );
         ok( input.$el.attr( 'placeholder' ) === '_placeholder', 'Has correct placeholder' );
+        input.model.set( 'disabled', true );
+        ok( input.$el.attr( 'disabled' ), 'Disabled' );
+        input.model.set( 'disabled', false );
+        ok( !input.$el.attr( 'disabled' ), 'Enabled' );
+        input.model.set( 'visible', false );
+        ok( input.$el.css( 'display' ) === 'none', 'Hidden' );
+        input.model.set( 'visible', true );
+        ok( input.$el.css( 'display' ) === 'inline-block', 'Shown' );
     } );
 
     test( 'textarea', function() {

@@ -51,28 +51,23 @@ define(['utils/utils',
             this.model.set( options );
         },
         render: function() {
-            this.$el.removeClass().addClass( this.model.get( 'cls' ) );
+            this.$el.removeClass().addClass( 'ui-message' ).addClass( this.model.get( 'cls' ) );
+            var status = this.model.get( 'status' );
+            if ( this.model.get( 'large' ) ) {
+                this.$el.addClass((( status == 'success' && 'done' ) ||
+                                   ( status == 'danger' && 'error' ) ||
+                                     status ) + 'messagelarge' );
+            } else {
+                this.$el.addClass( 'alert' ).addClass( 'alert-' + status );
+            }
             if ( this.model.get( 'message' ) ) {
-                var status = this.model.get( 'status' );
-                if ( this.model.get( 'large' ) ) {
-                    this.$el.addClass((( status == 'success' && 'done' ) ||
-                                       ( status == 'danger' && 'error' ) ||
-                                         status ) + 'messagelarge' );
-                } else {
-                    this.$el.addClass( 'ui-message alert' )
-                            .addClass( 'alert-' + status );
-                }
                 this.$el.html( this.model.get( 'message' ) );
                 this.$el.fadeIn();
                 this.timeout && window.clearTimeout( this.timeout );
                 if ( !this.model.get( 'persistent' ) ) {
                     var self = this;
                     this.timeout = window.setTimeout( function() {
-                        if ( self.$el.is( ':visible' ) ) {
-                            self.$el.fadeOut();
-                        } else {
-                            self.$el.hide();
-                        }
+                        self.$el.fadeOut();
                     }, 3000 );
                 }
             } else {
@@ -113,12 +108,12 @@ define(['utils/utils',
             if ( this.tagName == 'textarea' ) {
                 this.$el.addClass( 'ui-textarea' );
             } else {
-                this.$el.attr( 'type', this.model.get( 'type' ) )
-                        .attr( 'placeholder', this.model.get( 'placeholder' ) )
-                        .addClass( 'ui-input' );
+                this.$el.addClass( 'ui-input' )
+                        .attr( 'type', this.model.get( 'type' ) )
+                        .attr( 'placeholder', this.model.get( 'placeholder' ) );
             }
-            this.model.get( 'disabled' ) && this.$el.prop( 'disabled', true );
-            !this.model.get( 'visible' ) && this.$el.hide();
+            this.model.get( 'disabled' ) ? this.$el.attr( 'disabled', true ) : this.$el.removeAttr( 'disabled' );
+            this.$el[ this.model.get( 'visible' ) ? 'show' : 'hide' ]();
             return this;
         },
         _onchange: function() {
