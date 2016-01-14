@@ -41,9 +41,9 @@ define([ 'test-app', 'mvc/ui/ui-misc'
         var input = new Ui.Input( { area: true } );
         $( 'body' ).prepend( input.$el );
         ok( input.tagName === 'textarea', 'Created textarea.' );
-        ok( input.value() === undefined, 'Input empty.' );
+        ok( input.value() === undefined, 'Unavailable value.' );
         input.model.set( 'value', '_value' );
-        ok( input.value() === '_value', 'Input empty.' );
+        ok( input.value() === '_value', 'Correct new value.' );
         ok( !input.$el.hasClass( '_cls' ), 'Has no custom class.' );
         input.model.set( 'cls', '_cls' );
         ok( input.$el.hasClass( '_cls' ), 'Has custom class.' );
