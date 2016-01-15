@@ -5,7 +5,9 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( STATES, DC_LI, DC_VIEW, BASE_MVC, _l ){
-/* global Backbone */
+
+'use strict';
+
 //==============================================================================
 var _super = DC_LI.DCListItemView;
 /** @class Read only view for HistoryDatasetCollectionAssociation (a dataset collection inside a history).
@@ -22,9 +24,9 @@ var HDCAListItemView = _super.extend(
     _setUpListeners : function(){
         _super.prototype._setUpListeners.call( this );
 
-        this.model.on({
+        this.listenTo( this.model, {
             'change:populated change:visible' : function( model, options ){ this.render(); },
-        }, this );
+        });
     },
 
     /** Override to provide the proper collections panels as the foldout */

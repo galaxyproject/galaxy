@@ -7,6 +7,8 @@ define([
     "ui/hoverhighlight"
 ], function( levenshteinDistance, naturalSort, LIST_COLLECTION_CREATOR, baseMVC, _l ){
 
+'use strict';
+
 var logNamespace = 'collections';
 /* ============================================================================
 TODO:

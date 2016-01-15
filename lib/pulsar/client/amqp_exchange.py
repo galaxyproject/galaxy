@@ -186,8 +186,8 @@ class PulsarExchange(object):
         key = self.__queue_name(name)
         publish_log_prefix = self.__publish_log_prefex(transaction_uuid)
         log.debug("%sBegin publishing to key %s", publish_log_prefix, key)
-        if (self.acks_enabled and not name.endswith(ACK_QUEUE_SUFFIX)
-                and ACK_FORCE_NOACK_KEY not in payload):
+        if (self.acks_enabled and not name.endswith(ACK_QUEUE_SUFFIX) and
+                ACK_FORCE_NOACK_KEY not in payload):
             # Publishing a message on a normal queue and it's not a republish
             # (or explicitly forced do-not-ack), so add ack keys
             ack_uuid = str(transaction_uuid)

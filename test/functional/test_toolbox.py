@@ -1,3 +1,4 @@
+import logging
 import new
 import sys
 from base.twilltestcase import TwillTestCase
@@ -6,11 +7,12 @@ from base.interactor import build_interactor, stage_data_in_history, RunToolExce
 from base.instrument import register_job_data
 from galaxy.tools import DataManagerTool
 from galaxy.util import bunch
-import logging
+
 try:
     from nose.tools import nottest
 except ImportError:
-    nottest = lambda x: x
+    def nottest(x):
+        return x
 
 log = logging.getLogger( __name__ )
 

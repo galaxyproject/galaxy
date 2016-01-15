@@ -754,7 +754,8 @@ class BaseURLToolParameter( HiddenToolParameter ):
         return d
 
 
-DEFAULT_VALUE_MAP = lambda x: x
+def DEFAULT_VALUE_MAP(x):
+    return x
 
 
 def parse_dynamic_options(param, input_source):
@@ -1873,9 +1874,11 @@ class DataToolParameter( BaseDataToolParameter ):
 
     def _get_select_dataset_collection_fields( self, history, dataset_matcher, multiple=False, suffix="|__collection_multirun__", reduction=False ):
         if not reduction:
-            value_modifier = lambda x: x
+            def value_modifier(x):
+                return x
         else:
-            value_modifier = lambda value: "__collection_reduce__|%s" % value
+            def value_modifier(value):
+                return "__collection_reduce__|%s" % value
 
         value = dataset_matcher.value
         if value is not None:
@@ -2212,14 +2215,15 @@ class DataToolParameter( BaseDataToolParameter ):
             return d
 
         # add datasets
+        visible_hda = other_values.get( self.name )
         for hda in history.active_datasets_children_and_roles:
-            match = dataset_matcher.hda_match( hda )
+            match = dataset_matcher.hda_match( hda, ensure_visible=visible_hda != hda )
             if match:
                 m = match.hda
                 d['options']['hda'].append({
                     'id'            : trans.security.encode_id( m.id ),
                     'hid'           : m.hid,
-                    'name'          : m.name,
+                    'name'          : m.name if m.visible else '(hidden) %s' % m.name,
                     'src'           : 'hda'
                 })
 

@@ -12,9 +12,12 @@ log = getLogger( __name__ )
 # remote ComputeEnvironments (such as one used by Pulsar) determine what values to
 # rewrite or transfer...
 PATH_ATTRIBUTES = [ "path" ]
+
+
 # ... by default though - don't rewrite anything (if no ComputeEnviornment
 # defined or ComputeEnvironment doesn't supply a rewriter).
-DEFAULT_PATH_REWRITER = lambda x: x
+def DEFAULT_PATH_REWRITER(x):
+    return x
 
 
 class ToolParameterValueWrapper( object ):

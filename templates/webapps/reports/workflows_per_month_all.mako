@@ -21,27 +21,13 @@ ${get_css()}
         <table id="formHeader">
             <tr>
                 <td>
-                    ${
-                        get_pages(
-                            sort_id,
-                            order,
-                            page_specs,
-                            'workflows',
-                            'per_month_all')
-                    }
+                    ${get_pages(sort_id, order, page_specs, 'workflows', 'per_month_all')}
                 </td>
                 <td>
                     <h3 align="center">Workflows Per Month</h3>
                 </td>
                 <td align="right">
-                    ${
-                        get_entry_selector(
-                            "workflows",
-                            "per_month_all",
-                            page_specs.entries,
-                            sort_id,
-                            order)
-                    }
+                    ${get_entry_selector("workflows", "per_month_all", page_specs.entries, sort_id, order)}
                 </td>
             </tr>
         </table>
@@ -52,33 +38,11 @@ ${get_css()}
             %else:
                 <tr class="header">
                     <td class="half_width">
-                        ${
-                            get_sort_url(
-                                sort_id,
-                                order,
-                                'date',
-                                'workflows',
-                                'per_month_all',
-                                'Month',
-                                page=page,
-                                offset=offset,
-                                entries=entries)
-                        }
+                        ${get_sort_url(sort_id, order, 'date', 'workflows', 'per_month_all', 'Month', page=page, offset=offset, entries=entries)}
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
                     <td class="half_width">
-                        ${
-                            get_sort_url(
-                                sort_id,
-                                order,
-                                'total_workflows',
-                                'workflows',
-                                'per_month_all',
-                                'Total',
-                                page=page,
-                                offset=offset,
-                                entries=entries)
-                        }
+                        ${get_sort_url(sort_id, order, 'total_workflows', 'workflows', 'per_month_all', 'Total', page=page, offset=offset, entries=entries)}
                         <span class='dir_arrow total_workflows'>${arrow}</span>
                     </td>
                     <td></td>
@@ -104,22 +68,16 @@ ${get_css()}
                     %else:
                         <tr class="tr">
                     %endif
-                    
+
                         <td>${month}</td>
                         <td>${total}</td>
                         %try:
-                            ${
-                                make_sparkline(
-                                    key,
-                                    trends[key],
-                                    "bar",
-                                    "/ day")
-                            }
+                            ${make_sparkline(key, trends[key], "bar", "/ day")}
                         %except KeyError:
                         %endtry
                         <td id=${key}></td>
                     </tr>
-                    <% 
+                    <%
                        ctr += 1
                        entries += 1
                     %>

@@ -39,7 +39,8 @@ define([ "test-app", "layout/masthead"
 
     test( 'test masthead tabs', function() {
         this.tab = this.masthead.collection.first();
-        this.$tab = $( '.dropdown:first' );
+        this.$tab = $( '.nav:first' );
+        this.$dropdown = this.$tab.find( '.dropdown' );
         this.$toggle = this.$tab.find( '.dropdown-toggle' );
         this.$note = this.$tab.find( '.dropdown-note' );
         this.$menu = this.$tab.find( 'ul' );
@@ -79,14 +80,14 @@ define([ "test-app", "layout/masthead"
         this.tab.set( 'toggle', false );
         ok( !this.$toggle.hasClass( 'toggle' ), 'Untoggled' );
         this.tab.set( 'disabled', true );
-        ok( this.$toggle.hasClass( 'disabled' ), 'Correctly disabled' );
+        ok( this.$dropdown.hasClass( 'disabled' ), 'Correctly disabled' );
         this.tab.set( 'disabled', false );
-        ok( !this.$toggle.hasClass( 'disabled' ), 'Correctly enabled' );
-        ok( this.$tab.hasClass( 'active' ), 'Highlighted' );
+        ok( !this.$dropdown.hasClass( 'disabled' ), 'Correctly enabled' );
+        ok( this.$dropdown.hasClass( 'active' ), 'Highlighted' );
         this.tab.set( 'active', false );
-        ok( !this.$tab.hasClass( 'active' ), 'Not highlighted' );
+        ok( !this.$dropdown.hasClass( 'active' ), 'Not highlighted' );
         this.tab.set( 'active', true );
-        ok( this.$tab.hasClass( 'active' ), 'Highlighted, again' );
+        ok( this.$dropdown.hasClass( 'active' ), 'Highlighted, again' );
         this.tab.set( 'menu', [ { title: '_menu_title', url: '_menu_url', target: '_menu_target' } ] );
         ok( this.$menu.hasClass( 'dropdown-menu' ), 'Menu has correct class' );
         ok( this.$menu.css( 'display' ) == 'none', 'Menu hidden' );

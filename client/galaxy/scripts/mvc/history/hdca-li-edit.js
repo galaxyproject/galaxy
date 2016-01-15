@@ -4,6 +4,9 @@ define([
     "ui/fa-icon-button",
     "utils/localization"
 ], function( HDCA_LI, DC_VIEW_EDIT, faIconButton, _l ){
+
+'use strict';
+
 //==============================================================================
 var _super = HDCA_LI.HDCAListItemView;
 /** @class Editing view for HistoryDatasetCollectionAssociation.

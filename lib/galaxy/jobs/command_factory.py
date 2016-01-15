@@ -1,16 +1,19 @@
 from os import getcwd
-from os import chmod
 from os.path import join
 from os.path import abspath
 
 from galaxy import util
+from galaxy.jobs.runners.util.job_script import (
+    INTEGRITY_INJECTION,
+    write_script,
+    check_script_integrity,
+)
 
 from logging import getLogger
 log = getLogger( __name__ )
 
 CAPTURE_RETURN_CODE = "return_code=$?"
 YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
-DEFAULT_SHELL = "/bin/sh"
 
 
 def build_command(
@@ -19,7 +22,7 @@ def build_command(
     container=None,
     include_metadata=False,
     include_work_dir_outputs=True,
-    remote_command_params={}
+    remote_command_params={},
 ):
     """
     Compose the sequence of commands necessary to execute a job. This will
@@ -30,6 +33,7 @@ def build_command(
         - command line taken from job wrapper
         - commands to set metadata (if include_metadata is True)
     """
+    shell = job_wrapper.shell
     base_command_line = job_wrapper.get_command_line()
     # job_id = job_wrapper.job_id
     # log.debug( 'Tool evaluation for job (%s) produced command-line: %s' % ( job_id, base_command_line ) )
@@ -52,7 +56,7 @@ def build_command(
         __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params)
 
     if container or job_wrapper.commands_in_new_shell:
-        externalized_commands = __externalize_commands(job_wrapper, commands_builder, remote_command_params)
+        externalized_commands = __externalize_commands(job_wrapper, shell, commands_builder, remote_command_params)
         if container:
             # Stop now and build command before handling metadata and copying
             # working directory files back. These should always happen outside
@@ -76,17 +80,18 @@ def build_command(
     return commands_builder.build()
 
 
-def __externalize_commands(job_wrapper, commands_builder, remote_command_params, script_name="tool_script.sh"):
+def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_params, script_name="tool_script.sh"):
     local_container_script = join( job_wrapper.working_directory, script_name )
     tool_commands = commands_builder.build()
-    with open( local_container_script, "w" ) as f:
-        script_contents = u"#!%s\n%s" % (DEFAULT_SHELL, tool_commands)
-        f.write(script_contents.encode(util.DEFAULT_ENCODING))
-    chmod( local_container_script, 0755 )
-
+    config = job_wrapper.app.config
+    integrity_injection = ""
+    if check_script_integrity(config):
+        integrity_injection = INTEGRITY_INJECTION
+    script_contents = u"#!%s\n%s%s" % (shell, integrity_injection, tool_commands)
+    write_script(local_container_script, script_contents, config)
     commands = local_container_script
     if 'working_directory' in remote_command_params:
-        commands = "%s %s" % (DEFAULT_SHELL, join(remote_command_params['working_directory'], script_name))
+        commands = "%s %s" % (shell, join(remote_command_params['working_directory'], script_name))
     log.info("Built script [%s] for tool command[%s]" % (local_container_script, tool_commands))
     return commands
 

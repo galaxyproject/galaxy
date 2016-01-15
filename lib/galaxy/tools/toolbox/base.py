@@ -17,6 +17,7 @@ from galaxy.util import string_as_bool
 from galaxy.util.bunch import Bunch
 
 from .parser import get_toolbox_parser, ensure_tool_conf_item
+
 from .panel import ToolPanelElements
 from .panel import ToolSectionLabel
 from .panel import ToolSection
@@ -556,11 +557,24 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     # Backward compatibility issue - the tag used to be named 'changeset_revision'.
                     installed_changeset_revision_elem = item.elem.find( "changeset_revision" )
                 installed_changeset_revision = installed_changeset_revision_elem.text
+                try:
+                    splitted_path = path.split('/')
+                    assert splitted_path[0] == tool_shed
+                    assert splitted_path[2] == repository_owner
+                    assert splitted_path[3] == repository_name
+                    if splitted_path[4] != installed_changeset_revision:
+                        # This can happen if the Tool Shed repository has been
+                        # updated to a new revision and the installed_changeset_revision
+                        # element in shed_tool_conf.xml file has been updated too
+                        log.debug("The installed_changeset_revision for tool %s is %s, using %s instead", path, installed_changeset_revision, splitted_path[4])
+                        installed_changeset_revision = splitted_path[4]
+                except Exception as e:
+                    log.debug("Error while loading tool %s : %s", path, e)
+                    pass
                 tool_shed_repository = self._get_tool_shed_repository( tool_shed,
                                                                        repository_name,
                                                                        repository_owner,
                                                                        installed_changeset_revision )
-
                 if tool_shed_repository:
                     # Only load tools if the repository is not deactivated or uninstalled.
                     can_load_into_panel_dict = not tool_shed_repository.deleted

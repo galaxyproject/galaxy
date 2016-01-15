@@ -1398,7 +1398,6 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         assert db_session is not None
         query = db_session.query( content_class ).filter( content_class.table.c.history_id == self.id )
         query = query.order_by( content_class.table.c.hid.asc() )
-        python_filter = None
         deleted = galaxy.util.string_as_bool_or_none( kwds.get( 'deleted', None ) )
         if deleted is not None:
             query = query.filter( content_class.deleted == deleted )
@@ -1411,11 +1410,8 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             if len(ids) < max_in_filter_length:
                 query = query.filter( content_class.id.in_(ids) )
             else:
-                python_filter = lambda content: content.id in ids
-        if python_filter:
-            return ifilter(python_filter, query)
-        else:
-            return query
+                query = ifilter(lambda content: content.id in ids, query)
+        return query
 
     def __collection_contents_iter( self, **kwds ):
         return self.__filter_contents( HistoryDatasetCollectionAssociation, **kwds )

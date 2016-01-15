@@ -9,8 +9,9 @@ try:
     from watchdog.observers.polling import PollingObserver
     can_watch = True
 except ImportError:
+    Observer = None
     FileSystemEventHandler = object
-    PollingObserver = object
+    PollingObserver = None
     can_watch = False
 
 log = logging.getLogger( __name__ )

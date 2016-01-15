@@ -31,14 +31,14 @@ define([ 'utils/utils' ], function( Utils ) {
             var dict = {};
             this._iterate( this.app.section.$el, dict );
 
-            // add to result dictionary
+            // add to result dictionary, label elements
             var result_dict = {};
             this.flat_dict = {};
             function add( flat_id, input_id, input_value ) {
                 self.flat_dict[ flat_id ] = input_id;
                 result_dict[ flat_id ] = input_value;
-            };
-
+                self.app.element_list[ input_id ] && self.app.element_list[ input_id ].$el.attr( 'tour_id', flat_id );
+            }
             // converter between raw dictionary and job dictionary
             function convert( identifier, head ) {
                 for ( var index in head ) {
@@ -73,7 +73,7 @@ define([ 'utils/utils' ], function( Utils ) {
                                 break;
                             case 'conditional':
                                 var value = self.app.field_list[ input.id ].value();
-                                add ( flat_id + '|' + input.test_param.name, input.id, value );
+                                add( flat_id + '|' + input.test_param.name, input.id, value );
                                 var selectedCase = matchCase( input, value );
                                 if ( selectedCase != -1 ) {
                                     convert( flat_id, head[ input.id + '-section-' + selectedCase ] );
@@ -90,10 +90,10 @@ define([ 'utils/utils' ], function( Utils ) {
                                         if ( field.collapsed && input.collapsible_value ) {
                                             value = input.collapsible_value;
                                         }
-                                        add ( flat_id, input.id, value );
+                                        add( flat_id, input.id, value );
                                         if ( input.payload ) {
                                             for ( var p_id in input.payload ) {
-                                                add ( p_id, input.id, input.payload[ p_id ] );
+                                                add( p_id, input.id, input.payload[ p_id ] );
                                             }
                                         }
                                     }

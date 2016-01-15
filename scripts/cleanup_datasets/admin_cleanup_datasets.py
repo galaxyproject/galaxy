@@ -97,7 +97,7 @@ def main():
                       help="From address to use to send email. "
                       "Default: [read from galaxy ini file]")
     (options, args) = parser.parse_args()
-    if len(args) != 1 :
+    if len(args) != 1:
         parser.print_help()
         sys.exit()
     ini_file = args[0]
@@ -177,8 +177,7 @@ def administrative_delete_datasets(app, cutoff_time, cutoff_days,
          app.model.HistoryDatasetAssociation.table.c.deleted),
         whereclause=and_(
             app.model.Dataset.table.c.deleted == false(),
-            app.model.HistoryDatasetAssociation.table.c.update_time
-            < cutoff_time,
+            app.model.HistoryDatasetAssociation.table.c.update_time < cutoff_time,
             app.model.HistoryDatasetAssociation.table.c.deleted == false()),
         from_obj=[sa.outerjoin(
                   app.model.Dataset.table,

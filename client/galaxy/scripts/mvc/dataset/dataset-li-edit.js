@@ -7,6 +7,8 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( STATES, DATASET_LI, TAGS, ANNOTATIONS, faIconButton, BASE_MVC, _l ){
+
+'use strict';
 //==============================================================================
 var _super = DATASET_LI.DatasetListItemView;
 /** @class Editing view for DatasetAssociation.

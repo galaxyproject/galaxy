@@ -5,6 +5,9 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( HISTORY_VIEW, HDA_LI, HDCA_LI, BASE_MVC, _l ){
+
+'use strict';
+
 /* =============================================================================
 TODO:
 
