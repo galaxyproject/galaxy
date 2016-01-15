@@ -885,12 +885,8 @@ class SelectToolParameter( ToolParameter ):
             return self.static_options
 
     def get_legal_values( self, trans, other_values ):
-        def _get_UnvalidatedValue_value( value ):
-            if isinstance( value, UnvalidatedValue ):
-                return value.value
-            return value
         if self.options:
-            return map( _get_UnvalidatedValue_value, set( v for _, v, _ in self.options.get_options( trans, other_values ) ) )
+            return set( v for _, v, _ in self.options.get_options( trans, other_values ) )
         elif self.dynamic_options:
             try:
                 call_other_values = self._get_dynamic_options_call_other_values( trans, other_values )
@@ -906,8 +902,6 @@ class SelectToolParameter( ToolParameter ):
         # specifying the value as text for now.
         options = list(self.get_options( trans, context ))
         if len(list(options)) == 0 and (trans is None or trans.workflow_building_mode):
-            if isinstance( value, UnvalidatedValue ):
-                value = value.value
             if self.multiple:
                 if value is None:
                     value = ""
@@ -919,13 +913,8 @@ class SelectToolParameter( ToolParameter ):
         if value is not None:
             if not isinstance( value, list ):
                 value = [ value ]
-            # We could have an unvalidated value here when e.g. running a workflow.
-            value = [ val.value if isinstance( val, UnvalidatedValue ) else val for val in value ]
         field = form_builder.SelectField( self.name, self.multiple, self.display, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
         for text, optval, selected in options:
-            if isinstance( optval, UnvalidatedValue ):
-                optval = optval.value
-                text = "%s (unvalidated)" % text
             if value:
                 selected = ( optval in value )
             field.add_option( text, optval, selected )
@@ -947,7 +936,7 @@ class SelectToolParameter( ToolParameter ):
                         # in interpreting values but also is needed because many browsers
                         # use \r\n to separate lines.
                         value = value.split()
-            return UnvalidatedValue( value )
+            return value
         if not legal_values and self.optional:
             return None
         if not legal_values:
@@ -1000,9 +989,7 @@ class SelectToolParameter( ToolParameter ):
         return value
 
     def value_to_basic( self, value, app ):
-        if isinstance( value, UnvalidatedValue ):
-            return { "__class__": "UnvalidatedValue", "value": value.value }
-        elif isinstance( value, RuntimeValue ):
+        if isinstance( value, RuntimeValue ):
             # Need to handle runtime value's ourself since delegating to the
             # parent method causes the value to be turned into a string, which
             # breaks multiple selection
@@ -1010,14 +997,15 @@ class SelectToolParameter( ToolParameter ):
         return value
 
     def value_from_basic( self, value, app, ignore_errors=False ):
+        # Backward compatibility for unvalidated values already stored in databases
         if isinstance( value, dict ) and value.get( "__class__", None ) == "UnvalidatedValue":
-            return UnvalidatedValue( value["value"] )
+            return value[ "value" ]
         return super( SelectToolParameter, self ).value_from_basic( value, app, ignore_errors=ignore_errors )
 
     def get_initial_value( self, trans, context, history=None ):
         options = list( self.get_options( trans, context ) )
         if len(options) == 0 and (trans is None or trans.workflow_building_mode):
-            return UnvalidatedValue( None )
+            return None
         value = [ optval for _, optval, selected in options if selected ]
         if len( value ) == 0:
             if not self.optional and not self.multiple and options:
@@ -1031,11 +1019,6 @@ class SelectToolParameter( ToolParameter ):
         return value
 
     def value_to_display_text( self, value, app ):
-        if isinstance( value, UnvalidatedValue ):
-            suffix = "\n(value not yet validated)"
-            value = value.value
-        else:
-            suffix = ""
         if not isinstance( value, list ):
             value = [ value ]
         # FIXME: Currently only translating values back to labels if they
@@ -1048,7 +1031,7 @@ class SelectToolParameter( ToolParameter ):
             for t, v, s in options:
                 if v in value:
                     rval.append( t )
-        return "\n".join( rval ) + suffix
+        return "\n".join( rval )
 
     def get_dependencies( self ):
         """
@@ -1547,8 +1530,6 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         # specifying the value as text for now.
         options = self.get_options( trans, value, other_values )
         if len(list(options)) == 0 and (trans is None or trans.workflow_building_mode):
-            if isinstance( value, UnvalidatedValue ):
-                value = value.value
             if self.multiple:
                 if value is None:
                     value = ""
@@ -1567,7 +1548,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                     value = None
                 else:
                     value = value.split( "\n" )
-            return UnvalidatedValue( value )
+            return value
         if not value and not self.optional:
             raise ValueError( "An invalid option was selected for %s, 'None', please verify" % (self.name) )
         if not value:
@@ -1634,7 +1615,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         # More working around dynamic options for workflow
         options = self.get_options( trans=trans, other_values=context )
         if len(list(options)) == 0 and (trans is None or trans.workflow_building_mode):
-            return UnvalidatedValue( None )
+            return None
         initial_values = []
         recurse_options( initial_values, options )
         if len( initial_values ) == 0:
@@ -1650,12 +1631,6 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                 if rval:
                     return rval
             return None  # not found
-
-        if isinstance( value, UnvalidatedValue ):
-            suffix = "\n(value not yet validated)"
-            value = value.value
-        else:
-            suffix = ""
         if not value:
             value = []
         elif not isinstance( value, list ):
@@ -1674,7 +1649,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             rval = []
             for val in value:
                 rval.append( get_option_display( val, self.options ) or val )
-        return "\n".join( map( str, rval ) ) + suffix
+        return "\n".join( map( str, rval ) )
 
     def get_dependencies( self ):
         """
@@ -2656,7 +2631,6 @@ parameter_types = dict(
     drill_down=DrillDownSelectToolParameter
 )
 
-
 class UnvalidatedValue( object ):
     """
     Wrapper to mark a value that has not been validated
@@ -2666,7 +2640,6 @@ class UnvalidatedValue( object ):
 
     def __str__( self ):
         return str( self.value )
-
 
 class RuntimeValue( object ):
     """

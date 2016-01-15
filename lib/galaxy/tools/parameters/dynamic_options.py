@@ -148,7 +148,7 @@ class DataMetaFilter( Filter ):
             meta_value = ref.metadata.get( self.key, None )
 
         if meta_value is None:  # assert meta_value is not None, "Required metadata value '%s' not found in referenced dataset" % self.key
-            return [ ( disp_name, basic.UnvalidatedValue( optval ), selected ) for disp_name, optval, selected in options ]
+            return [ ( disp_name, optval, selected ) for disp_name, optval, selected in options ]
 
         if self.column is not None:
             rval = []
