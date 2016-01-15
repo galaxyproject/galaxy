@@ -169,6 +169,7 @@ class Configuration( object ):
         self.job_queue_cleanup_interval = int( kwargs.get("job_queue_cleanup_interval", "5") )
         self.cluster_files_directory = os.path.abspath( kwargs.get( "cluster_files_directory", "database/pbs" ) )
         self.job_working_directory = resolve_path( kwargs.get( "job_working_directory", "database/job_working_directory" ), self.root )
+        self.default_job_shell = kwargs.get( "default_job_shell", "/bin/sh" )
         self.cleanup_job = kwargs.get( "cleanup_job", "always" )
         self.container_image_cache_path = self.resolve_path( kwargs.get( "container_image_cache_path", "database/container_images" ) )
         self.outputs_to_working_directory = string_as_bool( kwargs.get( 'outputs_to_working_directory', False ) )
@@ -258,8 +259,11 @@ class Configuration( object ):
         self.log_events = string_as_bool( kwargs.get( 'log_events', 'False' ) )
         self.sanitize_all_html = string_as_bool( kwargs.get( 'sanitize_all_html', True ) )
         self.sanitize_whitelist_file = resolve_path( kwargs.get( 'sanitize_whitelist_file', "config/sanitize_whitelist.txt" ), self.root )
-        self.reload_sanitize_whitelist()
+        self.sanitize_whitelist = []
+        if kwargs.get('sanitize_whitelist_file', None) is not None:
+            self.reload_sanitize_whitelist()
         self.serve_xss_vulnerable_mimetypes = string_as_bool( kwargs.get( 'serve_xss_vulnerable_mimetypes', False ) )
+        self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames( kwargs )
         self.trust_ipython_notebook_conversion = string_as_bool( kwargs.get( 'trust_ipython_notebook_conversion', False ) )
         self.enable_old_display_applications = string_as_bool( kwargs.get( "enable_old_display_applications", "True" ) )
         self.brand = kwargs.get( 'brand', None )
@@ -480,7 +484,7 @@ class Configuration( object ):
                     if not line.startswith("#"):
                         self.sanitize_whitelist.append(line.strip())
         except IOError:
-            log.warning("Sanitize log file %s does not exist, continuing with no tools whitelisted.")
+            log.warning("Sanitize log file %s does not exist, continuing with no tools whitelisted.", self.sanitize_whitelist_file)
 
     def __parse_config_file_options( self, kwargs ):
         """
@@ -668,6 +672,24 @@ class Configuration( object ):
             # uWSGI galaxy installations don't use paster and only speak uWSGI not http
             port = None
         return port
+
+    def _parse_allowed_origin_hostnames( self, kwargs ):
+        """
+        Parse a CSV list of strings/regexp of hostnames that should be allowed
+        to use CORS and will be sent the Access-Control-Allow-Origin header.
+        """
+        allowed_origin_hostnames = listify( kwargs.get( 'allowed_origin_hostnames', None ) )
+        if not allowed_origin_hostnames:
+            return None
+
+        def parse( string ):
+            # a string enclosed in fwd slashes will be parsed as a regexp: e.g. /<some val>/
+            if string[0] == '/' and string[-1] == '/':
+                string = string[1:-1]
+                return re.compile( string, flags=( re.UNICODE | re.LOCALE ) )
+            return string
+
+        return [ parse( v ) for v in allowed_origin_hostnames if v ]
 
 
 def get_database_engine_options( kwargs, model_prefix='' ):

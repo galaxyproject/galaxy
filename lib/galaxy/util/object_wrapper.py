@@ -94,7 +94,8 @@ INVALID_CHARACTER = "X"
 
 if sys.version_info > (3, 0):
     # __coerce__ doesn't do anything under Python anyway.
-    coerce = lambda x, y: x
+    def coerce(x, y):
+        return x
 
 
 def sanitize_lists_to_string( values, valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP, invalid_character=INVALID_CHARACTER  ):

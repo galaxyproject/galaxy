@@ -413,7 +413,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
         :type   encoded_folder_id:      an encoded id string
-        :param  source:                 source the datasets should be loaded form
+        :param  source:                 source the datasets should be loaded from
         :type   source:                 str
         :param  link_data:              flag whether to link the dataset to data or copy it to Galaxy, defaults to copy
                                         while linking is set to True all symlinks will be resolved _once_
@@ -434,7 +434,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         kwd[ 'to_posix_lines' ] = 'True'
         kwd[ 'dbkey' ] = kwd.get( 'dbkey', '?' )
         kwd[ 'file_type' ] = kwd.get( 'file_type', 'auto' )
-        kwd[' link_data_only' ] = 'link_to_files' if util.string_as_bool( kwd.get( 'link_data', False ) ) else 'copy_files'
+        kwd['link_data_only'] = 'link_to_files' if util.string_as_bool( kwd.get( 'link_data', False ) ) else 'copy_files'
         encoded_folder_id = kwd.get( 'encoded_folder_id', None )
         if encoded_folder_id is not None:
             folder_id = self.folder_manager.cut_and_decode( trans, encoded_folder_id )
@@ -517,10 +517,10 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 abspath_datasets.append( ud )
         json_file_path = upload_common.create_paramfile( trans, abspath_datasets )
         data_list = [ ud.data for ud in abspath_datasets ]
-        job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=folder )
-        # HACK: Prevent outputs_to_working_directory from overwriting inputs when "linking"
-        job.add_parameter( 'link_data_only', dumps( kwd.get( 'link_data_only', 'copy_files' ) ) )
-        job.add_parameter( 'uuid', dumps( kwd.get( 'uuid', None ) ) )
+        job_params = {}
+        job_params['link_data_only'] = dumps( kwd.get( 'link_data_only', 'copy_files' ) )
+        job_params['uuid'] = dumps( kwd.get( 'uuid', None ) )
+        job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=folder, job_params=job_params )
         trans.sa_session.add( job )
         trans.sa_session.flush()
         job_dict = job.to_dict()
