@@ -172,7 +172,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # from the Tool Shed will fail.
 #tool_dependency_dir = None
 
-# The dependency resolves config file specifies an ordering and options for how 
+# The dependency resolves config file specifies an ordering and options for how
 # Galaxy resolves tool dependencies (requirement tags in Tool XML). The default
 # ordering is to the use the tool shed for tools installed that way, use local
 # Galaxy packages, and then use conda if available.
@@ -675,6 +675,14 @@ nglims_config_file = tool-data/nglims.yaml
 # by setting the following option to True.
 #serve_xss_vulnerable_mimetypes = False
 
+# Return a Access-Control-Allow-Origin response header that matches the Origin
+# header of the request if that Origin hostname matches one of the strings or
+# regular expressions listed here. This is a comma separated list of hostname
+# strings or regular expressions beginning and ending with /.
+# E.g. mysite.com,google.com,usegalaxy.org,/^[\w\.]*example\.com/
+# See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS
+#allowed_origin_hostnames = None
+
 # Set the following to True to use IPython nbconvert to build HTML from IPython
 # notebooks in Galaxy histories.  This process may allow users to execute
 # arbitrary code or serve arbitrary HTML.  If enabled, IPython must be
@@ -891,8 +899,8 @@ use_interactive = True
 # Set the following to a number of threads greater than 1 to spawn
 # a Python task queue for dealing with large tool submissions (either
 # through the tool form or as part of an individual workflow step across
-# large collection). The size of a "large" tool request is controlled by 
-# the second parameter below and defaults to 10. This affects workflow 
+# large collection). The size of a "large" tool request is controlled by
+# the second parameter below and defaults to 10. This affects workflow
 # scheduling and web processes, not job handlers.
 #tool_submission_burst_threads = 1
 #tool_submission_burst_at = 10
