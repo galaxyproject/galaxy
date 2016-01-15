@@ -5,6 +5,8 @@ define([
     "utils/localization"
 ], function( LIST_CREATOR, HDCA, BASE_MVC, _l ){
 
+'use strict';
+
 var logNamespace = 'collections';
 /*==============================================================================
 TODO:
