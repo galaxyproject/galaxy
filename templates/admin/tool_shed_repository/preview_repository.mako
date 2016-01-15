@@ -30,7 +30,7 @@ var tool_panel_sections_json = ${json.dumps(tool_panel_section_dict['sections'])
 function global_select_tps_template() {
     var tps_selection_template = _.template([
         '<div class="form-row" id="select_tps">',
-            '${tool_panel_section_select_field.get_html().replace('\n', '')}',
+            '${tool_panel_section_select_field.get_html(extra_attr={'style':'width:30em;'}).replace('\n', '')}',
             '<input class="menubutton" type="button" id="create_new" value="Create new" />',
             '<div class="toolParamHelp" style="clear: both;">',
                 'Select an existing tool panel section to contain the installed tools (optional).',
@@ -53,15 +53,15 @@ function global_create_tps_template() {
 }
 function tool_row_template(name, description, version, clean_name, tool_guid) {
     var tool_row = _.template([
-        '<tr id="libraryItem" class="tool_row" style="display: table-row;">',
+        '<tr id="libraryItem" class="tool_row" style="display: table-row;" style="width: 15%">',
             '<td style="padding-left: 40px;">',
                 '<div id="tool" class="menubutton split popup" style="float: left;">',
                     '<a class="view-info"><\%- tool_name %></a>',
                 '</div>',
             '</td>',
             '<td><\%- tool_description %></td>',
-            '<td><\%- tool_version %></td>',
-            '<td>',
+            '<td style="width: 15%"><\%- tool_version %></td>',
+            '<td style="width: 35%">',
                 '<div class="toolFormBody" id="per_tool_tps_container">',
                     '<span id="show_tps_picker">',
                         '<input class="menubutton" id="select_tps_button_<\%- clean_name %>" data-toolguid="<\%- tool_guid %>" data-toolname="<\%- clean_name %>" type="button" value="Specify panel section" />',
@@ -81,8 +81,8 @@ function tps_picker_template(clean_name, tool_guid) {
 }
 function select_tps_template(clean_name, tool_guid) {
     var underscore_template = _.template([
-        '<div id="select_tps_<\%- clean_name %>" class="form-row">',
-            '<select data-toolguid="<\%- tool_guid %>" class="tool_panel_section_picker" name="tool_panel_section_id" id="tool_panel_section_select_<\%- clean_name %>">',
+        '<div id="select_tps_<\%- clean_name %>" class="form-row" style="padding: 0 !important;">',
+            '<select style="width: 30em;" data-toolguid="<\%- tool_guid %>" class="tool_panel_section_picker" name="tool_panel_section_id" id="tool_panel_section_select_<\%- clean_name %>">',
             tool_panel_sections_json,
             '</select>',
             '<input class="menubutton" data-toolguid="<\%- tool_guid %>" data-toolname="<\%- clean_name %>" value="Create new" id="create_new_<\%- clean_name %>" type="button">',

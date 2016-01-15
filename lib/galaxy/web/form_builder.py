@@ -324,7 +324,11 @@ class SelectField(BaseField):
     def add_option( self, text, value, selected=False ):
         self.options.append( ( text, value, selected ) )
 
-    def get_html( self, prefix="", disabled=False ):
+    def get_html( self, prefix="", disabled=False, extra_attr={} ):
+        if extra_attr is not None:
+            self.extra_attributes = ' %s' % ' '.join( [ '%s="%s"' % ( k, v ) for k, v in extra_attr.items() ] )
+        else:
+            self.extra_attributes = ''
         if self.display == "checkboxes":
             return self.get_html_checkboxes( prefix, disabled )
         elif self.display == "radio":
@@ -351,8 +355,8 @@ class SelectField(BaseField):
             selected_text = ""
             if selected:
                 selected_text = " checked='checked'"
-            rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" id="%s"%s%s><label class="inline" for="%s">%s</label></div>'
-                         % ( style, prefix, self.name, escaped_value, uniq_id, selected_text, self.get_disabled_str( disabled ), uniq_id, escape( text, quote=True ) ) )
+            rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" id="%s"%s%s%s><label class="inline" for="%s">%s</label></div>'
+                         % ( style, prefix, self.name, escaped_value, uniq_id, selected_text, self.get_disabled_str( disabled ), self.extra_attributes, uniq_id, escape( text, quote=True ) ) )
             ctr += 1
         return unicodify( "\n".join( rval ) )
 
@@ -368,7 +372,7 @@ class SelectField(BaseField):
             selected_text = ""
             if selected:
                 selected_text = " checked='checked'"
-            rval.append( '<div%s><input type="radio" name="%s%s"%s value="%s" id="%s"%s%s><label class="inline" for="%s">%s</label></div>'
+            rval.append( '<div%s><input type="radio" name="%s%s"%s value="%s" id="%s"%s%s%s><label class="inline" for="%s">%s</label></div>'
                          % ( style,
                              prefix,
                              self.name,
@@ -377,6 +381,7 @@ class SelectField(BaseField):
                              uniq_id,
                              selected_text,
                              self.get_disabled_str( disabled ),
+                             self.extra_attributes,
                              uniq_id,
                              text ) )
             ctr += 1
@@ -412,8 +417,8 @@ class SelectField(BaseField):
             id_string = ' id="%s"' % self.field_id
         else:
             id_string = ''
-        rval.insert( 0, '<select name="%s%s"%s%s%s%s%s%s>'
-                     % ( prefix, self.name, multiple, size, self.refresh_on_change_text, last_selected_value, self.get_disabled_str( disabled ), id_string ) )
+        rval.insert( 0, '<select name="%s%s"%s%s%s%s%s%s%s>'
+                     % ( prefix, self.name, multiple, size, self.refresh_on_change_text, last_selected_value, self.get_disabled_str( disabled ), id_string, self.extra_attributes ) )
         rval.append( '</select>' )
         return unicodify( "\n".join( rval ) )
 
