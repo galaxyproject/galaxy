@@ -86,7 +86,7 @@ module.exports = function( grunt ){
         }
     }
 
-    grunt.loadNpmTasks( 'grunt-bower-install-simple');
+    grunt.loadNpmTasks( 'grunt-bower-install-simple' );
 
     grunt.registerTask( 'copy-libs', 'copy external libraries to src', copyLibs );
     grunt.registerTask( 'install-libs', 'fetch external libraries and copy to src',

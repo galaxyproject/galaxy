@@ -19,7 +19,6 @@
     "grunt-contrib-watch": "^0.6.1",
     "grunt-exec": "^0.4.6",
     "grunt-spritesmith": "^4.7.1",
-    "grunt-webpack": "^1.0.8",
     "handlebars": "^4.0.4",
     "handlebars-loader": "^1.1.4",
     "i18n-webpack-plugin": "^0.2.7",
