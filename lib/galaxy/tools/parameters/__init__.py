@@ -5,11 +5,12 @@ Classes encapsulating Galaxy tool parameters.
 from basic import DataCollectionToolParameter, DataToolParameter, SelectToolParameter
 from grouping import Conditional, Repeat, Section, UploadDataset
 from galaxy.util.json import dumps, json_fix, loads
+from galaxy.util.expressions import ExpressionContext
 
 REPLACE_ON_TRUTHY = object()
 
 
-def visit_input_values( inputs, input_values, callback, name_prefix="", label_prefix="", no_replacement_value=REPLACE_ON_TRUTHY ):
+def visit_input_values( inputs, input_values, callback, name_prefix="", label_prefix="", no_replacement_value=REPLACE_ON_TRUTHY, context=None, details=False ):
     """
     Given a tools parameter definition (`inputs`) and a specific set of
     parameter `values`, call `callback` for each non-grouping parameter,
@@ -22,30 +23,35 @@ def visit_input_values( inputs, input_values, callback, name_prefix="", label_pr
            Repeat and Group. This tracks labels and those do not. It would
            be nice to unify all the places that recursively visit inputs.
     """
+    context = ExpressionContext( input_values, context )
     for input in inputs.itervalues():
         if isinstance( input, Repeat ) or isinstance( input, UploadDataset ):
             for i, d in enumerate( input_values[ input.name ] ):
                 index = d['__index__']
                 new_name_prefix = name_prefix + "%s_%d|" % ( input.name, index )
                 new_label_prefix = label_prefix + "%s %d > " % ( input.title, i + 1 )
-                visit_input_values( input.inputs, d, callback, new_name_prefix, new_label_prefix, no_replacement_value=no_replacement_value )
+                visit_input_values( input.inputs, d, callback, new_name_prefix, new_label_prefix, no_replacement_value=no_replacement_value, context=context, details=details )
         elif isinstance( input, Conditional ):
             values = input_values[ input.name ]
             current = values["__current_case__"]
             label_prefix = label_prefix
             new_name_prefix = name_prefix + input.name + "|"
-            visit_input_values( input.cases[current].inputs, values, callback, new_name_prefix, label_prefix, no_replacement_value=no_replacement_value )
+            visit_input_values( input.cases[current].inputs, values, callback, new_name_prefix, label_prefix, no_replacement_value=no_replacement_value, context=context, details=details )
         elif isinstance( input, Section ):
             values = input_values[ input.name ]
             label_prefix = label_prefix
             new_name_prefix = name_prefix + input.name + "|"
-            visit_input_values( input.inputs, values, callback, new_name_prefix, label_prefix, no_replacement_value=no_replacement_value )
+            visit_input_values( input.inputs, values, callback, new_name_prefix, label_prefix, no_replacement_value=no_replacement_value, context=context, details=details )
         else:
-            new_value = callback( input,
-                                  input_values[input.name],
-                                  prefixed_name=name_prefix + input.name,
-                                  prefixed_label=label_prefix + input.label )
-
+            args = {
+                'input'             : input,
+                'value'             : input_values[input.name],
+                'prefixed_name'     : name_prefix + input.name,
+                'prefixed_label'    : label_prefix + input.label
+            }
+            if details:
+                args[ 'context' ] = context
+            new_value = callback( **args )
             if no_replacement_value is REPLACE_ON_TRUTHY:
                 replace = bool(new_value)
             else:
@@ -54,7 +60,7 @@ def visit_input_values( inputs, input_values, callback, name_prefix="", label_pr
                 input_values[input.name] = new_value
 
 
-def check_param( trans, param, incoming_value, param_values, source='html', history=None, workflow_building_mode=False ):
+def check_param( trans, param, incoming_value, param_values, source='html', boolean_fix=False, history=None, workflow_building_mode=False ):
     """
     Check the value of a single parameter `param`. The value in
     `incoming_value` is converted from its HTML encoding and validated.
@@ -65,6 +71,9 @@ def check_param( trans, param, incoming_value, param_values, source='html', hist
     value = incoming_value
     error = None
     try:
+        # resolves the inconsistent definition of boolean parameters (see base.py) without modifying shared code
+        if boolean_fix and param.type == 'boolean' and isinstance( value, basestring ):
+            return [ string_as_bool( value ), None ]
         if history is None:
             history = trans.history
         if value is not None or isinstance( param, DataToolParameter ) or isinstance( param, DataCollectionToolParameter ):

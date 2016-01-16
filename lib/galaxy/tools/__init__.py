@@ -1741,58 +1741,6 @@ class Tool( object, Dictifiable ):
                         if update_values:
                             values[ input.name ] = input.get_initial_value( trans, context )
 
-    def handle_unvalidated_param_values( self, input_values, app ):
-        """
-        Find any instances of `UnvalidatedValue` within input_values and
-        validate them (by calling `ToolParameter.from_html` and
-        `ToolParameter.validate`).
-        """
-        # No validation is done when check_values is False
-        if not self.check_values:
-            return
-        self.handle_unvalidated_param_values_helper( self.inputs, input_values, app )
-
-    def handle_unvalidated_param_values_helper( self, inputs, input_values, app, context=None, prefix="" ):
-        """
-        Recursive helper for `handle_unvalidated_param_values`
-        """
-        context = ExpressionContext( input_values, context )
-        for input in inputs.itervalues():
-            if isinstance( input, Repeat ):
-                for i, d in enumerate( input_values[ input.name ] ):
-                    rep_prefix = prefix + "%s %d > " % ( input.title, i + 1 )
-                    self.handle_unvalidated_param_values_helper( input.inputs, d, app, context, rep_prefix )
-            elif isinstance( input, Conditional ):
-                values = input_values[ input.name ]
-                current = values["__current_case__"]
-                # NOTE: The test param doesn't need to be checked since
-                #       there would be no way to tell what case to use at
-                #       workflow build time. However I'm not sure if we are
-                #       actually preventing such a case explicately.
-                self.handle_unvalidated_param_values_helper( input.cases[current].inputs, values, app, context, prefix )
-            else:
-                # Regular tool parameter
-                value = input_values[ input.name ]
-                if isinstance( value, UnvalidatedValue ):
-                    try:
-                        # Convert from html representation
-                        if value.value is None:
-                            # If value.value is None, it could not have been
-                            # submited via html form and therefore .from_html
-                            # can't be guaranteed to work
-                            value = None
-                        else:
-                            value = input.from_html( value.value, None, context )
-                        # Do any further validation on the value
-                        input.validate( value, None )
-                    except Exception, e:
-                        # Wrap an re-raise any generated error so we can
-                        # generate a more informative message
-                        message = "Failed runtime validation of %s%s (%s)" \
-                            % ( prefix, input.label, e )
-                        raise LateValidationError( message )
-                    input_values[ input.name ] = value
-
     def handle_job_failure_exception( self, e ):
         """
         Called by job.fail when an exception is generated to allow generation
@@ -2152,12 +2100,6 @@ class Tool( object, Dictifiable ):
 
         # convert value to jsonifiable value
         def jsonify(v):
-            if isinstance(v, UnvalidatedValue):
-                v = v.value
-                while isinstance( v, UnvalidatedValue ):
-                    v = v.value
-                return v
-
             # check if value is numeric
             isnumber = False
             try:
@@ -2219,29 +2161,21 @@ class Tool( object, Dictifiable ):
             dict[key] = value
 
         # check the current state of a value and update it if necessary
-        def check_state(trans, input, value, context):
+        def check_state( trans, input, value, context ):
             error = 'State validation failed.'
-
-            # handle unvalidated values
-            if isinstance(value, galaxy.tools.parameters.basic.DummyDataset):
+            if isinstance( value, galaxy.tools.parameters.basic.DummyDataset ):
                 return [ None, None ]
-            elif isinstance(value, galaxy.tools.parameters.basic.RuntimeValue):
+            elif isinstance( value, galaxy.tools.parameters.basic.RuntimeValue ):
                 return [ { '__class__' : 'RuntimeValue' }, None ]
             elif isinstance( value, dict ):
-                if value.get('__class__') == 'RuntimeValue':
+                if value.get( '__class__' ) == 'RuntimeValue':
                     return [ value, None ]
-
-            # validate value content
             try:
-                # resolves the inconsistent definition of boolean parameters (see base.py) without modifying shared code
-                if input.type == 'boolean' and isinstance(value, basestring):
-                    value, error = [string_as_bool(value), None]
-                else:
-                    value, error = check_param(trans, input, value, context, history=history, workflow_building_mode=workflow_mode)
+                value, error = check_param( trans, input, value, context, history=history, boolean_fix=True, workflow_building_mode=workflow_mode )
             except Exception, err:
-                log.error('Checking parameter %s failed. %s', input.name, str(err))
+                log.error( 'Checking parameter %s failed. %s', input.name, str( err ) )
                 pass
-            return [value, error]
+            return [ value, error ]
 
         # populates state with incoming url parameters
         def populate_state(trans, inputs, state, errors, incoming, prefix="", context=None ):

@@ -1962,7 +1962,9 @@ class DataToolParameter( BaseDataToolParameter ):
             return most_recent_dataset[0]
         return ''
 
-    def from_html( self, value, trans, other_values={} ):
+    def from_html( self, value, trans, other_values={}, app=None ):
+        if app is None:
+            app = trans.app
         # Can't look at history in workflow mode, skip validation and such,
         # although, this should never be called in workflow mode right?
         if trans.workflow_building_mode:
@@ -1979,44 +1981,44 @@ class DataToolParameter( BaseDataToolParameter ):
             for single_value in value:
                 if isinstance( single_value, dict ) and 'src' in single_value and 'id' in single_value:
                     if single_value['src'] == 'hda':
-                        rval.append(trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.app.security.decode_id(single_value['id']) ))
+                        rval.append(app.sa_session.query( app.model.HistoryDatasetAssociation ).get( app.security.decode_id(single_value['id']) ))
                     elif single_value['src'] == 'hdca':
                         found_hdca = True
-                        decoded_id = trans.app.security.decode_id( single_value[ 'id' ] )
-                        rval.append( trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id ) )
+                        decoded_id = app.security.decode_id( single_value[ 'id' ] )
+                        rval.append( app.sa_session.query( app.model.HistoryDatasetCollectionAssociation ).get( decoded_id ) )
                     else:
                         raise ValueError("Unknown input source %s passed to job submission API." % single_value['src'])
-                elif isinstance( single_value, trans.app.model.HistoryDatasetCollectionAssociation ):
+                elif isinstance( single_value, app.model.HistoryDatasetCollectionAssociation ):
                     rval.append( single_value )
-                elif isinstance( single_value, trans.app.model.HistoryDatasetAssociation ):
+                elif isinstance( single_value, app.model.HistoryDatasetAssociation ):
                     rval.append( single_value )
                 else:
-                    rval.append( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( single_value ) )
+                    rval.append( app.sa_session.query( app.model.HistoryDatasetAssociation ).get( single_value ) )
             if found_hdca:
                 for val in rval:
-                    if not isinstance( val, trans.app.model.HistoryDatasetCollectionAssociation ):
+                    if not isinstance( val, app.model.HistoryDatasetCollectionAssociation ):
                         raise ValueError( "If collections are supplied to multiple data input parameter, only collections may be used." )
-        elif isinstance( value, trans.app.model.HistoryDatasetAssociation ):
+        elif isinstance( value, app.model.HistoryDatasetAssociation ):
             rval = value
         elif isinstance( value, dict ) and 'src' in value and 'id' in value:
             if value['src'] == 'hda':
-                rval = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.app.security.decode_id(value['id']) )
+                rval = trans.sa_session.query( app.model.HistoryDatasetAssociation ).get( app.security.decode_id(value['id']) )
             elif value['src'] == 'hdca':
-                decoded_id = trans.app.security.decode_id( value[ 'id' ] )
-                rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
+                decoded_id = app.security.decode_id( value[ 'id' ] )
+                rval = app.sa_session.query( app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
             else:
                 raise ValueError("Unknown input source %s passed to job submission API." % value['src'])
         elif str( value ).startswith( "__collection_reduce__|" ):
             encoded_ids = [ v[ len( "__collection_reduce__|" ): ] for v in str( value ).split(",") ]
-            decoded_ids = map( trans.app.security.decode_id, encoded_ids )
+            decoded_ids = map( app.security.decode_id, encoded_ids )
             rval = []
             for decoded_id in decoded_ids:
-                hdca = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
+                hdca = app.sa_session.query( app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
                 rval.append( hdca )
-        elif isinstance( value, trans.app.model.HistoryDatasetCollectionAssociation ):
+        elif isinstance( value, app.model.HistoryDatasetCollectionAssociation ):
             rval = value
         else:
-            rval = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( value )
+            rval = app.sa_session.query( app.model.HistoryDatasetAssociation ).get( value )
         if isinstance( rval, list ):
             values = rval
         else:
