@@ -44,8 +44,34 @@ A complete rebuild can be done with the following (from the `client` directory):
 
 This will:
 
-1. compress the files in client/galaxy/scripts and place them in static/scripts
-2. generate source maps and place them in static/maps
+1. recompile the client templates (handlebars, etc.)
+2. compress the files in client/galaxy/scripts and place them in static/scripts
+3. generate source maps and place them in static/maps
+4. rebuild the webpack-based client apps
+
+
+Rebuilding Scripts Only
+=======================
+
+To re-minify all the individual javascript files:
+
+    grunt scripts
+
+
+Rebuilding Webpack Apps
+=======================
+
+To rebuild the webpack bundles for apps (compressed for production):
+
+    grunt webpack
+
+To rebuild the apps without compression:
+
+    grunt webpack-dev
+
+To rebuild without compression and watch and rebuild when scripts change:
+
+    grunt webpack-watch
 
 
 Templates
