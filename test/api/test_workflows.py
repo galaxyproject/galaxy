@@ -166,6 +166,12 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
         return invocation_details
 
     def _run_jobs( self, has_workflow, history_id=None, wait=True, source_type=None, jobs_descriptions=None ):
+        def read_test_data(test_dict):
+            test_data_resolver = TestDataResolver()
+            filename = test_data_resolver.get_filename(test_dict["value"])
+            content = open(filename, "r").read()
+            return content
+
         if history_id is None:
             history_id = self.history_id
         workflow_id = self._upload_yaml_workflow(
@@ -188,7 +194,11 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
                 elements = []
                 for element_data in elements_data:
                     identifier = element_data[ "identifier" ]
-                    content = element_data["content"]
+                    input_type = element_data.get("type", "raw")
+                    if input_type == "File":
+                        content = read_test_data(element_data)
+                    else:
+                        content = element_data["content"]
                     elements.append( ( identifier, content ) )
                 # TODO: make this collection_type
                 collection_type = value["type"]
@@ -204,9 +214,7 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
             elif is_dict and "type" in value:
                 input_type = value["type"]
                 if input_type == "File":
-                    test_data_resolver = TestDataResolver()
-                    filename = test_data_resolver.get_filename(value["value"])
-                    content = open(filename, "r").read()
+                    content = read_test_data(value)
                     hda = self.dataset_populator.new_dataset( history_id, content=content )
                     label_map[key] = self._ds_entry( hda )
                     has_uploads = True
@@ -740,6 +748,48 @@ steps:
         self.wait_for_invocation_and_jobs( history_id, workflow_id, invocation_id )
         content = self.dataset_populator.get_history_dataset_content( history_id, hid=7 )
         self.assertEquals(content.strip(), "samp1\t10.0\nsamp2\t20.0")
+
+    @skip_without_tool( "mapper" )
+    @skip_without_tool( "pileup" )
+    def test_workflow_metadata_validation_0( self ):
+        # Testing regression of
+        # https://github.com/galaxyproject/galaxy/issues/1514
+        history_id = self.dataset_populator.new_history()
+        self._run_jobs("""
+class: GalaxyWorkflow
+steps:
+  - label: input_fastqs
+    type: input_collection
+  - label: reference
+    type: input
+  - label: map_over_mapper
+    tool_id: mapper
+    state:
+      input1:
+        $link: input_fastqs
+      reference:
+        $link: reference
+  - label: pileup
+    tool_id: pileup
+    state:
+      input1:
+        $link: map_over_mapper#out_file1
+      reference:
+        $link: reference
+test_data:
+  input_fastqs:
+    type: list
+    elements:
+      - identifier: samp1
+        value: 1.fastq
+        type: File
+      - identifier: samp2
+        value: 1.fastq
+        type: File
+  reference:
+    value: 1.fasta
+    type: File
+""", history_id=history_id)
 
     def test_run_subworkflow_simple( self ):
         history_id = self.dataset_populator.new_history()
