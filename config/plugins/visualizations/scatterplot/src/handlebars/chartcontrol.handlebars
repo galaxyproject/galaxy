@@ -1,0 +1,47 @@
+<p class="help-text">
+    Use the following controls to how the chart is displayed.
+    The slide controls can be moved by the mouse or, if the 'handle' is in focus, your keyboard's arrow keys.
+    Move the focus between controls by using the tab or shift+tab keys on your keyboard.
+    Use the 'Draw' button to render (or re-render) the chart with the current settings.
+</p>
+
+<div data-config-key="datapointSize" class="form-input numeric-slider-input">
+    <label for="datapointSize">Size of data point: </label>
+    <div class="slider-output">{{datapointSize}}</div>
+    <div class="slider"></div>
+    <p class="form-help help-text-small">
+        Size of the graphic representation of each data point
+    </p>
+</div>
+
+<div data-config-key="width" class="form-input numeric-slider-input">
+    <label for="width">Chart width: </label>
+    <div class="slider-output">{{width}}</div>
+    <div class="slider"></div>
+    <p class="form-help help-text-small">
+        (not including chart margins and axes)
+    </p>
+</div>
+
+<div data-config-key="height" class="form-input numeric-slider-input">
+    <label for="height">Chart height: </label>
+    <div class="slider-output">{{height}}</div>
+    <div class="slider"></div>
+    <p class="form-help help-text-small">
+        (not including chart margins and axes)
+    </p>
+</div>
+
+<div data-config-key="X-axis-label"class="text-input form-input">
+    <label for="X-axis-label">Re-label the X axis: </label>
+    <input type="text" name="X-axis-label" id="X-axis-label" value="{{xLabel}}" />
+    <p class="form-help help-text-small"></p>
+</div>
+
+<div data-config-key="Y-axis-label" class="text-input form-input">
+    <label for="Y-axis-label">Re-label the Y axis: </label>
+    <input type="text" name="Y-axis-label" id="Y-axis-label" value="{{yLabel}}" />
+    <p class="form-help help-text-small"></p>
+</div>
+
+<button class="render-button btn btn-primary active">Draw</button>

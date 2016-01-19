@@ -1,0 +1,21 @@
+<div class="toolFormTitle">{{name}} (version {{version}})</div>
+    <div class="toolFormBody">
+        {{#each inputs}}
+        <div class="form-row">
+            <label for="{{name}}">{{label}}:</label>
+            <div class="form-row-input">
+                {{{html}}}
+            </div>
+            <div class="toolParamHelp" style="clear: both;">
+                {{help}}
+            </div>
+            <div style="clear: both;"></div>
+        </div>
+        {{/each}}
+    </div>
+    <div class="form-row form-actions">
+    <input type="submit" class="btn btn-primary" name="runtool_btn" value="Execute">
+</div>
+<div class="toolHelp">
+    <div class="toolHelpBody">{{help}}</div>
+</div>

@@ -15,6 +15,7 @@ module.exports = function( grunt ){
             'traceKit':       [ 'tracekit.js', 'tracekit.js' ],
             'ravenjs':        [ 'dist/raven.js', 'raven.js' ],
             'underscore':     [ 'underscore.js', 'underscore.js' ],
+            'handlebars':     [ 'handlebars.runtime.js', 'handlebars.runtime.js' ],
             'backbone':       [ 'backbone.js', 'backbone.js' ],
             'requirejs':      [ 'require.js', 'require.js' ],
             'd3':             [ 'd3.js', 'd3.js' ],
