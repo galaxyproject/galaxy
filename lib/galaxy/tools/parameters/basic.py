@@ -2114,6 +2114,12 @@ class DataToolParameter( BaseDataToolParameter ):
     def validate( self, value, history=None, workflow_building_mode=False ):
         dataset_count = 0
         for validator in self.validators:
+            def do_validate( v ):
+                if validator.requires_dataset_metadata and v and v.dataset.state != galaxy.model.Dataset.states.OK:
+                    return
+                else:
+                    validator.validate( v, history )
+
             if value and self.multiple:
                 if not isinstance( value, list ):
                     value = [ value ]
@@ -2121,14 +2127,14 @@ class DataToolParameter( BaseDataToolParameter ):
                     if isinstance(v, galaxy.model.HistoryDatasetCollectionAssociation):
                         for dataset_instance in v.collection.dataset_instances:
                             dataset_count += 1
-                            validator.validate( dataset_instance, history )
+                            do_validate( dataset_instance )
                     else:
                         dataset_count += 1
-                        validator.validate( v, history )
+                        do_validate( v )
             else:
                 if value:
                     dataset_count += 1
-                validator.validate( value, history )
+                do_validate( value )
 
         if self.min is not None:
             if self.min > dataset_count:
