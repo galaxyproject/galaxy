@@ -106,6 +106,7 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
 
+    ## ${h.templates( "tool_link", "panel_section", "tool_search", "tool_form" )}
     ${h.js( "libs/jquery/jquery-ui" )}
 
     <script type="text/javascript">
@@ -118,6 +119,7 @@
         //             exports: "Backbone"
         //         },
         //         "libs/d3": { exports: "d3" },
+        //         'handlebars' : { exports: 'Handlebars' },
         //     },
         //     // cache buster based on templated server (re)start time
         //     urlArgs: 'v=${app.server_starttime}'
