@@ -493,7 +493,7 @@ var ToolPanel = Backbone.Model.extend({
 /**
  * View classes for Galaxy tools and tool panel.
  *
- * Views use precompiled Handlebars templates for rendering. Views update as needed
+ * Views use the templates defined below for rendering. Views update as needed
  * based on (a) model/collection events and (b) user interactions; in this sense,
  * they are controllers are well and the HTML is the real view in the MVC architecture.
  */
@@ -782,6 +782,7 @@ var IntegratedToolMenuAndView = Backbone.View.extend({
     }
 });
 
+// TODO: move into relevant views
 var templates = {
     // the search bar at the top of the tool panel
     tool_search : _.template([
