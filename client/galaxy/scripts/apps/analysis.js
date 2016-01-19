@@ -30,7 +30,6 @@ window.app = function app( options, bootstrapped ){
         toolPanel = new ToolPanel({
             el                  : '#left',
             userIsAnonymous     : Galaxy.user.isAnonymous(),
-            spinner_url         : config.spinner_url,
             search_url          : config.search_url,
             toolbox             : config.toolbox,
             toolbox_in_panel    : config.toolbox_in_panel,

@@ -350,7 +350,6 @@ var ToolSearch = Backbone.Model.extend({
     defaults: {
         search_hint_string: "search tools",
         min_chars_for_search: 3,
-        spinner_url: "",
         clear_btn_url: "",
         search_url: "",
         visible: true,
@@ -790,7 +789,7 @@ var templates = {
                 'placeholder="<%- search_hint_string %>" autocomplete="off" type="text" />',
         '<a id="search-clear-btn" title="clear search (esc)"> </a>',
         //TODO: replace with icon
-        '<img src="<%= spinner_url %>" id="search-spinner" class="search-spinner" />',
+        '<span id="search-spinner" class="search-spinner fa fa-spinner fa-spin"></span>',
     ].join('')),
 
     // the category level container in the tool panel (e.g. 'Get Data', 'Text Manipulation')
