@@ -2331,7 +2331,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
             name = history_dataset_collection.name
             hid = str( history_dataset_collection.hid )
             hidden_text = ""  # TODO
-            subcollection_type = self._history_query( trans ).collection_type_description.collection_type
+            subcollection_type = self._history_query( trans ).can_map_over( history_dataset_collection ).collection_type
             id = "%s|%s" % ( dataset_matcher.trans.security.encode_id( history_dataset_collection.id ), subcollection_type )
             text = "%s:%s %s" % ( hid, hidden_text, name )
 
@@ -2446,7 +2446,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
         # append matching subcollections
         for hdca in self.match_multirun_collections( trans, history, dataset_matcher ):
-            subcollection_type = self._history_query( trans ).collection_type_description.collection_type
+            subcollection_type = self._history_query( trans ).can_map_over( hdca ).collection_type
             d['options']['hdca'].append({
                 'id': trans.security.encode_id( hdca.id ),
                 'hid': hdca.hid,
