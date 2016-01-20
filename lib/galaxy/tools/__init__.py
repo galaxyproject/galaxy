@@ -2154,6 +2154,9 @@ class Tool( object, Dictifiable ):
         def jsonify(v):
             if isinstance(v, UnvalidatedValue):
                 v = v.value
+                while isinstance( v, UnvalidatedValue ):
+                    v = v.value
+                return v
 
             # check if value is numeric
             isnumber = False

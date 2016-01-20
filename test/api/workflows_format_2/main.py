@@ -29,7 +29,11 @@ def convert_and_import_workflow(has_workflow, **kwds):
     else:
         workflow = yaml_to_workflow(has_workflow, galaxy_interface, workflow_directory)
 
-    return galaxy_interface.import_workflow(workflow)
+    publish = kwds.get("publish", False)
+    import_kwds = {}
+    if publish:
+        import_kwds["publish"] = True
+    return galaxy_interface.import_workflow(workflow, **import_kwds)
 
 __all__ = [
     'convert_and_import_workflow',
