@@ -123,6 +123,11 @@ class DatatypesController( BaseAPIController ):
     def edam_formats( self, trans, **kwds ):
         return self._datatypes_registry.edam_formats
 
+    @expose_api_anonymous_and_sessionless
+    def edam_data( self, trans, **kwds ):
+        return self._datatypes_registry.edam_data
+
+
     @property
     def _datatypes_registry( self ):
         return self.app.datatypes_registry
