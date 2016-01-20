@@ -74,6 +74,8 @@ class Sequence( data.Text ):
     """Add metadata elements"""
     MetadataElement( name="sequences", default=0, desc="Number of sequences", readonly=True, visible=False, optional=True, no_value=0 )
 
+    edam_data = "data_2044"
+
     def set_meta( self, dataset, **kwd ):
         """
         Set the number of sequences and the number of data lines in dataset.
@@ -297,6 +299,8 @@ class Alignment( data.Text ):
 
     """Add metadata elements"""
     MetadataElement( name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None )
+
+    edam_data = "data_0863"
 
     def split( cls, input_datasets, subdir_generator_function, split_params):
         """Split a generic alignment file (not sensible or possible, see subclasses)."""
@@ -846,6 +850,7 @@ class Axt( data.Text ):
     # here simply for backward compatibility ( although it is still in the datatypes registry ).  Subclassing
     # from data.Text eliminates managing metadata elements inherited from the Alignemnt class.
 
+    edam_data = "data_0863"
     file_ext = "axt"
 
     def sniff( self, filename ):
@@ -895,6 +900,7 @@ class Axt( data.Text ):
 
 class Lav( data.Text ):
     """Class describing a LAV alignment"""
+    edam_data = "data_0863"
     edam_format = "format_3014"
     file_ext = "lav"
 
@@ -963,6 +969,7 @@ class RNADotPlotMatrix( data.Data ):
 
 
 class DotBracket ( Sequence ):
+    edam_data = "data_0880"
     edam_format = "format_1457"
     file_ext = "dbn"
 
