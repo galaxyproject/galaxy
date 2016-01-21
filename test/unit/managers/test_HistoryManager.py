@@ -4,7 +4,6 @@
 import os
 import imp
 import unittest
-import random
 
 test_utils = imp.load_source( 'test_utils',
     os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
@@ -17,13 +16,11 @@ from galaxy import model
 from galaxy import exceptions
 
 from base import BaseTestCase
-from base import CreatesCollectionsMixin
 
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.histories import HistorySerializer
 from galaxy.managers.histories import HistoryFilters
 from galaxy.managers import hdas
-from galaxy.managers import collections
 
 default_password = '123456'
 user2_data = dict( email='user2@user2.user2', username='user2', password=default_password )
