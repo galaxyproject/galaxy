@@ -40,6 +40,9 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
         assert DEFAULT_TOOL_OUTPUT in datasets
         self.assertEquals( len( datasets[ DEFAULT_TOOL_OUTPUT ] ), 2 )
 
+        # Test default order of collection.
+        assert list(datasets[ DEFAULT_TOOL_OUTPUT ].keys()) == ["test1", "test2"]
+
         created_hda_1 = datasets[ DEFAULT_TOOL_OUTPUT ][ "test1" ]
         self.app.object_store.assert_created_with_path( created_hda_1.dataset, path1 )
 
@@ -49,6 +52,49 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
         # Test default metadata stuff
         assert created_hda_1.visible
         assert created_hda_1.dbkey == "?"
+
+    def test_collect_sorted_reverse( self ):
+        self._replace_output_collectors( '''<output>
+            <discover_datasets pattern="__name__" directory="subdir_for_name_discovery" sort_by="reverse_filename" ext="txt" />
+        </output>''')
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="test1" )
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="test2" )
+
+        datasets = self._collect()
+        assert DEFAULT_TOOL_OUTPUT in datasets
+
+        # Test default order of collection.
+        assert list(datasets[ DEFAULT_TOOL_OUTPUT ].keys()) == ["test2", "test1"]
+
+    def test_collect_sorted_name( self ):
+        self._replace_output_collectors( '''<output>
+            <discover_datasets pattern="[abc](?P&lt;name&gt;.*)" directory="subdir_for_name_discovery" sort_by="name" ext="txt" />
+        </output>''')
+        # Setup filenames in reverse order and ensure name is used as key.
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="ctest1" )
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="btest2" )
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="atest3" )
+
+        datasets = self._collect()
+        assert DEFAULT_TOOL_OUTPUT in datasets
+
+        # Test default order of collection.
+        assert list(datasets[ DEFAULT_TOOL_OUTPUT ].keys()) == ["test1", "test2", "test3"]
+
+    def test_collect_sorted_numeric( self ):
+        self._replace_output_collectors( '''<output>
+            <discover_datasets pattern="[abc](?P&lt;name&gt;.*)" directory="subdir_for_name_discovery" sort_by="numeric_name" ext="txt" />
+        </output>''')
+        # Setup filenames in reverse order and ensure name is used as key.
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="c1" )
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="b10" )
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="a100" )
+
+        datasets = self._collect()
+        assert DEFAULT_TOOL_OUTPUT in datasets
+
+        # Test default order of collection.
+        assert list(datasets[ DEFAULT_TOOL_OUTPUT ].keys()) == ["1", "10", "100"]
 
     def test_collect_hidden( self ):
         self._setup_extra_file( visible="hidden" )

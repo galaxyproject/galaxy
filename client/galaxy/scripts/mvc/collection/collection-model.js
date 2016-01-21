@@ -4,6 +4,8 @@ define([
     "utils/localization"
 ], function( DATASET_MODEL, BASE_MVC, _l ){
 
+'use strict';
+
 var logNamespace = 'collections';
 //==============================================================================
 /*

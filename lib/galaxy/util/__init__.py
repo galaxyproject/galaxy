@@ -1190,7 +1190,7 @@ def send_mail( frm, to, subject, body, config ):
     Sends an email.
     """
     to = listify( to )
-    msg = email_mime_text(  body.encode( 'ascii', 'replace' ) )
+    msg = email_mime_text.MIMEText(  body.encode( 'ascii', 'replace' ) )
     msg[ 'To' ] = ', '.join( to )
     msg[ 'From' ] = frm
     msg[ 'Subject' ] = subject

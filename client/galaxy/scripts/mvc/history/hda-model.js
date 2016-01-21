@@ -4,6 +4,9 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( DATASET, HISTORY_CONTENT, BASE_MVC, _l ){
+
+'use strict';
+
 //==============================================================================
 var _super = DATASET.DatasetAssociation,
     hcontentMixin = HISTORY_CONTENT.HistoryContentMixin;

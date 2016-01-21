@@ -322,7 +322,7 @@ return Backbone.View.extend({
                     '<td>' +
                         '<div id="genome" class="upload-genome"/>' +
                     '</td>' +
-                    '<td><div id="settings" class="upload-icon-button fa fa-gear"/></td>' +
+                    '<td><div id="settings" class="upload-settings upload-icon-button fa fa-gear"/></td>' +
                     '<td>' +
                         '<div id="info" class="upload-info">' +
                             '<div class="progress">' +

@@ -12,7 +12,7 @@ class ImporterGalaxyInterface(object):
     """
 
     @abc.abstractmethod
-    def import_workflow(self, workflow):
+    def import_workflow(self, workflow, **kwds):
         """ Import a workflow via POST /api/workflows or
         comparable interface into Galaxy.
         """
@@ -59,10 +59,11 @@ class BioBlendImporterGalaxyInterface(object):
         self._admin_gi = admin_gi
         self._user_gi = user_gi
 
-    def import_workflow(self, workflow):
+    def import_workflow(self, workflow, **kwds):
         workflow_str = json.dumps(workflow, indent=4)
         return self._user_gi.workflows.import_workflow_json(
-            workflow_str
+            workflow_str,
+            **kwds
         )
 
     def import_tool(self, tool_representation):

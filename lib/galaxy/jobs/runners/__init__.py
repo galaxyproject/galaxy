@@ -20,6 +20,7 @@ from galaxy.util import in_directory
 from galaxy.util import ParamsWithSpecs
 from galaxy.util import ExecutionTimer
 from galaxy.util.bunch import Bunch
+from galaxy.jobs.runners.util.job_script import write_script
 from galaxy.jobs.runners.util.job_script import job_script
 from galaxy.jobs.runners.util.env import env_to_statement
 
@@ -166,7 +167,7 @@ class BaseJobRunner( object ):
             job_wrapper.runner_command_line = self.build_command_line(
                 job_wrapper,
                 include_metadata=include_metadata,
-                include_work_dir_outputs=include_work_dir_outputs
+                include_work_dir_outputs=include_work_dir_outputs,
             )
         except:
             log.exception("(%s) Failure preparing job" % job_id)
@@ -297,6 +298,7 @@ class BaseJobRunner( object ):
             env_setup_commands=env_setup_commands,
             working_directory=os.path.abspath( job_wrapper.working_directory ),
             command=command_line,
+            shell=job_wrapper.shell,
         )
         # Additional logging to enable if debugging from_work_dir handling, metadata
         # commands, etc... (or just peak in the job script.)
@@ -306,41 +308,7 @@ class BaseJobRunner( object ):
         return job_script(**options)
 
     def write_executable_script( self, path, contents, mode=0o755 ):
-        with open( path, 'w' ) as f:
-            if isinstance(contents, unicode):
-                contents = contents.encode("UTF-8")
-            f.write( contents )
-        os.chmod( path, mode )
-        self._handle_script_integrity( path )
-
-    def _handle_script_integrity( self, path ):
-        if not getattr( self.app.config, "check_job_script_integrity", True ):
-            return
-
-        script_integrity_verified = False
-        for i in range(10):
-            try:
-                proc = subprocess.Popen( [path], shell=True, env={"ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ": "1"} )
-                proc.wait()
-                if proc.returncode == 42:
-                    script_integrity_verified = True
-                    break
-
-                # Else we will sync and wait to see if the script becomes
-                # executable.
-                try:
-                    # sync file system to avoid "Text file busy" problems.
-                    # These have occurred both in Docker containers and on EC2 clusters
-                    # under high load.
-                    subprocess.check_call(["/bin/sync"])
-                except Exception:
-                    pass
-                time.sleep( .25 )
-            except Exception:
-                pass
-
-        if not script_integrity_verified:
-            raise Exception("Failed to write job script, could not verify job script integrity.")
+        write_script( path, contents, self.app.config, mode=mode )
 
     def _complete_terminal_job( self, ajs, **kwargs ):
         if ajs.job_wrapper.get_state() != model.Job.states.DELETED:

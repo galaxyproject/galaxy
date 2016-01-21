@@ -617,9 +617,7 @@ EditorFormView = Backbone.View.extend({
 
         // Global state for the whole workflow
         reset: function() {
-            if ( this.workflow ) {
-                this.workflow.remove_all();
-            }
+            this.workflow && this.workflow.remove_all();
             this.workflow = Globals.workflow = new Workflow( this, $("#canvas-container") );
         },
 
@@ -795,6 +793,7 @@ EditorFormView = Backbone.View.extend({
                 if (node.type == 'tool' && Utils.isJSON(text)) {
                     var options = JSON.parse(text);
                     options.node = node;
+                    options.workflow = this.workflow;
                     options.datatypes = this.datatypes;
                     formView = new ToolForm.View(options);
                 } else {

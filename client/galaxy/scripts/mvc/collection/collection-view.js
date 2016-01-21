@@ -6,6 +6,8 @@ define([
     "utils/localization"
 ], function( LIST_VIEW, DC_MODEL, DC_LI, BASE_MVC, _l ){
 
+'use strict';
+
 var logNamespace = 'collections';
 /* =============================================================================
 TODO:
@@ -83,12 +85,14 @@ var CollectionView = _super.extend(
         _super.prototype._setUpItemViewListeners.call( panel, view );
 
         // use pub-sub to: handle drilldown expansion and collapse
-        view.on( 'expanded:drilldown', function( v, drilldown ){
-            this._expandDrilldownPanel( drilldown );
-        }, this );
-        view.on( 'collapsed:drilldown', function( v, drilldown ){
-            this._collapseDrilldownPanel( drilldown );
-        }, this );
+        panel.listenTo( view, {
+            'expanded:drilldown': function( v, drilldown ){
+                this._expandDrilldownPanel( drilldown );
+            },
+            'collapsed:drilldown': function( v, drilldown ){
+                this._collapseDrilldownPanel( drilldown );
+            }
+        });
         return this;
     },
 

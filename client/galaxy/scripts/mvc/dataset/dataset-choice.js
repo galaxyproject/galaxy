@@ -5,6 +5,7 @@ define([
     'mvc/base-mvc',
     'utils/localization'
 ], function( DATASET, DATASET_LIST, MODAL, BASE_MVC, _l ){
+'use strict';
 
 var logNamespace = 'dataset';
 /* ============================================================================

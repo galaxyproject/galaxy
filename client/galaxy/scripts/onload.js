@@ -8,7 +8,6 @@ window[ 'jQuery' ] = jQuery; // a weird form to prevent webpack from sub'ing 'wi
 window.$ = jQuery;
 window._ = _;
 window.Backbone = Backbone;
-window.Handlebars = Handlebars;
 // console.debug('globals loaded:', window.jQuery, window.Backbone, '...');
 
 // these are galaxy globals not defined in the provider (although they could be - but why encourage that?)
