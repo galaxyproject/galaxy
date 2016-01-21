@@ -458,15 +458,15 @@ class Sam( Tabular ):
                     break  # EOF
                 if line:
                     if line[0] != '@':
-                        linePieces = line.split('\t')
-                        if len(linePieces) < 11:
+                        line_pieces = line.split('\t')
+                        if len(line_pieces) < 11:
                             return False
                         try:
-                            int(linePieces[1])
-                            int(linePieces[3])
-                            int(linePieces[4])
-                            int(linePieces[7])
-                            int(linePieces[8])
+                            int(line_pieces[1])
+                            int(line_pieces[3])
+                            int(line_pieces[4])
+                            int(line_pieces[7])
+                            int(line_pieces[8])
                         except ValueError:
                             return False
                         count += 1
@@ -789,18 +789,18 @@ class Eland( Tabular ):
                 if not line:
                     break  # EOF
                 if line:
-                    linePieces = line.split('\t')
-                    if len(linePieces) != 22:
+                    line_pieces = line.split('\t')
+                    if len(line_pieces) != 22:
                         return False
                     try:
-                        if long(linePieces[1]) < 0:
+                        if long(line_pieces[1]) < 0:
                             raise Exception('Out of range')
-                        if long(linePieces[2]) < 0:
+                        if long(line_pieces[2]) < 0:
                             raise Exception('Out of range')
-                        if long(linePieces[3]) < 0:
+                        if long(line_pieces[3]) < 0:
                             raise Exception('Out of range')
-                        int(linePieces[4])
-                        int(linePieces[5])
+                        int(line_pieces[4])
+                        int(line_pieces[5])
                         # can get a lot more specific
                     except ValueError:
                         fh.close()
@@ -835,13 +835,13 @@ class Eland( Tabular ):
             # Otherwise, read the whole thing and set num data lines.
             for i, line in enumerate(dataset_fh):
                 if line:
-                    linePieces = line.split('\t')
-                    if len(linePieces) != 22:
+                    line_pieces = line.split('\t')
+                    if len(line_pieces) != 22:
                         raise Exception('%s:%d:Corrupt line!' % (dataset.file_name, i))
-                    lanes[linePieces[2]] = 1
-                    tiles[linePieces[3]] = 1
-                    barcodes[linePieces[6]] = 1
-                    reads[linePieces[7]] = 1
+                    lanes[line_pieces[2]] = 1
+                    tiles[line_pieces[3]] = 1
+                    barcodes[line_pieces[6]] = 1
+                    reads[line_pieces[7]] = 1
                 pass
             dataset.metadata.data_lines = i + 1
             dataset_fh.close()
