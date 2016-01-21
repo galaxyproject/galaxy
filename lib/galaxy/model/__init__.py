@@ -50,9 +50,9 @@ from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
 
 log = logging.getLogger( __name__ )
 
-datatypes_registry = galaxy.datatypes.registry.Registry()
+_datatypes_registry = galaxy.datatypes.registry.Registry()
 # Default Value Required for unit tests
-datatypes_registry.load_datatypes()
+_datatypes_registry.load_datatypes()
 
 # When constructing filters with in for a fixed set of ids, maximum
 # number of items to place in the IN statement. Different databases
@@ -84,8 +84,8 @@ def set_datatypes_registry( d_registry ):
     """
     Set up datatypes_registry
     """
-    global datatypes_registry
-    datatypes_registry = d_registry
+    global _datatypes_registry
+    _datatypes_registry = d_registry
 
 
 class HasName:
@@ -1858,7 +1858,7 @@ class DatasetInstance( object ):
 
     @property
     def datatype( self ):
-        return datatypes_registry.get_datatype_by_extension( self.extension )
+        return _datatypes_registry.get_datatype_by_extension( self.extension )
 
     def get_metadata( self ):
         # using weakref to store parent (to prevent circ ref),
@@ -1892,7 +1892,7 @@ class DatasetInstance( object ):
 
     def change_datatype( self, new_ext ):
         self.clear_associated_files()
-        datatypes_registry.change_datatype( self, new_ext )
+        _datatypes_registry.change_datatype( self, new_ext )
 
     def get_size( self, nice_size=False ):
         """Returns the size of the data on disk"""
@@ -1929,7 +1929,7 @@ class DatasetInstance( object ):
     def get_mime( self ):
         """Returns the mime type of the data"""
         try:
-            return datatypes_registry.get_mimetype_by_extension( self.extension.lower() )
+            return _datatypes_registry.get_mimetype_by_extension( self.extension.lower() )
         except AttributeError:
             # extension is None
             return 'data'
@@ -2054,14 +2054,14 @@ class DatasetInstance( object ):
         return None
 
     def get_converter_types(self):
-        return self.datatype.get_converter_types( self, datatypes_registry )
+        return self.datatype.get_converter_types( self, _datatypes_registry )
 
     def can_convert_to(self, format):
         return format in self.get_converter_types()
 
     def find_conversion_destination( self, accepted_formats, **kwd ):
         """Returns ( target_ext, existing converted dataset )"""
-        return self.datatype.find_conversion_destination( self, accepted_formats, datatypes_registry, **kwd )
+        return self.datatype.find_conversion_destination( self, accepted_formats, _datatypes_registry, **kwd )
 
     def add_validation_error( self, validation_error ):
         self.validation_errors.append( validation_error )
