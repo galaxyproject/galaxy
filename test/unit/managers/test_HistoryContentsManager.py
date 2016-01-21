@@ -9,8 +9,6 @@ import random
 test_utils = imp.load_source( 'test_utils',
     os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 
-from galaxy import eggs
-eggs.require( 'SQLAlchemy >= 0.4' )
 from sqlalchemy import true
 from sqlalchemy import false
 from sqlalchemy import desc
