@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import logging
 import mimetypes
 import os
@@ -7,7 +8,7 @@ import zipfile
 from cgi import escape
 from inspect import isclass
 
-import metadata
+from . import metadata
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
 from galaxy.util import inflector
@@ -15,7 +16,7 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 
-import dataproviders
+from . import dataproviders
 
 import paste
 
