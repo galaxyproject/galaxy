@@ -28,9 +28,9 @@ except ImportError:
     pexpect = None
 
 import galaxy.model.orm.now
+import galaxy.model.metadata
 import galaxy.security.passwords
 import galaxy.util
-import galaxy.datatypes.metadata
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.security import get_permitted_actions
@@ -1866,7 +1866,7 @@ class DatasetInstance( object ):
         # using weakref to store parent (to prevent circ ref),
         #   does a Session.clear() cause parent to be invalidated, while still copying over this non-database attribute?
         if not hasattr( self, '_metadata_collection' ) or self._metadata_collection.parent != self:
-            self._metadata_collection = galaxy.datatypes.metadata.MetadataCollection( self )
+            self._metadata_collection = galaxy.model.metadata.MetadataCollection( self )
         return self._metadata_collection
 
     def set_metadata( self, bunch ):

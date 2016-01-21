@@ -59,7 +59,7 @@ class Data( object ):
     >>> DataTest.metadata_spec.test.desc
     'test'
     >>> type( DataTest.metadata_spec.test.param )
-    <class 'galaxy.datatypes.metadata.MetadataParameter'>
+    <class 'galaxy.model.metadata.MetadataParameter'>
 
     """
     edam_format = "format_1915"
