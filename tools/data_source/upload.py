@@ -14,8 +14,6 @@ import urllib
 import zipfile
 
 from galaxy import util
-# need to import model before sniff to resolve a circular import dependency
-import galaxy.model  # noqa
 from galaxy.datatypes import sniff
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.registry import Registry
