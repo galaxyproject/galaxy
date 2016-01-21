@@ -3,8 +3,9 @@ velvet datatypes
 James E Johnson - University of Minnesota
 for velvet assembler tool in galaxy
 """
+from __future__ import absolute_import
 
-import data
+from galaxy.datatypes import data
 import logging
 import os
 import re

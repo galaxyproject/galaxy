@@ -1,6 +1,8 @@
 """
 Tabular datatype
 """
+from __future__ import absolute_import
+
 import csv
 import gzip
 import logging
@@ -18,7 +20,7 @@ from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers
 from galaxy.util.json import dumps
 
-import dataproviders
+from . import dataproviders
 
 log = logging.getLogger(__name__)
 
