@@ -323,11 +323,9 @@ class UploadDataset( Group ):
                 if not dataset_info:
                     dataset_info = 'uploaded file'
                 return Bunch( type='file', path=data_file['local_filename'], name=dataset_name )
-                # return 'file', data_file['local_filename'], get_file_name( data_file.filename ), dataset_name, dataset_info
             except:
                 # The uploaded file should've been persisted by the upload tool action
                 return Bunch( type=None, path=None, name=None )
-                # return None, None, None, None, None
 
         def get_url_paste_urls_or_filename( group_incoming, override_name=None, override_info=None ):
             url_paste_file = group_incoming.get( 'url_paste', None )
@@ -347,7 +345,6 @@ class UploadDataset( Group ):
                             if not dataset_info:
                                 dataset_info = 'uploaded url'
                             yield Bunch( type='url', path=line, name=dataset_name )
-                            # yield ( 'url', line, precreated_name, dataset_name, dataset_info )
                 else:
                     dataset_name = dataset_info = precreated_name = 'Pasted Entry'  # we need to differentiate between various url pastes here
                     if override_name:
@@ -355,7 +352,6 @@ class UploadDataset( Group ):
                     if override_info:
                         dataset_info = override_info
                     yield Bunch( type='file', path=url_paste_file, name=precreated_name )
-                    # yield ( 'file', url_paste_file, precreated_name, dataset_name, dataset_info )
 
         def get_one_filename( context ):
             data_file = context['file_data']
