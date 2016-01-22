@@ -6,6 +6,7 @@ from basic import DataCollectionToolParameter, DataToolParameter, SelectToolPara
 from grouping import Conditional, Repeat, Section, UploadDataset
 from galaxy.util.json import dumps, json_fix, loads
 from galaxy.util.expressions import ExpressionContext
+from galaxy.util.bunch import Bunch
 
 REPLACE_ON_TRUTHY = object()
 
@@ -68,6 +69,12 @@ def check_param( trans, param, incoming_value, param_values, source='html', bool
     previous parameters (this may actually be an ExpressionContext
     when dealing with grouping scenarios).
     """
+    request_context = Bunch(
+        user                    = trans.user,
+        history                 = trans.history,
+        user_ftp_dir            = trans.user_ftp_dir,
+        workflow_building_mode  = workflow_building_mode
+    )
     value = incoming_value
     error = None
     try:
@@ -79,9 +86,9 @@ def check_param( trans, param, incoming_value, param_values, source='html', bool
         if value is not None or isinstance( param, DataToolParameter ) or isinstance( param, DataCollectionToolParameter ):
             # Convert value from HTML representation
             if source == 'html':
-                value = param.from_html( value, trans, param_values )
+                value = param.from_html( value, request_context, param_values )
             else:
-                value = param.from_json( value, trans, param_values )
+                value = param.from_json( value, request_context, param_values )
             # Allow the value to be converted if necessary
             filtered_value = param.filter_value( value, trans, param_values )
             # Then do any further validation on the value

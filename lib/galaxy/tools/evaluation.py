@@ -52,10 +52,6 @@ class ToolEvaluator( object ):
         job = self.job
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         incoming = self.tool.params_from_strings( incoming, self.app )
-        def validate_inputs( input, value, prefixed_name, prefixed_label, context ):
-            value = input.from_html( value, None, context )
-            input.validate( value, None )
-        visit_input_values ( self.tool.inputs, incoming, validate_inputs, details=True )
 
         # Restore input / output data lists
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
