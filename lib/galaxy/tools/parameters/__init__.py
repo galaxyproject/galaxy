@@ -81,8 +81,6 @@ def check_param( trans, param, incoming_value, param_values, source='html', bool
         # resolves the inconsistent definition of boolean parameters (see base.py) without modifying shared code
         if boolean_fix and param.type == 'boolean' and isinstance( value, basestring ):
             return [ string_as_bool( value ), None ]
-        if history is None:
-            history = trans.history
         if value is not None or isinstance( param, DataToolParameter ) or isinstance( param, DataCollectionToolParameter ):
             # Convert value from HTML representation
             if source == 'html':
@@ -90,12 +88,12 @@ def check_param( trans, param, incoming_value, param_values, source='html', bool
             else:
                 value = param.from_json( value, request_context, param_values )
             # Allow the value to be converted if necessary
-            filtered_value = param.filter_value( value, trans, param_values )
+            filtered_value = param.filter_value( value, request_context, param_values )
             # Then do any further validation on the value
-            param.validate( filtered_value, history, workflow_building_mode=workflow_building_mode )
+            param.validate( filtered_value, request_context )
         elif value is None and isinstance( param, SelectToolParameter ):
             # An empty select list or column list
-            param.validate( value, history, workflow_building_mode=workflow_building_mode )
+            param.validate( value, request_context )
     except ValueError, e:
         error = str( e )
     return value, error

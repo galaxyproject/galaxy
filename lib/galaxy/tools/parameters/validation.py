@@ -28,7 +28,7 @@ class Validator( object ):
         assert type is not None, "Required 'type' attribute missing from validator"
         return validator_types[type].from_element( param, elem )
 
-    def validate( self, value, history=None ):
+    def validate( self, value, trans=None ):
         raise TypeError( "Abstract Method" )
 
 
@@ -61,7 +61,7 @@ class RegexValidator( Validator ):
         # the sre module.
         self.expression = expression
 
-    def validate( self, value, history=None ):
+    def validate( self, value, trans=None ):
         if re.match( self.expression, value ) is None:
             raise ValueError( self.message )
 
@@ -95,7 +95,7 @@ class ExpressionValidator( Validator ):
         # Save compiled expression, code objects are thread safe (right?)
         self.expression = compile( expression, '<string>', 'eval' )
 
-    def validate( self, value, history=None ):
+    def validate( self, value, trans=None ):
         if not( eval( self.expression, dict( value=value ) ) ):
             message = self.message
             if self.substitute_value_in_message:
@@ -156,7 +156,7 @@ class InRangeValidator( Validator ):
             op2 = '<'
         self.message = message or "Value must be %s %s and %s %s" % ( op1, self_min_str, op2, self_max_str )
 
-    def validate( self, value, history=None ):
+    def validate( self, value, trans=None ):
         if self.exclude_min:
             if not self.min < float( value ):
                 raise ValueError( self.message )
@@ -207,7 +207,7 @@ class LengthValidator( Validator ):
         self.min = length_min
         self.max = length_max
 
-    def validate( self, value, history=None ):
+    def validate( self, value, trans=None ):
         if self.min is not None and len( value ) < self.min:
             raise ValueError( self.message or ( "Must have length of at least %d" % self.min ) )
         if self.max is not None and len( value ) > self.max:
@@ -226,7 +226,7 @@ class DatasetOkValidator( Validator ):
     def from_element( cls, param, elem ):
         return cls( elem.get( 'message', None ) )
 
-    def validate( self, value, history=None ):
+    def validate( self, value, trans=None ):
         if value and value.state != model.Dataset.states.OK:
             if self.message is None:
                 self.message = "The selected dataset is still being generated, select another dataset or wait until it is completed"
@@ -248,7 +248,7 @@ class MetadataValidator( Validator ):
     def from_element( cls, param, elem ):
         return cls( message=elem.get( 'message', None ), check=elem.get( 'check', "" ), skip=elem.get( 'skip', "" ) )
 
-    def validate( self, value, history=None ):
+    def validate( self, value, trans=None ):
         if value:
             if not isinstance( value, model.DatasetInstance ):
                 raise ValueError( 'A non-dataset value was provided.' )
@@ -274,7 +274,7 @@ class UnspecifiedBuildValidator( Validator ):
     def from_element( cls, param, elem ):
         return cls( elem.get( 'message', None ) )
 
-    def validate( self, value, history=None ):
+    def validate( self, value, trans=None ):
         # if value is None, we cannot validate
         if value:
             dbkey = value.metadata.dbkey
@@ -294,7 +294,7 @@ class NoOptionsValidator( Validator ):
     def from_element( cls, param, elem ):
         return cls( elem.get( 'message', None ) )
 
-    def validate( self, value, history=None ):
+    def validate( self, value, trans=None ):
         if value is None:
             if self.message is None:
                 self.message = "No options available for selection"
@@ -311,7 +311,7 @@ class EmptyTextfieldValidator( Validator ):
     def from_element( cls, param, elem ):
         return cls( elem.get( 'message', None ) )
 
-    def validate( self, value, history=None ):
+    def validate( self, value, trans=None ):
         if value == '':
             if self.message is None:
                 self.message = "Field requires a value"
@@ -349,7 +349,7 @@ class MetadataInFileColumnValidator( Validator ):
                 if metadata_column < len( fields ):
                     self.valid_values.append( fields[metadata_column].strip() )
 
-    def validate( self, value, history=None ):
+    def validate( self, value, trans=None ):
         if not value:
             return
         if hasattr( value, "metadata" ):
@@ -401,7 +401,7 @@ class MetadataInDataTableColumnValidator( Validator ):
             if self._metadata_column < len( fields ):
                 self.valid_values.append( fields[ self._metadata_column ] )
 
-    def validate( self, value, history=None ):
+    def validate( self, value, trans=None ):
         if not value:
             return
         if hasattr( value, "metadata" ):
