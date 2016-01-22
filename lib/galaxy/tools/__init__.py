@@ -1734,7 +1734,7 @@ class Tool( object, Dictifiable ):
                                 ck_param = False
                             # this will fail when a parameter's type has changed to a non-compatible one: e.g. conditional group changed to dataset input
                             if ck_param:
-                                input.value_from_basic( input.value_to_basic( value, trans.app ), trans.app, ignore_errors=False )
+                                input.value_from_basic( input.value_to_basic( value, self.app ), self.app, ignore_errors=False )
                     except:
                         log.info("Parameter validation failed.", exc_info=True)
                         messages[ input.name ] = "Value no longer valid for '%s%s', replacing with default" % ( prefix, input.label )
@@ -2058,7 +2058,7 @@ class Tool( object, Dictifiable ):
         # Add input and output details.
         if io_details:
             tool_dict[ 'inputs' ] = [ input.to_dict( trans ) for input in self.inputs.values() ]
-            tool_dict[ 'outputs' ] = [ output.to_dict( app=trans.app ) for output in self.outputs.values() ]
+            tool_dict[ 'outputs' ] = [ output.to_dict( app=self.app ) for output in self.outputs.values() ]
 
         tool_dict[ 'panel_section_id' ], tool_dict[ 'panel_section_name' ] = self.get_panel_section()
 
@@ -2087,11 +2087,11 @@ class Tool( object, Dictifiable ):
         tool_message = ''
         if job:
             try:
-                job_params = job.get_param_values( trans.app, ignore_errors=True )
+                job_params = job.get_param_values( self.app, ignore_errors=True )
                 self.check_and_update_param_values( job_params, trans, update_values=False )
                 self._map_source_to_history( trans, self.inputs, job_params, history )
                 tool_message = self._compare_tool_version(trans, job)
-                params_to_incoming( kwd, self.inputs, job_params, trans.app, to_html=False )
+                params_to_incoming( kwd, self.inputs, job_params, self.app, to_html=False )
             except Exception, e:
                 raise exceptions.MessageException( str( e ) )
 
@@ -2109,17 +2109,17 @@ class Tool( object, Dictifiable ):
                 pass
 
             # fix hda parsing
-            if isinstance(v, trans.app.model.HistoryDatasetAssociation):
+            if isinstance(v, self.app.model.HistoryDatasetAssociation):
                 return {
                     'id'  : trans.security.encode_id(v.id),
                     'src' : 'hda'
                 }
-            elif isinstance(v, trans.app.model.HistoryDatasetCollectionAssociation):
+            elif isinstance(v, self.app.model.HistoryDatasetCollectionAssociation):
                 return {
                     'id'  : trans.security.encode_id(v.id),
                     'src' : 'hdca'
                 }
-            elif isinstance(v, trans.app.model.LibraryDatasetDatasetAssociation):
+            elif isinstance(v, self.app.model.LibraryDatasetDatasetAssociation):
                 return {
                     'id'  : trans.security.encode_id(v.id),
                     'name': v.name,
@@ -2244,7 +2244,7 @@ class Tool( object, Dictifiable ):
                         test_param = tool_dict['test_param']
                         test_param['default_value'] = jsonify(input.test_param.get_initial_value(trans, other_values, history=history))
                         test_param['value'] = jsonify(group_state.get(test_param['name'], test_param['default_value']))
-                        test_param['text_value'] = input.test_param.value_to_display_text(test_param['value'], trans.app)
+                        test_param['text_value'] = input.test_param.value_to_display_text(test_param['value'], self.app)
                         for i in range(len( tool_dict['cases'] ) ):
                             current_state = {}
                             if i == group_state.get('__current_case__', None):
@@ -2274,7 +2274,7 @@ class Tool( object, Dictifiable ):
                     tool_dict['value'] = state_inputs.get(input.name, tool_dict['default_value'])
 
                     # add text value
-                    tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ], trans.app )
+                    tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ], self.app )
 
                     # sanitize values
                     sanitize(tool_dict, 'value')
@@ -2353,14 +2353,14 @@ class Tool( object, Dictifiable ):
         # add toolshed url
         sharable_url = None
         if self.tool_shed_repository:
-            sharable_url = self.tool_shed_repository.get_sharable_url( trans.app )
+            sharable_url = self.tool_shed_repository.get_sharable_url( self.app )
 
         # add additional properties
         tool_model.update({
             'id'            : self.id,
             'help'          : tool_help,
             'citations'     : tool_citations,
-            'biostar_url'   : trans.app.config.biostar_url,
+            'biostar_url'   : self.app.config.biostar_url,
             'sharable_url'  : sharable_url,
             'message'       : tool_message,
             'versions'      : tool_versions,
@@ -2407,10 +2407,10 @@ class Tool( object, Dictifiable ):
         def map_to_history(value):
             id = None
             source = None
-            if isinstance(value, trans.app.model.HistoryDatasetAssociation):
+            if isinstance(value, self.app.model.HistoryDatasetAssociation):
                 id = value.dataset.id
                 source = hda_source_dict
-            elif isinstance(value, trans.app.model.HistoryDatasetCollectionAssociation):
+            elif isinstance(value, self.app.model.HistoryDatasetCollectionAssociation):
                 id = value.collection.id
                 source = hdca_source_dict
             else:
@@ -2430,7 +2430,7 @@ class Tool( object, Dictifiable ):
         def mapping_callback( input, value, prefixed_name, prefixed_label ):
             if isinstance( value, UnvalidatedValue ):
                 try:
-                    return input.to_html_value( value.value, trans.app )
+                    return input.to_html_value( value.value, self.app )
                 except Exception, e:
                     # Need to determine when (if ever) the to_html_value call could fail.
                     log.debug( "Failed to use input.to_html_value to determine value of unvalidated parameter, defaulting to string: %s" % ( e ) )
