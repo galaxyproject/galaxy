@@ -1066,7 +1066,7 @@ class Tool( object, Dictifiable ):
         """
         context = ExpressionContext( state, context )
         for input in inputs.itervalues():
-            state[ input.name ] = input.get_initial_value( trans, context, history=history )
+            state[ input.name ] = input.get_initial_value( trans, context )
 
     def get_param_html_map( self, trans, page=0, other_values={} ):
         """
@@ -2177,7 +2177,7 @@ class Tool( object, Dictifiable ):
         def populate_state(trans, inputs, state, errors, incoming, prefix="", context=None ):
             context = ExpressionContext(state, context)
             for input in inputs.itervalues():
-                state[input.name] = input.get_initial_value(trans, context, history=history)
+                state[input.name] = input.get_initial_value(trans, context)
                 key = prefix + input.name
                 if input.type == 'repeat':
                     group_state = state[input.name]
@@ -2238,7 +2238,7 @@ class Tool( object, Dictifiable ):
                     tool_dict = input.to_dict(trans)
                     if 'test_param' in tool_dict:
                         test_param = tool_dict['test_param']
-                        test_param['default_value'] = jsonify(input.test_param.get_initial_value(trans, other_values, history=history))
+                        test_param['default_value'] = jsonify(input.test_param.get_initial_value(trans, other_values))
                         test_param['value'] = jsonify(group_state.get(test_param['name'], test_param['default_value']))
                         test_param['text_value'] = input.test_param.value_to_display_text(test_param['value'], self.app)
                         for i in range(len( tool_dict['cases'] ) ):
@@ -2260,7 +2260,7 @@ class Tool( object, Dictifiable ):
 
                     # backup default value
                     try:
-                        tool_dict['default_value'] = input.get_initial_value(trans, other_values, history=history)
+                        tool_dict['default_value'] = input.get_initial_value(trans, other_values)
                     except Exception:
                         tool_dict['default_value'] = None
                         log.exception('tools::to_json() - Getting initial value failed %s.' % input.name)
