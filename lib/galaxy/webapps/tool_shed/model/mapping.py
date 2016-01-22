@@ -14,7 +14,13 @@ from galaxy.model.base import ModelMapping
 from galaxy.model.custom_types import JSONType, TrimmedString
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
-from galaxy.webapps.tool_shed.model import APIKeys, Category, Component, ComponentReview, GalaxySession, Group, GroupRoleAssociation, PasswordResetToken, Repository, RepositoryCategoryAssociation, RepositoryMetadata, RepositoryRatingAssociation, RepositoryReview, RepositoryRoleAssociation, Role, SkipToolTest, Tag, User, UserGroupAssociation, UserRoleAssociation
+from galaxy.webapps.tool_shed.model import APIKeys, Category, Component, ComponentReview
+from galaxy.webapps.tool_shed.model import GalaxySession, Group, GroupRoleAssociation
+from galaxy.webapps.tool_shed.model import PasswordResetToken, Repository, RepositoryCategoryAssociation
+from galaxy.webapps.tool_shed.model import RepositoryDependency, RepositoryMetadata, RepositoryRatingAssociation
+from galaxy.webapps.tool_shed.model import RepositoryReview, RepositoryRoleAssociation, Role
+from galaxy.webapps.tool_shed.model import SkipToolTest, Tag, User, UserGroupAssociation
+from galaxy.webapps.tool_shed.model import UserRoleAssociation
 from galaxy.webapps.tool_shed.security import CommunityRBACAgent
 
 log = logging.getLogger( __name__ )
@@ -109,14 +115,19 @@ Repository.table = Table( "repository", metadata,
                           Column( "type", TrimmedString( 255 ), index=True ),
                           Column( "remote_repository_url", TrimmedString( 255 ) ),
                           Column( "homepage_url", TrimmedString( 255 ) ),
-                          Column( "description" , TEXT ),
-                          Column( "long_description" , TEXT ),
+                          Column( "description", TEXT ),
+                          Column( "long_description", TEXT ),
                           Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
                           Column( "private", Boolean, default=False ),
                           Column( "deleted", Boolean, index=True, default=False ),
                           Column( "email_alerts", JSONType, nullable=True ),
                           Column( "times_downloaded", Integer ),
                           Column( "deprecated", Boolean, default=False ) )
+
+RepositoryDependency.table = Table( "repository_dependency", metadata,
+                                    Column( "id", Integer, primary_key=True ),
+                                    Column( "parent_metadata_id", Integer, ForeignKey( "repository_metadata.id" ), index=True ),
+                                    Column( "required_metadata_id", Integer, ForeignKey( "repository_metadata.id" ), index=True ) )
 
 RepositoryMetadata.table = Table( "repository_metadata", metadata,
                                   Column( "id", Integer, primary_key=True ),
@@ -146,7 +157,7 @@ SkipToolTest.table = Table( "skip_tool_test", metadata,
                             Column( "update_time", DateTime, default=now, onupdate=now ),
                             Column( "repository_metadata_id", Integer, ForeignKey( "repository_metadata.id" ), index=True ),
                             Column( "initial_changeset_revision", TrimmedString( 255 ), index=True ),
-                            Column( "comment" , TEXT ) )
+                            Column( "comment", TEXT ) )
 
 RepositoryReview.table = Table( "repository_review", metadata,
                                 Column( "id", Integer, primary_key=True ),
@@ -279,6 +290,10 @@ mapper( Repository, Repository.table,
                                 secondary=RepositoryReview.table,
                                 primaryjoin=( Repository.table.c.id == RepositoryReview.table.c.repository_id ),
                                 secondaryjoin=( RepositoryReview.table.c.user_id == User.table.c.id ) ) ) )
+
+mapper( RepositoryDependency, RepositoryDependency.table,
+        properties=dict( parent_metadata=relation( RepositoryMetadata, foreign_keys=[ RepositoryDependency.table.c.parent_metadata_id ], backref='depended_on' ),
+                         required_metadata=relation( RepositoryMetadata, foreign_keys=[ RepositoryDependency.table.c.required_metadata_id ], backref='depends_on' ) ) )
 
 mapper( RepositoryMetadata, RepositoryMetadata.table,
         properties=dict( repository=relation( Repository ),
