@@ -1485,11 +1485,7 @@ class Tool( object, Dictifiable ):
                         # load default initial value
                         if not test_param_error:
                             test_param_error = str( e )
-                        if trans is not None:
-                            history = trans.get_history()
-                        else:
-                            history = None
-                        value = input.test_param.get_initial_value( trans, context, history=history )
+                        value = input.test_param.get_initial_value( trans, context )
                         current_case = input.get_current_case( value, trans )
                 case_changed = current_case != old_current_case
                 if case_changed:

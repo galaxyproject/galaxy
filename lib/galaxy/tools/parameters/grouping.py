@@ -43,7 +43,7 @@ class Group( object, Dictifiable ):
         """
         return value
 
-    def get_initial_value( self, trans, context, history=None ):
+    def get_initial_value( self, trans, context ):
         """
         Return the initial state/value for this group
         """
@@ -120,12 +120,12 @@ class Repeat( Group ):
                 else:
                     input.visit_inputs( new_prefix, d[input.name], callback )
 
-    def get_initial_value( self, trans, context, history=None ):
+    def get_initial_value( self, trans, context ):
         rval = []
         for i in range( self.default ):
             rval_dict = { '__index__': i}
             for input in self.inputs.itervalues():
-                rval_dict[ input.name ] = input.get_initial_value( trans, context, history=history )
+                rval_dict[ input.name ] = input.get_initial_value( trans, context )
             rval.append( rval_dict )
         return rval
 
@@ -182,11 +182,11 @@ class Section( Group ):
             else:
                 input.visit_inputs( prefix, value[input.name], callback )
 
-    def get_initial_value( self, trans, context, history=None ):
+    def get_initial_value( self, trans, context ):
         rval = {}
         child_context = ExpressionContext( rval, context )
         for child_input in self.inputs.itervalues():
-            rval[ child_input.name ] = child_input.get_initial_value( trans, child_context, history=history )
+            rval[ child_input.name ] = child_input.get_initial_value( trans, child_context )
         return rval
 
     def to_dict( self, trans, view='collection', value_mapper=None ):
@@ -296,14 +296,14 @@ class UploadDataset( Group ):
                 else:
                     input.visit_inputs( new_prefix, d[input.name], callback )
 
-    def get_initial_value( self, trans, context, history=None ):
+    def get_initial_value( self, trans, context ):
         d_type = self.get_datatype( trans, context )
         rval = []
         for i, ( composite_name, composite_file ) in enumerate( d_type.writable_files.iteritems() ):
             rval_dict = {}
             rval_dict['__index__'] = i  # create __index__
             for input in self.inputs.itervalues():
-                rval_dict[ input.name ] = input.get_initial_value( trans, context, history=history )  # input.value_to_basic( d[input.name], app )
+                rval_dict[ input.name ] = input.get_initial_value( trans, context )
             rval.append( rval_dict )
         return rval
 
@@ -611,12 +611,12 @@ class Conditional( Group ):
             else:
                 input.visit_inputs( prefix, value[input.name], callback )
 
-    def get_initial_value( self, trans, context, history=None ):
+    def get_initial_value( self, trans, context ):
         # State for a conditional is a plain dictionary.
         rval = {}
         # Get the default value for the 'test element' and use it
         # to determine the current case
-        test_value = self.test_param.get_initial_value( trans, context, history=history )
+        test_value = self.test_param.get_initial_value( trans, context )
         current_case = self.get_current_case( test_value, trans )
         # Store the current case in a special value
         rval['__current_case__'] = current_case
@@ -625,7 +625,7 @@ class Conditional( Group ):
         # Fill in state for selected case
         child_context = ExpressionContext( rval, context )
         for child_input in self.cases[current_case].inputs.itervalues():
-            rval[ child_input.name ] = child_input.get_initial_value( trans, child_context, history=history )
+            rval[ child_input.name ] = child_input.get_initial_value( trans, child_context )
         return rval
 
     def to_dict( self, trans, view='collection', value_mapper=None ):
