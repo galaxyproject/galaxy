@@ -71,7 +71,7 @@ class AnnotatableDeserializerMixin( object ):
         if `val` is None.
         """
         val = self.validate.nullable_basestring( key, val )
-        return self.manager.annotate( item, val, user=user, flush=False )
+        return self.manager().annotate( item, val, user=user, flush=False )
 
 
 # TODO: I'm not entirely convinced this (or tags) are a good idea for filters since they involve a/the user

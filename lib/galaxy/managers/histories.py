@@ -39,7 +39,6 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
 
     def __init__( self, app, *args, **kwargs ):
         super( HistoryManager, self ).__init__( app, *args, **kwargs )
-
         self.hda_manager = hdas.HDAManager( app )
 
     def copy( self, history, user, **kwargs ):
@@ -148,6 +147,7 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
             return desc( self.model_class.disk_size )
         if order_by_string == 'size-asc':
             return asc( self.model_class.disk_size )
+        # TODO: add functional/non-orm orders (such as rating)
         if default:
             return self.parse_order_by( default )
         raise glx_exceptions.RequestParameterInvalidException( 'Unkown order_by', order_by=order_by_string,
@@ -170,12 +170,13 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
     """
     Interface/service object for serializing histories into dictionaries.
     """
+    model_manager_class = HistoryManager
     SINGLE_CHAR_ABBR = 'h'
 
-    def __init__( self, app ):
-        super( HistorySerializer, self ).__init__( app )
+    def __init__( self, app, **kwargs ):
+        super( HistorySerializer, self ).__init__( app, **kwargs )
 
-        self.history_manager = HistoryManager( app )
+        self.history_manager = self.manager()
         self.hda_manager = hdas.HDAManager( app )
         self.hda_serializer = hdas.HDASerializer( app )
 
@@ -207,8 +208,10 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             'state',
             'state_details',
             'state_ids',
-            # in the Historys' case, each of these views includes the keys from the previous
+            # 'community_rating',
+            # 'user_rating',
         ], include_keys_from='summary' )
+        # in the Historys' case, each of these views includes the keys from the previous
 
     # assumes: outgoing to json.dumps and sanitized
     def add_serializers( self ):
@@ -343,7 +346,7 @@ class HistoryDeserializer( sharable.SharableModelDeserializer, deletable.Purgabl
 
     def __init__( self, app ):
         super( HistoryDeserializer, self ).__init__( app )
-        self.history_manager = self.manager
+        self.history_manager = self.manager()
 
     def add_deserializers( self ):
         super( HistoryDeserializer, self ).add_deserializers()
@@ -355,9 +358,9 @@ class HistoryDeserializer( sharable.SharableModelDeserializer, deletable.Purgabl
         })
 
 
-class HistoryFilters( sharable.SharableModelFilters,
-                      deletable.PurgableFiltersMixin ):
+class HistoryFilters( sharable.SharableModelFilters, deletable.PurgableFiltersMixin ):
     model_class = model.History
+    model_manager_class = HistoryManager
 
     def _add_parsers( self ):
         super( HistoryFilters, self )._add_parsers()

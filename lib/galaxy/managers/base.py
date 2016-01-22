@@ -460,7 +460,6 @@ class ModelManager( object ):
             self.session().flush()
         return item
 
-    # TODO: yagni?
     def associate( self, associate_with, item, foreign_key_name=None ):
         """
         Generically associate `item` with `associate_with` based on `foreign_key_name`.
@@ -469,12 +468,15 @@ class ModelManager( object ):
         setattr( associate_with, foreign_key_name, item )
         return item
 
+    def _foreign_key( self, associated_model_class, foreign_key_name=None ):
+        foreign_key_name = foreign_key_name or self.foreign_key_name
+        return getattr( associated_model_class, foreign_key_name )
+
     def query_associated( self, associated_model_class, item, foreign_key_name=None ):
         """
         Generically query other items that have been associated with this `item`.
         """
-        foreign_key_name = foreign_key_name or self.foreign_key_name
-        foreign_key = getattr( associated_model_class, foreign_key_name )
+        foreign_key = self._foreign_key( associated_model_class, foreign_key_name=foreign_key_name )
         return self.session().query( associated_model_class ).filter( foreign_key == item )
 
     # a rename of sql DELETE to differentiate from the Galaxy notion of mark_as_deleted
@@ -520,14 +522,17 @@ class ModelSerializer( object ):
         keys_to_serialize = [ 'id', 'name', 'attr1', 'attr2', ... ]
         item_dict = MySerializer.serialize( my_item, keys_to_serialize )
     """
+    #: the class used to create this serializer's generically accessible model_manager
+    model_manager_class = None
     #: 'service' to use for getting urls - use class var to allow overriding when testing
     url_for = staticmethod( routes.url_for )
 
-    def __init__( self, app ):
+    def __init__( self, app, manager=None ):
         """
         Set up serializer map, any additional serializable keys, and views here.
         """
         self.app = app
+        self._manager = manager
 
         # a list of valid serializable keys that can use the default (string) serializer
         #   this allows us to: 'mention' the key without adding the default serializer
@@ -545,6 +550,13 @@ class ModelSerializer( object ):
         #   inspired by model.dict_{view}_visible_keys
         self.views = {}
         self.default_view = None
+
+    def manager( self ):
+        """Return an appropriate manager if it exists, instantiate if not."""
+        if not self._manager:
+            # TODO: pass this serializer to it
+            self._manager = self.model_manager_class( self.app )
+        return self._manager
 
     def add_serializers( self ):
         """
@@ -681,11 +693,12 @@ class ModelDeserializer( object ):
 
     # TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
 
-    def __init__( self, app ):
+    def __init__( self, app, manager=None ):
         """
         Set up deserializers and validator.
         """
         self.app = app
+        self._manager = None
 
         self.deserializers = {}
         self.deserializable_keyset = set([])
@@ -693,10 +706,12 @@ class ModelDeserializer( object ):
         # a sub object that can validate incoming values
         self.validate = ModelValidator( self.app )
 
-        # create a generically accessible manager for the model this deserializer works with/for
-        self.manager = None
-        if self.model_manager_class:
-            self.manager = self.model_manager_class( self.app )
+    def manager( self ):
+        """Return an appropriate manager if it exists, instantiate if not."""
+        if not self._manager:
+            # TODO: pass this deserializer to it
+            self._manager = self.model_manager_class( self.app )
+        return self._manager
 
     def add_deserializers( self ):
         """
@@ -865,6 +880,9 @@ class ModelFilterParser( object ):
     These might be safely be replaced in the future by creating SQLAlchemy
     hybrid properties or more thoroughly mapping derived values.
     """
+    #: the class used to create this deserializer's generically accessible model_manager
+    model_manager_class = None
+
     # ??: this class kindof 'lives' in both the world of the controllers/param-parsing and to models/orm
     # (as the model informs how the filter params are parsed)
     # I have no great idea where this 'belongs', so it's here for now
@@ -872,11 +890,12 @@ class ModelFilterParser( object ):
     #: model class
     model_class = None
 
-    def __init__( self, app ):
+    def __init__( self, app, manager=None ):
         """
         Set up serializer map, any additional serializable keys, and views here.
         """
         self.app = app
+        self._manager = manager
 
         # dictionary containing parsing data for ORM/SQLAlchemy-based filters
         # ..note: although kind of a pain in the ass and verbose, opt-in/whitelisting allows more control
@@ -888,6 +907,13 @@ class ModelFilterParser( object ):
 
         # set up both of the above
         self._add_parsers()
+
+    def manager( self ):
+        """Return an appropriate manager if it exists, instantiate if not."""
+        if not self._manager:
+            # TODO: pass this parser to it
+            self._manager = self.model_manager_class( self.app )
+        return self._manager
 
     def _add_parsers( self ):
         """
@@ -907,6 +933,7 @@ class ModelFilterParser( object ):
         """
         Parse string 3-tuples (attr, op, val) into orm or functional filters.
         """
+        # TODO: allow defining the default filter op in this class (and not 'eq' in base/controller.py)
         parsed = []
         for ( attr, op, val ) in filter_tuple_list:
             filter_ = self.parse_filter( attr, op, val )
@@ -936,7 +963,7 @@ class ModelFilterParser( object ):
         # by convention, assume most val parsers raise ValueError
         except ValueError, val_err:
             raise exceptions.RequestParameterInvalidException( 'unparsable value for filter',
-                                                               column=attr, operation=op, value=val, ValueError=str( val_err ) )
+                column=attr, operation=op, value=val, ValueError=str( val_err ) )
 
         # if neither of the above work, raise an error with how-to info
         # TODO: send back all valid filter keys in exception for added user help

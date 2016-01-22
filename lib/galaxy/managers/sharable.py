@@ -122,12 +122,13 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
         filters = self._munge_filters( published_filter, filters )
         return self.query( filters=filters, **kwargs )
 
-    def list_published( self, **kwargs ):
+    def list_published( self, filters=None, **kwargs ):
         """
         Return a list of all published items.
         """
-        query = self._query_published( **kwargs )
-        return self.list( query=query, **kwargs )
+        published_filter = self.model_class.published == true()
+        filters = self._munge_filters( published_filter, filters )
+        return self.list( filters=filters, **kwargs )
 
     # .... user sharing
     # sharing is often done via a 3rd table btwn a User and an item -> a <Item>UserShareAssociation
@@ -382,9 +383,9 @@ class SharableModelDeserializer( base.ModelDeserializer,
             return val
 
         if val:
-            self.manager.publish( item, flush=False )
+            self.manager().publish( item, flush=False )
         else:
-            self.manager.unpublish( item, flush=False )
+            self.manager().unpublish( item, flush=False )
         return item.published
 
     def deserialize_importable( self, item, key, val, **context ):
@@ -395,9 +396,9 @@ class SharableModelDeserializer( base.ModelDeserializer,
             return val
 
         if val:
-            self.manager.make_importable( item, flush=False )
+            self.manager().make_importable( item, flush=False )
         else:
-            self.manager.make_non_importable( item, flush=False )
+            self.manager().make_non_importable( item, flush=False )
         return item.published
 
     # def deserialize_slug( self, item, val, **context ):
@@ -410,13 +411,13 @@ class SharableModelDeserializer( base.ModelDeserializer,
 
 
 class SharableModelFilters( base.ModelFilterParser,
-                            taggable.TaggableFilterMixin,
-                            annotatable.AnnotatableFilterMixin ):
+        taggable.TaggableFilterMixin, annotatable.AnnotatableFilterMixin, ratable.RatableFilterMixin ):
 
     def _add_parsers( self ):
         super( SharableModelFilters, self )._add_parsers()
         taggable.TaggableFilterMixin._add_parsers( self )
         annotatable.AnnotatableFilterMixin._add_parsers( self )
+        ratable.RatableFilterMixin._add_parsers( self )
 
         self.orm_filter_parsers.update({
             'importable'    : { 'op': ( 'eq' ), 'val': self.parse_bool },

@@ -52,9 +52,9 @@ class DeletableDeserializerMixin( object ):
             return item.deleted
         # TODO:?? flush=False?
         if new_deleted:
-            self.manager.delete( item, flush=False )
+            self.manager().delete( item, flush=False )
         else:
-            self.manager.undelete( item, flush=False )
+            self.manager().undelete( item, flush=False )
         return item.deleted
 
 
@@ -103,7 +103,7 @@ class PurgableDeserializerMixin( DeletableDeserializerMixin ):
             return item.purged
         # do we want to error if something attempts to 'unpurge'?
         if new_purged:
-            self.manager.purge( item, flush=False )
+            self.manager().purge( item, flush=False )
         return item.purged
 
 

@@ -67,7 +67,7 @@ class VisualizationDeserializer( sharable.SharableModelDeserializer ):
 
     def __init__( self, app ):
         super( VisualizationDeserializer, self ).__init__( app )
-        self.visualization_manager = self.manager
+        self.visualization_manager = self.manager()
 
     def add_deserializers( self ):
         super( VisualizationDeserializer, self ).add_deserializers()
