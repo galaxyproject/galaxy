@@ -573,7 +573,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
             var json = view.model.toJSON();
             for( var key in properties ){
                 if( properties.hasOwnProperty( key ) ){
-                    if( json[ key ] !== view.model.get( key ) ){
+                    if( json[ key ] !== properties[ key ] ){
                         return false;
                     }
                 }
@@ -772,7 +772,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
     scrollToItem : function( view, speed ){
         if( !view ){ return this; }
         //var itemTop = view.$el.offset().top;
-        var itemTop = view.$el.position().top;
+        var itemTop = view.el.offsetTop;
         return this.scrollTo( itemTop, speed );
     },
 

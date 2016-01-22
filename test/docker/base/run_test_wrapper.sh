@@ -38,6 +38,7 @@ dev_requirements=./lib/galaxy/dependencies/dev-requirements.txt
 [ -f $dev_requirements ] && ./.venv/bin/pip install -r $dev_requirements
 
 sh manage_db.sh upgrade
+sh manage_db.sh upgrade tool_shed
 
 if [ -z "$GALAXY_NO_TESTS" ];
 then
