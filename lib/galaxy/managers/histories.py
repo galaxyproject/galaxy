@@ -4,7 +4,6 @@ Manager and Serializer for histories.
 Histories are containers for datasets or dataset collections
 created (or copied) by users over the course of an analysis.
 """
-import operator
 
 from sqlalchemy import desc, asc
 
@@ -12,7 +11,6 @@ from galaxy import model
 from galaxy import exceptions as glx_exceptions
 from galaxy.managers import sharable
 from galaxy.managers import deletable
-from galaxy.managers import containers
 from galaxy.managers import hdas
 from galaxy.managers import collections_util
 
@@ -21,7 +19,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMixin, containers.ContainerManagerMixin ):
+class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMixin ):
 
     model_class = model.History
     foreign_key_name = 'history'
@@ -30,10 +28,6 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
     tag_assoc = model.HistoryTagAssociation
     annotation_assoc = model.HistoryAnnotationAssociation
     rating_assoc = model.HistoryRatingAssociation
-
-    contained_class = model.HistoryDatasetAssociation
-    subcontainer_class = model.HistoryDatasetCollectionAssociation
-    order_contents_on = operator.attrgetter( 'hid' )
 
     # TODO: incorporate imp/exp (or alias to)
 
@@ -152,18 +146,6 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
             return self.parse_order_by( default )
         raise glx_exceptions.RequestParameterInvalidException( 'Unkown order_by', order_by=order_by_string,
             available=[ 'create_time', 'update_time', 'name', 'size' ])
-
-    # container interface
-    def _filter_to_contained( self, container, content_class ):
-        return content_class.history == container
-
-    def _content_manager( self, content ):
-        # type sniffing is inevitable
-        if isinstance( content, model.HistoryDatasetAssociation ):
-            return self.hda_manager
-        elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
-            return self.hdca_manager
-        raise TypeError( 'Unknown contents class: ' + str( content ) )
 
 
 class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSerializerMixin ):
