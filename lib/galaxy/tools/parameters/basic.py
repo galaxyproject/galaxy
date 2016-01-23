@@ -210,11 +210,11 @@ class ToolParameter( object, Dictifiable ):
                 value = sanitize_param( value )
         return value
 
-    def validate( self, value, history=None, workflow_building_mode=False ):
+    def validate( self, value, trans ):
         if value == "" and self.optional:
             return
         for validator in self.validators:
-            validator.validate( value, history )
+            validator.validate( value, trans )
 
     def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         """ to_dict tool parameter. This can be overridden by subclasses. """
@@ -292,10 +292,10 @@ class TextToolParameter( ToolParameter ):
         else:
             return self.to_string( value, app )
 
-    def validate( self, value, history=None, workflow_building_mode=False ):
+    def validate( self, value, trans ):
         search = self.type == "text"
-        if not ( workflow_building_mode and contains_workflow_parameter(value, search=search) ):
-            return super( TextToolParameter, self ).validate( value, history )
+        if not ( trans.workflow_building_mode and contains_workflow_parameter(value, search=search) ):
+            return super( TextToolParameter, self ).validate( value, trans )
 
     def get_initial_value( self, trans, other_values ):
         return self.value
@@ -1683,13 +1683,11 @@ class BaseDataToolParameter( ToolParameter ):
     def __init__( self, tool, input_source, trans ):
         super(BaseDataToolParameter, self).__init__( tool, input_source )
 
-    def _get_history( self, trans, history=None ):
+    def _get_history( self, trans ):
         class_name = self.__class__.__name__
         assert trans is not None, "%s requires a trans" % class_name
-        if history is None:
-            history = trans.get_history()
-        assert history is not None, "%s requires a history" % class_name
-        return history
+        assert trans.history is not None, "%s requires a history" % class_name
+        return trans.history
 
     def _ensure_selection( self, field ):
         set_selected = field.get_selected( return_label=True, return_value=True, multi=False ) is not None
@@ -2090,14 +2088,14 @@ class DataToolParameter( BaseDataToolParameter ):
                 pass
         return "No dataset"
 
-    def validate( self, value, history=None, workflow_building_mode=False ):
+    def validate( self, value, trans=None ):
         dataset_count = 0
         for validator in self.validators:
             def do_validate( v ):
                 if validator.requires_dataset_metadata and v and v.dataset.state != galaxy.model.Dataset.states.OK:
                     return
                 else:
-                    validator.validate( v, history )
+                    validator.validate( v, trans )
 
             if value and self.multiple:
                 if not isinstance( value, list ):
@@ -2402,7 +2400,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
             display_text = "No dataset collection."
         return display_text
 
-    def validate( self, value, history=None, workflow_building_mode=False ):
+    def validate( self, value, trans ):
         return True  # TODO
 
     def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
