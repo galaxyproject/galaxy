@@ -2576,16 +2576,6 @@ parameter_types = dict(
     drill_down=DrillDownSelectToolParameter
 )
 
-class UnvalidatedValue( object ):
-    """
-    Wrapper to mark a value that has not been validated
-    """
-    def __init__( self, value ):
-        self.value = value
-
-    def __str__( self ):
-        return str( self.value )
-
 class RuntimeValue( object ):
     """
     Wrapper to note a value that is not yet set, but will be required at

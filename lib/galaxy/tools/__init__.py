@@ -31,7 +31,7 @@ from galaxy.tools.parameters import params_to_incoming, check_param, params_from
 from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
                                            DataToolParameter, DataCollectionToolParameter, HiddenToolParameter,
-                                           SelectToolParameter, ToolParameter, UnvalidatedValue,
+                                           SelectToolParameter, ToolParameter,
                                            contains_workflow_parameter)
 from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, Section, UploadDataset
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
@@ -2419,18 +2419,7 @@ class Tool( object, Dictifiable ):
             else:
                 return None
 
-        # Unpack unvalidated values to strings, they'll be validated when the
-        # form is submitted (this happens when re-running a job that was
-        # initially run by a workflow)
-        # This needs to be done recursively through grouping parameters
         def mapping_callback( input, value, prefixed_name, prefixed_label ):
-            if isinstance( value, UnvalidatedValue ):
-                try:
-                    return input.to_html_value( value.value, self.app )
-                except Exception, e:
-                    # Need to determine when (if ever) the to_html_value call could fail.
-                    log.debug( "Failed to use input.to_html_value to determine value of unvalidated parameter, defaulting to string: %s" % ( e ) )
-                    return str( value )
             if isinstance( input, DataToolParameter ):
                 if isinstance(value, list):
                     values = []

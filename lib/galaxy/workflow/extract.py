@@ -8,8 +8,7 @@ from galaxy.tools.parameters.basic import (
     DataToolParameter,
     DataCollectionToolParameter,
     DrillDownSelectToolParameter,
-    SelectToolParameter,
-    UnvalidatedValue
+    SelectToolParameter
 )
 from galaxy.tools.parser import ToolOutputCollectionPart
 from galaxy.tools.parameters.grouping import (

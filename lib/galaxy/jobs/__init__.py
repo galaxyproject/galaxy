@@ -1301,9 +1301,7 @@ class JobWrapper( object ):
             if not data:
                 continue
             input_ext = data.ext
-        # why not re-use self.param_dict here? ##dunno...probably should, this causes
-        # tools.parameters.basic.UnvalidatedValue to be used in following methods
-        # instead of validated and transformed values during i.e. running workflows
+        # why not re-use self.param_dict here?
         param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         # Create generated output children and primary datasets and add to param_dict
