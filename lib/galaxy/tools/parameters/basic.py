@@ -51,7 +51,6 @@ class ToolParameter( object, Dictifiable ):
 
     def __init__( self, tool, input_source, context=None ):
         input_source = ensure_input_source(input_source)
-        self.app = tool.app
         self.tool = tool
         self.refresh_on_change = False
         self.refresh_on_change_values = []
@@ -647,7 +646,7 @@ class FTPFileToolParameter( ToolParameter ):
             return lst[ 0 ]
 
     def from_html( self, value, trans=None, other_values={} ):
-        return self.to_python( value, self.app, validate=True )
+        return self.to_python( value, trans.app, validate=True )
 
     def to_string( self, value, app ):
         return self.to_python( value, app )
@@ -2480,7 +2479,7 @@ class LibraryDatasetToolParameter( ToolParameter ):
         return None
 
     def from_html( self, value, trans, other_values={} ):
-        return self.to_python( value, self.app, other_values=other_values, validate=True )
+        return self.to_python( value, trans.app, other_values=other_values, validate=True )
 
     def to_param_dict_string( self, value, other_values={} ):
         if value is None:
