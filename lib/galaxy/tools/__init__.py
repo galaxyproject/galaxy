@@ -1648,17 +1648,17 @@ class Tool( object, Dictifiable ):
     def params_from_strings( self, params, app, ignore_errors=False ):
         return params_from_strings( self.inputs, params, app, ignore_errors )
 
-    def check_and_update_param_values( self, values, trans, update_values=True, allow_workflow_parameters=False ):
+    def check_and_update_param_values( self, values, trans, update_values=True ):
         """
         Check that all parameters have values, and fill in with default
         values where necessary. This could be called after loading values
         from a database in case new parameters have been added.
         """
         messages = {}
-        self.check_and_update_param_values_helper( self.inputs, values, trans, messages, update_values=update_values, allow_workflow_parameters=allow_workflow_parameters )
+        self.check_and_update_param_values_helper( self.inputs, values, trans, messages, update_values=update_values )
         return messages
 
-    def check_and_update_param_values_helper( self, inputs, values, trans, messages, context=None, prefix="", update_values=True, allow_workflow_parameters=False ):
+    def check_and_update_param_values_helper( self, inputs, values, trans, messages, context=None, prefix="", update_values=True ):
         """
         Recursive helper for `check_and_update_param_values_helper`
         """
@@ -1673,7 +1673,7 @@ class Tool( object, Dictifiable ):
                         messages[ input.name ] = cond_messages
                     test_value = input.test_param.get_initial_value( trans, context )
                     current_case = input.get_current_case( test_value, trans )
-                    self.check_and_update_param_values_helper( input.cases[ current_case ].inputs, {}, trans, cond_messages, context, prefix, allow_workflow_parameters=allow_workflow_parameters )
+                    self.check_and_update_param_values_helper( input.cases[ current_case ].inputs, {}, trans, cond_messages, context, prefix )
                 elif isinstance( input, Repeat ):
                     if input.min:
                         messages[ input.name ] = []
@@ -1681,10 +1681,10 @@ class Tool( object, Dictifiable ):
                             rep_prefix = prefix + "%s %d > " % ( input.title, i + 1 )
                             rep_dict = dict()
                             messages[ input.name ].append( rep_dict )
-                            self.check_and_update_param_values_helper( input.inputs, {}, trans, rep_dict, context, rep_prefix, allow_workflow_parameters=allow_workflow_parameters )
+                            self.check_and_update_param_values_helper( input.inputs, {}, trans, rep_dict, context, rep_prefix )
                 elif isinstance( input, Section ):
                     messages[ input.name ] = {}
-                    self.check_and_update_param_values_helper( input.inputs, {}, trans, messages[ input.name ], context, prefix, allow_workflow_parameters=allow_workflow_parameters )
+                    self.check_and_update_param_values_helper( input.inputs, {}, trans, messages[ input.name ], context, prefix )
                 else:
                     messages[ input.name ] = "No value found for '%s%s', using default" % ( prefix, input.label )
                 values[ input.name ] = input.get_initial_value( trans, context )
@@ -1693,7 +1693,7 @@ class Tool( object, Dictifiable ):
                 if isinstance( input, Repeat ):
                     for i, d in enumerate( values[ input.name ] ):
                         rep_prefix = prefix + "%s %d > " % ( input.title, i + 1 )
-                        self.check_and_update_param_values_helper( input.inputs, d, trans, messages, context, rep_prefix, allow_workflow_parameters=allow_workflow_parameters )
+                        self.check_and_update_param_values_helper( input.inputs, d, trans, messages, context, rep_prefix )
                 elif isinstance( input, Conditional ):
                     group_values = values[ input.name ]
                     use_initial_value = False
@@ -1711,22 +1711,22 @@ class Tool( object, Dictifiable ):
                             messages[ child_input.name ] = "Value no longer valid for '%s%s', replacing with default" % ( prefix, child_input.label )
                     else:
                         current = group_values["__current_case__"]
-                        self.check_and_update_param_values_helper( input.cases[current].inputs, group_values, trans, messages, context, prefix, allow_workflow_parameters=allow_workflow_parameters )
+                        self.check_and_update_param_values_helper( input.cases[current].inputs, group_values, trans, messages, context, prefix )
                 elif isinstance( input, Section ):
                     messages[ input.name ] = {}
-                    self.check_and_update_param_values_helper( input.inputs, values[ input.name ], trans, messages[ input.name ], context, prefix, allow_workflow_parameters=allow_workflow_parameters )
+                    self.check_and_update_param_values_helper( input.inputs, values[ input.name ], trans, messages[ input.name ], context, prefix )
                 else:
                     # Regular tool parameter, no recursion needed
                     try:
                         value = values[ input.name ]
-                        if not allow_workflow_parameters:
+                        if not trans.workflow_building_mode:
                             input.value_from_basic( input.value_to_basic( value, trans.app ), trans.app, ignore_errors=False )
-                            input.validate( value, history=trans.history )
+                            input.validate( value, trans )
                         else:
                             # skip check if is workflow parameters
                             ck_param = True
                             search = input.type in ["text"]
-                            if allow_workflow_parameters and contains_workflow_parameter( values[ input.name ], search=search ):
+                            if trans.workflow_building_mode and contains_workflow_parameter( values[ input.name ], search=search ):
                                 ck_param = False
                             # this will fail when a parameter's type has changed to a non-compatible one: e.g. conditional group changed to dataset input
                             if ck_param:

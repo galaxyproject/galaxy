@@ -25,7 +25,7 @@ from galaxy.tools.parameters import wrapped_json, visit_input_values
 from galaxy.tools.parameters.grouping import Conditional, Repeat, Section
 from galaxy.tools import global_tool_errors
 from galaxy.jobs.datasets import dataset_path_rewrites
-
+from galaxy.work.context import WorkRequestContext
 import logging
 log = logging.getLogger( __name__ )
 
@@ -54,14 +54,15 @@ class ToolEvaluator( object ):
         incoming = self.tool.params_from_strings( incoming, self.app )
 
         # Regular parameter validation
+        request_context = WorkRequestContext(
+            app                     = self.app,
+            user                    = job.history.user,
+            history                 = job.history,
+            workflow_building_mode  = False
+        )
         def validate_inputs( input, value, prefixed_name, prefixed_label, context ):
-            value = input.from_html( value, Bunch(
-                app                     = app,
-                user                    = job.history.user,
-                history                 = job.history,
-                workflow_building_mode  = False
-            ), context )
-            input.validate( value, None )
+            value = input.from_html( value, request_context, context )
+            input.validate( value, request_context )
         visit_input_values ( self.tool.inputs, incoming, validate_inputs, details=True )
 
         # Restore input / output data lists

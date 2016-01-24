@@ -1080,7 +1080,7 @@ class ToolModule( WorkflowModule ):
 
     def check_and_update_state( self ):
         inputs = self.state.inputs
-        return self.tool.check_and_update_param_values( inputs, self.trans, allow_workflow_parameters=True )
+        return self.tool.check_and_update_param_values( inputs, self.trans )
 
     def compute_runtime_state( self, trans, step_updates=None, source="html" ):
         # Warning: This method destructively modifies existing step state.
