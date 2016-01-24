@@ -72,11 +72,11 @@ class GenomeBuilds( object ):
                     # fasta-to-len converter.
                     if 'fasta' in custom_build_dict and custom_build_hack_get_len_from_fasta_conversion:
                         # Build is defined by fasta; get len file, which is obtained from converting fasta.
-                        build_fasta_dataset = trans.sa_session.query( self._app.model.HistoryDatasetAssociation ).get( custom_build_dict[ 'fasta' ] )
+                        build_fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( custom_build_dict[ 'fasta' ] )
                         chrom_info = build_fasta_dataset.get_converted_dataset( trans, 'len' ).file_name
                     elif 'len' in custom_build_dict:
                         # Build is defined by len file, so use it.
-                        chrom_info = trans.sa_session.query( self._app.model.HistoryDatasetAssociation ).get( custom_build_dict[ 'len' ] ).file_name
+                        chrom_info = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( custom_build_dict[ 'len' ] ).file_name
         # Check Data table
         if not chrom_info:
             dbkey_table = self._app.tool_data_tables.get( self._data_table_name, None )
