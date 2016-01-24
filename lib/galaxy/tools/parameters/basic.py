@@ -1150,7 +1150,7 @@ class GenomeBuildParameter( SelectToolParameter ):
         if not self.tool:
             # Hack for unit tests, since we have no tool
             return util.read_dbnames( None )
-        return trans.app.genome_builds.get_genome_build_names( trans=trans )
+        return self.tool.app.genome_builds.get_genome_build_names( trans=trans )
 
 
 class ColumnListParameter( SelectToolParameter ):
