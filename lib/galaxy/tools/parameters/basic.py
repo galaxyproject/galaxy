@@ -560,7 +560,7 @@ class FileToolParameter( ToolParameter ):
         # Middleware or proxies may encode files in special ways (TODO: this
         # should be pluggable)
         if type( value ) == dict:
-            upload_store = self.app.config.nginx_upload_store
+            upload_store = trans.app.config.nginx_upload_store
             assert upload_store, \
                 "Request appears to have been processed by nginx_upload_module \
                 but Galaxy is not configured to recognize it"
@@ -635,7 +635,7 @@ class FTPFileToolParameter( ToolParameter ):
             user_ftp_dir = None
         else:
             user_ftp_dir = trans.user_ftp_dir
-        return form_builder.FTPFileField( self.name, user_ftp_dir, self.app.config.ftp_upload_site, value=value )
+        return form_builder.FTPFileField( self.name, user_ftp_dir, trans.app.config.ftp_upload_site, value=value )
 
     def to_param_dict_string( self, value, other_values={} ):
         if value is '':
@@ -1151,7 +1151,7 @@ class GenomeBuildParameter( SelectToolParameter ):
         if not self.tool:
             # Hack for unit tests, since we have no tool
             return util.read_dbnames( None )
-        return self.app.genome_builds.get_genome_build_names( trans=trans )
+        return trans.app.genome_builds.get_genome_build_names( trans=trans )
 
 
 class ColumnListParameter( SelectToolParameter ):
@@ -1708,7 +1708,7 @@ class BaseDataToolParameter( ToolParameter ):
             if trans:
                 # Must account for "Input Dataset" types, which while not a tool still need access to the real registry.
                 # A handle to the transaction (and thus app) will be given by the module.
-                datatypes_registry = self.app.datatypes_registry
+                datatypes_registry = trans.app.datatypes_registry
             else:
                 # This occurs for things such as unit tests
                 import galaxy.datatypes.registry
@@ -1866,7 +1866,7 @@ class DataToolParameter( BaseDataToolParameter ):
             name = history_dataset_collection.name
             hid = str( history_dataset_collection.hid )
             hidden_text = ""  # TODO
-            id = value_modifier( self.app.security.encode_id( history_dataset_collection.id ) )
+            id = value_modifier( dataset_matcher.app.security.encode_id( history_dataset_collection.id ) )
             selected = value and history_dataset_collection in value
             text = "%s:%s %s" % ( hid, hidden_text, name )
             field.add_option( text, id, selected )
@@ -1978,44 +1978,44 @@ class DataToolParameter( BaseDataToolParameter ):
             for single_value in value:
                 if isinstance( single_value, dict ) and 'src' in single_value and 'id' in single_value:
                     if single_value['src'] == 'hda':
-                        rval.append( self.app.model.context.query( self.app.model.HistoryDatasetAssociation ).get( self.app.security.decode_id(single_value['id']) ))
+                        rval.append( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.app.security.decode_id(single_value['id']) ))
                     elif single_value['src'] == 'hdca':
                         found_hdca = True
-                        decoded_id = self.app.security.decode_id( single_value[ 'id' ] )
-                        rval.append( self.app.model.context.query( self.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id ) )
+                        decoded_id = trans.app.security.decode_id( single_value[ 'id' ] )
+                        rval.append( trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id ) )
                     else:
                         raise ValueError("Unknown input source %s passed to job submission API." % single_value['src'])
-                elif isinstance( single_value, self.app.model.HistoryDatasetCollectionAssociation ):
+                elif isinstance( single_value, trans.app.model.HistoryDatasetCollectionAssociation ):
                     rval.append( single_value )
-                elif isinstance( single_value, self.app.model.HistoryDatasetAssociation ):
+                elif isinstance( single_value, trans.app.model.HistoryDatasetAssociation ):
                     rval.append( single_value )
                 else:
-                    rval.append( self.app.model.context.query( self.app.model.HistoryDatasetAssociation ).get( single_value ) )
+                    rval.append( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( single_value ) )
             if found_hdca:
                 for val in rval:
-                    if not isinstance( val, self.app.model.HistoryDatasetCollectionAssociation ):
+                    if not isinstance( val, trans.app.model.HistoryDatasetCollectionAssociation ):
                         raise ValueError( "If collections are supplied to multiple data input parameter, only collections may be used." )
-        elif isinstance( value, self.app.model.HistoryDatasetAssociation ):
+        elif isinstance( value, trans.app.model.HistoryDatasetAssociation ):
             rval = value
         elif isinstance( value, dict ) and 'src' in value and 'id' in value:
             if value['src'] == 'hda':
-                rval = self.app.model.context.query( self.app.model.HistoryDatasetAssociation ).get( self.app.security.decode_id(value['id']) )
+                rval = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.app.security.decode_id(value['id']) )
             elif value['src'] == 'hdca':
-                decoded_id = self.app.security.decode_id( value[ 'id' ] )
-                rval = self.app.model.context.query( self.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
+                decoded_id = trans.app.security.decode_id( value[ 'id' ] )
+                rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
             else:
                 raise ValueError("Unknown input source %s passed to job submission API." % value['src'])
         elif str( value ).startswith( "__collection_reduce__|" ):
             encoded_ids = [ v[ len( "__collection_reduce__|" ): ] for v in str( value ).split(",") ]
-            decoded_ids = map( self.app.security.decode_id, encoded_ids )
+            decoded_ids = map( trans.app.security.decode_id, encoded_ids )
             rval = []
             for decoded_id in decoded_ids:
-                hdca = self.app.model.context.query( self.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
+                hdca = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
                 rval.append( hdca )
-        elif isinstance( value, self.app.model.HistoryDatasetCollectionAssociation ):
+        elif isinstance( value, trans.app.model.HistoryDatasetCollectionAssociation ):
             rval = value
         else:
-            rval = self.app.model.context.query( self.app.model.HistoryDatasetAssociation ).get( value )
+            rval = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( value )
         if isinstance( rval, list ):
             values = rval
         else:
@@ -2201,7 +2201,7 @@ class DataToolParameter( BaseDataToolParameter ):
             if match:
                 m = match.hda
                 d['options']['hda'].append({
-                    'id'            : self.app.security.encode_id( m.id ),
+                    'id'            : trans.app.security.encode_id( m.id ),
                     'hid'           : m.hid,
                     'name'          : m.name if m.visible else '(hidden) %s' % m.name,
                     'src'           : 'hda'
@@ -2212,7 +2212,7 @@ class DataToolParameter( BaseDataToolParameter ):
         for hdca in history.active_dataset_collections:
             if dataset_collection_matcher.hdca_match( hdca, reduction=multiple ):
                 d['options']['hdca'].append({
-                    'id'            : self.app.security.encode_id( hdca.id ),
+                    'id'            : trans.app.security.encode_id( hdca.id ),
                     'hid'           : hdca.hid,
                     'name'          : hdca.name,
                     'src'           : 'hdca'
@@ -2247,7 +2247,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         return self._collection_types
 
     def _history_query( self, trans ):
-        dataset_collection_type_descriptions = self.app.dataset_collections_service.collection_type_descriptions
+        dataset_collection_type_descriptions = trans.app.dataset_collections_service.collection_type_descriptions
         return history_query.HistoryQuery.from_parameter( self, dataset_collection_type_descriptions )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
@@ -2270,7 +2270,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         return self._switch_fields( fields, default_field=default_field )
 
     def match_collections( self, trans, history, dataset_matcher ):
-        dataset_collections = self.app.dataset_collections_service.history_dataset_collections( history, self._history_query( trans ) )
+        dataset_collections = trans.app.dataset_collections_service.history_dataset_collections( history, self._history_query( trans ) )
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
 
         for dataset_collection_instance in dataset_collections:
@@ -2315,7 +2315,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
             hid = str( history_dataset_collection.hid )
             hidden_text = ""  # TODO
             subcollection_type = self._history_query( trans ).collection_type_description.collection_type
-            id = "%s|%s" % ( self.app.security.encode_id( history_dataset_collection.id ), subcollection_type )
+            id = "%s|%s" % ( trans.app.security.encode_id( history_dataset_collection.id ), subcollection_type )
             text = "%s:%s %s" % ( hid, hidden_text, name )
 
             field.add_option( text, id, False )
@@ -2329,30 +2329,30 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
             return None
         if isinstance( value, str ) and value.find( "," ) > 0:
             value = [ int( value_part ) for value_part in value.split( "," ) ]
-        elif isinstance( value, self.app.model.HistoryDatasetCollectionAssociation ):
+        elif isinstance( value, trans.app.model.HistoryDatasetCollectionAssociation ):
             rval = value
-        elif isinstance( value, self.app.model.DatasetCollectionElement ):
+        elif isinstance( value, trans.app.model.DatasetCollectionElement ):
             # When mapping over nested collection - this paramter will recieve
             # a DatasetCollectionElement instead of a
             # HistoryDatasetCollectionAssociation.
             rval = value
         elif isinstance( value, dict ) and 'src' in value and 'id' in value:
             if value['src'] == 'hdca':
-                rval = self.app.model.context.query( self.app.model.HistoryDatasetCollectionAssociation ).get( self.app.security.decode_id(value['id']) )
+                rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( trans.app.security.decode_id(value['id']) )
         elif isinstance( value, list ):
             if len( value ) > 0:
                 value = value[0]
                 if isinstance( value, dict ) and 'src' in value and 'id' in value:
                     if value['src'] == 'hdca':
-                        rval = self.app.model.context.query( self.app.model.HistoryDatasetCollectionAssociation ).get( self.app.security.decode_id(value['id']) )
+                        rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( trans.app.security.decode_id(value['id']) )
         elif isinstance( value, basestring ):
             if value.startswith( "dce:" ):
-                rval = self.app.model.context.query( self.app.model.DatasetCollectionElement ).get( value[ len( "dce:"): ] )
+                rval = trans.sa_session.query( trans.app.model.DatasetCollectionElement ).get( value[ len( "dce:"): ] )
             elif value.startswith( "hdca:" ):
-                rval = self.app.model.context.query( self.app.model.HistoryDatasetCollectionAssociation ).get( value[ len( "hdca:"): ] )
+                rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( value[ len( "hdca:"): ] )
             else:
-                rval = self.app.model.context.query( self.app.model.HistoryDatasetCollectionAssociation ).get( value )
-        if rval and isinstance( rval, self.app.model.HistoryDatasetCollectionAssociation ):
+                rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( value )
+        if rval and isinstance( rval, trans.app.model.HistoryDatasetCollectionAssociation ):
             if rval.deleted:
                 raise ValueError( "The previously selected dataset collection has been deleted" )
             # TODO: Handle error states, implement error states ...
@@ -2421,7 +2421,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         # append directly matched collections
         for hdca in self.match_collections( trans, history, dataset_matcher ):
             d['options']['hdca'].append({
-                'id': self.app.security.encode_id( hdca.id ),
+                'id': trans.app.security.encode_id( hdca.id ),
                 'hid': hdca.hid,
                 'name': hdca.name,
                 'src': 'hdca'
@@ -2431,7 +2431,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         for hdca in self.match_multirun_collections( trans, history, dataset_matcher ):
             subcollection_type = self._history_query( trans ).can_map_over( hdca ).collection_type
             d['options']['hdca'].append({
-                'id': self.app.security.encode_id( hdca.id ),
+                'id': trans.app.security.encode_id( hdca.id ),
                 'hid': hdca.hid,
                 'name': hdca.name,
                 'src': 'hdca',

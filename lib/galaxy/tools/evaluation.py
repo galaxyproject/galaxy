@@ -53,6 +53,17 @@ class ToolEvaluator( object ):
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         incoming = self.tool.params_from_strings( incoming, self.app )
 
+        # Regular parameter validation
+        #def validate_inputs( input, value, prefixed_name, prefixed_label, context ):
+        #    value = input.from_html( value, Bunch(
+        #        user                    = job.history.user,
+        #        history                 = job.history,
+        #        ##user_ftp_dir            = trans.user_ftp_dir,
+        #        workflow_building_mode  = False
+        #    ), context )
+        #    input.validate( value, None )
+        #visit_input_values ( self.tool.inputs, incoming, validate_inputs, details=True )
+
         # Restore input / output data lists
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
