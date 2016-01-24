@@ -317,9 +317,6 @@ def __cleanup_param_values( inputs, values ):
     # Recursively clean data inputs and dynamic selects
     def cleanup( prefix, inputs, values ):
         for key, input in inputs.items():
-            if isinstance( input, ( SelectToolParameter, DrillDownSelectToolParameter ) ):
-                if input.is_dynamic and not isinstance( values[key], UnvalidatedValue ):
-                    values[key] = UnvalidatedValue( values[key] )
             if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
                 tmp = values[key]
                 values[key] = None

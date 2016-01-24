@@ -18,7 +18,7 @@ class WorkRequestContext( ProvidesAppContext, ProvidesUserContext, ProvidesHisto
     objects.
     """
 
-    def __init__( self, app, user=None, history=None, workflow_building_mode=None ):
+    def __init__( self, app, user=None, history=None, workflow_building_mode=False ):
         self.app = app
         self.security = app.security
         self.__user = user
