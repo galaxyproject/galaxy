@@ -901,7 +901,7 @@ class SelectToolParameter( ToolParameter ):
         # Dynamic options are not yet supported in workflow, allow
         # specifying the value as text for now.
         options = list(self.get_options( trans, other_values ))
-        if len(list(options)) == 0 and trans.workflow_building_mode:
+        if len( list( options ) ) == 0 and trans.workflow_building_mode:
             if self.multiple:
                 if value is None:
                     value = ""
@@ -1529,7 +1529,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         # Dynamic options are not yet supported in workflow, allow
         # specifying the value as text for now.
         options = self.get_options( trans, value, other_values )
-        if len(list(options)) == 0 and trans.workflow_building_mode:
+        if len( list( options ) ) == 0 and trans.workflow_building_mode:
             if self.multiple:
                 if value is None:
                     value = ""
@@ -1795,7 +1795,7 @@ class DataToolParameter( BaseDataToolParameter ):
             conv_types = [ tool.app.datatypes_registry.get_datatype_by_extension( conv_extensions.lower() ) ]
             self.conversions.append( ( name, conv_extensions, conv_types ) )
 
-    def get_html_field( self, trans=None, value=None, other_values={} ):
+    def get_html_field( self, trans, value=None, other_values={} ):
         if value is not None:
             if type( value ) != list:
                 value = [ value ]
@@ -1811,7 +1811,7 @@ class DataToolParameter( BaseDataToolParameter ):
             fields[ "multiselect_single" ] = multi_select
 
             if self.__display_multirun_option():
-                collection_select = self._get_select_dataset_collection_fields( history, dataset_matcher, suffix="", reduction=True )
+                collection_select = self._get_select_dataset_collection_fields( trans, dataset_matcher, suffix="", reduction=True )
                 if collection_select.get_selected(return_value=True):
                     default_field = "multiselect_collection"
                 fields[ "multiselect_collection" ] = collection_select
@@ -1840,12 +1840,12 @@ class DataToolParameter( BaseDataToolParameter ):
                 multi_dataset_matcher = DatasetMatcher( trans, self, multirun_value, other_values )
                 multi_select = self._get_select_dataset_field( history, multi_dataset_matcher, multiple=True, suffix="|__multirun__" )
                 fields[ "select_multiple" ] = multi_select
-                collection_field = self._get_select_dataset_collection_fields( history, dataset_matcher, multiple=False, reduction=False )
+                collection_field = self._get_select_dataset_collection_fields( trans, dataset_matcher, multiple=False, reduction=False )
                 fields[ "select_collection" ] = collection_field
 
         return self._switch_fields( fields, default_field=default_field )
 
-    def _get_select_dataset_collection_fields( self, history, dataset_matcher, multiple=False, suffix="|__collection_multirun__", reduction=False ):
+    def _get_select_dataset_collection_fields( self, trans, dataset_matcher, multiple=False, suffix="|__collection_multirun__", reduction=False ):
         if not reduction:
             def value_modifier(x):
                 return x
@@ -1861,11 +1861,11 @@ class DataToolParameter( BaseDataToolParameter ):
         field_name = "%s%s" % ( self.name, suffix )
         field = form_builder.SelectField( field_name, multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
 
-        for history_dataset_collection in self.match_collections( history, dataset_matcher, reduction=reduction ):
+        for history_dataset_collection in self.match_collections( trans.history, dataset_matcher, reduction=reduction ):
             name = history_dataset_collection.name
             hid = str( history_dataset_collection.hid )
             hidden_text = ""  # TODO
-            id = value_modifier( dataset_matcher.app.security.encode_id( history_dataset_collection.id ) )
+            id = value_modifier( trans.app.security.encode_id( history_dataset_collection.id ) )
             selected = value and history_dataset_collection in value
             text = "%s:%s %s" % ( hid, hidden_text, name )
             field.add_option( text, id, selected )
