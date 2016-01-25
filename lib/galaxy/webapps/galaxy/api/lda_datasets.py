@@ -392,6 +392,8 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         trans.sa_session.flush()
 
         rval = trans.security.encode_all_ids( dataset.to_dict() )
+        nice_size = util.nice_size( int( dataset.library_dataset_dataset_association.get_size() ) )
+        rval[ 'file_size' ] = nice_size
         rval[ 'update_time' ] = dataset.update_time.strftime( "%Y-%m-%d %I:%M %p" )
         rval[ 'deleted' ] = dataset.deleted
         rval[ 'folder_id' ] = 'F' + rval[ 'folder_id' ]
