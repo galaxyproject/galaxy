@@ -6,7 +6,6 @@ from basic import DataCollectionToolParameter, DataToolParameter, SelectToolPara
 from grouping import Conditional, Repeat, Section, UploadDataset
 from galaxy.util.json import dumps, json_fix, loads
 from galaxy.util.expressions import ExpressionContext
-from galaxy.work.context import WorkRequestContext
 
 REPLACE_ON_TRUTHY = object()
 
@@ -61,7 +60,7 @@ def visit_input_values( inputs, input_values, callback, name_prefix="", label_pr
                 input_values[input.name] = new_value
 
 
-def check_param( trans, param, incoming_value, param_values, source='html', boolean_fix=False, history=None, workflow_building_mode=False ):
+def check_param( trans, param, incoming_value, param_values, source='html', boolean_fix=False ):
     """
     Check the value of a single parameter `param`. The value in
     `incoming_value` is converted from its HTML encoding and validated.
@@ -69,12 +68,6 @@ def check_param( trans, param, incoming_value, param_values, source='html', bool
     previous parameters (this may actually be an ExpressionContext
     when dealing with grouping scenarios).
     """
-    request_context = WorkRequestContext(
-        app                     = trans.app,
-        user                    = trans.user,
-        history                 = history or trans.history,
-        workflow_building_mode  = workflow_building_mode
-    )
     value = incoming_value
     error = None
     try:
@@ -84,16 +77,16 @@ def check_param( trans, param, incoming_value, param_values, source='html', bool
         if value is not None or isinstance( param, DataToolParameter ) or isinstance( param, DataCollectionToolParameter ):
             # Convert value from HTML representation
             if source == 'html':
-                value = param.from_html( value, request_context, param_values )
+                value = param.from_html( value, trans, param_values )
             else:
-                value = param.from_json( value, request_context, param_values )
+                value = param.from_json( value, trans, param_values )
             # Allow the value to be converted if necessary
-            filtered_value = param.filter_value( value, request_context, param_values )
+            filtered_value = param.filter_value( value, trans, param_values )
             # Then do any further validation on the value
-            param.validate( filtered_value, request_context )
+            param.validate( filtered_value, trans )
         elif value is None and isinstance( param, SelectToolParameter ):
             # An empty select list or column list
-            param.validate( value, request_context )
+            param.validate( value, trans )
     except ValueError, e:
         error = str( e )
     return value, error

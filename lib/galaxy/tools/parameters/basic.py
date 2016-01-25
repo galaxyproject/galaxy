@@ -1931,7 +1931,7 @@ class DataToolParameter( BaseDataToolParameter ):
               happens twice (here and when generating HTML).
         """
         # Can't look at history in workflow mode. Tool shed has no histories.
-        if trans.workflow_building_mode or trans.webapp.name == 'tool_shed':
+        if trans.workflow_building_mode or trans.app.name == 'tool_shed':
             return DummyDataset()
         history = self._get_history( trans )
         dataset_matcher = DatasetMatcher( trans, self, None, other_values )
