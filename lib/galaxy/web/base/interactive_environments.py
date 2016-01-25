@@ -281,6 +281,7 @@ class InteractiveEnviornmentRequest(object):
                 host=self.attr.docker_hostname,
                 port=host_port,
                 proxy_prefix=self.attr.proxy_prefix,
+                route_name='/%s/' % self.attr.viz_id,
             )
             # These variables then become available for use in templating URLs
             self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]

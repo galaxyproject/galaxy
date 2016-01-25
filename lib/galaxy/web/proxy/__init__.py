@@ -1,17 +1,16 @@
 import logging
-import os
 import json
+import urllib2
 
-from .filelock import FileLock
 from galaxy.util import sockets
 from galaxy.util.lazy_process import LazyProcess, NoOpLazyProcess
-from galaxy.util import sqlite
 
 log = logging.getLogger( __name__ )
 
 
 DEFAULT_PROXY_TO_HOST = "localhost"
 SECURE_COOKIE = "galaxysession"
+API_KEY = "test"
 
 
 class ProxyManager(object):
@@ -26,19 +25,18 @@ class ProxyManager(object):
             self.lazy_process = self.__setup_lazy_process( config )
         else:
             self.lazy_process = NoOpLazyProcess()
-        self.proxy_ipc = proxy_ipc(config)
 
     def shutdown( self ):
         self.lazy_process.shutdown()
 
-    def setup_proxy( self, trans, host=DEFAULT_PROXY_TO_HOST, port=None, proxy_prefix="" ):
+    def setup_proxy( self, trans, host=DEFAULT_PROXY_TO_HOST, port=None, proxy_prefix="", route_name="" ):
         if self.manage_dynamic_proxy:
             log.info("Attempting to start dynamic proxy process")
             self.lazy_process.start_process()
 
         authentication = AuthenticationToken(trans)
         proxy_requests = ProxyRequests(host=host, port=port)
-        self.proxy_ipc.handle_requests(authentication, proxy_requests)
+        self.register_proxy_route(authentication, proxy_requests, route_name)
         # TODO: These shouldn't need to be request.host and request.scheme -
         # though they are reasonable defaults.
         host = trans.request.host
@@ -55,6 +53,23 @@ class ProxyManager(object):
             'proxied_host': proxy_requests.host,
         }
 
+    def register_proxy_route( self, auth, proxy_requests, route_name ):
+        """Make a POST request to the GO proxy to register a route
+        """
+        url = 'http://127.0.0.1:%s/api?api_key=%s' % (self.dynamic_proxy_bind_port, API_KEY)
+        values = {
+            'frontend': route_name,
+            'backendAddr': "%s:%s" % ( proxy_requests.host, proxy_requests.port ),
+            'cookie': auth.cookie_value,
+        }
+
+        log.debug(values)
+        log.debug(url)
+
+        req = urllib2.Request(url)
+        req.add_header('Content-Type', 'application/json')
+        urllib2.urlopen(req, json.dumps(values))
+
     def __setup_lazy_process( self, config ):
         launcher = proxy_launcher(self)
         command = launcher.launch_proxy_command(config)
@@ -62,7 +77,8 @@ class ProxyManager(object):
 
 
 def proxy_launcher(config):
-    return NodeProxyLauncher()
+    return GoProxyLauncher()
+    # return NodeProxyLauncher()
 
 
 class ProxyLauncher(object):
@@ -71,21 +87,18 @@ class ProxyLauncher(object):
         raise NotImplementedError()
 
 
-class NodeProxyLauncher(object):
+class GoProxyLauncher(object):
 
     def launch_proxy_command(self, config):
         args = [
-            "--sessions", config.proxy_session_map,
-            "--ip", config.dynamic_proxy_bind_ip,
-            "--port", str(config.dynamic_proxy_bind_port),
+            '/home/hxr/work/galaxy/gxproxy',
+            '-api_key', API_KEY,
+            '-cookie_name', SECURE_COOKIE,
+            '-listen', '%s:%s' % (config.dynamic_proxy_bind_ip, config.dynamic_proxy_bind_port),
+            '-storage', config.proxy_session_map,
+            '-listen_path', '/galaxy/gie_proxy',
         ]
-        if config.dynamic_proxy_debug:
-            args.append("--verbose")
-
-        parent_directory = os.path.dirname( __file__ )
-        path_to_application = os.path.join( parent_directory, "js", "lib", "main.js" )
-        command = [ path_to_application ] + args
-        return command
+        return args
 
 
 class AuthenticationToken(object):
@@ -106,69 +119,6 @@ class ProxyRequests(object):
         self.host = host
         self.port = port
 
-
-def proxy_ipc(config):
-    proxy_session_map = config.proxy_session_map
-    if proxy_session_map.endswith(".sqlite"):
-        return SqliteProxyIpc(proxy_session_map)
-    else:
-        return JsonFileProxyIpc(proxy_session_map)
-
-
-class ProxyIpc(object):
-
-    def handle_requests(self, cookie, host, port):
-        raise NotImplementedError()
-
-
-class JsonFileProxyIpc(object):
-
-    def __init__(self, proxy_session_map):
-        self.proxy_session_map = proxy_session_map
-
-    def handle_requests(self, authentication, proxy_requests):
-        key = "%s:%s" % ( proxy_requests.host, proxy_requests.port )
-        secure_id = authentication.cookie_value
-        with FileLock( self.proxy_session_map ):
-            if not os.path.exists( self.proxy_session_map ):
-                open( self.proxy_session_map, "w" ).write( "{}" )
-            json_data = open( self.proxy_session_map, "r" ).read()
-            session_map = json.loads( json_data )
-            to_remove = []
-            for k, value in session_map.items():
-                if value == secure_id:
-                    to_remove.append( k )
-            for k in to_remove:
-                del session_map[ k ]
-            session_map[ key ] = secure_id
-            new_json_data = json.dumps( session_map )
-            open( self.proxy_session_map, "w" ).write( new_json_data )
-
-
-class SqliteProxyIpc(object):
-
-    def __init__(self, proxy_session_map):
-        self.proxy_session_map = proxy_session_map
-
-    def handle_requests(self, authentication, proxy_requests):
-        key = "%s:%s" % ( proxy_requests.host, proxy_requests.port )
-        secure_id = authentication.cookie_value
-        with FileLock( self.proxy_session_map ):
-            conn = sqlite.connect(self.proxy_session_map)
-            try:
-                c = conn.cursor()
-                try:
-                    # Create table
-                    c.execute('''CREATE TABLE gxproxy
-                                 (key text PRIMARY_KEY, secret text)''')
-                except Exception:
-                    pass
-                insert_tmpl = '''INSERT INTO gxproxy (key, secret) VALUES ('%s', '%s');'''
-                insert = insert_tmpl % (key, secure_id)
-                c.execute(insert)
-                conn.commit()
-            finally:
-                conn.close()
 
 # TODO: RESTful API driven proxy?
 # TODO: MQ diven proxy?
