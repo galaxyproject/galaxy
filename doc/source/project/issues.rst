@@ -105,19 +105,22 @@ Area Labels
 
 The 'area' label is used for tagging issues and pull requests to a
 particular focus area. This allows for easy searching within that
-particular domain, as well as more organized release notes. Some
-examples, not-exhaustive, are here:
+particular domain, as well as more organized release notes.
 
 -  ``area/API``
 -  ``area/cleanup``
--  ``area/jobs``
+-  ``area/dataset-collections``
 -  ``area/documentation``
+-  ``area/framework``
+-  ``area/jobs``
 -  ``area/GIEs``
+-  ``area/performance``
+-  ``area/reports``
+-  ``area/tools``
 -  ``area/toolshed``
 -  ``area/UI-UX``
+-  ``area/visaulization``
 -  ``area/workflows``
-
-This list will definitely grow over time.
 
 Other Useful Labels
 -------------------
