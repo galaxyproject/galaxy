@@ -798,10 +798,15 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         Delete potentially outdated dependency entries from the database in preparation
         for creating new ones in the create_or_update_repository_metadata method.
         '''
-        dependency_entries = metadata_util.get_repository_dependencies( self.app, repository )
-        for dependency in dependency_entries:
-            self.sa_session.delete( dependency )
-            self.sa_session.flush()
+        metadata_entries = self.sa_session.query( self.app.model.RepositoryMetadata ) \
+                                            .filter( self.app.model.RepositoryMetadata.table.c.repository_id == repository.id ) \
+                                            .all()
+        for metadata in metadata_entries:
+            for dependency in self.sa_session.query( self.app.model.RepositoryDependency ) \
+                                             .filter( self.app.model.RepositoryDependency.table.c.parent_metadata_id == metadata.id ) \
+                                             .all():
+                self.sa_session.delete( dependency )
+                self.sa_session.flush()
 
     def reset_all_metadata_on_repository_in_tool_shed( self ):
         """Reset all metadata on a single repository in a tool shed."""

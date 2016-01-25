@@ -5,7 +5,7 @@ import datetime
 import logging
 import sys
 
-from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table
+from sqlalchemy import Column, ForeignKey, ForeignKeyConstraint, Integer, MetaData, Table
 
 log = logging.getLogger( __name__ )
 log.setLevel( logging.DEBUG )
@@ -21,8 +21,14 @@ metadata = MetaData()
 
 RepositoryDependency_table = Table( "repository_dependency", metadata,
                                     Column( "id", Integer, primary_key=True ),
-                                    Column( "parent_metadata_id", Integer, ForeignKey( "repository_metadata.id" ), index=True ),
-                                    Column( "required_metadata_id", Integer, ForeignKey( "repository_metadata.id" ), index=True ) )
+                                    Column( "parent_metadata_id", Integer, ForeignKey( "repository_metadata.id" ), index=True, nullable=False ),
+                                    Column( "required_metadata_id", Integer, ForeignKey( "repository_metadata.id" ), index=True, nullable=False ),
+                                    ForeignKeyConstraint( [ 'parent_metadata_id' ],
+                                                          [ 'repository_metadata.id' ],
+                                                          onupdate="CASCADE", ondelete="CASCADE" ),
+                                    ForeignKeyConstraint( [ 'required_metadata_id' ],
+                                                          [ 'repository_metadata.id' ],
+                                                          onupdate="CASCADE", ondelete="CASCADE" ) )
 
 
 def upgrade( migrate_engine ):
