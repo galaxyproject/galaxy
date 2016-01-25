@@ -218,7 +218,10 @@ class InteractiveEnviornmentRequest(object):
         # Get environment stuff, this will go into the mako template of a docker-compose.yml
         env = self.get_conf_dict()
         env.update(env_override)
-        env = {key.upper(): value for (key, value) in env.items()}
+
+        clean_env = {}
+        for (key, value) in env.items():
+            clean_env[key.upper()] = value
         # volume_str = ' '.join(['-v "%s"' % volume for volume in volumes])
         # TODO: this works very poorly. What if we want to mount N volumes? Or
         # mount them with non-keys or something? It's not friendly
@@ -230,7 +233,7 @@ class InteractiveEnviornmentRequest(object):
         with open(compose_output_path, 'w') as output_handle, open(compose_template, 'r') as input_handle:
             output_handle.write(
                 Template(input_handle.read()).render(
-                    env=env,
+                    env=clean_env,
                     volumes=volume_keyed,
                 )
             )
