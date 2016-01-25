@@ -130,6 +130,9 @@ particular domain, as well as more organized release notes.
 -  ``area/visualization``
 -  ``area/workflows``
 
+New labels should be proposed by opening a pull request against this document
+in the dev branch of Galaxy.
+
 Other Useful Labels
 -------------------
 
