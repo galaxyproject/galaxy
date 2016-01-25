@@ -45,7 +45,7 @@ var FolderRowView = Backbone.View.extend({
       } else {
         template = this.templateRowFolder();
       }
-    } else if (folder_item.get('type') === 'file' || folder_item.get('model_class') === 'LibraryDatasetDatasetAssociation'){
+    } else if (folder_item.get('type') === 'file' || folder_item.get('model_class') === 'LibraryDatasetDatasetAssociation' || folder_item.get('model_class') === 'LibraryDataset'){
       this.options.type = 'file';
       if (folder_item.get('deleted')){
         template = this.templateRowDeletedFile();
@@ -271,7 +271,7 @@ var FolderRowView = Backbone.View.extend({
     tmpl_array.push('  </td>');
     tmpl_array.push('  <td style="text-align: center; "><input style="margin: 0;" type="checkbox"></td>');
     tmpl_array.push('  <td><a href="#folders/<%- content_item.get("folder_id") %>/datasets/<%- content_item.id %>" class="library-dataset"><%- content_item.get("name") %><a></td>'); // dataset
-    tmpl_array.push('  <td></td>');
+    tmpl_array.push('  <td><%- content_item.get("message") %></td>');
     tmpl_array.push('  <td><%= _.escape(content_item.get("file_ext")) %></td>'); // data type
     tmpl_array.push('  <td><%= _.escape(content_item.get("file_size")) %></td>'); // size
     tmpl_array.push('  <td><%= _.escape(content_item.get("update_time")) %></td>'); // time updated
@@ -295,7 +295,7 @@ var FolderRowView = Backbone.View.extend({
     tmpl_array.push('  </td>');
     tmpl_array.push('  <td></td>');
     tmpl_array.push('  <td style="color:grey;"><%- content_item.get("name") %></td>'); // dataset
-    tmpl_array.push('  <td></td>');
+    tmpl_array.push('  <td><%- content_item.get("message") %></td>');
     tmpl_array.push('  <td><%= _.escape(content_item.get("file_ext")) %></td>'); // data type
     tmpl_array.push('  <td><%= _.escape(content_item.get("file_size")) %></td>'); // size
     tmpl_array.push('  <td><%= _.escape(content_item.get("update_time")) %></td>'); // time updated
@@ -316,7 +316,7 @@ var FolderRowView = Backbone.View.extend({
     tmpl_array.push('  <td style="color:grey;">');
     tmpl_array.push('    <%- content_item.get("name") %>');
     tmpl_array.push('  </td>');
-    tmpl_array.push('  <td></td>');
+    tmpl_array.push('  <td><%- content_item.get("description") %></td>');
     tmpl_array.push('  <td>folder</td>');
     tmpl_array.push('  <td></td>');
     tmpl_array.push('  <td><%= _.escape(content_item.get("update_time")) %></td>'); // time updated
