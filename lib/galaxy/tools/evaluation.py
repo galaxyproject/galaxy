@@ -53,12 +53,11 @@ class ToolEvaluator( object ):
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         incoming = self.tool.params_from_strings( incoming, self.app )
 
-        # Regular parameter validation
+        # Full parameter validation
         request_context = WorkRequestContext(
             app                     = self.app,
             user                    = job.history.user,
-            history                 = job.history,
-            workflow_building_mode  = False
+            history                 = job.history
         )
         def validate_inputs( input, value, prefixed_name, prefixed_label, context ):
             value = input.from_html( value, request_context, context )
