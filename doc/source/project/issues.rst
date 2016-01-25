@@ -107,19 +107,27 @@ The 'area' label is used for tagging issues and pull requests to a
 particular focus area. This allows for easy searching within that
 particular domain, as well as more organized release notes.
 
+-  ``area/admin`` - Changes to admin functionality of the Galaxy webapp.
 -  ``area/API``
--  ``area/cleanup``
+-  ``area/cleanup`` - General code cleanup.
+-  ``area/database`` - Change requires a modification to Galaxy's database.
 -  ``area/dataset-collections``
+-  ``area/datatypes`` - Changes to Galaxy's datatypes
+-  ``area/datatype-framework`` - Changes to Galaxy's datatype and metadata framework
 -  ``area/documentation``
 -  ``area/framework``
--  ``area/jobs``
 -  ``area/GIEs``
+-  ``area/histories``
+-  ``area/jobs``
 -  ``area/performance``
 -  ``area/reports``
--  ``area/tools``
--  ``area/toolshed``
+-  ``area/system`` - Changes to scripts used to run or manage Galaxy.
+-  ``area/tools`` - Changes to specific tools in Galaxy.
+-  ``area/tooling`` - Changes to Galaxy's tool framework.
+-  ``area/toolshed``- Changes to the tool shed client or server.
 -  ``area/UI-UX``
--  ``area/visaulization``
+-  ``area/util``
+-  ``area/visualization``
 -  ``area/workflows``
 
 Other Useful Labels
