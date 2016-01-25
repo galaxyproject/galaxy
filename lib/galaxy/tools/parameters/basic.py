@@ -615,6 +615,7 @@ class FTPFileToolParameter( ToolParameter ):
         input_source = ensure_input_source(input_source)
         ToolParameter.__init__( self, tool, input_source )
         self.multiple = input_source.get_bool( 'multiple', True )
+        self.optional = input_source.parse_optional( True )
         self.user_ftp_dir = ''
 
     def get_initial_value( self, trans, other_values ):
@@ -652,8 +653,6 @@ class FTPFileToolParameter( ToolParameter ):
         return self.to_python( value, app )
 
     def to_python( self, value, app, validate=False ):
-        if validate and self.tool.app.config.ftp_upload_dir is None:
-            raise ValueError( "The FTP directory is not configured." )
         if not isinstance( value, list ):
             value = [ value ]
         lst = []
@@ -669,6 +668,8 @@ class FTPFileToolParameter( ToolParameter ):
             if not self.optional and validate:
                 raise ValueError( "Please select a valid FTP file." )
             return ''
+        if validate and self.tool.app.config.ftp_upload_dir is None:
+            raise ValueError( "The FTP directory is not configured." )
         return lst
 
     def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
@@ -2575,6 +2576,7 @@ parameter_types = dict(
     library_data=LibraryDatasetToolParameter,
     drill_down=DrillDownSelectToolParameter
 )
+
 
 class RuntimeValue( object ):
     """

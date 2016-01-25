@@ -4,6 +4,7 @@ Classes encapsulating Galaxy tool parameters.
 
 from basic import DataCollectionToolParameter, DataToolParameter, SelectToolParameter
 from grouping import Conditional, Repeat, Section, UploadDataset
+from galaxy.util import string_as_bool
 from galaxy.util.json import dumps, json_fix, loads
 from galaxy.util.expressions import ExpressionContext
 

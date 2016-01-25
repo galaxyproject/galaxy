@@ -5,7 +5,6 @@ on the values of other parameters or other aspects of the current state)
 
 import logging
 import os
-import basic
 import validation
 from galaxy.util import string_as_bool
 from galaxy.model import User

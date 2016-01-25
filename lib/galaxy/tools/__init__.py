@@ -1049,17 +1049,17 @@ class Tool( object, Dictifiable ):
         #       outputs?
         return True
 
-    def new_state( self, trans, history=None ):
+    def new_state( self, trans ):
         """
         Create a new `DefaultToolState` for this tool. It will be initialized
         with default values for inputs.
         """
         state = DefaultToolState()
         state.inputs = {}
-        self.fill_in_new_state( trans, self.inputs, state.inputs, history=history )
+        self.fill_in_new_state( trans, self.inputs, state.inputs )
         return state
 
-    def fill_in_new_state( self, trans, inputs, state, context=None, history=None ):
+    def fill_in_new_state( self, trans, inputs, state, context=None ):
         """
         Fill in a tool state dictionary with default values for all parameters
         in the dictionary `inputs`. Grouping elements are filled in recursively.
@@ -1067,22 +1067,6 @@ class Tool( object, Dictifiable ):
         context = ExpressionContext( state, context )
         for input in inputs.itervalues():
             state[ input.name ] = input.get_initial_value( trans, context )
-
-    def get_param_html_map( self, trans, page=0, other_values={} ):
-        """
-        Return a dictionary containing the HTML representation of each
-        parameter. This is used for rendering display elements. It is
-        currently not compatible with grouping constructs.
-
-        NOTE: This should be considered deprecated, it is only used for tools
-              with `display` elements. These should be eliminated.
-        """
-        rval = dict()
-        for key, param in self.inputs_by_page[page].iteritems():
-            if not isinstance( param, ToolParameter ):
-                raise Exception( "'get_param_html_map' only supported for simple paramters" )
-            rval[key] = param.get_html( trans, other_values=other_values )
-        return rval
 
     def get_param( self, key ):
         """
@@ -1128,6 +1112,7 @@ class Tool( object, Dictifiable ):
         to the form or execute the tool (only if 'execute' was clicked and
         there were no errors).
         """
+        request_context = WorkRequestContext( app=trans.app, user=trans.user, history=history or trans.history )
         rerun_remap_job_id = None
         if 'rerun_remap_job_id' in incoming:
             try:
@@ -1152,7 +1137,7 @@ class Tool( object, Dictifiable ):
         all_params = []
         validate_input = self.get_hook( 'validate_input' )
         for expanded_incoming in expanded_incomings:
-            expanded_state = self.new_state( trans, history=history )
+            expanded_state = self.new_state( request_context )
             # Process incoming data
             if not self.check_values:
                 # If `self.check_values` is false we don't do any checking or
@@ -1163,7 +1148,7 @@ class Tool( object, Dictifiable ):
             else:
                 # Update state for all inputs on the current page taking new
                 # values from `incoming`.
-                errors = self.populate_state( trans, self.inputs, expanded_state.inputs, expanded_incoming, history, source=source )
+                errors = self.populate_state( request_context, self.inputs, expanded_state.inputs, expanded_incoming, source=source )
                 # If the tool provides a `validate_input` hook, call it.
                 if validate_input:
                     validate_input( trans, errors, expanded_state.inputs, self.inputs )
@@ -1176,7 +1161,7 @@ class Tool( object, Dictifiable ):
         if any( all_errors ):
             raise exceptions.MessageException( err_data=all_errors[ 0 ] )
         else:
-            execution_tracker = execute_job( trans, self, all_params, history=history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info )
+            execution_tracker = execute_job( trans, self, all_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info )
             if execution_tracker.successful_jobs:
                 return dict( out_data=execution_tracker.output_datasets,
                              num_jobs=len( execution_tracker.successful_jobs ),
@@ -1219,7 +1204,7 @@ class Tool( object, Dictifiable ):
         elif isinstance(x, list):
             [ self.find_fieldstorage( y ) for y in x ]
 
-    def populate_state( self, trans, inputs, state, incoming, history=None, source="html", prefix="", context=None ):
+    def populate_state( self, trans, inputs, state, incoming, source="html", prefix="", context=None ):
         errors = dict()
         # Push this level onto the context stack
         context = ExpressionContext( state, context )
@@ -1239,14 +1224,13 @@ class Tool( object, Dictifiable ):
                     if rep_index < input.max:
                         new_state = {}
                         new_state['__index__'] = rep_index
-                        self.fill_in_new_state( trans, input.inputs, new_state, context, history=history )
+                        self.fill_in_new_state( trans, input.inputs, new_state, context )
                         group_state.append( new_state )
                         group_errors.append( {} )
                         rep_errors = self.populate_state( trans,
                                                           input.inputs,
                                                           new_state,
                                                           incoming,
-                                                          history,
                                                           source,
                                                           prefix=rep_name + "|",
                                                           context=context )
@@ -1288,12 +1272,11 @@ class Tool( object, Dictifiable ):
                     # Current case has changed, throw away old state
                     group_state = state[input.name] = {}
                     # TODO: we should try to preserve values if we can
-                    self.fill_in_new_state( trans, input.cases[current_case].inputs, group_state, context, history=history )
+                    self.fill_in_new_state( trans, input.cases[current_case].inputs, group_state, context )
                     group_errors = self.populate_state( trans,
                                                         input.cases[current_case].inputs,
                                                         group_state,
                                                         incoming,
-                                                        history,
                                                         source,
                                                         prefix=group_prefix,
                                                         context=context)
@@ -1306,12 +1289,11 @@ class Tool( object, Dictifiable ):
             elif isinstance( input, Section ):
                 group_state = state[input.name]
                 group_prefix = "%s|" % ( key )
-                self.fill_in_new_state( trans, input.inputs, group_state, context, history=history )
+                self.fill_in_new_state( trans, input.inputs, group_state, context )
                 group_errors = self.populate_state( trans,
                                                     input.inputs,
                                                     group_state,
                                                     incoming,
-                                                    history,
                                                     source,
                                                     prefix=group_prefix,
                                                     context=context )
@@ -1344,7 +1326,6 @@ class Tool( object, Dictifiable ):
                                                       input.inputs,
                                                       rep_state,
                                                       incoming,
-                                                      history,
                                                       source,
                                                       prefix=rep_prefix,
                                                       context=context)
@@ -2065,12 +2046,7 @@ class Tool( object, Dictifiable ):
             raise exceptions.MessageException( '[history_id=%s] Failed to retrieve history. %s.' % ( history_id, str( e ) ) )
 
         # build request context
-        request_context = WorkRequestContext(
-            app                     = trans.app,
-            user                    = trans.user,
-            history                 = history,
-            workflow_building_mode  = workflow_mode
-        )
+        request_context = WorkRequestContext( app=trans.app, user=trans.user, history=history, workflow_building_mode=workflow_mode )
 
         # load job parameters into incoming
         tool_message = ''
@@ -2078,7 +2054,7 @@ class Tool( object, Dictifiable ):
             try:
                 job_params = job.get_param_values( self.app, ignore_errors=True )
                 self.check_and_update_param_values( job_params, request_context, update_values=False )
-                self._map_source_to_history( request_context, self.inputs, job_params, history )
+                self._map_source_to_history( request_context, self.inputs, job_params )
                 tool_message = self._compare_tool_version( job )
                 params_to_incoming( kwd, self.inputs, job_params, self.app, to_html=False )
             except Exception, e:
@@ -2298,14 +2274,14 @@ class Tool( object, Dictifiable ):
         # initialize and populate tool state
         state_inputs = {}
         state_errors = {}
-        populate_state( request_context, self.inputs, state_inputs, state_errors, params.__dict__ )
+        populate_state( self.inputs, state_inputs, state_errors, params.__dict__ )
 
         # create basic tool model
         tool_model = self.to_dict( request_context )
         tool_model['inputs'] = {}
 
         # build tool model and tool state
-        iterate( request_context, tool_model['inputs'], self.inputs, state_inputs, '' )
+        iterate( tool_model['inputs'], self.inputs, state_inputs, '' )
 
         # sanitize tool state
         sanitize_state(state_inputs)
@@ -2375,10 +2351,11 @@ class Tool( object, Dictifiable ):
                     pass
         return False
 
-    def _map_source_to_history(self, trans, tool_inputs, params, history):
+    def _map_source_to_history( self, trans, tool_inputs, params ):
         # Need to remap dataset parameters. Job parameters point to original
         # dataset used; parameter should be the analygous dataset in the
         # current history.
+        history = trans.history
 
         # Create index for hdas.
         hda_source_dict = {}

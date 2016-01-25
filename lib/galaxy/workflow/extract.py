@@ -6,9 +6,7 @@ from galaxy import exceptions
 from galaxy import model
 from galaxy.tools.parameters.basic import (
     DataToolParameter,
-    DataCollectionToolParameter,
-    DrillDownSelectToolParameter,
-    SelectToolParameter
+    DataCollectionToolParameter
 )
 from galaxy.tools.parser import ToolOutputCollectionPart
 from galaxy.tools.parameters.grouping import (

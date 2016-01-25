@@ -54,15 +54,12 @@ class ToolEvaluator( object ):
         incoming = self.tool.params_from_strings( incoming, self.app )
 
         # Full parameter validation
-        request_context = WorkRequestContext(
-            app                     = self.app,
-            user                    = job.history.user,
-            history                 = job.history
-        )
+        request_context = WorkRequestContext( app=self.app, user=job.history.user, history=job.history )
+
         def validate_inputs( input, value, prefixed_name, prefixed_label, context ):
             value = input.from_html( value, request_context, context )
             input.validate( value, request_context )
-        visit_input_values ( self.tool.inputs, incoming, validate_inputs, details=True )
+        visit_input_values( self.tool.inputs, incoming, validate_inputs, details=True )
 
         # Restore input / output data lists
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
