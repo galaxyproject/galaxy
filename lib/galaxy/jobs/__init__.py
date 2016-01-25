@@ -46,6 +46,8 @@ TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
 # Override with config.default_job_shell.
 DEFAULT_JOB_SHELL = '/bin/bash'
 
+DEFAULT_CLEANUP_JOB = "always"
+
 
 class JobDestination( Bunch ):
     """
@@ -772,11 +774,18 @@ class JobWrapper( object ):
         self.__galaxy_system_pwent = None
 
     def _job_dataset_path_rewriter( self, working_directory ):
-        if self.app.config.outputs_to_working_directory:
+        outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
+        if outputs_to_working_directory:
             dataset_path_rewriter = OutputsToWorkingDirectoryPathRewriter( working_directory )
         else:
             dataset_path_rewriter = NullDatasetPathRewriter( )
         return dataset_path_rewriter
+
+    @property
+    def cleanup_job(self):
+        """ Remove the job after it is complete, should return "always", "onsuccess", or "never".
+        """
+        self.get_destination_configuration("cleanup_job", DEFAULT_CLEANUP_JOB)
 
     def can_split( self ):
         # Should the job handler split this job up?
@@ -969,7 +978,9 @@ class JobWrapper( object ):
                 # Get the exception and let the tool attempt to generate
                 # a better message
                 etype, evalue, tb = sys.exc_info()
-            if self.app.config.outputs_to_working_directory:
+
+            outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
+            if outputs_to_working_directory:
                 for dataset_path in self.get_output_fnames():
                     try:
                         shutil.move( dataset_path.false_path, dataset_path.real_path )
@@ -1013,7 +1024,8 @@ class JobWrapper( object ):
         # If the job was deleted, call tool specific fail actions (used for e.g. external metadata) and clean up
         if self.tool:
             self.tool.job_failed( self, message, exception )
-        delete_files = self.app.config.cleanup_job == 'always' or (self.app.config.cleanup_job == 'onsuccess' and job.state == job.states.DELETED)
+        cleanup_job = self.cleanup_job
+        delete_files = cleanup_job == 'always' or (cleanup_job == 'onsuccess' and job.state == job.states.DELETED)
         self.cleanup( delete_files=delete_files )
 
     def pause( self, job=None, message=None ):
@@ -1093,6 +1105,14 @@ class JobWrapper( object ):
         if flush:
             self.sa_session.flush()
 
+    def get_destination_configuration(self, key, default=None):
+        """ Get a destination parameter that can be defaulted back
+        in app.config if it needs to be applied globally.
+        """
+        return self.get_job().get_destination_configuration(
+            self.app.config, key, default
+        )
+
     def finish( self, stdout, stderr, tool_exit_code=None, remote_working_directory=None ):
         """
         Called to indicate that the associated command has been run. Updates
@@ -1138,7 +1158,8 @@ class JobWrapper( object ):
                 self.version_string = open(version_filename).read()
                 os.unlink(version_filename)
 
-        if self.app.config.outputs_to_working_directory and not self.__link_file_check():
+        outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
+        if outputs_to_working_directory and not self.__link_file_check():
             for dataset_path in self.get_output_fnames():
                 try:
                     shutil.move( dataset_path.false_path, dataset_path.real_path )
@@ -1204,7 +1225,8 @@ class JobWrapper( object ):
                     # either use the metadata from originating output dataset, or call set_meta on the copies
                     # it would be quicker to just copy the metadata from the originating output dataset,
                     # but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
-                    if ( self.app.config.retry_metadata_internally and
+                    retry_internally = util.asbool(self.get_destination_configuration("retry_metadata_internally", True))
+                    if ( retry_internally and
                             not self.external_output_metadata.external_metadata_set_successfully(dataset, self.sa_session ) ):
                         # If Galaxy was expected to sniff type and didn't - do so.
                         if dataset.ext == "_sniff_":
@@ -1360,7 +1382,8 @@ class JobWrapper( object ):
             self._collect_metrics( job )
         self.sa_session.flush()
         log.debug( 'job %d ended (finish() executed in %s)' % (self.job_id, finish_timer) )
-        delete_files = self.app.config.cleanup_job == 'always' or ( job.state == job.states.OK and self.app.config.cleanup_job == 'onsuccess' )
+        cleanup_job = self.cleanup_job
+        delete_files = cleanup_job == 'always' or ( job.state == job.states.OK and cleanup_job == 'onsuccess' )
         self.cleanup( delete_files=delete_files )
 
     def check_tool_output( self, stdout, stderr, tool_exit_code, job ):
@@ -1528,7 +1551,8 @@ class JobWrapper( object ):
         if self.output_paths is None:
             self.get_output_fnames()
         for dp in self.output_paths:
-            if self.app.config.outputs_to_working_directory and os.path.basename( dp.false_path ) == file:
+            outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
+            if outputs_to_working_directory and os.path.basename( dp.false_path ) == file:
                 return dp.dataset_id
             elif os.path.basename( dp.real_path ) == file:
                 return dp.dataset_id
@@ -1649,7 +1673,8 @@ class JobWrapper( object ):
     def _change_ownership( self, username, gid ):
         job = self.get_job()
         # FIXME: hardcoded path
-        cmd = [ '/usr/bin/sudo', '-E', self.app.config.external_chown_script, self.working_directory, username, str( gid ) ]
+        external_chown_script = self.get_destination_configuration("external_chown_script", None)
+        cmd = [ '/usr/bin/sudo', '-E', external_chown_script, self.working_directory, username, str( gid ) ]
         log.debug( '(%s) Changing ownership of working directory with: %s' % ( job.id, ' '.join( cmd ) ) )
         p = subprocess.Popen( cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
         # TODO: log stdout/stderr
@@ -1658,7 +1683,8 @@ class JobWrapper( object ):
 
     def change_ownership_for_run( self ):
         job = self.get_job()
-        if self.app.config.external_chown_script and job.user is not None:
+        external_chown_script = self.get_destination_configuration("external_chown_script", None)
+        if external_chown_script and job.user is not None:
             try:
                 self._change_ownership( self.user_system_pwent[0], str( self.user_system_pwent[3] ) )
             except:
@@ -1667,7 +1693,8 @@ class JobWrapper( object ):
 
     def reclaim_ownership( self ):
         job = self.get_job()
-        if self.app.config.external_chown_script and job.user is not None:
+        external_chown_script = self.get_destination_configuration("external_chown_script", None)
+        if external_chown_script and job.user is not None:
             self._change_ownership( self.galaxy_system_pwent[0], str( self.galaxy_system_pwent[3] ) )
 
     @property
@@ -1832,7 +1859,7 @@ class TaskWrapper(JobWrapper):
         # if the job was deleted, don't finish it
         if task.state == task.states.DELETED:
             # Job was deleted by an administrator
-            delete_files = self.app.config.cleanup_job in ( 'always', 'onsuccess' )
+            delete_files = self.cleanup_job in ( 'always', 'onsuccess' )
             self.cleanup( delete_files=delete_files )
             return
         elif task.state == task.states.ERROR:

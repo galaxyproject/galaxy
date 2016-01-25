@@ -583,7 +583,8 @@ class AsynchronousJobRunner( BaseJobRunner ):
             exit_code = 0
 
         # clean up the job files
-        if self.app.config.cleanup_job == "always" or ( not stderr and self.app.config.cleanup_job == "onsuccess" ):
+        cleanup_job = job_state.job_wrapper.cleanup_job
+        if cleanup_job == "always" or ( not stderr and cleanup_job == "onsuccess" ):
             job_state.cleanup()
 
         try:
@@ -600,7 +601,7 @@ class AsynchronousJobRunner( BaseJobRunner ):
         # something necessary
         if not job_state.runner_state_handled:
             job_state.job_wrapper.fail( getattr( job_state, 'fail_message', 'Job failed' ) )
-            if self.app.config.cleanup_job == "always":
+            if job_state.job_wrapper.cleanup_job == "always":
                 job_state.cleanup()
 
     def mark_as_finished(self, job_state):

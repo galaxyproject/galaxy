@@ -80,7 +80,7 @@ class ShellJobRunner( AsynchronousJobRunner ):
         # job was deleted while we were preparing it
         if job_wrapper.get_state() == model.Job.states.DELETED:
             log.info("(%s) Job deleted by user before it entered the queue" % galaxy_id_tag )
-            if self.app.config.cleanup_job in ("always", "onsuccess"):
+            if job_wrapper.cleanup_job in ("always", "onsuccess"):
                 job_wrapper.cleanup()
             return
 

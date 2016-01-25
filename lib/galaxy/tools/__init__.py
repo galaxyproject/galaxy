@@ -344,7 +344,6 @@ class Tool( object, Dictifiable ):
         except Exception, e:
             global_tool_errors.add_error(config_file, "Tool Loading", e)
             raise e
-        self.external_runJob_script = app.config.drmaa_external_runjob_script
         self.history_manager = histories.HistoryManager( app )
 
     @property

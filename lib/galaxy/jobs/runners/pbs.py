@@ -291,7 +291,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
         if job_wrapper.get_state() == model.Job.states.DELETED:
             log.debug( "Job %s deleted by user before it entered the PBS queue" % job_wrapper.job_id )
             pbs.pbs_disconnect(c)
-            if self.app.config.cleanup_job in ( "always", "onsuccess" ):
+            if job_wrapper.cleanup_job in ( "always", "onsuccess" ):
                 self.cleanup( ( ofile, efile, ecfile, job_file ) )
                 job_wrapper.cleanup()
             return
@@ -480,7 +480,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
         if pbs_job_state.stop_job:
             self.stop_job( self.sa_session.query( self.app.model.Job ).get( pbs_job_state.job_wrapper.job_id ) )
         pbs_job_state.job_wrapper.fail( pbs_job_state.fail_message )
-        if self.app.config.cleanup_job == "always":
+        if pbs_job_state.job_wrapper.cleanup_job == "always":
             self.cleanup( ( pbs_job_state.output_file, pbs_job_state.error_file, pbs_job_state.exit_code_file, pbs_job_state.job_file ) )
 
     def get_stage_in_out( self, fnames, symlink=False ):
