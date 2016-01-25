@@ -965,9 +965,6 @@ class JobWrapper( object ):
                 # Get the exception and let the tool attempt to generate
                 # a better message
                 etype, evalue, tb = sys.exc_info()
-                m = self.tool.handle_job_failure_exception( evalue )
-                if m:
-                    message = m
             if self.app.config.outputs_to_working_directory:
                 for dataset_path in self.get_output_fnames():
                     try:

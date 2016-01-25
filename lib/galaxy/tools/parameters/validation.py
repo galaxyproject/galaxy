@@ -10,12 +10,6 @@ from galaxy import util
 log = logging.getLogger( __name__ )
 
 
-class LateValidationError( Exception ):
-
-    def __init__( self, message ):
-        self.message = message
-
-
 class Validator( object ):
     """
     A validator checks that a value meets some conditions OR raises ValueError
