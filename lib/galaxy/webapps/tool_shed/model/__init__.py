@@ -9,6 +9,7 @@ from galaxy.util.hash_util import new_secure_hash
 from galaxy.util.dictifiable import Dictifiable
 import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
+from tool_shed.dependencies.repository import relation_builder
 
 from mercurial import hg
 from mercurial import ui
