@@ -4,6 +4,9 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( HISTORY_MODEL, HISTORY_VIEW_EDIT, BASE_MVC, _l ){
+
+'use strict';
+
 // ============================================================================
 /** session storage for history panel preferences (and to maintain state)
  */
@@ -158,12 +161,12 @@ var CurrentHistoryView = _super.extend(
         //TODO:?? may not be needed? see history-view-edit, 369
         // if a hidden item is created (gen. by a workflow), moves thru the updater to the ready state,
         //  then: remove it from the collection if the panel is set to NOT show hidden datasets
-        this.collection.on( 'state:ready', function( model, newState, oldState ){
+        this.listenTo( this.collection, 'state:ready', function( model, newState, oldState ){
             if( ( !model.get( 'visible' ) )
             &&  ( !this.storage.get( 'show_hidden' ) ) ){
                 this.removeItemView( model );
             }
-        }, this );
+        });
     },
 
     /** listening for history events */
@@ -257,27 +260,28 @@ var CurrentHistoryView = _super.extend(
     _renderTags : function( $where ){
         var panel = this;
         // render tags and show/hide based on preferences
-        _super.prototype._renderTags.call( this, $where );
-        if( this.preferences.get( 'tagsEditorShown' ) ){
-            this.tagsEditor.toggle( true );
+        _super.prototype._renderTags.call( panel, $where );
+        if( panel.preferences.get( 'tagsEditorShown' ) ){
+            panel.tagsEditor.toggle( true );
         }
         // store preference when shown or hidden
-        this.tagsEditor.on( 'hiddenUntilActivated:shown hiddenUntilActivated:hidden',
+        panel.listenTo( panel.tagsEditor, 'hiddenUntilActivated:shown hiddenUntilActivated:hidden',
             function( tagsEditor ){
                 panel.preferences.set( 'tagsEditorShown', tagsEditor.hidden );
-            });
+            }
+        );
     },
 
     /** In this override, get and set current panel preferences when editor is used */
     _renderAnnotation : function( $where ){
         var panel = this;
         // render annotation and show/hide based on preferences
-        _super.prototype._renderAnnotation.call( this, $where );
-        if( this.preferences.get( 'annotationEditorShown' ) ){
-            this.annotationEditor.toggle( true );
+        _super.prototype._renderAnnotation.call( panel, $where );
+        if( panel.preferences.get( 'annotationEditorShown' ) ){
+            panel.annotationEditor.toggle( true );
         }
         // store preference when shown or hidden
-        this.annotationEditor.on( 'hiddenUntilActivated:shown hiddenUntilActivated:hidden',
+        panel.listenTo( panel.annotationEditor, 'hiddenUntilActivated:shown hiddenUntilActivated:hidden',
             function( annotationEditor ){
                 panel.preferences.set( 'annotationEditorShown', annotationEditor.hidden );
             }
@@ -325,12 +329,12 @@ var CurrentHistoryView = _super.extend(
         _super.prototype._setUpItemViewListeners.call( panel, view );
 
         // use pub-sub to: handle drilldown expansion and collapse
-        view.on( 'expanded:drilldown', function( v, drilldown ){
+        panel.listenTo( view, 'expanded:drilldown', function( v, drilldown ){
             this._expandDrilldownPanel( drilldown );
-        }, this );
-        view.on( 'collapsed:drilldown', function( v, drilldown ){
+        });
+        panel.listenTo( view, 'collapsed:drilldown', function( v, drilldown ){
             this._collapseDrilldownPanel( drilldown );
-        }, this );
+        });
 
         // when content is manipulated, make it the current-content
         // view.on( 'visualize', function( v, ev ){
@@ -376,7 +380,7 @@ var CurrentHistoryView = _super.extend(
     // ........................................................................ external objects/MVC
     listenToGalaxy : function( galaxy ){
         // TODO: MEM: questionable reference island / closure practice
-        galaxy.on( 'galaxy_main:load', function( data ){
+        this.listenTo( galaxy, 'galaxy_main:load', function( data ){
             var pathToMatch = data.fullpath,
                 useToURLRegexMap = {
                     'display'       : /datasets\/([a-f0-9]+)\/display/,
@@ -401,7 +405,7 @@ var CurrentHistoryView = _super.extend(
             // need to type mangle to go from web route to history contents
             hdaId = 'dataset-' + hdaId;
             this._setCurrentContentById( hdaId );
-        }, this );
+        });
     },
 
 //TODO: remove quota meter from panel and remove this

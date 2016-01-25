@@ -3,7 +3,9 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( DATASET_LI, BASE_MVC, _l ){
-/* global Backbone */
+
+'use strict';
+
 //==============================================================================
 var _super = DATASET_LI.DatasetListItemView;
 /** @class Read only view for HistoryDatasetAssociation.

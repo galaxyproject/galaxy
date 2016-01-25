@@ -3,6 +3,9 @@ define([
     "mvc/history/history-content-model",
     "utils/localization"
 ], function( DC_MODEL, HISTORY_CONTENT, _l ){
+
+'use strict';
+
 /*==============================================================================
 
 Models for DatasetCollections contained within a history.

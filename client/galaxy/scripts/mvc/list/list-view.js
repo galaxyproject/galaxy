@@ -6,6 +6,8 @@ define([
     "ui/search-input"
 ], function( LIST_ITEM, LoadingIndicator, BASE_MVC, _l ){
 
+'use strict';
+
 var logNamespace = 'list';
 /* ============================================================================
 TODO:
@@ -120,29 +122,30 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
 
         //TODO: move errorHandler down into list-view from history-view or
         //  pass to global error handler (Galaxy)
-        this.on( 'error', function( model, xhr, options, msg, details ){
-            //this.errorHandler( model, xhr, options, msg, details );
-            console.error( model, xhr, options, msg, details );
-        }, this );
-
-        // show hide the loading indicator
-        this.on( 'loading', function(){
-            this._showLoadingIndicator( 'loading...', 40 );
-        }, this );
-        this.on( 'loading-done', function(){
-            this._hideLoadingIndicator( 40 );
-        }, this );
+        this.on({
+            error: function( model, xhr, options, msg, details ){
+                //this.errorHandler( model, xhr, options, msg, details );
+                console.error( model, xhr, options, msg, details );
+            },
+            // show hide the loading indicator
+            loading: function(){
+                this._showLoadingIndicator( 'loading...', 40 );
+            },
+            'loading-done': function(){
+                this._hideLoadingIndicator( 40 );
+            },
+        });
 
         // throw the first render up as a diff namespace using once (for outside consumption)
         this.once( 'rendered', function(){
             this.trigger( 'rendered:initial', this );
-        }, this );
+        });
 
         // debugging
         if( this.logger ){
             this.on( 'all', function( event ){
                 this.log( this + '', arguments );
-            }, this );
+            });
         }
 
         this._setUpCollectionListeners();
@@ -156,21 +159,22 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         this.collection.off();
 
         // bubble up error events
-        this.collection.on( 'error', function( model, xhr, options, msg, details ){
-            this.trigger( 'error', model, xhr, options, msg, details );
-        }, this );
-
-        this.collection.on( 'reset', function(){
-            this.renderItems();
-        }, this );
-        this.collection.on( 'add', this.addItemView, this );
-        this.collection.on( 'remove', this.removeItemView, this );
+        this.listenTo( this.collection, {
+            error   : function( model, xhr, options, msg, details ){
+                this.trigger( 'error', model, xhr, options, msg, details );
+            },
+            reset   : function(){
+                this.renderItems();
+            },
+            add     : this.addItemView,
+            remove  : this.removeItemView
+        });
 
         // debugging
         if( this.logger ){
-            this.collection.on( 'all', function( event ){
+            this.listenTo( this.collection, 'all', function( event ){
                 this.info( this + '(collection)', arguments );
-            }, this );
+            });
         }
         return this;
     },
@@ -180,23 +184,25 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         this.log( this + '._setUpViewListeners' );
 
         // shift to select a range
-        this.on( 'view:selected', function( view, ev ){
-            if( ev && ev.shiftKey && this.lastSelected ){
-                var lastSelectedView = this.viewFromModelId( this.lastSelected );
-                if( lastSelectedView ){
-                    this.selectRange( view, lastSelectedView );
+        this.on({
+            'view:selected': function( view, ev ){
+                if( ev && ev.shiftKey && this.lastSelected ){
+                    var lastSelectedView = this.viewFromModelId( this.lastSelected );
+                    if( lastSelectedView ){
+                        this.selectRange( view, lastSelectedView );
+                    }
+                } else if( ev && ev.altKey && !this.selecting ){
+                    this.showSelectors();
                 }
-            } else if( ev && ev.altKey && !this.selecting ){
-                this.showSelectors();
-            }
-            this.selected.push( view.model.id );
-            this.lastSelected = view.model.id;
-        }, this );
+                this.selected.push( view.model.id );
+                this.lastSelected = view.model.id;
+            },
 
-        this.on( 'view:de-selected', function( view, ev ){
-            this.selected = _.without( this.selected, view.model.id );
-            //this.lastSelected = view.model.id;
-        }, this );
+            'view:de-selected': function( view, ev ){
+                this.selected = _.without( this.selected, view.model.id );
+                //this.lastSelected = view.model.id;
+            }
+        });
     },
 
     // ------------------------------------------------------------------------ rendering
@@ -426,14 +432,14 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
     _setUpItemViewListeners : function( view ){
         var panel = this;
         // send all events to the panel, re-namspaceing them with the view prefix
-        view.on( 'all', function(){
+        this.listenTo( view, 'all', function(){
             var args = Array.prototype.slice.call( arguments, 0 );
             args[0] = 'view:' + args[0];
             panel.trigger.apply( panel, args );
         });
 
         // drag multiple - hijack ev.setData to add all selected items
-        view.on( 'draggable:dragstart', function( ev, v ){
+        this.listenTo( view, 'draggable:dragstart', function( ev, v ){
             //TODO: set multiple drag data here
             var json = {},
                 selected = this.getSelectedModels();
@@ -567,7 +573,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
             var json = view.model.toJSON();
             for( var key in properties ){
                 if( properties.hasOwnProperty( key ) ){
-                    if( json[ key ] !== view.model.get( key ) ){
+                    if( json[ key ] !== properties[ key ] ){
                         return false;
                     }
                 }
@@ -766,7 +772,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
     scrollToItem : function( view, speed ){
         if( !view ){ return this; }
         //var itemTop = view.$el.offset().top;
-        var itemTop = view.$el.position().top;
+        var itemTop = view.el.offsetTop;
         return this.scrollTo( itemTop, speed );
     },
 
@@ -912,7 +918,7 @@ var ModelListPanel = ListPanel.extend({
         // override
         this.log( this + '._setUpModelListeners', this.model );
         // bounce model errors up to the panel
-        this.model.on( 'error', function(){
+        this.listenTo( this.model, 'error', function(){
             var args = Array.prototype.slice.call( arguments, 0 );
             //args.unshift( 'model:error' );
             args.unshift( 'error' );

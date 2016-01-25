@@ -46,19 +46,31 @@ This will:
 
 1. compress the files in client/galaxy/scripts and place them in static/scripts
 2. generate source maps and place them in static/maps
+3. rebuild the webpack-based client apps
 
 
-Templates
-=========
+Rebuilding Scripts Only
+=======================
 
-You can change and recompile the templates by using:
+To re-minify all the individual javascript files:
 
-    grunt templates
+    grunt scripts
 
-This will:
 
-1. recompile the templates in client/galaxy/scripts/templates to client/galaxy/scripts/templates/compiled
-2. minify and generate source maps for the compiled templates
+Rebuilding Webpack Apps
+=======================
+
+To rebuild the webpack bundles for apps (compressed for production):
+
+    grunt webpack
+
+To rebuild the apps without compression:
+
+    grunt webpack-dev
+
+To rebuild without compression and watch and rebuild when scripts change:
+
+    grunt webpack-watch
 
 
 Changing Styles/CSS

@@ -4,6 +4,7 @@ define([
     'mvc/base-mvc',
     'utils/localization'
 ], function( _, Backbone, baseMVC, _l ){
+'use strict';
 
 var logNamespace = 'user';
 //==============================================================================
