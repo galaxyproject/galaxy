@@ -394,9 +394,6 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         repository_metadata.tool_test_results = None
         self.sa_session.add( repository_metadata )
         self.sa_session.flush()
-        # Check for dependencies and update the database if needed.
-        if repository_metadata.has_repository_dependencies:
-            self.update_database_dependencies( self.repository, repository_metadata )
 
         if check_skip_tool_test:
             # Since we created a new repository_metadata record, we may need to update the
@@ -793,18 +790,6 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         # repository_metadata table record is not needed.
         return False
 
-    def _clear_repository_dependency_entries( self, repository ):
-        '''
-        Delete potentially outdated dependency entries from the database in preparation
-        for creating new ones in the create_or_update_repository_metadata method.
-        '''
-        query = self.sa_session.query( self.app.model.RepositoryMetadata )
-        for metadata in query.filter( self.app.model.RepositoryMetadata.table.c.repository_id == repository.id ).all():
-            dependency_query = self.sa_session.query( self.app.model.RepositoryDependency )
-            for dependency in dependency_query.filter( self.app.model.RepositoryDependency.table.c.parent_metadata_id == metadata.id ).all():
-                self.sa_session.delete( dependency )
-                self.sa_session.flush()
-
     def reset_all_metadata_on_repository_in_tool_shed( self ):
         """Reset all metadata on a single repository in a tool shed."""
         log.debug( "Resetting all metadata on repository: %s" % self.repository.name )
@@ -822,7 +807,6 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         metadata_dict = None
         ancestor_changeset_revision = None
         ancestor_metadata_dict = None
-        self._clear_repository_dependency_entries( self.repository )
         for changeset in self.repository.get_changesets_for_setting_metadata( self.app ):
             work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-ramorits" )
             ctx = repo.changectx( changeset )
@@ -1075,13 +1059,3 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         """Set metadata on the tip of self.repository in the tool shed."""
         error_message, status = self.set_repository_metadata( host, content_alert_str=content_alert_str, **kwd )
         return status, error_message
-
-    def update_database_dependencies( self, repository, repository_metadata ):
-        for shed, name, owner, changeset, prior, _ in repository_metadata.metadata[ 'repository_dependencies' ][ 'repository_dependencies' ]:
-            required_repository = suc.get_repository_by_name_and_owner( self.app, name, owner )
-            metadata_entry = suc.get_repository_metadata_by_changeset_revision( self.app, self.app.security.encode_id( required_repository.id ), changeset )
-            if None in [ required_repository, metadata_entry ]:
-                continue
-            dependency_entry = self.app.model.RepositoryDependency( parent_metadata_id=repository_metadata.id, required_metadata_id=metadata_entry.id )
-            self.sa_session.add( dependency_entry )
-            self.sa_session.flush()
