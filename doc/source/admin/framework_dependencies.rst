@@ -66,6 +66,7 @@ To manually create a virtualenv, you will first need to obtain virtualenv.
 There are a variety of ways to do this:
 
 - ``pip install virtualenv``
+- ``brew install virtualenv``
 - Install your Linux distribution's virtualenv package from the system package
   manager (e.g. ``apt-get install python-virtualenv``).
 - Download the `virtualenv source from PyPI
