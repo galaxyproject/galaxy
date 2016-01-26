@@ -14,7 +14,8 @@ Highlights
   end. Unlike video tutorials, these will not become stale and are truly 
   interactive (allowing users to actually navigate and interact with Galaxy).
   Galaxy 16.01 ships with two example tours and new ones can easily be added by
-  creating a small YAML file describing the tour.
+  creating a small YAML file describing the tour. Try the `Galaxy UI tour
+  <https://usegalaxy.org/?tour_id=core.galaxy_ui>`__  on Main.
 
 **Wheels**
   Galaxy's Python dependencies have traditionally been distributed as eggs_ using
@@ -27,7 +28,7 @@ Highlights
 
 **Nested Workflows**
   Workflows may now run other workflows as a single abstract step in the parent
-  workflow.
+  workflow. This allows for reusing or subworkflows in your analyses.
 
 `Github <https://github.com/galaxyproject/galaxy>`__
 ===========================================================
