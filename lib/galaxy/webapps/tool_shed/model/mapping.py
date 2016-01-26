@@ -17,7 +17,7 @@ from galaxy.model.orm.now import now
 from galaxy.webapps.tool_shed.model import APIKeys, Category, Component, ComponentReview
 from galaxy.webapps.tool_shed.model import GalaxySession, Group, GroupRoleAssociation
 from galaxy.webapps.tool_shed.model import PasswordResetToken, Repository, RepositoryCategoryAssociation
-from galaxy.webapps.tool_shed.model import RepositoryDependency, RepositoryMetadata, RepositoryRatingAssociation
+from galaxy.webapps.tool_shed.model import RepositoryMetadata, RepositoryRatingAssociation
 from galaxy.webapps.tool_shed.model import RepositoryReview, RepositoryRoleAssociation, Role
 from galaxy.webapps.tool_shed.model import SkipToolTest, Tag, User, UserGroupAssociation
 from galaxy.webapps.tool_shed.model import UserRoleAssociation
