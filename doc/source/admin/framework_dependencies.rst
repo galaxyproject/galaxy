@@ -255,7 +255,7 @@ install unpinned dependencies, the process is similar as to installing unpinned
 versions without Conda, with the extra step of installing as much as possible
 from Conda/Bioconda before installing from pip. Begin by adding the `Bioconda`_
 channel as explained in the `Bioconda instructions`_ and then creating a new
-Conda environment using the provided Conda requirements file. Then, install
+Conda environment using the provided Conda environment file. Then, install
 remaining dependencies using pip and start Galaxy, instructing it to skip the
 automatic fetching of pinned dependencies.
 
@@ -263,7 +263,7 @@ automatic fetching of pinned dependencies.
 
     $ conda config --add channels r
     $ conda config --add channels bioconda
-    $ conda create --name galaxy --file lib/galaxy/dependencies/conda-requirements.txt
+    $ conda create --name galaxy --file lib/galaxy/dependencies/conda-environment.txt
     Fetching package metadata: ........
     Solving package specifications: ............................................
     Package plan for installation in environment /home/nate/conda/envs/galaxy:
