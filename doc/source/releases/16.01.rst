@@ -61,7 +61,7 @@ Enhancements
   (thanks to `@erasche <https://github.com/erasche>`__.)
   `Pull Request 1111`_
 * Improve masthead and scratchbook UI and architecture.
-  `Pull Request 1407`_
+  `Pull Request 1407`_, `Pull Request 1424`_
 * Add support for constructive solid geometry datatypes ``ply`` and ``vtk``.
   (Thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__.)
   `Pull Request 905`_, `Pull Request 1211`_
@@ -84,7 +84,7 @@ Enhancements
   (thanks to `@chambm <https://github.com/chambm>`__.)
   `Pull Request 1209`_
 * Improve tool shed installation API for installation of repositories if they
-  already installed
+  are already installed
   (thanks to `@bgruening <https://github.com/bgruening>`__.)
   `Pull Request 1095`_
 * Prevent GIEs from being closed without user confirmation
@@ -149,6 +149,7 @@ Enhancements
   `Pull Request 955`_
 * Remove remaining references to galaxy.eggs and flake8 some tools
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 990`_
 * Apply stricter flake8 rules for the directories shared with Pulsar
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 1010`_
@@ -173,13 +174,14 @@ Enhancements
   `Pull Request 1096`_
 * Improve the API attributes display on parameters page.
   `Pull Request 1098`_
-* Update run_tests.sh help for changes this cycle
+* Update run_tests.sh help for recent changes
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 1101`_
 * Show welcome page with required login.
   `Pull Request 1105`_
 * Allow accessing collection elements in format_source.
-  `Pull Request 1113`_
+  (with significant help from `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 1113`_, `Pull Request 1155`_
 * Add nginx config for GIE proxy to documentation.
   `Pull Request 1123`_
 * Enforce client build deps are up-to-date.
@@ -224,8 +226,8 @@ Enhancements
 * Add beta run workflow form based on the newer tool form code.
   `Pull Request 1249`_
 * During tool migrations, do not mess with galaxy_config_file if provided
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
-  `Pull Request 1253`_
+  (thanks to `@openlangrid <https://github.com/openlangrid>`__ and `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 1230`_, `Pull Request 1253`_
 * In the users API, properly return a boolean from has_requests
   `Pull Request 1262`_
 * Extend the logging of tool dependency status changes
@@ -337,6 +339,9 @@ Enhancements
   `Pull Request 1401`_
 * Fix CasperJS tests.
   `Pull Request 1438`_, `Pull Request 1439`_
+* Add a log.warn() if extracted file does not exist when changing permissions.
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 939`_
 
 Fixes
 -------------------------------
@@ -427,10 +432,6 @@ Fixes
 * Fix for re-installing an uninstalled TS repository with a dependency
   (Thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__.)
   `Pull Request 1154`_
-* Fix bugs in test and code introduced in PR `#1113
-  <https://github.com/galaxyproject/galaxy/issues/1113>`__
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
-  `Pull Request 1155`_
 * Fix interface and usage of ``WorkflowModule.get_runtime_inputs``.
   `Pull Request 1174`_
 * Add enhancements to the Galaxy repository install process
@@ -444,9 +445,6 @@ Fixes
   `Pull Request 1215`_
 * Replace the defunct readthedocs badge.
   `Pull Request 1229`_
-* Path replacement fix
-  (thanks to `@openlangrid <https://github.com/openlangrid>`__.)
-  `Pull Request 1230`_
 * Export ``GALAXY_TEST_DBURI`` as ``GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION``
   before installing wheels.
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
@@ -540,6 +538,7 @@ Fixes
 .. _Pull Request 924: https://github.com/galaxyproject/galaxy/pull/924
 .. _Pull Request 929: https://github.com/galaxyproject/galaxy/pull/929
 .. _Pull Request 938: https://github.com/galaxyproject/galaxy/pull/938
+.. _Pull Request 939: https://github.com/galaxyproject/galaxy/pull/939
 .. _Pull Request 942: https://github.com/galaxyproject/galaxy/pull/942
 .. _Pull Request 944: https://github.com/galaxyproject/galaxy/pull/944
 .. _Pull Request 947: https://github.com/galaxyproject/galaxy/pull/947
