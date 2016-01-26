@@ -123,7 +123,7 @@ particular domain, as well as more organized release notes.
 -  ``area/reports``
 -  ``area/system`` - Changes to scripts used to run or manage Galaxy.
 -  ``area/tools`` - Changes to specific tools in Galaxy.
--  ``area/tooling`` - Changes to Galaxy's tool framework.
+-  ``area/tool-framework``
 -  ``area/toolshed``- Changes to the tool shed client or server.
 -  ``area/UI-UX``
 -  ``area/util``
