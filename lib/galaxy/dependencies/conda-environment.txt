@@ -1,3 +1,21 @@
+# This file can be used with conda's `--file` option to install as many of
+# Galaxy's dependencies as possible using Conda. The file
+# conda-requirements.txt in this directory can be used to install the remaining
+# missing dependencies using pip:
+#
+# $ conda create --name galaxy --file lib/galaxy/dependencies/conda-environment.txt
+# $ source activate galaxy
+# $ pip install --index-url=https://wheels.galaxyproject.org/simple/ -r lib/galaxy/dependencies/requirements.txt
+#
+# or if you already have an environment:
+#
+# $ source activate galaxy
+# $ conda install --file lib/galaxy/dependencies/conda-environment.txt
+# $ pip install --index-url=https://wheels.galaxyproject.org/simple/ -r lib/galaxy/dependencies/requirements.txt
+#
+# More details are available in the administration section of the Galaxy
+# documentation at https://galaxy.readthedocs.org/
+
 # packages with C extensions
 # numpy should be installed before bx to enable extra features in bx
 numpy
