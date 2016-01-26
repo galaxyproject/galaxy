@@ -938,7 +938,7 @@ class SelectToolParameter( ToolParameter ):
                         # use \r\n to separate lines.
                         value = value.split()
             return value
-        if not legal_values and self.optional:
+        if ( not legal_values or value is None ) and self.optional:
             return None
         if not legal_values:
             raise ValueError( "Parameter %s requires a value, but has no legal values defined." % self.name )
