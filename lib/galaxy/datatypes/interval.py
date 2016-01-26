@@ -1519,9 +1519,12 @@ class ScIdx(Tabular):
                 line = line.strip()
                 # The first line is always a comment like this:
                 # 2015-11-23 20:18:56.51;input.bam;READ1
-                if line.startswith('#'):
-                    count += 1
-                    continue
+                if count == 0:
+                    if line.startswith('#'):
+                        count += 1
+                        continue
+                    else:
+                        return False
                 if not line:
                     # EOF
                     if count > 1:
