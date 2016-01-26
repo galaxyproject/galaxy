@@ -2449,7 +2449,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
         # append matching subcollections
         for hdca in self.match_multirun_collections( trans, history, dataset_matcher ):
-            subcollection_type = self._history_query( trans ).collection_type_description.collection_type
+            subcollection_type = self._history_query( trans ).collection_type_descriptions[0].collection_type
             d['options']['hdca'].append({
                 'id': trans.security.encode_id( hdca.id ),
                 'hid': hdca.hid,
