@@ -22,7 +22,7 @@ Enhancements
 * Implement nested workflows.
   `Pull Request 1306`_
 .. feature
-* Use Webpack to greatly optimize JavaScript and other assert served by Galaxy.
+* Use Webpack to greatly optimize JavaScript and other assets served by Galaxy.
   `Pull Request 1144`_
 * Overhaul Galaxy analysis view toward a more modular JavaScript architecture.
   `Pull Request 706`_, `Pull Request 1184`_
