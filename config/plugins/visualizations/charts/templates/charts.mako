@@ -15,7 +15,7 @@
                 'libs/jquery/select2',
                 'libs/bootstrap',
                 'libs/underscore',
-                'libs/backbone/backbone',
+                'libs/backbone',
                 'libs/d3',
                 'libs/require')}
 
@@ -39,7 +39,7 @@
 
         ## load merged/minified code
         ${h.javascript_link( app_root + "build-app.js" )}
-        
+
         ## install default css
         ${h.stylesheet_link( app_root + "app.css" )}
     </head>
@@ -79,7 +79,7 @@
                 },
                 shim: {
                     "libs/underscore": { exports: "_" },
-                    "libs/backbone/backbone": { exports: "Backbone" },
+                    "libs/backbone": { exports: "Backbone" },
                     "d3": { exports: "d3"}
 
                 }
@@ -89,7 +89,7 @@
             };
             // application
             var app = null;
-            $(function() {   
+            $(function() {
                 // request application script
                 require(['plugin/app'], function(App) {
                     // load options
@@ -97,10 +97,10 @@
                         id      : ${h.dumps( visualization_id )} || undefined,
                         config  : ${h.dumps( config )}
                     }
-                    
+
                     // create application
                     app = new App(options);
-                    
+
                     // add to body
                     $('body').append(app.$el);
                 });

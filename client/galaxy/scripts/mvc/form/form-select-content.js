@@ -195,6 +195,7 @@ var View = Backbone.View.extend({
                 for (var i in options) {
                     var item = options[i];
                     select_options.push({
+                        hid  : item.hid,
                         label: item.hid + ': ' + item.name,
                         value: item.id
                     });
@@ -202,7 +203,7 @@ var View = Backbone.View.extend({
                     self.history[item.id + '_' + item.src] = item;
                 }
                 // update field
-                field.update(select_options);
+                field.add( select_options, function( a, b ) { return b.hid - a.hid } );
             }
         }
 
