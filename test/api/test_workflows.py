@@ -1236,6 +1236,50 @@ steps:
         content = self.dataset_populator.get_history_dataset_details( history_id )
         assert content[ "name" ] == "foo was replaced", content[ "name" ]
 
+    @skip_without_tool( "cat1" )
+    def test_delete_intermediate_datasets_pja_1( self ):
+        history_id = self.dataset_populator.new_history()
+        self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+outputs:
+  - id: wf_output_1
+    source: third_cat#out_file1
+steps:
+  - tool_id: cat1
+    label: first_cat
+    state:
+      input1:
+        $link: input1
+  - tool_id: cat1
+    label: second_cat
+    state:
+      input1:
+        $link: first_cat#out_file1
+  - tool_id: cat1
+    label: third_cat
+    state:
+      input1:
+        $link: second_cat#out_file1
+    outputs:
+      out_file1:
+        delete_intermediate_datasets: true
+test_data:
+  input1: "hello world"
+""", history_id=history_id)
+        hda1 = self.dataset_populator.get_history_dataset_details(history_id, hid=1)
+        hda2 = self.dataset_populator.get_history_dataset_details(history_id, hid=2)
+        hda3 = self.dataset_populator.get_history_dataset_details(history_id, hid=3)
+        hda4 = self.dataset_populator.get_history_dataset_details(history_id, hid=4)
+        assert not hda1["deleted"]
+        assert hda2["deleted"]
+        # I think hda3 should be deleted, but the inputs to
+        # steps with workflow outputs are not deleted.
+        # assert hda3["deleted"]
+        print hda3["deleted"]
+        assert not hda4["deleted"]
+
     @skip_without_tool( "random_lines1" )
     def test_run_replace_params_by_tool( self ):
         workflow_request, history_id = self._setup_random_x2_workflow( "test_for_replace_tool_params" )
