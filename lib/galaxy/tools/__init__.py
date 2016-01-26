@@ -1629,14 +1629,15 @@ class Tool( object, Dictifiable ):
     def params_from_strings( self, params, app, ignore_errors=False ):
         return params_from_strings( self.inputs, params, app, ignore_errors )
 
-    def check_and_update_param_values( self, values, trans, update_values=True ):
+    def check_and_update_param_values( self, values, trans, update_values=True, workflow_building_mode=False ):
         """
         Check that all parameters have values, and fill in with default
         values where necessary. This could be called after loading values
         from a database in case new parameters have been added.
         """
         messages = {}
-        self.check_and_update_param_values_helper( self.inputs, values, trans, messages, update_values=update_values )
+        request_context = WorkRequestContext( app=trans.app, user=trans.user, history=trans.history, workflow_building_mode=workflow_building_mode )
+        self.check_and_update_param_values_helper( self.inputs, values, request_context, messages, update_values=update_values )
         return messages
 
     def check_and_update_param_values_helper( self, inputs, values, trans, messages, context=None, prefix="", update_values=True ):
@@ -1654,7 +1655,7 @@ class Tool( object, Dictifiable ):
                         messages[ input.name ] = cond_messages
                     test_value = input.test_param.get_initial_value( trans, context )
                     current_case = input.get_current_case( test_value, trans )
-                    self.check_and_update_param_values_helper( input.cases[ current_case ].inputs, {}, trans, cond_messages, context, prefix )
+                    self.check_and_update_param_values_helper( input.cases[ current_case ].inputs, {}, trans, cond_messages, context, prefix, update_values=update_values )
                 elif isinstance( input, Repeat ):
                     if input.min:
                         messages[ input.name ] = []
@@ -1662,10 +1663,10 @@ class Tool( object, Dictifiable ):
                             rep_prefix = prefix + "%s %d > " % ( input.title, i + 1 )
                             rep_dict = dict()
                             messages[ input.name ].append( rep_dict )
-                            self.check_and_update_param_values_helper( input.inputs, {}, trans, rep_dict, context, rep_prefix )
+                            self.check_and_update_param_values_helper( input.inputs, {}, trans, rep_dict, context, rep_prefix, update_values=update_values )
                 elif isinstance( input, Section ):
                     messages[ input.name ] = {}
-                    self.check_and_update_param_values_helper( input.inputs, {}, trans, messages[ input.name ], context, prefix )
+                    self.check_and_update_param_values_helper( input.inputs, {}, trans, messages[ input.name ], context, prefix, update_values=update_values )
                 else:
                     messages[ input.name ] = "No value found for '%s%s', using default" % ( prefix, input.label )
                 values[ input.name ] = input.get_initial_value( trans, context )
@@ -1674,7 +1675,7 @@ class Tool( object, Dictifiable ):
                 if isinstance( input, Repeat ):
                     for i, d in enumerate( values[ input.name ] ):
                         rep_prefix = prefix + "%s %d > " % ( input.title, i + 1 )
-                        self.check_and_update_param_values_helper( input.inputs, d, trans, messages, context, rep_prefix )
+                        self.check_and_update_param_values_helper( input.inputs, d, trans, messages, context, rep_prefix, update_values=update_values )
                 elif isinstance( input, Conditional ):
                     group_values = values[ input.name ]
                     use_initial_value = False
@@ -1692,10 +1693,10 @@ class Tool( object, Dictifiable ):
                             messages[ child_input.name ] = "Value no longer valid for '%s%s', replacing with default" % ( prefix, child_input.label )
                     else:
                         current = group_values["__current_case__"]
-                        self.check_and_update_param_values_helper( input.cases[current].inputs, group_values, trans, messages, context, prefix )
+                        self.check_and_update_param_values_helper( input.cases[current].inputs, group_values, trans, messages, context, prefix, update_values=update_values )
                 elif isinstance( input, Section ):
                     messages[ input.name ] = {}
-                    self.check_and_update_param_values_helper( input.inputs, values[ input.name ], trans, messages[ input.name ], context, prefix )
+                    self.check_and_update_param_values_helper( input.inputs, values[ input.name ], trans, messages[ input.name ], context, prefix, update_values=update_values )
                 else:
                     # Regular tool parameter, no recursion needed
                     try:
