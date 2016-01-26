@@ -30,6 +30,7 @@ data-urlencode "runName=${name}"
 data-urlencode "runDescription=${description}"
 data-urlencode "historyId=$__app__.security.encode_id($data.creating_job.history.id)"
 data-urlencode "hostName=${__app__.config.galaxy_infrastructure_url}"
+data-urlencode "outputFormat=json"
 data-urlencode "apiKey=#from galaxy.managers import api_keys#${api_keys.ApiKeyManager( $__app__ ).get_or_create_api_key( $__user__ )}"
       </configfile>
   </configfiles>
