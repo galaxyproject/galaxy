@@ -35,20 +35,18 @@ def visit_input_values( inputs, input_values, callback, name_prefix="", label_pr
         elif isinstance( input, Conditional ):
             values = input_values[ input.name ]
             current = values["__current_case__"]
-            label_prefix = label_prefix
             new_name_prefix = name_prefix + input.name + "|"
             visit_input_values( input.cases[current].inputs, values, callback, new_name_prefix, label_prefix, no_replacement_value=no_replacement_value, context=context, details=details )
         elif isinstance( input, Section ):
             values = input_values[ input.name ]
-            label_prefix = label_prefix
             new_name_prefix = name_prefix + input.name + "|"
             visit_input_values( input.inputs, values, callback, new_name_prefix, label_prefix, no_replacement_value=no_replacement_value, context=context, details=details )
         else:
             args = {
                 'input'             : input,
-                'value'             : input_values[input.name],
-                'prefixed_name'     : name_prefix + input.name,
-                'prefixed_label'    : label_prefix + input.label
+                'value'             : input_values[ input.name ],
+                'prefixed_name'     : "%s%s" % ( name_prefix, input.name ),
+                'prefixed_label'    : "%s%s" % ( label_prefix, input.label )
             }
             if details:
                 args[ 'context' ] = context
