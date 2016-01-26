@@ -11,6 +11,7 @@ Enhancements
 -------------------------------
 
 .. major_feature
+
 * Interactive tours (with significant help from
   `@bgruening <https://github.com/bgruening>`__.)
   `Pull Request 1422`_, `Pull Request 1464`_
@@ -21,7 +22,9 @@ Enhancements
   `Pull Request 1037`_
 * Implement nested workflows.
   `Pull Request 1306`_
+
 .. feature
+
 * Use Webpack to greatly optimize JavaScript and other assets served by Galaxy.
   `Pull Request 1144`_
 * Overhaul Galaxy analysis view toward a more modular JavaScript architecture.
@@ -41,10 +44,10 @@ Enhancements
 * Many ToolBox improvements including allowing specifying labels on individual
   tools, monitoring and automatic reloading of ``tool_conf.xml`` files, and 
   allowing specification of such files in JSON/YAML.
-  `Pull Request 1012`_, `Pull Request 1398`_, 
+  `Pull Request 1012`_, `Pull Request 1398`_
 * Configurable client side logging.
   `Pull Request 1011`_
-* Allow input collections to specify multiple ``collection_type``s.
+* Allow input collections to specify multiple ``collection_type``\ s.
   `Pull Request 1308`_
 * Allow multiple collections to be supplied to a multiple data parameter.
   `Pull Request 805`_
@@ -97,7 +100,9 @@ Enhancements
   `Pull Request 1063`_
 * Finish swapping unencoded ids with order_index in workflows API.
   `Pull Request 1137`_
+
 .. enhancement
+
 * Add documentation and extra options to Environment Modules resolver
   (thanks to `@pvanheus <https://github.com/pvanheus>`__.)
   `Pull Request 1221`_
@@ -263,7 +268,9 @@ Enhancements
 * Rename reports_wsgi.ini to reports.ini
   (thanks to `@souravsingh <https://github.com/souravsingh>`__.)
   `Pull Request 1181`_
+
 .. small_enhancement
+
 * Attempt to fix more transiently failing API tests.
   `Pull Request 859`_, `Pull Request 865`_  
 * Fix data library test case.
@@ -287,7 +294,7 @@ Enhancements
   `Pull Request 1014`_
 * Fix log statements and link to logger.
   `Pull Request 1040`_
-* Add more data libraries API tests..
+* Add more data libraries API tests.
   `Pull Request 1074`_
 * Remove upload unused function parameter
   (thanks to `@einon <https://github.com/einon>`__.)
@@ -335,7 +342,9 @@ Fixes
 -------------------------------
 
 .. major_bug
+
 .. bug
+
 * Add check for ``HTTP_GX_SECRET``
   (thanks to `@golharam <https://github.com/golharam>`__.)
   `Pull Request 827`_
