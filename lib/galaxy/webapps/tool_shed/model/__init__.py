@@ -309,7 +309,7 @@ class RepositoryMetadata( object, Dictifiable ):
     dict_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
                                   'tools_functionally_correct', 'do_not_test', 'test_install_error', 'time_last_tested', 'tool_test_results',
                                   'has_repository_dependencies', 'includes_datatypes', 'includes_tools', 'includes_tool_dependencies',
-                                  'includes_tools_for_display_in_tool_panel', 'includes_workflows' )
+                                  'includes_tools_for_display_in_tool_panel', 'includes_workflows', 'repository_dependencies' )
 
     def __init__( self, id=None, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False,
                   downloadable=False, missing_test_components=None, tools_functionally_correct=False, do_not_test=False,
@@ -344,6 +344,12 @@ class RepositoryMetadata( object, Dictifiable ):
                     return True
         return False
 
+    @property
+    def repository_dependencies( self ):
+        if self.has_repository_dependencies:
+            return [ repository_dependency for repository_dependency in self.metadata[ 'repository_dependencies' ][ 'repository_dependencies' ] ]
+        return []
+
 
 class SkipToolTest( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'repository_metadata_id', 'initial_changeset_revision' )
@@ -370,12 +376,6 @@ class RepositoryReview( object, Dictifiable ):
         self.user_id = user_id
         self.rating = rating
         self.deleted = deleted
-
-
-class RepositoryDependency( object ):
-    def __init__( self, parent_metadata_id, required_metadata_id ):
-        self.parent_metadata_id = parent_metadata_id
-        self.required_metadata_id = required_metadata_id
 
 
 class ComponentReview( object, Dictifiable ):

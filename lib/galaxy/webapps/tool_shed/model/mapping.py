@@ -124,11 +124,6 @@ Repository.table = Table( "repository", metadata,
                           Column( "times_downloaded", Integer ),
                           Column( "deprecated", Boolean, default=False ) )
 
-RepositoryDependency.table = Table( "repository_dependency", metadata,
-                                    Column( "id", Integer, primary_key=True ),
-                                    Column( "parent_metadata_id", Integer, ForeignKey( "repository_metadata.id" ), index=True ),
-                                    Column( "required_metadata_id", Integer, ForeignKey( "repository_metadata.id" ), index=True ) )
-
 RepositoryMetadata.table = Table( "repository_metadata", metadata,
                                   Column( "id", Integer, primary_key=True ),
                                   Column( "create_time", DateTime, default=now ),
@@ -290,10 +285,6 @@ mapper( Repository, Repository.table,
                                 secondary=RepositoryReview.table,
                                 primaryjoin=( Repository.table.c.id == RepositoryReview.table.c.repository_id ),
                                 secondaryjoin=( RepositoryReview.table.c.user_id == User.table.c.id ) ) ) )
-
-mapper( RepositoryDependency, RepositoryDependency.table,
-        properties=dict( parent_metadata=relation( RepositoryMetadata, foreign_keys=[ RepositoryDependency.table.c.parent_metadata_id ], backref='depended_on' ),
-                         required_metadata=relation( RepositoryMetadata, foreign_keys=[ RepositoryDependency.table.c.required_metadata_id ], backref='depends_on' ) ) )
 
 mapper( RepositoryMetadata, RepositoryMetadata.table,
         properties=dict( repository=relation( Repository ),
