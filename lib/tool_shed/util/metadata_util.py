@@ -42,12 +42,6 @@ def get_dependencies_for_metadata_revision( app, metadata ):
         dependencies.append( metadata_entry )
     return dependencies
 
-    sa_session = app.model.context.current
-    results = sa_session.query( app.model.RepositoryDependency ) \
-                        .filter( app.model.RepositoryDependency.table.c.parent_metadata_id == metadata_id ) \
-                        .all()
-    return [ get_metadata_by_id( app, result.required_metadata_id ) for result in results ]
-
 
 def get_latest_changeset_revision( app, repository, repo ):
     repository_tip = repository.tip( app )
