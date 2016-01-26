@@ -127,7 +127,7 @@ particular domain, as well as more organized release notes.
 -  ``area/toolshed``- Changes to the tool shed client or server.
 -  ``area/UI-UX``
 -  ``area/util``
--  ``area/visualization``
+-  ``area/visualizations``
 -  ``area/workflows``
 
 New labels should be proposed by opening a pull request against this document
