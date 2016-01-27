@@ -25,13 +25,36 @@ log = logging.getLogger( __name__ )
 class HistoryContentsManager( containers.ContainerManagerMixin ):
 
     root_container_class = model.History
+
     contained_class = model.HistoryDatasetAssociation
+    contained_class_manager_class = hdas.HDAManager
+    contained_class_type_name = 'dataset'
+
     subcontainer_class = model.HistoryDatasetCollectionAssociation
+    # TODO:
+    subcontainer_class_manager_class = None
+    subcontainer_class_type_name = 'dataset_collection'
+
+    #: the columns which are common to both subcontainers and non-subcontainers.
+    #  (Also the attributes that may be filtered or orderered_by)
+    common_columns = (
+        "history_id",
+        "history_content_type",
+        "id",
+        "hid",
+        "name",
+        "collection_id",
+        "deleted",
+        "purged",
+        "visible",
+        "create_time",
+        "update_time",
+    )
     default_order_by = 'hid'
 
     def __init__( self, app ):
         self.app = app
-        self.contained_manager = hdas.HDAManager( app )
+        self.contained_manager = self.contained_class_manager_class( app )
         self.subcontainer_manager = collections.DatasetCollectionManager( app )
 
     # ---- interface
@@ -51,7 +74,7 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         filters = base.munge_lists( filter_to_inside_container, filters )
         # TODO: collections.DatasetCollectionManager doesn't have the list
         # return self.subcontainer_manager.list( filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs )
-        return self.session().query( self.subcontainer_class ).filter( filters ).all()
+        return self._session().query( self.subcontainer_class ).filter( filters ).all()
 
     def contents( self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs ):
         """
@@ -83,34 +106,17 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
             return desc( 'name' )
         if default:
             return self.parse_order_by( default )
-        raise glx_exceptions.RequestParameterInvalidException( 'Unkown order_by', order_by=order_by_string,
+        raise glx_exceptions.RequestParameterInvalidException( 'Unknown order_by', order_by=order_by_string,
             available=[ 'create_time', 'update_time', 'name', 'hid' ])
 
-    #: the columns which are common to both subcontainers and non-subcontainers.
-    #  (Also the attributes that may be filtered or orderered_by)
-    common_columns = (
-        "history_id",
-        "model_class",
-        "id",
-        "history_content_type",
-        "collection_id",
-        "hid",
-        "name",
-        "deleted",
-        "purged",
-        "visible",
-        "create_time",
-        "update_time",
-    )
-
     # ---- private
-    def session( self ):
+    def _session( self ):
         return self.app.model.context
 
     def _filter_to_contents_query( self, container, content_class, **kwargs ):
         # TODO: use list (or by_history etc.)
         container_filter = self._get_filter_for_contained( container, content_class )
-        query = self.session().query( content_class ).filter( container_filter )
+        query = self._session().query( content_class ).filter( container_filter )
         return query
 
     def _get_filter_for_contained( self, container, content_class ):
@@ -154,9 +160,9 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         #     print r
 
         # partition ids into a map of { component_class names -> list of ids } from the above union query
-        id_map = dict( (( self.contained_class.__name__, [] ), ( self.subcontainer_class.__name__, [] )) )
+        id_map = dict( (( self.contained_class_type_name, [] ), ( self.subcontainer_class_type_name, [] )) )
         for result in contents_results:
-            result_type = self._get_union_classstr( result )
+            result_type = self._get_union_type( result )
             contents_id = self._get_union_id( result )
             if result_type in id_map:
                 id_map[ result_type ].append( contents_id )
@@ -166,11 +172,9 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         # for tuple_ in id_map.items():
         #     print tuple_
 
-        # query 2 & 3: use the ids to query each component_class
-        # query the contained classes using the id_lists for each
-        for component_class in ( self.contained_class, self.subcontainer_class ):
-            id_list = id_map[ component_class.__name__ ]
-            id_map[ component_class.__name__ ] = self._by_ids( component_class, id_list )
+        # query 2 & 3: use the ids to query each component_class, returning an id->full component model map
+        id_map[ self.contained_class_type_name ] = self._by_ids( self.contained_class, id_map[ self.contained_class_type_name ] )
+        id_map[ self.subcontainer_class_type_name ] = self._by_ids( self.subcontainer_class, id_map[ self.subcontainer_class_type_name ] )
         # for tuple_ in id_map.items():
         #     print tuple_
 
@@ -178,7 +182,7 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         contents = []
         # TODO: or as generator?
         for result in contents_results:
-            result_type = self._get_union_classstr( result )
+            result_type = self._get_union_type( result )
             contents_id = self._get_union_id( result )
             content = id_map[ result_type ][ contents_id ]
             contents.append( content )
@@ -202,10 +206,10 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         component_class = self.contained_class
         columns = self._contents_common_columns( component_class,
             history_content_type=literal( 'dataset' ),
-            # gen. do not have inner collections
+            # do not have inner collections
             collection_id=literal( None )
         )
-        return self.session().query( *columns ).filter( component_class.history_id == history_id )
+        return self._session().query( *columns ).filter( component_class.history_id == history_id )
 
     def _contents_common_query_for_subcontainer( self, history_id ):
         component_class = self.subcontainer_class
@@ -217,14 +221,14 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
             create_time=model.DatasetCollection.create_time,
             update_time=model.DatasetCollection.update_time
         )
-        subquery = self.session().query( *columns )
+        subquery = self._session().query( *columns )
         # for the HDCA's we need to join the DatasetCollection since it has update/create times
         subquery = subquery.join( model.DatasetCollection,
             model.DatasetCollection.id == component_class.collection_id )
         subquery = subquery.filter( component_class.history_id == history_id )
         return subquery
 
-    def _get_union_classstr( self, union ):
+    def _get_union_type( self, union ):
         """Return the string name of the class for this row in the union results"""
         return str( union[ 1 ] )
 
@@ -235,25 +239,28 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
     def _by_ids( self, component_class, id_list ):
         if not id_list:
             return []
-        query = self.session().query( component_class ).filter( component_class.id.in_( id_list ) )
+        query = self._session().query( component_class ).filter( component_class.id.in_( id_list ) )
         return dict( ( row.id, row ) for row in query.all() )
 
 
 class HistoryContentsFilters( base.ModelFilterParser, deletable.PurgableFiltersMixin ):
     # surprisingly (but ominously), this works for both content classes in the union that's filtered
     model_class = model.HistoryDatasetAssociation
+    dataset_content_type_filter = text( 'history_content_type = "dataset"' )
+    dataset_collection_content_type_filter = text( 'history_content_type = "dataset_collection"' )
 
-    def _parse_orm_filter( self, attr, op, val ):
-        # the following allows 'q=history_content_type-eq&qv=dataset', etc. while still using contents above
-        # (although it might be better to branch to the individual content managers since this filter makes the union unneccessary)
-        # TODO: instead branch to subcontainers or contained (from within contents)
-        # TODO: factor out ability to run text orm queries into base
-        if attr == 'history_content_type' and op == 'eq':
-            if val == 'dataset':
-                return text( 'history_content_type = "dataset"' )
-            if val == 'dataset_collection':
-                return text( 'history_content_type = "dataset_collection"' )
-        return super( HistoryContentsFilters, self )._parse_orm_filter( attr, op, val )
+    # TODO: history_content_type filter doesn't work with psycopg2: column does not exist (even with hybrid props)
+    # def _parse_orm_filter( self, attr, op, val ):
+    #     # the following allows 'q=history_content_type-eq&qv=dataset', etc. while still using contents above
+    #     # (although it might be better to branch to the individual content managers since this filter makes the union unneccessary)
+    #     # TODO: instead branch to subcontainers or contained (from within contents)
+    #     # TODO: factor out ability to run text orm queries into base
+    #     if attr == 'history_content_type' and op == 'eq':
+    #         if val == 'dataset':
+    #             return self.dataset_content_type_filter
+    #         if val == 'dataset_collection':
+    #             return self.dataset_collection_content_type_filter
+    #     return super( HistoryContentsFilters, self )._parse_orm_filter( attr, op, val )
 
     def _add_parsers( self ):
         super( HistoryContentsFilters, self )._add_parsers()
