@@ -144,13 +144,6 @@ class ToolParameter( object, Dictifiable ):
         """
         return []
 
-    def filter_value( self, value, trans=None, other_values={} ):
-        """
-        Parse the value returned by the view into a form usable by the tool OR
-        raise a ValueError.
-        """
-        return value
-
     def to_string( self, value, app ):
         """Convert a value to a string representation suitable for persisting"""
         if not isinstance( value, basestring ):
@@ -778,8 +771,6 @@ class SelectToolParameter( ToolParameter ):
     <option value="y">I am Y</option>
     <option value="z" selected>I am Z</option>
     </select>
-    >>> print p.filter_value( "y" )
-    y
 
     >>> p = SelectToolParameter( None, XML(
     ... '''
@@ -1085,9 +1076,6 @@ class GenomeBuildParameter( SelectToolParameter ):
     <option value="hg17">Human May 2004 (NCBI35/hg17) (hg17)</option>
     ...
     </select>
-
-    >>> print p.filter_value( "hg17" )
-    hg17
     """
     def __init__( self, *args, **kwds ):
         super( GenomeBuildParameter, self ).__init__( *args, **kwds )

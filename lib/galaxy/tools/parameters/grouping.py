@@ -557,7 +557,7 @@ class Conditional( Group ):
         if isinstance( value, bool ):
             str_value = self.test_param.to_param_dict_string( value )
         else:
-            str_value = self.test_param.filter_value( value, trans )
+            str_value = value
         # Find the matching case
         for index, case in enumerate( self.cases ):
             if str_value == case.value:

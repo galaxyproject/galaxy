@@ -79,10 +79,8 @@ def check_param( trans, param, incoming_value, param_values, source='html', bool
                 value = param.from_html( value, trans, param_values )
             else:
                 value = param.from_json( value, trans, param_values )
-            # Allow the value to be converted if necessary
-            filtered_value = param.filter_value( value, trans, param_values )
             # Then do any further validation on the value
-            param.validate( filtered_value, trans )
+            param.validate( value, trans )
         elif value is None and isinstance( param, SelectToolParameter ):
             # An empty select list or column list
             param.validate( value, trans )
