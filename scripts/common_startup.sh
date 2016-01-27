@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+GXPIP_VERSION='8.0.2+gx1'
+
 SET_VENV=1
 for arg in "$@"; do
     [ "$arg" = "--skip-venv" ] && SET_VENV=0
@@ -138,7 +140,7 @@ fi
 if [ $REPLACE_PIP -eq 1 ]; then
     pip_version=`pip --version | awk '{print $2}'`
     pre=`python -c "from pkg_resources import parse_version; from sys import stdout; stdout.write('--pre') if parse_version('$pip_version') >= parse_version('1.4') else stdout.write('')"`
-    pip install $pre --no-index --find-links ${GALAXY_WHEELS_INDEX_URL}/pip --upgrade pip
+    pip install $pre --no-index --find-links ${GALAXY_WHEELS_INDEX_URL}/pip --upgrade "pip==${GXPIP_VERSION}"
     # binary-compatibility.cfg may need to be created (e.g. on CentOS)
     [ -n "$VIRTUAL_ENV" -a ! -f ${VIRTUAL_ENV}/binary-compatibility.cfg ] && python ./scripts/binary_compatibility.py -o ${VIRTUAL_ENV}/binary-compatibility.cfg
 fi
