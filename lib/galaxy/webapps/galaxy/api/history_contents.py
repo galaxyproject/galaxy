@@ -36,13 +36,6 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         self.hda_deserializer = hdas.HDADeserializer( app )
         self.history_contents_filters = history_contents.HistoryContentsFilters( app )
 
-    # def _parse_serialization_params( self, kwd, default_view ):
-    #     view = kwd.get( 'view', None )
-    #     keys = kwd.get( 'keys' )
-    #     if isinstance( keys, basestring ):
-    #         keys = keys.split( ',' )
-    #     return dict( view=view, keys=keys, default_view=default_view )
-
     def _parse_order_by( self, order_by_string ):
         ORDER_BY_SEP_CHAR = ','
         manager = self.history_contents_manager
@@ -131,7 +124,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
 
         filters = self.history_contents_filters.parse_filters( self.parse_filter_params( kwd ) )
         limit, offset = self.parse_limit_offset( kwd )
-        order_by = self._parse_order_by( kwd.get( 'order', 'hid-dsc' ) )
+        order_by = self._parse_order_by( kwd.get( 'order', 'hid-asc' ) )
 
         serialization_params = self._parse_serialization_params( kwd, 'summary' )
 

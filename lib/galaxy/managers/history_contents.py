@@ -4,6 +4,7 @@ not easily made.
 """
 
 from sqlalchemy import literal
+from sqlalchemy import text
 from sqlalchemy import asc, desc
 
 from galaxy import model
@@ -249,9 +250,9 @@ class HistoryContentsFilters( base.ModelFilterParser, deletable.PurgableFiltersM
         # TODO: factor out ability to run text orm queries into base
         if attr == 'history_content_type' and op == 'eq':
             if val == 'dataset':
-                return 'history_content_type = "dataset"'
+                return text( 'history_content_type = "dataset"' )
             if val == 'dataset_collection':
-                return 'history_content_type = "dataset_collection"'
+                return text( 'history_content_type = "dataset_collection"' )
         return super( HistoryContentsFilters, self )._parse_orm_filter( attr, op, val )
 
     def _add_parsers( self ):
