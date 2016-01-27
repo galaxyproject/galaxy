@@ -151,10 +151,6 @@ class ToolParameter( object, Dictifiable ):
         """
         return value
 
-    def to_html_value( self, value, app ):
-        """Convert an object value to the value expected from an html post"""
-        return self.to_string( value, app )
-
     def to_string( self, value, app ):
         """Convert a value to a string representation suitable for persisting"""
         if not isinstance( value, basestring ):
@@ -284,12 +280,6 @@ class TextToolParameter( ToolParameter ):
         else:
             rval = util.smart_str( value )
         return rval
-
-    def to_html_value( self, value, app ):
-        if value is None:
-            return ''
-        else:
-            return self.to_string( value, app )
 
     def validate( self, value, trans ):
         search = self.type == "text"
@@ -500,12 +490,6 @@ class BooleanToolParameter( ToolParameter ):
 
     def from_json( self, value, trans=None, other_values={} ):
         return string_as_bool( value )
-
-    def to_html_value( self, value, app ):
-        if value:
-            return [ 'true', 'true' ]
-        else:
-            return [ 'true' ]
 
     def to_python( self, value, app ):
         return ( value in [ 'True', 'true' ])
@@ -962,12 +946,6 @@ class SelectToolParameter( ToolParameter ):
             if value not in legal_values:
                 raise ValueError( "An invalid option was selected for %s, %r, please verify." % ( self.name, value ) )
             return value
-
-    def to_html_value( self, value, app ):
-        if isinstance( value, list ):
-            return value
-        else:
-            return str( value )
 
     def to_param_dict_string( self, value, other_values={}, value_map=DEFAULT_VALUE_MAP ):
         if value is None:

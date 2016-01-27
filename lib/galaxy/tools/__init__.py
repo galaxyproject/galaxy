@@ -2057,7 +2057,7 @@ class Tool( object, Dictifiable ):
                 self.check_and_update_param_values( job_params, request_context, update_values=False )
                 self._map_source_to_history( request_context, self.inputs, job_params )
                 tool_message = self._compare_tool_version( job )
-                params_to_incoming( kwd, self.inputs, job_params, self.app, to_html=False )
+                params_to_incoming( kwd, self.inputs, job_params, self.app )
             except Exception, e:
                 raise exceptions.MessageException( str( e ) )
 
