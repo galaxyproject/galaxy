@@ -3,13 +3,14 @@ Heterogenous lists/contents are difficult to query properly since unions are
 not easily made.
 """
 
-import pkg_resources
-pkg_resources.require( "SQLAlchemy" )
 from sqlalchemy import literal
+from sqlalchemy import asc, desc
 
 from galaxy import model
+from galaxy import exceptions as glx_exceptions
 
 from galaxy.managers import base
+from galaxy.managers import deletable
 from galaxy.managers import containers
 from galaxy.managers import hdas
 from galaxy.managers import collections
@@ -59,6 +60,47 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         # for now, I'm just using this (even for non-limited/offset queries) to reduce code paths
         return self._union_of_contents( container,
             filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs )
+
+    # order_by parsing - similar to FilterParser but not enough yet to warrant a class?
+    def parse_order_by( self, order_by_string, default=None ):
+        """Return an ORM compatible order_by using the given string"""
+        if order_by_string in ( 'hid', 'hid-dsc' ):
+            return desc( 'hid' )
+        if order_by_string == 'hid-asc':
+            return asc( 'hid' )
+        if order_by_string in ( 'create_time', 'create_time-dsc' ):
+            return desc( 'create_time' )
+        if order_by_string == 'create_time-asc':
+            return asc( 'create_time' )
+        if order_by_string in ( 'update_time', 'update_time-dsc' ):
+            return desc( 'update_time' )
+        if order_by_string == 'update_time-asc':
+            return asc( 'update_time' )
+        if order_by_string in ( 'name', 'name-asc' ):
+            return asc( 'name' )
+        if order_by_string == 'name-dsc':
+            return desc( 'name' )
+        if default:
+            return self.parse_order_by( default )
+        raise glx_exceptions.RequestParameterInvalidException( 'Unkown order_by', order_by=order_by_string,
+            available=[ 'create_time', 'update_time', 'name', 'hid' ])
+
+    #: the columns which are common to both subcontainers and non-subcontainers.
+    #  (Also the attributes that may be filtered or orderered_by)
+    common_columns = (
+        "history_id",
+        "model_class",
+        "id",
+        "history_content_type",
+        "collection_id",
+        "hid",
+        "name",
+        "deleted",
+        "purged",
+        "visible",
+        "create_time",
+        "update_time",
+    )
 
     # ---- private
     def session( self ):
@@ -141,22 +183,6 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
             contents.append( content )
         return contents
 
-    #: the columns which are common to both subcontainers and non-subcontainers.
-    #  Also the attributes that may be filtered or orderered_by.
-    common_columns = (
-        "history_id",
-        "model_class",
-        "id",
-        "collection_id",
-        "hid",
-        "name",
-        "deleted",
-        "purged",
-        "visible",
-        "create_time",
-        "update_time",
-    )
-
     def _contents_common_columns( self, component_class, **kwargs ):
         columns = []
         # pull column from class by name or override with kwargs if listed there, then label
@@ -174,6 +200,7 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
     def _contents_common_query_for_contained( self, history_id ):
         component_class = self.contained_class
         columns = self._contents_common_columns( component_class,
+            history_content_type=literal( 'dataset' ),
             # gen. do not have inner collections
             collection_id=literal( None )
         )
@@ -182,6 +209,7 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
     def _contents_common_query_for_subcontainer( self, history_id ):
         component_class = self.subcontainer_class
         columns = self._contents_common_columns( component_class,
+            history_content_type=literal( 'dataset_collection' ),
             # TODO: should be purgable? fix
             purged=literal( False ),
             # these are attached instead to the inner collection joined below
@@ -208,3 +236,28 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
             return []
         query = self.session().query( component_class ).filter( component_class.id.in_( id_list ) )
         return dict( ( row.id, row ) for row in query.all() )
+
+
+class HistoryContentsFilters( base.ModelFilterParser, deletable.PurgableFiltersMixin ):
+    # surprisingly (but ominously), this works for both content classes in the union that's filtered
+    model_class = model.HistoryDatasetAssociation
+
+    def _parse_orm_filter( self, attr, op, val ):
+        # the following allows 'q=history_content_type-eq&qv=dataset', etc. while still using contents above
+        # (although it might be better to branch to the individual content managers since this filter makes the union unneccessary)
+        # TODO: instead branch to subcontainers or contained (from within contents)
+        # TODO: factor out ability to run text orm queries into base
+        if attr == 'history_content_type' and op == 'eq':
+            if val == 'dataset':
+                return 'history_content_type = "dataset"'
+            if val == 'dataset_collection':
+                return 'history_content_type = "dataset_collection"'
+        return super( HistoryContentsFilters, self )._parse_orm_filter( attr, op, val )
+
+    def _add_parsers( self ):
+        super( HistoryContentsFilters, self )._add_parsers()
+        deletable.PurgableFiltersMixin._add_parsers( self )
+        self.orm_filter_parsers.update({
+            'name'      : { 'op': ( 'eq', 'contains', 'like' ) },
+            'visible'   : { 'op': ( 'eq' ), 'val': self.parse_bool }
+        })

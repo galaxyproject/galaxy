@@ -24,6 +24,7 @@ attribute change to a model object.
 #   such as: a single flat class, serializers being singletons in the manager, etc.
 #   instead of the three separate classes. With no 'apparent' perfect scheme
 #   I'm opting to just keep them separate.
+import re
 
 import sqlalchemy
 import routes
@@ -909,8 +910,8 @@ class ModelFilterParser( object ):
             'id'            : { 'op': ( 'in' ) },
             'encoded_id'    : { 'column' : 'id', 'op': ( 'in' ), 'val': self.parse_id_list },
             # dates can be directly passed through the orm into a filter (no need to parse into datetime object)
-            'create_time'   : { 'op': ( 'le', 'ge' ) },
-            'update_time'   : { 'op': ( 'le', 'ge' ) },
+            'create_time'   : { 'op': ( 'le', 'ge' ), 'val': self.parse_date },
+            'update_time'   : { 'op': ( 'le', 'ge' ), 'val': self.parse_date },
         })
 
     def parse_filters( self, filter_tuple_list ):
@@ -990,10 +991,12 @@ class ModelFilterParser( object ):
             return None
         # attr must be a whitelisted column by attr name or by key passed in column_map
         # note: column_map[ 'column' ] takes precedence
-        column = self.model_class.table.columns.get( attr )
         if 'column' in column_map:
-            remap_to = column_map[ 'column' ]
-            column = self.model_class.table.columns.get( remap_to )
+            attr = column_map[ 'column' ]
+        column = self.model_class.table.columns.get( attr )
+        if column is None:
+            # could be a property (hybrid_property, etc.) - assume we can make a filter from it
+            column = getattr( self.model_class, attr )
         if column is None:
             # no orm column
             return None
@@ -1065,3 +1068,15 @@ class ModelFilterParser( object ):
         # TODO: move id decoding out
         id_list = [ self.app.security.decode_id( id_ ) for id_ in id_list_string.split( sep ) ]
         return id_list
+
+    def parse_date( self, date_string ):
+        """
+        Removes T from date string.
+
+        We should be able to accept what we output.
+        """
+        if not hasattr( self, 'date_string_re' ):
+            self.date_string_re = re.compile( r'^\d{4}\-\d{2}\-\d{2}T' )
+        if self.date_string_re.match( date_string ):
+            return date_string.replace( 'T', ' ', 1 )
+        return date_string
