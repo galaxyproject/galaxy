@@ -947,7 +947,7 @@ class ModelFilterParser( object ):
         # by convention, assume most val parsers raise ValueError
         except ValueError, val_err:
             raise exceptions.RequestParameterInvalidException( 'unparsable value for filter',
-                                                               column=attr, operation=op, value=val, ValueError=str( val_err ) )
+                column=attr, operation=op, value=val, ValueError=str( val_err ) )
 
         # if neither of the above work, raise an error with how-to info
         # TODO: send back all valid filter keys in exception for added user help

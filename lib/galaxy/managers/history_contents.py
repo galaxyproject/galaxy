@@ -155,9 +155,6 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         if offset is not None:
             contents_query = contents_query.offset( offset )
         contents_results = contents_query.all()
-        # print 'contents_results'
-        # for r in contents_results:
-        #     print r
 
         # partition ids into a map of { component_class names -> list of ids } from the above union query
         id_map = dict( (( self.contained_class_type_name, [] ), ( self.subcontainer_class_type_name, [] )) )
@@ -168,15 +165,10 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
                 id_map[ result_type ].append( contents_id )
             else:
                 raise TypeError( 'Unknown contents type:', result_type )
-        # print 'id_map'
-        # for tuple_ in id_map.items():
-        #     print tuple_
 
         # query 2 & 3: use the ids to query each component_class, returning an id->full component model map
         id_map[ self.contained_class_type_name ] = self._by_ids( self.contained_class, id_map[ self.contained_class_type_name ] )
         id_map[ self.subcontainer_class_type_name ] = self._by_ids( self.subcontainer_class, id_map[ self.subcontainer_class_type_name ] )
-        # for tuple_ in id_map.items():
-        #     print tuple_
 
         # cycle back over the union query to create an ordered list of the objects returned in queries 2 & 3 above
         contents = []

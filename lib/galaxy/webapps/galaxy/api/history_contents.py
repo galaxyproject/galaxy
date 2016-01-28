@@ -69,7 +69,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         If neither keys or views are sent, the default view (set of keys) is returned.
         If both a view and keys are sent, the key list and the view's keys are
         combined.
-        If keys are send and no view, only those properties in keys are returned.
+        If keys are sent and no view, only those properties in keys are returned.
 
         For which properties are available see:
             galaxy/managers/hdas/HDASerializer
@@ -122,12 +122,17 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
 
         history = self.history_manager.get_accessible( self.decode_id( history_id ), trans.user, current_history=trans.history )
 
-        filters = self.history_contents_filters.parse_filters( self.parse_filter_params( kwd ) )
+        filter_params = self.parse_filter_params( kwd )
+        # TODO: > 16.04: remove these
+        self._support_deprecated_filter( 'deleted', filter_params, kwd )
+        self._support_deprecated_filter( 'visible', filter_params, kwd )
+        filters = self.history_contents_filters.parse_filters( filter_params )
+
         limit, offset = self.parse_limit_offset( kwd )
         order_by = self._parse_order_by( kwd.get( 'order', 'hid-asc' ) )
-
         serialization_params = self._parse_serialization_params( kwd, 'summary' )
 
+        # TODO: > 16.04: remove these
         # TODO: remove 'dataset_details' and the following section when the UI doesn't need it
         # details param allows a mixed set of summary and detailed hdas
         # Ever more convoluted due to backwards compat..., details
@@ -154,17 +159,26 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             elif isinstance( content, trans.app.model.HistoryDatasetCollectionAssociation ):
                 rval.append( self.__collection_dict( trans, content, view='summary' ) )
 
-        # TODO: remove?
-        # contents_kwds = { 'types': types }
-        # contents_kwds[ 'ids' ] = ids
-        # contents_kwds[ 'deleted' ] = kwd.get( 'deleted', None )
-        # contents_kwds[ 'visible' ] = kwd.get( 'visible', None )
-
         return rval
+
+    def _support_deprecated_filter( self, filter_key, filter_params, kwargs ):
+        """Support the older keyword filters e.g. `deleted=True`"""
+        # TODO: include reponse header 'X-Galaxy-API-deprecated' or similar
+        # new filters take precedence, check them first
+        new_filter_used = ( ( filter_key, 'eq', 'True' ) in filter_params
+                         or ( filter_key, 'eq', 'False' ) in filter_params )
+        # ...adding old style only when not present
+        if filter_key in kwargs and not new_filter_used:
+            filter_value = kwargs.pop( filter_key )
+            if filter_value in ( 'True', 'False' ):
+                filter_params.append( ( filter_key, 'eq', filter_value ) )
+            else:
+                raise exceptions.RequestParameterInvalidException( 'bad filter (must be True or False)',
+                    column=filter_key, operation='eq', val=filter_value )
 
     def __collection_dict( self, trans, dataset_collection_instance, view="collection" ):
         return dictify_dataset_collection_instance( dataset_collection_instance,
-                                                    security=trans.security, parent=dataset_collection_instance.history, view=view )
+            security=trans.security, parent=dataset_collection_instance.history, view=view )
 
     @expose_api_anonymous
     def show( self, trans, id, history_id, **kwd ):
