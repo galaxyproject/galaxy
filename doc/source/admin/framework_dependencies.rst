@@ -1,3 +1,5 @@
+.. _framework-dependencies:
+
 Galaxy Framework Dependencies
 =============================
 
@@ -567,8 +569,46 @@ complete.
 Adding additional wheels as Galaxy dependencies
 -----------------------------------------------
 
-**TODO**
+New wheels can be added to Galaxy, or the versions of existing wheels can be
+updated, using `Galaxy Starforge`_, Galaxy's Docker-based build system.
 
-For the time being, see the `Galaxy Starforge`_ documentation.
+The process is still under development and will be streamlined and automated
+over time. For the time being, please use the following process to add new
+wheels:
 
+1. Install `Starforge`_ (e.g. with ``pip install starforge`` or ``python
+   setup.py install`` from the source). You will also need to have Docker
+   installed on your system.
+
+2. Obtain `wheels.yml`_ (this file will most likely be moved in to Galaxy in
+   the future) and add/modify the wheel definition.
+
+3. Use ``starforge wheel --wheels-config=wheels.yml <wheel-name>`` to build the
+   wheel. If the wheel includes C extensions, you will probably want to also
+   use the ``--no-qemu`` flag to prevent Starforge from attempting to build on
+   Mac OS X using QEMU/KVM.
+
+4. If the wheel build is successful, submit a pull request to `Starforge`_ with
+   your changes to `wheels.yml`_.
+
+5. A `Galaxy Committers group`_ member will need to trigger an automated build
+   of the wheel changes in your pull request. Galaxy's Jenkins_ service will
+   build these changes using Starforge.
+
+6. If the pull request is merged, submit a pull request to Galaxy modifying the
+   files in `lib/galaxy/dependencies`_ as appropriate.
+
+You may attempt to skip directly to step 4 and let the Starforge wheel PR
+builder build your wheels for you. This is especially useful if you are simply
+updating an existing wheel's version. However, if you are adding a new C
+extension wheel that is not simple to build, you may need to go through many
+iterations of updating the PR and having a `Galaxy Committers group`_ member
+triggering builds before wheels are successfully built. You can avoid this
+cycle by performing steps 1-3 locally.
+
+.. _Starforge:
 .. _Galaxy Starforge: https://github.com/galaxyproject/starforge/
+.. _wheels.yml: https://github.com/galaxyproject/starforge/blob/master/wheels/build/wheels.yml
+.. _Galaxy Committers group: https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/organization.rst#committers
+.. _Jenkins: https://jenkins.galaxyproject.org/
+.. _lib/galaxy/dependencies: https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/dependencies
