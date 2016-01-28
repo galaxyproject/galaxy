@@ -99,18 +99,6 @@ def get_previous_metadata_changeset_revision( repository, repo, before_changeset
             previous_changeset_revision = changeset_revision
 
 
-def get_repository_dependencies( app, metadata_id ):
-    '''Return a list of RepositoryDependency objects that specify the provided repository metadata record as the parent.'''
-    sa_session = app.model.context.current
-    return sa_session.query( app.model.RepositoryDependency ).filter( app.model.RepositoryDependency.table.c.parent_metadata_id == metadata_id ).all()
-
-
-def get_repository_dependencies( app, metadata_id ):
-    '''Return a list of RepositoryDependency objects that specify the provided repository metadata record as the parent.'''
-    sa_session = app.model.context.current
-    return sa_session.query( app.model.RepositoryDependency ).filter( app.model.RepositoryDependency.table.c.parent_metadata_id == metadata_id ).all()
-
-
 def get_repository_dependency_tups_from_repository_metadata( app, repository_metadata, deprecated_only=False ):
     """
     Return a list of of tuples defining repository objects required by the received repository.  The returned
