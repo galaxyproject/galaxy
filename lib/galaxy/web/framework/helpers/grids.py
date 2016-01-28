@@ -252,11 +252,15 @@ class Grid( object ):
 
         # Render grid.
         def url( *args, **kwargs ):
+            new_args = kwargs.pop( '__args', () )
+            print 'new_args:', new_args
+            print 'url:', args, kwargs
             # Only include sort/filter arguments if not linking to another
             # page. This is a bit of a hack.
             if 'action' in kwargs:
                 new_kwargs = dict()
             else:
+                print 'extra_url_args:', extra_url_args
                 new_kwargs = dict( extra_url_args )
             # Extend new_kwargs with first argument if found
             if len(args) > 0:
@@ -274,7 +278,9 @@ class Grid( object ):
                 new_kwargs['controller'] = trans.controller
             if 'action' not in new_kwargs:
                 new_kwargs['action'] = trans.action
-            return url_for( **new_kwargs)
+            if new_args:
+                return url_for( *new_args, **new_kwargs )
+            return url_for( **new_kwargs )
 
         self.use_panels = ( kwargs.get( 'use_panels', False ) in [ True, 'True', 'true' ] )
         self.advanced_search = ( kwargs.get( 'advanced_search', False ) in [ True, 'True', 'true' ] )
