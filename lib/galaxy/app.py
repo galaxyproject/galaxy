@@ -30,6 +30,7 @@ from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.jobs import metrics as job_metrics
 from galaxy.web.proxy import ProxyManager
 from galaxy.queue_worker import GalaxyQueueWorker
+from galaxy.util import heartbeat
 from tool_shed.galaxy_install import update_repository_manager
 
 
@@ -141,7 +142,6 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Start the heartbeat process if configured and available (wait until
         # postfork if using uWSGI)
         if self.config.use_heartbeat:
-            from galaxy.util import heartbeat
             if heartbeat.Heartbeat:
                 self.heartbeat = heartbeat.Heartbeat(
                     self.config,
@@ -177,9 +177,9 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager( self )
 
         # Configure handling of signals
-        handlers = {
-            signal.SIGUSR1: self.heartbeat.dump_signal_handler if self.heartbeat else None
-        }
+        handlers = {}
+        if self.heartbeat:
+            handlers[signal.SIGUSR1] = self.heartbeat.dump_signal_handler
         self._configure_signal_handlers( handlers )
 
         self.model.engine.dispose()
