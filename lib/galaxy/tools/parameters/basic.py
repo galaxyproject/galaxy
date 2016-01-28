@@ -198,7 +198,7 @@ class ToolParameter( object, Dictifiable ):
                 value = sanitize_param( value )
         return value
 
-    def validate( self, value, trans ):
+    def validate( self, value, trans=None ):
         if value == "" and self.optional:
             return
         for validator in self.validators:
@@ -274,9 +274,9 @@ class TextToolParameter( ToolParameter ):
             rval = util.smart_str( value )
         return rval
 
-    def validate( self, value, trans ):
+    def validate( self, value, trans=None ):
         search = self.type == "text"
-        if not ( trans.workflow_building_mode and contains_workflow_parameter(value, search=search) ):
+        if not ( trans and trans.workflow_building_mode and contains_workflow_parameter(value, search=search) ):
             return super( TextToolParameter, self ).validate( value, trans )
 
     def get_initial_value( self, trans, other_values ):
@@ -292,15 +292,16 @@ class TextToolParameter( ToolParameter ):
 class IntegerToolParameter( TextToolParameter ):
     """
     Parameter that takes an integer value.
-
+    >>> from galaxy.util.bunch import Bunch
+    >>> trans = Bunch( history=Bunch(), workflow_building_mode=True )
     >>> p = IntegerToolParameter( None, XML( '<param name="blah" type="integer" size="4" value="10" />' ) )
     >>> print p.name
     blah
     >>> print p.get_html()
     <input type="text" name="blah" size="4" value="10">
-    >>> type( p.from_html( "10" ) )
+    >>> type( p.from_html( "10", trans ) )
     <type 'int'>
-    >>> type( p.from_html( "bleh" ) )
+    >>> type( p.from_html( "bleh", trans ) )
     Traceback (most recent call last):
         ...
     ValueError: An integer or workflow parameter e.g. ${name} is required
@@ -371,15 +372,16 @@ class IntegerToolParameter( TextToolParameter ):
 class FloatToolParameter( TextToolParameter ):
     """
     Parameter that takes a real number value.
-
+    >>> from galaxy.util.bunch import Bunch
+    >>> trans = Bunch( history=Bunch(), workflow_building_mode=True )
     >>> p = FloatToolParameter( None, XML( '<param name="blah" type="float" size="4" value="3.141592" />' ) )
     >>> print p.name
     blah
     >>> print p.get_html()
     <input type="text" name="blah" size="4" value="3.141592">
-    >>> type( p.from_html( "36.1" ) )
+    >>> type( p.from_html( "36.1", trans ) )
     <type 'float'>
-    >>> type( p.from_html( "bleh" ) )
+    >>> type( p.from_html( "bleh", trans ) )
     Traceback (most recent call last):
         ...
     ValueError: A real number or workflow parameter e.g. ${name} is required
@@ -1832,7 +1834,7 @@ class DataToolParameter( BaseDataToolParameter ):
             name = history_dataset_collection.name
             hid = str( history_dataset_collection.hid )
             hidden_text = ""  # TODO
-            id = value_modifier( trans.app.security.encode_id( history_dataset_collection.id ) )
+            id = value_modifier( trans.security.encode_id( history_dataset_collection.id ) )
             selected = value and history_dataset_collection in value
             text = "%s:%s %s" % ( hid, hidden_text, name )
             field.add_option( text, id, selected )
@@ -1944,10 +1946,10 @@ class DataToolParameter( BaseDataToolParameter ):
             for single_value in value:
                 if isinstance( single_value, dict ) and 'src' in single_value and 'id' in single_value:
                     if single_value['src'] == 'hda':
-                        rval.append( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.app.security.decode_id(single_value['id']) ))
+                        rval.append( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id(single_value['id']) ))
                     elif single_value['src'] == 'hdca':
                         found_hdca = True
-                        decoded_id = trans.app.security.decode_id( single_value[ 'id' ] )
+                        decoded_id = trans.security.decode_id( single_value[ 'id' ] )
                         rval.append( trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id ) )
                     else:
                         raise ValueError("Unknown input source %s passed to job submission API." % single_value['src'])
@@ -1965,15 +1967,15 @@ class DataToolParameter( BaseDataToolParameter ):
             rval = value
         elif isinstance( value, dict ) and 'src' in value and 'id' in value:
             if value['src'] == 'hda':
-                rval = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.app.security.decode_id(value['id']) )
+                rval = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id(value['id']) )
             elif value['src'] == 'hdca':
-                decoded_id = trans.app.security.decode_id( value[ 'id' ] )
+                decoded_id = trans.security.decode_id( value[ 'id' ] )
                 rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
             else:
                 raise ValueError("Unknown input source %s passed to job submission API." % value['src'])
         elif str( value ).startswith( "__collection_reduce__|" ):
             encoded_ids = [ v[ len( "__collection_reduce__|" ): ] for v in str( value ).split(",") ]
-            decoded_ids = map( trans.app.security.decode_id, encoded_ids )
+            decoded_ids = map( trans.security.decode_id, encoded_ids )
             rval = []
             for decoded_id in decoded_ids:
                 hdca = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
@@ -2162,7 +2164,7 @@ class DataToolParameter( BaseDataToolParameter ):
 
         # build and append a new select option
         def append( list, id, hid, name, src ):
-            return list.append( { 'id' : trans.app.security.encode_id( id ), 'hid' : hid, 'name' : name, 'src' : src } )
+            return list.append( { 'id' : trans.security.encode_id( id ), 'hid' : hid, 'name' : name, 'src' : src } )
 
         # add datasets
         visible_hda = other_values.get( self.name )
@@ -2278,8 +2280,8 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
             name = history_dataset_collection.name
             hid = str( history_dataset_collection.hid )
             hidden_text = ""  # TODO
-            subcollection_type = self._history_query( trans ).collection_type_description.collection_type
-            id = "%s|%s" % ( trans.app.security.encode_id( history_dataset_collection.id ), subcollection_type )
+            subcollection_type = self._history_query( trans ).can_map_over( history_dataset_collection ).collection_type
+            id = "%s|%s" % ( trans.security.encode_id( history_dataset_collection.id ), subcollection_type )
             text = "%s:%s %s" % ( hid, hidden_text, name )
 
             field.add_option( text, id, False )
@@ -2302,13 +2304,13 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
             rval = value
         elif isinstance( value, dict ) and 'src' in value and 'id' in value:
             if value['src'] == 'hdca':
-                rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( trans.app.security.decode_id(value['id']) )
+                rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( trans.security.decode_id(value['id']) )
         elif isinstance( value, list ):
             if len( value ) > 0:
                 value = value[0]
                 if isinstance( value, dict ) and 'src' in value and 'id' in value:
                     if value['src'] == 'hdca':
-                        rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( trans.app.security.decode_id(value['id']) )
+                        rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( trans.security.decode_id(value['id']) )
         elif isinstance( value, basestring ):
             if value.startswith( "dce:" ):
                 rval = trans.sa_session.query( trans.app.model.DatasetCollectionElement ).get( value[ len( "dce:"): ] )
@@ -2364,7 +2366,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
             display_text = "No dataset collection."
         return display_text
 
-    def validate( self, value, trans ):
+    def validate( self, value, trans=None ):
         return True  # TODO
 
     def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
@@ -2385,7 +2387,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         # append directly matched collections
         for hdca in self.match_collections( trans, history, dataset_matcher ):
             d['options']['hdca'].append({
-                'id': trans.app.security.encode_id( hdca.id ),
+                'id': trans.security.encode_id( hdca.id ),
                 'hid': hdca.hid,
                 'name': hdca.name,
                 'src': 'hdca'
@@ -2395,7 +2397,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         for hdca in self.match_multirun_collections( trans, history, dataset_matcher ):
             subcollection_type = self._history_query( trans ).can_map_over( hdca ).collection_type
             d['options']['hdca'].append({
-                'id': trans.app.security.encode_id( hdca.id ),
+                'id': trans.security.encode_id( hdca.id ),
                 'hid': hdca.hid,
                 'name': hdca.name,
                 'src': 'hdca',

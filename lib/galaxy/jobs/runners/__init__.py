@@ -169,7 +169,7 @@ class BaseJobRunner( object ):
                 include_metadata=include_metadata,
                 include_work_dir_outputs=include_work_dir_outputs,
             )
-        except Exception, e:
+        except Exception as e:
             log.exception("(%s) Failure preparing job" % job_id)
             job_wrapper.fail( e.message if hasattr( e, 'message' ) else "Job preparation failed", exception=True )
             return False
