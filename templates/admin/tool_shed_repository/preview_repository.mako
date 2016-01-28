@@ -25,6 +25,7 @@ tool_panel_section_dict = { 'name': tool_panel_section_select_field.name,
 for name, id, _ in tool_panel_section_select_field.options:
     tool_panel_section_dict['sections'].append( '<option value="%s">%s</option>' % ( id, name ) )
 %>
+var has_repo_dependencies = false;
 var tool_panel_sections_json = ${json.dumps(tool_panel_section_dict['sections'])};
 var repository_information = ${json.dumps(toolshed_data)};
 var valid_tool_dependencies = Array();
@@ -140,9 +141,16 @@ function clean_tool_name(name) {
     return name.replace(/[^a-zA-Z0-9]+/g, "_").toLowerCase();
 }
 function process_dependencies(metadata, selector) {
+    has_repo_dependencies = false;
+    if (metadata.has_repository_dependencies) {
+        has_repo_dependencies = true;
+    }
     if (metadata.has_repository_dependencies) {
         for (var item in metadata.repository_dependencies) {
             var dependency = metadata.repository_dependencies[item];
+            if (dependency.has_repository_dependencies) {
+                has_repo_dependencies = true;
+            }
             var repository = dependency.repository;
             if (repository != null) {
                 var dependency_html = repository_dependency_row(dependency.id, repository.name, dependency.changeset_revision, repository.owner, dependency.prior_installation_required)
@@ -161,15 +169,22 @@ function process_dependencies(metadata, selector) {
     if (metadata.includes_tool_dependencies) {
         for (var item in metadata.tool_dependencies) {
             var dependency = metadata.tool_dependencies[item];
-            var tool_dependency = {name: dependency.name, version: dependency.version, type: dependency.type};
+            if (item == 'set_environment') {
+                for (var i = 0; i < dependency.length; i++) {
+                    var tool_dependency = {name: dependency[i].name, version: 'N/A', type: dependency[i].type}
+                }
+            }
+            else {
+                var tool_dependency = {name: dependency.name, version: dependency.version, type: dependency.type};
+            }
             if (!valid_tool_dependencies.containsDict(tool_dependency)) {
                 valid_tool_dependencies.push(tool_dependency);
             }
         }
     }
-    if (metadata.includes_tools) {
-        for (var entry in metadata.tools) {
-            var tool = metadata.tools[entry];
+    if (metadata.includes_tools_for_display_in_tool_panel) {
+        for (var i = 0; i < metadata.tools.length; i++) {
+            var tool = metadata.tools[i];
             valid_tool = {clean_name: clean_tool_name(tool.name), name: tool.name, version: tool.version, description: tool.description, guid: tool.guid};
             if (!valid_tools.containsDict(valid_tool) && tool.add_to_tool_panel) {
                 valid_tools.push(valid_tool);
@@ -221,7 +236,10 @@ function changeset_metadata() {
     metadata_key = $('#changeset').find("option:selected").text();
     $("#current_changeset").text(metadata_key);
     var repository_metadata = repository_information.metadata[metadata_key];
-    if (repository_metadata !== undefined && repository_metadata['has_repository_dependencies']) {
+    $(".repository_dependency_row").remove();
+    $(".tool_dependency_row").remove();
+    process_dependencies(repository_metadata);
+    if (has_repo_dependencies) {
         $("#repository_dependencies").show();
         $("#install_repository_dependencies_checkbox").show();
     }
@@ -229,9 +247,6 @@ function changeset_metadata() {
         $("#repository_dependencies").hide();
         $("#install_repository_dependencies_checkbox").hide();
     }
-    $(".repository_dependency_row").remove();
-    $(".tool_dependency_row").remove();
-    process_dependencies(repository_metadata);
     valid_tools.sort(function(a,b){return a.clean_name.localeCompare(b.clean_name);});
     valid_tool_dependencies.sort(function(a,b){return a.name.toUpperCase().localeCompare(b.name.toUpperCase());});
     $('.tool_row').remove();

@@ -324,7 +324,7 @@ class SelectField(BaseField):
     def add_option( self, text, value, selected=False ):
         self.options.append( ( text, value, selected ) )
 
-    def get_html( self, prefix="", disabled=False, extra_attr={} ):
+    def get_html( self, prefix="", disabled=False, extra_attr=None ):
         if extra_attr is not None:
             self.extra_attributes = ' %s' % ' '.join( [ '%s="%s"' % ( k, v ) for k, v in extra_attr.items() ] )
         else:
