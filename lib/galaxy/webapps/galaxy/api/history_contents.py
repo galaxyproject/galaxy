@@ -165,8 +165,8 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         """Support the older keyword filters e.g. `deleted=True`"""
         # TODO: include reponse header 'X-Galaxy-API-deprecated' or similar
         # new filters take precedence, check them first
-        new_filter_used = ( ( filter_key, 'eq', 'True' ) in filter_params
-                         or ( filter_key, 'eq', 'False' ) in filter_params )
+        new_filter_used = ( ( filter_key, 'eq', 'True' ) in filter_params or
+                            ( filter_key, 'eq', 'False' ) in filter_params )
         # ...adding old style only when not present
         if filter_key in kwargs and not new_filter_used:
             filter_value = kwargs.pop( filter_key )
