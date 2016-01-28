@@ -1098,14 +1098,9 @@ class JobWrapper( object ):
         """ Get a destination parameter that can be defaulted back
         in app.config if it needs to be applied globally.
         """
-        job = self.job
-        param_unspecified = object()
-        config_value = job.destination_params.get(key, param_unspecified)
-        if config_value is param_unspecified:
-            config_value = getattr(self.app.config, key, param_unspecified)
-        if config_value is param_unspecified:
-            config_value = default
-        return config_value
+        return self.get_job().get_destination_configuration(
+            self.app.config, key, default
+        )
 
     def finish( self, stdout, stderr, tool_exit_code=None, remote_working_directory=None ):
         """
@@ -1219,7 +1214,7 @@ class JobWrapper( object ):
                     # either use the metadata from originating output dataset, or call set_meta on the copies
                     # it would be quicker to just copy the metadata from the originating output dataset,
                     # but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
-                    retry_internally = util.asbool(self.get_destination_configuration("retry_metadata_internally", False))
+                    retry_internally = util.asbool(self.get_destination_configuration("retry_metadata_internally", True))
                     if ( retry_internally and
                             not self.external_output_metadata.external_metadata_set_successfully(dataset, self.sa_session ) ):
                         # If Galaxy was expected to sniff type and didn't - do so.

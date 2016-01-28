@@ -694,6 +694,19 @@ class Job( object, JobLike, Dictifiable ):
         if self.workflow_invocation_step:
             self.workflow_invocation_step.update()
 
+    def get_destination_configuration(self, config, key, default=None):
+        """ Get a destination parameter that can be defaulted back
+        in specified config if it needs to be applied globally.
+        """
+        return self.get_job().get_destination_configuration(key, default)
+        param_unspecified = object()
+        config_value = self.destination_params.get(key, param_unspecified)
+        if config_value is param_unspecified:
+            config_value = getattr(config, key, param_unspecified)
+        if config_value is param_unspecified:
+            config_value = default
+        return config_value
+
 
 class Task( object, JobLike ):
     """

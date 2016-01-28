@@ -84,7 +84,6 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         self.ds = drmaa.Session()
         self.ds.initialize()
 
-        self.external_killJob_script = app.config.drmaa_external_killjob_script
         self.userid = None
 
         self._init_monitor_thread()
@@ -312,9 +311,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         try:
             ext_id = job.get_job_runner_external_id()
             assert ext_id not in ( None, 'None' ), 'External job id is None'
-            kill_script = job.destination_params.get("external_killJob_script", None)
-            if not kill_script:
-                kill_script = getattr(self.app.config, "external_killJob_script", None)
+            kill_script = job.get_destination_configuration(self.app.config, "external_killJob_script", None)
             if kill_script is None:
                 self.ds.control( ext_id, drmaa.JobControlAction.TERMINATE )
             else:
