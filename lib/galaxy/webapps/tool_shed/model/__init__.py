@@ -253,16 +253,10 @@ class Repository( object, Dictifiable ):
     def installable_revisions( self, app ):
         return suc.get_metadata_changeset_revisions( self, hg.repository( ui.ui(), self.repo_path( app ) ) )
 
-    def ordered_installable_revisions( self, app ):
-        return suc.get_ordered_metadata_changeset_revisions( self, hg.repository( ui.ui(), self.repo_path( app ) ), downloadable=True )
-
     def is_new( self, app ):
         repo = hg.repository( ui.ui(), self.repo_path( app ) )
         tip_ctx = repo.changectx( repo.changelog.tip() )
         return tip_ctx.rev() < 0
-
-    def installable_revisions( self, app ):
-        return suc.get_metadata_changeset_revisions( self, hg.repository( ui.ui(), self.repo_path( app ) ) )
 
     def ordered_installable_revisions( self, app ):
         return suc.get_ordered_metadata_changeset_revisions( self, hg.repository( ui.ui(), self.repo_path( app ) ), downloadable=True )

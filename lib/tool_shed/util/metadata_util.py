@@ -43,53 +43,6 @@ def get_dependencies_for_metadata_revision( app, metadata ):
     return dependencies
 
 
-def get_all_dependencies( app, metadata_entry, processed_dependency_links=[] ):
-    encoder = app.security.encode_id
-    value_mapper = { 'repository_id': encoder, 'id': encoder, 'user_id': encoder }
-    metadata = metadata_entry.to_dict( value_mapper=value_mapper, view='element' )
-    db = app.model.context.current
-    returned_dependencies = []
-    required_metadata = get_dependencies_for_metadata_revision( app, metadata )
-    if required_metadata is None:
-        return metadata
-    for dependency_metadata, prior in required_metadata:
-        dependency_dict = dependency_metadata.to_dict( value_mapper=value_mapper, view='element' )
-        dependency_link = ( metadata[ 'id' ], dependency_dict['id'] )
-        if dependency_link in processed_dependency_links:
-            continue
-        processed_dependency_links.append( dependency_link )
-        repository = db.query( app.model.Repository ).get( app.security.decode_id( dependency_dict[ 'repository_id' ] ) )
-        dependency_dict[ 'repository' ] = repository.to_dict( value_mapper=value_mapper, view='element' )
-        if dependency_metadata.includes_tools:
-            dependency_dict[ 'tools' ] = dependency_metadata.metadata[ 'tools' ]
-        dependency_dict[ 'prior_installation_required' ] = prior
-        dependency_dict[ 'repository_dependencies' ] = []
-        if dependency_dict['includes_tool_dependencies']:
-            dependency_dict['tool_dependencies'] = repository.get_tool_dependencies( dependency_dict['changeset_revision'] )
-        if dependency_dict['has_repository_dependencies']:
-            dependency_dict['repository_dependencies'] = get_all_dependencies( app, dependency_metadata, processed_dependency_links )
-        else:
-            dependency_dict['repository_dependencies'] = []
-        processed_dependency_links.append( dependency_dict['id'] )
-        returned_dependencies.append( dependency_dict )
-    return returned_dependencies
-
-
-def get_dependencies_for_metadata_revision( app, metadata ):
-    dependencies = []
-    for shed, name, owner, changeset, prior, _ in metadata[ 'repository_dependencies' ]:
-        required_repository = suc.get_repository_by_name_and_owner( app, name, owner )
-        metadata_entry = suc.get_repository_metadata_by_changeset_revision( app, app.security.encode_id( required_repository.id ), changeset )
-        dependencies.append( ( metadata_entry, prior ) )
-    return dependencies
-
-    sa_session = app.model.context.current
-    results = sa_session.query( app.model.RepositoryDependency ) \
-                        .filter( app.model.RepositoryDependency.table.c.parent_metadata_id == metadata_id ) \
-                        .all()
-    return [ get_metadata_by_id( app, result.required_metadata_id ) for result in results ]
-
-
 def get_latest_changeset_revision( app, repository, repo ):
     repository_tip = repository.tip( app )
     repository_metadata = suc.get_repository_metadata_by_changeset_revision( app,
