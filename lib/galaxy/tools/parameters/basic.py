@@ -2160,29 +2160,27 @@ class DataToolParameter( BaseDataToolParameter ):
         if history is None:
             return d
 
+        # build and append a new select option
+        def append( list, id, hid, name, src ):
+            return list.append( { 'id' : trans.app.security.encode_id( id ), 'hid' : hid, 'name' : name, 'src' : src } )
+
         # add datasets
         visible_hda = other_values.get( self.name )
+        has_matched = False
         for hda in history.active_datasets_children_and_roles:
             match = dataset_matcher.hda_match( hda, ensure_visible=visible_hda != hda )
             if match:
                 m = match.hda
-                d['options']['hda'].append({
-                    'id'            : trans.app.security.encode_id( m.id ),
-                    'hid'           : m.hid,
-                    'name'          : m.name if m.visible else '(hidden) %s' % m.name,
-                    'src'           : 'hda'
-                })
+                has_matched = has_matched or visible_hda == m
+                append( d[ 'options' ][ 'hda' ], m.id, m.hid, m.name if m.visible else '(hidden) %s' % m.name, 'hda' )
+        if not has_matched and isinstance( visible_hda, trans.app.model.HistoryDatasetAssociation ):
+            append( d[ 'options' ][ 'hda' ], visible_hda.id, visible_hda.hid, '(unavailable) %s' % visible_hda.name, 'hda' )
 
         # add dataset collections
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
         for hdca in history.active_dataset_collections:
             if dataset_collection_matcher.hdca_match( hdca, reduction=multiple ):
-                d['options']['hdca'].append({
-                    'id'            : trans.app.security.encode_id( hdca.id ),
-                    'hid'           : hdca.hid,
-                    'name'          : hdca.name,
-                    'src'           : 'hdca'
-                })
+                append( d[ 'options' ][ 'hdca' ], hdca.id, hdca.hid, hdca.name, 'hdca' )
 
         # sort both lists
         d['options']['hda'] = sorted(d['options']['hda'], key=lambda k: k['hid'], reverse=True)
