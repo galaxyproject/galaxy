@@ -345,8 +345,13 @@ div.expandLink {
 div.changeset {
     padding: 5px 10px 5px 10px;
 }
+.container-table {
+    padding-top: 1em;
+}
+ul.jstree-container-ul {
+    margin-top: 1em;
+}
 </style>
-<!-- <pre>${json.dumps(toolshed_data, indent=2)}</pre> -->
 <h2 style="font-weight: normal;">Installing repository <strong>${toolshed_data['name']}</strong> from <strong>${toolshed_data['owner']}</strong></h2>
 <form id="repository_installation" method="post" action="${h.url_for(controller='/api/tool_shed_repositories', action='install', async=True)}">
     <input type="hidden" id="tsr_id" name="tsr_id" value="${toolshed_data['id']}" />
