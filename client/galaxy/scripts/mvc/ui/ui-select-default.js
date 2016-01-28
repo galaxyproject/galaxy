@@ -20,6 +20,7 @@ var View = Backbone.View.extend({
     initialize: function(options) {
         // link this
         var self = this;
+        this.model = new Backbone.Model();
 
         // configure options
         this.options = Utils.merge(options, this.optionsDefault);
@@ -186,6 +187,13 @@ var View = Backbone.View.extend({
 
     /** Update all available options at once
     */
+    add: function( options, sorter ) {
+        _.each( this.model.get( 'options' ), function( v ) {
+            !_.findWhere( options, v ) && options.push( v );
+        });
+        sorter && options.sort( sorter );
+        this.update( options );
+    },
     update: function(options) {
         // backup current value
         var current = this._getValue();
@@ -199,6 +207,7 @@ var View = Backbone.View.extend({
         }
 
         // add new options
+        this.model.set( 'options', options );
         for (var key in options) {
             this.$select.append(this._templateOption(options[key]));
         }

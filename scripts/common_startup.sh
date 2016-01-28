@@ -6,6 +6,11 @@ for arg in "$@"; do
     [ "$arg" = "--skip-venv" ] && SET_VENV=0
 done
 
+# Conda Python is in use, do not use virtualenv
+if python -V 2>&1 | grep -q 'Continuum Analytics'; then
+    SET_VENV=0
+fi
+
 DEV_WHEELS=0
 FETCH_WHEELS=1
 CREATE_VENV=1

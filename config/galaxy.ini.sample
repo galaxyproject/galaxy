@@ -771,7 +771,7 @@ use_interactive = True
 
 # Search data libraries with lucene
 #enable_lucene_library_search = False
-# maxiumum file size to index for searching, in MB
+# maximum file size to index for searching, in MB
 #fulltext_max_size = 500
 #fulltext_noindex_filetypes = bam,sam,wig,bigwig,fasta,fastq,fastqsolexa,fastqillumina,fastqsanger
 # base URL of server providing search functionality using lucene
