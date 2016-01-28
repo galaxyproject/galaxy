@@ -1257,20 +1257,13 @@ class AdminToolshed( AdminGalaxy ):
     def preview_repository( self, trans, **kwd ):
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         tsr_id = kwd.get( 'tsr_id', '' )
-        json_data = json.loads( common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id ] ) )
-        json_data[ 'metadata' ] = dict()
-        revisions = common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=[ 'api', 'repositories', 'get_installable_revisions' ], params=dict( tsr_id=tsr_id ) )
-        for revision, changehash in json.loads( revisions ):
-            pathspec = [ 'api', 'repositories', tsr_id, changehash, 'metadata' ]
-            tools_path = [ 'api', 'repositories', tsr_id, changehash, 'show_tools' ]
-            json_data[ 'metadata' ][ '%s:%s' % ( revision, changehash ) ] = json.loads( common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=pathspec ) )
-            json_data[ 'metadata' ][ '%s:%s' % ( revision, changehash ) ][ 'tools' ] = json.loads( common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=tools_path ) )
+        toolshed_data = json.loads( common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id ] ) )
+        toolshed_data[ 'metadata' ] = json.loads( common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id, 'metadata' ] ) )
         shed_tool_conf_select_field = tool_util.build_shed_tool_conf_select_field( trans.app )
         tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field( trans.app )
         return trans.fill_template( '/admin/tool_shed_repository/preview_repository.mako',
                                     tool_shed_url=tool_shed_url,
-                                    repository=json_data,
-                                    encoded_repository=encoding_util.tool_shed_encode( json.dumps( json_data ) ),
+                                    toolshed_data=toolshed_data,
                                     tool_panel_section_select_field=tool_panel_section_select_field,
                                     shed_tool_conf_select_field=shed_tool_conf_select_field )
 

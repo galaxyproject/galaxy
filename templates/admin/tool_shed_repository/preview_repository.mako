@@ -19,7 +19,6 @@ ${javascripts()}
 <script type="text/javascript">
 <%
 import json
-metadata_json = json.dumps(repository['metadata'])
 tool_panel_section_dict = { 'name': tool_panel_section_select_field.name,
                             'id': tool_panel_section_select_field.field_id,
                             'sections': [] }
@@ -27,6 +26,22 @@ for name, id, _ in tool_panel_section_select_field.options:
     tool_panel_section_dict['sections'].append( '<option value="%s">%s</option>' % ( id, name ) )
 %>
 var tool_panel_sections_json = ${json.dumps(tool_panel_section_dict['sections'])};
+var repository_information = ${json.dumps(toolshed_data)};
+var valid_tool_dependencies = Array();
+var valid_tools = Array();
+Array.prototype.containsDict = function(val) {
+    for (var i in this) {
+        needle = this[i];
+        var found = true;
+        for (var key in val) {
+            if (needle[key] != val[key]) {
+                found = false;
+            }
+        }
+        if (found) { return true; }
+    }
+    return false;
+}
 function global_select_tps_template() {
     var tps_selection_template = _.template([
         '<div class="form-row" id="select_tps">',
@@ -101,14 +116,14 @@ function create_tps_template(clean_name, tool_guid) {
         ].join(''));
     return underscore_template({clean_name: clean_name, tool_guid: tool_guid});
 }
-function repository_dependency_row(name, revision, owner, prior) {
-    rd_html = ['<tr class="datasetRow repository_dependency_row" style="display: table-row;">',
-               '<td><p>Repository <b><\%- name %></b> revision <b><\%- revision %></b> owned by <b><\%- owner %></b>']
+function repository_dependency_row(dependency_id, name, revision, owner, prior) {
+    rd_html = ['<li id="metadata_<\%- id %>" class="datasetRow repository_dependency_row" style="display: table-row;">',
+               'Repository <b><\%- name %></b> revision <b><\%- revision %></b> owned by <b><\%- owner %></b>']
     if (prior) {
         rd_html.push(' (<em>prior installation required</em>)');
     }
-    rd_html.push('</p></td></tr>');
-    return _.template(rd_html.join(''))({name: name, revision: revision, owner: owner});
+    rd_html.push('</li>');
+    return _.template(rd_html.join(''))({id: dependency_id, name: name, revision: revision, owner: owner});
 }
 function tool_dependency_row(name, version, type) {
     var td_row = _.template([
@@ -124,41 +139,42 @@ function tool_dependency_row(name, version, type) {
 function clean_tool_name(name) {
     return name.replace(/[^a-zA-Z0-9]+/g, "_").toLowerCase();
 }
-function check_tool_dependencies(metadata) {
-    if (metadata['includes_tool_dependencies']) {
-        $(".tool_dependency_row").remove();
-        dependency_metadata = metadata['tool_dependencies'];
-        for (var dependency_key in dependency_metadata) {
-            dep = dependency_metadata[dependency_key];
-            dependency_html = tool_dependency_row(dep['name'], dep['version'], dep['type']);
-            $("#tool_deps").append(dependency_html);
-        }
-        $("#tool_dependencies").show();
-        $("#install_tool_dependencies").prop('disabled', false);
-    }
-    else {
-        $("#tool_dependencies").hide();
-        $("#install_tool_dependencies").prop('disabled', true);
-    }
-}
-function check_repository_dependencies(metadata) {
-    $(".repository_dependency_row").remove();
-    if (metadata['has_repository_dependencies']) {
-        dependency_metadata = metadata['repository_dependencies'];
-        for (var dependency_key in dependency_metadata) {
-            if (dependency_key != 'root_key' && dependency_key != 'description') {
-                for (var dependency in dependency_metadata[dependency_key]) {
-                    dep = dependency_metadata[dependency_key][dependency];
-                    $("#repository_deps").append(repository_dependency_row(dep[1], dep[3], dep[2], dep[4]));
+function process_dependencies(metadata, selector) {
+    if (metadata.has_repository_dependencies) {
+        for (var item in metadata.repository_dependencies) {
+            var dependency = metadata.repository_dependencies[item];
+            var repository = dependency.repository;
+            if (repository != null) {
+                var dependency_html = repository_dependency_row(dependency.id, repository.name, dependency.changeset_revision, repository.owner, dependency.prior_installation_required)
+                if (selector == null) {
+                    $("#repository_deps").append(dependency_html);
+                }
+                else {
+                    $(selector).append('<ul>' + dependency_html + '</ul>');
+                }
+                if (dependency.has_repository_dependencies) {
+                    process_dependencies(dependency, '#metadata_' + dependency.id);
                 }
             }
         }
-        $("#repository_dependencies").show();
-        $("#install_repository_dependencies").prop('disabled', false);
     }
-    else {
-        $("#repository_dependencies").hide();
-        $("#install_repository_dependencies").prop('disabled', true);
+    if (metadata.includes_tool_dependencies) {
+        for (var item in metadata.tool_dependencies) {
+            var dependency = metadata.tool_dependencies[item];
+            var tool_dependency = {name: dependency.name, version: dependency.version, type: dependency.type};
+            if (!valid_tool_dependencies.containsDict(tool_dependency)) {
+                valid_tool_dependencies.push(tool_dependency);
+            }
+        }
+    }
+    if (metadata.includes_tools) {
+        for (var entry in metadata.tools) {
+            var tool = metadata.tools[entry];
+            valid_tool = {clean_name: clean_tool_name(tool.name), name: tool.name, version: tool.version, description: tool.description, guid: tool.guid};
+            if (!valid_tools.containsDict(valid_tool) && tool.add_to_tool_panel) {
+                valid_tools.push(valid_tool);
+            }
+        }
     }
 }
 function tool_panel_section() {
@@ -204,10 +220,8 @@ function show_create_html() {
 function changeset_metadata() {
     metadata_key = $('#changeset').find("option:selected").text();
     $("#current_changeset").text(metadata_key);
-    var metadata = ${metadata_json}[metadata_key];
-    check_repository_dependencies(metadata);
-    check_tool_dependencies(metadata);
-    if (metadata !== undefined && metadata['has_repository_dependencies']) {
+    var repository_metadata = repository_information.metadata[metadata_key];
+    if (repository_metadata !== undefined && repository_metadata['has_repository_dependencies']) {
         $("#repository_dependencies").show();
         $("#install_repository_dependencies_checkbox").show();
     }
@@ -215,23 +229,35 @@ function changeset_metadata() {
         $("#repository_dependencies").hide();
         $("#install_repository_dependencies_checkbox").hide();
     }
-    if (metadata !== undefined && metadata['includes_tool_dependencies']) {
+    $(".repository_dependency_row").remove();
+    $(".tool_dependency_row").remove();
+    process_dependencies(repository_metadata);
+    valid_tools.sort(function(a,b){return a.clean_name.localeCompare(b.clean_name);});
+    valid_tool_dependencies.sort(function(a,b){return a.name.toUpperCase().localeCompare(b.name.toUpperCase());});
+    $('.tool_row').remove();
+    for (var tool_idx = 0; tool_idx < valid_tools.length; tool_idx++) {
+        tool = valid_tools[tool_idx];
+        if (tool.name != 'undefined') {
+            new_html = tool_row_template(tool.name, tool.description, tool.version, tool.clean_name, tool.guid);
+            $("#tools_in_repo").append(new_html);
+            $('#select_tps_button_' + tool.clean_name).click(show_select_html);
+        }
+    }
+    if (valid_tool_dependencies.length > 0) {
+        for (var td_index = 0; td_index < valid_tool_dependencies.length; td_index++) {
+            tool_dependency = valid_tool_dependencies[td_index];
+            dependency_html = tool_dependency_row(tool_dependency.name, tool_dependency.version, tool_dependency.type);
+            $("#tool_deps").append(dependency_html);
+        }
         $("#tool_dependencies").show();
+        $("#install_tool_dependencies").prop('disabled', false);
         $("#install_tool_dependencies_checkbox").show();
     }
     else {
         $("#tool_dependencies").hide();
+        $("#install_tool_dependencies").prop('disabled', true);
         $("#install_tool_dependencies_checkbox").hide();
     }
-    $(".tool_row").remove();
-    $.each(metadata['tools']['valid_tools'], function(idx) {
-        tool = metadata['tools']['valid_tools'][idx];
-        clean_name = clean_tool_name(tool['name']);
-        new_html = tool_row_template(tool.name, tool.description, tool.version, clean_name, tool.guid);
-        create_html = create_tps_template(clean_name);
-        $("#tools_in_repo").append(new_html);
-        $('#select_tps_button_' + clean_name).click(show_select_html);
-    });
 }
 function toggle_folder(folder) {
     target_selector = '#' + folder.attr('data_target');
@@ -269,6 +295,9 @@ function show_global_tps_create() {
 }
 $(function() {
     changeset_metadata();
+    require(["libs/jquery/jstree"], function() {
+        $('#repository_dependencies_table').jstree();
+    });
     show_global_tps_select();
     $('#changeset').change(changeset_metadata);
     $("#tool_panel_section_select").change(tool_panel_section);
@@ -284,8 +313,6 @@ $(function() {
         params.tool_panel_section = JSON.stringify(select_tps(params));
         params.shed_tool_conf = $("select[name='shed_tool_conf']").find('option:selected').val()
         params.changeset = $("#changeset").val();
-        params.repo_dict = '${encoded_repository}';
-        console.log(params);
         url = $('#repository_installation').attr('action');
         $.post(url, params, function(data) {
             window.location.href = data;
@@ -300,16 +327,20 @@ div.expandLink {
     background-color: #d8d8d8;
     width: 100%;
 }
+div.changeset {
+    padding: 5px 10px 5px 10px;
+}
 </style>
-<h2 style="font-weight: normal;">Installing repository <strong>${repository['name']}</strong> from <strong>${repository['owner']}</strong></h2>
+<!-- <pre>${json.dumps(toolshed_data, indent=2)}</pre> -->
+<h2 style="font-weight: normal;">Installing repository <strong>${toolshed_data['name']}</strong> from <strong>${toolshed_data['owner']}</strong></h2>
 <form id="repository_installation" method="post" action="${h.url_for(controller='/api/tool_shed_repositories', action='install', async=True)}">
-    <input type="hidden" id="tsr_id" name="tsr_id" value="${repository['id']}" />
+    <input type="hidden" id="tsr_id" name="tsr_id" value="${toolshed_data['id']}" />
     <input type="hidden" id="tool_shed_url" name="tool_shed_url" value="${tool_shed_url}" />
     <div class="toolForm">
         <div class="toolFormTitle">Changeset</div>
-        <div class="toolFormBody">
+        <div class="toolFormBody changeset">
             <select id="changeset" name="changeset">
-                %for changeset in sorted( repository['metadata'].keys(), key=lambda changeset: int( changeset.split( ':' )[ 0 ] ), reverse=True ):
+                %for changeset in sorted( toolshed_data['metadata'].keys(), key=lambda changeset: int( changeset.split( ':' )[ 0 ] ), reverse=True ):
                     <option value="${changeset.split(':')[1]}">${changeset}</option>
                 %endfor
             </select>
@@ -354,11 +385,11 @@ div.expandLink {
                         Repository dependencies &ndash; <em>installation of these additional repositories is required</em>
                     </a>
                 </div>
-                <table class="tables container-table" id="repository_dependencies_table" border="0" cellpadding="2" cellspacing="2" width="100%">
-                    <tbody id="repository_deps">
-                        <tr class="repository_dependency_row"><p>Repository installation requires the following:</p></tr>
-                    </tbody>
-                </table>
+                <div class="tables container-table" id="repository_dependencies_table" border="0" cellpadding="2" cellspacing="2" width="100%">
+                    <ul id="repository_deps">
+                        <li class="repository_dependency_row"><p>Repository installation requires the following:</p></li>
+                    </ul>
+                </div>
             </div>
             <div class="tables container-table" id="tool_dependencies">
                 <div class="expandLink">

@@ -33,7 +33,7 @@
         </td>
         <td>${repository['description']}</td>
         <td>${repository['type']}</td>
-        %if repository['metadata']['tools_functionally_correct']:
+        %if 'tools_functionally_correct' in repository['metadata'] and repository['metadata']['tools_functionally_correct']:
             <td>Yes</td>
         %else:
             <td>No</td>

@@ -153,15 +153,10 @@ def app_factory( global_conf, **kwargs ):
                            controller='repositories',
                            action='create_changeset_revision',
                            conditions=dict( method=[ "POST" ] ) )
-    webapp.mapper.connect( 'repository_show_dependencies',
-                           '/api/repositories/{id}/{changeset}/metadata',
-                           controller='repositories',
-                           action='metadata',
-                           conditions=dict( method=[ "GET" ] ) )
-    webapp.mapper.connect( 'get_latest_metadata',
+    webapp.mapper.connect( 'repository_get_metadata',
                            '/api/repositories/{id}/metadata',
                            controller='repositories',
-                           action='get_latest_metadata',
+                           action='metadata',
                            conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.connect( 'repository_show_tools',
                            '/api/repositories/{id}/{changeset}/show_tools',

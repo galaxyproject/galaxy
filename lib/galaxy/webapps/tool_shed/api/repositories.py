@@ -33,6 +33,7 @@ from tool_shed.util import basic_util
 from tool_shed.util import commit_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
+from tool_shed.util import metadata_util
 from tool_shed.util import repository_content_util
 from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
@@ -772,34 +773,41 @@ class RepositoriesController( BaseAPIController ):
             return {}
 
     @expose_api_anonymous_and_sessionless
-    def metadata( self, trans, id, changeset, **kwd ):
+    def metadata( self, trans, id, **kwd ):
         """
-        GET /api/repositories/{encoded_repository_id}/{changeset}/metadata
+        GET /api/repositories/{encoded_repository_id}/metadata
         Returns information about a repository in the Tool Shed.
 
-        Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135/4a129b2343bb/metadata
+        Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135/metadata
 
         :param id: the encoded id of the Repository object
-        :type  id: encoded str
 
-        :returns:   the given changeset's metadata
+        :returns:   A dictionary containing the specified repository's metadata, by changeset,
+                    recursively including dependencies and their metadata.
 
-        :raises:  ObjectNotFound, MalformedId
+        :not found:  Empty dictionary.
         """
         try:
             trans.security.decode_id( id )
         except Exception:
             raise MalformedId( 'The given id is invalid.' )
-
+        all_metadata = {}
         repository = suc.get_repository_in_tool_shed( self.app, id )
-        metadata = suc.get_current_repository_metadata_for_changeset_revision( self.app, repository, changeset )
-        if metadata is None:
-            raise ObjectNotFound( 'Unable to locate metadata for the given id and changeset.' )
-        tool_shed_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
-        metadata_dict = metadata.to_dict( value_mapper={ 'id': trans.security.encode_id, 'repository_id': trans.security.encode_id } )
-        metadata_dict['repository_dependencies'] = repository.get_repository_dependencies( self.app, changeset, tool_shed_url )
-        metadata_dict['tool_dependencies'] = repository.get_tool_dependencies( changeset )
-        return metadata_dict
+        for changeset, changehash in repository.installable_revisions( self.app ):
+            metadata = suc.get_current_repository_metadata_for_changeset_revision( self.app, repository, changehash )
+            if metadata is None:
+                continue
+            metadata_dict = metadata.to_dict( value_mapper={ 'id': self.app.security.encode_id, 'repository_id': self.app.security.encode_id }, view='element' )
+            if metadata.has_repository_dependencies:
+                metadata_dict[ 'repository_dependencies' ] = metadata_util.get_all_dependencies( self.app, metadata, processed_dependency_links=[] )
+            else:
+                metadata_dict[ 'repository_dependencies' ] = []
+            if metadata.includes_tool_dependencies:
+                metadata_dict[ 'tool_dependencies' ] = repository.get_tool_dependencies( changehash )
+            else:
+                metadata_dict[ 'tool_dependencies' ] = {}
+            all_metadata[ '%s:%s' % ( changeset, changehash ) ] = metadata_dict
+        return all_metadata
 
     @expose_api
     def update( self, trans, id, **kwd ):
