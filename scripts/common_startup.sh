@@ -142,7 +142,7 @@ if [ $REPLACE_PIP -eq 1 ]; then
     method=`python - << EOF
 from pkg_resources import parse_version
 from sys import stdout
-if parse_version('$pip_version') >= parse_version('1.6'):
+if parse_version('$pip_version') >= parse_version('6.0'):
     stdout.write('req')
 elif parse_version('$pip_version') >= parse_version('1.5'):
     stdout.write('wheel')
