@@ -14,22 +14,27 @@ class RatableManagerMixin( object ):
     #: class of RatingAssociation (e.g. HistoryRatingAssociation)
     rating_assoc = None
 
-    def rating( self, item, user ):
-        """Returns the integer rating given to this item by the user."""
-        rating = self.query_associated( self.rating_assoc, item ).filter_by( user=user ).first()
-        if rating is not None:
-            # get the value if there's a rating
-            rating = rating.rating
-        return rating
+    def rating( self, item, user, as_int=True ):
+        """Returns the integer rating given to this item by the user.
 
-    def ratings( self, item, user ):
+        Returns the full rating model if `as_int` is False.
+        """
+        rating = self.query_associated( self.rating_assoc, item ).filter_by( user=user ).first()
+        # most common case is assumed to be 'get the number'
+        if not as_int:
+            return rating
+        # get the int value if there's a rating
+        return rating.rating if rating is not None else None
+
+    def ratings( self, item ):
         """Returns all ratings given to this item."""
         return [ r.rating for r in item.ratings ]
 
     def ratings_avg( self, item ):
         """Returns the average of all ratings given to this item."""
         foreign_key = self._foreign_key( self.rating_assoc )
-        return self.session().query( func.avg( self.rating_assoc.rating ) ).filter( foreign_key == item ).scalar()
+        avg = self.session().query( func.avg( self.rating_assoc.rating ) ).filter( foreign_key == item ).scalar()
+        return avg or 0.0
 
     def ratings_count( self, item ):
         """Returns the average of all ratings given to this item."""
@@ -40,14 +45,15 @@ class RatableManagerMixin( object ):
         """Updates or creates a rating for this item and user. Returns the rating"""
         # TODO?: possible generic update_or_create
         # TODO?: update and create to RatingsManager (if not overkill)
-        rating = self.rating( item, user )
+        rating = self.rating( item, user, as_int=False )
         if not rating:
-            rating = self.rating_assoc( item=item, user=user )
+            rating = self.rating_assoc( user=user )
+            self.associate( rating, item )
         rating.rating = value
 
         self.session().add( rating )
         if flush:
-            self.flush()
+            self.session().flush()
         return rating
 
     # TODO?: all ratings for a user

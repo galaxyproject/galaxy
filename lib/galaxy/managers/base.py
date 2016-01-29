@@ -24,7 +24,6 @@ attribute change to a model object.
 #   such as: a single flat class, serializers being singletons in the manager, etc.
 #   instead of the three separate classes. With no 'apparent' perfect scheme
 #   I'm opting to just keep them separate.
-
 import sqlalchemy
 import routes
 
