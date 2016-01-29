@@ -572,10 +572,12 @@ div.toolHelpBody {
 
 .toolForm.toolFormInCanvas {
     border: solid @form-border 1px;
+    .border-radius(2px);
     background: @white;
+    margin: 0px;
     &.toolForm-active {
-        border: solid @brand-primary 3px;
-        margin: 4px;
+        box-shadow: 0 0 0 3px @brand-primary;
+        .border-radius(1px);
     }
     .toolFormTitle {
         font-size: @font-size-base;
