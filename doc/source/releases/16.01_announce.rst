@@ -26,6 +26,10 @@ Highlights
   Work done as part of this to enable binary dependencies on Linux has been 
   included with the recently released pip_ 8.
 
+  Detailed documentation on these changes and their impact under a variety of
+  Galaxy deployment scenarios can be found in the :ref:`framework-dependencies`
+  section of the Admin documentation.
+
 **Nested Workflows**
   Workflows may now run other workflows as a single abstract step in the parent
   workflow. This allows for reusing or subworkflows in your analyses.
