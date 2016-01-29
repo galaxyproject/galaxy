@@ -20,6 +20,7 @@ window.make_popupmenu = POPUPMENU.make_popupmenu;
 window.make_popup_menus = POPUPMENU.make_popup_menus;
 window.init_tag_click_function = require( 'ui/autocom_tagging' );
 var TOURS = require( 'mvc/tours' );
+var QUERY_STRING = require( 'utils/query-string-parsing' );
 // console.debug( 'galaxy globals loaded' );
 
 // ============================================================================
@@ -170,7 +171,7 @@ $(document).ready( function() {
         // work on some pages with some rendered content because of view
         // rendering delays.
         // Another option is to present an icon for 'continue-tour' somewhere?
-        var urlparms = _.object(_.compact(_.map(location.search.slice(1).split('&'), function(item) { if (item) return item.split('='); })));
+        var urlparms = QUERY_STRING.parse(location.search.slice(1));
         if (urlparms.tour_id){
             var tour_id = urlparms.tour_id;
             delete urlparms.tour_id;
