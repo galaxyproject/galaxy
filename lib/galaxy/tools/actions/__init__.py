@@ -6,6 +6,7 @@ from galaxy.model import LibraryDatasetDatasetAssociation
 from galaxy import model
 from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter
 from galaxy.tools.parameters.wrapped import WrappedParameters
+from galaxy.tools.parameters import update_param
 from galaxy.util import ExecutionTimer
 from galaxy.util.json import dumps
 from galaxy.util.none_like import NoneDataset
@@ -491,9 +492,10 @@ class DefaultToolAction( object ):
                                 if hda.state == hda.states.PAUSED:
                                     hda.state = hda.states.NEW
                                     hda.info = None
+                            input_values = dict( [ ( p.name, json.loads( p.value ) ) for p in job_to_remap.parameters ] )
+                            update_param( jtid.name, input_values, str( out_data[ jtod.name ].id ) )
                             for p in job_to_remap.parameters:
-                                if p.name == jtid.name and p.value == str(jtod.dataset.id):
-                                    p.value = str(out_data[jtod.name].id)
+                                p.value = json.dumps( input_values[ p.name ] )
                             jtid.dataset = out_data[jtod.name]
                             jtid.dataset.hid = jtod.dataset.hid
                             log.info('Job %s input HDA %s remapped to new HDA %s' % (job_to_remap.id, jtod.dataset.id, jtid.dataset.id))

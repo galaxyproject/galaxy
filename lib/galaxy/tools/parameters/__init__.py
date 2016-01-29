@@ -1,7 +1,7 @@
 """
 Classes encapsulating Galaxy tool parameters.
 """
-
+import re
 from basic import DataCollectionToolParameter, DataToolParameter, SelectToolParameter
 from grouping import Conditional, Repeat, Section, UploadDataset
 from galaxy.util import string_as_bool
@@ -147,3 +147,22 @@ def params_to_incoming( incoming, inputs, input_values, app, name_prefix="" ):
         else:
             value = input_values.get( input.name )
             incoming[ name_prefix + input.name ] = value
+
+
+def update_param( prefixed_name, input_values, new_value ):
+    """
+    Given a prefixed parameter name, e.g. 'parameter_0|parameter_1', update
+    the corresponding input value in a nested input values dictionary.
+    """
+    for key in input_values:
+        match = re.match( '^' + key + '_(\d+)\|(.+)', prefixed_name )
+        if match:
+            index = int( match.group( 1 ) )
+            if isinstance( input_values[ key ], list ) and len( input_values[ key ] ) > index:
+                update_param( match.group( 2 ), input_values[ key ][ index ], new_value )
+        else:
+            match = re.match( '^' + key + '\|(.+)', prefixed_name )
+            if isinstance( input_values[ key ], dict ) and match:
+                update_param( match.group( 1 ), input_values[ key ], new_value )
+            elif prefixed_name == key:
+                input_values[ key ] = new_value
