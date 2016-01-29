@@ -146,10 +146,10 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
         collection = galaxy.model.DatasetCollection(
             collection_type=collection_type,
         )
-        to_element = lambda hda: galaxy.model.DatasetCollectionElement(
-            collection=collection,
-            element=hda,
-        )
+
+        def to_element(hda):
+            return galaxy.model.DatasetCollectionElement(collection=collection,
+                                                         element=hda)
         elements = map(to_element, hdas)
         if collection_type == "list:paired":
             paired_collection = galaxy.model.DatasetCollection(
@@ -275,6 +275,9 @@ class MockTrans( object ):
 
     def get_history( self, **kwargs ):
         return self.history
+
+    def get_current_user_roles( self ):
+        return []
 
 
 class MockCollectionService( object ):

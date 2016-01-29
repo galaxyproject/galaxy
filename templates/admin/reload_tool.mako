@@ -14,6 +14,14 @@ $().ready(function() {
 %endif
     focus_el.focus();
 });
+$().ready(function() {
+    $("#reload_toolbox").click(function(){
+        $.ajax({
+            url: "${h.url_for(controller="/api/configuration", action="toolbox")}",
+            type: 'PUT'
+        });
+    });
+});
 </script>
 
 %if message:
@@ -50,6 +58,21 @@ $().ready(function() {
         </div>
         <div class="form-row">
             <input type="submit" name="reload_tool_button" value="Reload"/>
+        </div>
+    </form>
+    </div>
+</div>
+<p>
+<div class="toolForm">
+    <div class="toolFormTitle">Reload Toolbox</div>
+    <div class="toolFormBody">
+    <form name="reload_toolbox_form" id="reload_toolbox_form" action="" method="" >
+        <div class="form-row">
+        Clicking <a href="#" id="reload_toolbox">here</a> will reload
+        the Galaxy toolbox. This will cause newly discovered tools
+        to be added, tools now missing from tool confs to be removed,
+        and items in the panel reordered. Individual tools, even ones
+        with modified tool descriptions willl not be reloaded.
         </div>
     </form>
     </div>

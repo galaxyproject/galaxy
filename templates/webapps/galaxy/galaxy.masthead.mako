@@ -40,54 +40,40 @@
             Galaxy = {};
         }
 
-        ## load additional style sheet
-        if (window != window.top){
-            $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">')
-                .appendTo('head');
+        // if we're in an iframe, create styles that hide masthead/messagebox, and reset top for panels
+        // note: don't use a link to avoid roundtrip request
+        // note: we can't select here because the page (incl. messgaebox, center, etc.) isn't fully rendered
+        // TODO: remove these when we no longer navigate with iframes
+        var in_iframe = window !== window.top;
+        if( in_iframe ){
+            var styleElement = document.createElement( 'style' );
+            document.head.appendChild( styleElement );
+            [
+                '#masthead, #messagebox { display: none; }',
+                '#center, #right, #left { top: 0 !important; }',
+             ].forEach( function( rule ){
+                styleElement.sheet.insertRule( rule, 0 );
+            });
         }
+        // TODO: ?? move above to base_panels.mako?
 
         ## load galaxy js-modules
         require([
-            'galaxy.masthead', 'galaxy.menu', 'mvc/ui/ui-modal', 'galaxy.frame', 'mvc/upload/upload-view',
-            'mvc/user/user-model',
-            'mvc/user/user-quotameter'
-        ], function( mod_masthead, mod_menu, mod_modal, mod_frame, GalaxyUpload, user, quotameter ){
-            if( !Galaxy.currUser ){
+            'layout/masthead',
+            'mvc/ui/ui-modal',
+            'mvc/user/user-model'
+        ], function( Masthead, Modal, user ){
+            if( !Galaxy.user ) {
                 // this doesn't need to wait for the page being readied
-                Galaxy.currUser = new user.User(${ h.dumps( masthead_config[ 'user_json' ], indent=2 ) });
+                Galaxy.user = new user.User(${ h.dumps( masthead_config[ 'user_json' ], indent=2 ) });
             }
-            // TODO: reduce to one attribute (currUser used more than user)
-            Galaxy.user = Galaxy.currUser;
 
             $(function() {
-                // check if masthead is available
-                if (Galaxy.masthead){
-                    return;
+                if (!Galaxy.masthead) {
+                    Galaxy.masthead = new Masthead.View(${ h.dumps( masthead_config ) });
+                    Galaxy.modal = new Modal.View();
+                    $('body').append( Galaxy.masthead.render().$el );
                 }
-
-                // get configuration
-                var masthead_config = ${ h.dumps( masthead_config ) };
-
-                // load global galaxy objects
-                Galaxy.masthead = new mod_masthead.GalaxyMasthead(masthead_config);
-                Galaxy.modal = new mod_modal.View();
-                Galaxy.frame = new mod_frame.GalaxyFrame();
-
-                // construct default menu options
-                Galaxy.menu = new mod_menu.GalaxyMenu({
-                    masthead: Galaxy.masthead,
-                    config: masthead_config
-                });
-
-                // add upload plugin
-                Galaxy.upload = new GalaxyUpload(masthead_config);
-
-                // set up the quota meter (And fetch the current user data from trans)
-                // add quota meter to masthead
-                Galaxy.quotaMeter = new quotameter.UserQuotaMeter({
-                    model   : Galaxy.currUser,
-                    el      : Galaxy.masthead.$('.quota-meter-container')
-                }).render();
             });
         });
     </script>

@@ -6,7 +6,7 @@ from galaxy import util
 from galaxy.util import unique_id
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
-from galaxy.model.item_attrs import Dictifiable
+from galaxy.util.dictifiable import Dictifiable
 import tool_shed.repository_types.util as rt_util
 
 from mercurial import hg
@@ -462,6 +462,7 @@ class WorkflowStep( object ):
         self.position = None
         self.input_connections = []
         self.config = None
+        self.label = None
 
 
 class WorkflowStepConnection( object ):

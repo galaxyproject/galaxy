@@ -180,10 +180,10 @@ class Install( RecipeTag, SyncDatabase ):
                     error_message += 'tag set.'
                     # Since there was an installation error, update the tool dependency status to Error.
                     # The remove_installation_path option must be left False here.
-                    tool_dependency = tool_dependency_util.handle_tool_dependency_installation_error( self.app,
-                                                                                                      tool_dependency,
-                                                                                                      error_message,
-                                                                                                      remove_installation_path=False )
+                    tool_dependency = tool_dependency_util.set_tool_dependency_attributes(self.app,
+                                                                                          tool_dependency=tool_dependency,
+                                                                                          status=self.app.install_model.ToolDependency.installation_status.ERROR,
+                                                                                          error_message=error_message)
             else:
                 raise NotImplementedError( 'Only install version 1.0 is currently supported (i.e., change your tag to be <install version="1.0">).' )
         return tool_dependency, proceed_with_install, actions_elem_tuples
@@ -213,9 +213,7 @@ class Package( RecipeTag ):
                 tool_dependency = \
                     tool_dependency_util.set_tool_dependency_attributes( self.app,
                                                                          tool_dependency=tool_dependency,
-                                                                         status=self.app.install_model.ToolDependency.installation_status.ERROR,
-                                                                         error_message=None,
-                                                                         remove_from_disk=False )
+                                                                         status=self.app.install_model.ToolDependency.installation_status.ERROR )
             else:
                 proceed_with_install = True
         return tool_dependency, proceed_with_install, action_elem_tuples
@@ -329,18 +327,18 @@ class Repository( RecipeTag, SyncDatabase ):
                                 error_message = 'Error defining env.sh file for package %s, return_code: %s' % \
                                     ( str( package_name ), str( return_code ) )
                                 tool_dependency = \
-                                    tool_dependency_util.handle_tool_dependency_installation_error( self.app,
-                                                                                                    tool_dependency,
-                                                                                                    error_message,
-                                                                                                    remove_installation_path=False )
+                                    tool_dependency_util.set_tool_dependency_attributes(self.app,
+                                                                                        tool_dependency=tool_dependency,
+                                                                                        status=self.app.install_model.ToolDependency.installation_status.ERROR,
+                                                                                        error_message=error_message)
                             elif required_tool_dependency is not None and required_tool_dependency.in_error_state:
                                 error_message = "This tool dependency's required tool dependency %s version %s has status %s." % \
                                     ( str( required_tool_dependency.name ), str( required_tool_dependency.version ), str( required_tool_dependency.status ) )
                                 tool_dependency = \
-                                    tool_dependency_util.handle_tool_dependency_installation_error( self.app,
-                                                                                                    tool_dependency,
-                                                                                                    error_message,
-                                                                                                    remove_installation_path=False )
+                                    tool_dependency_util.set_tool_dependency_attributes(self.app,
+                                                                                        tool_dependency=tool_dependency,
+                                                                                        status=self.app.install_model.ToolDependency.installation_status.ERROR,
+                                                                                        error_message=error_message)
                             else:
                                 tool_dependency = \
                                     tool_dependency_util.set_tool_dependency_attributes( self.app,
@@ -556,18 +554,10 @@ class SetEnvironment( RecipeTag ):
         else:
             attr_tups_of_dependencies_for_install = [ ( td.name, td.version, td.type ) for td in tool_dependency_db_records ]
         try:
-            tool_dependencies = self.set_environment( package_elem, tool_shed_repository, attr_tups_of_dependencies_for_install )
+            self.set_environment( package_elem, tool_shed_repository, attr_tups_of_dependencies_for_install )
         except Exception, e:
             error_message = "Error setting environment for tool dependency: %s" % str( e )
             log.debug( error_message )
-        for tool_dependency in tool_dependencies:
-            if tool_dependency and tool_dependency.status == self.app.install_model.ToolDependency.installation_status.ERROR:
-                # Since there was an installation error, update the tool dependency status to Error. The
-                # remove_installation_path option must be left False here.
-                tool_dependency = tool_dependency_util.handle_tool_dependency_installation_error( self.app,
-                                                                                                  tool_dependency,
-                                                                                                  error_message,
-                                                                                                  remove_installation_path=False )
         return tool_dependency, proceed_with_install, action_elem_tuples
 
     def set_environment( self, elem, tool_shed_repository, attr_tups_of_dependencies_for_install ):
@@ -613,7 +603,7 @@ class SetEnvironment( RecipeTag ):
             # <requirement type="set_environment">R_SCRIPT_PATH</requirement>).
             env_var_action = env_var_elem.get( 'action', None )
             if env_var_name and env_var_action:
-                # Tool dependencies of type "set_environmnet" always have the version attribute set to None.
+                # Tool dependencies of type "set_environment" always have the version attribute set to None.
                 attr_tup = ( env_var_name, None, 'set_environment' )
                 if attr_tup in attr_tups_of_dependencies_for_install:
                     install_dir = \
@@ -654,8 +644,7 @@ class SetEnvironment( RecipeTag ):
                                     tool_dependency_util.set_tool_dependency_attributes( self.app,
                                                                                          tool_dependency=tool_dependency,
                                                                                          status=status,
-                                                                                         error_message=error_message,
-                                                                                         remove_from_disk=False )
+                                                                                         error_message=error_message )
                             else:
                                 if tool_dependency.status not in [ self.app.install_model.ToolDependency.installation_status.ERROR,
                                                                    self.app.install_model.ToolDependency.installation_status.INSTALLED ]:
@@ -663,9 +652,7 @@ class SetEnvironment( RecipeTag ):
                                     tool_dependency = \
                                         tool_dependency_util.set_tool_dependency_attributes( self.app,
                                                                                              tool_dependency=tool_dependency,
-                                                                                             status=status,
-                                                                                             error_message=None,
-                                                                                             remove_from_disk=False )
+                                                                                             status=status )
                                     log.debug( 'Environment variable %s set in %s for tool dependency %s.' %
                                         ( str( env_var_name ), str( install_dir ), str( tool_dependency.name ) ) )
                         else:
@@ -675,7 +662,6 @@ class SetEnvironment( RecipeTag ):
                                 tool_dependency_util.set_tool_dependency_attributes( self.app,
                                                                                      tool_dependency=tool_dependency,
                                                                                      status=status,
-                                                                                     error_message=error_message,
-                                                                                     remove_from_disk=False )
+                                                                                     error_message=error_message )
             tool_dependencies.append( tool_dependency )
         return tool_dependencies

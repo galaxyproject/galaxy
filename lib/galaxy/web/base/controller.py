@@ -11,7 +11,6 @@ from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
 from paste.httpexceptions import HTTPNotImplemented, HTTPRequestRangeNotSatisfiable
 from galaxy.exceptions import ItemAccessibilityException, ItemDeletionException, ItemOwnershipException
 from galaxy.exceptions import MessageException
-from galaxy import exceptions
 
 from galaxy import web
 from galaxy import model
@@ -24,7 +23,8 @@ from galaxy.web.form_builder import build_select_field, HistoryField, PasswordFi
 from galaxy.workflow.modules import WorkflowModuleInjector, MissingToolException
 from galaxy.security.validate_user_input import validate_publicname
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.model.item_attrs import Dictifiable, UsesAnnotations
+from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.util.dictifiable import Dictifiable
 
 from galaxy.datatypes.interval import ChromatinInteractions
 
@@ -35,6 +35,7 @@ from galaxy.managers import tags
 from galaxy.managers import workflows
 from galaxy.managers import base as managers_base
 from galaxy.managers import users
+from galaxy.managers import configuration
 
 
 log = logging.getLogger( __name__ )
@@ -93,13 +94,7 @@ class BaseController( object ):
 
     # ---- parsing query params
     def decode_id( self, id ):
-        try:
-            # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
-            #   resulting in error for valid id
-            return self.app.security.decode_id( str( id ) )
-        except ( ValueError, TypeError ):
-            msg = "Malformed id ( %s ) specified, unable to decode" % ( str( id ) )
-            raise exceptions.MalformedId( msg, id=str( id ) )
+        return managers_base.decode_id( self.app, id )
 
     def encode_all_ids( self, trans, rval, recursive=False ):
         """
@@ -229,6 +224,79 @@ class BaseAPIController( BaseController ):
         if isinstance( keys, basestring ):
             keys = keys.split( ',' )
         return dict( view=view, keys=keys, default_view=default_view )
+
+
+class JSAppLauncher( BaseUIController ):
+    """
+    A controller that launches JavaScript web applications.
+    """
+
+    #: path to js app template
+    JS_APP_MAKO_FILEPATH = "/js-app.mako"
+    #: window-scoped js function to call to start the app (will be passed options, bootstrapped)
+    DEFAULT_ENTRY_FN = "app"
+    #: keys used when serializing current user for bootstrapped data
+    USER_BOOTSTRAP_KEYS = ( 'id', 'email', 'username', 'is_admin', 'tags_used', 'requests',
+                            'total_disk_usage', 'nice_total_disk_usage', 'quota_percent' )
+
+    def __init__( self, app ):
+        super( JSAppLauncher, self ).__init__( app )
+        self.user_manager = users.UserManager( app )
+        self.user_serializer = users.CurrentUserSerializer( app )
+        self.config_serializer = configuration.ConfigSerializer( app )
+        self.admin_config_serializer = configuration.AdminConfigSerializer( app )
+
+    def _get_js_options( self, trans, root=None ):
+        """
+        Return a dictionary of session/site configuration/options to jsonify
+        and pass onto the js app.
+
+        Defaults to `config`, `user`, and the root url. Pass kwargs to update further.
+        """
+        root = root or web.url_for( '/' )
+        js_options = {
+            'root'      : root,
+            'user'      : self.user_serializer.serialize( trans.user, self.USER_BOOTSTRAP_KEYS, trans=trans ),
+            'config'    : self._get_site_configuration( trans )
+        }
+        return js_options
+
+    def _get_site_configuration( self, trans ):
+        """
+        Return a dictionary representing Galaxy's current configuration.
+        """
+        try:
+            serializer = self.config_serializer
+            if self.user_manager.is_admin( trans.user ):
+                serializer = self.admin_config_serializer
+            return serializer.serialize_to_view( self.app.config, view='all' )
+        except Exception, exc:
+            log.exception( exc )
+            return {}
+
+    def template( self, trans, app_name, entry_fn='app', options=None, bootstrapped_data=None, masthead=True, **additional_options ):
+        """
+        Render and return the single page mako template that starts the app.
+
+        `app_name` (string): the first portion of the webpack bundle to as the app.
+        `entry_fn` (string): the name of the window-scope function that starts the
+            app. Defaults to 'app'.
+        `bootstrapped_data` (dict): (optional) update containing any more data
+            the app may need.
+        `masthead` (boolean): (optional, default=True) include masthead elements in
+            the initial page dom.
+        `additional_options` (kwargs): update to the options sent to the app.
+        """
+        options = options or self._get_js_options( trans )
+        options.update( additional_options )
+        return trans.fill_template(
+            self.JS_APP_MAKO_FILEPATH,
+            js_app_name=app_name,
+            js_app_entry_fn=( entry_fn or self.DEFAULT_ENTRY_FN ),
+            options=( options or self._get_js_options( trans ) ),
+            bootstrapped=( bootstrapped_data or {} ),
+            masthead=masthead
+        )
 
 
 class Datatype( object ):
@@ -1079,7 +1147,9 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         # Copy workflow.
         imported_stored = model.StoredWorkflow()
         imported_stored.name = "imported: " + stored.name
-        imported_stored.latest_workflow = stored.latest_workflow
+        workflow = stored.latest_workflow.copy()
+        workflow.stored_workflow = imported_stored
+        imported_stored.latest_workflow = workflow
         imported_stored.user = trans.user
         # Save new workflow.
         session = trans.sa_session
@@ -1113,7 +1183,7 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         """
         Converts a workflow to a dict of attributes suitable for exporting.
         """
-        workflow_contents_manager = workflows.WorkflowContentsManager()
+        workflow_contents_manager = workflows.WorkflowContentsManager( self.app )
         return workflow_contents_manager.workflow_to_dict(
             trans,
             stored,

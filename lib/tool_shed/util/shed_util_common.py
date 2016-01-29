@@ -6,13 +6,14 @@ import shutil
 import socket
 import string
 from urllib2 import HTTPError
+from operator import itemgetter
 
 import sqlalchemy.orm.exc
 from sqlalchemy import and_, false, or_, true
 
 from galaxy import util
 from galaxy.web import url_for
-from galaxy.datatypes import checkers
+from galaxy.util import checkers
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
@@ -79,6 +80,59 @@ ${message}
 This message was sent from the Galaxy Tool Shed instance hosted on the server
 '${host}'
 """
+
+
+def can_eliminate_repository_dependency(metadata_dict, tool_shed_url, name, owner):
+    """
+    Determine if the relationship between a repository_dependency record
+    associated with a tool_shed_repository record on the Galaxy side
+    can be eliminated.
+    """
+    rd_dict = metadata_dict.get('repository_dependencies', {})
+    rd_tups = rd_dict.get( 'repository_dependencies', [] )
+    for rd_tup in rd_tups:
+        tsu, n, o, none1, none2, none3 = common_util.parse_repository_dependency_tuple(rd_tup)
+        if tsu == tool_shed_url and n == name and o == owner:
+            # The repository dependency is current, so keep it.
+            return False
+    return True
+
+
+def can_eliminate_tool_dependency(metadata_dict, name, type, version):
+    """
+    Determine if the relationship between a tool_dependency record
+    associated with a tool_shed_repository record on the Galaxy side
+    can be eliminated.
+    """
+    td_dict = metadata_dict.get('tool_dependencies', {})
+    for td_key, td_val in td_dict.items():
+        n = td_val.get('name', None)
+        t = td_val.get('type', None)
+        v = td_val.get('version', None)
+        if n == name and t == type and v == version:
+            # The tool dependency is current, so keep it.
+            return False
+    return True
+
+
+def clean_dependency_relationships(trans, metadata_dict, tool_shed_repository, tool_shed_url):
+    """
+    Repositories of type tool_dependency_definition allow for defining a
+    package dependency at some point in the change log and then removing the
+    dependency later in the change log.  This function keeps the dependency
+    relationships on the Galaxy side current by deleting database records
+    that defined the now-broken relationships.
+    """
+    for rrda in tool_shed_repository.required_repositories:
+        rd = rrda.repository_dependency
+        r = rd.repository
+        if can_eliminate_repository_dependency(metadata_dict, tool_shed_url, r.name, r.owner):
+            trans.install_model.context.delete(rrda)
+            trans.install_model.context.flush()
+    for td in tool_shed_repository.tool_dependencies:
+        if can_eliminate_tool_dependency(metadata_dict, td.name, td.type, td.version):
+            trans.install_model.context.delete(td)
+            trans.install_model.context.flush()
 
 
 def create_or_update_tool_shed_repository( app, name, description, installed_changeset_revision, ctx_rev, repository_clone_url,
@@ -292,10 +346,23 @@ def get_latest_downloadable_changeset_revision( app, repository, repo ):
     repository_metadata = get_repository_metadata_by_changeset_revision( app, app.security.encode_id( repository.id ), repository_tip )
     if repository_metadata and repository_metadata.downloadable:
         return repository_tip
-    changeset_revisions = get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
+    changeset_revisions = [ revision[ 1 ] for revision in get_metadata_revisions( repository, repo ) ]
     if changeset_revisions:
         return changeset_revisions[ -1 ]
     return hg_util.INITIAL_CHANGELOG_HASH
+
+
+def get_tool_dependency_definition_metadata_from_tool_shed( app, tool_shed_url, name, owner ):
+    """
+    Send a request to the tool shed to retrieve the current metadata for a
+    repository of type tool_dependency_definition defined by the combination
+    of a name and owner.
+    """
+    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
+    params = dict( name=name, owner=owner )
+    pathspec = [ 'repository', 'get_tool_dependency_definition_metadata' ]
+    metadata = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
+    return metadata
 
 
 def get_next_downloadable_changeset_revision( repository, repo, after_changeset_revision ):
@@ -303,7 +370,7 @@ def get_next_downloadable_changeset_revision( repository, repo, after_changeset_
     Return the installable changeset_revision in the repository changelog after the changeset to which
     after_changeset_revision refers.  If there isn't one, return None.
     """
-    changeset_revisions = get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
+    changeset_revisions = [ revision[ 1 ] for revision in get_metadata_revisions( repository, repo ) ]
     if len( changeset_revisions ) == 1:
         changeset_revision = changeset_revisions[ 0 ]
         if changeset_revision == after_changeset_revision:
@@ -354,10 +421,9 @@ def get_next_prior_import_or_install_required_dict_entry( prior_required_dict, p
         return key
 
 
-def get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True ):
+def get_metadata_revisions( repository, repo, sort_revisions=True, reverse=False, downloadable=True ):
     """
-    Return an ordered list of changeset_revisions that are associated with metadata
-    where order is defined by the repository changelog.
+    Return a list of changesets for the provided repository.
     """
     if downloadable:
         metadata_revisions = repository.downloadable_revisions
@@ -365,16 +431,15 @@ def get_ordered_metadata_changeset_revisions( repository, repo, downloadable=Tru
         metadata_revisions = repository.metadata_revisions
     changeset_tups = []
     for repository_metadata in metadata_revisions:
-        changeset_revision = repository_metadata.changeset_revision
-        ctx = hg_util.get_changectx_for_changeset( repo, changeset_revision )
+        ctx = hg_util.get_changectx_for_changeset( repo, repository_metadata.changeset_revision )
         if ctx:
             rev = '%04d' % ctx.rev()
         else:
-            rev = '-1'
-        changeset_tups.append( ( rev, changeset_revision ) )
-    sorted_changeset_tups = sorted( changeset_tups )
-    sorted_changeset_revisions = [ str( changeset_tup[ 1 ] ) for changeset_tup in sorted_changeset_tups ]
-    return sorted_changeset_revisions
+            rev = -1
+        changeset_tups.append( ( rev, repository_metadata.changeset_revision ) )
+    if sort_revisions:
+        changeset_tups.sort( key=itemgetter( 0 ), reverse=reverse )
+    return changeset_tups
 
 
 def get_prior_import_or_install_required_dict( app, tsr_ids, repo_info_dicts ):
@@ -709,6 +774,18 @@ def get_repository_query( app ):
     else:
         query = app.model.context.query( app.model.Repository )
     return query
+
+
+def get_repository_type_from_tool_shed( app, tool_shed_url, name, owner ):
+    """
+    Send a request to the tool shed to retrieve the type for a repository defined by the
+    combination of a name and owner.
+    """
+    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
+    params = dict( name=name, owner=owner )
+    pathspec = [ 'repository', 'get_repository_type' ]
+    repository_type = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
+    return repository_type
 
 
 def get_tool_panel_config_tool_path_install_dir( app, repository ):

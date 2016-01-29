@@ -23,14 +23,17 @@ ${h.css( 'base', 'jquery-ui/smoothness/jquery-ui')}
 ${h.stylesheet_link( root + 'plugins/visualizations/scatterplot/static/scatterplot.css' )}
 
 ## ----------------------------------------------------------------------------
+<script type="text/javascript">
+// TODO: blah
+window.Galaxy = { root: '${ root }' };
+</script>
 ${h.js( 'libs/jquery/jquery',
         'libs/jquery/jquery.migrate',
         'libs/jquery/jquery-ui',
         'libs/bootstrap',
         'libs/underscore',
-        'libs/backbone/backbone',
+        'libs/backbone',
         'libs/d3',
-        'libs/handlebars.runtime',
         'ui/peek-column-selector',
         'ui/pagination',
         'mvc/visualization/visualization-model' )}
@@ -41,7 +44,7 @@ ${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterpl
 function getModel(){
     return new ScatterplotModel({
         id      : ${h.dumps( visualization_id )} || undefined,
-        title   : "${title}",
+        title   : "${title or default_title}",
         config  : ${h.dumps( config, indent=2 )}
     });
 }
@@ -88,7 +91,7 @@ function getHDAJSON(){
                 hdaJSON = getHDAJSON(),
                 editor  = new ScatterplotConfigEditor({
                     el      : $( '.scatterplot-editor' ).attr( 'id', 'scatterplot-editor-hda-' + hdaJSON.id ),
-                    model   : getModel(),
+                    model   : model,
                     dataset : hdaJSON
                 }).render();
             window.editor = editor;

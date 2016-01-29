@@ -1,43 +1,18 @@
 /**
     This is the main class of the form plugin. It is referenced as 'app' in all lower level modules.
 */
-define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
-        'mvc/form/form-section', 'mvc/form/form-data'],
+define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-section', 'mvc/form/form-data'],
     function(Utils, Portlet, Ui, FormSection, FormData) {
-
-    // create form view
     return Backbone.View.extend({
-        // initialize
         initialize: function(options) {
-            // options
-            this.optionsDefault = {
-                // uses workflow editor mode i.e. text instead of select fields
-                is_workflow     : false,
-                // shows errors on start
+            this.options = Utils.merge(options, {
                 initial_errors  : false,
-                // portlet style
-                cls             : 'ui-portlet-limited'
-            };
-
-            // configure options
-            this.options = Utils.merge(options, this.optionsDefault);
-
-            // log options
-            Galaxy.emit.debug('form-view::initialize()', 'Ready to build form.', this.options);
-
-            // link galaxy modal or create one
-            var galaxy = parent.Galaxy;
-            if (galaxy && galaxy.modal) {
-                this.modal = galaxy.modal;
-            } else {
-                this.modal = new Ui.Modal.View();
-            }
-
-            // set element
+                cls             : 'ui-portlet-limited',
+                icon            : ''
+            });
+            this.modal = ( parent.Galaxy && parent.Galaxy.modal ) || new Ui.Modal.View();
             this.setElement('<div/>');
-
-            // build this form
-            this._build();
+            this.render();
         },
 
         /** Update available options */
@@ -137,9 +112,9 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             }
         },
 
-        /** Main tool form build function. This function is called once a new model is available.
+        /** Render tool form
         */
-        _build: function() {
+        render: function() {
             // link this
             var self = this;
 
@@ -157,7 +132,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             this.element_list = {};
 
             // creates a json data structure from the input form
-            this.data = new FormData(this);
+            this.data = new FormData.Manager(this);
 
             // create ui elements
             this._renderForm();
@@ -186,6 +161,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     this.element_list[i].reset();
                 }
             });
+            return this;
         },
 
         /** Renders the UI elements required for the form
@@ -204,15 +180,17 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
 
             // create portlet
             this.portlet = new Portlet.View({
-                icon        : 'fa-wrench',
+                icon        : this.options.icon,
                 title       : this.options.title,
                 cls         : this.options.cls,
                 operations  : this.options.operations,
-                buttons     : this.options.buttons
+                buttons     : this.options.buttons,
+                collapsible : this.options.collapsible,
+                collapsed   : this.options.collapsed
             });
 
             // append message
-            this.portlet.append(this.message.$el.addClass('ui-margin-top'));
+            this.portlet.append(this.message.$el);
 
             // append tool section
             this.portlet.append(this.section.$el);

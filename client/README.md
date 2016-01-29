@@ -4,9 +4,24 @@ Client Build System
 Builds and moves the client-side scripts necessary for running the Galaxy webapps. There's no need to use this system
 unless you are modifying or developing client-side scripts.
 
-You'll need Node and the Node Package Manager (npm): nodejs.org.
+The base dependencies you'll need are Node.js and the Node Package Manager
+(npm).  See nodejs.org for more information.
 
-Once npm is installed, install the grunt task manager and it's command line into your global scope:
+
+Simple Full Build
+=================
+
+The simplest way to rebuild the entire client to incorporate any local changes
+is to run the 'client' rule in the Galaxy makefile, which is in the repository
+root.  This will also ensure any local node modules are installed.
+
+    make client
+
+
+Detailed Build Instructions
+===========================
+
+Once npm is installed, install the grunt task manager and its command line into your global scope:
 
     npm install -g grunt grunt-cli
 
@@ -31,26 +46,38 @@ This will:
 
 1. compress the files in client/galaxy/scripts and place them in static/scripts
 2. generate source maps and place them in static/maps
+3. rebuild the webpack-based client apps
 
 
-Templates
-=========
+Rebuilding Scripts Only
+=======================
 
-You can change and recompile the templates by using:
+To re-minify all the individual javascript files:
 
-    grunt templates
+    grunt scripts
 
-This will:
 
-1. recompile the templates in client/galaxy/scripts/templates to client/galaxy/scripts/templates/compiled
-2. minify and generate source maps for the compiled templates
+Rebuilding Webpack Apps
+=======================
+
+To rebuild the webpack bundles for apps (compressed for production):
+
+    grunt webpack
+
+To rebuild the apps without compression:
+
+    grunt webpack-dev
+
+To rebuild without compression and watch and rebuild when scripts change:
+
+    grunt webpack-watch
 
 
 Changing Styles/CSS
 ===================
 
 The CSS and styling used by Galaxy is also controlled from this directory. Galaxy uses LESS, a superset of CSS that
-compiles to CSS, for its styling. LESS files are kept in client/galaxy/style/less. Compiled CSS is in statis/style/blue.
+compiles to CSS, for its styling. LESS files are kept in client/galaxy/style/less. Compiled CSS is in static/style/blue.
 
 Use grunt to recompile the LESS in into CSS (from the `client` directory):
 

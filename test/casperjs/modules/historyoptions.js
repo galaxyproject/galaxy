@@ -189,8 +189,8 @@ HistoryOptions.prototype.data = {
             unhideHiddenDatasets    : "Unhide Hidden Datasets",
             deleteHiddenDatasets    : "Delete Hidden Datasets",
             showStructure           : "Show Structure",
-            exportCitations         : "Export Citations",
-            exportToFile            : "Export to File",
+            exportCitations         : "Export Tool Citations",
+            exportToFile            : "Export History to File",
             deleteHistory           : "Delete",
             //deleteHistoryPermanently : "Delete Permanently",
             //Other Actions

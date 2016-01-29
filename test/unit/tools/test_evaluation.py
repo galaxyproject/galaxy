@@ -15,7 +15,7 @@ from galaxy.util.bunch import Bunch
 
 # For MockTool
 from galaxy.tools.parameters import params_from_strings
-from galaxy.tools import ToolOutput
+from galaxy.tools.parser.output_objects import ToolOutput
 from galaxy.tools.parameters.grouping import Repeat
 from galaxy.tools.parameters.grouping import Conditional
 from galaxy.tools.parameters.grouping import ConditionalWhen

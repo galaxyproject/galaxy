@@ -79,15 +79,15 @@ var LibraryView = Backbone.View.extend({
       }
     }
     var is_admin = false;
-    if (Galaxy.currUser){
-      is_admin = Galaxy.currUser.isAdmin();
-    } 
+    if (Galaxy.user){
+      is_admin = Galaxy.user.isAdmin();
+    }
     var template = this.templateLibraryPermissions();
     this.$el.html(template({library: this.model, is_admin:is_admin}));
 
     var self = this;
     if (this.options.fetched_permissions === undefined){
-      $.get( ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/libraries/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
+      $.get( Galaxy.root + "api/libraries/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
         self.prepareSelectBoxes({fetched_permissions:fetched_permissions});
       }).fail(function(){
           mod_toastr.error('An error occurred while attempting to fetch library permissions.');
@@ -134,7 +134,7 @@ var LibraryView = Backbone.View.extend({
       placeholder: 'Click to select a role',
       container: self.$el.find('#' + id),
       ajax: {
-          url: ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/libraries/" + self.id + "/permissions?scope=available&is_library_access=" + is_library_access,
+          url: Galaxy.root + "api/libraries/" + self.id + "/permissions?scope=available&is_library_access=" + is_library_access,
           dataType: 'json',
           quietMillis: 100,
           data: function (term, page) { // page is the one-based page number tracked by Select2
@@ -193,7 +193,7 @@ var LibraryView = Backbone.View.extend({
 
   makeDatasetPrivate: function(){
     var self = this;
-    $.post( ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/libraries/datasets/" + self.id + "/permissions?action=make_private").done(function(fetched_permissions) {
+    $.post( Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?action=make_private").done(function(fetched_permissions) {
       self.model.set({is_unrestricted:false});
       self.showPermissions({fetched_permissions:fetched_permissions})
       mod_toastr.success('The dataset is now private to you.');
@@ -204,7 +204,7 @@ var LibraryView = Backbone.View.extend({
 
   removeDatasetRestrictions: function(){
     var self = this;
-    $.post( ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/libraries/datasets/" + self.id + "/permissions?action=remove_restrictions")
+    $.post( Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?action=remove_restrictions")
     .done(function(fetched_permissions) {
       self.model.set({is_unrestricted:true});
       self.showPermissions({fetched_permissions:fetched_permissions})
@@ -230,7 +230,7 @@ var LibraryView = Backbone.View.extend({
     var manage_ids = this._extractIds(this.manageSelectObject.$el.select2('data'));
     var modify_ids = this._extractIds(this.modifySelectObject.$el.select2('data'));
 
-    $.post( ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/libraries/" + self.id + "/permissions?action=set_permissions", { 'access_ids[]': access_ids, 'add_ids[]': add_ids, 'manage_ids[]': manage_ids, 'modify_ids[]': modify_ids, } )
+    $.post( Galaxy.root + "api/libraries/" + self.id + "/permissions?action=set_permissions", { 'access_ids[]': access_ids, 'add_ids[]': add_ids, 'manage_ids[]': manage_ids, 'modify_ids[]': modify_ids, } )
     .done(function(fetched_permissions){
       //fetch dataset again
       self.showPermissions({fetched_permissions:fetched_permissions})
@@ -287,7 +287,7 @@ var LibraryView = Backbone.View.extend({
     var tmpl_array = [];
     // CONTAINER START
     tmpl_array.push('<div class="library_style_container">');
-    
+
 
     tmpl_array.push('  <div id="library_toolbar">');
     tmpl_array.push('   <a href="#"><button data-toggle="tooltip" data-placement="top" title="Go back to the list of Libraries" class="btn btn-default primary-button" type="button"><span class="fa fa-list"></span> Libraries</span></button></a>');
@@ -302,7 +302,7 @@ var LibraryView = Backbone.View.extend({
     tmpl_array.push('You can assign any number of roles to any of the following permission types. However please read carefully the implications of such actions.');
     tmpl_array.push('<% }%>');
     tmpl_array.push('</div>');
-    
+
     tmpl_array.push('<div class="dataset_table">');
 
     tmpl_array.push('<h2>Library permissions</h2>');
@@ -310,7 +310,7 @@ var LibraryView = Backbone.View.extend({
     tmpl_array.push('<h4>Roles that can access the library</h4>');
     tmpl_array.push('<div id="access_perm" class="access_perm roles-selection"></div>');
     tmpl_array.push('<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can access this library. If there are no access roles set on the library it is considered <strong>unrestricted</strong>.</div>');
-    
+
     tmpl_array.push('<h4>Roles that can manage permissions on this library</h4>');
     tmpl_array.push('<div id="manage_perm" class="manage_perm roles-selection"></div>');
     tmpl_array.push('<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can manage permissions on this library (includes giving access).</div>');

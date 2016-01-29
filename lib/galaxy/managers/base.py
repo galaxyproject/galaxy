@@ -112,6 +112,16 @@ def get_class( class_name ):
     return item_class
 
 
+def decode_id(app, id):
+    try:
+        # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
+        #   resulting in error for valid id
+        return app.security.decode_id( str( id ) )
+    except ( ValueError, TypeError ):
+        msg = "Malformed id ( %s ) specified, unable to decode" % ( str( id ) )
+        raise exceptions.MalformedId( msg, id=str( id ) )
+
+
 def get_object( trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None ):
     """
     Convenience method to get a model object with the specified checks. This is
@@ -119,11 +129,7 @@ def get_object( trans, id, class_name, check_ownership=False, check_accessible=F
     controller mixin code - however whenever possible the managers for a
     particular model should be used to load objects.
     """
-    try:
-        decoded_id = trans.security.decode_id( id )
-    except:
-        raise exceptions.MessageException( "Malformed %s id ( %s ) specified, unable to decode"
-                                           % ( class_name, str( id ) ), type='error' )
+    decoded_id = decode_id(trans.app, id)
     try:
         item_class = get_class( class_name )
         assert item_class is not None
@@ -145,6 +151,25 @@ def get_object( trans, id, class_name, check_ownership=False, check_accessible=F
 
 
 # =============================================================================
+def munge_lists( listA, listB ):
+    """
+    Combine two lists into a single list.
+
+    (While allowing them to be None, non-lists, or lists.)
+    """
+    # TODO: there's nothing specifically filter or model-related here - move to util
+    if listA is None:
+        return listB
+    if listB is None:
+        return listA
+    if not isinstance( listA, list ):
+        listA = [ listA ]
+    if not isinstance( listB, list ):
+        listB = [ listB ]
+    return listA + listB
+
+
+# -----------------------------------------------------------------------------
 class ModelManager( object ):
     """
     Base class for all model/resource managers.
@@ -213,16 +238,7 @@ class ModelManager( object ):
 
         (While allowing them to be None, non-lists, or lists.)
         """
-        # TODO: there's nothing specifically filter or model-related here - move to util
-        if filtersA is None:
-            return filtersB
-        if filtersB is None:
-            return filtersA
-        if not isinstance( filtersA, list ):
-            filtersA = [ filtersA ]
-        if not isinstance( filtersB, list ):
-            filtersB = [ filtersB ]
-        return filtersA + filtersB
+        return munge_lists( filtersA, filtersB )
 
     # .... order, limit, and offset
     def _apply_order_by( self, query, order_by ):

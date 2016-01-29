@@ -4,7 +4,7 @@ define([], function() {
 // LIBRARY RELATED MODELS
 
     var Library = Backbone.Model.extend({
-      urlRoot: ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/libraries/',
+      urlRoot: Galaxy.root + 'api/libraries/',
 
       /** based on show_deleted would this lib show in the list of lib's?
        *  @param {Boolean} show_deleted are we including deleted libraries?
@@ -19,7 +19,7 @@ define([], function() {
     });
 
     var Libraries = Backbone.Collection.extend({
-      url: ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/libraries',
+      url: Galaxy.root + 'api/libraries',
 
       model: Library,
 
@@ -60,7 +60,7 @@ define([], function() {
       },
 
       /** Sort collection by library name (ascending) and return the sorted
-       *  collection 
+       *  collection
        */
       sortByNameAsc: function(){
         this.comparator = function(libraryA, libraryB){
@@ -77,7 +77,7 @@ define([], function() {
       },
 
       /** Sort collection by library name (descending) and return the sorted
-       *  collection 
+       *  collection
        */
       sortByNameDesc: function(){
         this.comparator = function(libraryA, libraryB){
@@ -102,18 +102,18 @@ define([], function() {
     });
 
     var Ldda = LibraryItem.extend({
-      urlRoot : ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/libraries/datasets/'
+      urlRoot : Galaxy.root + 'api/libraries/datasets/'
     });
 
     var FolderAsModel = LibraryItem.extend({
-      urlRoot: ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/folders/'
+      urlRoot: Galaxy.root + 'api/folders/'
     });
 
     var Folder = Backbone.Collection.extend({
       model: LibraryItem,
 
       /** Sort collection by item name (ascending) and return the sorted
-       *  collection. Folders go before datasets. 
+       *  collection. Folders go before datasets.
        */
       sortByNameAsc: function(){
         this.comparator = function(itemA, itemB){
@@ -138,7 +138,7 @@ define([], function() {
       },
 
       /** Sort collection by item name (descending) and return the sorted
-       *  collection. Folders go before datasets. 
+       *  collection. Folders go before datasets.
        */
       sortByNameDesc: function(){
         this.comparator = function(itemA, itemB){
@@ -166,7 +166,7 @@ define([], function() {
     var FolderContainer = Backbone.Model.extend({
       defaults : {
           folder : new Folder(),
-          urlRoot : ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/folders/',
+          urlRoot : Galaxy.root + 'api/folders/',
           id : "unknown"
       },
       parse : function(obj) {
@@ -195,11 +195,11 @@ define([], function() {
 // TODO UNITE
 
     var HistoryItem = Backbone.Model.extend({
-      urlRoot : ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/histories/'
+      urlRoot : Galaxy.root + 'api/histories/'
     });
 
     var HistoryContents = Backbone.Collection.extend({
-      urlRoot : ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/histories/',
+      urlRoot : Galaxy.root + 'api/histories/',
       initialize: function(options){
         this.id = options.id;
       },
@@ -210,22 +210,22 @@ define([], function() {
     });
 
     var GalaxyHistory = Backbone.Model.extend({
-      urlRoot : ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/histories/'
+      urlRoot : Galaxy.root + 'api/histories/'
     });
 
     var GalaxyHistories = Backbone.Collection.extend({
-      url : ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/histories',
+      url : Galaxy.root + 'api/histories',
       model : GalaxyHistory
     });
 
 // ============================================================================
 // JSTREE MODEL
     /** Represents folder structure parsable by the jstree component.
-     * 
+     *
      */
-    
+
     var Jstree = Backbone.Model.extend({
-      urlRoot: ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/remote_files'
+      urlRoot: Galaxy.root + 'api/remote_files'
     });
 
 return {

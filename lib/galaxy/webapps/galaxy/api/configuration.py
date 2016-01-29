@@ -82,6 +82,15 @@ class ConfigurationController( BaseAPIController ):
             rval.append(entry)
         return rval
 
+    @expose_api
+    @require_admin
+    def reload_toolbox(self, trans):
+        """
+        PUT /api/configuration/toolbox
+        Reload the Galaxy toolbox (but not individual tools).
+        """
+        self.app.reload_toolbox()
+
 
 def _tool_conf_to_dict(conf):
     return dict(

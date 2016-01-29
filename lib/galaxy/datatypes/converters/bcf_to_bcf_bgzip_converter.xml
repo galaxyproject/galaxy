@@ -1,0 +1,14 @@
+<tool id="CONVERTER_bcf_to_bcf_bgzip" name="Convert BCF to BCF_BGZIP" version="0.0.1" hidden="false">
+<!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+  <command interpreter="python">bcf_to_bcf_bgzip_converter.py '$input1' '$output1'</command>
+  <inputs>
+    <page>
+        <param format="bcf" name="input1" type="data" label="Choose bcf file"/>
+    </page>
+   </inputs>
+  <outputs>
+    <data format="bcf_bgzip" name="output1"/>
+  </outputs>
+  <help>
+  </help>
+</tool>

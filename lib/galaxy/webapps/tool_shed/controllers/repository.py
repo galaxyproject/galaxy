@@ -1681,6 +1681,14 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                      includes_tool_dependencies=includes_tool_dependencies,
                      repo_info_dicts=repo_info_dicts )
 
+    @web.expose
+    def get_repository_type( self, trans, **kwd ):
+        """Given a repository name and owner, return the type."""
+        repository_name = kwd[ 'name' ]
+        repository_owner = kwd[ 'owner' ]
+        repository = suc.get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
+        return str( repository.type )
+
     @web.json
     def get_required_repo_info_dict( self, trans, encoded_str=None ):
         """
@@ -1747,6 +1755,22 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             tool_dependencies_config_file.close()
             return contents
         return ''
+
+    @web.json
+    def get_tool_dependency_definition_metadata( self, trans, **kwd ):
+        """
+        Given a repository name and ownerof a repository whose type is
+        tool_dependency_definition, return the current metadata.
+        """
+        repository_name = kwd[ 'name' ]
+        repository_owner = kwd[ 'owner' ]
+        repository = suc.get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
+        encoded_id = trans.app.security.encode_id( repository.id )
+        repository_tip = repository.tip( trans.app )
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
+                                                                                 encoded_id,
+                                                                                 repository_tip )
+        return repository_metadata.metadata
 
     @web.expose
     def get_tool_versions( self, trans, **kwd ):
@@ -2922,13 +2946,13 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 else:
                     tool_shed_status_dict[ 'revision_update' ] = 'False'
             # Handle revision upgrades.
-            ordered_metadata_changeset_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
-            num_metadata_revisions = len( ordered_metadata_changeset_revisions )
-            for index, metadata_changeset_revision in enumerate( ordered_metadata_changeset_revisions ):
+            metadata_revisions = [ revision[ 1 ] for revision in suc.get_metadata_revisions( repository, repo ) ]
+            num_metadata_revisions = len( metadata_revisions )
+            for index, metadata_revision in enumerate( metadata_revisions ):
                 if index == num_metadata_revisions:
                     tool_shed_status_dict[ 'revision_upgrade' ] = 'False'
                     break
-                if metadata_changeset_revision == changeset_revision:
+                if metadata_revision == changeset_revision:
                     if num_metadata_revisions - index > 1:
                         tool_shed_status_dict[ 'revision_upgrade' ] = 'True'
                     else:

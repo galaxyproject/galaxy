@@ -13,7 +13,8 @@ from galaxy.managers.tags import GalaxyTagManager
 from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
-from galaxy.tools.imp_exp import load_history_imp_exp_tools
+from galaxy.tools.special_tools import load_lib_tools
+from galaxy.tours import ToursRegistry
 from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.tools.data_manager.manager import DataManagers
@@ -99,12 +100,14 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Load external metadata tool
         self.datatypes_registry.load_external_metadata_tool( self.toolbox )
         # Load history import/export tools.
-        load_history_imp_exp_tools( self.toolbox )
+        load_lib_tools( self.toolbox )
         # visualizations registry: associates resources with visualizations, controls how to render
         self.visualizations_registry = VisualizationsRegistry(
             self,
             directories_setting=self.config.visualization_plugins_directory,
             template_cache_dir=self.config.template_cache )
+        # Tours registry
+        self.tour_registry = ToursRegistry(self.config.tour_config_dir)
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.security.HostAgent(

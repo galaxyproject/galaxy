@@ -1482,6 +1482,88 @@ class ChromatinInteractions( Interval ):
         return False
 
 
+class ScIdx(Tabular):
+    """
+    ScIdx files are 1-based and consist of strand-specific coordinate counts.
+    They always have 5 columns, and the first row is the column labels:
+    'chrom', 'index', 'forward', 'reverse', 'value'.
+    Each line following the first consists of data:
+    chromosome name (type str), peak index (type int), Forward strand peak
+    count (type int), Reverse strand peak count (type int) and value (type int).
+    The value of the 5th 'value' column is the sum of the forward and reverse
+    peak count values.
+    """
+    file_ext = "scidx"
+
+    MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True, visible=False)
+    MetadataElement(name="column_types", default=[], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False, no_value=[])
+
+    def __init__(self, **kwd):
+        """
+        Initialize scidx datatype.
+        """
+        Tabular.__init__(self, **kwd)
+        # Don't set column names since the first
+        # line of the dataset displays them.
+        self.column_names = ['chrom', 'index', 'forward', 'reverse', 'value']
+
+    def sniff(self, filename):
+        """
+        Checks for 'scidx-ness.'
+        """
+        try:
+            count = 0
+            fh = open(filename, "r")
+            while True:
+                line = fh.readline()
+                line = line.strip()
+                # The first line is always a comment like this:
+                # 2015-11-23 20:18:56.51;input.bam;READ1
+                if count == 0:
+                    if line.startswith('#'):
+                        count += 1
+                        continue
+                    else:
+                        return False
+                if not line:
+                    # EOF
+                    if count > 1:
+                        # The second line is always the labels:
+                        # chrom index forward reverse value
+                        # We need at least the column labels and a data line.
+                        return True
+                    return False
+                # Skip first line.
+                if count > 1:
+                    items = line.split('\t')
+                    if len(items) != 5:
+                        return False
+                    index = items[1]
+                    if not index.isdigit():
+                        return False
+                    forward = items[2]
+                    if not forward.isdigit():
+                        return False
+                    reverse = items[3]
+                    if not reverse.isdigit():
+                        return False
+                    value = items[4]
+                    if not value.isdigit():
+                        return False
+                    if int(forward) + int(reverse) != int(value):
+                        return False
+                if count == 100:
+                    return True
+                count += 1
+            if count < 100 and count > 0:
+                return True
+        except:
+            return False
+        finally:
+            fh.close()
+        return False
+
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod(sys.modules[__name__])

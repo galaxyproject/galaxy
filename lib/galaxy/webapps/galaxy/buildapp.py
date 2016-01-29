@@ -71,11 +71,14 @@ def paste_app_factory( global_conf, **kwargs ):
     atexit.register( app.shutdown )
     # Create the universe WSGI application
     webapp = GalaxyWebApplication( app, session_cookie='galaxysession', name='galaxy' )
+
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
     # Force /history to go to view of current
     webapp.add_route( '/history', controller='history', action='view' )
     # Force /activate to go to the controller
     webapp.add_route( '/activate', controller='user', action='activate' )
+    webapp.add_route( '/login', controller='root', action='login' )
+
     # These two routes handle our simple needs at the moment
     webapp.add_route( '/async/{tool_id}/{data_id}/{data_secret}', controller='async', action='index', tool_id=None, data_id=None, data_secret=None )
     webapp.add_route( '/{controller}/{action}', action='index' )
@@ -248,6 +251,13 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.connect( '/api/tools/{id:.+?}', action='show', controller="tools" )
     webapp.mapper.resource( 'tool', 'tools', path_prefix='/api' )
 
+    webapp.mapper.connect( '/api/dependency_resolvers/dependency', action="manager_dependency", controller="tool_dependencies" )
+    webapp.mapper.connect( '/api/dependency_resolvers/requirements', action="manager_requirements", controller="tool_dependencies" )
+    webapp.mapper.connect( '/api/dependency_resolvers/{id}/dependency', action="resolver_dependency", controller="tool_dependencies", method=['GET'] )
+    webapp.mapper.connect( '/api/dependency_resolvers/{id}/dependency', action="install_dependency", controller="tool_dependencies", method=['POST'] )
+    webapp.mapper.connect( '/api/dependency_resolvers/{id}/requirements', action="resolver_requirements", controller="tool_dependencies" )
+    webapp.mapper.resource( 'dependency_resolver', 'dependency_resolvers', controller="tool_dependencies", path_prefix='api' )
+
     webapp.mapper.resource_with_deleted( 'user', 'users', path_prefix='/api' )
     webapp.mapper.resource( 'genome', 'genomes', path_prefix='/api' )
     webapp.mapper.resource( 'visualization', 'visualizations', path_prefix='/api' )
@@ -266,6 +276,12 @@ def populate_api_routes( webapp, app ):
         '/api/configuration/tool_lineages',
         controller="configuration",
         action="tool_lineages"
+    )
+    webapp.mapper.connect(
+        '/api/configuration/toolbox',
+        controller="configuration",
+        action="reload_toolbox",
+        conditions=dict( method=["PUT"] )
     )
     webapp.mapper.resource( 'configuration', 'configuration', path_prefix='/api' )
     webapp.mapper.connect( "configuration_version",
@@ -389,6 +405,28 @@ def populate_api_routes( webapp, app ):
                            controller='authenticate',
                            action='get_api_key',
                            conditions=dict( method=[ "GET" ] ) )
+
+    # =====================
+    # ===== TOURS API =====
+    # =====================
+
+    webapp.mapper.connect( 'index',
+                           '/api/tours',
+                           controller='tours',
+                           action='index',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'show',
+                           '/api/tours/{tour_id}',
+                           controller='tours',
+                           action='show',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'update_tour',
+                           '/api/tours/{tour_id}',
+                           controller='tours',
+                           action='update_tour',
+                           conditions=dict( method=[ "POST" ] ) )
 
     # =======================
     # ===== LIBRARY API =====

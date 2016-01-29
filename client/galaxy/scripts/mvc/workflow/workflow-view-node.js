@@ -1,4 +1,4 @@
-define(['mvc/workflow/workflow-view-terminals', 'mvc/workflow/workflow-view-data'], function( TerminalViews, DataViews ){
+define(['libs/underscore', 'mvc/workflow/workflow-view-terminals', 'mvc/workflow/workflow-view-data'], function( _, TerminalViews, DataViews ){
     return Backbone.View.extend( {
         initialize: function( options ){
             this.node = options.node;
@@ -7,10 +7,18 @@ define(['mvc/workflow/workflow-view-terminals', 'mvc/workflow/workflow-view-data
             this.tool_body.find( "div" ).remove();
             this.newInputsDiv().appendTo( this.tool_body );
             this.terminalViews = {};
-            this.outputTerminlViews = {};
+            this.outputViews = {};
         },
 
         render: function() {
+            var label = this.node.label;
+            var title;
+            if(label) {
+                title = label; 
+            } else {
+                title = this.node.name;
+            }
+            this.$el.find(".nodeTitle").text(title);
             this.renderToolErrors();
             this.$el.css( "width", Math.min(250, Math.max( this.$el.width(), this.output_width )));
         },
@@ -83,7 +91,14 @@ define(['mvc/workflow/workflow-view-terminals', 'mvc/workflow/workflow-view-data
                 "terminalElement": terminalView.el,
                 "nodeView": this,
             } );
+            this.outputViews[ output.name ] = outputView;
             this.tool_body.append( outputView.$el.append( terminalView.terminalElements() ) );
+        },
+
+        redrawWorkflowOutputs: function() {
+            _.each(this.outputViews, function(outputView) {
+                outputView.redrawWorkflowOutput();
+            });
         },
 
         updateDataOutput: function( output ) {

@@ -77,6 +77,8 @@ class DatasetCollectionManager( object ):
                 for input_name, input_collection in implicit_collection_info[ "implicit_inputs" ]:
                     dataset_collection_instance.add_implicit_input_collection( input_name, input_collection )
                 for output_dataset in implicit_collection_info.get( "outputs" ):
+                    if output_dataset not in trans.sa_session:
+                        output_dataset = trans.sa_session.query( type( output_dataset ) ).get( output_dataset.id )
                     if isinstance( output_dataset, model.HistoryDatasetAssociation ):
                         output_dataset.hidden_beneath_collection_instance = dataset_collection_instance
                     elif isinstance( output_dataset, model.HistoryDatasetCollectionAssociation ):
@@ -265,7 +267,12 @@ class DatasetCollectionManager( object ):
         # Previously created collection already found in request, just pass
         # through as is.
         if "__object__" in element_identifier:
-            return element_identifier[ "__object__" ]
+            the_object = element_identifier[ "__object__" ]
+            if the_object is not None and the_object.id:
+                context = self.model.context
+                if the_object not in context:
+                    the_object = context.query( type(the_object) ).get(the_object.id)
+            return the_object
 
         # dateset_identifier is dict {src=hda|ldda|hdca|new_collection, id=<encoded_id>}
         try:

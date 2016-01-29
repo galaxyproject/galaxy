@@ -34,25 +34,23 @@
     ${parent.javascripts()}
     ${h.js(
         "libs/jquery/jstorage",
-        "libs/jquery/jquery.rating",
-        "galaxy.panels",
         "libs/jquery/jquery.event.drag",
-        "libs/jquery/jquery.event.hover",
         "libs/jquery/jquery.mousewheel",
-        "libs/jquery/jquery-ui",
-        "libs/require",
         "libs/farbtastic",
         "libs/jquery/jquery.autocomplete",
-        "galaxy.autocom_tagging"
     )}
     ${community_tag_js( get_controller_name( item ) )}
 </%def>
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "autocomplete_tagging", "embed_item", "jquery.rating" )}
-    ${h.css( "autocomplete_tagging", "trackster", "library",
-             "jquery-ui/smoothness/jquery-ui" )}
+    ${h.css(
+        "autocomplete_tagging",
+        "embed_item",
+        "jquery.rating",
+        "library",
+        "jquery-ui/smoothness/jquery-ui"
+    )}
 
     <style type="text/css">
         .page-body {

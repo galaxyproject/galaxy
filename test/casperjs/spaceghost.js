@@ -349,11 +349,14 @@ SpaceGhost.prototype._loadFailedHandler = function _loadFailedHandler( object ){
 SpaceGhost.prototype._pageErrorHandler = function _pageErrorHandler( msg, backtrace ){
     // add a page error handler to catch page errors (what we're most interested with here)
     //  normally, casper seems to let these pass unhandled
-    //console.debug( 'page.error:' + msg );
 
     //TODO:!! lots of casper selectors are throwing this - even tho they still work
     if( msg === 'SYNTAX_ERR: DOM Exception 12: An invalid or illegal string was specified.' ){
         void( 0 ); // no op
+
+    //TODO: these are from requirejs erroring (potentially) when navigating away from a page still loading scripts
+    } else if( msg.indexOf( 'http://requirejs.org/docs/errors.html#scripterror' ) !== -1 ){
+        this.warn( 'requirejs script error:  ' + msg.replace( /\n/g, '  ' ) );
 
     } else if( this.options.raisePageError ){
         //console.debug( '(page) Error: ' + msg );
@@ -1159,7 +1162,7 @@ SpaceGhost.prototype.getUniverseSetting = function getUniverseSetting( iniKey ){
 };
 
 SpaceGhost.prototype.waitForMasthead = function wait( then ) {
-    return this.waitForText( this.data.labels.masthead.menus.user, then );
+    return this.waitForText( this.data.labels.masthead.menus.analyze, then );
 };
 
 
@@ -1190,7 +1193,8 @@ SpaceGhost.prototype.data = {
             adminLink   : '#masthead a[href="/admin/index"]',
             userMenu    : {
                 userEmail_xpath : '//a[contains(text(),"Logged in as")]'
-            }
+            },
+            user        : '//ul[@id="user"]',
         },
         toolMenu : {
             container   : '.toolMenuContainer'
@@ -1222,7 +1226,12 @@ SpaceGhost.prototype.data = {
     labels : {
         masthead : {
             menus : {
-                user : 'User'
+                analyze: 'Analyze Data',
+                workflow: 'Workflow',
+                libraries: 'Shared Data',
+                visualization: 'Visualization',
+                help: 'Help',
+                user : 'User',
             },
             userMenu : {
                 register    : 'Register',

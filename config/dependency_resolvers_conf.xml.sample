@@ -1,0 +1,28 @@
+<dependency_resolvers>
+<!-- the default configuration, first look for dependencies installed from the toolshed -->
+  <tool_shed_packages />
+<!-- then look for env.sh files in directories according to the "galaxy packages" schema.
+     These resolvers can take a base_path attribute to specify where to look for
+     package definitions, but by default look in the directory specified by tool_dependency_dir
+     in Galaxy's config/galaxy.ini -->
+  <galaxy_packages />
+  <galaxy_packages versionless="true" />
+  <conda />
+  <conda versionless="true" />
+
+<!-- Example configuration of modules dependency resolver, uses Environment Modules -->
+<!--
+  <modules modulecmd="/opt/Modules/3.2.9/bin/modulecmd" />
+  <modules modulecmd="/opt/Modules/3.2.9/bin/modulecmd" versionless="true" default_indicator="default" />
+Attributes are:
+* modulecmd - path to modulecmd
+* versionless - default: false - whether to resolve tools using a version number or not
+* find_by - directory or avail - use the DirectoryModuleChecker or AvailModuleChecker
+* prefetch - default: true - in the AvailModuleChecker prefetch module info with 'module avail'
+* default_indicator - default: '(default)' - what indicate to the AvailModuleChecker that a module is the default version
+-->
+<!-- other resolvers
+  <tool_shed_tap />
+  <homebrew />
+-->
+</dependency_resolvers>

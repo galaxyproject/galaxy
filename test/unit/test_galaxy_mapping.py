@@ -373,47 +373,80 @@ class MappingTests( unittest.TestCase ):
             email="testworkflows@bx.psu.edu",
             password="password"
         )
-        stored_workflow = model.StoredWorkflow()
-        stored_workflow.user = user
-        workflow = model.Workflow()
-        workflow_step = model.WorkflowStep()
-        workflow.steps = [ workflow_step ]
-        workflow.stored_workflow = stored_workflow
 
+        def workflow_from_steps(steps):
+            stored_workflow = model.StoredWorkflow()
+            stored_workflow.user = user
+            workflow = model.Workflow()
+            workflow.steps = steps
+            workflow.stored_workflow = stored_workflow
+            return workflow
+
+        child_workflow = workflow_from_steps([])
+        self.persist( child_workflow )
+
+        workflow_step_1 = model.WorkflowStep()
+        workflow_step_1.order_index = 0
+        workflow_step_1.type = "data_input"
+        workflow_step_2 = model.WorkflowStep()
+        workflow_step_2.order_index = 1
+        workflow_step_2.type = "subworkflow"
+        workflow_step_2.subworkflow = child_workflow
+
+        workflow = workflow_from_steps([workflow_step_1, workflow_step_2])
         self.persist( workflow )
-        assert workflow_step.id is not None
+
+        assert workflow_step_1.id is not None
+        h1 = model.History( name="WorkflowHistory1", user=user)
 
         invocation_uuid = uuid.uuid1()
 
         workflow_invocation = model.WorkflowInvocation()
         workflow_invocation.uuid = invocation_uuid
+        workflow_invocation.history = h1
 
         workflow_invocation_step1 = model.WorkflowInvocationStep()
         workflow_invocation_step1.workflow_invocation = workflow_invocation
-        workflow_invocation_step1.workflow_step = workflow_step
+        workflow_invocation_step1.workflow_step = workflow_step_1
+
+        subworkflow_invocation = model.WorkflowInvocation()
+        workflow_invocation.attach_subworkflow_invocation_for_step(workflow_step_2, subworkflow_invocation)
 
         workflow_invocation_step2 = model.WorkflowInvocationStep()
         workflow_invocation_step2.workflow_invocation = workflow_invocation
-        workflow_invocation_step2.workflow_step = workflow_step
+        workflow_invocation_step2.workflow_step = workflow_step_2
 
         workflow_invocation.workflow = workflow
 
-        h1 = model.History( name="WorkflowHistory1", user=user)
         d1 = self.new_hda( h1, name="1" )
         workflow_request_dataset = model.WorkflowRequestToInputDatasetAssociation()
         workflow_request_dataset.workflow_invocation = workflow_invocation
-        workflow_request_dataset.workflow_step = workflow_step
+        workflow_request_dataset.workflow_step = workflow_step_1
         workflow_request_dataset.dataset = d1
         self.persist( workflow_invocation )
         assert workflow_request_dataset is not None
         assert workflow_invocation.id is not None
 
+        history_id = h1.id
         self.expunge()
 
         loaded_invocation = self.query( model.WorkflowInvocation ).get( workflow_invocation.id )
         assert loaded_invocation.uuid == invocation_uuid, "%s != %s" % (loaded_invocation.uuid, invocation_uuid)
         assert loaded_invocation
+        assert loaded_invocation.history.id == history_id
+
+        step_1, step_2 = loaded_invocation.workflow.steps
+
+        assert not step_1.subworkflow
+        assert step_2.subworkflow
         assert len( loaded_invocation.steps ) == 2
+
+        subworkflow_invocation_assoc = loaded_invocation.get_subworkflow_invocation_association_for_step(step_2)
+        assert subworkflow_invocation_assoc is not None
+        assert isinstance(subworkflow_invocation_assoc.subworkflow_invocation, model.WorkflowInvocation)
+        assert isinstance(subworkflow_invocation_assoc.parent_workflow_invocation, model.WorkflowInvocation)
+
+        assert subworkflow_invocation_assoc.subworkflow_invocation.history.id == history_id
 
     def new_hda( self, history, **kwds ):
         return history.add_dataset( self.model.HistoryDatasetAssociation( create_dataset=True, sa_session=self.model.session, **kwds ) )

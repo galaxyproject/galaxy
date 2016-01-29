@@ -4,7 +4,6 @@
 import os
 import imp
 import unittest
-import random
 
 test_utils = imp.load_source( 'test_utils',
     os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
@@ -17,13 +16,11 @@ from galaxy import model
 from galaxy import exceptions
 
 from base import BaseTestCase
-from base import CreatesCollectionsMixin
 
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.histories import HistorySerializer
 from galaxy.managers.histories import HistoryFilters
 from galaxy.managers import hdas
-from galaxy.managers import collections
 
 default_password = '123456'
 user2_data = dict( email='user2@user2.user2', username='user2', password=default_password )
@@ -36,6 +33,12 @@ class HistoryManagerTestCase( BaseTestCase ):
     def set_up_managers( self ):
         super( HistoryManagerTestCase, self ).set_up_managers()
         self.history_manager = HistoryManager( self.app )
+        self.hda_manager = hdas.HDAManager( self.app )
+
+    def add_hda_to_history( self, history, **kwargs ):
+        dataset = self.hda_manager.dataset_manager.create()
+        hda = self.hda_manager.create( history=history, dataset=dataset, **kwargs )
+        return hda
 
     def test_base( self ):
         user2 = self.user_manager.create( **user2_data )
@@ -52,13 +55,7 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.assertEqual( history1,
             self.trans.sa_session.query( model.History ).filter( model.History.user == user2 ).one() )
 
-        self.log( "should be able to copy a history" )
         history2 = self.history_manager.copy( history1, user=user3 )
-        self.assertIsInstance( history2, model.History )
-        self.assertEqual( history2.user, user3 )
-        self.assertEqual( history2, self.trans.sa_session.query( model.History ).get( history2.id ) )
-        self.assertEqual( history2.name, history1.name )
-        self.assertNotEqual( history2, history1 )
 
         self.log( "should be able to query" )
         histories = self.trans.sa_session.query( model.History ).all()
@@ -80,6 +77,36 @@ class HistoryManagerTestCase( BaseTestCase ):
         name_first_then_time = ( model.History.name, sqlalchemy.desc( model.History.create_time ) )
         self.assertEqual( self.history_manager.list( order_by=name_first_then_time ),
             [ history2, history1, history3 ] )
+
+    def test_copy( self ):
+        user2 = self.user_manager.create( **user2_data )
+        user3 = self.user_manager.create( **user3_data )
+
+        self.log( "should be able to copy a history (and it's hdas)" )
+        history1 = self.history_manager.create( name='history1', user=user2 )
+        tags = [ u'tag-one' ]
+        annotation = u'history annotation'
+        self.history_manager.set_tags( history1, tags, user=user2 )
+        self.history_manager.annotate( history1, annotation, user=user2 )
+
+        hda = self.add_hda_to_history( history1, name='wat' )
+        hda_tags = [ u'tag-one', u'tag-two' ]
+        hda_annotation = u'annotation'
+        self.hda_manager.set_tags( hda, hda_tags, user=user2 )
+        self.hda_manager.annotate( hda, hda_annotation, user=user2 )
+
+        history2 = self.history_manager.copy( history1, user=user3 )
+        self.assertIsInstance( history2, model.History )
+        self.assertEqual( history2.user, user3 )
+        self.assertEqual( history2, self.trans.sa_session.query( model.History ).get( history2.id ) )
+        self.assertEqual( history2.name, history1.name )
+        self.assertNotEqual( history2, history1 )
+
+        copied_hda = history2.datasets[0]
+        copied_hda_tags = self.hda_manager.get_tags( copied_hda )
+        self.assertEqual( sorted( hda_tags ), sorted( copied_hda_tags ) )
+        copied_hda_annotation = self.hda_manager.annotation( copied_hda )
+        self.assertEqual( hda_annotation, copied_hda_annotation )
 
     def test_has_user( self ):
         owner = self.user_manager.create( **user2_data )
@@ -724,69 +751,6 @@ class HistoryFiltersTestCase( BaseTestCase ):
         self.log( "orm and fn filtered, negative offset should return full list" )
         found = self.history_manager.list( filters=filters, offset=-1 )
         self.assertEqual( found, deleted_and_annotated )
-
-
-# =============================================================================
-class HistoryAsContainerTestCase( BaseTestCase, CreatesCollectionsMixin ):
-
-    def set_up_managers( self ):
-        super( HistoryAsContainerTestCase, self ).set_up_managers()
-        self.history_manager = HistoryManager( self.app )
-        self.hda_manager = hdas.HDAManager( self.app )
-        self.collection_manager = collections.DatasetCollectionManager( self.app )
-
-    def add_hda_to_history( self, history, **kwargs ):
-        dataset = self.hda_manager.dataset_manager.create()
-        hda = self.hda_manager.create( history=history, dataset=dataset, **kwargs )
-        return hda
-
-    def add_list_collection_to_history( self, history, hdas, name='test collection', **kwargs ):
-        hdca = self.collection_manager.create( self.trans, history, name, 'list',
-            element_identifiers=self.build_element_identifiers( hdas ) )
-        return hdca
-
-    def test_contents( self ):
-        user2 = self.user_manager.create( **user2_data )
-        history = self.history_manager.create( name='history', user=user2 )
-
-        self.log( "calling contents on an empty history should return an empty list" )
-        self.assertEqual( [], list( self.history_manager.contents( history ) ) )
-
-        self.log( "calling contents on an history with hdas should return those in order of their hids" )
-        hdas = [ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ]
-        random.shuffle( hdas )
-        ordered_hda_contents = list( self.history_manager.contents( history ) )
-        self.assertEqual( map( lambda hda: hda.hid, ordered_hda_contents ), [ 1, 2, 3 ] )
-
-        self.log( "calling contents on an history with both hdas and collections should return both" )
-        hdca = self.add_list_collection_to_history( history, hdas )
-        all_contents = list( self.history_manager.contents( history ) )
-        self.assertEqual( all_contents, list( ordered_hda_contents ) + [ hdca ] )
-
-    def test_contained( self ):
-        user2 = self.user_manager.create( **user2_data )
-        history = self.history_manager.create( name='history', user=user2 )
-
-        self.log( "calling contained on an empty history should return an empty list" )
-        self.assertEqual( [], list( self.history_manager.contained( history ) ) )
-
-        self.log( "calling contained on an history with both hdas and collections should return only hdas" )
-        hdas = [ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ]
-        self.add_list_collection_to_history( history, hdas )
-        self.assertEqual( list( self.history_manager.contained( history ) ), hdas )
-
-    def test_subcontainers( self ):
-        user2 = self.user_manager.create( **user2_data )
-        history = self.history_manager.create( name='history', user=user2 )
-
-        self.log( "calling subcontainers on an empty history should return an empty list" )
-        self.assertEqual( [], list( self.history_manager.subcontainers( history ) ) )
-
-        self.log( "calling subcontainers on an history with both hdas and collections should return only collections" )
-        hdas = [ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ]
-        hdca = self.add_list_collection_to_history( history, hdas )
-        subcontainers = list( self.history_manager.subcontainers( history ) )
-        self.assertEqual( subcontainers, [ hdca ] )
 
 
 # =============================================================================

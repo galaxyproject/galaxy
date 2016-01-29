@@ -7,8 +7,9 @@ import urllib
 
 from galaxy import util
 from galaxy import web
-from galaxy.util import xml_util
 from galaxy.datatypes import checkers
+from galaxy.util import checkers
+from galaxy.util import xml_util
 from galaxy.web.base.controller import BaseUIController
 from tool_shed.util.web_util import escape
 

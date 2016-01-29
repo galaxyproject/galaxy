@@ -4,7 +4,7 @@ import shutil
 
 import galaxy.tools
 from galaxy import util
-from galaxy.datatypes import checkers
+from galaxy.util import checkers
 from galaxy.util.expressions import ExpressionContext
 from galaxy.web.form_builder import SelectField
 
@@ -179,7 +179,7 @@ def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tu
                         sample_files_copied.append( options.missing_index_file )
                         break
         # Reload the tool into the local list of repository_tools_tups.
-        repository_tool = app.toolbox.load_tool( os.path.join( tool_path, tup_path ), guid=guid )
+        repository_tool = app.toolbox.load_tool( os.path.join( tool_path, tup_path ), guid=guid, use_cached=False )
         repository_tools_tups[ index ] = ( tup_path, guid, repository_tool )
     return repository_tools_tups, sample_files_copied
 

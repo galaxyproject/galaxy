@@ -332,7 +332,6 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         ajs.command_line = job.get_command_line()
         ajs.job_wrapper = job_wrapper
         ajs.job_destination = job_wrapper.job_destination
-        self.__old_state_paths( ajs )
         if job.state == model.Job.states.RUNNING:
             log.debug( "(%s/%s) is still in running state, adding to the DRM queue" % ( job.get_id(), job.get_job_runner_external_id() ) )
             ajs.old_state = drmaa.JobState.RUNNING
@@ -343,18 +342,6 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             ajs.old_state = drmaa.JobState.QUEUED_ACTIVE
             ajs.running = False
             self.monitor_queue.put( ajs )
-
-    def __old_state_paths( self, ajs ):
-        """For recovery of jobs started prior to standardizing the naming of
-        files in the AsychronousJobState object
-        """
-        if ajs.job_wrapper is not None:
-            job_file = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, ajs.job_wrapper.job_id)
-            if not os.path.exists( ajs.job_file ) and os.path.exists( job_file ):
-                ajs.output_file = "%s.drmout" % os.path.join(os.getcwd(), ajs.job_wrapper.working_directory, ajs.job_wrapper.get_id_tag())
-                ajs.error_file = "%s.drmerr" % os.path.join(os.getcwd(), ajs.job_wrapper.working_directory, ajs.job_wrapper.get_id_tag())
-                ajs.exit_code_file = "%s.drmec" % os.path.join(os.getcwd(), ajs.job_wrapper.working_directory, ajs.job_wrapper.get_id_tag())
-                ajs.job_file = job_file
 
     def store_jobtemplate(self, job_wrapper, jt):
         """ Stores the content of a DRMAA JobTemplate object in a file as a JSON string.

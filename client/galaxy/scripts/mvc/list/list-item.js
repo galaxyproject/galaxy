@@ -3,6 +3,8 @@ define([
     'utils/localization'
 ], function( BASE_MVC, _l ){
 
+'use strict';
+
 var logNamespace = 'list';
 //==============================================================================
 /** A view which, when first rendered, shows only summary data/attributes, but
@@ -475,7 +477,7 @@ var FoldoutListItemView = ListItemView.extend({
     _expandByDrilldown : function(){
         var view = this;
         // attachment and rendering done by listener
-        view.foldout.on( 'close', function(){
+        view.listenTo( view.foldout, 'close', function(){
             view.trigger( 'collapsed:drilldown', view, view.foldout );
         });
         view.trigger( 'expanded:drilldown', view, view.foldout );

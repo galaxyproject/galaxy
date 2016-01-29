@@ -13,7 +13,7 @@ from cgi import escape
 
 from galaxy import util
 from galaxy.datatypes import data, metadata
-from galaxy.datatypes.checkers import is_gzip
+from galaxy.util.checkers import is_gzip
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers
 from galaxy.util.json import dumps
@@ -81,6 +81,7 @@ class TabularData( data.Text ):
             # For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
             max_peek_size = 1000000  # 1 MB
             if os.stat( dataset.file_name ).st_size < max_peek_size:
+                self._clean_and_set_mime_type( trans, dataset.get_mime() )
                 return open( dataset.file_name )
             else:
                 trans.response.set_content_type( "text/html" )

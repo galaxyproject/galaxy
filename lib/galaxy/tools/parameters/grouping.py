@@ -15,7 +15,7 @@ from galaxy.util import relpath
 from galaxy.util import sanitize_for_filename
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
-from galaxy.model.item_attrs import Dictifiable
+from galaxy.util.dictifiable import Dictifiable
 
 
 class Group( object, Dictifiable ):

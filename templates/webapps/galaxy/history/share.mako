@@ -103,7 +103,7 @@
                     url: "${h.url_for(controller="/api/users", action="index")}",
                     data: function (term) {
                         return {
-                            f_email: term
+                            f_any: term,
                         };
                     },
                     dataType: 'json',
@@ -115,11 +115,13 @@
                             // If they aren't the requesting user, add to the
                             // list that will populate the select
                             if(item.id != "${trans.security.encode_id(trans.user.id)}"){
-                                results.push({
-                                  id: item.id,
-                                  name: item.username,
-                                  text: item_to_label(item),
-                                });
+                                if(item.email !== undefined){
+                                    results.push({
+                                      id: item.id,
+                                      name: item.username,
+                                      text: item_to_label(item),
+                                    });
+                                }
                             }
                         });
                         return {

@@ -269,7 +269,7 @@ class Inflector:
 
     def __init__( self, Inflector=English ):
         assert callable(Inflector), "Inflector should be a callable obj"
-        self.Inflector = apply(Inflector)
+        self.Inflector = Inflector()
 
     def pluralize(self, word) :
         '''Pluralizes nouns.'''

@@ -3,6 +3,7 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( STATES, BASE_MVC, _l ){
+'use strict';
 
 var logNamespace = 'dataset';
 //==============================================================================
@@ -79,9 +80,8 @@ var DatasetAssociation = Backbone.Model
             'meta_download' : 'dataset/get_metadata_file?hda_id=' + id + '&metadata_name='
         };
 //TODO: global
-        var root = ( window.galaxy_config && galaxy_config.root )?( galaxy_config.root ):( '/' );
         _.each( urls, function( value, key ){
-            urls[ key ] = root + value;
+            urls[ key ] = Galaxy.root + value;
         });
         this.urls = urls;
         return urls;
@@ -251,12 +251,11 @@ var DatasetAssociationCollection = Backbone.Collection.extend( BASE_MVC.Loggable
     model : DatasetAssociation,
 
     /** root api url */
-    urlRoot : (( window.galaxy_config && galaxy_config.root )?( galaxy_config.root ):( '/' ))
-        + 'api/datasets',
+    urlRoot : Galaxy.root + 'api/datasets',
 
     /** url fn */
     url : function(){
-        return this.urlRoot
+        return this.urlRoot;
     },
 
     // ........................................................................ common queries
