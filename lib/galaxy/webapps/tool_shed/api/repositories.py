@@ -87,34 +87,6 @@ class RepositoriesController( BaseAPIController ):
             % ( name, owner )
         return response_dict
 
-    @expose_api_anonymous_and_sessionless
-    def get_latest_metadata( self, trans, id, **kwd ):
-        """
-        GET /api/repositories/{encoded_repository_id}/metadata
-        Returns information about a repository in the Tool Shed.
-
-        Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135/metadata
-
-        :param id: the encoded id of the Repository object
-        :type  id: encoded str
-
-        :returns:   the given changeset's metadata
-
-        :raises:  ObjectNotFound, MalformedId
-        """
-        try:
-            trans.security.decode_id( id )
-        except Exception:
-            raise MalformedId( 'The given id is invalid.' )
-
-        repository = suc.get_repository_in_tool_shed( self.app, id )
-        changeset = suc.get_latest_downloadable_changeset_revision( self.app, repository )
-        metadata = suc.get_current_repository_metadata_for_changeset_revision( self.app, repository, changeset )
-        if metadata is None:
-            raise ObjectNotFound( 'Unable to locate metadata for the given ID.' )
-        metadata_dict = metadata.to_dict( value_mapper={ 'id': trans.security.encode_id, 'repository_id': trans.security.encode_id } )
-        return metadata_dict
-
     @web.expose_api_anonymous
     def get_ordered_installable_revisions( self, trans, **kwd ):
         """

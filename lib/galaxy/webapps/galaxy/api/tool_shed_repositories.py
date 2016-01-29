@@ -231,12 +231,11 @@ class ToolShedRepositoriesController( BaseAPIController ):
         return tool_shed_repository_dicts
 
     @expose_api
-    def install( self, trans, payload, **kwd ):
+    def install( self, trans, **kwd ):
         """
         POST /api/tool_shed_repositories/install
         Initiate the installation of a repository.
 
-        :param repo_dict: A dictionary describing the repository to install
         :param install_tool_dependencies: True to install tool dependencies.
         :param install_repository_dependencies: True to install repository dependencies.
         :param tool_panel_section_id: The unique identifier for an existing tool panel section
