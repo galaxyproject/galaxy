@@ -568,6 +568,21 @@ def which(file):
     return None
 
 
+def safe_makedirs(path):
+    """ Safely make a directory, do not fail if it already exist or
+    is created during execution.
+    """
+    if not os.path.exists(path):
+        try:
+            os.makedirs(path)
+        except OSError as e:
+            # review source for Python 2.7 this would only ever happen
+            # for the last path anyway so need to recurse - this exception
+            # means the last part of the path was already in existence.
+            if e.errno != errno.EEXIST:
+                raise
+
+
 def in_directory( file, directory, local_path_module=os.path ):
     """
     Return true, if the common prefix of both is equal to directory
