@@ -170,12 +170,12 @@ $(document).ready( function() {
         // work on some pages with some rendered content because of view
         // rendering delays.
         // Another option is to present an icon for 'continue-tour' somewhere?
-        urlparms = _.object(_.compact(_.map(location.search.slice(1).split('&'), function(item) { if (item) return item.split('='); })));
+        var urlparms = _.object(_.compact(_.map(location.search.slice(1).split('&'), function(item) { if (item) return item.split('='); })));
         if (urlparms.tour_id){
             var tour_id = urlparms.tour_id;
             delete urlparms.tour_id;
             var url = $(location).attr('href');
-            var repacked_url_args = _.map(Object.getOwnPropertyNames(urlparms), function(k) { return "?" + [k, urlparms[k]].join('=') }).join('&');
+            var repacked_url_args = _.map(Object.getOwnPropertyNames(urlparms), function(k) { return "?" + [k, urlparms[k]].join('='); }).join('&');
             url = window.location.href.split('?')[0];
             if (repacked_url_args !== "?"){
                 url = url + repacked_url_args;
@@ -184,7 +184,7 @@ $(document).ready( function() {
             TOURS.giveTour(tour_id);
         }
         else{
-            et = JSON.parse(sessionStorage.getItem('activeGalaxyTour'));
+            var et = JSON.parse(sessionStorage.getItem('activeGalaxyTour'));
             if (et){
                 et = TOURS.hooked_tour_from_data(et);
                 if (et && et.steps){
