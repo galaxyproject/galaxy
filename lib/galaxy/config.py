@@ -9,6 +9,7 @@ import logging
 import logging.config
 import os
 import re
+import signal
 import socket
 import string
 import sys
@@ -255,6 +256,8 @@ class Configuration( object ):
         self.external_chown_script = kwargs.get('external_chown_script', None)
         self.environment_setup_file = kwargs.get( 'environment_setup_file', None )
         self.use_heartbeat = string_as_bool( kwargs.get( 'use_heartbeat', 'False' ) )
+        self.heartbeat_interval = int( kwargs.get( 'heartbeat_interval', 20 ) )
+        self.heartbeat_log = kwargs.get( 'heartbeat_log', None )
         self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )
         self.log_events = string_as_bool( kwargs.get( 'log_events', 'False' ) )
         self.sanitize_all_html = string_as_bool( kwargs.get( 'sanitize_all_html', True ) )
@@ -351,8 +354,10 @@ class Configuration( object ):
             self.config_file = global_conf['__file__']
             global_conf_parser.read(global_conf['__file__'])
         # Heartbeat log file name override
-        if global_conf is not None:
-            self.heartbeat_log = global_conf.get( 'heartbeat_log', 'heartbeat.log' )
+        if global_conf is not None and 'heartbeat_log' in global_conf:
+            self.heartbeat_log = global_conf['heartbeat_log']
+        if self.heartbeat_log is None:
+            self.heartbeat_log = 'heartbeat_{server_name}.log'
         # Determine which 'server:' this is
         self.server_name = 'main'
         for arg in sys.argv:
@@ -912,3 +917,7 @@ class ConfiguresGalaxyMixin:
             install_db_engine_options = self.config.install_database_engine_options
             self.install_model = install_mapping.init( install_db_url,
                                                        install_db_engine_options )
+
+    def _configure_signal_handlers( self, handlers ):
+        for sig, handler in handlers.items():
+            signal.signal( sig, handler )
