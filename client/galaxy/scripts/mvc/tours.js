@@ -10,13 +10,15 @@
 
 define(['libs/bootstrap-tour'],function(BootstrapTour) {
 
+    var gxy_root = Galaxy === undefined ? '/' : Galaxy.root;
+
     var tour_opts = { storage: window.sessionStorage,
                       onEnd: function(){
                           sessionStorage.removeItem('activeGalaxyTour');
                       },
                       delay: 150, // Attempts to make it look natural
                       orphan:true
-    }
+    };
 
     var hooked_tour_from_data = function(data){
         _.each(data.steps, function(step) {
@@ -41,20 +43,12 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
                 // elements which have additional logic, like the
                 // upload input box
                 step.onShown= function(){
-                    $(step.element).val(step.textinsert).trigger("change")
+                    $(step.element).val(step.textinsert).trigger("change");
                 };
             }
         });
         return data;
-    }
-
-    // DBTODO: there's probably a better way to do this for pages which don't
-    // have Galaxy objects.
-    if (typeof Galaxy != "undefined") {
-        var gxy_root = Galaxy.root;
-    }else{
-        var gxy_root = '/';
-    }
+    };
 
     var TourItem = Backbone.Model.extend({
       urlRoot: gxy_root + 'api/tours',
@@ -70,8 +64,7 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
         var url = gxy_root + 'api/tours/' + tour_id;
         $.getJSON( url, function( data ) {
             // Set hooks for additional click and data entry actions.
-            tourdata = hooked_tour_from_data(data);
-            console.log(tourdata);
+            var tourdata = hooked_tour_from_data(data);
             sessionStorage.setItem('activeGalaxyTour', JSON.stringify(data));
             // Store tour steps in sessionStorage to easily persist w/o hackery.
             var tour = new Tour(_.extend({
@@ -82,14 +75,14 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
             tour.goTo(0);
             tour.restart();
         });
-    }
+    };
 
     var ToursView = Backbone.View.extend({
         // initialize
         initialize: function(options) {
             var self = this;
             this.setElement('<div/>');
-            this.model = new Tours()
+            this.model = new Tours();
             this.model.fetch({
               success: function( model ){
                 self.render();
@@ -126,5 +119,5 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
     return {ToursView: ToursView,
             hooked_tour_from_data: hooked_tour_from_data,
             tour_opts: tour_opts,
-            giveTour: giveTour}
+            giveTour: giveTour};
 });
