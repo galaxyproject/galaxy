@@ -328,6 +328,8 @@ $(function() {
         params.tool_panel_section = JSON.stringify(select_tps(params));
         params.shed_tool_conf = $("select[name='shed_tool_conf']").find('option:selected').val()
         params.changeset = $("#changeset").val();
+        params.name = '${toolshed_data['name']}';
+        params.owner = '${toolshed_data['owner']}';
         url = $('#repository_installation').attr('action');
         $.post(url, params, function(data) {
             window.location.href = data;
