@@ -83,7 +83,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                 encoded_id = 'F' + encoded_id
                 can_modify = is_admin or ( trans.user and trans.app.security_agent.can_modify_library_item( current_user_roles, folder ) )
                 can_manage = is_admin or ( trans.user and trans.app.security_agent.can_manage_library_item( current_user_roles, folder ) )
-                return_item.update( dict( can_modify=can_modify, can_manage=can_manage, description=content_item.description ) )
+                return_item.update( dict( can_modify=can_modify, can_manage=can_manage ) )
                 if content_item.description:
                     return_item.update( dict( description=content_item.description ) )
 
