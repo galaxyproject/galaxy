@@ -310,12 +310,21 @@ def populate_api_routes( webapp, app ):
                            controller="users", action="api_key", user_id=None,
                            conditions=dict( method=["POST"] ) )
 
-    # visualizations registry generic template renderer
+    # ---- visualizations registry ---- generic template renderer
+    # @deprecated: this route should be considered deprecated
     webapp.add_route( '/visualization/show/{visualization_name}', controller='visualization', action='render', visualization_name=None )
+
     # provide an alternate route to visualization plugins that's closer to their static assets
     # (/plugins/visualizations/{visualization_name}/static) and allow them to use relative urls to those
-    webapp.add_route( '/plugins/visualizations/{visualization_name}/show', controller='visualization', action='render' )
-    webapp.mapper.connect( 'saved_visualization', '/plugins/visualizations/{visualization_name}/saved', controller='visualization', action='saved' )
+    webapp.mapper.connect( 'visualization_plugin', '/plugins/visualizations/{visualization_name}/show',
+        controller='visualization', action='render' )
+    webapp.mapper.connect( 'saved_visualization', '/plugins/visualizations/{visualization_name}/saved',
+        controller='visualization', action='saved' )
+    # same with IE's
+    webapp.mapper.connect( 'interactive_environment_plugin', '/plugins/interactive_environments/{visualization_name}/show',
+        controller='visualization', action='render' )
+    webapp.mapper.connect( 'saved_interactive_environment', '/plugins/interactive_environments/{visualization_name}/saved',
+        controller='visualization', action='saved' )
 
     # Deprecated in favor of POST /api/workflows with 'workflow' in payload.
     webapp.mapper.connect( 'import_workflow_deprecated',
