@@ -4,7 +4,7 @@ not easily made.
 """
 
 from sqlalchemy import literal
-from sqlalchemy import text
+from sqlalchemy import sql
 from sqlalchemy import asc, desc
 
 from galaxy import model
@@ -43,7 +43,9 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         "id",
         "hid",
         "name",
+        "dataset_id",
         "collection_id",
+        "state",
         "deleted",
         "purged",
         "visible",
@@ -147,7 +149,6 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         # TODO: this needs the same fn/orm split that happens in the main query
         for orm_filter in ( filters or [] ):
             contents_query = contents_query.filter( orm_filter )
-
         contents_query = contents_query.order_by( *order_by )
 
         if limit is not None:
@@ -196,17 +197,26 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
 
     def _contents_common_query_for_contained( self, history_id ):
         component_class = self.contained_class
+        # TODO: and now a join with Dataset - this is getting sad
         columns = self._contents_common_columns( component_class,
             history_content_type=literal( 'dataset' ),
+            state=model.Dataset.state,
             # do not have inner collections
             collection_id=literal( None )
         )
-        return self._session().query( *columns ).filter( component_class.history_id == history_id )
+        subquery = self._session().query( *columns )
+        # for the HDA's we need to join the Dataset since it has an actual state column
+        subquery = subquery.join( model.Dataset, model.Dataset.id == component_class.dataset_id )
+        subquery = subquery.filter( component_class.history_id == history_id )
+        return subquery
 
     def _contents_common_query_for_subcontainer( self, history_id ):
         component_class = self.subcontainer_class
         columns = self._contents_common_columns( component_class,
             history_content_type=literal( 'dataset_collection' ),
+            # do not have datasets
+            dataset_id=literal( None ),
+            state=model.DatasetCollection.populated_state,
             # TODO: should be purgable? fix
             purged=literal( False ),
             # these are attached instead to the inner collection joined below
@@ -238,26 +248,43 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
 class HistoryContentsFilters( base.ModelFilterParser, deletable.PurgableFiltersMixin ):
     # surprisingly (but ominously), this works for both content classes in the union that's filtered
     model_class = model.HistoryDatasetAssociation
-    dataset_content_type_filter = text( 'history_content_type = "dataset"' )
-    dataset_collection_content_type_filter = text( 'history_content_type = "dataset_collection"' )
 
     # TODO: history_content_type filter doesn't work with psycopg2: column does not exist (even with hybrid props)
-    # def _parse_orm_filter( self, attr, op, val ):
-    #     # the following allows 'q=history_content_type-eq&qv=dataset', etc. while still using contents above
-    #     # (although it might be better to branch to the individual content managers since this filter makes the union unneccessary)
-    #     # TODO: instead branch to subcontainers or contained (from within contents)
-    #     # TODO: factor out ability to run text orm queries into base
-    #     if attr == 'history_content_type' and op == 'eq':
-    #         if val == 'dataset':
-    #             return self.dataset_content_type_filter
-    #         if val == 'dataset_collection':
-    #             return self.dataset_collection_content_type_filter
-    #     return super( HistoryContentsFilters, self )._parse_orm_filter( attr, op, val )
+    def _parse_orm_filter( self, attr, op, val ):
+        valid_states = model.Job.states.values()
+
+        def raise_bad_val( attr, op, val ):
+            raise glx_exceptions.RequestParameterInvalidException( 'bad val in filter',
+                column=attr, operation=op, val=val )
+
+        # we need to use some manual/text/column foo here since hda.state is *not* a normal column
+        if attr == 'state' and op == 'eq':
+            if val not in valid_states:
+                raise_bad_val( attr, op, val )
+            return sql.column( 'state' ) == val
+
+        if attr == 'state' and op == 'in':
+            valid_states = model.Job.states.values()
+            states = [ s for s in val.split( ',' ) if s ]
+            if any([ s not in valid_states for s in states ]):
+                raise_bad_val( attr, op, val )
+            return sql.column( 'state' ).in_( states )
+
+        if attr == 'history_content_type' and op == 'eq':
+            if val == 'dataset':
+                return sql.column( 'history_content_type' ) == 'dataset'
+            if val == 'dataset_collection':
+                return sql.column( 'history_content_type' ) == 'dataset_collection'
+            raise_bad_val( attr, op, val )
+
+        return super( HistoryContentsFilters, self )._parse_orm_filter( attr, op, val )
 
     def _add_parsers( self ):
         super( HistoryContentsFilters, self )._add_parsers()
         deletable.PurgableFiltersMixin._add_parsers( self )
         self.orm_filter_parsers.update({
+            'history_content_type' : { 'op': ( 'eq' ) },
             'name'      : { 'op': ( 'eq', 'contains', 'like' ) },
-            'visible'   : { 'op': ( 'eq' ), 'val': self.parse_bool }
+            'visible'   : { 'op': ( 'eq' ), 'val': self.parse_bool },
+            'state'     : { 'op': ( 'eq', 'in' ) }
         })
