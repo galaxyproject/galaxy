@@ -227,7 +227,6 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
 
         # we want existing visualizations to work as normal but still be part of the registry (without mod'ing)
         #   so generate their urls differently
-        print visualization.name, param_data
         url = None
         if visualization.name in self.BUILT_IN_VISUALIZATIONS:
             url = url_for( controller='visualization', action=visualization.name, **params )
