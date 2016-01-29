@@ -3,8 +3,8 @@ import os
 
 from sqlalchemy import false
 
-from galaxy import util
 from galaxy.util import inflector
+from galaxy.util import xml_util
 from galaxy.web.form_builder import SelectField
 from tool_shed.galaxy_install.tools import tool_panel_manager
 from tool_shed.metadata import metadata_generator
@@ -12,7 +12,6 @@ from tool_shed.util import common_util
 from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
-from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
 
@@ -173,7 +172,7 @@ class InstalledRepositoryMetadataManager( metadata_generator.MetadataGenerator )
                                                                           tool,
                                                                           None )
         config_elems = []
-        tree, error_message = xml_util.parse_xml( shed_tool_conf )
+        tree, parse_error = xml_util.parse_xml( shed_tool_conf, preserve_comments=True )
         if tree:
             root = tree.getroot()
             for elem in root:

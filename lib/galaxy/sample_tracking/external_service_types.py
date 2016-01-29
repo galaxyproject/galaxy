@@ -1,5 +1,6 @@
 import os
 import logging
+from galaxy.util import xml_util
 from galaxy.util.odict import odict
 from galaxy import util, model
 from galaxy.forms.forms import form_factory
@@ -25,7 +26,7 @@ class ExternalServiceTypesCollection( object ):
 
     def load_all( self, config_filename ):
         self.visible_external_service_types = []
-        tree = util.parse_xml( config_filename )
+        tree, parse_error = xml_util.parse_xml( config_filename )
         root = tree.getroot()
         for elem in root:
             try:
@@ -42,7 +43,7 @@ class ExternalServiceTypesCollection( object ):
 
     def load_external_service_type( self, config_file, visible=True ):
         # Parse XML configuration file and get the root element
-        tree = util.parse_xml( config_file )
+        tree, parse_error = xml_util.parse_xml( config_file )
         root = tree.getroot()
         return ExternalServiceType( config_file, root, visible )
 

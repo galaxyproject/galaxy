@@ -21,7 +21,7 @@ from .util import (
 )
 from .output_collection_def import dataset_collector_descriptions_from_elem
 from .output_actions import ToolOutputActionGroup
-from galaxy.util import string_as_bool, xml_text, xml_to_string
+from galaxy.util import string_as_bool, xml_text, xml_to_string, xml_util
 from galaxy.util.odict import odict
 from galaxy.tools.deps import requirements
 from .output_objects import (
@@ -787,7 +787,7 @@ class XmlPageSource(PageSource):
     def parse_display(self):
         display_elem = self.parent_elem.find("display")
         if display_elem is not None:
-            display = xml_to_string(display_elem)
+            display = xml_util.xml_to_string(display_elem)
         else:
             display = None
         return display

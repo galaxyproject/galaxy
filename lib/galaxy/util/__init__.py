@@ -44,7 +44,7 @@ except ImportError:
     docutils_core = None
     docutils_html4css1 = None
 
-from xml.etree import ElementTree, ElementInclude
+from xml.etree import ElementTree
 
 from .inflection import Inflector, English
 inflector = Inflector(English)
@@ -175,18 +175,6 @@ def unique_id(KEY_SIZE=128):
     """
     random_bits = text_type(random.getrandbits(KEY_SIZE)).encode("UTF-8")
     return md5(random_bits).hexdigest()
-
-
-def parse_xml( fname ):
-    """Returns a parsed xml tree"""
-    # handle deprecation warning for XMLParsing a file with DOCTYPE
-    class DoctypeSafeCallbackTarget( ElementTree.TreeBuilder ):
-        def doctype( *args ):
-            pass
-    tree = ElementTree.ElementTree()
-    root = tree.parse( fname, parser=ElementTree.XMLParser( target=DoctypeSafeCallbackTarget() ) )
-    ElementInclude.include( root )
-    return tree
 
 
 def parse_xml_string(xml_string):

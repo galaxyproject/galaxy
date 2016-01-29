@@ -7,6 +7,7 @@ import tarfile
 import tempfile
 import time
 import urllib
+from json import loads
 
 import twill.commands as tc
 from mercurial import commands, hg, ui
@@ -17,9 +18,9 @@ import galaxy.util
 import galaxy.webapps.tool_shed.util.hgweb_config
 from base.tool_shed_util import repository_installation_timeout
 from base.twilltestcase import TwillTestCase
-from galaxy.util.json import loads
+from galaxy.util import xml_util
 from galaxy.web import security
-from tool_shed.util import hg_util, xml_util
+from tool_shed.util import hg_util
 from tool_shed.util.encoding_util import tool_shed_encode
 
 from . import common, test_db_util

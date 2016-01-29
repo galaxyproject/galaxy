@@ -18,6 +18,7 @@ from tempfile import NamedTemporaryFile
 from urllib2 import urlopen
 
 from galaxy import util
+from galaxy.util import xml_util
 from galaxy.util.odict import odict
 
 from galaxy.util.dictifiable import Dictifiable
@@ -76,7 +77,7 @@ class ToolDataTableManager( object ):
         if not isinstance( config_filename, list ):
             config_filename = [ config_filename ]
         for filename in config_filename:
-            tree = util.parse_xml( filename )
+            tree, parse_error = xml_util.parse_xml( filename )
             root = tree.getroot()
             for table_elem in root.findall( 'table' ):
                 table = ToolDataTable.from_elem( table_elem, tool_data_path, from_shed_config, filename=filename )
@@ -140,13 +141,16 @@ class ToolDataTableManager( object ):
             remove_elems = []
         full_path = os.path.abspath( shed_tool_data_table_config )
         # FIXME: we should lock changing this file by other threads / head nodes
-        try:
-            tree = util.parse_xml( full_path )
-            root = tree.getroot()
-            out_elems = [ elem for elem in root ]
-        except Exception, e:
+        if os.path.exists( full_path ):
+            tree, parse_error = xml_util.parse_xml( full_path )
+            if parse_error is None:
+                root = tree.getroot()
+                out_elems = [ elem for elem in root ]
+            else:
+                out_elems = []
+                log.exception( 'Could not parse existing tool data table config, assume no existing elements' )
+        else:
             out_elems = []
-            log.debug( 'Could not parse existing tool data table config, assume no existing elements: %s', e )
         for elem in remove_elems:
             # handle multiple occurrences of remove elem in existing elems
             while elem in out_elems:
@@ -156,7 +160,7 @@ class ToolDataTableManager( object ):
         with open( full_path, 'wb' ) as out:
             out.write( '<?xml version="1.0"?>\n<tables>\n' )
             for elem in out_elems:
-                out.write( util.xml_to_string( elem, pretty=True ) )
+                out.write( util.xml_util.xml_to_string( elem ) )
             out.write( '</tables>\n' )
         os.chmod( full_path, 0644 )
 
@@ -300,7 +304,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
             filename = file_path = expand_here_template( filename, here=self.here )
             found = False
             if file_path is None:
-                log.debug( "Encountered a file element (%s) that does not contain a path value when loading tool data table '%s'.", util.xml_to_string( file_element ), self.name )
+                log.debug( "Encountered a file element (%s) that does not contain a path value when loading tool data table '%s'.", util.xml_util.xml_to_string( file_element ), self.name )
                 continue
 
             # FIXME: splitting on and merging paths from a configuration file when loading is wonky
@@ -646,7 +650,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
 
     @property
     def xml_string( self ):
-        return util.xml_to_string( self.config_element )
+        return util.xml_util.xml_to_string( self.config_element )
 
     def to_dict(self, view='collection'):
         rval = super(TabularToolDataTable, self).to_dict()

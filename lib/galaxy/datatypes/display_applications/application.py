@@ -1,7 +1,7 @@
 # Contains objects for using external display applications
 import logging
 import urllib
-from galaxy.util import parse_xml, string_as_bool
+from galaxy.util import xml_util, string_as_bool
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
@@ -250,7 +250,8 @@ class PopulatedDisplayApplicationLink( object ):
 class DisplayApplication( object ):
     @classmethod
     def from_file( cls, filename, app ):
-        return cls.from_elem( parse_xml( filename ).getroot(), app, filename=filename )
+        tree, parse_error = xml_util.parse_xml( filename )
+        return cls.from_elem( tree.getroot(), app, filename=filename )
 
     @classmethod
     def from_elem( cls, elem, app, filename=None ):
@@ -306,7 +307,7 @@ class DisplayApplication( object ):
 
     def reload( self ):
         if self._filename:
-            elem = parse_xml( self._filename ).getroot()
+            elem, parse_error = xml_util.parse_xml( self._filename ).getroot()
         elif self._elem:
             elem = self._elem
         else:

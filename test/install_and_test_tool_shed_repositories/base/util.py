@@ -25,9 +25,8 @@ import tool_shed.util.shed_util_common as suc
 from common import get_api_url
 from common import get_latest_downloadable_changeset_revision_via_api
 from common import get_repository_dict, json_from_url, submit, update
-from galaxy.util import asbool, listify, unicodify
+from galaxy.util import asbool, listify, unicodify, xml_util
 from tool_shed.util import common_util, hg_util
-from tool_shed.util.xml_util import parse_xml
 
 log = logging.getLogger(__name__)
 
@@ -687,7 +686,7 @@ def parse_exclude_list( xml_filename ):
     #                     ( name, owner, changeset_revision if changeset_revision else None )]}]
     exclude_list = []
     exclude_tups = []
-    xml_tree, error_message = parse_xml( xml_filename )
+    xml_tree, error_message = xml_util.parse_xml( xml_filename )
     if error_message:
         print 'The exclude file %s is invalid, so no repositories will be excluded from testing: %s' % ( xml_filename, error_message )
         return exclude_list

@@ -2,7 +2,7 @@ from tempfile import mkdtemp
 from shutil import rmtree
 import os
 
-from galaxy.util import parse_xml
+from galaxy.util import xml_util
 from galaxy.tools.loader import template_macro_params, load_tool
 
 
@@ -23,10 +23,10 @@ def test_loader():
 
         def load(self, name="tool.xml", preprocess=True):
             if preprocess:
-                loader = load_tool
+                return load_tool(os.path.join(self.temp_directory, name))
             else:
-                loader = parse_xml
-            return loader(os.path.join(self.temp_directory, name))
+                tree, error = xml_util.parse_xml(os.path.join(self.temp_directory, name))
+                return tree
 
     # Test simple macro replacement.
     with TestToolDirectory() as tool_dir:

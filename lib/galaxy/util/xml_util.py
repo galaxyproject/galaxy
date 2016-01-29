@@ -1,20 +1,33 @@
 import logging
 import sys
 import tempfile
-import xml.etree.ElementTree
-from xml.etree import ElementTree as XmlET
-
 from galaxy.util import listify
+from xml.etree import ElementTree as XmlET
+import xml.etree.ElementTree
 
 log = logging.getLogger( __name__ )
-using_python_27 = sys.version_info[ :2 ] >= ( 2, 7 )
 
 
-class Py26CommentedTreeBuilder( XmlET.XMLTreeBuilder ):
-    # Python 2.6 uses ElementTree 1.2.x.
+class Py27DoctypeSafeCallbackTarget( XmlET.TreeBuilder ):
+
+    def doctype( *args ):
+        pass
+
+
+class Py26DoctypeSafeCallbackTarget( XmlET.XMLTreeBuilder ):
 
     def __init__( self, html=0, target=None ):
         XmlET.XMLTreeBuilder.__init__( self, html, target )
+
+    def doctype( *args ):
+        pass
+
+
+class Py26CommentedTreeBuilder( Py26DoctypeSafeCallbackTarget, XmlET.XMLTreeBuilder ):
+    # Python 2.6 uses ElementTree 1.2.x with old-style class definitions.
+
+    def __init__( self, html=0, target=None ):
+        Py26DoctypeSafeCallbackTarget.__init__( self, html, target )
         self._parser.CommentHandler = self.handle_comment
 
     def handle_comment( self, data ):
@@ -23,7 +36,7 @@ class Py26CommentedTreeBuilder( XmlET.XMLTreeBuilder ):
         self._target.end( XmlET.Comment )
 
 
-class Py27CommentedTreeBuilder( XmlET.TreeBuilder ):
+class Py27CommentedTreeBuilder( Py27DoctypeSafeCallbackTarget, XmlET.TreeBuilder ):
     # Python 2.7 uses ElementTree 1.3.x.
 
     def comment( self, data ):
@@ -33,15 +46,11 @@ class Py27CommentedTreeBuilder( XmlET.TreeBuilder ):
 
 
 def create_and_write_tmp_file( elems, use_indent=False ):
-    tmp_str = ''
-    for elem in listify( elems ):
-        tmp_str += xml_to_string( elem, use_indent=use_indent )
-    fh = tempfile.NamedTemporaryFile( 'wb', prefix="tmp-toolshed-cawrf"  )
+    fh = tempfile.NamedTemporaryFile( 'wb', prefix="tmp-xmlutil-cawrf"  )
     tmp_filename = fh.name
-    fh.close()
-    fh = open( tmp_filename, 'wb' )
     fh.write( '<?xml version="1.0"?>\n' )
-    fh.write( tmp_str )
+    for elem in listify( elems ):
+        fh.write( xml_to_string( elem, use_indent=use_indent ) )
     fh.close()
     return tmp_filename
 
@@ -115,28 +124,23 @@ def indent( elem, level=0 ):
             elem.tail = i
 
 
-def parse_xml( file_name ):
+def parse_xml( file_name, preserve_comments=False ):
     """Returns a parsed xml tree with comments intact."""
-    error_message = ''
-    fobj = open( file_name, 'r' )
-    if using_python_27:
+    with open( file_name, 'r' ) as fh:
+        if sys.version_info[ :2 ] >= ( 2, 7 ):
+            xml_parser = XmlET.XMLParser( target=Py27CommentedTreeBuilder() )
+        else:
+            xml_parser = Py26CommentedTreeBuilder()
         try:
-            tree = XmlET.parse( fobj, parser=XmlET.XMLParser( target=Py27CommentedTreeBuilder() ) )
+            if preserve_comments:
+                tree = XmlET.parse( fh, parser=xml_parser )
+            else:
+                tree = XmlET.parse( fh )
         except Exception, e:
-            fobj.close()
             error_message = "Exception attempting to parse %s: %s" % ( str( file_name ), str( e ) )
             log.exception( error_message )
             return None, error_message
-    else:
-        try:
-            tree = XmlET.parse( fobj, parser=Py26CommentedTreeBuilder() )
-        except Exception, e:
-            fobj.close()
-            error_message = "Exception attempting to parse %s: %s" % ( str( file_name ), str( e ) )
-            log.exception( error_message )
-            return None, error_message
-    fobj.close()
-    return tree, error_message
+    return tree, None
 
 
 def xml_to_string( elem, encoding='utf-8', use_indent=False, level=0 ):
@@ -145,7 +149,7 @@ def xml_to_string( elem, encoding='utf-8', use_indent=False, level=0 ):
             # We were called from ToolPanelManager.config_elems_to_xml_file(), so
             # set the level to 1 since level 0 is the <toolbox> tag set.
             indent( elem, level=level )
-        if using_python_27:
+        if sys.version_info[ :2 ] >= ( 2, 7 ):
             xml_str = '%s\n' % xml.etree.ElementTree.tostring( elem, encoding=encoding, method="xml" )
         else:
             xml_str = '%s\n' % xml.etree.ElementTree.tostring( elem, encoding=encoding )

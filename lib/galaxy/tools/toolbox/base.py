@@ -12,7 +12,7 @@ from galaxy.util.dictifiable import Dictifiable
 
 from galaxy.util.odict import odict
 from galaxy.util import listify
-from galaxy.util import parse_xml
+from galaxy.util import xml_util
 from galaxy.util import string_as_bool
 from galaxy.util.bunch import Bunch
 
@@ -352,7 +352,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         panel config files are parsed, at which time the tools and workflows
         are loaded.
         """
-        tree = parse_xml( self._integrated_tool_panel_config )
+        tree, parse_error = xml_util.parse_xml( self._integrated_tool_panel_config )
         root = tree.getroot()
         for elem in root:
             key = elem.get( 'id' )

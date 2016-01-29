@@ -11,7 +11,9 @@ from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import MessageException
 from galaxy.model import tool_shed_install as install_model
 from galaxy.model.util import pgcalc
-from galaxy.util import nice_size, sanitize_text
+from galaxy.util import nice_size
+from galaxy.util import sanitize_text
+from galaxy.util import xml_util
 from galaxy.util.odict import odict
 from galaxy.web import url_for
 from galaxy.web.base.controller import BaseUIController, UsesQuotaMixin
@@ -767,7 +769,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
     def check_for_tool_dependencies( self, trans, migration_stage ):
         # Get the 000x_tools.xml file associated with migration_stage.
         tools_xml_file_path = os.path.abspath( os.path.join( trans.app.config.root, 'scripts', 'migrate_tools', '%04d_tools.xml' % migration_stage ) )
-        tree = galaxy.util.parse_xml( tools_xml_file_path )
+        tree, parse_error = xml_util.parse_xml( tools_xml_file_path )
         root = tree.getroot()
         tool_shed = root.get( 'name' )
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed )

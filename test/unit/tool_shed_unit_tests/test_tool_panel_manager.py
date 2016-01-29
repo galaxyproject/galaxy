@@ -1,6 +1,6 @@
 import os
 
-from galaxy.util import parse_xml
+from galaxy.util import xml_util
 
 from tools.test_toolbox import BaseToolBoxTestCase
 from tool_shed.galaxy_install.tools import tool_panel_manager
@@ -195,11 +195,10 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
         self._assert_valid_xml( os.path.join( self.test_directory, "tool_conf.xml" ) )
 
     def _assert_valid_xml( self, filename ):
-        try:
-            parse_xml( filename )
-        except Exception:
-            message_template = "file %s does not contain valid XML, content %s"
-            message = message_template % ( filename, open( filename, "r" ).read() )
+        tree, error = xml_util.parse_xml( filename )
+        if error is not None:
+            message_template = "Error: %s\nFile %s does not contain valid XML, content %s"
+            message = message_template % ( str( error ), filename, open( filename, "r" ).read() )
             raise AssertionError( message )
 
     def _init_dynamic_tool_conf( self ):

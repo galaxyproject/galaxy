@@ -2,7 +2,8 @@ import logging
 import urllib2
 
 from galaxy.util.odict import odict
-from tool_shed.util import common_util, xml_util
+from galaxy.util import xml_util
+from tool_shed.util import common_util
 
 log = logging.getLogger( __name__ )
 
@@ -14,8 +15,9 @@ class Registry( object ):
         self.tool_sheds_auth = odict()
         if root_dir and config:
             # Parse tool_sheds_conf.xml
-            tree, error_message = xml_util.parse_xml( config )
+            tree, parse_error = xml_util.parse_xml( config, preserve_comments=True )
             if tree is None:
+                log.exception( str( parse_error ) )
                 log.warning( "Unable to load references to tool sheds defined in file %s" % str( config ) )
             else:
                 root = tree.getroot()

@@ -5,7 +5,7 @@ import sys
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 sys.path.insert(1, os.path.join(galaxy_root, 'lib'))
 
-from galaxy.util import parse_xml
+from galaxy.util import xml_util
 
 log = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ def parse_tool_panel_config( config, shed_tools_dict ):
     last_tested_changeset_revision = None
     tool_path = None
     has_test_data = False
-    tree = parse_xml( config )
+    tree, parse_error = xml_util.parse_xml( config )
     root = tree.getroot()
     tool_path = root.get('tool_path')
     for elem in root:

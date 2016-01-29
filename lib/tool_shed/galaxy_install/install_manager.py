@@ -9,9 +9,14 @@ from fabric.api import lcd
 from sqlalchemy import or_
 
 from galaxy import exceptions, util
-from tool_shed.util import basic_util, common_util, encoding_util, hg_util
-from tool_shed.util import shed_util_common as suc, tool_dependency_util
-from tool_shed.util import tool_util, xml_util
+from galaxy.util import xml_util
+from tool_shed.util import basic_util
+from tool_shed.util import common_util
+from tool_shed.util import encoding_util
+from tool_shed.util import hg_util
+from tool_shed.util import shed_util_common as suc
+from tool_shed.util import tool_dependency_util
+from tool_shed.util import tool_util
 
 from tool_shed.galaxy_install.datatypes import custom_datatype_manager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
@@ -147,9 +152,9 @@ class InstallToolDependencyManager( object ):
         installed_packages = []
         tag_manager = TagManager( self.app )
         # Parse the tool_dependencies.xml config.
-        tree, error_message = xml_util.parse_xml( tool_dependencies_config )
+        tree, parse_error = xml_util.parse_xml( tool_dependencies_config, preserve_comments=False )
         if tree is None:
-            log.debug( "The received tool_dependencies.xml file is likely invalid: %s" % str( error_message ) )
+            log.exception( "The received tool_dependencies.xml file is likely invalid: %s" % str( parse_error ) )
             return installed_packages
         root = tree.getroot()
         elems = []

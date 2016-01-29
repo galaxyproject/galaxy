@@ -13,6 +13,7 @@ from sqlalchemy import and_, false
 import tool_shed.repository_types.util as rt_util
 from galaxy import web
 from galaxy.util import asbool
+from galaxy.util import xml_util
 from galaxy.util import CHUNK_SIZE
 from galaxy.util.odict import odict
 from tool_shed.dependencies.repository.relation_builder import RelationBuilder
@@ -26,7 +27,6 @@ from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
 from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
-from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
 
@@ -519,9 +519,10 @@ class ImportRepositoryManager( object ):
         """
         archives = []
         error_message = ''
-        manifest_tree, error_message = xml_util.parse_xml( manifest_file_path )
-        if error_message:
-            return archives, error_message
+        manifest_tree, parse_error = xml_util.parse_xml( manifest_file_path, preserve_comments=True )
+        if parse_error:
+            log.exception( str( parse_error ) )
+            return archives, str( parse_error )
         manifest_root = manifest_tree.getroot()
         for elem in manifest_root:
             # <repository name="package_lapack_3_4" type="tool_dependency_definition" username="test">
@@ -603,7 +604,7 @@ class ImportRepositoryManager( object ):
         Parse the export_info.xml file contained within the capsule and return a dictionary
         containing its entries.
         """
-        export_info_tree, error_message = xml_util.parse_xml( export_info_file_path )
+        export_info_tree, parse_error = xml_util.parse_xml( export_info_file_path, preserve_comments=True )
         export_info_root = export_info_tree.getroot()
         export_info_dict = {}
         for elem in export_info_root:
@@ -630,9 +631,10 @@ class ImportRepositoryManager( object ):
         each exported repository archive contained within the capsule.
         """
         repository_info_dicts = []
-        manifest_tree, error_message = xml_util.parse_xml( manifest_file_path )
-        if error_message:
-            return repository_info_dicts, error_message
+        manifest_tree, parse_error = xml_util.parse_xml( manifest_file_path, preserve_comments=True )
+        if parse_error:
+            log.exception( str( parse_error ) )
+            return repository_info_dicts, str( parse_error )
         manifest_root = manifest_tree.getroot()
         for elem in manifest_root:
             # <repository name="package_lapack_3_4" type="tool_dependency_definition" username="test">
@@ -871,9 +873,10 @@ class ImportRepositoryManager( object ):
         file_path = encoding_util.tool_shed_decode( encoded_file_path )
         # The capsule must contain a valid XML file named export_info.xml.
         export_info_file_path = os.path.join( file_path, 'export_info.xml' )
-        export_info_tree, error_message = xml_util.parse_xml( export_info_file_path )
-        if error_message:
-            capsule_dict[ 'error_message' ] = error_message
+        export_info_tree, parse_error = xml_util.parse_xml( export_info_file_path, preserve_comments=True )
+        if parse_error:
+            log.exception( str( parse_error ) )
+            capsule_dict[ 'error_message' ] = str( parse_error )
             capsule_dict[ 'status' ] = 'error'
             return capsule_dict
         # The capsule must contain a valid XML file named manifest.xml.

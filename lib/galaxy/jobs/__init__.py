@@ -17,6 +17,7 @@ import subprocess
 import sys
 import traceback
 from galaxy import model, util
+from galaxy.util import xml_util
 from galaxy.util.xml_macros import load
 from galaxy.datatypes import metadata
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
@@ -382,10 +383,9 @@ class JobConfiguration( object ):
             return
 
         resource_param_file = self.app.config.job_resource_params_file
-        try:
-            resource_definitions = util.parse_xml( resource_param_file )
-        except Exception as e:
-            raise config_exception(e, resource_param_file)
+        resource_definitions, parse_error = xml_util.parse_xml( resource_param_file )
+        if parse_error is not None:
+            raise config_exception(str(parse_error), resource_param_file)
 
         resource_definitions_root = resource_definitions.getroot()
         # TODO: Also handling conditionals would be awesome!

@@ -6,6 +6,8 @@ import tempfile
 from sqlalchemy import and_
 
 from galaxy import util
+from galaxy.util import xml_util
+from galaxy.datatypes import checkers
 from galaxy.tools.data_manager.manager import DataManager
 from galaxy.tools.loader_directory import looks_like_a_tool
 from galaxy.tools.parser.interface import TestCollectionDef
@@ -19,7 +21,6 @@ from tool_shed.util import readme_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
-from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
 
@@ -119,10 +120,11 @@ class MetadataGenerator( object ):
                                   'invalid_data_managers': invalid_data_managers,
                                   'error_messages': [] }
         metadata_dict[ 'data_manager' ] = data_manager_metadata
-        tree, error_message = xml_util.parse_xml( data_manager_config_filename )
+        tree, parse_error = xml_util.parse_xml( data_manager_config_filename, preserve_comments=True )
         if tree is None:
+            log.exception( str( parse_error ) )
             # We are not able to load any data managers.
-            data_manager_metadata[ 'error_messages' ].append( error_message )
+            data_manager_metadata[ 'error_messages' ].append( str( parse_error ) )
             return metadata_dict
         tool_path = None
         if shed_config_dict:
@@ -189,8 +191,9 @@ class MetadataGenerator( object ):
 
     def generate_datatypes_metadata( self, tv, repository_files_dir, datatypes_config, metadata_dict ):
         """Update the received metadata_dict with information from the parsed datatypes_config."""
-        tree, error_message = xml_util.parse_xml( datatypes_config )
+        tree, parse_error = xml_util.parse_xml( datatypes_config, preserve_comments=True )
         if tree is None:
+            log.exception( str( parse_error ) )
             return metadata_dict
         root = tree.getroot()
         repository_datatype_code_files = []
@@ -575,8 +578,9 @@ class MetadataGenerator( object ):
         """
         error_message = ''
         # Make sure we're looking at a valid repository_dependencies.xml file.
-        tree, error_message = xml_util.parse_xml( repository_dependencies_config )
+        tree, parse_error = xml_util.parse_xml( repository_dependencies_config, preserve_comments=True )
         if tree is None:
+            log.exception( str( parse_error ) )
             xml_is_valid = False
         else:
             root = tree.getroot()
@@ -712,9 +716,10 @@ class MetadataGenerator( object ):
             original_valid_tool_dependencies_dict = original_repository_metadata.get( 'tool_dependencies', None )
         else:
             original_valid_tool_dependencies_dict = None
-        tree, error_message = xml_util.parse_xml( tool_dependencies_config )
+        tree, parse_error = xml_util.parse_xml( tool_dependencies_config, preserve_comments=True )
         if tree is None:
-            return metadata_dict, error_message
+            log.exception( str( parse_error ) )
+            return metadata_dict, str( parse_error )
         root = tree.getroot()
 
         class RecurserValueStore( object ):

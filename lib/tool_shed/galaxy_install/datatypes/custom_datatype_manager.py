@@ -3,8 +3,12 @@ import os
 import tempfile
 
 from galaxy.util import asbool
-from tool_shed.util import basic_util, hg_util, shed_util_common as suc
-from tool_shed.util import tool_util, xml_util
+from galaxy.util import xml_util
+
+from tool_shed.util import basic_util
+from tool_shed.util import hg_util
+from tool_shed.util import tool_util
+from tool_shed.util import shed_util_common as suc
 
 log = logging.getLogger( __name__ )
 
@@ -25,8 +29,9 @@ class CustomDatatypeLoader( object ):
         occurring after the datatypes registry has been initialized, the registry's contents
         cannot be overridden by conflicting data types.
         """
-        tree, error_message = xml_util.parse_xml( datatypes_config )
+        tree, parse_error = xml_util.parse_xml( datatypes_config, preserve_comments=True )
         if tree is None:
+            log.exception( str( parse_error ) )
             return None, None
         datatypes_config_root = tree.getroot()
         registration = datatypes_config_root.find( 'registration' )

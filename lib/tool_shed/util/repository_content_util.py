@@ -1,9 +1,10 @@
 import os
 import shutil
 
+from galaxy import util
+from galaxy.util import xml_util
 from tool_shed.util import commit_util
 from tool_shed.util import hg_util
-from tool_shed.util import xml_util
 
 import tool_shed.repository_types.util as rt_util
 
@@ -60,7 +61,7 @@ def upload_tar( trans, rdah, tdah, repository, tar, uploaded_file, upload_point,
                 if error_message:
                     return False, error_message, [], '', [], []
                 if altered:
-                    tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
+                    tmp_filename = util.xml.create_and_write_tmp_file( root_elem )
                     shutil.move( tmp_filename, uploaded_file_name )
         return commit_util.handle_directory_changes( trans.app,
                                                      trans.request.host,

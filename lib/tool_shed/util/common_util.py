@@ -5,9 +5,10 @@ import urllib
 import urllib2
 
 from galaxy import util
+from galaxy.util import xml_util
 from galaxy.util.odict import odict
 from galaxy.web import url_for
-from tool_shed.util import encoding_util, xml_util
+from tool_shed.util import encoding_util
 
 log = logging.getLogger( __name__ )
 
@@ -28,8 +29,9 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
     tools_xml_file_path = os.path.abspath( os.path.join( 'scripts', 'migrate_tools', '%04d_tools.xml' % latest_tool_migration_script_number ) )
     # Parse the XML and load the file attributes for later checking against the proprietary tool_panel_config.
     migrated_tool_configs_dict = odict()
-    tree, error_message = xml_util.parse_xml( tools_xml_file_path )
+    tree, parse_error = xml_util.parse_xml( tools_xml_file_path, preserve_comments=True )
     if tree is None:
+        log.exception( str( parse_error ) )
         return False, odict()
     root = tree.getroot()
     tool_shed = root.get( 'name' )
@@ -83,7 +85,7 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
         if tool_shed_accessible:
             # Parse the proprietary tool_panel_configs (the default is tool_conf.xml) and generate the list of missing tool config file names.
             for tool_panel_config in tool_panel_configs:
-                tree, error_message = xml_util.parse_xml( tool_panel_config )
+                tree, parse_error = xml_util.parse_xml( tool_panel_config, preserve_comments=True )
                 if tree:
                     root = tree.getroot()
                     for elem in root:
@@ -143,8 +145,9 @@ def get_non_shed_tool_panel_configs( app ):
     for config_filename in app.config.tool_configs:
         # Any config file that includes a tool_path attribute in the root tag set like the following is shed-related.
         # <toolbox tool_path="../shed_tools">
-        tree, error_message = xml_util.parse_xml( config_filename )
+        tree, parse_error = xml_util.parse_xml( config_filename, preserve_comments=True )
         if tree is None:
+            log.exception( str( parse_error ) )
             continue
         root = tree.getroot()
         tool_path = root.get( 'tool_path', None )
