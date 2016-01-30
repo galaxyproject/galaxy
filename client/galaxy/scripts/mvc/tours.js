@@ -10,7 +10,7 @@
 
 define(['libs/bootstrap-tour'],function(BootstrapTour) {
 
-    var gxy_root = Galaxy === undefined ? '/' : Galaxy.root;
+    var gxy_root = window.Galaxy === undefined ? '/' : window.Galaxy.root;
 
     var tour_opts = { storage: window.sessionStorage,
                       onEnd: function(){
