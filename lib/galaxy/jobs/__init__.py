@@ -1593,20 +1593,19 @@ class JobWrapper( object ):
             config_file = self.app.config.config_file
         if datatypes_config is None:
             datatypes_config = self.app.datatypes_registry.integrated_datatypes_configs
-        base_command = self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for
-                                                                                output_dataset_assoc in
-                                                                                job.output_datasets + job.output_library_datasets ],
-                                                                              self.sa_session,
-                                                                              exec_dir=exec_dir,
-                                                                              tmp_dir=tmp_dir,
-                                                                              dataset_files_path=dataset_files_path,
-                                                                              config_root=config_root,
-                                                                              config_file=config_file,
-                                                                              datatypes_config=datatypes_config,
-                                                                              job_metadata=os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE ),
-                                                                              max_metadata_value_size=self.app.config.max_metadata_value_size,
-                                                                              **kwds )
-        command = base_command
+        command = self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for
+                                                                           output_dataset_assoc in
+                                                                           job.output_datasets + job.output_library_datasets ],
+                                                                         self.sa_session,
+                                                                         exec_dir=exec_dir,
+                                                                         tmp_dir=tmp_dir,
+                                                                         dataset_files_path=dataset_files_path,
+                                                                         config_root=config_root,
+                                                                         config_file=config_file,
+                                                                         datatypes_config=datatypes_config,
+                                                                         job_metadata=os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE ),
+                                                                         max_metadata_value_size=self.app.config.max_metadata_value_size,
+                                                                         **kwds )
         if resolve_metadata_dependencies:
             metadata_tool = self.app.toolbox.get_tool("__SET_METADATA__")
             dependency_shell_commands = metadata_tool.build_dependency_shell_commands(job_directory=self.working_directory)
