@@ -488,16 +488,15 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         kwd[ 'filesystem_paths' ] = path
         if source in [ 'importdir_folder' ]:
             kwd[ 'filesystem_paths' ] = os.path.join( import_base_dir, path )
-        params = util.Params( kwd )
         # user wants to import one file only
         if source in [ "userdir_file", "importdir_file" ]:
             file = os.path.abspath( path )
             abspath_datasets.append( trans.webapp.controllers[ 'library_common' ].make_library_uploaded_dataset(
-                trans, 'api', params, os.path.basename( file ), file, 'server_dir', library_bunch ) )
+                trans, 'api', kwd, os.path.basename( file ), file, 'server_dir', library_bunch ) )
         # user wants to import whole folder
         if source == "userdir_folder":
             uploaded_datasets_bunch = trans.webapp.controllers[ 'library_common' ].get_path_paste_uploaded_datasets(
-                trans, 'api', params, library_bunch, 200, '' )
+                trans, 'api', kwd, library_bunch, 200, '' )
             uploaded_datasets = uploaded_datasets_bunch[ 0 ]
             if uploaded_datasets is None:
                 raise exceptions.ObjectNotFound( 'Given folder does not contain any datasets.' )
@@ -508,7 +507,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         if source in [ "admin_path", "importdir_folder" ]:
             # validate the path is within root
             uploaded_datasets_bunch = trans.webapp.controllers[ 'library_common' ].get_path_paste_uploaded_datasets(
-                trans, 'api', params, library_bunch, 200, '' )
+                trans, 'api', kwd, library_bunch, 200, '' )
             uploaded_datasets = uploaded_datasets_bunch[0]
             if uploaded_datasets is None:
                 raise exceptions.ObjectNotFound( 'Given folder does not contain any datasets.' )
