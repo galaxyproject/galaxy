@@ -398,7 +398,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         return rval
 
     @expose_api
-    def load( self, trans, **kwd ):
+    def load( self, trans, payload=None, **kwd ):
         """
         load( self, trans, **kwd ):
         * POST /api/libraries/datasets
@@ -411,6 +411,9 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 example path: path/to/galaxy/$library_import_dir/{admin can browse everything here}
             (admin)any absolute or relative path - option allowed with "allow_library_path_paste" in galaxy.ini
 
+        :param  payload:                present in case application/json is the content-type of request, it takes
+                                        precedence over the kwd.
+        :type   dictionary
         :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
         :type   encoded_folder_id:      an encoded id string
         :param  source:                 source the datasets should be loaded from
@@ -429,7 +432,8 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         :returns:   dict containing information about the created upload job
         :rtype:     dictionary
         """
-
+        if payload:
+            kwd.update(payload)
         kwd[ 'space_to_tab' ] = 'False'
         kwd[ 'to_posix_lines' ] = 'True'
         kwd[ 'dbkey' ] = kwd.get( 'dbkey', '?' )
