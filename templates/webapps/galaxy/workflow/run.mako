@@ -27,7 +27,7 @@
             elif step.type == 'tool':
                 incoming = {}
                 tool = trans.app.toolbox.get_tool( step.tool_id )
-                params_to_incoming( incoming, tool.inputs, step.state.inputs, trans.app, to_html=False )
+                params_to_incoming( incoming, tool.inputs, step.state.inputs, trans.app )
                 step_model = tool.to_json( trans, incoming, workflow_mode=True )
                 step_model[ 'post_job_actions' ] = [{
                     'short_str'         : ActionBox.get_short_str( pja ),

@@ -21,11 +21,11 @@ from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     SelectToolParameter,
 )
-from galaxy.tools.parameters import wrapped_json
+from galaxy.tools.parameters import wrapped_json, visit_input_values
 from galaxy.tools.parameters.grouping import Conditional, Repeat, Section
 from galaxy.tools import global_tool_errors
 from galaxy.jobs.datasets import dataset_path_rewrites
-
+from galaxy.work.context import WorkRequestContext
 import logging
 log = logging.getLogger( __name__ )
 
@@ -52,8 +52,15 @@ class ToolEvaluator( object ):
         job = self.job
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         incoming = self.tool.params_from_strings( incoming, self.app )
-        # Do any validation that could not be done at job creation
-        self.tool.handle_unvalidated_param_values( incoming, self.app )
+
+        # Full parameter validation
+        request_context = WorkRequestContext( app=self.app, user=job.history and job.history.user, history=job.history )
+
+        def validate_inputs( input, value, prefixed_name, prefixed_label, context ):
+            value = input.from_html( value, request_context, context )
+            input.validate( value, request_context )
+        visit_input_values( self.tool.inputs, incoming, validate_inputs, details=True )
+
         # Restore input / output data lists
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
