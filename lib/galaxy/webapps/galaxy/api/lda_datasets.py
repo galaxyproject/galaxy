@@ -398,7 +398,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         return rval
 
     @expose_api
-    def load( self, trans, **kwd ):
+    def load( self, trans, payload, **kwd ):
         """
         load( self, trans, **kwd ):
         * POST /api/libraries/datasets
@@ -411,41 +411,41 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 example path: path/to/galaxy/$library_import_dir/{admin can browse everything here}
             (admin)any absolute or relative path - option allowed with "allow_library_path_paste" in galaxy.ini
 
-        :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
-        :type   encoded_folder_id:      an encoded id string
-        :param  source:                 source the datasets should be loaded from
-        :type   source:                 str
-        :param  link_data:              flag whether to link the dataset to data or copy it to Galaxy, defaults to copy
-                                        while linking is set to True all symlinks will be resolved _once_
-        :type   link_data:              bool
-        :param  preserve_dirs:          flag whether to preserve the directory structure when importing dir
-                                        if False only datasets will be imported
-        :type   preserve_dirs:          bool
-        :param  file_type:              file type of the loaded datasets, defaults to 'auto' (autodetect)
-        :type   file_type:              str
-        :param  dbkey:                  dbkey of the loaded genome, defaults to '?' (unknown)
-        :type   dbkey:                  str
-
+        :param   payload: dictionary structure containing:
+            :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
+            :type   encoded_folder_id:      an encoded id string
+            :param  source:                 source the datasets should be loaded from
+            :type   source:                 str
+            :param  link_data:              flag whether to link the dataset to data or copy it to Galaxy, defaults to copy
+                                            while linking is set to True all symlinks will be resolved _once_
+            :type   link_data:              bool
+            :param  preserve_dirs:          flag whether to preserve the directory structure when importing dir
+                                            if False only datasets will be imported
+            :type   preserve_dirs:          bool
+            :param  file_type:              file type of the loaded datasets, defaults to 'auto' (autodetect)
+            :type   file_type:              str
+            :param  dbkey:                  dbkey of the loaded genome, defaults to '?' (unknown)
+            :type   dbkey:                  str
+        :type   payload: dict
         :returns:   dict containing information about the created upload job
         :rtype:     dictionary
         """
-
         kwd[ 'space_to_tab' ] = 'False'
         kwd[ 'to_posix_lines' ] = 'True'
-        kwd[ 'dbkey' ] = kwd.get( 'dbkey', '?' )
-        kwd[ 'file_type' ] = kwd.get( 'file_type', 'auto' )
-        kwd['link_data_only'] = 'link_to_files' if util.string_as_bool( kwd.get( 'link_data', False ) ) else 'copy_files'
-        encoded_folder_id = kwd.get( 'encoded_folder_id', None )
+        kwd[ 'dbkey' ] = payload.get( 'dbkey', '?' )
+        kwd[ 'file_type' ] = payload.get( 'file_type', 'auto' )
+        kwd['link_data_only'] = 'link_to_files' if util.string_as_bool( payload.get( 'link_data', False ) ) else 'copy_files'
+        encoded_folder_id = payload.get( 'encoded_folder_id', None )
         if encoded_folder_id is not None:
             folder_id = self.folder_manager.cut_and_decode( trans, encoded_folder_id )
         else:
             raise exceptions.RequestParameterMissingException( 'The required atribute encoded_folder_id is missing.' )
-        path = kwd.get( 'path', None)
+        path = payload.get( 'path', None)
         if path is None:
             raise exceptions.RequestParameterMissingException( 'The required atribute path is missing.' )
         folder = self.folder_manager.get( trans, folder_id )
 
-        source = kwd.get( 'source', None )
+        source = payload.get( 'source', None )
         if source not in [ 'userdir_file', 'userdir_folder', 'importdir_file', 'importdir_folder', 'admin_path' ]:
             raise exceptions.RequestParameterMissingException( 'You have to specify "source" parameter. Possible values are "userdir_file", "userdir_folder", "admin_path", "importdir_file" and "importdir_folder". ')
         if source in [ 'importdir_file', 'importdir_folder' ]:
@@ -518,8 +518,8 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         json_file_path = upload_common.create_paramfile( trans, abspath_datasets )
         data_list = [ ud.data for ud in abspath_datasets ]
         job_params = {}
-        job_params['link_data_only'] = dumps( kwd.get( 'link_data_only', 'copy_files' ) )
-        job_params['uuid'] = dumps( kwd.get( 'uuid', None ) )
+        job_params['link_data_only'] = dumps( payload.get( 'link_data_only', 'copy_files' ) )
+        job_params['uuid'] = dumps( payload.get( 'uuid', None ) )
         job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=folder, job_params=job_params )
         trans.sa_session.add( job )
         trans.sa_session.flush()
