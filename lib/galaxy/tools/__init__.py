@@ -866,6 +866,7 @@ class Tool( object, Dictifiable ):
                     # Should have one child "input" which determines the case
                     test_param_input_source = input_source.parse_test_input_source()
                     group.test_param = self.parse_param_elem( test_param_input_source, enctypes, context )
+                    group.test_param.optional = False
                     possible_cases = list( group.test_param.legal_values )  # store possible cases, undefined whens will have no inputs
                     # Must refresh when test_param changes
                     group.test_param.refresh_on_change = True
