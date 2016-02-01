@@ -10,7 +10,7 @@
 
 define(['libs/bootstrap-tour'],function(BootstrapTour) {
 
-    var gxy_root = Galaxy === undefined ? '/' : Galaxy.root;
+    var gxy_root = typeof Galaxy === "undefined" ? '/' : Galaxy.root;
 
     var tour_opts = { storage: window.sessionStorage,
                       onEnd: function(){
@@ -76,18 +76,17 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
             tour.restart();
         });
     };
-
     var ToursView = Backbone.View.extend({
         // initialize
-        initialize: function(options) {
+        initialize: function() {
             var self = this;
             this.setElement('<div/>');
             this.model = new Tours();
             this.model.fetch({
-              success: function( model ){
+              success: function(){
                 self.render();
               },
-              error: function( model, response ){
+              error: function(){
                 // Do something.
                 console.error("Failed to fetch tours.");
               }
@@ -95,7 +94,6 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
         },
 
         render: function(){
-            var self = this;
             var tpl = _.template([
                 "<h2>Galaxy Tours</h2>",
                 "<p>This page presents a list of interactive tours available on this Galaxy server.  ",
@@ -110,7 +108,7 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
                     '</li>',
                 '<% }); %>',
                 "</ul>"].join(''));
-            this.$el.html(tpl({tours: this.model.models})).on("click", ".tourItem", function(e){
+            this.$el.html(tpl({tours: this.model.models})).on("click", ".tourItem", function(){
                 giveTour($(this).data("tour.id"));
             });
         }
