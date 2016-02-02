@@ -309,7 +309,7 @@ class Configuration( object ):
             self.use_tool_dependencies = True
         else:
             self.tool_dependency_dir = None
-            self.use_tool_dependencies = False
+            self.use_tool_dependencies = os.path.exists(self.dependency_resolvers_config_file)
         # Configuration options for taking advantage of nginx features
         self.upstream_gzip = string_as_bool( kwargs.get( 'upstream_gzip', False ) )
         self.apache_xsendfile = string_as_bool( kwargs.get( 'apache_xsendfile', False ) )
