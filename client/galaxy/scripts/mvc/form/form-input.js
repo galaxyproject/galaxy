@@ -111,7 +111,7 @@ define([], function() {
                 tmp +=              options.help;
             }
             if (options.argument && options.help.indexOf('(' + options.argument + ')') == -1) {
-                tmp += ' (' + options.argument + ')';
+                tmp +=              ' (' + options.argument + ')';
             }
             tmp +=              '</div>' +
                                 '<div class="ui-form-backdrop"/>' +
