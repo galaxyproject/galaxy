@@ -281,6 +281,13 @@ class XmlToolSource(ToolSource):
             parser = StdioParser(self.root)
             return parser.stdio_exit_codes, parser.stdio_regexes
 
+    def parse_strict_shell(self):
+        command_el = self._command_el
+        if command_el is not None:
+            return string_as_bool(command_el.get("strict", "False"))
+        else:
+            return False
+
     def parse_help(self):
         help_elem = self.root.find( 'help' )
         return help_elem.text if help_elem is not None else None

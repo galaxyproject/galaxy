@@ -140,6 +140,12 @@ class ToolSource(object):
         """
 
     @abstractmethod
+    def parse_strict_shell(self):
+        """ Return True if tool commands should be executed with
+        set -e.
+        """
+
+    @abstractmethod
     def parse_stdio(self):
         """ Builds lists of ToolStdioExitCode and ToolStdioRegex objects
         to describe tool execution error conditions.

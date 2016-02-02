@@ -562,6 +562,9 @@ class Tool( object, Dictifiable ):
 
         # Parse result handling for tool exit codes and stdout/stderr messages:
         self.parse_stdio( tool_source )
+
+        self.strict_shell = tool_source.parse_strict_shell()
+
         # Any extra generated config files for the tool
         self.__parse_config_files(tool_source)
         # Action

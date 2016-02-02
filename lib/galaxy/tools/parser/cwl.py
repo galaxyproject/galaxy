@@ -61,6 +61,9 @@ class CwlToolSource(ToolSource):
     def parse_help(self):
         return ""
 
+    def parse_strict_shell(self):
+        return True
+
     def parse_stdio(self):
         # TODO: remove duplication with YAML
         from galaxy.jobs.error_level import StdioErrorLevel

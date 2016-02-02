@@ -64,6 +64,10 @@ class YamlToolSource(ToolSource):
         page_source = YamlPageSource(self.root_dict.get("inputs", {}))
         return PagesSource([page_source])
 
+    def parse_strict_shell(self):
+        # TODO: Add ability to disable this.
+        return True
+
     def parse_stdio(self):
         return error_on_exit_code()
 

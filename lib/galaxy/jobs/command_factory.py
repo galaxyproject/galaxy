@@ -87,7 +87,15 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     integrity_injection = ""
     if check_script_integrity(config):
         integrity_injection = INTEGRITY_INJECTION
-    script_contents = u"#!%s\n%s%s" % (shell, integrity_injection, tool_commands)
+    set_e = ""
+    if job_wrapper.strict_shell:
+        set_e = "set -e\n"
+    script_contents = u"#!%s\n%s%s%s" % (
+        shell,
+        integrity_injection,
+        set_e,
+        tool_commands
+    )
     write_script(local_container_script, script_contents, config)
     commands = local_container_script
     if 'working_directory' in remote_command_params:

@@ -794,6 +794,10 @@ class JobWrapper( object ):
         return self.job_destination.shell or getattr(self.app.config, 'default_job_shell', DEFAULT_JOB_SHELL)
 
     @property
+    def strict_shell(self):
+        return self.tool.strict_shell
+
+    @property
     def commands_in_new_shell(self):
         return self.app.config.commands_in_new_shell
 
