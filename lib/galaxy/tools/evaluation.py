@@ -526,7 +526,7 @@ class ToolEvaluator( object ):
         param_dict = self.param_dict
         directory = self.local_working_directory
         command = self.tool.command
-        if command and "$param_file" in command:
+        if self.tool.legacy_defaults and command and "$param_file" in command:
             fd, param_filename = tempfile.mkstemp( dir=directory )
             os.close( fd )
             f = open( param_filename, "w" )

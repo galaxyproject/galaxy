@@ -224,7 +224,10 @@ class DefaultToolAction( object ):
 
         # Deal with input dataset names, 'dbkey' and types
         input_names = []
-        input_ext = 'data'
+        # format='input" previously would give you a random extension from
+        # the input extensions, now it should just give "input" as the output
+        # format.
+        input_ext = 'data' if tool.legacy_defaults else "input"
         input_dbkey = incoming.get( "dbkey", "?" )
         for name, data in reversed(inp_data.items()):
             if not data:
@@ -239,7 +242,8 @@ class DefaultToolAction( object ):
             else:  # HDA
                 if data.hid:
                     input_names.append( 'data %s' % data.hid )
-            input_ext = data.ext
+            if tool.legacy_defaults:
+                input_ext = data.ext
 
             if data.dbkey not in [None, '?']:
                 input_dbkey = data.dbkey

@@ -133,6 +133,9 @@ class CwlToolSource(ToolSource):
             containers=containers,
         ))
 
+    def parse_profile(self):
+        return "16.04"
+
 
 class CwlPageSource(PageSource):
 

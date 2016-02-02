@@ -256,6 +256,7 @@ class TestComputeEnviornment( SimpleComputeEnvironment ):
 class MockTool( object ):
 
     def __init__( self, app ):
+        self.legacy_defaults = True
         self.app = app
         self.hooks_called = []
         self.environment_variables = []

@@ -20,6 +20,7 @@ from mako.template import Template
 from paste import httpexceptions
 from six import string_types
 
+from galaxy.version import VERSION_MAJOR
 from galaxy import model
 from galaxy.managers import histories
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
@@ -460,6 +461,8 @@ class Tool( object, Dictifiable ):
         """
         Read tool configuration from the element `root` and fill in `self`.
         """
+        self.legacy_defaults = tool_source.legacy_defaults
+        tool_profile = tool_source.parse_profile()
         # Get the UNIQUE id for the tool
         self.old_id = tool_source.parse_id()
         if guid is None:
@@ -469,6 +472,11 @@ class Tool( object, Dictifiable ):
         if not self.id:
             raise Exception( "Missing tool 'id'" )
 
+        if not self.legacy_defaults and VERSION_MAJOR < tool_profile:
+            template = "The tool %s targets version %s of Galaxy, you should upgrade Galaxy to ensure proper functioning of this tool."
+            message = template % (self.id, tool_profile)
+            log.warn(message)
+
         # Get the (user visible) name of the tool
         self.name = tool_source.parse_name()
         if not self.name:
@@ -476,8 +484,11 @@ class Tool( object, Dictifiable ):
 
         self.version = tool_source.parse_version()
         if not self.version:
-            # For backward compatibility, some tools may not have versions yet.
-            self.version = "1.0.0"
+            if self.legacy_defaults:
+                # For backward compatibility, some tools may not have versions yet.
+                self.version = "1.0.0"
+            else:
+                raise Exception( "Missing tool version.")
 
         # Support multi-byte tools
         self.is_multi_byte = tool_source.parse_is_multi_byte()
