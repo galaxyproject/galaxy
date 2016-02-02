@@ -44,7 +44,7 @@ def visit_input_values( inputs, input_values, callback, name_prefix="", label_pr
         else:
             args = {
                 'input'             : input,
-                'value'             : input_values[ input.name ],
+                'value'             : input_values.get( input.name ),
                 'prefixed_name'     : "%s%s" % ( name_prefix, input.name ),
                 'prefixed_label'    : "%s%s" % ( label_prefix, input.label )
             }

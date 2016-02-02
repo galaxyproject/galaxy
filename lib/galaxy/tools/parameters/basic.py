@@ -726,7 +726,11 @@ class BaseURLToolParameter( HiddenToolParameter ):
         return self._get_value()
 
     def _get_value( self ):
-        return url_for( self.value, qualified=True )
+        try:
+            return url_for( self.value, qualified=True )
+        except Exception as e:
+            log.debug( 'Url creation failed for "%s": %s', self.name, e )
+            return self.value
 
     def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         d = super( BaseURLToolParameter, self ).to_dict( trans )
