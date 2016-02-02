@@ -96,6 +96,10 @@ def check_script_integrity(config):
 
 
 def write_script(path, contents, config, mode=0o755):
+    dir = os.path.dirname(path)
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
     with open(path, 'w') as f:
         if isinstance(contents, text_type):
             contents = contents.encode("UTF-8")
