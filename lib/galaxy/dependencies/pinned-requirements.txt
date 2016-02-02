@@ -31,7 +31,7 @@ Cheetah==2.4.4
 Markdown==2.6.3
 
 # BioBlend and dependencies
-bioblend==0.6.1
+bioblend==0.7.0
 boto==2.38.0
 requests==2.8.1
 requests-toolbelt==0.4.0
