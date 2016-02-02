@@ -1108,7 +1108,7 @@ class Tool( object, Dictifiable ):
             else:
                 input.visit_inputs( "", value[input.name], callback )
 
-    def handle_input( self, trans, incoming, history=None, source='html' ):
+    def handle_input( self, trans, incoming, history=None ):
         """
         Process incoming parameters for this tool from the dict `incoming`,
         update the tool state (or create if none existed), and either return
@@ -1135,32 +1135,31 @@ class Tool( object, Dictifiable ):
         if rerun_remap_job_id and len( expanded_incomings ) > 1:
             raise exceptions.MessageException( 'Failure executing tool (cannot create multiple jobs when remapping existing job).' )
 
+        # Process incoming data
         validation_timer = ExecutionTimer()
         all_errors = []
         all_params = []
-        validate_input = self.get_hook( 'validate_input' )
         for expanded_incoming in expanded_incomings:
-            expanded_state = self.new_state( request_context )
-            # Process incoming data
+            params = {}
+            errors = {}
             if not self.check_values:
                 # If `self.check_values` is false we don't do any checking or
                 # processing on input  This is used to pass raw values
                 # through to/from external sites.
-                errors = {}
-                params = expanded_incoming
+                state_inputs = expanded_incoming
             else:
                 # Update state for all inputs on the current page taking new
                 # values from `incoming`.
-                errors = self.populate_state( request_context, self.inputs, expanded_state.inputs, expanded_incoming, source=source )
+                self._populate_state( request_context, self.inputs, expanded_incoming, params, errors )
+
                 # If the tool provides a `validate_input` hook, call it.
+                validate_input = self.get_hook( 'validate_input' )
                 if validate_input:
-                    validate_input( trans, errors, expanded_state.inputs, self.inputs )
-                params = expanded_state.inputs
+                    validate_input( request_context, errors, params, self.inputs )
             all_errors.append( errors )
             all_params.append( params )
-        log.debug("Validated and populated state for tool request %s" % validation_timer)
-        # If there were errors, we stay on the same page and display
-        # error messages
+        log.debug( 'Validated and populated state for tool request %s' % validation_timer )
+        # If there were errors, we stay on the same page and display them
         if any( all_errors ):
             raise exceptions.MessageException( err_data=all_errors[ 0 ] )
         else:
@@ -1174,6 +1173,7 @@ class Tool( object, Dictifiable ):
                              implicit_collections=execution_tracker.implicit_collections )
             else:
                 raise exceptions.MessageException( execution_tracker.execution_errors[ 0 ] )
+
 
     def handle_single_execution( self, trans, rerun_remap_job_id, params, history, mapping_over_collection, execution_cache=None ):
         """
@@ -1199,6 +1199,7 @@ class Tool( object, Dictifiable ):
                 message = 'Failure executing tool (invalid data returned from tool execution)'
             return False, message
 
+
     def find_fieldstorage( self, x ):
         if isinstance( x, FieldStorage ):
             raise InterruptedUpload( None )
@@ -1207,145 +1208,6 @@ class Tool( object, Dictifiable ):
         elif isinstance(x, list):
             [ self.find_fieldstorage( y ) for y in x ]
 
-    def populate_state( self, trans, inputs, state, incoming, source="html", prefix="", context=None ):
-        errors = dict()
-        # Push this level onto the context stack
-        context = ExpressionContext( state, context )
-        for input in inputs.itervalues():
-            key = prefix + input.name
-            if isinstance( input, Repeat ):
-                group_state = state[input.name]
-                # Create list of empty errors for each previously existing state
-                group_errors = [ ]
-                any_group_errors = False
-                rep_index = 0
-                del group_state[:]  # Clear prepopulated defaults if repeat.min set.
-                while True:
-                    rep_name = "%s_%d" % ( key, rep_index )
-                    if not any( [ incoming_key.startswith(rep_name) for incoming_key in incoming.keys() ] ):
-                        break
-                    if rep_index < input.max:
-                        new_state = {}
-                        new_state['__index__'] = rep_index
-                        self.fill_in_new_state( trans, input.inputs, new_state, context )
-                        group_state.append( new_state )
-                        group_errors.append( {} )
-                        rep_errors = self.populate_state( trans,
-                                                          input.inputs,
-                                                          new_state,
-                                                          incoming,
-                                                          source,
-                                                          prefix=rep_name + "|",
-                                                          context=context )
-                        if rep_errors:
-                            any_group_errors = True
-                            group_errors[rep_index].update( rep_errors )
-
-                    else:
-                        group_errors[-1] = { '__index__': 'Cannot add repeat (max size=%i).' % input.max }
-                        any_group_errors = True
-                    rep_index += 1
-                if any_group_errors:
-                    errors[ input.name ] = group_errors
-            elif isinstance( input, Conditional ):
-                group_state = state[input.name]
-                group_prefix = "%s|" % ( key )
-                # Deal with the 'test' element and see if its value changed
-                if input.value_ref and not input.value_ref_in_group:
-                    # We are referencing an existent parameter, which is not
-                    # part of this group
-                    test_param_key = prefix + input.test_param.name
-                else:
-                    test_param_key = group_prefix + input.test_param.name
-                # Get value of test param and determine current case
-                value, test_param_error = check_param_from_incoming( trans,
-                                                                     group_state,
-                                                                     input.test_param,
-                                                                     incoming,
-                                                                     test_param_key,
-                                                                     context,
-                                                                     source )
-
-                if test_param_error:
-                    errors[ input.name ] = [ test_param_error ]
-                    # Store the value of the test element
-                    group_state[ input.test_param.name ] = value
-                else:
-                    current_case = input.get_current_case( value, trans )
-                    # Current case has changed, throw away old state
-                    group_state = state[input.name] = {}
-                    # TODO: we should try to preserve values if we can
-                    self.fill_in_new_state( trans, input.cases[current_case].inputs, group_state, context )
-                    group_errors = self.populate_state( trans,
-                                                        input.cases[current_case].inputs,
-                                                        group_state,
-                                                        incoming,
-                                                        source,
-                                                        prefix=group_prefix,
-                                                        context=context)
-                    if group_errors:
-                        errors[ input.name ] = group_errors
-                    # Store the current case in a special value
-                    group_state['__current_case__'] = current_case
-                    # Store the value of the test element
-                    group_state[ input.test_param.name ] = value
-            elif isinstance( input, Section ):
-                group_state = state[input.name]
-                group_prefix = "%s|" % ( key )
-                self.fill_in_new_state( trans, input.inputs, group_state, context )
-                group_errors = self.populate_state( trans,
-                                                    input.inputs,
-                                                    group_state,
-                                                    incoming,
-                                                    source,
-                                                    prefix=group_prefix,
-                                                    context=context )
-                if group_errors:
-                    errors[ input.name ] = group_errors
-            elif isinstance( input, UploadDataset ):
-                group_state = state[input.name]
-                group_errors = []
-                any_group_errors = False
-                d_type = input.get_datatype( trans, context )
-                writable_files = d_type.writable_files
-                # remove extra files
-                while len( group_state ) > len( writable_files ):
-                    del group_state[-1]
-
-                # Add new fileupload as needed
-                while len( writable_files ) > len( group_state ):
-                    new_state = {}
-                    new_state['__index__'] = len( group_state )
-                    self.fill_in_new_state( trans, input.inputs, new_state, context )
-                    group_state.append( new_state )
-                    if any_group_errors:
-                        group_errors.append( {} )
-
-                # Update state
-                for i, rep_state in enumerate( group_state ):
-                    rep_index = rep_state['__index__']
-                    rep_prefix = "%s_%d|" % ( key, rep_index )
-                    rep_errors = self.populate_state( trans,
-                                                      input.inputs,
-                                                      rep_state,
-                                                      incoming,
-                                                      source,
-                                                      prefix=rep_prefix,
-                                                      context=context)
-                    if rep_errors:
-                        any_group_errors = True
-                        group_errors.append( rep_errors )
-                    else:
-                        group_errors.append( {} )
-                # Were there *any* errors for any repetition?
-                if any_group_errors:
-                    errors[input.name] = group_errors
-            else:
-                value, error = check_param_from_incoming( trans, state, input, incoming, key, context, source )
-                if error:
-                    errors[ input.name ] = error
-                state[ input.name ] = value
-        return errors
 
     def update_state( self, trans, inputs, state, incoming, source='html', prefix="", context=None,
                       update_only=False, old_errors={}, item_callback=None ):
@@ -1663,7 +1525,7 @@ class Tool( object, Dictifiable ):
                     if input.min:
                         messages[ input.name ] = []
                         for i in range( input.min ):
-                            rep_prefix = prefix + "%s %d > " % ( input.title, i + 1 )
+                            rep_prefix = prefix + '%s %d > ' % ( input.title, i + 1 )
                             rep_dict = dict()
                             messages[ input.name ].append( rep_dict )
                             self.check_and_update_param_values_helper( input.inputs, {}, trans, rep_dict, context, rep_prefix, update_values=update_values )
@@ -1677,13 +1539,13 @@ class Tool( object, Dictifiable ):
             else:
                 if isinstance( input, Repeat ):
                     for i, d in enumerate( values[ input.name ] ):
-                        rep_prefix = prefix + "%s %d > " % ( input.title, i + 1 )
+                        rep_prefix = prefix + '%s %d > ' % ( input.title, i + 1 )
                         self.check_and_update_param_values_helper( input.inputs, d, trans, messages, context, rep_prefix, update_values=update_values )
                 elif isinstance( input, Conditional ):
                     group_values = values[ input.name ]
                     use_initial_value = False
                     if '__current_case__' in group_values:
-                        if int( group_values['__current_case__'] ) >= len( input.cases ):
+                        if int( group_values[ '__current_case__' ] ) >= len( input.cases ):
                             use_initial_value = True
                     else:
                         use_initial_value = True
@@ -1691,11 +1553,11 @@ class Tool( object, Dictifiable ):
                         # No test param invalidates the whole conditional
                         values[ input.name ] = group_values = input.get_initial_value( trans, context )
                         messages[ input.test_param.name ] = "No value found for '%s%s', using default" % ( prefix, input.test_param.label )
-                        current_case = group_values['__current_case__']
+                        current_case = group_values[ '__current_case__' ]
                         for child_input in input.cases[current_case].inputs.itervalues():
                             messages[ child_input.name ] = "Value no longer valid for '%s%s', replacing with default" % ( prefix, child_input.label )
                     else:
-                        current = group_values["__current_case__"]
+                        current = group_values[ '__current_case__' ]
                         self.check_and_update_param_values_helper( input.cases[current].inputs, group_values, trans, messages, context, prefix, update_values=update_values )
                 elif isinstance( input, Section ):
                     messages[ input.name ] = {}
@@ -1710,14 +1572,14 @@ class Tool( object, Dictifiable ):
                         else:
                             # skip check if is workflow parameters
                             ck_param = True
-                            search = input.type in ["text"]
+                            search = input.type in [ 'text' ]
                             if trans.workflow_building_mode and contains_workflow_parameter( values[ input.name ], search=search ):
                                 ck_param = False
                             # this will fail when a parameter's type has changed to a non-compatible one: e.g. conditional group changed to dataset input
                             if ck_param:
                                 input.value_from_basic( input.value_to_basic( value, self.app ), self.app, ignore_errors=False )
                     except:
-                        log.info("Parameter validation failed.", exc_info=True)
+                        log.info( "Parameter validation failed.", exc_info=True )
                         messages[ input.name ] = "Value no longer valid for '%s%s', replacing with default" % ( prefix, input.label )
                         if update_values:
                             values[ input.name ] = input.get_initial_value( trans, context )
@@ -2018,7 +1880,7 @@ class Tool( object, Dictifiable ):
 
         # If an admin user, expose the path to the actual tool config XML file.
         if trans.user_is_admin():
-            tool_dict['config_file'] = os.path.abspath(self.config_file)
+            tool_dict[ 'config_file' ] = os.path.abspath( self.config_file )
 
         # Add link details.
         if link_details:
@@ -2042,11 +1904,11 @@ class Tool( object, Dictifiable ):
 
         return tool_dict
 
-    def to_json(self, trans, kwd={}, job=None, workflow_mode=False):
+    def to_json( self, trans, kwd={}, job=None, workflow_mode=False ):
         """
         Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
         """
-        history_id = kwd.get('history_id', None)
+        history_id = kwd.get( 'history_id', None )
         history = None
         try:
             if history_id is not None:
@@ -2070,7 +1932,7 @@ class Tool( object, Dictifiable ):
                 self._map_source_to_history( request_context, self.inputs, job_params )
                 tool_message = self._compare_tool_version( job )
                 params_to_incoming( kwd, self.inputs, job_params, self.app )
-            except Exception, e:
+            except Exception as e:
                 raise exceptions.MessageException( str( e ) )
 
         # create parameter object
@@ -2116,7 +1978,7 @@ class Tool( object, Dictifiable ):
                 return None
 
         # ensures that input dictionary is jsonifiable
-        def sanitize(dict, key='value'):
+        def sanitize( dict, key='value' ):
             # get current value
             value = dict[key] if key in dict else None
 
@@ -2138,142 +2000,52 @@ class Tool( object, Dictifiable ):
             # update and return
             dict[key] = value
 
-        # check the current state of a value and update it if necessary
-        def check_state( input, value, context ):
-            error = 'State validation failed.'
-            if isinstance( value, galaxy.tools.parameters.basic.DummyDataset ):
-                return [ None, None ]
-            elif isinstance( value, galaxy.tools.parameters.basic.RuntimeValue ):
-                return [ { '__class__' : 'RuntimeValue' }, None ]
-            elif isinstance( value, dict ):
-                if value.get( '__class__' ) == 'RuntimeValue':
-                    return [ value, None ]
-            try:
-                value, error = check_param( request_context, input, value, context, boolean_fix=True )
-            except Exception, err:
-                log.error( 'Checking parameter %s failed. %s', input.name, str( err ) )
-                pass
-            return [ value, error ]
-
-        # populates state with incoming url parameters
-        def populate_state( inputs, state, errors, incoming, prefix="", context=None ):
-            context = ExpressionContext(state, context)
-            for input in inputs.itervalues():
-                state[input.name] = input.get_initial_value( request_context, context )
-                key = prefix + input.name
-                if input.type == 'repeat':
-                    group_state = state[input.name]
-                    rep_index = 0
-                    del group_state[:]
-                    while True:
-                        rep_name = "%s_%d" % (key, rep_index)
-                        if not any([incoming_key.startswith(rep_name) for incoming_key in incoming.keys()]) and rep_index >= input.min:
-                            break
-                        if rep_index < input.max:
-                            new_state = {}
-                            new_state['__index__'] = rep_index
-                            group_state.append(new_state)
-                            populate_state( input.inputs, new_state, errors, incoming, prefix=rep_name + "|", context=context )
-                        rep_index += 1
-                elif input.type == 'conditional':
-                    group_state = state[input.name]
-                    group_prefix = "%s|" % ( key )
-                    test_param_key = group_prefix + input.test_param.name
-                    default_value = incoming.get(test_param_key, group_state.get(input.test_param.name, None))
-                    value, error = check_state( input.test_param, default_value, context )
-                    if error:
-                        errors[test_param_key] = error
-                    else:
-                        try:
-                            current_case = input.get_current_case( value, request_context )
-                            group_state = state[input.name] = {}
-                            populate_state( input.cases[current_case].inputs, group_state, errors, incoming, prefix=group_prefix, context=context )
-                            group_state['__current_case__'] = current_case
-                        except Exception:
-                            errors[test_param_key] = 'The selected case is unavailable/invalid.'
-                            pass
-                    group_state[input.test_param.name] = value
-                elif input.type == 'section':
-                    group_state = state[input.name]
-                    group_prefix = "%s|" % ( key )
-                    populate_state( input.inputs, group_state, errors, incoming, prefix=group_prefix, context=context )
-                else:
-                    default_value = incoming.get(key, state.get(input.name, None))
-                    value, error = check_state( input, default_value, context )
-                    if error:
-                        errors[key] = error
-                    state[input.name] = value
-
-        # builds tool model including all attributes
-        def iterate( group_inputs, inputs, state_inputs, other_values=None ):
+        # populates model from state
+        def populate_model( inputs, state_inputs, group_inputs, other_values=None ):
             other_values = ExpressionContext( state_inputs, other_values )
             for input_index, input in enumerate( inputs.itervalues() ):
                 tool_dict = None
-                group_state = state_inputs.get(input.name, {})
+                group_state = state_inputs.get( input.name, {} )
                 if input.type == 'repeat':
                     tool_dict = input.to_dict( request_context )
-                    group_cache = tool_dict['cache'] = {}
+                    group_cache = tool_dict[ 'cache' ] = {}
                     for i in range( len( group_state ) ):
-                        group_cache[i] = {}
-                        iterate( group_cache[i], input.inputs, group_state[i], other_values )
+                        group_cache[ i ] = {}
+                        populate_model( input.inputs, group_state[ i ], group_cache[ i ], other_values )
                 elif input.type == 'conditional':
                     tool_dict = input.to_dict( request_context )
                     if 'test_param' in tool_dict:
-                        test_param = tool_dict['test_param']
-                        test_param['default_value'] = jsonify( input.test_param.get_initial_value( request_context, other_values ) )
-                        test_param['value'] = jsonify(group_state.get(test_param['name'], test_param['default_value']))
-                        test_param['text_value'] = input.test_param.value_to_display_text(test_param['value'], self.app)
-                        for i in range(len( tool_dict['cases'] ) ):
+                        test_param = tool_dict[ 'test_param' ]
+                        test_param[ 'value' ] = jsonify( group_state.get( test_param[ 'name' ], input.test_param.get_initial_value( request_context, other_values ) ) )
+                        test_param[ 'text_value' ] = input.test_param.value_to_display_text( test_param[ 'value' ], self.app )
+                        for i in range( len( tool_dict['cases'] ) ):
                             current_state = {}
-                            if i == group_state.get('__current_case__', None):
+                            if i == group_state.get( '__current_case__' ):
                                 current_state = group_state
-                            iterate( tool_dict['cases'][i]['inputs'], input.cases[i].inputs, current_state, other_values )
+                            populate_model( input.cases[ i ].inputs, current_state, tool_dict[ 'cases' ][ i ][ 'inputs' ], other_values )
                 elif input.type == 'section':
                     tool_dict = input.to_dict( request_context )
-                    iterate( tool_dict['inputs'], input.inputs, group_state, other_values )
+                    populate_model( tool_dict[ 'inputs' ], input.inputs, group_state, other_values )
                 else:
-                    # expand input dictionary, resolve dynamic parameters
-                    try:
-                        tool_dict = input.to_dict( request_context, other_values=other_values )
-                    except Exception:
-                        tool_dict = input.to_dict( request_context )
-                        log.exception('tools::to_json() - Skipping parameter expansion for %s.' % input.name)
-                        pass
-
-                    # backup default value
-                    try:
-                        tool_dict['default_value'] = input.get_initial_value( request_context, other_values )
-                    except Exception:
-                        tool_dict['default_value'] = None
-                        log.exception('tools::to_json() - Getting initial value failed %s.' % input.name)
-                        pass
-
-                    # update input value from tool state
-                    tool_dict['value'] = state_inputs.get(input.name, tool_dict['default_value'])
-
-                    # add text value
+                    tool_dict = input.to_dict( request_context, other_values=other_values )
+                    tool_dict[ 'value' ] = state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) )
                     tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ], self.app )
+                    sanitize( tool_dict, 'value' )
+                group_inputs[ input_index ] = tool_dict
 
-                    # sanitize values
-                    sanitize(tool_dict, 'value')
-                    sanitize(tool_dict, 'default_value')
-
-                # backup final input dictionary
-                group_inputs[input_index] = tool_dict
-
-        # sanatization for the final tool state
-        def sanitize_state(state):
+        # sanatizes tool state
+        def sanitize_state( state ):
             keys = None
-            if isinstance(state, dict):
+            if isinstance( state, dict ):
                 keys = state
-            elif isinstance(state, list):
-                keys = range( len(state) )
+            elif isinstance( state, list ):
+                keys = range( len( state ) )
             if keys:
                 for k in keys:
-                    if isinstance(state[k], dict) or isinstance(state[k], list):
-                        sanitize_state(state[k])
+                    if isinstance( state[ k ], dict ) or isinstance( state[ k ], list ):
+                        sanitize_state( state[ k ] )
                     else:
-                        state[k] = jsonify(state[k])
+                        state[ k ] = jsonify( state[ k ] )
 
         # expand incoming parameters (parameters might trigger multiple tool executions,
         # here we select the first execution only in order to resolve dynamic parameters)
@@ -2284,74 +2056,109 @@ class Tool( object, Dictifiable ):
         if self.input_translator:
             self.input_translator.translate( params )
 
-        # initialize and populate tool state
+        # create tool state
         state_inputs = {}
         state_errors = {}
-        populate_state( self.inputs, state_inputs, state_errors, params.__dict__ )
+        self._populate_state( request_context, self.inputs, params.__dict__, state_inputs, state_errors )
 
-        # create basic tool model
+        # create tool model
         tool_model = self.to_dict( request_context )
-        tool_model['inputs'] = {}
-
-        # build tool model and tool state
-        iterate( tool_model['inputs'], self.inputs, state_inputs, '' )
+        tool_model[ 'inputs' ] = {}
+        populate_model( self.inputs, state_inputs, tool_model[ 'inputs' ] )
 
         # sanitize tool state
-        sanitize_state(state_inputs)
+        sanitize_state( state_inputs )
 
-        # load tool help
+        # create tool help
         tool_help = ''
         if self.help:
-            tool_help = self.help
-            tool_help = tool_help.render( static_path=url_for( '/static' ), host_url=url_for('/', qualified=True) )
+            tool_help = self.help.render( static_path=url_for( '/static' ), host_url=url_for( '/', qualified=True ) )
             if type( tool_help ) is not unicode:
-                tool_help = unicode( tool_help, 'utf-8')
+                tool_help = unicode( tool_help, 'utf-8' )
 
-        # check if citations exist
-        tool_citations = False
-        if self.citations:
-            tool_citations = True
-
-        # get tool versions
+        # create tool versions
         tool_versions = []
-        tools = self.app.toolbox.get_loaded_tools_by_lineage(self.id)
+        tools = self.app.toolbox.get_loaded_tools_by_lineage( self.id )
         for t in tools:
             if t.version not in tool_versions:
-                tool_versions.append(t.version)
+                tool_versions.append( t.version )
 
-        # add information with underlying requirements and their versions
-        tool_requirements = []
-        if self.requirements:
-            for requirement in self.requirements:
-                tool_requirements.append({
-                    'name'      : requirement.name,
-                    'version'   : requirement.version
-                })
-
-        # add toolshed url
-        sharable_url = None
-        if self.tool_shed_repository:
-            sharable_url = self.tool_shed_repository.get_sharable_url( self.app )
-
-        # add additional properties
+        # update tool model
         tool_model.update({
             'id'            : self.id,
             'help'          : tool_help,
-            'citations'     : tool_citations,
+            'citations'     : bool( self.citations ),
             'biostar_url'   : self.app.config.biostar_url,
-            'sharable_url'  : sharable_url,
+            'sharable_url'  : self.tool_shed_repository.get_sharable_url( self.app ) if self.tool_shed_repository else None,
             'message'       : tool_message,
             'versions'      : tool_versions,
-            'requirements'  : tool_requirements,
+            'requirements'  : [ { 'name' : r.name, 'version' : r.version } for r in self.requirements ],
             'errors'        : state_errors,
             'state_inputs'  : state_inputs,
             'job_id'        : trans.security.encode_id( job.id ) if job else None,
             'job_remap'     : self._get_job_remap( job ),
             'history_id'    : trans.security.encode_id( history.id )
         })
-
-        # return enriched tool model
         return tool_model
+
+    # populates state from incoming parameters
+    def _populate_state( self, request_context, inputs, incoming, state, errors, prefix='', context=None ):
+        context = ExpressionContext( state, context )
+        for input in inputs.itervalues():
+            state[ input.name ] = input.get_initial_value( request_context, context )
+            key = prefix + input.name
+            group_state = state[ input.name ]
+            group_prefix = '%s|' % ( key )
+            if input.type == 'repeat':
+                rep_index = 0
+                del group_state[:]
+                while True:
+                    rep_prefix = '%s_%d' % ( key, rep_index )
+                    if not any( [ incoming_key.startswith( rep_prefix ) for incoming_key in incoming.keys() ] ) and rep_index >= input.min:
+                        break
+                    if rep_index < input.max:
+                        new_state = { '__index__' : rep_index }
+                        group_state.append( new_state )
+                        self._populate_state( request_context, input.inputs, incoming, new_state, errors, prefix=rep_prefix + '|', context=context )
+                    rep_index += 1
+            elif input.type == 'conditional':
+                test_param_key = group_prefix + input.test_param.name
+                test_param_value = incoming.get( test_param_key, group_state.get( input.test_param.name ) )
+                value, error = check_param( request_context, input.test_param, test_param_value, context )
+                if error:
+                    errors[ test_param_key ] = error
+                else:
+                    try:
+                        current_case = input.get_current_case( value, request_context )
+                        group_state = state[ input.name ] = {}
+                        self._populate_state( request_context, input.cases[ current_case ].inputs, incoming, group_state, errors, prefix=group_prefix, context=context )
+                        group_state[ '__current_case__' ] = current_case
+                    except Exception:
+                        errors[ test_param_key ] = 'The selected case is unavailable/invalid.'
+                        pass
+                group_state[ input.test_param.name ] = value
+            elif input.type == 'section':
+                self._populate_state( request_context, input.inputs, incoming, group_state, errors, prefix=group_prefix, context=context )
+            elif input.type == 'upload_dataset':
+                d_type = input.get_datatype( request_context, context=context )
+                writable_files = d_type.writable_files
+                while len( group_state ) > len( writable_files ):
+                    del group_state[ -1 ]
+                while len( writable_files ) > len( group_state ):
+                    new_state = { '__index__' : len( group_state ) }
+                    for upload_item in input.inputs.itervalues():
+                        new_state[ upload_item.name ] = upload_item.get_initial_value( request_context, context )
+                    group_state.append( new_state )
+                for i, rep_state in enumerate( group_state ):
+                    rep_index = rep_state[ '__index__' ]
+                    rep_prefix = '%s_%d|' % ( key, rep_index )
+                    self._populate_state( request_context, input.inputs, incoming, rep_state, errors, prefix=rep_prefix, context=context )
+            else:
+                param_value = incoming.get( key, state.get( input.name ) )
+                value, error = check_param( request_context, input, param_value, context )
+                if error:
+                    errors[ key ] = error
+                state[ input.name ] = value
 
     def _get_job_remap( self, job):
         if job:
@@ -2373,28 +2180,28 @@ class Tool( object, Dictifiable ):
         # Create index for hdas.
         hda_source_dict = {}
         for hda in history.datasets:
-            key = '%s_%s' % (hda.hid, hda.dataset.id)
+            key = '%s_%s' % ( hda.hid, hda.dataset.id )
             hda_source_dict[ hda.dataset.id ] = hda_source_dict[ key ] = hda
 
         # Ditto for dataset collections.
         hdca_source_dict = {}
         for hdca in history.dataset_collections:
-            key = '%s_%s' % (hdca.hid, hdca.collection.id)
+            key = '%s_%s' % ( hdca.hid, hdca.collection.id )
             hdca_source_dict[ hdca.collection.id ] = hdca_source_dict[ key ] = hdca
 
         # Map dataset or collection to current history
-        def map_to_history(value):
+        def map_to_history( value ):
             id = None
             source = None
-            if isinstance(value, self.app.model.HistoryDatasetAssociation):
+            if isinstance( value, self.app.model.HistoryDatasetAssociation ):
                 id = value.dataset.id
                 source = hda_source_dict
-            elif isinstance(value, self.app.model.HistoryDatasetCollectionAssociation):
+            elif isinstance( value, self.app.model.HistoryDatasetCollectionAssociation ):
                 id = value.collection.id
                 source = hdca_source_dict
             else:
                 return None
-            key = '%s_%s' % (value.hid, id)
+            key = '%s_%s' % ( value.hid, id )
             if key in source:
                 return source[ key ]
             elif id in source:
@@ -2442,16 +2249,15 @@ class Tool( object, Dictifiable ):
                         else:
                             message += 'You can re-run the job with this tool version, which is a different version of the original tool.'
                 else:
-                    new_tool_shed_url = tool.tool_shed_repository.get_sharable_url( tool.app ) + '/%s/' % tool.tool_shed_repository.changeset_revision
-                    old_tool_shed = tool_id.split( "/repos/" )[0]
-                    old_tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, old_tool_shed )
-                    old_tool_shed_url = old_tool_shed_url + "/view/%s/%s/" % (tool.repository_owner, tool.repository_name)
-                    message = 'This job was run with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, version "%s", which is not available.  ' % (old_tool_shed_url, tool_id, tool_version)
+                    new_tool_shed_url = '%s/%s/' % ( tool.tool_shed_repository.get_sharable_url( tool.app ), tool.tool_shed_repository.changeset_revision )
+                    old_tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, tool_id.split( '/repos/' )[ 0 ] )
+                    old_tool_shed_url = '%s/view/%s/%s/' % ( old_tool_shed_url, tool.repository_owner, tool.repository_name )
+                    message = 'This job was run with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, version "%s", which is not available.  ' % ( old_tool_shed_url, tool_id, tool_version )
                     if len( tools ) > 1:
-                        message += 'You can re-run the job with the selected <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a> or choose another derivation of the tool.' % (new_tool_shed_url, self.id)
+                        message += 'You can re-run the job with the selected <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a> or choose another derivation of the tool.' % ( new_tool_shed_url, self.id )
                     else:
-                        message += 'You can re-run the job with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, which is a derivation of the original tool.' % (new_tool_shed_url, self.id)
-        except Exception, e:
+                        message += 'You can re-run the job with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, which is a derivation of the original tool.' % ( new_tool_shed_url, self.id )
+        except Exception as e:
             raise exceptions.MessageException( str( e ) )
         return message
 
@@ -2785,18 +2591,6 @@ def json_fix( val ):
         return val.encode( "utf8" )
     else:
         return val
-
-
-def check_param_from_incoming( trans, state, input, incoming, key, context, source ):
-    """
-    Unlike "update" state, this preserves default if no incoming value found.
-    This lets API user specify just a subset of params and allow defaults to be
-    used when available.
-    """
-    default_input_value = state.get( input.name, None )
-    incoming_value = get_incoming_value( incoming, key, default_input_value )
-    value, error = check_param( trans, input, incoming_value, context, source=source )
-    return value, error
 
 
 def get_incoming_value( incoming, key, default ):

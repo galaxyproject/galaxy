@@ -163,7 +163,7 @@ class WorkflowModule( object ):
         """
         raise TypeError( "Abstract method" )
 
-    def compute_runtime_state( self, trans, step_updates=None, source="html" ):
+    def compute_runtime_state( self, trans, step_updates=None ):
         """ Determine the runtime state (potentially different from self.state
         which describes configuration state). This (again unlike self.state) is
         currently always a `DefaultToolState` object.
@@ -278,7 +278,7 @@ class SimpleWorkflowModule( WorkflowModule ):
                 errors[ name ] = error
         return errors
 
-    def compute_runtime_state( self, trans, step_updates=None, source="html" ):
+    def compute_runtime_state( self, trans, step_updates=None ):
         if step_updates and "tool_state" in step_updates:
             # Fix this for multiple inputs
             state = self.decode_runtime_state( trans, step_updates.pop( "tool_state" ) )
@@ -441,7 +441,7 @@ class SubWorkflowModule( WorkflowModule ):
                 errors[ name ] = error
         return errors
 
-    def compute_runtime_state( self, trans, step_updates=None, source="html" ):
+    def compute_runtime_state( self, trans, step_updates=None ):
         state = self.get_runtime_state()
         step_errors = {}
         return state, step_errors
@@ -1084,7 +1084,7 @@ class ToolModule( WorkflowModule ):
         inputs = self.state.inputs
         return self.tool.check_and_update_param_values( inputs, self.trans, workflow_building_mode=True )
 
-    def compute_runtime_state( self, trans, step_updates=None, source="html" ):
+    def compute_runtime_state( self, trans, step_updates=None ):
         # Warning: This method destructively modifies existing step state.
         step_errors = None
         state = self.state
@@ -1097,7 +1097,7 @@ class ToolModule( WorkflowModule ):
             # Update the state
             self.runtime_post_job_actions = step_updates.get(RUNTIME_POST_JOB_ACTIONS_KEY, {})
             step_errors = tool.update_state( trans, tool.inputs, state.inputs, step_updates,
-                                             update_only=True, old_errors=old_errors, source=source )
+                                             update_only=True, old_errors=old_errors )
             step_metadata_runtime_state = self.__step_meta_runtime_state()
             if step_metadata_runtime_state:
                 state.inputs[ RUNTIME_STEP_META_STATE_KEY ] = step_metadata_runtime_state
@@ -1385,7 +1385,7 @@ class WorkflowModuleInjector(object):
         self.trans = trans
         self.allow_tool_state_corrections = allow_tool_state_corrections
 
-    def inject( self, step, step_args=None, source="html" ):
+    def inject( self, step, step_args=None ):
         """ Pre-condition: `step` is an ORM object coming from the database, if
         supplied `step_args` is the representation of the inputs for that step
         supplied via web form.
@@ -1421,7 +1421,7 @@ class WorkflowModuleInjector(object):
         # are not persisted so we need to do it every time)
         module.add_dummy_datasets( connections=step.input_connections )
 
-        state, step_errors = module.compute_runtime_state( trans, step_args, source=source )
+        state, step_errors = module.compute_runtime_state( trans, step_args )
 
         step.state = state
 
@@ -1440,7 +1440,7 @@ def populate_module_and_state( trans, workflow, param_map, allow_tool_state_corr
         module_injector = WorkflowModuleInjector( trans, allow_tool_state_corrections )
     for step in workflow.steps:
         step_args = param_map.get( step.id, {} )
-        step_errors = module_injector.inject( step, step_args=step_args, source="json" )
+        step_errors = module_injector.inject( step, step_args=step_args )
         if step.type == 'tool' or step.type is None:
             if step_errors:
                 message = "Workflow cannot be run because of validation errors in some steps: %s" % step_errors

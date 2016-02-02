@@ -110,7 +110,6 @@ define([ "test-app", "layout/masthead"
         ok( $menu.css( 'display', 'none' ), 'Menu manually hidden' );
         tab.set( 'show_menu', true );
         ok( $menu.css( 'display', 'block' ), 'Menu manually shown, again' );
-
         var tab = this.masthead.collection.findWhere( { id: 'enable-scratchbook' } );
         var $tab = $( '#enable-scratchbook' ).find( '.dropdown' );
         ok( tab && $tab.length == 1, 'Found tab to enable scratchbook' );

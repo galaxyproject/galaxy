@@ -111,9 +111,6 @@ class ToolParameter( object, Dictifiable ):
         """
         return value
 
-    def from_json( self, value, trans=None, other_values={} ):
-        return self.from_html( value, trans, other_values )
-
     def get_initial_value( self, trans, other_values ):
         """
         Return the starting value of the parameter
@@ -481,9 +478,6 @@ class BooleanToolParameter( ToolParameter ):
         return form_builder.CheckboxField( self.name, checked, refresh_on_change=self.refresh_on_change )
 
     def from_html( self, value, trans=None, other_values={} ):
-        return form_builder.CheckboxField.is_checked( value )
-
-    def from_json( self, value, trans=None, other_values={} ):
         return string_as_bool( value )
 
     def to_python( self, value, app ):
