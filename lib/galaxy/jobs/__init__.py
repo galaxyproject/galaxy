@@ -44,7 +44,7 @@ log = logging.getLogger( __name__ )
 TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
 
 # Override with config.default_job_shell.
-DEFAULT_JOB_SHELL = '/bin/sh'
+DEFAULT_JOB_SHELL = '/bin/bash'
 
 
 class JobDestination( Bunch ):

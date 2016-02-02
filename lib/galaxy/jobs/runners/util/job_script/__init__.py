@@ -7,7 +7,7 @@ from pkg_resources import resource_string
 from six import text_type
 from galaxy.util import unicodify
 
-DEFAULT_SHELL = '/bin/sh'
+DEFAULT_SHELL = '/bin/bash'
 
 DEFAULT_JOB_FILE_TEMPLATE = Template(
     resource_string(__name__, 'DEFAULT_JOB_FILE_TEMPLATE.sh').decode('UTF-8')

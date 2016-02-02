@@ -172,7 +172,7 @@ class Configuration( object ):
         self.job_queue_cleanup_interval = int( kwargs.get("job_queue_cleanup_interval", "5") )
         self.cluster_files_directory = os.path.abspath( kwargs.get( "cluster_files_directory", "database/pbs" ) )
         self.job_working_directory = resolve_path( kwargs.get( "job_working_directory", "database/job_working_directory" ), self.root )
-        self.default_job_shell = kwargs.get( "default_job_shell", "/bin/sh" )
+        self.default_job_shell = kwargs.get( "default_job_shell", "/bin/bash" )
         self.cleanup_job = kwargs.get( "cleanup_job", "always" )
         self.container_image_cache_path = self.resolve_path( kwargs.get( "container_image_cache_path", "database/container_images" ) )
         self.outputs_to_working_directory = string_as_bool( kwargs.get( 'outputs_to_working_directory', False ) )
