@@ -84,6 +84,8 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                 can_modify = is_admin or ( trans.user and trans.app.security_agent.can_modify_library_item( current_user_roles, folder ) )
                 can_manage = is_admin or ( trans.user and trans.app.security_agent.can_manage_library_item( current_user_roles, folder ) )
                 return_item.update( dict( can_modify=can_modify, can_manage=can_manage ) )
+                if content_item.description:
+                    return_item.update( dict( description=content_item.description ) )
 
             if content_item.api_type == 'file':
                 #  Is the dataset public or private?
@@ -107,7 +109,10 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                                           is_unrestricted=is_unrestricted,
                                           is_private=is_private,
                                           can_manage=can_manage,
-                                          file_size=nice_size ) )
+                                          file_size=nice_size
+                                          ) )
+                if content_item.library_dataset_dataset_association.message:
+                    return_item.update( dict( message=content_item.library_dataset_dataset_association.message ) )
 
             # For every item include the default metadata
             return_item.update( dict( id=encoded_id,

@@ -34,7 +34,6 @@
     <param name="async_datasets" type="hidden" value="None"/>
     <upload_dataset name="files" title="Specify Files for Dataset" file_type_name="file_type" metadata_ref="files_metadata">
         <param name="file_data" type="file" size="30" label="File" ajax-upload="true" help="TIP: Due to browser limitations, uploading files larger than 2GB is guaranteed to fail.  To upload large files, use the URL method (below) or FTP (if enabled by the site administrator).">
-        <validator type="expression" message="You will need to reselect the file you specified (%s)." substitute_value_in_message="True">not ( ( isinstance( value, unicode ) or isinstance( value, str ) ) and value != "" )</validator> <!-- use validator to post message to user about needing to reselect the file, since most browsers won't accept the value attribute for file inputs -->
       </param>
       <param name="url_paste" type="text" area="true" size="5x35" label="URL/Text" help="Here you may specify a list of URLs (one per line) or paste the contents of a file."/> 
       <param name="ftp_files" type="ftpfile" label="Files uploaded via FTP"/>

@@ -379,6 +379,16 @@ def transform_tool(context, step):
                 )
                 post_job_actions[action_name] = action
 
+            if output.get("delete_intermediate_datasets", None):
+                action_name = "DeleteIntermediatesAction%s" % name
+                arguments = dict()
+                action = __action(
+                    "DeleteIntermediatesAction",
+                    name,
+                    arguments,
+                )
+                post_job_actions[action_name] = action
+
         del step["outputs"]
 
 

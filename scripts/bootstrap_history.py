@@ -35,7 +35,13 @@ RELEASES = [
 ]
 
 # Uncredit pull requestors... kind of arbitrary at this point.
-DEVTEAM = ["afgane", "dannon", "blankenberg", "davebx", "martenson", "jmchilton", "tnabtaf", "natefoo", "carlfeberhard", "jgoecks", "guerler", "jennaj", "nekrut", "jxtx", "nitesh1989"]
+DEVTEAM = [
+    "afgane", "dannon", "blankenberg",
+    "davebx", "martenson", "jmchilton",
+    "tnabtaf", "natefoo", "carlfeberhard",
+    "jgoecks", "guerler", "jennaj",
+    "nekrut", "jxtx", "nitesh1989"
+]
 
 TEMPLATE = """
 .. to_doc
@@ -44,23 +50,36 @@ TEMPLATE = """
 %s
 -------------------------------
 
+.. announce_start
+
 Enhancements
 -------------------------------
 
-.. enhancements
+.. major_feature
+
+
+.. feature
+
+
+.. enhancement
+
+
+.. small_enhancement
+
 
 
 Fixes
 -------------------------------
 
+.. major_bug
 
-.. fixes
+
+.. bug
 
 
 .. github_links
 """
 
-# TODO: for 15.10 use this template...
 ANNOUNCE_TEMPLATE = string.Template("""
 ===========================================================
 ${month_name} 20${year} Galaxy Release (v ${release})
@@ -115,7 +134,7 @@ Release Notes
 ===========================================================
 
 .. include:: ${release}.rst
-   :start-after: enhancements
+   :start-after: announce_start
 
 .. include:: _thanks.rst
 """)
@@ -167,7 +186,7 @@ def do_release(argv):
     else:
         next_year = year
     next_version = "%s.%02d" % (next_year, next_month)
-    first_of_next_month = datetime.date(next_year + 2000, next_month, 1)
+    first_of_next_month = datetime.date(int(next_year) + 2000, next_month, 1)
     freeze_date = next_weekday(first_of_next_month, 0)
     release_date = next_weekday(first_of_next_month, 0) + datetime.timedelta(21)
 
@@ -181,34 +200,11 @@ def do_release(argv):
     )
     open(next_release_file, "w").write(next_announce.encode("utf-8"))
 
-    release_commit_start = None
-    release_commit_end = None
-
-    for i, release_info in enumerate(RELEASES):
-        if release_name == release_info[0]:
-            release_commit_start = release_info[1]
-            release_commit_end = RELEASES[i + 1][1]
-
-    if release_commit_start is None:
-        raise Exception("Failed to find information for version %s" % release_name)
-
-    start_release_time = commit_time(release_commit_start)
-    end_release_time = commit_time(release_commit_end)
-
     for page in _get_prs():
         for pr in page:
-            base_label = pr.base['label']
-            if base_label == "galaxyproject:dev":
-                merged_at = pr.merged_at
-                if merged_at is None:
-                    continue
-                before_branch = merged_at < start_release_time
-                after_branch = merged_at > end_release_time
-                print "%s %s %s" % (merged_at, start_release_time, end_release_time)
-                if before_branch or after_branch:
-                    print "SKIPPING"
-                    continue
-            elif base_label != "galaxyproject:release_%s" % release_name:
+            merged_at = pr.merged_at
+            milestone = pr.milestone
+            if not merged_at or not milestone or milestone['title'] != release_name:
                 continue
             # 2015-06-29 18:32:13 2015-04-22 19:11:53 2015-08-12 21:15:45
             as_dict = {
@@ -221,7 +217,11 @@ def do_release(argv):
 
 def _get_prs():
     github = _github_client()
-    pull_requests = github.pull_requests.list(state='closed', user=PROJECT_OWNER, repo=PROJECT_NAME)
+    pull_requests = github.pull_requests.list(
+        state='closed',
+        user=PROJECT_OWNER,
+        repo=PROJECT_NAME,
+    )
     return pull_requests
 
 
@@ -305,22 +305,47 @@ def main(argv):
                 labels = github.issues.labels.list_by_issue(int(pull_request), user=PROJECT_OWNER, repo=PROJECT_NAME)
             except Exception:
                 pass
-            is_bug = is_enhancement = is_minor = False
+            is_bug = is_enhancement = is_feature = is_minor = is_major = is_merge = is_small_enhancement = False
             for label in labels:
-                if label.name.lower() == "minor":
+                label_name = label.name.lower()
+                if label_name == "minor":
                     is_minor = True
-                if label.name.lower() == "bug":
+                elif label_name == "major":
+                    is_major = True
+                elif label_name == "merge":
+                    is_merge = True
+                elif label_name == "kind/bug":
                     is_bug = True
-                if label.name.lower() == "enhancement":
+                elif label_name == "kind/feature":
+                    is_feature = True
+                elif label_name == "kind/enhancement":
                     is_enhancement = True
-            if is_minor:
+                elif label_name in ["kind/testing", "kind/refactoring"]:
+                        is_small_enhancement = True
+
+            is_some_kind_of_enhancement = is_enhancement or is_feature or is_small_enhancement
+
+            if not( is_bug or is_some_kind_of_enhancement or is_minor or is_merge ):
+                print "No kind/ or minor or merge label found for %s" % pull_request
+                text_target = None
+
+            if is_minor or is_merge:
                 return
-            if is_enhancement:
-                text_target = "enhancements"
+
+            if is_some_kind_of_enhancement and is_major:
+                text_target = "major_feature"
+            elif is_feature:
+                text_target = "feature"
+            elif is_enhancement:
+                text_target = "enhancement"
+            elif is_some_kind_of_enhancement:
+                text_target = "small_enhancement"
+            elif is_major:
+                text_target = "major_bug"
             elif is_bug:
-                text_target = "fixes"
+                text_target = "bug"
             else:
-                print "Problem not label for %s" % pull_request
+                print "Logic problem, cannot determine section for %s" % pull_request
                 text_target = None
     elif ident.startswith("issue"):
         issue = ident[len("issue"):]
