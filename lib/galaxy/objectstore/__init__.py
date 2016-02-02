@@ -12,7 +12,7 @@ import logging
 import threading
 from xml.etree import ElementTree
 
-from galaxy.util import umask_fix_perms, force_symlink
+from galaxy.util import umask_fix_perms, force_symlink, safe_makedirs
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util.sleeper import Sleeper
 from galaxy.util.directory_hash import directory_hash_id
@@ -331,8 +331,7 @@ class DiskObjectStore(ObjectStore):
             dir_only = kwargs.get('dir_only', False)
             # Create directory if it does not exist
             dir = path if dir_only else os.path.dirname(path)
-            if not os.path.exists(dir):
-                os.makedirs(dir)
+            safe_makedirs(dir)
             # Create the file if it does not exist
             if not dir_only:
                 open(path, 'w').close()  # Should be rb?
