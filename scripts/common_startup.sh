@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-GXPIP_VERSION='8.0.2+gx1'
+GXPIP_VERSION='8.0.2+gx2'
 
 SET_VENV=1
 for arg in "$@"; do
