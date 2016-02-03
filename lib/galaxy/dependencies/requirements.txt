@@ -60,4 +60,4 @@ Fabric
 Whoosh==2.4.1+gx1
 
 # Flexible BAM index naming
-pysam==0.8.3+gx1
+pysam==0.8.4+gx1
