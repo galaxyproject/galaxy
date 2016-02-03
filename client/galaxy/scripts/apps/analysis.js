@@ -7,7 +7,8 @@ var jQuery = require( 'jquery' ),
     ToolPanel = require( './tool-panel' ),
     HistoryPanel = require( './history-panel' ),
     PAGE = require( 'layout/page' ),
-    ToolForm = require( 'mvc/tool/tool-form' );
+    ToolForm = require( 'mvc/tool/tool-form' ),
+    Tours = require( 'mvc/tours' );
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -99,6 +100,11 @@ window.app = function app( options, bootstrapped ){
             '(/)' : 'home',
             // TODO: remove annoying 'root' from root urls
             '(/)root*' : 'home',
+            '(/)tours' : 'show_tours',
+        },
+
+        show_tours : function( params ){
+            centerPanel.display( new Tours.ToursView() );
         },
 
         /**  */
