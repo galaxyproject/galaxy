@@ -100,11 +100,16 @@ window.app = function app( options, bootstrapped ){
             '(/)' : 'home',
             // TODO: remove annoying 'root' from root urls
             '(/)root*' : 'home',
-            '(/)tours' : 'show_tours',
+            '(/)tours(/:tour_id)' : 'show_tours',
         },
 
-        show_tours : function( params ){
-            centerPanel.display( new Tours.ToursView() );
+        show_tours : function( tour_id ){
+            if (tour_id){
+                Tours.giveTour(tour_id);
+            }
+            else{
+                centerPanel.display( new Tours.ToursView() );
+            }
         },
 
         /**  */

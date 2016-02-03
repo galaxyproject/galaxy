@@ -101,7 +101,7 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
                 "<ul>",
                 '<% _.each(tours, function(tour) { %>',
                     '<li>',
-                        '<a href="#" class="tourItem" data-tour.id=<%- tour.id %>>',
+                        '<a href="#/tours/<%- tour.id %>" class="tourItem" data-tour.id=<%- tour.id %>>',
                             '<%- tour.attributes.name || tour.id %>',
                         '</a>',
                         ' - <%- tour.attributes.description || "No description given." %>',
