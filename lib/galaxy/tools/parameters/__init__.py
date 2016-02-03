@@ -2,7 +2,7 @@
 Classes encapsulating Galaxy tool parameters.
 """
 import re
-from basic import DummyDataset, RuntimeValue
+from basic import RuntimeValue
 from grouping import Conditional, Repeat, Section, UploadDataset
 from galaxy.util import string_as_bool
 from galaxy.util.json import dumps, json_fix, loads
@@ -67,8 +67,6 @@ def check_param( trans, param, incoming_value, param_values ):
     error = None
     try:
         if trans.workflow_building_mode:
-            if isinstance( value, DummyDataset ):
-                return [ None, None ]
             if isinstance( value, RuntimeValue ):
                 return [ { '__class__' : 'RuntimeValue' }, None ]
             if isinstance( value, dict ):

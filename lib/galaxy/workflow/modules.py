@@ -21,7 +21,6 @@ from galaxy.tools.parameters.basic import (
     parameter_types,
     DataCollectionToolParameter,
     DataToolParameter,
-    DummyDataset,
     RuntimeValue,
 )
 from galaxy.tools.parameters.wrapped import make_dict_copy
@@ -1049,11 +1048,9 @@ class ToolModule( WorkflowModule ):
         return encoded
 
     def update_state( self, incoming ):
-        """ Update the current state of the module against the user supplied
-        parameters in the dict-like object `incoming`.
-        """
         self.label = incoming.get( 'label' )
         self.state.inputs = copy.deepcopy( incoming )
+        print self.state.inputs
 
     def check_and_update_state( self ):
         inputs = self.state.inputs
@@ -1065,14 +1062,8 @@ class ToolModule( WorkflowModule ):
         state = self.state
         self.runtime_post_job_actions = {}
         if step_updates:
-            # Get the tool
-            tool = self.tool
-            # Get old errors
-            old_errors = state.inputs.pop( "__errors__", {} )
-            # Update the state
             self.runtime_post_job_actions = step_updates.get(RUNTIME_POST_JOB_ACTIONS_KEY, {})
-            step_errors = tool.update_state( trans, tool.inputs, state.inputs, step_updates,
-                                             update_only=True, old_errors=old_errors )
+            self.tool.populate_state( trans, self.tool.inputs, state.inputs, step_updates, step_errors )
             step_metadata_runtime_state = self.__step_meta_runtime_state()
             if step_metadata_runtime_state:
                 state.inputs[ RUNTIME_STEP_META_STATE_KEY ] = step_metadata_runtime_state
@@ -1211,7 +1202,7 @@ class ToolModule( WorkflowModule ):
                 dict( ( conn.input_name, conn ) for conn in connections )
         else:
             input_connections_by_name = {}
-        # Any connected input needs to have value DummyDataset (these
+        # Any connected input needs to have value RuntimeValue (these
         # are not persisted so we need to do it every time)
 
         def callback( input, value, prefixed_name, prefixed_label ):
@@ -1219,12 +1210,12 @@ class ToolModule( WorkflowModule ):
             if isinstance( input, DataToolParameter ):
                 if connections is None or prefixed_name in input_connections_by_name:
                     if input.multiple:
-                        replacement = [] if not connections else [DummyDataset() for conn in connections]
+                        replacement = [] if not connections else [RuntimeValue() for conn in connections]
                     else:
-                        replacement = DummyDataset()
+                        replacement = RuntimeValue()
             elif isinstance( input, DataCollectionToolParameter ):
                 if connections is None or prefixed_name in input_connections_by_name:
-                    replacement = DummyDataset()
+                    replacement = RuntimeValue()
             return replacement
 
         visit_input_values( self.tool.inputs, self.state.inputs, callback )

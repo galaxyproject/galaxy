@@ -1640,10 +1640,6 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         return d
 
 
-class DummyDataset( object ):
-    pass
-
-
 class BaseDataToolParameter( ToolParameter ):
 
     def __init__( self, tool, input_source, trans ):
@@ -1899,7 +1895,7 @@ class DataToolParameter( BaseDataToolParameter ):
         """
         # Can't look at history in workflow mode. Tool shed has no histories.
         if trans.workflow_building_mode or trans.app.name == 'tool_shed':
-            return DummyDataset()
+            return RuntimeValue()
         history = self._get_history( trans )
         dataset_matcher = DatasetMatcher( trans, self, None, other_values )
         if self.optional:
@@ -2003,9 +1999,9 @@ class DataToolParameter( BaseDataToolParameter ):
             return value
         elif isinstance( value, int ):
             return str( value )
-        elif isinstance( value, DummyDataset ):
+        elif isinstance( value, RuntimeValue ):
             return None
-        elif isinstance( value, list) and len(value) > 0 and isinstance( value[0], DummyDataset):
+        elif isinstance( value, list) and len(value) > 0 and isinstance( value[0], RuntimeValue):
             return None
         elif isinstance( value, list ):
             return ",".join( [ str( self.to_string( val, app ) ) for val in value ] )
@@ -2325,7 +2321,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
     def to_string( self, value, app ):
         if value is None or isinstance( value, basestring ):
             return value
-        elif isinstance( value, DummyDataset ):
+        elif isinstance( value, RuntimeValue ):
             return None
         try:
             if isinstance( value, galaxy.model.DatasetCollectionElement ):
