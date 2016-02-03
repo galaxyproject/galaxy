@@ -313,7 +313,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return self.workflow_contents_manager.workflow_to_dict( trans, stored_workflow, style="instance" )
 
     @expose_api
-    def build_module( self, trans, payload={}):
+    def build_module( self, trans, payload={} ):
         """
         POST /api/workflows/build_module
         Builds module details including a tool model for the workflow editor.
