@@ -188,7 +188,6 @@ class ToolEvaluator( object ):
                                             tool=self.tool,
                                             name=input.name )
 
-
             elif isinstance( input, DataToolParameter ):
                 # FIXME: We're populating param_dict with conversions when
                 #        wrapping values, this should happen as a separate

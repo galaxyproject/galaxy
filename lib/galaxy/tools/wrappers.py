@@ -320,6 +320,7 @@ class DatasetListAsFileWrapper( DatasetListWrapper ):
             listfile.close()
         return filepath
 
+
 class DatasetCollectionWrapper( ToolParameterValueWrapper, HasDatasets ):
 
     def __init__( self, has_collection, dataset_paths=[], **kwargs ):
