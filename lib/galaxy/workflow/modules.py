@@ -4,6 +4,7 @@ Modules used in building workflows
 
 import logging
 import re
+import copy
 
 from xml.etree.ElementTree import Element
 
@@ -1048,37 +1049,11 @@ class ToolModule( WorkflowModule ):
         return encoded
 
     def update_state( self, incoming ):
-        # Build a callback that handles setting an input to be required at
-        # runtime. We still process all other parameters the user might have
-        # set. We also need to make sure all datasets have a dummy value
-        # for dependencies to see
-
-        self.label = incoming.get("label", None) or None
-        self.post_job_actions = ActionBox.handle_incoming(incoming)
-
-        make_runtime_key = incoming.get( 'make_runtime', None )
-        make_buildtime_key = incoming.get( 'make_buildtime', None )
-
-        def item_callback( trans, key, input, value, error, old_value, context ):
-            # Dummy value for Data parameters
-            if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
-                return DummyDataset(), None
-            # Deal with build/runtime (does not apply to Data parameters)
-            if key == make_buildtime_key:
-                return input.get_initial_value( trans, context ), None
-            elif isinstance( old_value, RuntimeValue ):
-                return old_value, None
-            elif key == make_runtime_key:
-                return RuntimeValue(), None
-            elif isinstance(value, basestring) and re.search("\$\{.+?\}", str(value)):
-                # Workflow Parameter Replacement, so suppress error from going to the workflow level.
-                return value, None
-            else:
-                return value, error
-
-        # Update state using incoming values
-        errors = self.tool.update_state( self.trans, self.tool.inputs, self.state.inputs, incoming, item_callback=item_callback )
-        self.errors = errors or None
+        """ Update the current state of the module against the user supplied
+        parameters in the dict-like object `incoming`.
+        """
+        self.label = incoming.get( 'label' )
+        self.state.inputs = copy.deepcopy( incoming )
 
     def check_and_update_state( self ):
         inputs = self.state.inputs
