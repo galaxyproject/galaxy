@@ -6,7 +6,7 @@
 command = docker {docker_args}
 
 # The docker image name that should be started.
-image = shiltemann/docker-phinch-galaxy:v1
+image = shiltemann/docker-phinch-galaxy:16.04
 
 # Additional arguments that are passed to the `docker run` command.
 #command_inject = --sig-proxy=true -e DEBUG=false
