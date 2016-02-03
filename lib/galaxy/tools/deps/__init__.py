@@ -29,21 +29,18 @@ CONFIG_VAL_NOT_FOUND = object()
 
 
 def build_dependency_manager( config ):
-    if getattr( config, "use_tool_dependencies", False ):
-        dependency_manager_kwds = {
-            'default_base_path': config.tool_dependency_dir,
-            'conf_file': config.dependency_resolvers_config_file,
-        }
-        for key, default_value in EXTRA_CONFIG_KWDS.items():
-            value = getattr(config, key, CONFIG_VAL_NOT_FOUND)
-            if value is CONFIG_VAL_NOT_FOUND and hasattr(config, "config_dict"):
-                value = config.config_dict.get(key, CONFIG_VAL_NOT_FOUND)
-            if value is CONFIG_VAL_NOT_FOUND:
-                value = default_value
-            dependency_manager_kwds[key] = value
-        dependency_manager = DependencyManager( **dependency_manager_kwds )
-    else:
-        dependency_manager = NullDependencyManager()
+    dependency_manager_kwds = {
+        'default_base_path': getattr( config, "tool_dependency_dir", config.root ),
+        'conf_file': config.dependency_resolvers_config_file,
+    }
+    for key, default_value in EXTRA_CONFIG_KWDS.items():
+        value = getattr(config, key, CONFIG_VAL_NOT_FOUND)
+        if value is CONFIG_VAL_NOT_FOUND and hasattr(config, "config_dict"):
+            value = config.config_dict.get(key, CONFIG_VAL_NOT_FOUND)
+        if value is CONFIG_VAL_NOT_FOUND:
+            value = default_value
+        dependency_manager_kwds[key] = value
+    dependency_manager = DependencyManager( **dependency_manager_kwds )
 
     return dependency_manager
 

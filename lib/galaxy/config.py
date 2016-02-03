@@ -300,13 +300,9 @@ class Configuration( object ):
         # Location for tool dependencies.
         if 'tool_dependency_dir' in kwargs:
             self.tool_dependency_dir = resolve_path( kwargs.get( "tool_dependency_dir" ), self.root )
-            # Setting the following flag to true will ultimately cause tool dependencies
-            # to be located in the shell environment and used by the job that is executing
-            # the tool.
-            self.use_tool_dependencies = True
+
         else:
             self.tool_dependency_dir = None
-            self.use_tool_dependencies = False
         # Configuration options for taking advantage of nginx features
         self.upstream_gzip = string_as_bool( kwargs.get( 'upstream_gzip', False ) )
         self.apache_xsendfile = string_as_bool( kwargs.get( 'apache_xsendfile', False ) )

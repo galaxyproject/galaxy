@@ -806,7 +806,7 @@ class AdminToolshed( AdminGalaxy ):
                     message = 'No selected tool dependencies can be uninstalled, you may need to use the <b>Repair repository</b> feature.'
                     status = 'error'
             elif operation == "install":
-                if trans.app.config.tool_dependency_dir:
+                if trans.app.config.tool_dependency_dir is not None:
                     tool_dependencies_for_installation = []
                     for tool_dependency_id in tool_dependency_ids:
                         tool_dependency = tool_dependency_util.get_tool_dependency( trans.app, tool_dependency_id )
@@ -875,7 +875,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                   action='browse_tool_dependency',
                                                                   **kwd ) )
             elif operation == "install":
-                if trans.app.config.tool_dependency_dir:
+                if trans.app.config.tool_dependency_dir is not None:
                     tool_dependencies_for_installation = []
                     for tool_dependency_id in tool_dependency_ids:
                         tool_dependency = tool_dependency_util.get_tool_dependency( trans.app, tool_dependency_id )

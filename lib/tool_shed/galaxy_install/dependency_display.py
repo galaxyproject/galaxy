@@ -34,7 +34,7 @@ class DependencyDisplayer( object ):
             changeset_revision = requirements_dict.get( 'changeset_revision', 'unknown' )
             dependency_name = requirements_dict[ 'name' ]
             version = requirements_dict[ 'version' ]
-            if self.app.config.tool_dependency_dir:
+            if self.app.config.tool_dependency_dir is not None:
                 root_dir = self.app.config.tool_dependency_dir
             else:
                 root_dir = '<set your tool_dependency_dir in your Galaxy configuration file>'
