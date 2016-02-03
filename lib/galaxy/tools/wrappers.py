@@ -1,3 +1,4 @@
+import os
 import pipes
 from galaxy import exceptions
 from galaxy.util.none_like import NoneDataset
@@ -297,6 +298,27 @@ class DatasetListWrapper( list, ToolParameterValueWrapper, HasDatasets ):
     def __str__( self ):
         return ','.join( map( str, self ) )
 
+
+class DatasetListAsFileWrapper( DatasetListWrapper ):
+    """
+    A DatasetListAsFileWrapper is a DatasetListWrapper whose __str__() method
+    returns a file containing a list of the DatasetList files, creating it if
+    necessary. This is so a Dataset List can be passed in a command line
+    without overflowing the command line argument limit.
+    """
+    def __init__( self, job_working_directory, datasets, dataset_paths=[], **kwargs ):
+        self.job_working_directory = job_working_directory
+        super(DatasetListAsFileWrapper, self).__init__(datasets, dataset_paths, **kwargs )
+
+    def __str__(self):
+        # TODO - use dataset ID for this filename
+        filename = "dataset_xx_filelist"
+        filepath = os.path.join( self.job_working_directory, filename)
+        if not os.path.isfile(filepath):
+            listfile = open( filepath, 'w' )
+            listfile.write( super(DatasetListAsFileWrapper, self).__str__().replace(',', '\n') )
+            listfile.close()
+        return filepath
 
 class DatasetCollectionWrapper( ToolParameterValueWrapper, HasDatasets ):
 

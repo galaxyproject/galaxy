@@ -830,6 +830,7 @@ class SelectToolParameter( ToolParameter ):
         input_source = ensure_input_source( input_source )
         ToolParameter.__init__( self, tool, input_source )
         self.multiple = input_source.get_bool( 'multiple', False )
+        self.pass_as_file = input_source.get_bool( 'pass_as_file', False )
         # Multiple selects are optional by default, single selection is the inverse.
         self.optional = input_source.parse_optional( self.multiple )
         self.display = input_source.get( 'display', None )
@@ -1042,6 +1043,7 @@ class SelectToolParameter( ToolParameter ):
 
         d['display'] = self.display
         d['multiple'] = self.multiple
+        d['pass_as_file'] = self.pass_as_file
 
         return d
 
@@ -1114,7 +1116,8 @@ class GenomeBuildParameter( SelectToolParameter ):
             'options'   : options,
             'value'     : value,
             'display'   : self.display,
-            'multiple'  : self.multiple
+            'multiple'  : self.multiple,
+            'pass_as_file'  : self.pass_as_file
         })
 
         return d
@@ -1743,6 +1746,7 @@ class DataToolParameter( BaseDataToolParameter ):
             self.validators.append( validation.MetadataValidator() )
         self._parse_formats( trans, tool, input_source )
         self.multiple = input_source.get_bool('multiple', False)
+        self.pass_as_file = input_source.get_bool('pass_as_file', False)
         self.min = input_source.get( 'min' )
         self.max = input_source.get( 'max' )
         if self.min:
@@ -2153,6 +2157,7 @@ class DataToolParameter( BaseDataToolParameter ):
         d['extensions'] = extensions
         d['edam_formats'] = edam_formats
         d['multiple'] = self.multiple
+        d['pass_as_file'] = self.pass_as_file
         if self.multiple:
             # For consistency, should these just always be in the dict?
             d['min'] = self.min
@@ -2209,6 +2214,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
             collection_types = [t.strip() for t in collection_types.split(",")]
         self._collection_types = collection_types
         self.multiple = False  # Accessed on DataToolParameter a lot, may want in future
+        self.pass_as_file = False
         self.is_dynamic = True
         self._parse_options( input_source )  # TODO: Review and test.
 
@@ -2378,6 +2384,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         d = super( DataCollectionToolParameter, self ).to_dict( trans )
         d['extensions'] = self.extensions
         d['multiple'] = self.multiple
+        d['pass_as_file'] = self.pass_as_file
         d['options'] = {'hda': [], 'hdca': []}
 
         # return default content if context is not available
@@ -2442,6 +2449,7 @@ class LibraryDatasetToolParameter( ToolParameter ):
         input_source = ensure_input_source( input_source )
         ToolParameter.__init__( self, tool, input_source )
         self.multiple = input_source.get_bool( 'multiple', True )
+        self.pass_as_file = input_source.get_bool( 'pass_as_file', False )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
         return form_builder.LibraryField( self.name, value=value, trans=trans )
@@ -2525,6 +2533,7 @@ class LibraryDatasetToolParameter( ToolParameter ):
     def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
         d = super( LibraryDatasetToolParameter, self ).to_dict( trans )
         d['multiple'] = self.multiple
+        d['pass_as_file'] = self.pass_as_file
         return d
 
 parameter_types = dict(
