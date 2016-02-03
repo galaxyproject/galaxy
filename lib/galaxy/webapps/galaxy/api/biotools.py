@@ -1,7 +1,8 @@
 import functools
 import os
-import copy
 import string
+import logging
+log = logging.getLogger( __name__ )
 
 def json_formater(fonc):
     @functools.wraps(fonc)
@@ -18,8 +19,9 @@ def json_formater(fonc):
 
 def edam_to_uri(edam):
     """
-    :param edam:
-    :return:
+    Build edam uri from edam data or edam format
+    :param edam: edam data or format
+    :return: edam uri
     """
     uri = "http://edamontology.org/{}".format(edam)
     return uri
@@ -27,8 +29,9 @@ def edam_to_uri(edam):
 
 def clean_list(jsonlist):
     """
-    :param jsonlist:
-    :return:
+    Recursive function in order to clean the json tool registry
+    :param jsonlist: List part of a json tool registry
+    :return: None
     """
     nullindexlist = []
     for elem in range(len(jsonlist)):
@@ -47,8 +50,9 @@ def clean_list(jsonlist):
 
 def clean_dict(jsondict):
     """
-    :param jsondict:
-    :return:
+    Recursive function in order to clean the json tool registry
+    :param jsondict: Dictionary part of a json tool registry
+    :return: None
     """
     for sonkey, sonvalue in jsondict.items():
         if sonvalue:
@@ -64,11 +68,13 @@ def clean_dict(jsondict):
 
 def build_tool_name(tool_id, tool_version):
     """
-    @tool_id: tool_id
-    builds the tool_name regarding its long id
-   """
+    Build the tool registry name regarding its long or short galaxy tool id
+    :param tool_id: Galaxy tool id
+    :param tool_version: Galaxy tool version
+    :return: tool registry name
+    :rtype: string
+    """
     tbl = string.maketrans('.:/', '___')
-    # warning unicode is not string
     # with a long id galaxy, xml version is already in the id
     if tool_version in tool_id:
         return str(tool_id).translate(tbl)
@@ -80,6 +86,9 @@ def format_description(description):
     """
     Test the first and last char of a description and replace them
     with the format adapted to Elixir
+    :param description: Tool Galaxy description
+    :return: Formatted tool Galaxy description
+    :rtype: string
     """
     try:
         size = len(description)
@@ -88,25 +97,29 @@ def format_description(description):
         else:
             return description[0].upper() + description[1:size] + '.'
     except IndexError:
-        print description
+        raise  description
 
 
 def get_source_registry(tool_id):
     """
-    :param tool_id:
-    :return:
+    Take a tool id and return the toolshed url if the id is a long id or a empty string if id is a short id
+    :param tool_id: Galaxy tool id
+    :return: toolshed url for a tool or empty string
+    :rtype: string
     """
     try:
-        return "/".join(tool_id.replace('repos','view',1).split('/')[0:-2])
+        return "/".join(tool_id.replace('repos', 'view', 1).split('/')[0:-2])
     except ValueError:
-        print "ValueError:", tool_id
+        log.warning("Not well formated tool id: {}".format(tool_id))
         return ""
 
 
 def build_general_dict(tool_meta_data):
     """
-      builds general_dict
-      @param: tool_meta_data for one tool extracted from galaxy
+    Extract informations from a galaxy json tool and return the general json in the biotools format
+    :param tool_meta_data: galaxy json tool
+    :return: biotools dictionary
+    :rtype: dictionary
     """
 
     gen_dict = {
@@ -169,10 +182,13 @@ def build_general_dict(tool_meta_data):
     }
     return gen_dict
 
+
 def build_fonction_dict(json_tool):
     """
-    :param json_tool:
-    :return:
+    Extract information from a galaxy json tool and return a list of functions in the json biotools format
+    :param json_tool: galaxy json tool
+    :return: list of functions in the json biotools format
+    :rtype: list
     """
     list_func = list()
     listinps = inputs_extract(json_tool['inputs'])
@@ -190,13 +206,21 @@ def build_fonction_dict(json_tool):
     list_func.append(func_dict)
     return list_func
 
+
 def inputs_extract(inputs_json):
     """
-    :param tool_json:
-    :return:
+    Extract type data param of a galaxy json tool inputs and return a list of dictionary in the json biotools format
+    :param inputs_json: inputs part of a json tool
+    :return: list of dictionary in the json biotools format
+    :rtype: list
     """
 
     def inputs_extract_data(data_json):
+        """
+        Save param type data from a json tool galaxy in a list
+        :param data_json:
+        :return: None
+        """
         list_format = list()
         for edam_format in data_json['edam']['edam_formats']:
             list_format.append({'uri': edam_to_uri(edam_format), 'term': 'EDAM label placeholder'})
@@ -209,16 +233,18 @@ def inputs_extract(inputs_json):
                              'dataDescription': data_json['name']
                              })
         else:
-           listdata.append({'dataType': {'uri': 'WARNING, SEVERAL EDAM DATA',
-                                         'term': 'EDAM label placeholder'},
-                            'dataFormat': list_format,
-                            'dataHandle': ", ".join(data_json['extensions']),
-                            'dataDescription': data_json['name']
-                            })
-        #listdata.append({'type':data_json[u"type"], 'name':data_json[u"name"],'label':data_json[u"label"],
-        #                 'extensions':data_json[u"extensions"],'edam':data_json[u"edam"]})
+            listdata.append({'dataType': {'uri': 'WARNING, SEVERAL EDAM DATA', 'term': 'EDAM label placeholder'},
+                             'dataFormat': list_format,
+                             'dataHandle': ", ".join(data_json['extensions']),
+                             'dataDescription': data_json['name']
+                             })
 
     def inputs_extract_repeat(repeat_json):
+        """
+        Recursive function in order to explore repeat param of a galaxy json tool
+        :param repeat_json: Repeat param part of a galaxy json tool
+        :return: None
+        """
         for dictinprep in repeat_json['inputs']:
             if dictinprep['type'] == "conditional":
                 inputs_extract_conditional(dictinprep)
@@ -228,7 +254,11 @@ def inputs_extract(inputs_json):
                 inputs_extract_data(dictinprep)
 
     def inputs_extract_conditional(conditional_json):
-
+        """
+        Recursive function in order to explore conditional param of a galaxy json tool
+        :param conditional_json: conditional param part of a galaxy json tool
+        :return: None
+        """
         for case in conditional_json["cases"]:
             for dictinpcond in case["inputs"]:
                 if dictinpcond['type'] == "conditional":
@@ -252,13 +282,17 @@ def inputs_extract(inputs_json):
 
 
 def ouputs_extract(outputs_json):
+    """
+    Extract type output param of a galaxy json tool outputs and return a list of dictionary in the json biotools format
+    :param outputs_json: output param of a galaxy json tool outputs
+    :return: list of dictionary in the json biotools format
+    :rtype: dictionary
+    """
     listoutput = list()
     for output in outputs_json:
         outputdict = {'dataType': {'uri': edam_to_uri(output["edam_data"]), 'term': 'EDAM label placeholder'},
-            'dataFormat': [{'uri': edam_to_uri(output["edam_format"]), 'term': 'EDAM label placeholder'}],
-            'dataHandle': output['format'],
-            'dataDescription': output['name']
-
-        }
+                      'dataFormat': [{'uri': edam_to_uri(output["edam_format"]), 'term': 'EDAM label placeholder'}],
+                      'dataHandle': output['format'], 'dataDescription': output['name']
+                      }
         listoutput.append(outputdict)
     return listoutput
