@@ -258,7 +258,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         return folder_dict
 
     @expose_api
-    def update( self, trans, encoded_folder_id, **kwd ):
+    def update( self, trans, encoded_folder_id, payload=None, **kwd ):
         """
         * PATCH /api/folders/{encoded_folder_id}
            Updates the folder defined by an ``encoded_folder_id`` with the data in the payload.
@@ -280,14 +280,12 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         """
         decoded_folder_id = self.folder_manager.cut_and_decode( trans, encoded_folder_id )
         folder = self.folder_manager.get( trans, decoded_folder_id )
-        payload = kwd.get( 'payload', None )
         if payload:
-            name = payload.get( 'name', None )
-            if not name:
-                raise exceptions.RequestParameterMissingException( "Parameter 'name' of library folder is required. You cannot remove it." )
-            description = payload.get( 'description', None )
-        else:
-            raise exceptions.RequestParameterMissingException( "You did not specify any payload." )
+            kwd.update(payload)
+        name = kwd.get( 'name', None )
+        if not name:
+            raise exceptions.RequestParameterMissingException( "Parameter 'name' of library folder is required. You cannot remove it." )
+        description = kwd.get( 'description', None )
         updated_folder = self.folder_manager.update( trans, folder, name, description )
         folder_dict = self.folder_manager.get_folder_dict( trans, updated_folder )
         return folder_dict
