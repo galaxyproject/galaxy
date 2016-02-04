@@ -166,39 +166,15 @@ $(document).ready( function() {
         return anchor;
     });
 
-    try{
-        // So, depending on what elements your tour is hooked to, this may not
-        // work on some pages with some rendered content because of view
-        // rendering delays.
-        // Another option is to present an icon for 'continue-tour' somewhere?
-        var urlparms = QUERY_STRING.parse(location.search.slice(1));
-        if (urlparms.tour_id){
-            var tour_id = urlparms.tour_id;
-            delete urlparms.tour_id;
-            var url = $(location).attr('href');
-            var repacked_url_args = _.map(Object.getOwnPropertyNames(urlparms), function(k) { return "?" + [k, urlparms[k]].join('='); }).join('&');
-            url = window.location.href.split('?')[0];
-            if (repacked_url_args !== "?"){
-                url = url + repacked_url_args;
-            }
-            history.pushState(null, null, url);
-            TOURS.giveTour(tour_id);
+    var et = JSON.parse(sessionStorage.getItem('activeGalaxyTour'));
+    if (et){
+        et = TOURS.hooked_tour_from_data(et);
+        if (et && et.steps){
+            var tour = new Tour(_.extend({
+                steps: et.steps,
+            }, TOURS.tour_opts));
+            tour.init();
+            tour.restart();
         }
-        else{
-            var et = JSON.parse(sessionStorage.getItem('activeGalaxyTour'));
-            if (et){
-                et = TOURS.hooked_tour_from_data(et);
-                if (et && et.steps){
-                    var tour = new Tour(_.extend({
-                        steps: et.steps,
-                    }, TOURS.tour_opts));
-                    tour.init();
-                    tour.restart();
-                }
-            }
-        }
-    }
-    catch(ex){
-        console.log("Tour loading failure, you'll need to restart the tour manually." + ex);
     }
 });
