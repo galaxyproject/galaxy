@@ -150,7 +150,7 @@ class LibrariesController( BaseAPIController ):
         return library_dict
 
     @expose_api
-    def delete( self, trans, id, **kwd ):
+    def delete( self, trans, id, payload=None, **kwd ):
         """
         delete( self, trans, id, **kwd )
         * DELETE /api/libraries/{id}
@@ -171,6 +171,8 @@ class LibrariesController( BaseAPIController ):
 
         :raises: ItemAccessibilityException, MalformedId, ObjectNotFound
         """
+        if payload:
+            kwd.update(payload)
         library = self.library_manager.get( trans, self.__decode_id( trans, id, 'library' ))
         undelete = util.string_as_bool( kwd.get( 'undelete', False ) )
         library = self.library_manager.delete( trans, library, undelete )
