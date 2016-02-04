@@ -11,7 +11,6 @@ from galaxy.tools.wrappers import (
     ToolParameterValueWrapper,
     DatasetFilenameWrapper,
     DatasetListWrapper,
-    DatasetListAsFileWrapper,
     DatasetCollectionWrapper,
     SelectToolParameterWrapper,
     InputValueWrapper,
@@ -172,21 +171,13 @@ class ToolEvaluator( object ):
             if isinstance( input, DataToolParameter ) and input.multiple:
                 value = input_values[ input.name ]
                 dataset_instances = DatasetListWrapper.to_dataset_instances( value )
-                if input.pass_as_file:
-                    input_values[ input.name ] = \
-                        DatasetListAsFileWrapper( job_working_directory,
-                                                  dataset_instances,
-                                                  dataset_paths=input_dataset_paths,
-                                                  datatypes_registry=self.app.datatypes_registry,
-                                                  tool=self.tool,
-                                                  name=input.name )
-                else:
-                    input_values[ input.name ] = \
-                        DatasetListWrapper( dataset_instances,
-                                            dataset_paths=input_dataset_paths,
-                                            datatypes_registry=self.app.datatypes_registry,
-                                            tool=self.tool,
-                                            name=input.name )
+                input_values[ input.name ] = \
+                    DatasetListWrapper( job_working_directory,
+                                        dataset_instances,
+                                        dataset_paths=input_dataset_paths,
+                                        datatypes_registry=self.app.datatypes_registry,
+                                        tool=self.tool,
+                                        name=input.name )
 
             elif isinstance( input, DataToolParameter ):
                 # FIXME: We're populating param_dict with conversions when
@@ -245,6 +236,7 @@ class ToolEvaluator( object ):
                     name=input.name
                 )
                 wrapper = DatasetCollectionWrapper(
+                    job_working_directory,
                     dataset_collection,
                     **wrapper_kwds
                 )
@@ -317,6 +309,7 @@ class ToolEvaluator( object ):
                 name=name
             )
             wrapper = DatasetCollectionWrapper(
+                job_working_directory,
                 out_collection,
                 **wrapper_kwds
             )
