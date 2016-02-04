@@ -48,7 +48,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         return return_dict
 
     @expose_api
-    def create( self, trans, encoded_parent_folder_id, **kwd ):
+    def create( self, trans, encoded_parent_folder_id, payload=None, **kwd ):
 
         """
         create( self, trans, encoded_parent_folder_id, **kwd )
@@ -70,13 +70,12 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
 
         :raises: RequestParameterMissingException
         """
-        payload = kwd.get( 'payload', None )
-        if payload is None:
-            raise exceptions.RequestParameterMissingException( "Missing required parameter 'name'." )
-        name = payload.get( 'name', None )
+        if payload:
+            kwd.update(payload)
+        name = kwd.get( 'name', None )
         if name is None:
             raise exceptions.RequestParameterMissingException( "Missing required parameter 'name'." )
-        description = payload.get( 'description', '' )
+        description = kwd.get( 'description', '' )
         decoded_parent_folder_id = self.folder_manager.cut_and_decode( trans, encoded_parent_folder_id )
         parent_folder = self.folder_manager.get( trans, decoded_parent_folder_id )
         new_folder = self.folder_manager.create( trans, parent_folder.id, name, description )
