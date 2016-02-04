@@ -81,7 +81,7 @@ class LibrariesController( BaseAPIController ):
         return library_dict
 
     @expose_api
-    def create( self, trans, payload, **kwd ):
+    def create( self, trans, payload=None, **kwd ):
         """
         create( self, trans, payload, **kwd )
         * POST /api/libraries:
@@ -100,12 +100,13 @@ class LibrariesController( BaseAPIController ):
 
         :raises: ItemAccessibilityException, RequestParameterMissingException
         """
-        params = util.Params( payload )
-        name = util.restore_text( params.get( 'name', None ) )
+        if payload:
+            kwd.update(payload)
+        name = kwd.get('name', None)
         if not name:
             raise exceptions.RequestParameterMissingException( "Missing required parameter 'name'." )
-        description = util.restore_text( params.get( 'description', '' ) )
-        synopsis = util.restore_text( params.get( 'synopsis', '' ) )
+        description = kwd.get( 'description', '' )
+        synopsis = kwd.get( 'synopsis', '' )
         if synopsis in [ 'None', None ]:
             synopsis = ''
         library = self.library_manager.create( trans, name, description, synopsis )
