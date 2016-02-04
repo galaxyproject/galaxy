@@ -116,7 +116,7 @@ class LibrariesController( BaseAPIController ):
         return library_dict
 
     @expose_api
-    def update( self, trans, id, **kwd ):
+    def update( self, trans, id, payload=None, **kwd ):
         """
         * PATCH /api/libraries/{encoded_id}
            Updates the library defined by an ``encoded_id`` with the data in the payload.
@@ -138,17 +138,13 @@ class LibrariesController( BaseAPIController ):
         :raises: ItemAccessibilityException, MalformedId, ObjectNotFound, RequestParameterInvalidException, RequestParameterMissingException
         """
         library = self.library_manager.get( trans, self.__decode_id( trans, id, 'library'  ) )
-        payload = kwd.get( 'payload', None )
         if payload:
-            name = payload.get( 'name', None )
-            if name == '':
-                raise exceptions.RequestParameterMissingException( "Parameter 'name' of library is required. You cannot remove it." )
-            if payload.get( 'description', None ) or payload.get( 'description', None ) == '':
-                description = payload.get( 'description', None )
-            if payload.get( 'synopsis', None ) or payload.get( 'synopsis', None ) == '':
-                synopsis = payload.get( 'synopsis', None )
-        else:
-            raise exceptions.RequestParameterMissingException( "You did not specify any payload." )
+            kwd.update(payload)
+        name = kwd.get( 'name', None )
+        if name == '':
+            raise exceptions.RequestParameterMissingException( "Parameter 'name' of library is required. You cannot remove it." )
+        description = kwd.get( 'description', None )
+        synopsis = kwd.get( 'synopsis', None )
         updated_library = self.library_manager.update( trans, library, name, description, synopsis )
         library_dict = self.library_manager.get_library_dict( trans, updated_library )
         return library_dict
