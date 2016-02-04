@@ -3,7 +3,7 @@ API operations on library folders.
 """
 from galaxy import util
 from galaxy import exceptions
-from galaxy.managers import folders
+from galaxy.managers import folders, roles
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
 from sqlalchemy.orm.exc import MultipleResultsFound
@@ -18,6 +18,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
     def __init__( self, app ):
         super( FoldersController, self ).__init__( app )
         self.folder_manager = folders.FolderManager()
+        self.role_manager = roles.RoleManager( app )
 
     @expose_api
     def index( self, trans, **kwd ):
@@ -133,7 +134,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
             raise exceptions.RequestParameterInvalidException( "The value of 'scope' parameter is invalid. Alllowed values: current, available" )
 
     @expose_api
-    def set_permissions( self, trans, encoded_folder_id, **kwd ):
+    def set_permissions( self, trans, encoded_folder_id, payload=None, **kwd ):
         """
         def set_permissions( self, trans, encoded_folder_id, **kwd ):
             *POST /api/folders/{encoded_folder_id}/permissions
@@ -158,10 +159,11 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         :raises: RequestParameterInvalidException, ObjectNotFound, InsufficientPermissionsException, InternalServerError
                     RequestParameterMissingException
         """
+        if payload:
+            kwd.update(payload)
         is_admin = trans.user_is_admin()
         current_user_roles = trans.get_current_user_roles()
-
-        decoded_folder_id = self.folder_manager.decode_folder_id( trans, self.folder_manager.cut_the_prefix( encoded_folder_id ) )
+        decoded_folder_id = self.folder_manager.cut_and_decode( trans, encoded_folder_id )
         folder = self.folder_manager.get( trans, decoded_folder_id )
         if not ( is_admin or trans.app.security_agent.can_manage_library_item( current_user_roles, folder ) ):
             raise exceptions.InsufficientPermissionsException( 'You do not have proper permission to modify permissions of this folder.' )
@@ -179,7 +181,8 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
             valid_add_roles = []
             invalid_add_roles_names = []
             for role_id in new_add_roles_ids:
-                role = self._load_role( trans, role_id )
+                role = self.role_manager.get( trans, self.__decode_id( trans, role_id, 'role' ) )
+                # role = self._load_role( trans, role_id )
                 #  Check whether role is in the set of allowed roles
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles( trans, folder )
                 if role in valid_roles:
@@ -193,7 +196,8 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
             valid_manage_roles = []
             invalid_manage_roles_names = []
             for role_id in new_manage_roles_ids:
-                role = self._load_role( trans, role_id )
+                role = self.role_manager.get( trans, self.__decode_id( trans, role_id, 'role' ) )
+                # role = self._load_role( trans, role_id )
                 #  Check whether role is in the set of allowed roles
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles( trans, folder )
                 if role in valid_roles:
@@ -207,7 +211,8 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
             valid_modify_roles = []
             invalid_modify_roles_names = []
             for role_id in new_modify_roles_ids:
-                role = self._load_role( trans, role_id )
+                role = self.role_manager.get( trans, self.__decode_id( trans, role_id, 'role' ) )
+                # role = self._load_role( trans, role_id )
                 #  Check whether role is in the set of allowed roles
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles( trans, folder )
                 if role in valid_roles:
@@ -287,25 +292,16 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         folder_dict = self.folder_manager.get_folder_dict( trans, updated_folder )
         return folder_dict
 
-    # TODO move to Role manager
-    def _load_role( self, trans, role_name ):
+    def __decode_id( self, trans, encoded_id, object_name=None ):
         """
-        Method loads the role from the DB based on the given role name.
+        Try to decode the id.
 
-        :param  role_name:      name of the role to load from the DB
-        :type   role_name:      string
-
-        :rtype:     Role
-        :returns:   the loaded Role object
-
-        :raises: InconsistentDatabase, RequestParameterInvalidException, InternalServerError
+        :param  object_name:      Name of the object the id belongs to. (optional)
+        :type   object_name:      str
         """
         try:
-            role = trans.sa_session.query( trans.app.model.Role ).filter( trans.model.Role.table.c.name == role_name ).one()
-        except MultipleResultsFound:
-            raise exceptions.InconsistentDatabase( 'Multiple roles found with the same name. Name: ' + str( role_name ) )
-        except NoResultFound:
-            raise exceptions.RequestParameterInvalidException( 'No role found with the name provided. Name: ' + str( role_name ) )
-        except Exception, e:
-            raise exceptions.InternalServerError( 'Error loading from the database.' + str(e))
-        return role
+            return trans.security.decode_id( encoded_id )
+        except TypeError as e:
+            raise exceptions.MalformedId( 'Malformed %s id specified, unable to decode.' % object_name if object_name is not None else '' )
+        except ValueError as e:
+            raise exceptions.MalformedId( 'Wrong %s id specified, unable to decode.' % object_name if object_name is not None else '' )
