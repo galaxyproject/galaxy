@@ -239,7 +239,7 @@ class LibrariesController( BaseAPIController ):
             raise exceptions.RequestParameterInvalidException( "The value of 'scope' parameter is invalid. Alllowed values: current, available" )
 
     @expose_api
-    def set_permissions( self, trans, encoded_library_id, **kwd ):
+    def set_permissions( self, trans, encoded_library_id, payload=None, **kwd ):
         """
         def set_permissions( self, trans, encoded_dataset_id, **kwd ):
             *POST /api/libraries/{encoded_library_id}/permissions
@@ -266,6 +266,8 @@ class LibrariesController( BaseAPIController ):
         :raises: RequestParameterInvalidException, ObjectNotFound, InsufficientPermissionsException, InternalServerError
                     RequestParameterMissingException
         """
+        if payload:
+            kwd.update(payload)
         is_admin = trans.user_is_admin()
         current_user_roles = trans.get_current_user_roles()
         library = self.library_manager.get( trans, self.__decode_id( trans, encoded_library_id, 'library' ) )
