@@ -68,7 +68,7 @@ class MockAppConfig( Bunch ):
         self.security = security.SecurityHelper( id_secret='bler' )
         self.use_remote_user = kwargs.get( 'use_remote_user', False )
         self.file_path = '/tmp'
-        self.job_working_directory = '/tmp'
+        self.jobs_directory = '/tmp'
         self.new_file_path = '/tmp'
 
         self.object_store_config_file = ''
