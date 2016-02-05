@@ -1182,6 +1182,13 @@ class Tool( object, Dictifiable ):
         """
         try:
             params = self.__remove_meta_properties( params )
+            if u'input' in params:
+                input = params[u'input']
+                if hasattr(input, u'hidden_beneath_collection_instance'):
+                    dataset_id = input.dataset_id
+                    elements = input.hidden_beneath_collection_instance.collection.elements
+                    input.element_identifier = [ element.element_identifier for element in elements if element.dataset_instance.dataset_id == dataset_id][0]
+                    params[u'input'] = input
             job, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id, mapping_over_collection=mapping_over_collection, execution_cache=execution_cache )
         except httpexceptions.HTTPFound, e:
             # if it's a paste redirect exception, pass it up the stack
