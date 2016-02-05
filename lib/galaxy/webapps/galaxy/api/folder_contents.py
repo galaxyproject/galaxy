@@ -235,23 +235,21 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
     @expose_api
     def create( self, trans, encoded_folder_id, payload, **kwd ):
         """
-        create( self, trans, library_id, payload, **kwd )
         * POST /api/folders/{encoded_id}/contents
             create a new library file from an HDA
 
+        :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
+        :type   encoded_folder_id:      an encoded id string
         :param  payload:    dictionary structure containing:
+            :param from_hda_id:         (optional) the id of an accessible HDA to copy into the library
+            :type  from_hda_id:         encoded id
+            :param ldda_message:        (optional) the new message attribute of the LDDA created
+            :type   ldda_message:       str
+            :param extended_metadata:   (optional) dub-dictionary containing any extended metadata to associate with the item
+            :type  extended_metadata:   dict
         :type   payload:    dict
 
-            * folder_id:    the parent folder of the new item
-            * from_hda_id:  (optional) the id of an accessible HDA to copy
-                into the library
-            * ldda_message: (optional) the new message attribute of the LDDA
-                 created
-            * extended_metadata: (optional) dub-dictionary containing any
-                extended metadata to associate with the item
-
-        :returns:   a dictionary containing the id, name,
-            and 'show' url of the new item
+        :returns:   a dictionary containing the id, name, and 'show' url of the new item
         :rtype:     dict
 
         :raises:    ObjectAttributeInvalidException,

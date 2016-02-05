@@ -400,7 +400,6 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
     @expose_api
     def load( self, trans, payload=None, **kwd ):
         """
-        load( self, trans, **kwd ):
         * POST /api/libraries/datasets
         Load dataset from the given source into the library.
         Source can be:
@@ -411,26 +410,26 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 example path: path/to/galaxy/$library_import_dir/{admin can browse everything here}
             (admin)any absolute or relative path - option allowed with "allow_library_path_paste" in galaxy.ini
 
-        :param  payload:                present in case application/json is the content-type of request, it takes
-                                        precedence over the kwd.
+        :param   payload: dictionary structure containing:
+            :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
+            :type   encoded_folder_id:      an encoded id string
+            :param  source:                 source the datasets should be loaded from
+            :type   source:                 str
+            :param  link_data:              flag whether to link the dataset to data or copy it to Galaxy, defaults to copy
+                                            while linking is set to True all symlinks will be resolved _once_
+            :type   link_data:              bool
+            :param  preserve_dirs:          flag whether to preserve the directory structure when importing dir
+                                            if False only datasets will be imported
+            :type   preserve_dirs:          bool
+            :param  file_type:              file type of the loaded datasets, defaults to 'auto' (autodetect)
+            :type   file_type:              str
+            :param  dbkey:                  dbkey of the loaded genome, defaults to '?' (unknown)
+            :type   dbkey:                  str
         :type   dictionary
-        :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
-        :type   encoded_folder_id:      an encoded id string
-        :param  source:                 source the datasets should be loaded from
-        :type   source:                 str
-        :param  link_data:              flag whether to link the dataset to data or copy it to Galaxy, defaults to copy
-                                        while linking is set to True all symlinks will be resolved _once_
-        :type   link_data:              bool
-        :param  preserve_dirs:          flag whether to preserve the directory structure when importing dir
-                                        if False only datasets will be imported
-        :type   preserve_dirs:          bool
-        :param  file_type:              file type of the loaded datasets, defaults to 'auto' (autodetect)
-        :type   file_type:              str
-        :param  dbkey:                  dbkey of the loaded genome, defaults to '?' (unknown)
-        :type   dbkey:                  str
-
         :returns:   dict containing information about the created upload job
         :rtype:     dictionary
+        :raises: RequestParameterMissingException, AdminRequiredException, ConfigDoesNotAllowException, RequestParameterInvalidException
+                    InsufficientPermissionsException, ObjectNotFound
         """
         if payload:
             kwd.update(payload)

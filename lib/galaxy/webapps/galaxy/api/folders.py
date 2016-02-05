@@ -48,25 +48,20 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
 
     @expose_api
     def create( self, trans, encoded_parent_folder_id, payload=None, **kwd ):
-
         """
-        create( self, trans, encoded_parent_folder_id, **kwd )
         *POST /api/folders/{encoded_parent_folder_id}
+            Create a new folder object underneath the one specified in the parameters.
 
-        Create a new folder object underneath the one specified in the parameters.
-
-        :param  encoded_parent_folder_id:      the parent folder's id (required)
+        :param  encoded_parent_folder_id:      (required) the parent folder's id
         :type   encoded_parent_folder_id:      an encoded id string (should be prefixed by 'F')
-
-        :param  name:                          the name of the new folder (required)
-        :type   name:                          str
-
-        :param  description:                   the description of the new folder
-        :type   description:                   str
-
+        :param   payload: dictionary structure containing:
+            :param  name:                          (required) the name of the new folder
+            :type   name:                          str
+            :param  description:                   the description of the new folder
+            :type   description:                   str
+        :type       dictionary
         :returns:   information about newly created folder, notably including ID
         :rtype:     dictionary
-
         :raises: RequestParameterMissingException
         """
         if payload:
@@ -96,7 +91,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         :returns:   dictionary with all applicable permissions' values
         :rtype:     dictionary
 
-        :raises: ObjectNotFound, InsufficientPermissionsException
+        :raises: InsufficientPermissionsException
         """
         current_user_roles = trans.get_current_user_roles()
         is_admin = trans.user_is_admin()
@@ -134,28 +129,24 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
     @expose_api
     def set_permissions( self, trans, encoded_folder_id, payload=None, **kwd ):
         """
-        def set_permissions( self, trans, encoded_folder_id, **kwd ):
-            *POST /api/folders/{encoded_folder_id}/permissions
+        *POST /api/folders/{encoded_folder_id}/permissions
+            Set permissions of the given folder to the given role ids.
 
         :param  encoded_folder_id:      the encoded id of the folder to set the permissions of
         :type   encoded_folder_id:      an encoded id string
-
-        :param  action:     (required) describes what action should be performed
-                            available actions: set_permissions
-        :type   action:     string
-
-        :param  add_ids[]:         list of Role.id defining roles that should have add item permission on the folder
-        :type   add_ids[]:         string or list
-        :param  manage_ids[]:      list of Role.id defining roles that should have manage permission on the folder
-        :type   manage_ids[]:      string or list
-        :param  modify_ids[]:      list of Role.id defining roles that should have modify permission on the folder
-        :type   modify_ids[]:      string or list
-
-        :rtype:     dictionary
+        :param   payload: dictionary structure containing:
+            :param  action:            (required) describes what action should be performed
+            :type   action:            string
+            :param  add_ids[]:         list of Role.id defining roles that should have add item permission on the folder
+            :type   add_ids[]:         string or list
+            :param  manage_ids[]:      list of Role.id defining roles that should have manage permission on the folder
+            :type   manage_ids[]:      string or list
+            :param  modify_ids[]:      list of Role.id defining roles that should have modify permission on the folder
+            :type   modify_ids[]:      string or list
+        :type       dictionary
         :returns:   dict of current roles for all available permission types.
-
-        :raises: RequestParameterInvalidException, ObjectNotFound, InsufficientPermissionsException, InternalServerError
-                    RequestParameterMissingException
+        :rtype:     dictionary
+        :raises: RequestParameterInvalidException, InsufficientPermissionsException, RequestParameterMissingException
         """
         if payload:
             kwd.update(payload)
@@ -180,7 +171,6 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
             invalid_add_roles_names = []
             for role_id in new_add_roles_ids:
                 role = self.role_manager.get( trans, self.__decode_id( trans, role_id, 'role' ) )
-                # role = self._load_role( trans, role_id )
                 #  Check whether role is in the set of allowed roles
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles( trans, folder )
                 if role in valid_roles:
@@ -195,7 +185,6 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
             invalid_manage_roles_names = []
             for role_id in new_manage_roles_ids:
                 role = self.role_manager.get( trans, self.__decode_id( trans, role_id, 'role' ) )
-                # role = self._load_role( trans, role_id )
                 #  Check whether role is in the set of allowed roles
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles( trans, folder )
                 if role in valid_roles:
@@ -210,7 +199,6 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
             invalid_modify_roles_names = []
             for role_id in new_modify_roles_ids:
                 role = self.role_manager.get( trans, self.__decode_id( trans, role_id, 'role' ) )
-                # role = self._load_role( trans, role_id )
                 #  Check whether role is in the set of allowed roles
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles( trans, folder )
                 if role in valid_roles:
@@ -259,21 +247,18 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
     def update( self, trans, encoded_folder_id, payload=None, **kwd ):
         """
         * PATCH /api/folders/{encoded_folder_id}
-           Updates the folder defined by an ``encoded_folder_id`` with the data in the payload.
+           Update the folder defined by an ``encoded_folder_id`` with the data in the payload.
 
        .. note:: Currently, only admin users can update library folders. Also the folder must not be `deleted`.
 
         :param  id:      the encoded id of the folder
         :type   id:      an encoded id string
-
         :param  payload: (required) dictionary structure containing::
             'name':         new folder's name, cannot be empty
             'description':  new folder's description
         :type   payload: dict
-
         :returns:   detailed folder information
         :rtype:     dict
-
         :raises: RequestParameterMissingException
         """
         decoded_folder_id = self.folder_manager.cut_and_decode( trans, encoded_folder_id )
