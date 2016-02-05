@@ -284,8 +284,6 @@ class LibrariesController( BaseAPIController ):
         action = kwd.get( 'action', None )
         if action is None:
             if payload is not None:
-                if 'payload' in kwd:
-                    del kwd['payload']
                 return self.set_permissions_old( trans, library, payload, **kwd )
             else:
                 raise exceptions.RequestParameterMissingException( 'The mandatory parameter "action" is missing.' )
