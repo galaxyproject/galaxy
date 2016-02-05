@@ -71,8 +71,15 @@ def build_command(
         else:
             commands_builder = CommandsBuilder( externalized_commands )
 
+    # usually working will already exist, but it will not for task
+    # split jobs.
+    commands_builder.prepend_command("mkdir -p working; cd working")
+
     if include_work_dir_outputs:
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)
+
+    commands_builder.capture_return_code()
+    commands_builder.append_command("cd ..")
 
     if include_metadata and job_wrapper.requires_setting_metadata:
         __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params)

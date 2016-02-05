@@ -191,7 +191,12 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext, in
     sa_session = tool.sa_session
     new_primary_datasets = {}
     try:
-        json_file = open( os.path.join( job_working_directory, jobs.TOOL_PROVIDED_JOB_METADATA_FILE ), 'r' )
+        galaxy_json_path = os.path.join( job_working_directory, "working", jobs.TOOL_PROVIDED_JOB_METADATA_FILE )
+        # LEGACY: Remove in 17.XX
+        if not os.path.exists( galaxy_json_path ):
+            # Maybe this is a legacy job, use the job working directory instead
+            galaxy_json_path = os.path.join( job_working_directory, jobs.TOOL_PROVIDED_JOB_METADATA_FILE )
+        json_file = open( galaxy_json_path, 'r' )
         for line in json_file:
             line = json.loads( line )
             if line.get( 'type' ) == 'new_primary_dataset':

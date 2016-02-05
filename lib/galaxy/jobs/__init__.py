@@ -26,6 +26,7 @@ from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import loads
+from galaxy.util import safe_makedirs
 from galaxy.util import unicodify
 from galaxy.datatypes import sniff
 
@@ -756,7 +757,7 @@ class JobWrapper( object ):
         # directory to be set before prepare is run, or else premature deletion
         # and job recovery fail.
         # Create the working dir if necessary
-        self.create_working_directory()
+        self._create_working_directory()
         self.dataset_path_rewriter = self._job_dataset_path_rewriter( self.working_directory )
         self.output_paths = None
         self.output_hdas_and_paths = None
@@ -899,13 +900,18 @@ class JobWrapper( object ):
             self.write_version_cmd = None
         return self.extra_filenames
 
-    def create_working_directory( self ):
+    def _create_working_directory( self ):
         job = self.get_job()
         try:
             self.app.object_store.create(
                 job, base_dir='job_work', dir_only=True, obj_dir=True )
             self.working_directory = self.app.object_store.get_filename(
                 job, base_dir='job_work', dir_only=True, obj_dir=True )
+
+            # The tool execution is given a working directory beneath the
+            # "job" working directory.
+            self.tool_working_directory = os.path.join(self.working_directory, "working")
+            safe_makedirs(self.tool_working_directory)
             log.debug( '(%s) Working directory for job is: %s',
                        self.job_id, self.working_directory )
         except ObjectInvalid:
@@ -930,7 +936,7 @@ class JobWrapper( object ):
         date_str = datetime.datetime.now().strftime( '%Y%m%d-%H%M%S' )
         arc_dir = os.path.join( base, date_str )
         shutil.move( self.working_directory, arc_dir )
-        self.create_working_directory()
+        self._create_working_directory()
         log.debug( '(%s) Previous working directory moved to %s',
                    self.job_id, arc_dir )
 
@@ -1330,13 +1336,18 @@ class JobWrapper( object ):
         param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         # Create generated output children and primary datasets and add to param_dict
+        tool_working_directory = self.tool_working_directory
+        # LEGACY: Remove in 17.XX
+        if not os.path.exists(tool_working_directory):
+            # Maybe this is a legacy job, use the job working directory instead
+            tool_working_directory = self.working_directory
         collected_datasets = {
-            'children': self.tool.collect_child_datasets(out_data, self.working_directory),
-            'primary': self.tool.collect_primary_datasets(out_data, self.working_directory, input_ext, input_dbkey)
+            'children': self.tool.collect_child_datasets(out_data, tool_working_directory),
+            'primary': self.tool.collect_primary_datasets(out_data, tool_working_directory, input_ext, input_dbkey)
         }
         self.tool.collect_dynamic_collections(
             out_collections,
-            job_working_directory=self.working_directory,
+            job_working_directory=tool_working_directory,
             inp_data=inp_data,
             job=job,
             input_dbkey=input_dbkey,
@@ -1564,7 +1575,12 @@ class JobWrapper( object ):
 
         # Look for JSONified job metadata
         self.tool_provided_job_metadata = []
-        meta_file = os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE )
+        meta_file = os.path.join( self.tool_working_directory, TOOL_PROVIDED_JOB_METADATA_FILE )
+        # LEGACY: Remove in 17.XX
+        if not os.path.exists( meta_file ):
+            # Maybe this is a legacy job, use the job working directory instead
+            meta_file = os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE )
+
         if os.path.exists( meta_file ):
             for line in open( meta_file, 'r' ):
                 try:
@@ -1634,7 +1650,7 @@ class JobWrapper( object ):
                                                                          config_root=config_root,
                                                                          config_file=config_file,
                                                                          datatypes_config=datatypes_config,
-                                                                         job_metadata=os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE ),
+                                                                         job_metadata=os.path.join( self.tool_working_directory, TOOL_PROVIDED_JOB_METADATA_FILE ),
                                                                          max_metadata_value_size=self.app.config.max_metadata_value_size,
                                                                          **kwds )
         if resolve_metadata_dependencies:
