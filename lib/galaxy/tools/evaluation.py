@@ -130,7 +130,7 @@ class ToolEvaluator( object ):
         param_dict.update( incoming )
 
         input_dataset_paths = dataset_path_rewrites( input_paths )
-        self.__populate_wrappers(param_dict, input_dataset_paths)
+        self.__populate_wrappers(param_dict, input_dataset_paths, job_working_directory)
         self.__populate_input_dataset_wrappers(param_dict, input_datasets, input_dataset_paths)
         self.__populate_output_dataset_wrappers(param_dict, output_datasets, output_paths, job_working_directory)
         self.__populate_output_collection_wrappers(param_dict, output_collections, output_paths, job_working_directory)
@@ -165,18 +165,20 @@ class ToolEvaluator( object ):
 
         do_walk( inputs, input_values )
 
-    def __populate_wrappers(self, param_dict, input_dataset_paths):
+    def __populate_wrappers(self, param_dict, input_dataset_paths, job_working_directory):
 
         def wrap_input( input_values, input ):
             if isinstance( input, DataToolParameter ) and input.multiple:
                 value = input_values[ input.name ]
                 dataset_instances = DatasetListWrapper.to_dataset_instances( value )
                 input_values[ input.name ] = \
-                    DatasetListWrapper( dataset_instances,
+                    DatasetListWrapper( job_working_directory,
+                                        dataset_instances,
                                         dataset_paths=input_dataset_paths,
                                         datatypes_registry=self.app.datatypes_registry,
                                         tool=self.tool,
                                         name=input.name )
+
             elif isinstance( input, DataToolParameter ):
                 # FIXME: We're populating param_dict with conversions when
                 #        wrapping values, this should happen as a separate
@@ -234,6 +236,7 @@ class ToolEvaluator( object ):
                     name=input.name
                 )
                 wrapper = DatasetCollectionWrapper(
+                    job_working_directory,
                     dataset_collection,
                     **wrapper_kwds
                 )
@@ -306,6 +309,7 @@ class ToolEvaluator( object ):
                 name=name
             )
             wrapper = DatasetCollectionWrapper(
+                job_working_directory,
                 out_collection,
                 **wrapper_kwds
             )

@@ -1114,7 +1114,7 @@ class GenomeBuildParameter( SelectToolParameter ):
             'options'   : options,
             'value'     : value,
             'display'   : self.display,
-            'multiple'  : self.multiple
+            'multiple'  : self.multiple,
         })
 
         return d

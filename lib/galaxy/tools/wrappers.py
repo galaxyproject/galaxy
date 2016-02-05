@@ -1,4 +1,6 @@
+import os
 import pipes
+import tempfile
 from galaxy import exceptions
 from galaxy.util.none_like import NoneDataset
 from galaxy.util import odict
@@ -263,11 +265,18 @@ class HasDatasets:
                 wrapper_kwds[ "dataset_path" ] = dataset_paths[ real_path ]
         return DatasetFilenameWrapper( dataset, **wrapper_kwds )
 
+    def paths_as_file(self, sep="\n"):
+        handle, filepath = tempfile.mkstemp(prefix="gx_file_list", dir=self.job_working_directory)
+        contents = sep.join(map(str, self))
+        os.write(handle, contents)
+        os.close(handle)
+        return filepath
+
 
 class DatasetListWrapper( list, ToolParameterValueWrapper, HasDatasets ):
     """
     """
-    def __init__( self, datasets, dataset_paths=[], **kwargs ):
+    def __init__( self, job_working_directory, datasets, dataset_paths=[], **kwargs ):
         if not isinstance(datasets, list):
             datasets = [datasets]
 
@@ -279,6 +288,7 @@ class DatasetListWrapper( list, ToolParameterValueWrapper, HasDatasets ):
             return self._dataset_wrapper( dataset, dataset_paths, **kwargs )
 
         list.__init__( self, map( to_wrapper, datasets ) )
+        self.job_working_directory = job_working_directory
 
     @staticmethod
     def to_dataset_instances( dataset_instance_sources ):
@@ -300,8 +310,9 @@ class DatasetListWrapper( list, ToolParameterValueWrapper, HasDatasets ):
 
 class DatasetCollectionWrapper( ToolParameterValueWrapper, HasDatasets ):
 
-    def __init__( self, has_collection, dataset_paths=[], **kwargs ):
+    def __init__( self, job_working_directory, has_collection, dataset_paths=[], **kwargs ):
         super(DatasetCollectionWrapper, self).__init__()
+        self.job_working_directory = job_working_directory
 
         if has_collection is None:
             self.__input_supplied = False
@@ -330,7 +341,7 @@ class DatasetCollectionWrapper( ToolParameterValueWrapper, HasDatasets ):
             element_identifier = dataset_collection_element.element_identifier
 
             if dataset_collection_element.is_collection:
-                element_wrapper = DatasetCollectionWrapper( dataset_collection_element, dataset_paths, **kwargs )
+                element_wrapper = DatasetCollectionWrapper(job_working_directory, dataset_collection_element, dataset_paths, **kwargs )
             else:
                 element_wrapper = self._dataset_wrapper( element_object, dataset_paths, **kwargs)
 
