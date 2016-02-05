@@ -52,9 +52,9 @@ class LibrariesController( BaseAPIController ):
         """
         try:
             return trans.security.decode_id( encoded_id )
-        except TypeError as e:
+        except TypeError:
             raise exceptions.MalformedId( 'Malformed %s id specified, unable to decode.' % object_name if object_name is not None else '' )
-        except ValueError as e:
+        except ValueError:
             raise exceptions.MalformedId( 'Wrong %s id specified, unable to decode.' % object_name if object_name is not None else '' )
 
     @expose_api_anonymous

@@ -6,8 +6,6 @@ from galaxy import exceptions
 from galaxy.managers import folders, roles
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
-from sqlalchemy.orm.exc import MultipleResultsFound
-from sqlalchemy.orm.exc import NoResultFound
 
 import logging
 log = logging.getLogger( __name__ )
@@ -299,7 +297,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         """
         try:
             return trans.security.decode_id( encoded_id )
-        except TypeError as e:
+        except TypeError:
             raise exceptions.MalformedId( 'Malformed %s id specified, unable to decode.' % object_name if object_name is not None else '' )
-        except ValueError as e:
+        except ValueError:
             raise exceptions.MalformedId( 'Wrong %s id specified, unable to decode.' % object_name if object_name is not None else '' )
