@@ -29,8 +29,8 @@ Upon startup (with ``run.sh``), the startup scripts will:
 
 3. Replace that virtualenv's pip with `Galaxy pip`_.
 
-4. If applicable, create a ``binary-compatbility.cfg`` (see the `Galaxy pip and
-   wheel`_ section for an explanation of this file).
+4. If applicable, create a ``binary-compatibility.cfg`` (see the `Galaxy pip
+   and wheel`_ section for an explanation of this file).
 
 5. Download and install wheels from the Galaxy project wheel server,
    `wheels.galaxyproject.org`_, using pip.
