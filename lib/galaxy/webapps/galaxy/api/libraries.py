@@ -283,8 +283,6 @@ class LibrariesController( BaseAPIController ):
 
         action = kwd.get( 'action', None )
         if action is None:
-            payload = kwd.get( 'payload', None )
-            del kwd[ 'payload' ]
             if payload is not None:
                 return self.set_permissions_old( trans, library, payload, **kwd )
             else:
