@@ -6,6 +6,13 @@ function load_notebook(url){
     });
 }
 
+function append_notebook(url){
+    clear_main_area();
+    $('#main').append('<iframe frameBorder="0" seamless="seamless" style="width: 100%; height: 100%; overflow:auto;" scrolling="yes" src="'+ url +'"></iframe>'
+    );
+}
+
+
 function keep_alive(notebook_access_url){
     /**
     * This is needed to keep the container alive. If the user leaves this site
