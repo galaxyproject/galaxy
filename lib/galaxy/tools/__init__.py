@@ -1180,8 +1180,42 @@ class Tool( object, Dictifiable ):
         Return a pair with whether execution is successful as well as either
         resulting output data or an error message indicating the problem.
         """
+
+        def update_hda_element_identifier(self, hda):
+            """
+            Update hda with element_identifier, if hda is part of a DatasetCollection and element identifier is not set.
+            """
+            if not hasattr(hda, u'element_identifier') and \
+                    hasattr(hda, u'hidden_beneath_collection_instance') and \
+                    hasattr(hda.hidden_beneath_collection_instance, u'collection') and \
+                    isinstance(hda.hidden_beneath_collection_instance.collection, self.app.model.DatasetCollection):
+                dataset_id = hda.dataset_id
+                elements = hda.hidden_beneath_collection_instance.collection.elements
+                hda.element_identifier = [ element.element_identifier for element in elements if element.dataset_instance.dataset_id == dataset_id][0]
+            return hda
+
+        def find_hda_in_params(self, d):
+            """
+            Recursively finds HistoryDatasetAssociation instances in d and calls update_hda_element_identifier to ensure element_identifier is set.
+            """
+            for k, v in d.items():
+                if isinstance(v, self.app.model.HistoryDatasetAssociation):
+                    d[k] = update_hda_element_identifier(self, v)
+                elif isinstance(v, list):
+                    updated_hdas = []
+                    for item in v:
+                        if isinstance(item, self.app.model.HistoryDatasetAssociation):
+                            updated_hdas.append( update_hda_element_identifier( self, item ) )
+                        elif isinstance(item, dict):
+                            updated_hdas.append( find_hda_in_params( self, item ) )
+                        else:
+                            updated_hdas.append( item )
+                    d[k] = updated_hdas
+            return d
+
         try:
             params = self.__remove_meta_properties( params )
+            params = find_hda_in_params(self, params)
             job, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id, mapping_over_collection=mapping_over_collection, execution_cache=execution_cache )
         except httpexceptions.HTTPFound, e:
             # if it's a paste redirect exception, pass it up the stack
