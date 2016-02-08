@@ -76,6 +76,7 @@ ${render_galaxy_repository_actions( repository )}
     </div>
 </div>
 <p/>
+${render_resolver_dependency_items(resolver_dependency_dict )}
 %if not in_error_state:
     ${render_repository_items( repository.metadata, containers_dict, can_set_metadata=False, render_repository_actions_for='galaxy' )}
 %endif
