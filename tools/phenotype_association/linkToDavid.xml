@@ -1,4 +1,4 @@
-<tool id="hgv_david" name="DAVID" version="1.0.0">
+<tool id="hgv_david" name="DAVID" version="1.0.1">
   <description>functional annotation for a list of genes</description>
 
   <command interpreter="perl">
@@ -21,17 +21,17 @@
       <option value="FLYBASE_GENE_ID">FLYBASE_GENE_ID</option>
       <option value="FLYBASE_TRANSCRIPT_ID">FLYBASE_TRANSCRIPT_ID</option>
       <option value="GENBANK_ACCESSION">GENBANK_ACCESSION</option>
-      <option value="GENPEPT_ACCESSION">GENPEPT_ACCESSION</option>
       <option value="GENOMIC_GI_ACCESSION">GENOMIC_GI_ACCESSION</option>
-      <option value="PROTEIN_GI_ACCESSION">PROTEIN_GI_ACCESSION</option>
+      <option value="GENPEPT_ACCESSION">GENPEPT_ACCESSION</option>
       <option value="ILLUMINA_ID">ILLUMINA_ID</option>
       <option value="IPI_ID">IPI_ID</option>
       <option value="MGI_ID">MGI_ID</option>
-      <option value="GENE_SYMBOL" selected="true">GENE_SYMBOL</option>
+      <option value="OFFICIAL_GENE_SYMBOL" selected="true">OFFICIAL_GENE_SYMBOL</option>
       <option value="PFAM_ID">PFAM_ID</option>
-      <option value="PIR_ACCESSION">PIR_ACCESSION</option>
+      <!--option value="PIR_ACCESSION">PIR_ACCESSION</option-->
       <option value="PIR_ID">PIR_ID</option>
-      <option value="PIR_NREF_ID">PIR_NREF_ID</option>
+      <option value="PROTEIN_GI_ACCESSION">PROTEIN_GI_ACCESSION</option>
+      <!--option value="PIR_NREF_ID">PIR_NREF_ID</option-->
       <option value="REFSEQ_GENOMIC">REFSEQ_GENOMIC</option>
       <option value="REFSEQ_MRNA">REFSEQ_MRNA</option>
       <option value="REFSEQ_PROTEIN">REFSEQ_PROTEIN</option>
