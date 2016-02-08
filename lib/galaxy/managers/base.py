@@ -493,6 +493,31 @@ class ModelManager( object ):
     #    return item
 
 
+# ---- code for classes that use one *main* model manager
+# TODO: this may become unecessary if we can access managers some other way (class var, app, etc.)
+class HasAModelManager( object ):
+    """
+    Mixin used where serializers, deserializers, filter parsers, etc.
+    need some functionality around the model they're mainly concerned with
+    and would perform that functionality with a manager.
+    """
+
+    #: the class used to create this serializer's generically accessible model_manager
+    model_manager_class = None
+
+    def __init__( self, app, manager=None, **kwargs ):
+        self._manager = manager
+
+    @property
+    def manager( self ):
+        """Return an appropriate manager if it exists, instantiate if not."""
+        # PRECONDITION: assumes self.app is assigned elsewhere
+        if not self._manager:
+            # TODO: pass this serializer to it
+            self._manager = self.model_manager_class( self.app )
+        return self._manager
+
+
 # ==== SERIALIZERS/to_dict,from_dict
 class ModelSerializingError( exceptions.InternalServerError ):
     """Thrown when request model values can't be serialized"""
@@ -514,7 +539,7 @@ class SkipAttribute( Exception ):
     pass
 
 
-class ModelSerializer( object ):
+class ModelSerializer( HasAModelManager ):
     """
     Turns models into JSONable dicts.
 
@@ -531,17 +556,15 @@ class ModelSerializer( object ):
         keys_to_serialize = [ 'id', 'name', 'attr1', 'attr2', ... ]
         item_dict = MySerializer.serialize( my_item, keys_to_serialize )
     """
-    #: the class used to create this serializer's generically accessible model_manager
-    model_manager_class = None
     #: 'service' to use for getting urls - use class var to allow overriding when testing
     url_for = staticmethod( routes.url_for )
 
-    def __init__( self, app, manager=None ):
+    def __init__( self, app, **kwargs ):
         """
         Set up serializer map, any additional serializable keys, and views here.
         """
+        super( ModelSerializer, self ).__init__( app, **kwargs )
         self.app = app
-        self._manager = manager
 
         # a list of valid serializable keys that can use the default (string) serializer
         #   this allows us to: 'mention' the key without adding the default serializer
@@ -559,13 +582,6 @@ class ModelSerializer( object ):
         #   inspired by model.dict_{view}_visible_keys
         self.views = {}
         self.default_view = None
-
-    def manager( self ):
-        """Return an appropriate manager if it exists, instantiate if not."""
-        if not self._manager:
-            # TODO: pass this serializer to it
-            self._manager = self.model_manager_class( self.app )
-        return self._manager
 
     def add_serializers( self ):
         """
@@ -692,35 +708,25 @@ class ModelSerializer( object ):
         return self.views[ view ][:]
 
 
-class ModelDeserializer( object ):
+class ModelDeserializer( HasAModelManager ):
     """
     An object that converts an incoming serialized dict into values that can be
     directly assigned to an item's attributes and assigns them.
     """
-    #: the class used to create this deserializer's generically accessible model_manager
-    model_manager_class = None
-
     # TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
 
-    def __init__( self, app, manager=None ):
+    def __init__( self, app, **kwargs ):
         """
         Set up deserializers and validator.
         """
+        super( ModelDeserializer, self ).__init__( app, **kwargs )
         self.app = app
-        self._manager = None
 
         self.deserializers = {}
         self.deserializable_keyset = set([])
         self.add_deserializers()
         # a sub object that can validate incoming values
         self.validate = ModelValidator( self.app )
-
-    def manager( self ):
-        """Return an appropriate manager if it exists, instantiate if not."""
-        if not self._manager:
-            # TODO: pass this deserializer to it
-            self._manager = self.model_manager_class( self.app )
-        return self._manager
 
     def add_deserializers( self ):
         """
@@ -787,7 +793,7 @@ class ModelDeserializer( object ):
         return self.default_deserializer( item, key, val, **context )
 
 
-class ModelValidator( object ):
+class ModelValidator( HasAModelManager ):
     """
     An object that inspects a dictionary (generally meant to be a set of
     new/updated values for the model) and raises an error if a value is
@@ -795,6 +801,7 @@ class ModelValidator( object ):
     """
 
     def __init__( self, app, *args, **kwargs ):
+        super( ModelValidator, self ).__init__( app, **kwargs )
         self.app = app
 
     def type( self, key, val, types ):
@@ -870,7 +877,7 @@ class ModelValidator( object ):
 
 
 # ==== Building query filters based on model data
-class ModelFilterParser( object ):
+class ModelFilterParser( HasAModelManager ):
     """
     Converts string tuples (partially converted query string params) of
     attr, op, val into either:
@@ -889,9 +896,6 @@ class ModelFilterParser( object ):
     These might be safely be replaced in the future by creating SQLAlchemy
     hybrid properties or more thoroughly mapping derived values.
     """
-    #: the class used to create this deserializer's generically accessible model_manager
-    model_manager_class = None
-
     # ??: this class kindof 'lives' in both the world of the controllers/param-parsing and to models/orm
     # (as the model informs how the filter params are parsed)
     # I have no great idea where this 'belongs', so it's here for now
@@ -899,12 +903,12 @@ class ModelFilterParser( object ):
     #: model class
     model_class = None
 
-    def __init__( self, app, manager=None ):
+    def __init__( self, app, **kwargs ):
         """
         Set up serializer map, any additional serializable keys, and views here.
         """
+        super( ModelFilterParser, self ).__init__( app, **kwargs )
         self.app = app
-        self._manager = manager
 
         # dictionary containing parsing data for ORM/SQLAlchemy-based filters
         # ..note: although kind of a pain in the ass and verbose, opt-in/whitelisting allows more control
@@ -916,13 +920,6 @@ class ModelFilterParser( object ):
 
         # set up both of the above
         self._add_parsers()
-
-    def manager( self ):
-        """Return an appropriate manager if it exists, instantiate if not."""
-        if not self._manager:
-            # TODO: pass this parser to it
-            self._manager = self.model_manager_class( self.app )
-        return self._manager
 
     def _add_parsers( self ):
         """

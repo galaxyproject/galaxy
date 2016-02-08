@@ -65,7 +65,7 @@ class PageDeserializer( sharable.SharableModelDeserializer ):
 
     def __init__( self, app ):
         super( PageDeserializer, self ).__init__( app )
-        self.page_manager = self.manager()
+        self.page_manager = self.manager
 
     def add_deserializers( self ):
         super( PageDeserializer, self ).add_deserializers()

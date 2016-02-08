@@ -158,7 +158,7 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
     def __init__( self, app, **kwargs ):
         super( HistorySerializer, self ).__init__( app, **kwargs )
 
-        self.history_manager = self.manager()
+        self.history_manager = self.manager
         self.hda_manager = hdas.HDAManager( app )
         self.hda_serializer = hdas.HDASerializer( app )
 
@@ -328,7 +328,7 @@ class HistoryDeserializer( sharable.SharableModelDeserializer, deletable.Purgabl
 
     def __init__( self, app ):
         super( HistoryDeserializer, self ).__init__( app )
-        self.history_manager = self.manager()
+        self.history_manager = self.manager
 
     def add_deserializers( self ):
         super( HistoryDeserializer, self ).add_deserializers()

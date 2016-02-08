@@ -443,7 +443,7 @@ class HDADeserializer( datasets.DatasetAssociationDeserializer,
 
     def __init__( self, app ):
         super( HDADeserializer, self ).__init__( app )
-        self.hda_manager = self.manager()
+        self.hda_manager = self.manager
 
     def add_deserializers( self ):
         super( HDADeserializer, self ).add_deserializers()

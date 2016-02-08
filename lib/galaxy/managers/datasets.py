@@ -234,11 +234,11 @@ class DatasetDeserializer( base.ModelDeserializer, deletable.PurgableDeserialize
         `permissions` dictionary, where `permissions` is in the form:
             { 'manage': [ <role id 1>, ... ], 'access': [ <role id 2>, ... ] }
         """
-        self.manager().permissions.manage.error_unless_permitted( dataset, user )
+        self.manager.permissions.manage.error_unless_permitted( dataset, user )
         self._validate_permissions( permissions, **context )
         manage = self._list_of_roles_from_ids( permissions[ 'manage' ] )
         access = self._list_of_roles_from_ids( permissions[ 'access' ] )
-        self.manager().permissions.set( dataset, manage, access, flush=False )
+        self.manager.permissions.set( dataset, manage, access, flush=False )
         return permissions
 
     def _validate_permissions( self, permissions, **context ):

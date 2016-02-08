@@ -383,9 +383,9 @@ class SharableModelDeserializer( base.ModelDeserializer,
             return val
 
         if val:
-            self.manager().publish( item, flush=False )
+            self.manager.publish( item, flush=False )
         else:
-            self.manager().unpublish( item, flush=False )
+            self.manager.unpublish( item, flush=False )
         return item.published
 
     def deserialize_importable( self, item, key, val, **context ):
@@ -396,9 +396,9 @@ class SharableModelDeserializer( base.ModelDeserializer,
             return val
 
         if val:
-            self.manager().make_importable( item, flush=False )
+            self.manager.make_importable( item, flush=False )
         else:
-            self.manager().make_non_importable( item, flush=False )
+            self.manager.make_non_importable( item, flush=False )
         return item.published
 
     # def deserialize_slug( self, item, val, **context ):
