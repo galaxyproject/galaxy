@@ -196,19 +196,22 @@ class CommandsBuilder(object):
         self.return_code_captured = False
 
     def prepend_command(self, command):
-        self.commands = u"%s; %s" % (command,
-                                     self.commands)
+        if command:
+            self.commands = u"%s; %s" % (command,
+                                         self.commands)
         return self
 
     def prepend_commands(self, commands):
-        return self.prepend_command(u"; ".join(commands))
+        return self.prepend_command(u"; ".join([c for c in commands if c]))
 
     def append_command(self, command):
-        self.commands = u"%s; %s" % (self.commands,
-                                     command)
+        if command:
+            self.commands = u"%s; %s" % (self.commands,
+                                         command)
+        return self
 
     def append_commands(self, commands):
-        self.append_command(u"; ".join(commands))
+        self.append_command(u"; ".join([c for c in commands if c]))
 
     def capture_return_code(self):
         if not self.return_code_captured:
