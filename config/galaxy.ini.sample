@@ -714,6 +714,15 @@ use_interactive = True
 # lot of CPU.
 #use_heartbeat = False
 
+# Control the period (in seconds) between dumps. Use -1 to disable. Regardless
+# of this setting, if use_heartbeat is enabled, you can send a Galaxy process
+# (unless running with uWSGI) SIGUSR1 (`kill -USR1`) to force a dump.
+#heartbeat_interval = 20
+
+# Heartbeat log filename. Can accept the template variables {server_name} and
+# {pid}
+#heartbeat_log = heartbeat_{server_name}.log
+
 # Log to Sentry
 # Sentry is an open source logging and error aggregation platform.  Setting
 # sentry_dsn will enable the Sentry middleware and errors will be sent to the
@@ -771,7 +780,7 @@ use_interactive = True
 
 # Search data libraries with lucene
 #enable_lucene_library_search = False
-# maxiumum file size to index for searching, in MB
+# maximum file size to index for searching, in MB
 #fulltext_max_size = 500
 #fulltext_noindex_filetypes = bam,sam,wig,bigwig,fasta,fastq,fastqsolexa,fastqillumina,fastqsanger
 # base URL of server providing search functionality using lucene

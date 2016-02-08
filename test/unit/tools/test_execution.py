@@ -268,6 +268,7 @@ class MockTrans( object ):
     def __init__( self, app, history ):
         self.app = app
         self.history = history
+        self.user = None
         self.history._active_datasets_children_and_roles = filter( lambda hda: hda.active and hda.history == history, self.app.model.context.model_objects[ galaxy.model.HistoryDatasetAssociation ] )
         self.workflow_building_mode = False
         self.webapp = Bunch( name="galaxy" )

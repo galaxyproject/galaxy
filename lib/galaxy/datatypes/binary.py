@@ -339,7 +339,7 @@ class Bam( Binary ):
         os.unlink( stderr_name )
         # Now use pysam with BAI index to determine additional metadata
         try:
-            bam_file = pysam.AlignmentFile( filename=dataset.file_name, mode='rb', index_filename=index_file.file_name )
+            bam_file = pysam.AlignmentFile( dataset.file_name, mode='rb', index_filename=index_file.file_name )
             dataset.metadata.reference_names = list( bam_file.references )
             dataset.metadata.reference_lengths = list( bam_file.lengths )
             dataset.metadata.bam_header = bam_file.header

@@ -535,8 +535,16 @@ class WorkflowContentsManager(UsesAnnotations):
                 # 'data_outputs': module.get_data_outputs(),
                 'annotation': annotation_str
             }
-            # Add post-job actions to step dict.
+            # Add tool shed repository information and post-job actions to step dict.
             if module.type == 'tool':
+                if module.tool.tool_shed_repository:
+                    tsr = module.tool.tool_shed_repository
+                    step_dict["tool_shed_repository"] = {
+                        'name': tsr.name,
+                        'owner': tsr.owner,
+                        'changeset_revision': tsr.changeset_revision,
+                        'tool_shed': tsr.tool_shed
+                    }
                 pja_dict = {}
                 for pja in step.post_job_actions:
                     pja_dict[pja.action_type + pja.output_name] = dict(

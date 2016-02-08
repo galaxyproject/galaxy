@@ -147,16 +147,9 @@ define(['utils/utils',
             //
             // add parsed/minimum number of repeat blocks
             //
-            var n_min   = input_def.min;
-            var n_cache = _.size(input_def.cache);
-            for (var i = 0; i < Math.max(n_cache, n_min); i++) {
-                var inputs = null;
-                if (i < n_cache) {
-                    inputs = input_def.cache[i];
-                } else {
-                    inputs = input_def.inputs;
-                }
-                create(inputs);
+            var n_cache = _.size( input_def.cache );
+            for ( var i = 0; i < Math.max( Math.max( n_cache, input_def.min ), input_def.default ); i++ ) {
+                create( i < n_cache ? input_def.cache[ i ] : input_def.inputs );
             }
 
             // hide options
