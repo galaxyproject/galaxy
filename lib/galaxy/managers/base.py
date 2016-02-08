@@ -504,6 +504,8 @@ class HasAModelManager( object ):
 
     #: the class used to create this serializer's generically accessible model_manager
     model_manager_class = None
+    # examples where this doesn't really work are ConfigurationSerializer (no manager)
+    # and contents (2 managers)
 
     def __init__( self, app, manager=None, **kwargs ):
         self._manager = manager
@@ -515,6 +517,7 @@ class HasAModelManager( object ):
         if not self._manager:
             # TODO: pass this serializer to it
             self._manager = self.model_manager_class( self.app )
+            # this will error for unset model_manager_class'es
         return self._manager
 
 

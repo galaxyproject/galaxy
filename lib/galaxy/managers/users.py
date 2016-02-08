@@ -239,13 +239,14 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
 
 
 class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
+    model_manager_class = UserManager
 
     def __init__( self, app ):
         """
         Convert a User and associated data to a dictionary representation.
         """
         super( UserSerializer, self ).__init__( app )
-        self.user_manager = UserManager( app )
+        self.user_manager = self.manager
 
         self.default_view = 'summary'
         self.add_view( 'summary', [
@@ -288,6 +289,7 @@ class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
 
 
 class CurrentUserSerializer( UserSerializer ):
+    model_manager_class = UserManager
 
     def serialize( self, user, keys, **kwargs ):
         """
@@ -324,6 +326,7 @@ class CurrentUserSerializer( UserSerializer ):
 
 
 class AdminUserFilterParser( base.ModelFilterParser, deletable.PurgableFiltersMixin ):
+    model_manager_class = UserManager
     model_class = model.User
 
     def _add_parsers( self ):
