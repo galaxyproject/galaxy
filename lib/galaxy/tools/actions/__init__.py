@@ -515,7 +515,8 @@ class DefaultToolAction( object ):
         if output.actions:
             for action in output.actions.actions:
                 if action.tag == "metadata":
-                    action.default = fill_template( action.default, context=params )
+                    metadata_new_value = fill_template( action.default, context=wrapped_params.params ).split(",")
+                    dataset.metadata.__setattr__(str(action.name), metadata_new_value)
 
     def _get_default_data_name( self, dataset, tool, on_text=None, trans=None, incoming=None, history=None, params=None, job_params=None, **kwd ):
         name = tool.name
