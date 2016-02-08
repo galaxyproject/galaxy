@@ -44,6 +44,15 @@ new_file_path = database/tmp
 # File containing old-style genome builds
 #builds_file_path = tool-data/shared/ucsc/builds.txt
 
+# Format string used when showing date and time information.
+# The string may contain:
+# - the directives used by Python time.strftime() function (see
+#   https://docs.python.org/2/library/time.html#time.strftime ),
+# - $locale (complete format string for the server locale),
+# - $iso8601 (complete format string as specified by ISO 8601 international
+#   standard).
+# pretty_datetime_format = $locale (UTC)
+
 # Session support (beaker)
 use_beaker_session = True
 session_type = memory
@@ -118,9 +127,6 @@ use_lint = false
 # Force everyone to log in (disable anonymous access)
 require_login = False
 
-# path to sendmail
-sendmail_path = /usr/sbin/sendmail
-
 # Enables displaying of test run results on repo pages.
 #display_legacy_test_results = True
 
@@ -131,6 +137,16 @@ sendmail_path = /usr/sbin/sendmail
 # For use by email messages sent from the tool shed
 #smtp_server = smtp.your_tool_shed_server
 #email_from = your_tool_shed_email@server
+
+# If your SMTP server requires a username and password, you can provide them
+# here (password in cleartext here, but if your server supports STARTTLS it
+# will be sent over the network encrypted).
+#smtp_username = None
+#smtp_password = None
+
+# If your SMTP server requires SSL from the beginning of the connection
+# smtp_ssl = False
+
 
 # The URL linked by the "Support" link in the "Help" menu.
 #support_url = https://wiki.galaxyproject.org/Support

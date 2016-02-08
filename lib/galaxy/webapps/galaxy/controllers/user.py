@@ -11,10 +11,7 @@ import urllib
 
 from datetime import datetime, timedelta
 
-from galaxy import eggs
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
-eggs.require('sqlalchemy')
 from sqlalchemy import and_, or_, true, func
 
 from galaxy import model
@@ -82,7 +79,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     installed_len_files = None
 
     @web.expose
-    def index( self, trans, cntrller, **kwd ):
+    def index( self, trans, cntrller='user', **kwd ):
         return trans.fill_template( '/user/index.mako', cntrller=cntrller )
 
     @web.expose
@@ -466,7 +463,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     @web.expose
     def login( self, trans, refresh_frames=[], **kwd ):
         '''Handle Galaxy Log in'''
-        redirect = self.__get_redirect_url( kwd.get( 'redirect', trans.request.referer ).strip() )
+        referer = trans.request.referer or ''
+        redirect = self.__get_redirect_url( kwd.get( 'redirect', referer ).strip() )
         redirect_url = ''  # always start with redirect_url being empty
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         message = kwd.get( 'message', '' )
@@ -519,7 +517,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         status = kwd.get( 'status', 'error' )
         login = kwd.get( 'login', '' )
         password = kwd.get( 'password', '' )
-        redirect = kwd.get( 'redirect', trans.request.referer ).strip()
+        referer = trans.request.referer or ''
+        redirect = kwd.get( 'redirect', referer ).strip()
         success = False
         user = trans.sa_session.query( trans.app.model.User ).filter(or_(
             trans.app.model.User.table.c.email == login,
@@ -674,7 +673,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         username = util.restore_text( params.get( 'username', '' ) )
         subscribe = params.get( 'subscribe', '' )
         subscribe_checked = CheckboxField.is_checked( subscribe )
-        redirect = kwd.get( 'redirect', trans.request.referer ).strip()
+        referer = trans.request.referer or ''
+        redirect = kwd.get( 'redirect', referer ).strip()
         is_admin = cntrller == 'admin' and trans.user_is_admin
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
             message = 'User registration is disabled.  Please contact your local Galaxy administrator for an account.'
@@ -788,7 +788,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     subject = 'Join Mailing List'
                     try:
                         util.send_mail( frm, to, subject, body, trans.app.config )
-                    except:
+                    except Exception:
+                        log.exception( 'Subscribing to the mailing list has failed.' )
                         error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed."
             if not error and not is_admin:
                 # The handle_user_login() method has a call to the history_set_default_permissions() method
@@ -847,7 +848,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         try:
             util.send_mail( frm, to, subject, body, trans.app.config )
             return True
-        except:
+        except Exception:
+            log.exception( 'Unable to send the activation email.' )
             return False
 
     def prepare_activation_link( self, trans, email ):

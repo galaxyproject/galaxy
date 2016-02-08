@@ -15,14 +15,14 @@ module.exports = function( grunt ){
             'traceKit':       [ 'tracekit.js', 'tracekit.js' ],
             'ravenjs':        [ 'dist/raven.js', 'raven.js' ],
             'underscore':     [ 'underscore.js', 'underscore.js' ],
-            'handlebars':     [ 'handlebars.runtime.js', 'handlebars.runtime.js' ],
-            'backbone':       [ 'backbone.js', 'backbone/backbone.js' ],
+            'backbone':       [ 'backbone.js', 'backbone.js' ],
             'requirejs':      [ 'require.js', 'require.js' ],
             'd3':             [ 'd3.js', 'd3.js' ],
             'bib2json':       [ 'Parser.js', 'bibtex.js' ],
 
             'farbtastic':     [ 'src/farbtastic.js', 'farbtastic.js' ],
             'jQTouch':        [ 'src/reference/jqtouch.js', 'jquery/jqtouch.js' ],
+            'bootstrap-tour': [ 'build/js/bootstrap-tour.js', 'bootstrap-tour.js' ],
 
             // these need to be updated and tested
             //'jquery-form': [ 'jquery.form.js', 'jquery/jquery.form.js' ],
@@ -85,7 +85,7 @@ module.exports = function( grunt ){
         }
     }
 
-    grunt.loadNpmTasks( 'grunt-bower-install-simple');
+    grunt.loadNpmTasks( 'grunt-bower-install-simple' );
 
     grunt.registerTask( 'copy-libs', 'copy external libraries to src', copyLibs );
     grunt.registerTask( 'install-libs', 'fetch external libraries and copy to src',

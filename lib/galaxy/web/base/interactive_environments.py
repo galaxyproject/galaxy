@@ -19,18 +19,17 @@ log = logging.getLogger(__name__)
 class InteractiveEnviornmentRequest(object):
 
     def __init__(self, trans, plugin):
-        plugin_config = plugin.config
-
         self.trans = trans
         self.log = log
 
         self.attr = Bunch()
-        self.attr.viz_id = plugin_config["name"].lower()
+        self.attr.viz_id = plugin.name
         self.attr.history_id = trans.security.encode_id( trans.history.id )
         self.attr.galaxy_config = trans.app.config
         self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
         self.attr.root = web.url_for("/")
         self.attr.app_root = self.attr.root + "plugins/interactive_environments/" + self.attr.viz_id + "/static/"
+        self.attr.import_volume = True
 
         plugin_path = os.path.abspath( plugin.path )
 
@@ -60,8 +59,12 @@ class InteractiveEnviornmentRequest(object):
 
         # This duplicates the logic in the proxy manager
         if self.attr.galaxy_config.dynamic_proxy_external_proxy:
-            self.attr.proxy_prefix = '%s/%s' % (
+            slash = '/'
+            if self.attr.galaxy_config.cookie_path.endswith('/'):
+                slash = ''
+            self.attr.proxy_prefix = '%s%s%s' % (
                 self.attr.galaxy_config.cookie_path,
+                slash,
                 self.attr.galaxy_config.dynamic_proxy_prefix)
         else:
             self.attr.proxy_prefix = ''
@@ -95,7 +98,6 @@ class InteractiveEnviornmentRequest(object):
         # we always assume use of Galaxy dynamic proxy? None of these need to be specified
         # if using the Galaxy dynamic proxy.
         self.attr.PASSWORD_AUTH = _boolean_option("password_auth")
-        self.attr.APACHE_URLS = _boolean_option("apache_urls")
         self.attr.SSL_URLS = _boolean_option("ssl")
 
     def get_conf_dict(self):
@@ -117,14 +119,15 @@ class InteractiveEnviornmentRequest(object):
             'proxy_prefix': self.attr.proxy_prefix,
         }
 
+        web_port = self.attr.galaxy_config.galaxy_infrastructure_web_port
+        conf_file['galaxy_web_port'] = web_port or self.attr.galaxy_config.guess_galaxy_port()
+
         if self.attr.viz_config.has_option("docker", "galaxy_url"):
             conf_file['galaxy_url'] = self.attr.viz_config.get("docker", "galaxy_url")
         elif self.attr.galaxy_config.galaxy_infrastructure_url_set:
             conf_file['galaxy_url'] = self.attr.galaxy_config.galaxy_infrastructure_url.rstrip('/') + '/'
         else:
             conf_file['galaxy_url'] = request.application_url.rstrip('/') + '/'
-            web_port = self.attr.galaxy_config.galaxy_infrastructure_web_port
-            conf_file['galaxy_web_port'] = web_port or self.attr.galaxy_config.guess_galaxy_port()
             # Galaxy paster port is deprecated
             conf_file['galaxy_paster_port'] = conf_file['galaxy_web_port']
 
@@ -184,18 +187,19 @@ class InteractiveEnviornmentRequest(object):
         conf.update(env_override)
         env_str = ' '.join(['-e "%s=%s"' % (key.upper(), item) for key, item in conf.items()])
         volume_str = ' '.join(['-v "%s"' % volume for volume in volumes])
+        import_volume_str = '-v "{temp_dir}:/import/"'.format(temp_dir=temp_dir) if self.attr.import_volume else ''
         # This is the basic docker command such as "sudo -u docker docker {docker_args}"
         # or just "docker {docker_args}"
         command = self.attr.viz_config.get("docker", "command")
         # Then we format in the entire docker command in place of
         # {docker_args}, so as to let the admin not worry about which args are
         # getting passed
-        command = command.format(docker_args='run {command_inject} {environment} -d -P -v "{temp_dir}:/import/" {volume_str} {image}')
+        command = command.format(docker_args='run {command_inject} {environment} -d -P {import_volume_str} {volume_str} {image}')
         # Once that's available, we format again with all of our arguments
         command = command.format(
             command_inject=self.attr.viz_config.get("docker", "command_inject"),
             environment=env_str,
-            temp_dir=temp_dir,
+            import_volume_str=import_volume_str,
             volume_str=volume_str,
             image=self.attr.viz_config.get("docker", "image")
         )

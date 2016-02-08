@@ -2,9 +2,11 @@
 # Little script to make HISTORY.rst more easy to format properly, lots TODO
 # pull message down and embed, use arg parse, handle multiple, etc...
 
+import calendar
 import datetime
 import os
 import re
+import string
 import sys
 try:
     import requests
@@ -28,11 +30,18 @@ PROJECT_API = "https://api.github.com/repos/%s/%s/" % (PROJECT_OWNER, PROJECT_NA
 RELEASES = [
     ("15.05", "b16ac25cdc0f2b64d6af34ea1e6ff253d8a71ee4"),
     ("15.07", "e44c8db9dea56b8d1a2f941ce572b0f14e999d4c"),
-    ("15.10", "d554136658e165c84a42b988f39009c185325919"),
+    ("15.10", "ef55279d58eced4b90632a572a8fc5a227ceefb9"),
+    ("16.01", "cc23adb0a962f1c9780b838604718319a0a71888"),
 ]
 
 # Uncredit pull requestors... kind of arbitrary at this point.
-DEVTEAM = ["afgane", "dannon", "blankenberg", "davebx", "martenson", "jmchilton", "tnabtaf", "natefoo", "carlfeberhard", "jgoecks", "guerler", "jennaj", "nekrut", "jxtx", "nitesh1989"]
+DEVTEAM = [
+    "afgane", "dannon", "blankenberg",
+    "davebx", "martenson", "jmchilton",
+    "tnabtaf", "natefoo", "carlfeberhard",
+    "jgoecks", "guerler", "jennaj",
+    "nekrut", "jxtx", "nitesh1989"
+]
 
 TEMPLATE = """
 .. to_doc
@@ -41,26 +50,39 @@ TEMPLATE = """
 %s
 -------------------------------
 
+.. announce_start
+
 Enhancements
 -------------------------------
 
-.. enhancements
+.. major_feature
+
+
+.. feature
+
+
+.. enhancement
+
+
+.. small_enhancement
+
 
 
 Fixes
 -------------------------------
 
+.. major_bug
 
-.. fixes
+
+.. bug
 
 
 .. github_links
 """
 
-# TODO: for 15.10 use this template...
-ANNOUNCE_TEMPLATE = """
+ANNOUNCE_TEMPLATE = string.Template("""
 ===========================================================
-TODO Galaxy Release (v %s)
+${month_name} 20${year} Galaxy Release (v ${release})
 ===========================================================
 
 .. include:: _header.rst
@@ -93,7 +115,7 @@ Update to latest stable release
 Update to exact version
   .. code-block:: shell
 
-      % git checkout v%s
+      % git checkout v${release}
 
 
 `BitBucket <https://bitbucket.org/galaxy/galaxy-dist>`__
@@ -103,7 +125,7 @@ Upgrade
   .. code-block:: shell
 
       % hg pull
-      % hg update latest_%s
+      % hg update latest_${release}
 
 
 See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additional details regarding the source code locations.
@@ -111,12 +133,23 @@ See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additio
 Release Notes
 ===========================================================
 
-.. include:: %s.rst
-   :start-after: enhancements
+.. include:: ${release}.rst
+   :start-after: announce_start
 
 .. include:: _thanks.rst
-"""
+""")
 
+NEXT_TEMPLATE = string.Template("""
+===========================================================
+${month_name} 20${year} Galaxy Release (v ${version})
+===========================================================
+
+
+Schedule
+===========================================================
+ * Planned Freeze Date: ${freeze_date}
+ * Planned Release Date: ${release_date}
+""")
 
 # https://api.github.com/repos/galaxyproject/galaxy/pulls?base=dev&state=closed
 # https://api.github.com/repos/galaxyproject/galaxy/pulls?base=release_15.07&state=closed
@@ -134,35 +167,44 @@ def do_release(argv):
     release_file = _release_file(release_name + ".rst")
     release_info = TEMPLATE % release_name
     open(release_file, "w").write(release_info.encode("utf-8"))
-    print release_info
-    release_commit_start = None
-    release_commit_end = None
+    month = int(release_name.split(".")[1])
+    month_name = calendar.month_name[month]
+    year = release_name.split(".")[0]
 
-    for i, release_info in enumerate(RELEASES):
-        if release_name == release_info[0]:
-            release_commit_start = release_info[1]
-            release_commit_end = RELEASES[i + 1][1]
+    announce_info = ANNOUNCE_TEMPLATE.substitute(
+        month_name=month_name,
+        year=year,
+        release=release_name
+    )
+    announce_file = _release_file(release_name + "_announce.rst")
+    open(announce_file, "w").write(announce_info.encode("utf-8"))
 
-    if release_commit_start is None:
-        raise Exception("Failed to find information for version %s" % release_name)
+    next_month = (((month - 1) + 3) % 12) + 1
+    next_month_name = calendar.month_name[next_month]
+    if next_month < 3:
+        next_year = int(year) + 1
+    else:
+        next_year = year
+    next_version = "%s.%02d" % (next_year, next_month)
+    first_of_next_month = datetime.date(int(next_year) + 2000, next_month, 1)
+    freeze_date = next_weekday(first_of_next_month, 0)
+    release_date = next_weekday(first_of_next_month, 0) + datetime.timedelta(21)
 
-    start_release_time = commit_time(release_commit_start)
-    end_release_time = commit_time(release_commit_end)
+    next_release_file = _release_file(next_version + "_announce.rst")
+    next_announce = NEXT_TEMPLATE.substitute(
+        version=next_version,
+        year=next_year,
+        month_name=next_month_name,
+        freeze_date=freeze_date,
+        release_date=release_date,
+    )
+    open(next_release_file, "w").write(next_announce.encode("utf-8"))
 
     for page in _get_prs():
         for pr in page:
-            base_label = pr.base['label']
-            if base_label == "galaxyproject:dev":
-                merged_at = pr.merged_at
-                if merged_at is None:
-                    continue
-                before_branch = merged_at < start_release_time
-                after_branch = merged_at > end_release_time
-                print "%s %s %s" % (merged_at, start_release_time, end_release_time)
-                if before_branch or after_branch:
-                    print "SKIPPING"
-                    continue
-            elif base_label != "galaxyproject:release_%s" % release_name:
+            merged_at = pr.merged_at
+            milestone = pr.milestone
+            if not merged_at or not milestone or milestone['title'] != release_name:
                 continue
             # 2015-06-29 18:32:13 2015-04-22 19:11:53 2015-08-12 21:15:45
             as_dict = {
@@ -175,11 +217,17 @@ def do_release(argv):
 
 def _get_prs():
     github = _github_client()
-    pull_requests = github.pull_requests.list(state='closed', user=PROJECT_OWNER, repo=PROJECT_NAME)
+    pull_requests = github.pull_requests.list(
+        state='closed',
+        user=PROJECT_OWNER,
+        repo=PROJECT_NAME,
+    )
     return pull_requests
 
 
 def main(argv):
+    if requests is None:
+        raise Exception("Requests library not found, please pip install requests")
     github = _github_client()
     newest_release = None
 
@@ -247,27 +295,57 @@ def main(argv):
         text = ".. _Pull Request {0}: {1}/pull/{0}".format(pull_request, PROJECT_URL)
         history = extend(".. github_links", text)
         if owner:
-            to_doc += "(Thanks to `@%s <https://github.com/%s>`__.) " % (
+            to_doc += "\n(Thanks to `@%s <https://github.com/%s>`__.)" % (
                 owner, owner,
             )
-        to_doc += "`Pull Request {0}`_".format(pull_request)
+        to_doc += "\n`Pull Request {0}`_".format(pull_request)
         if github:
             labels = []
             try:
                 labels = github.issues.labels.list_by_issue(int(pull_request), user=PROJECT_OWNER, repo=PROJECT_NAME)
-            except:
+            except Exception:
                 pass
-            is_bug = is_enhancement = False
+            is_bug = is_enhancement = is_feature = is_minor = is_major = is_merge = is_small_enhancement = False
             for label in labels:
-                if label.name == "bug":
+                label_name = label.name.lower()
+                if label_name == "minor":
+                    is_minor = True
+                elif label_name == "major":
+                    is_major = True
+                elif label_name == "merge":
+                    is_merge = True
+                elif label_name == "kind/bug":
                     is_bug = True
-                if label.name == "enhancement":
+                elif label_name == "kind/feature":
+                    is_feature = True
+                elif label_name == "kind/enhancement":
                     is_enhancement = True
-            if is_enhancement:
-                text_target = "enhancements"
+                elif label_name in ["kind/testing", "kind/refactoring"]:
+                        is_small_enhancement = True
+
+            is_some_kind_of_enhancement = is_enhancement or is_feature or is_small_enhancement
+
+            if not( is_bug or is_some_kind_of_enhancement or is_minor or is_merge ):
+                print "No kind/ or minor or merge label found for %s" % pull_request
+                text_target = None
+
+            if is_minor or is_merge:
+                return
+
+            if is_some_kind_of_enhancement and is_major:
+                text_target = "major_feature"
+            elif is_feature:
+                text_target = "feature"
+            elif is_enhancement:
+                text_target = "enhancement"
+            elif is_some_kind_of_enhancement:
+                text_target = "small_enhancement"
+            elif is_major:
+                text_target = "major_bug"
             elif is_bug:
-                text_target = "fixes"
+                text_target = "bug"
             else:
+                print "Logic problem, cannot determine section for %s" % pull_request
                 text_target = None
     elif ident.startswith("issue"):
         issue = ident[len("issue"):]
@@ -321,7 +399,20 @@ def wrap(message):
     wrapper = textwrap.TextWrapper(initial_indent="* ")
     wrapper.subsequent_indent = '  '
     wrapper.width = 78
-    return "\n".join(wrapper.wrap(message))
+    message_lines = message.splitlines()
+    first_lines = "\n".join(wrapper.wrap(message_lines[0]))
+    wrapper.initial_indent = "  "
+    rest_lines = "\n".join(["\n".join(wrapper.wrap(m)) for m in message_lines[1:]])
+    return first_lines + ("\n" + rest_lines if rest_lines else "")
+
+
+def next_weekday(d, weekday):
+    """ Return the next week day (0 for Monday, 6 for Sunday) starting from ``d``. """
+    days_ahead = weekday - d.weekday()
+    if days_ahead <= 0:  # Target day already happened this week
+        days_ahead += 7
+    return d + datetime.timedelta(days_ahead)
+
 
 if __name__ == "__main__":
     main(sys.argv)

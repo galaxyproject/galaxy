@@ -13,10 +13,7 @@ from time import strftime
 sys.path[1:1] = [ os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ),
                   os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir, 'test' ) ]
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
 from mercurial import __version__
-eggs.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_, false, true
 
 import galaxy.webapps.tool_shed.config as tool_shed_config
@@ -364,7 +361,7 @@ def should_set_do_not_test_flag( app, repository, changeset_revision, testable_r
     """
     if not testable_revision:
         repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
-        changeset_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
+        changeset_revisions = [ revision[ 1 ] for revision in suc.get_metadata_revisions( repository, repo ) ]
         if len( changeset_revisions ) > 1:
             latest_downloadable_revision = changeset_revisions[ -1 ]
             if changeset_revision != latest_downloadable_revision:

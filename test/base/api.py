@@ -78,6 +78,12 @@ class ApiTestCase( TwillTestCase ):
     def _post( self, *args, **kwds ):
         return self.galaxy_interactor.post( *args, **kwds )
 
+    def _delete( self, *args, **kwds ):
+        return self.galaxy_interactor.delete( *args, **kwds )
+
+    def _patch( self, *args, **kwds ):
+        return self.galaxy_interactor.patch( *args, **kwds )
+
     def _assert_status_code_is( self, response, expected_status_code ):
         assert_status_code_is( response, expected_status_code )
 
@@ -113,3 +119,9 @@ class ApiTestInteractor( BaseInteractor ):
 
     def post( self, *args, **kwds ):
         return self._post( *args, **kwds )
+
+    def delete( self, *args, **kwds ):
+        return self._delete( *args, **kwds )
+
+    def patch( self, *args, **kwds ):
+        return self._patch( *args, **kwds )

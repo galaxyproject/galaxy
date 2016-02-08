@@ -1,14 +1,19 @@
 from os import getcwd
-from os import chmod
 from os.path import join
 from os.path import abspath
+
+from galaxy import util
+from galaxy.jobs.runners.util.job_script import (
+    INTEGRITY_INJECTION,
+    write_script,
+    check_script_integrity,
+)
 
 from logging import getLogger
 log = getLogger( __name__ )
 
 CAPTURE_RETURN_CODE = "return_code=$?"
 YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
-DEFAULT_SHELL = "/bin/sh"
 
 
 def build_command(
@@ -17,7 +22,7 @@ def build_command(
     container=None,
     include_metadata=False,
     include_work_dir_outputs=True,
-    remote_command_params={}
+    remote_command_params={},
 ):
     """
     Compose the sequence of commands necessary to execute a job. This will
@@ -28,9 +33,13 @@ def build_command(
         - command line taken from job wrapper
         - commands to set metadata (if include_metadata is True)
     """
+    shell = job_wrapper.shell
     base_command_line = job_wrapper.get_command_line()
     # job_id = job_wrapper.job_id
     # log.debug( 'Tool evaluation for job (%s) produced command-line: %s' % ( job_id, base_command_line ) )
+    if not base_command_line:
+        raise Exception("Attempting to run a tool with empty command definition.")
+
     commands_builder = CommandsBuilder(base_command_line)
 
     # All job runners currently handle this case which should never occur
@@ -47,7 +56,7 @@ def build_command(
         __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params)
 
     if container or job_wrapper.commands_in_new_shell:
-        externalized_commands = __externalize_commands(job_wrapper, commands_builder, remote_command_params)
+        externalized_commands = __externalize_commands(job_wrapper, shell, commands_builder, remote_command_params)
         if container:
             # Stop now and build command before handling metadata and copying
             # working directory files back. These should always happen outside
@@ -71,17 +80,19 @@ def build_command(
     return commands_builder.build()
 
 
-def __externalize_commands(job_wrapper, commands_builder, remote_command_params, script_name="tool_script.sh"):
+def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_params, script_name="tool_script.sh"):
     local_container_script = join( job_wrapper.working_directory, script_name )
-    with open( local_container_script, "w" ) as f:
-        script_contents = "#!%s\n%s" % (DEFAULT_SHELL, commands_builder.build())
-        f.write( script_contents )
-    chmod( local_container_script, 0755 )
-
+    tool_commands = commands_builder.build()
+    config = job_wrapper.app.config
+    integrity_injection = ""
+    if check_script_integrity(config):
+        integrity_injection = INTEGRITY_INJECTION
+    script_contents = u"#!%s\n%s%s" % (shell, integrity_injection, tool_commands)
+    write_script(local_container_script, script_contents, config)
     commands = local_container_script
     if 'working_directory' in remote_command_params:
-        commands = "%s %s" % (DEFAULT_SHELL, join(remote_command_params['working_directory'], script_name))
-    log.info("Built script [%s] for tool command[%s]" % (local_container_script, commands))
+        commands = "%s %s" % (shell, join(remote_command_params['working_directory'], script_name))
+    log.info("Built script [%s] for tool command[%s]" % (local_container_script, tool_commands))
     return commands
 
 
@@ -130,6 +141,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
     config_file = metadata_kwds.get( 'config_file', None )
     datatypes_config = metadata_kwds.get( 'datatypes_config', None )
     compute_tmp_dir = metadata_kwds.get( 'compute_tmp_dir', None )
+    resolve_metadata_dependencies = job_wrapper.commands_in_new_shell
     metadata_command = job_wrapper.setup_external_metadata(
         exec_dir=exec_dir,
         tmp_dir=tmp_dir,
@@ -140,6 +152,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
         config_file=config_file,
         datatypes_config=datatypes_config,
         compute_tmp_dir=compute_tmp_dir,
+        resolve_metadata_dependencies=resolve_metadata_dependencies,
         kwds={ 'overwrite': False }
     ) or ''
     metadata_command = metadata_command.strip()
@@ -155,10 +168,11 @@ def __copy_if_exists_command(work_dir_output):
 
 class CommandsBuilder(object):
 
-    def __init__(self, initial_command):
+    def __init__(self, initial_command=u''):
         # Remove trailing semi-colon so we can start hacking up this command.
         # TODO: Refactor to compose a list and join with ';', would be more clean.
-        commands = initial_command.rstrip("; ")
+        initial_command = util.unicodify(initial_command)
+        commands = initial_command.rstrip(u"; ")
         self.commands = commands
 
         # Coping work dir outputs or setting metadata will mask return code of
@@ -167,17 +181,19 @@ class CommandsBuilder(object):
         self.return_code_captured = False
 
     def prepend_command(self, command):
-        self.commands = "%s; %s" % (command, self.commands)
+        self.commands = u"%s; %s" % (command,
+                                     self.commands)
         return self
 
     def prepend_commands(self, commands):
-        return self.prepend_command("; ".join(commands))
+        return self.prepend_command(u"; ".join(commands))
 
     def append_command(self, command):
-        self.commands = "%s; %s" % (self.commands, command)
+        self.commands = u"%s; %s" % (self.commands,
+                                     command)
 
     def append_commands(self, commands):
-        self.append_command("; ".join(commands))
+        self.append_command(u"; ".join(commands))
 
     def capture_return_code(self):
         if not self.return_code_captured:
@@ -189,4 +205,4 @@ class CommandsBuilder(object):
             self.append_command(YIELD_CAPTURED_CODE)
         return self.commands
 
-__all__ = [build_command]
+__all__ = [ "build_command" ]

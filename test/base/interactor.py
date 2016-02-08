@@ -4,9 +4,7 @@ from json import dumps
 from logging import getLogger
 from StringIO import StringIO
 
-from galaxy import eggs
-eggs.require( "requests" )
-from requests import get, post
+from requests import get, post, delete, patch
 
 from galaxy import util
 from galaxy.tools.parser.interface import TestCollectionDef
@@ -282,6 +280,8 @@ class GalaxyInteractorApi( object ):
         return wait
 
     def __job_ready( self, job_id, history_id ):
+        if job_id is None:
+            raise ValueError("__job_ready passed empty job_id")
         job_json = self._get( "jobs/%s" % job_id ).json()
         state = job_json[ 'state' ]
         try:
@@ -292,6 +292,8 @@ class GalaxyInteractorApi( object ):
             raise
 
     def __history_ready( self, history_id ):
+        if history_id is None:
+            raise ValueError("__history_ready passed empty history_id")
         history_json = self._get( "histories/%s" % history_id ).json()
         state = history_json[ 'state' ]
         try:
@@ -302,6 +304,8 @@ class GalaxyInteractorApi( object ):
             raise
 
     def _summarize_history_errors( self, history_id ):
+        if history_id is None:
+            raise ValueError("_summarize_history_errors passed empty history_id")
         print "History with id %s in error - summary of datasets in error below." % history_id
         try:
             history_contents = self.__contents( history_id )
@@ -403,18 +407,39 @@ class GalaxyInteractorApi( object ):
 
         return fetcher
 
-    def _post( self, path, data={}, files=None, key=None, admin=False):
-        if not key:
-            key = self.api_key if not admin else self.master_api_key
-        data = data.copy()
-        data['key'] = key
+    def _post( self, path, data={}, files=None, key=None, admin=False, anon=False ):
+        if not anon:
+            if not key:
+                key = self.api_key if not admin else self.master_api_key
+            data = data.copy()
+            data['key'] = key
         return post( "%s/%s" % (self.api_url, path), data=data, files=files )
 
-    def _get( self, path, data={}, key=None, admin=False ):
-        if not key:
-            key = self.api_key if not admin else self.master_api_key
-        data = data.copy()
-        data['key'] = key
+    def _delete( self, path, data={}, key=None, admin=False, anon=False ):
+        if not anon:
+            if not key:
+                key = self.api_key if not admin else self.master_api_key
+            data = data.copy()
+            data['key'] = key
+        return delete( "%s/%s" % (self.api_url, path), params=data )
+
+    def _patch( self, path, data={}, key=None, admin=False, anon=False ):
+        if not anon:
+            if not key:
+                key = self.api_key if not admin else self.master_api_key
+            params = dict( key=key )
+            data = data.copy()
+            data['key'] = key
+        else:
+            params = {}
+        return patch( "%s/%s" % (self.api_url, path), params=params, data=data )
+
+    def _get( self, path, data={}, key=None, admin=False, anon=False ):
+        if not anon:
+            if not key:
+                key = self.api_key if not admin else self.master_api_key
+            data = data.copy()
+            data['key'] = key
         if path.startswith("/api"):
             path = path[ len("/api"): ]
         url = "%s/%s" % (self.api_url, path)

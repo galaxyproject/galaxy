@@ -8,9 +8,6 @@ import tempfile
 import time
 import urllib
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
-eggs.require( 'twill' )
 import twill.commands as tc
 from mercurial import commands, hg, ui
 from mercurial.util import Abort
@@ -542,7 +539,8 @@ class ShedTwillTestCase( TwillTestCase ):
         self.submit_form( 'export_repository', 'export_repository_button' )
         fd, capsule_filename = tempfile.mkstemp()
         os.close( fd )
-        file( capsule_filename, 'w' ).write( self.last_page() )
+        with open( capsule_filename, 'w' ) as f:
+            f.write( self.last_page() )
         return capsule_filename
 
     def fill_review_form( self, review_contents_dict, strings_displayed=[], strings_not_displayed=[] ):

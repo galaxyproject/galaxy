@@ -17,10 +17,7 @@ from json import loads
 from urlparse import urlparse
 from xml.etree import ElementTree
 
-from galaxy import eggs
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
-eggs.require( 'twill' )
 import twill
 import twill.commands as tc
 from twill.other_packages._mechanize_dist import ClientForm
@@ -39,6 +36,8 @@ tc.config( 'use_tidy', 0 )
 # Dial ClientCookie logging down (very noisy)
 logging.getLogger( "ClientCookie.cookies" ).setLevel( logging.WARNING )
 log = logging.getLogger( __name__ )
+
+DEFAULT_TOOL_TEST_WAIT = os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 86400)
 
 
 class TwillTestCase( unittest.TestCase ):
@@ -2443,18 +2442,25 @@ class TwillTestCase( unittest.TestCase ):
     def wait_for( self, func, **kwd ):
         sleep_amount = 0.2
         slept = 0
-        walltime_exceeded = 86400
+        walltime_exceeded = kwd.get("maxseconds", None)
+        if walltime_exceeded is None:
+            walltime_exceeded = DEFAULT_TOOL_TEST_WAIT
+
+        exceeded = True
         while slept <= walltime_exceeded:
             result = func()
             if result:
                 time.sleep( sleep_amount )
                 slept += sleep_amount
                 sleep_amount *= 2
-                if slept + sleep_amount > walltime_exceeded:
-                    sleep_amount = walltime_exceeded - slept  # don't overshoot maxseconds
             else:
+                exceeded = False
                 break
-        assert slept < walltime_exceeded, 'Tool run exceeded reasonable walltime of 24 hours, terminating.'
+
+        if exceeded:
+            message = 'Tool test run exceeded walltime [total %s, max %s], terminating.' % (slept, walltime_exceeded)
+            log.info(message)
+            raise AssertionError(message)
 
     def write_temp_file( self, content, suffix='.html' ):
         fd, fname = tempfile.mkstemp( suffix=suffix, prefix='twilltestcase-' )

@@ -9,15 +9,11 @@ Application to convert AXT file to LAV file
 The application reads an AXT file from standard input and writes a LAV file to
 standard out;  some statistics are written to standard error.
 """
+import sys
 
-import sys, copy
-from galaxy import eggs
-import pkg_resources
-pkg_resources.require( "bx-python" )
 import bx.align.axt
 import bx.align.lav
 
-assert sys.version_info[:2] >= ( 2, 4 )
 
 def usage(s=None):
     message = """
@@ -39,8 +35,10 @@ axt_to_lav primary_spec secondary_spec [--silent] < axt_file > lav_file
   The chromosome field in each axt block must match some <chromosome name> in
   the lengths file.
 """
-    if (s == None): sys.exit (message)
-    else:           sys.exit ("%s\n%s" % (s,message))
+    if s is None:
+        sys.exit(message)
+    else:
+        sys.exit("%s\n%s" % (s, message))
 
 
 def main():
@@ -48,82 +46,80 @@ def main():
 
     # parse the command line
 
-    primary   = None
+    primary = None
     secondary = None
-    silent    = False
+    silent = False
 
     # pick off options
 
     args = sys.argv[1:]
-    seq_file2 = open(args.pop(-1),'w')
-    seq_file1 = open(args.pop(-1),'w')
+    seq_file2 = open(args.pop(-1), 'w')
+    seq_file1 = open(args.pop(-1), 'w')
     lav_out = args.pop(-1)
     axt_in = args.pop(-1)
-    while (len(args) > 0):
+    while len(args) > 0:
         arg = args.pop(0)
         val = None
-        fields = arg.split("=",1)
-        if (len(fields) == 2):
+        fields = arg.split("=", 1)
+        if len(fields) == 2:
             arg = fields[0]
             val = fields[1]
-            if (val == ""):
+            if val == "":
                 usage("missing a value in %s=" % arg)
 
-        if (arg == "--silent") and (val == None):
+        if arg == "--silent" and val is None:
             silent = True
-        elif (primary == None) and (val == None):
+        elif primary is None and val is None:
             primary = arg
-        elif (secondary == None) and (val == None):
+        elif secondary is None and val is None:
             secondary = arg
         else:
             usage("unknown argument: %s" % arg)
 
-    if (primary == None):
+    if primary is None:
         usage("missing primary file name and length")
 
-    if (secondary == None):
+    if secondary is None:
         usage("missing secondary file name and length")
 
     try:
-        (primaryFile,primary,primaryLengths) = parse_spec(primary)
+        (primaryFile, primary, primaryLengths) = parse_spec(primary)
     except:
         usage("bad primary spec (must be seq_file[:species_name]:lengths_file")
 
     try:
-        (secondaryFile,secondary,secondaryLengths) = parse_spec(secondary)
+        (secondaryFile, secondary, secondaryLengths) = parse_spec(secondary)
     except:
         usage("bad secondary spec (must be seq_file[:species_name]:lengths_file")
 
     # read the lengths
 
     speciesToLengths = {}
-    speciesToLengths[primary]   = read_lengths (primaryLengths)
-    speciesToLengths[secondary] = read_lengths (secondaryLengths)
+    speciesToLengths[primary] = read_lengths(primaryLengths)
+    speciesToLengths[secondary] = read_lengths(secondaryLengths)
 
     # read the alignments
 
-    out = bx.align.lav.Writer(open(lav_out,'w'), \
-            attributes = { "name_format_1" : primaryFile,
-                           "name_format_2" : secondaryFile })
+    out = bx.align.lav.Writer(open(lav_out, 'w'),
+                              attributes={ "name_format_1": primaryFile,
+                                           "name_format_2": secondaryFile })
 
     axtsRead = 0
     axtsWritten = 0
-    for axtBlock in bx.align.axt.Reader(open(axt_in), \
-            species_to_lengths = speciesToLengths,
-            species1           = primary,
-            species2           = secondary,
-            support_ids        = True):
+    for axtBlock in bx.align.axt.Reader(
+            open(axt_in), species_to_lengths=speciesToLengths, species1=primary,
+            species2=secondary, support_ids=True):
         axtsRead += 1
-        out.write (axtBlock)
+        out.write(axtBlock)
         primary_c = axtBlock.get_component_by_src_start(primary)
         secondary_c = axtBlock.get_component_by_src_start(secondary)
-        
-        print >>seq_file1, ">%s_%s_%s_%s" % (primary_c.src,secondary_c.strand,primary_c.start,primary_c.start+primary_c.size)
-        print >>seq_file1,primary_c.text
+
+        print >>seq_file1, ">%s_%s_%s_%s" % (primary_c.src, secondary_c.strand, primary_c.start, primary_c.start + primary_c.size)
+        print >>seq_file1, primary_c.text
         print >>seq_file1
-        
-        print >>seq_file2, ">%s_%s_%s_%s" % (secondary_c.src,secondary_c.strand,secondary_c.start,secondary_c.start+secondary_c.size)
-        print >>seq_file2,secondary_c.text
+
+        print >>seq_file2, ">%s_%s_%s_%s" % (secondary_c.src, secondary_c.strand, secondary_c.start, secondary_c.start + secondary_c.size)
+        print >>seq_file2, secondary_c.text
         print >>seq_file2
         axtsWritten += 1
 
@@ -131,46 +127,53 @@ def main():
     seq_file1.close()
     seq_file2.close()
 
-    if (not silent):
-        sys.stdout.write ("%d blocks read, %d written\n" % (axtsRead,axtsWritten))
+    if not silent:
+        sys.stdout.write("%d blocks read, %d written\n" % (axtsRead, axtsWritten))
 
-def parse_spec(spec): # returns (seq_file,species_name,lengths_file)
+
+def parse_spec(spec):
+    """returns (seq_file,species_name,lengths_file)"""
     fields = spec.split(":")
-    if   (len(fields) == 2): return (fields[0],"",fields[1])
-    elif (len(fields) == 3): return (fields[0],fields[1],fields[2])
-    else:                    raise ValueError
+    if len(fields) == 2:
+        return (fields[0], "", fields[1])
+    elif len(fields) == 3:
+        return (fields[0], fields[1], fields[2])
+    else:
+        raise ValueError
 
-def read_lengths (fileName):
 
+def read_lengths(fileName):
     chromToLength = {}
 
-    f = file (fileName, "r")
+    f = file(fileName, "r")
 
-    for lineNumber,line in enumerate(f):
+    for lineNumber, line in enumerate(f):
         line = line.strip()
-        if (line == ""): continue
-        if (line.startswith("#")): continue
+        if line == "":
+            continue
+        if line.startswith("#"):
+            continue
 
-        fields = line.split ()
-        if (len(fields) != 2):
-            raise "bad lengths line (%s:%d): %s" % (fileName,lineNumber,line)
+        fields = line.split()
+        if len(fields) != 2:
+            raise "bad lengths line (%s:%d): %s" % (fileName, lineNumber, line)
 
         chrom = fields[0]
         try:
             length = int(fields[1])
         except:
-            raise "bad lengths line (%s:%d): %s" % (fileName,lineNumber,line)
+            raise "bad lengths line (%s:%d): %s" % (fileName, lineNumber, line)
 
-        if (chrom in chromToLength):
+        if chrom in chromToLength:
             raise "%s appears more than once (%s:%d): %s" \
-                % (chrom,fileName,lineNumber)
+                % (chrom, fileName, lineNumber)
 
         chromToLength[chrom] = length
 
-    f.close ()
+    f.close()
 
     return chromToLength
 
 
-if __name__ == "__main__": main()
-
+if __name__ == "__main__":
+    main()

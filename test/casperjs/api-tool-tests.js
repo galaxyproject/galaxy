@@ -48,7 +48,7 @@ var panelSectionKeys = [
         'id', 'name', 'description', 'version', 'inputs'
     ],
     toolInputKeys = [
-        'html', 'label', 'name', 'type'
+        'label', 'name', 'type'
         // there are others, but it's not consistent across all inputs
     ];
 

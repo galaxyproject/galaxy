@@ -6,8 +6,6 @@ import sys
 
 sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir ) )
 
-from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 import galaxy.webapps.tool_shed.model.mapping as tool_shed_model

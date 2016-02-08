@@ -6,8 +6,6 @@ import tempfile
 from datetime import datetime
 from time import gmtime
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
 from mercurial import cmdutil, commands, hg, ui
 from mercurial.changegroup import readexactly
 from mercurial.exchange import readbundle
@@ -46,7 +44,7 @@ def bundle_to_json( fh ):
     command line) to a json object.
     """
     # See http://www.wstein.org/home/wstein/www/home/was/patches/hg_json
-    hg_unbundle10_obj = readbundle( None, fh, None )
+    hg_unbundle10_obj = readbundle( get_configured_ui(), fh, None )
     groups = [ group for group in unpack_groups( hg_unbundle10_obj ) ]
     return json.dumps( groups, indent=4 )
 
@@ -198,9 +196,12 @@ def get_mercurial_default_options_dict( command, command_table=None, **kwd ):
     if command_table is None:
         command_table = commands.table
     possible = cmdutil.findpossible( command, command_table )
+    # Mercurial >= 3.4 returns a tuple whose first element is the old return dict
+    if type(possible) is tuple:
+        possible = possible[0]
     if len( possible ) != 1:
         raise Exception('unable to find mercurial command "%s"' % command)
-    default_options_dict = dict( ( r[ 1 ].replace( '-', '_' ), r[ 2 ] ) for r in possible[ possible.keys()[ 0 ] ][ 1 ][ 1 ] )
+    default_options_dict = dict( ( r[1].replace( '-', '_' ), r[2] ) for r in possible.values()[0][1][1] )
     for option in kwd:
         default_options_dict[ option ] = kwd[ option ]
     return default_options_dict
@@ -438,7 +439,7 @@ def unpack_patches( hg_unbundle10_obj, remaining ):
                 'blocklen': blocklen,
                 'block': block.encode( 'string_escape' ) }
     if remaining > 0:
-        print remaining
+        log.error("Unexpected end of patch stream, %s remaining", remaining)
         raise Exception( "unexpected end of patch stream" )
 
 

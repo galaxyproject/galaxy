@@ -13,7 +13,7 @@ from cgi import escape
 
 from galaxy import util
 from galaxy.datatypes import data, metadata
-from galaxy.datatypes.checkers import is_gzip
+from galaxy.util.checkers import is_gzip
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers
 from galaxy.util.json import dumps
@@ -39,7 +39,7 @@ class TabularData( data.Text ):
     MetadataElement( name="delimiter", default='\t', desc="Data delimiter", readonly=True, visible=False, optional=True, no_value=[] )
 
     def set_peek( self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None ):
-        super(TabularData, self).set_peek( dataset, line_count=line_count, is_multi_byte=is_multi_byte, WIDTH=WIDTH, skipchars=skipchars)
+        super(TabularData, self).set_peek( dataset, line_count=line_count, is_multi_byte=is_multi_byte, WIDTH=WIDTH, skipchars=skipchars, line_wrap=False )
         if dataset.metadata.comment_lines:
             dataset.blurb = "%s, %s comments" % ( dataset.blurb, util.commaify( str( dataset.metadata.comment_lines ) ) )
 
@@ -81,6 +81,7 @@ class TabularData( data.Text ):
             # For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
             max_peek_size = 1000000  # 1 MB
             if os.stat( dataset.file_name ).st_size < max_peek_size:
+                self._clean_and_set_mime_type( trans, dataset.get_mime() )
                 return open( dataset.file_name )
             else:
                 trans.response.set_content_type( "text/html" )
@@ -179,6 +180,9 @@ class TabularData( data.Text ):
                     out.append( '<tr><td colspan="100%%">%s</td></tr>' % escape( line ) )
                 elif line:
                     elems = line.split( dataset.metadata.delimiter )
+                    # pad shortened elems, since lines could have been truncated by width
+                    if len( elems ) < columns:
+                        elems.extend( [''] * ( columns - len( elems ) ) )
                     # we may have an invalid comment line or invalid data
                     if len( elems ) != columns:
                         out.append( '<tr><td colspan="100%%">%s</td></tr>' % escape( line ) )

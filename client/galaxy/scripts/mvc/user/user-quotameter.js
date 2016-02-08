@@ -2,23 +2,19 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( baseMVC, _l ){
+'use strict';
+
+var logNamespace = 'user';
 //==============================================================================
 /** @class View to display a user's disk/storage usage
  *      either as a progress bar representing the percentage of a quota used
  *      or a simple text element displaying the human readable size used.
  *  @name UserQuotaMeter
- *
  *  @augments Backbone.View
- *  @borrows LoggableMixin#logger as #logger
- *  @borrows LoggableMixin#log as #log
- *  @constructs
  */
 var UserQuotaMeter = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
 /** @lends UserQuotaMeter.prototype */{
-    
-    ///** logger used to record this.log messages, commonly set to console */
-    //// comment this out to suppress log output
-    //logger              : console,
+    _logNamespace : logNamespace,
 
     /** Defaults for optional settings passed to initialize */
     options : {
@@ -30,9 +26,9 @@ var UserQuotaMeter = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
     initialize : function( options ){
         this.log( this + '.initialize:', options );
         _.extend( this.options, options );
-        
+
         //this.bind( 'all', function( event, data ){ this.log( this + ' event:', event, data ); }, this );
-        this.model.bind( 'change:quota_percent change:total_disk_usage', this.render, this );
+        this.listenTo( this.model, 'change:quota_percent change:total_disk_usage', this.render );
     },
 
     /** Re-load user model data from the api */
@@ -109,7 +105,7 @@ var UserQuotaMeter = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
     render : function(){
         //this.log( this + '.rendering' );
         var meterHtml = null;
-        
+
         // no quota on server ('quota_percent' === null (can be valid at 0)), show usage instead
         this.log( this + '.model.quota_percent:', this.model.get( 'quota_percent' ) );
         if( ( this.model.get( 'quota_percent' ) === null )
@@ -122,7 +118,7 @@ var UserQuotaMeter = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
             //TODO: add the original text for unregistered quotas
             //tooltip = "Your disk quota is %s.  You can increase your quota by registering a Galaxy account."
         }
-        
+
         this.$el.html( meterHtml );
         this.$el.find( '.quota-meter-text' ).tooltip();
         return this;

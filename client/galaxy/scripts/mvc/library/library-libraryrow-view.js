@@ -1,6 +1,6 @@
 // dependencies
 define([
-    "galaxy.masthead",
+    "layout/masthead",
     "utils/utils",
     "libs/toastr"],
 function(mod_masthead,
@@ -18,7 +18,7 @@ var LibraryRowView = Backbone.View.extend({
   },
 
   edit_mode: false,
-  
+
   element_visibility_config: {
     upload_library_btn: false,
     edit_library_btn: false,
@@ -45,22 +45,22 @@ var LibraryRowView = Backbone.View.extend({
   },
 
   repaint: function(library){
-    /* need to hide manually because of the element removal in setElement 
+    /* need to hide manually because of the element removal in setElement
     invoked in render() */
     $(".tooltip").hide();
-    /* we need to store the old element to be able to replace it with 
+    /* we need to store the old element to be able to replace it with
     new one */
     var old_element = this.$el;
-    /* if user canceled the library param is undefined, 
+    /* if user canceled the library param is undefined,
       if user saved and succeeded the updated library is rendered */
-    this.render(library);
+    this.render();
     old_element.replaceWith(this.$el);
     /* now we attach new tooltips to the newly created row element */
     this.$el.find("[data-toggle]").tooltip();
   },
-  
+
   /**
-   * Function modifies the visibility of buttons for 
+   * Function modifies the visibility of buttons for
    * the filling of the row template of given library.
    */
   prepareButtons: function(library){
@@ -223,57 +223,52 @@ var LibraryRowView = Backbone.View.extend({
   },
 
   templateRow: function() {
-    tmpl_array = [];
-
-    tmpl_array.push('           <tr class="<% if(library.get("deleted") === true) { print("active") } %>" style="display:none;" data-id="<%- library.get("id") %>">');
-    tmpl_array.push('               <% if(!edit_mode) { %>');
-    tmpl_array.push('                 <% if(library.get("deleted")) { %>');
-    tmpl_array.push('                   <td style="color:grey;"><span data-toggle="tooltip" data-placement="top" title="Marked deleted" style="color:grey;" class="fa fa-ban fa-lg deleted_lib_ico"> </span> <%- library.get("name") %></td>');
-    tmpl_array.push('                 <% } else { %>');
-    tmpl_array.push('                   <td><a href="#folders/<%- library.get("root_folder_id") %>"><%- library.get("name") %></a></td>');
-    tmpl_array.push('                 <% } %>');
-
-    tmpl_array.push('                 <% if(library.get("description")) { %>');
-    tmpl_array.push('                   <% if( (library.get("description")).length> 80 ) { %>');
-    tmpl_array.push('                     <td data-toggle="tooltip" data-placement="bottom" title="<%= _.escape(library.get("description")) %>"><%= _.escape(library.get("description")).substring(0, 80) + "..." %></td>');
-    tmpl_array.push('                   <% } else { %>');
-    tmpl_array.push('                     <td><%= _.escape(library.get("description"))%></td>');
-    tmpl_array.push('                   <% } %>');
-    tmpl_array.push('                 <% } else { %>');
-    tmpl_array.push('                   <td></td>');
-    tmpl_array.push('                 <% } %>');
-
-    tmpl_array.push('                 <% if(library.get("synopsis")) { %>');
-    tmpl_array.push('                   <% if( (library.get("synopsis")).length> 120 ) { %>');
-    tmpl_array.push('                     <td data-toggle="tooltip" data-placement="bottom" title="<%= _.escape(library.get("synopsis")) %>"><%= _.escape(library.get("synopsis")).substring(0, 120) + "..." %></td>');
-    tmpl_array.push('                   <% } else { %>');
-    tmpl_array.push('                     <td><%= _.escape(library.get("synopsis"))%></td>');
-    tmpl_array.push('                   <% } %>');
-    tmpl_array.push('                 <% } else { %>');
-    tmpl_array.push('                   <td></td>');
-    tmpl_array.push('                 <% } %>');
-
-    tmpl_array.push('               <% } else if(edit_mode){ %>');
-    tmpl_array.push('                 <td><textarea rows="4" class="form-control input_library_name" placeholder="name" ><%- library.get("name") %></textarea></td>');
-    tmpl_array.push('                 <td><textarea rows="4"  class="form-control input_library_description" placeholder="description" ><%- library.get("description") %></textarea></td>');
-    tmpl_array.push('                 <td><textarea rows="4"  class="form-control input_library_synopsis" placeholder="synopsis" ><%- library.get("synopsis") %></textarea></td>');
-    tmpl_array.push('               <% } %>');
-    tmpl_array.push('               <td class="right-center">');
-    tmpl_array.push('                   <% if( (library.get("public")) && (library.get("deleted") === false) ) { %>');
-    tmpl_array.push('                     <span data-toggle="tooltip" data-placement="top" title="Unrestricted library" style="color:grey;" class="fa fa-globe fa-lg public_lib_ico"> </span>');
-    tmpl_array.push('                   <% }%>');
-    tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Modify <%- library.get("name") %>" class="primary-button btn-xs edit_library_btn" type="button" style="<% if(button_config.edit_library_btn === false) { print("display:none;") } %>"><span class="fa fa-pencil"></span></button>');
-    tmpl_array.push('                   <a href="#library/<%- library.get("id") %>/permissions"> <button data-toggle="tooltip" data-placement="top" title="Modify permissions" class="primary-button btn-xs permission_library_btn" type="button" style="<% if(button_config.permission_library_btn === false) { print("display:none;") } %>"><span class="fa fa-group"></span></button></a>');
-    tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Save changes" class="primary-button btn-xs save_library_btn" type="button" style="<% if(button_config.save_library_btn === false) { print("display:none;") } %>"><span class="fa fa-floppy-o"> Save</span></button>');
-    tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Discard changes" class="primary-button btn-xs cancel_library_btn" type="button" style="<% if(button_config.cancel_library_btn === false) { print("display:none;") } %>"><span class="fa fa-times"> Cancel</span></button>');
-    tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Delete <%- library.get("name") %>" class="primary-button btn-xs delete_library_btn" type="button" style="<% if(button_config.delete_library_btn === false) { print("display:none;") } %>"><span class="fa fa-trash-o"> Delete</span></button>');
-    tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Undelete <%- library.get("name") %> " class="primary-button btn-xs undelete_library_btn" type="button" style="<% if(button_config.undelete_library_btn === false) { print("display:none;") } %>"><span class="fa fa-unlock"> Undelete</span></button>');
-    tmpl_array.push('               </td>');
-    tmpl_array.push('           </tr>');
-
-    return _.template(tmpl_array.join(''));
+    return _.template([
+    '<tr class="<% if(library.get("deleted") === true) { print("active") } %>" style="display:none;" data-id="<%- library.get("id") %>">',
+      '<% if(!edit_mode) { %>',
+        '<% if(library.get("deleted")) { %>',
+          '<td style="color:grey;"><span data-toggle="tooltip" data-placement="top" title="Marked deleted" style="color:grey;" class="fa fa-ban fa-lg deleted_lib_ico"> </span> <%- library.get("name") %></td>',
+        '<% } else { %>',
+          '<td><a href="#folders/<%- library.get("root_folder_id") %>"><%- library.get("name") %></a></td>',
+        '<% } %>',
+      '<% if(library.get("description")) { %>',
+        '<% if( (library.get("description")).length> 80 ) { %>',
+          '<td data-toggle="tooltip" data-placement="bottom" title="<%= _.escape(library.get("description")) %>"><%= _.escape(library.get("description")).substring(0, 80) + "..." %></td>',
+        '<% } else { %>',
+          '<td><%= _.escape(library.get("description"))%></td>',
+        '<% } %>',
+      '<% } else { %>',
+        '<td></td>',
+      '<% } %>',
+      '<% if(library.get("synopsis")) { %>',
+        '<% if( (library.get("synopsis")).length> 120 ) { %>',
+          '<td data-toggle="tooltip" data-placement="bottom" title="<%= _.escape(library.get("synopsis")) %>"><%= _.escape(library.get("synopsis")).substring(0, 120) + "..." %></td>',
+        '<% } else { %>',
+          '<td><%= _.escape(library.get("synopsis"))%></td>',
+        '<% } %>',
+      '<% } else { %>',
+        '<td></td>',
+      '<% } %>',
+      '<% } else if(edit_mode){ %>',
+        '<td><textarea rows="4" class="form-control input_library_name" placeholder="name" ><%- library.get("name") %></textarea></td>',
+        '<td><textarea rows="4" class="form-control input_library_description" placeholder="description" ><%- library.get("description") %></textarea></td>',
+        '<td><textarea rows="4" class="form-control input_library_synopsis" placeholder="synopsis" ><%- library.get("synopsis") %></textarea></td>',
+      '<% } %>',
+      '<td class="right-center">',
+        '<% if( (library.get("public")) && (library.get("deleted") === false) ) { %>',
+          '<span data-toggle="tooltip" data-placement="top" title="Unrestricted library" style="color:grey;" class="fa fa-globe fa-lg public_lib_ico"> </span>',
+        '<% }%>',
+        '<button data-toggle="tooltip" data-placement="top" title="Modify \'<%- library.get("name") %>\'" class="primary-button btn-xs edit_library_btn" type="button" style="<% if(button_config.edit_library_btn === false) { print("display:none;") } %>"><span class="fa fa-pencil"></span></button>',
+        '<a href="#library/<%- library.get("id") %>/permissions"><button data-toggle="tooltip" data-placement="top" title="Manage \'<%- library.get("name") %>\'" class="primary-button btn-xs permission_library_btn" type="button" style="<% if(button_config.permission_library_btn === false) { print("display:none;") } %>"><span class="fa fa-group"></span></button></a>',
+        '<button data-toggle="tooltip" data-placement="top" title="Save changes" class="primary-button btn-xs save_library_btn" type="button" style="<% if(button_config.save_library_btn === false) { print("display:none;") } %>"><span class="fa fa-floppy-o"> Save</span></button>',
+        '<button data-toggle="tooltip" data-placement="top" title="Discard changes" class="primary-button btn-xs cancel_library_btn" type="button" style="<% if(button_config.cancel_library_btn === false) { print("display:none;") } %>"><span class="fa fa-times"> Cancel</span></button>',
+        '<button data-toggle="tooltip" data-placement="top" title="Delete <%- library.get("name") %>" class="primary-button btn-xs delete_library_btn" type="button" style="<% if(button_config.delete_library_btn === false) { print("display:none;") } %>"><span class="fa fa-trash-o"> Delete</span></button>',
+        '<button data-toggle="tooltip" data-placement="top" title="Undelete <%- library.get("name") %> " class="primary-button btn-xs undelete_library_btn" type="button" style="<% if(button_config.undelete_library_btn === false) { print("display:none;") } %>"><span class="fa fa-unlock"> Undelete</span></button>',
+      '</td>',
+    '</tr>'
+    ].join(''));
   }
-   
+
 });
 
 return {

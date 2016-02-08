@@ -11,15 +11,11 @@ import urllib
 import urllib2
 import zipfile
 
-from galaxy import eggs
-eggs.require('MarkupSafe')
 from markupsafe import escape
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false
 from sqlalchemy.orm import eagerload_all
 
 from galaxy import util, web
-from galaxy.eggs import require
 from galaxy.security import Action
 from galaxy.tools.actions import upload_common
 from galaxy.util import inflector
@@ -30,7 +26,6 @@ from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, bu
 
 # Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether tool search is enabled.
 try:
-    require( "Whoosh" )
     import whoosh.index
     from whoosh.fields import Schema, STORED, TEXT
     from whoosh.scoring import BM25F
@@ -1120,10 +1115,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                        status='error' ) )
         json_file_path = upload_common.create_paramfile( trans, uploaded_datasets )
         data_list = [ ud.data for ud in uploaded_datasets ]
-        job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=library_bunch.folder )
-        # HACK: Prevent outputs_to_working_directory from overwriting inputs when "linking"
-        job.add_parameter( 'link_data_only', dumps( kwd.get( 'link_data_only', 'copy_files' ) ) )
-        job.add_parameter( 'uuid', dumps( kwd.get( 'uuid', None ) ) )
+        job_params = {}
+        job_params['link_data_only'] = dumps( kwd.get( 'link_data_only', 'copy_files' ) )
+        job_params['uuid'] = dumps( kwd.get( 'uuid', None ) )
+        job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=library_bunch.folder, job_params=job_params )
         trans.sa_session.add( job )
         trans.sa_session.flush()
         return output

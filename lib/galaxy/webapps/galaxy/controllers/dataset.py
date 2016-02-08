@@ -2,12 +2,8 @@ import logging
 import os
 import urllib
 
-from galaxy import eggs
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
-eggs.require( "Paste" )
 import paste.httpexceptions
-eggs.require('SQLAlchemy')
 from sqlalchemy import false, true
 
 from galaxy import datatypes, model, util, web
@@ -37,7 +33,7 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
     # Custom columns for grid.
     class HistoryColumn( grids.GridColumn ):
         def get_value( self, trans, grid, hda):
-            return hda.history.name
+            return escape(hda.history.name)
 
     class StatusColumn( grids.GridColumn ):
         def get_value( self, trans, grid, hda ):
@@ -62,7 +58,7 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
     columns = [
         grids.TextColumn( "Name", key="name",
                           # Link name to dataset's history.
-                          link=( lambda item: iff( item.history.deleted, None, dict( operation="switch", id=item.id ) ) ), filterable="advanced", attach_popup=True, inbound=True ),
+                          link=( lambda item: iff( item.history.deleted, None, dict( operation="switch", id=item.id ) ) ), filterable="advanced", attach_popup=True ),
         HistoryColumn( "History", key="history", sortable=False, inbound=True,
                        link=( lambda item: iff( item.history.deleted, None, dict( operation="switch_history", id=item.id ) ) ) ),
         grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.HistoryDatasetAssociationTagAssociation, filterable="advanced", grid_name="HistoryDatasetAssocationListGrid" ),
@@ -123,12 +119,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
 
     @web.expose
     def errors( self, trans, id ):
-        try:
-            hda = trans.sa_session.query( model.HistoryDatasetAssociation ).get( id )
-        except:
-            hda = None
-        if not hda:
-            hda = trans.sa_session.query( model.HistoryDatasetAssociation ).get( self.decode_id( id ) )
+        hda = trans.sa_session.query( model.HistoryDatasetAssociation ).get( self.decode_id( id ) )
+
         if not hda or not self._can_access_dataset( trans, hda ):
             return trans.show_error_message( "Either this dataset does not exist or you do not have permission to access it." )
         return trans.fill_template( "dataset/errors.mako", hda=hda )
@@ -523,7 +515,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         """ Import another user's dataset via a shared URL; dataset is added to user's current history. """
         # Set referer message.
         referer = trans.request.referer
-        if referer is not "":
+        if referer:
             referer_message = "<a href='%s'>return to the previous page</a>" % escape(referer)
         else:
             referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
@@ -1110,7 +1102,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                 trans.sa_session.flush()
                 hist_names_str = ", ".join( ['<a href="%s" target="_top">%s</a>' %
                                             ( url_for( controller="history", action="switch_to_history",
-                                                       hist_id=trans.security.encode_id( hist.id ) ), hist.name )
+                                                       hist_id=trans.security.encode_id( hist.id ) ), escape(hist.name) )
                                             for hist in target_histories ] )
                 num_source = len( source_content_ids ) - invalid_contents
                 num_target = len(target_histories)

@@ -1,10 +1,7 @@
-import pkg_resources
-
 import functools
 import os
 import urllib2
 
-pkg_resources.require('Beaker')
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 

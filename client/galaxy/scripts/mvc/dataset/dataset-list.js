@@ -1,21 +1,22 @@
 define([
-    "mvc/list/list-panel",
+    "mvc/list/list-view",
     "mvc/dataset/dataset-li",
     "mvc/base-mvc",
     "utils/localization"
-], function( LIST_PANEL, DATASET_LI, BASE_MVC, _l ){
+], function( LIST_VIEW, DATASET_LI, BASE_MVC, _l ){
+'use strict';
+
+var logNamespace = 'dataset';
 /* =============================================================================
 TODO:
 
 ============================================================================= */
-var _super = LIST_PANEL.ListPanel;
+var _super = LIST_VIEW.ListPanel;
 /** @class  non-editable, read-only View/Controller for a list of datasets.
  */
 var DatasetList = _super.extend(
 /** @lends DatasetList.prototype */{
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
+    _logNamespace : logNamespace,
 
     /** class to use for constructing the sub-views */
     viewClass       : DATASET_LI.DatasetListItemView,

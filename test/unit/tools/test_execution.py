@@ -9,8 +9,6 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
 import tools_support
 
-from galaxy import eggs
-eggs.require( "Paste" )
 from paste import httpexceptions
 
 BASE_REPEAT_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
@@ -148,10 +146,10 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
         collection = galaxy.model.DatasetCollection(
             collection_type=collection_type,
         )
-        to_element = lambda hda: galaxy.model.DatasetCollectionElement(
-            collection=collection,
-            element=hda,
-        )
+
+        def to_element(hda):
+            return galaxy.model.DatasetCollectionElement(collection=collection,
+                                                         element=hda)
         elements = map(to_element, hdas)
         if collection_type == "list:paired":
             paired_collection = galaxy.model.DatasetCollection(
@@ -270,6 +268,7 @@ class MockTrans( object ):
     def __init__( self, app, history ):
         self.app = app
         self.history = history
+        self.user = None
         self.history._active_datasets_children_and_roles = filter( lambda hda: hda.active and hda.history == history, self.app.model.context.model_objects[ galaxy.model.HistoryDatasetAssociation ] )
         self.workflow_building_mode = False
         self.webapp = Bunch( name="galaxy" )
@@ -277,6 +276,9 @@ class MockTrans( object ):
 
     def get_history( self, **kwargs ):
         return self.history
+
+    def get_current_user_roles( self ):
+        return []
 
 
 class MockCollectionService( object ):

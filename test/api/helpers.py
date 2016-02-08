@@ -70,10 +70,14 @@ class BaseDatasetPopulator( object ):
     Galaxy - implementations must implement _get and _post.
     """
 
-    def new_dataset( self, history_id, content='TestData123', **kwds ):
+    def new_dataset( self, history_id, content='TestData123', wait=False, **kwds ):
         payload = self.upload_payload( history_id, content, **kwds )
-        run_response = self._post( "tools", data=payload )
-        return run_response.json()["outputs"][0]
+        run_response = self._post( "tools", data=payload ).json()
+        if wait:
+            job = run_response["jobs"][0]
+            self.wait_for_job(job["id"])
+            self.wait_for_history(history_id, assert_ok=True)
+        return run_response["outputs"][0]
 
     def wait_for_history( self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
         try:
@@ -83,7 +87,10 @@ class BaseDatasetPopulator( object ):
             raise
 
     def wait_for_job( self, job_id, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
-        return wait_on_state( lambda: self._get( "jobs/%s" % job_id ), assert_ok=assert_ok, timeout=timeout )
+        return wait_on_state( lambda: self.get_job_details( job_id ), assert_ok=assert_ok, timeout=timeout )
+
+    def get_job_details( self, job_id, full=False ):
+        return self._get( "jobs/%s?full=%s" % (job_id, full) )
 
     def _summarize_history_errors( self, history_id ):
         pass
@@ -409,11 +416,15 @@ class BaseDatasetCollectionPopulator( object ):
         # 2-tuples of form (name, dataset_content).
         if contents and isinstance(contents[0], tuple):
             hdas = self.__datasets( history_id, count=count, contents=[c[1] for c in contents] )
-            hda_to_identifier = lambda ( i, hda ): dict( name=contents[i][0], src="hda", id=hda[ "id" ] )
+
+            def hda_to_identifier(i, hda):
+                return dict(name=contents[i][0], src="hda", id=hda["id"])
         else:
             hdas = self.__datasets( history_id, count=count, contents=contents )
-            hda_to_identifier = lambda ( i, hda ): dict( name="data%d" % ( i + 1 ), src="hda", id=hda[ "id" ] )
-        element_identifiers = map( hda_to_identifier, enumerate( hdas ) )
+
+            def hda_to_identifier(i, hda):
+                return dict(name="data%d" % (i + 1), src="hda", id=hda["id"])
+        element_identifiers = [hda_to_identifier(i, hda) for (i, hda) in enumerate(hdas)]
         return element_identifiers
 
     def __create( self, payload ):
@@ -454,12 +465,16 @@ def wait_on_state( state_func, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
     return wait_on( get_state, desc="state", timeout=timeout)
 
 
-def wait_on( function, desc, timeout=5 ):
+def wait_on( function, desc, timeout=DEFAULT_TIMEOUT ):
     delta = .25
     iteration = 0
     while True:
-        if (delta * iteration) > timeout:
-            assert False, "Timed out waiting on %s." % desc
+        total_wait = delta * iteration
+        if total_wait > timeout:
+            timeout_message = "Timed out after %s seconds waiting on %s." % (
+                total_wait, desc
+            )
+            assert False, timeout_message
         iteration += 1
         value = function()
         if value is not None:

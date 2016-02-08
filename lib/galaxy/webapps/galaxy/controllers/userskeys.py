@@ -4,10 +4,7 @@ Contains the user interface in the Universe class
 
 import logging
 
-from galaxy import eggs
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
-eggs.require('SQLAlchemy')
 from sqlalchemy import false
 
 from galaxy import web

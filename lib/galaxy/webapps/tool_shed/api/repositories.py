@@ -7,13 +7,11 @@ from cgi import FieldStorage
 from collections import namedtuple
 from time import strftime
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false
 
 from galaxy import util
 from galaxy import web
-from galaxy.datatypes import checkers
+from galaxy.util import checkers
 from galaxy.exceptions import ActionInputError
 from galaxy.exceptions import ConfigDoesNotAllowException
 from galaxy.exceptions import InsufficientPermissionsException
@@ -218,7 +216,8 @@ class RepositoriesController( BaseAPIController ):
                 repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                                  action='show',
                                                                  id=encoded_repository_metadata_id )
-                repository_metadata_dict[ 'valid_tools' ] = repository_metadata.metadata[ 'tools' ]
+                if 'tools' in repository_metadata.metadata:
+                    repository_metadata_dict[ 'valid_tools' ] = repository_metadata.metadata[ 'tools' ]
                 # Get the repo_info_dict for installing the repository.
                 repo_info_dict, \
                     includes_tools, \
@@ -641,12 +640,15 @@ class RepositoriesController( BaseAPIController ):
                                                                             repository,
                                                                             None,
                                                                             as_html=False )
+                    results[ 'status' ] = 'warning'
                 else:
                     message = "Successfully reset metadata on repository %s owned by %s" % \
                         ( str( repository.name ), str( repository.user.username ) )
+                    results[ 'status' ] = 'ok'
             except Exception, e:
                 message = "Error resetting metadata on repository %s owned by %s: %s" % \
                     ( str( repository.name ), str( repository.user.username ), str( e ) )
+                results[ 'status' ] = 'error'
             status = '%s : %s' % ( str( repository.name ), message )
             results[ 'repository_status' ].append( status )
             return results
@@ -659,7 +661,7 @@ class RepositoriesController( BaseAPIController ):
             results = handle_repository( trans, start_time, repository )
             stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
             results[ 'stop_time' ] = stop_time
-        return json.dumps( results, sort_keys=True, indent=4 )
+        return results
 
     @expose_api_anonymous_and_sessionless
     def show( self, trans, id, **kwd ):

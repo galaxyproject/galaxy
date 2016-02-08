@@ -5,8 +5,6 @@ import subprocess
 import tempfile
 from cgi import FieldStorage
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy.orm import eagerload_all
 
 from galaxy import datatypes, util
@@ -352,7 +350,7 @@ def create_paramfile( trans, uploaded_datasets ):
     return json_file_path
 
 
-def create_job( trans, params, tool, json_file_path, data_list, folder=None, history=None ):
+def create_job( trans, params, tool, json_file_path, data_list, folder=None, history=None, job_params=None ):
     """
     Create the upload job.
     """
@@ -397,7 +395,10 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None, his
             # open( dataset.file_name, "w" ).close()
     job.object_store_id = object_store_id
     job.set_state( job.states.NEW )
-    job.set_handler(tool.get_job_handler(None))
+    job.set_handler( tool.get_job_handler( None ) )
+    if job_params:
+        for name, value in job_params.iteritems():
+            job.add_parameter( name, value )
     trans.sa_session.add( job )
     trans.sa_session.flush()
 

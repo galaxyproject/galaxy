@@ -8,8 +8,6 @@ import unittest
 test_utils = imp.load_source( 'test_utils',
     os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 
-from galaxy import eggs
-eggs.require( 'SQLAlchemy >= 0.4' )
 import sqlalchemy
 
 from galaxy import model
@@ -184,7 +182,7 @@ class UserSerializerTestCase( BaseTestCase ):
         self.assertIsInstance( serialized[ 'nice_total_disk_usage' ], basestring )
         self.assertIsInstance( serialized[ 'quota_percent' ], ( type( None ), float ) )
         self.assertIsInstance( serialized[ 'tags_used' ], list )
-        self.assertIsInstance( serialized[ 'requests' ], list )
+        self.assertIsInstance( serialized[ 'has_requests' ], bool )
 
         self.log( 'serialized should jsonify well' )
         self.assertIsJsonifyable( serialized )

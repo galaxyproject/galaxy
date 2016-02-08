@@ -6,12 +6,10 @@ import os
 import shutil
 import tempfile
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy.sql.expression import null
 
 import tool_shed.repository_types.util as rt_util
-from galaxy.datatypes import checkers
+from galaxy.util import checkers
 from tool_shed.tools import data_table_manager
 from tool_shed.util import basic_util, hg_util, shed_util_common as suc
 

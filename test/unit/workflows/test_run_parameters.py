@@ -45,8 +45,8 @@ def test_inputs_by_step_id():
         str( STEP_ID_OFFSET + 1 ): input1,
         str( STEP_ID_OFFSET + 2 ): input2
     }, inputs_by="step_id" )
-    assert normalized_inputs[ STEP_ID_OFFSET + 1 ] == input1[ 'content' ]
-    assert normalized_inputs[ STEP_ID_OFFSET + 2 ] == input2[ 'content' ]
+    assert normalized_inputs[ STEP_ID_OFFSET + 1 ]['content'] == input1[ 'content' ]
+    assert normalized_inputs[ STEP_ID_OFFSET + 2 ]['content'] == input2[ 'content' ]
 
 
 def test_inputs_by_step_index():
@@ -56,8 +56,8 @@ def test_inputs_by_step_index():
         str( 0 ): input1,
         str( 1 ): input2
     }, inputs_by="step_index" )
-    assert normalized_inputs[ STEP_ID_OFFSET + 1 ] == input1[ 'content' ]
-    assert normalized_inputs[ STEP_ID_OFFSET + 2 ] == input2[ 'content' ]
+    assert normalized_inputs[ STEP_ID_OFFSET + 1 ]['content'] == input1[ 'content' ]
+    assert normalized_inputs[ STEP_ID_OFFSET + 2 ]['content'] == input2[ 'content' ]
 
 
 def test_inputs_by_name():
@@ -68,8 +68,8 @@ def test_inputs_by_name():
         "input2": input2
     }, inputs_by="name" )
     print normalized_inputs
-    assert normalized_inputs[ STEP_ID_OFFSET + 1 ] == input1[ 'content' ]
-    assert normalized_inputs[ STEP_ID_OFFSET + 2 ] == input2[ 'content' ]
+    assert normalized_inputs[ STEP_ID_OFFSET + 1 ]['content'] == input1[ 'content' ]
+    assert normalized_inputs[ STEP_ID_OFFSET + 2 ]['content'] == input2[ 'content' ]
 
 
 def __normalize_parameters_against_fixture( params ):
@@ -79,7 +79,7 @@ def __normalize_parameters_against_fixture( params ):
     __workflow_fixure( trans )
 
     workflow = __workflow_fixure( trans )
-    normalized_params = normalize_step_parameters( workflow.steps, params )
+    normalized_params = normalize_step_parameters( workflow.steps, params, legacy=True )
     return normalized_params
 
 

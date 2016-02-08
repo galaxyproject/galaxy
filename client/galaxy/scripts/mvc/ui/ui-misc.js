@@ -10,256 +10,141 @@ define(['utils/utils',
     'mvc/ui/ui-modal'],
     function( Utils, Select, Slider, Options, Drilldown, Buttons, Modal ) {
 
-    /** Image wrapper */
-    var Image = Backbone.View.extend({
-        initialize : function(options) {
-            this.options = Utils.merge(options, {
-                url  : '',
-                cls  : ''
-            });
-            this.setElement(this._template(this.options));
-        },
-        _template: function(options) {
-            return '<img class="ui-image ' + options.cls + '" src="' + options.url + '"/>';
-        }
-    });
-
     /** Label wrapper */
     var Label = Backbone.View.extend({
-        initialize : function(options) {
-            this.options = Utils.merge(options, {
-                title  : '',
-                cls    : ''
-            });
-            this.setElement(this._template(this.options));
+        tagName: 'label',
+        initialize: function( options ) {
+            this.model = options && options.model || new Backbone.Model( options );
+            this.tagName = options.tagName || this.tagName;
+            this.setElement( $( '<' + this.tagName + '/>' ) );
+            this.listenTo( this.model, 'change', this.render, this );
+            this.render();
         },
-        title: function(new_title) {
-            this.$el.html(new_title);
+        title: function( new_title ) {
+            this.model.set( 'title', new_title );
         },
         value: function() {
-            return options.title;
+            return this.model.get( 'title' );
         },
-        _template: function(options) {
-            return '<label class="ui-label ' + options.cls + '">' + options.title + '</label>';
-        }
-    });
-
-    /** Displays an icon with title */
-    var Icon = Backbone.View.extend({
-        initialize : function(options) {
-            this.options = Utils.merge(options, {
-                floating    : 'right',
-                icon        : '',
-                tooltip     : '',
-                placement   : 'bottom',
-                title       : '',
-                cls         : ''
-            });
-            this.setElement(this._template(this.options));
-            $(this.el).tooltip({title: options.tooltip, placement: 'bottom'});
-        },
-        _template: function(options) {
-            return  '<div>' +
-                        '<span class="fa ' + options.icon + '" class="ui-icon"/>&nbsp;' +
-                        options.title +
-                    '</div>';
-        }
-    });
-
-    /** Renders an anchor element */
-    var Anchor = Backbone.View.extend({
-        initialize : function(options) {
-            this.options = Utils.merge(options, {
-                title  : '',
-                cls    : ''
-            });
-            this.setElement(this._template(this.options));
-            $(this.el).on('click', options.onclick);
-        },
-        _template: function(options) {
-            return '<div><a href="javascript:void(0)" class="ui-anchor ' + options.cls + '">' + options.title + '</a></div>';
+        render: function() {
+            this.$el.removeClass()
+                    .addClass( 'ui-label' )
+                    .addClass( this.model.get( 'cls' ) )
+                    .html( this.model.get( 'title' ) );
+            return this;
         }
     });
 
     /** Displays messages used e.g. in the tool form */
     var Message = Backbone.View.extend({
-        initialize : function(options) {
-            this.options = Utils.merge(options, {
+        initialize: function( options ) {
+            this.model = options && options.model || new Backbone.Model({
                 message     : null,
                 status      : 'info',
                 cls         : '',
                 persistent  : false
-            });
-            this.setElement('<div class="' + this.options.cls + '"/>');
-            this.options.message && this.update(this.options);
+            }).set( options );
+            this.listenTo( this.model, 'change', this.render, this );
+            this.render();
         },
-
-        // update
-        update: function(options) {
-            // get options
-            this.options = Utils.merge(options, this.options);
-
-            // show message
-            if (options.message != '') {
-                this.$el.html(this._template(this.options));
+        update: function( options ) {
+            this.model.set( options );
+        },
+        render: function() {
+            this.$el.removeClass().addClass( 'ui-message' ).addClass( this.model.get( 'cls' ) );
+            var status = this.model.get( 'status' );
+            if ( this.model.get( 'large' ) ) {
+                this.$el.addClass((( status == 'success' && 'done' ) ||
+                                   ( status == 'danger' && 'error' ) ||
+                                     status ) + 'messagelarge' );
+            } else {
+                this.$el.addClass( 'alert' ).addClass( 'alert-' + status );
+            }
+            if ( this.model.get( 'message' ) ) {
+                this.$el.html( this.model.get( 'message' ) );
                 this.$el.fadeIn();
-
-                // clear previous timeouts
-                if (this.timeout) {
-                    window.clearTimeout(this.timeout);
-                }
-
-                // set timeout if message is not persistent
-                if (!options.persistent) {
+                this.timeout && window.clearTimeout( this.timeout );
+                if ( !this.model.get( 'persistent' ) ) {
                     var self = this;
-                    this.timeout = window.setTimeout(function() {
-                        if (self.$el.is(':visible')) {
-                            self.$el.fadeOut();
-                        } else {
-                            self.$el.hide();
-                        }
-                    }, 3000);
+                    this.timeout = window.setTimeout( function() {
+                        self.$el.fadeOut();
+                    }, 3000 );
                 }
             } else {
                 this.$el.fadeOut();
             }
-        },
-
-        // template
-        _template: function(options) {
-            var cls_status = 'ui-message alert alert-' + options.status;
-            if (options.large) {
-                cls_status = ( ( options.status == 'success' && 'done' ) ||
-                               ( options.status == 'danger' && 'error' ) ||
-                                 options.status ) + 'messagelarge';
-            }
-            return  '<div class="' + cls_status + '" >' +
-                        options.message +
-                    '</div>';
-        }
-    });
-
-    /** Render a search box */
-    var Searchbox = Backbone.View.extend({
-        initialize : function(options) {
-            this.options = Utils.merge(options, {
-                onclick : null,
-                searchword : ''
-            });
-            this.setElement(this._template(this.options));
-            var self = this;
-            if (this.options.onclick) {
-                this.$el.on('submit', function(e) {
-                    var search_field = self.$el.find('#search');
-                    self.options.onclick(search_field.val());
-                });
-            }
-        },
-        _template: function(options) {
-            return  '<div class="ui-search">' +
-                        '<form onsubmit="return false;">' +
-                            '<input id="search" class="form-control input-sm" type="text" name="search" placeholder="Search..." value="' + options.searchword + '">' +
-                            '<button type="submit" class="btn search-btn">' +
-                                '<i class="fa fa-search"></i>' +
-                            '</button>' +
-                        '</form>' +
-                    '</div>';
+            return this;
         }
     });
 
     /** Renders an input element used e.g. in the tool form */
     var Input = Backbone.View.extend({
-        initialize : function(options) {
-            // configure options
-            this.options = Utils.merge(options, {
+        initialize: function( options ) {
+            this.model = options && options.model || new Backbone.Model({
                 type            : 'text',
                 placeholder     : '',
                 disabled        : false,
                 visible         : true,
                 cls             : '',
                 area            : false
-            });
-
-            // create new element
-            this.setElement(this._template(this.options));
-
-            // set initial value
-            if (this.options.value !== undefined) {
-                this.value(this.options.value);
-            }
-
-            // disable input field
-            if (this.options.disabled) {
-                this.$el.prop('disabled', true);
-            }
-
-            // hide input field
-            if (!this.options.visible) {
-                this.$el.hide();
-            }
-
-            // onchange event handler. fires on user activity.
-            var self = this;
-            this.$el.on('input', function() {
-                if (self.options.onchange) {
-                    self.options.onchange(self.$el.val());
-                }
-            });
+            }).set( options );
+            this.tagName = this.model.get( 'area' ) ? 'textarea' : 'input';
+            this.setElement( $( '<' + this.tagName + '/>' ) );
+            this.listenTo( this.model, 'change', this.render, this );
+            this.render();
         },
-
-        // value
-        value : function (new_val) {
-            if (new_val !== undefined) {
-                this.$el.val(new_val);
-            }
-            return this.$el.val();
+        events: {
+            'input': '_onchange'
         },
-
-        // template
-        _template: function(options) {
-            if (options.area) {
-                return '<textarea id="' + options.id + '" class="ui-textarea ' + options.cls + '"></textarea>';
-            } else {
-                return '<input id="' + options.id + '" type="' + options.type + '" value="' + options.value + '" placeholder="' + options.placeholder + '" class="ui-input ' + options.cls + '">';
-            }
+        value: function( new_val ) {
+            new_val !== undefined && this.model.set( 'value', typeof new_val === 'string' ? new_val : '' );
+            return this.model.get( 'value' );
+        },
+        render: function() {
+            this.$el.removeClass()
+                    .addClass( 'ui-' + this.tagName )
+                    .addClass( this.model.get( 'cls' ) )
+                    .attr( 'id', this.model.id )
+                    .attr( 'type', this.model.get( 'type' ) )
+                    .attr( 'placeholder', this.model.get( 'placeholder' ) )
+                    .val( this.model.get( 'value' ) );
+            this.model.get( 'disabled' ) ? this.$el.attr( 'disabled', true ) : this.$el.removeAttr( 'disabled' );
+            this.$el[ this.model.get( 'visible' ) ? 'show' : 'hide' ]();
+            return this;
+        },
+        _onchange: function() {
+            this.value( this.$el.val() );
+            this.model.get( 'onchange' ) && this.model.get( 'onchange' )( this.model.get( 'value' ) );
         }
     });
 
     /** Creates a hidden element input field used e.g. in the tool form */
     var Hidden = Backbone.View.extend({
-        initialize : function(options) {
-            this.options = options;
-            this.setElement(this._template(this.options));
-            if (this.options.value !== undefined) {
-                this.value(this.options.value);
-            }
+        initialize: function( options ) {
+            this.model = options && options.model || new Backbone.Model( options );
+            this.setElement( $ ( '<div/>' ).append( this.$info = $( '<div/>' ) )
+                                           .append( this.$hidden = $( '<div/>' ) ) );
+            this.listenTo( this.model, 'change', this.render, this );
+            this.render();
         },
-        value : function (new_val) {
-            if (new_val !== undefined) {
-                this.$('hidden').val(new_val);
-            }
-            return this.$('hidden').val();
+        value: function( new_val ) {
+            new_val !== undefined && this.model.set( 'value', new_val );
+            return this.model.get( 'value' );
         },
-        _template: function(options) {
-            var tmpl =  '<div id="' + options.id + '" >';
-            if (options.info) {
-                tmpl +=     '<div>' + options.info + '</div>';
-            }
-            tmpl +=         '<hidden value="' + options.value + '"/>' +
-                        '</div>';
-            return tmpl;
+        render: function() {
+            this.$el.attr( 'id', this.model.id );
+            this.$hidden.val( this.model.get( 'value' ) );
+            this.model.get( 'info' ) ? this.$info.show().html( this.model.get( 'info' ) ) : this.$info.hide();
+            return this;
         }
     });
 
     return {
-        Anchor      : Anchor,
         Button      : Buttons.ButtonDefault,
         ButtonIcon  : Buttons.ButtonIcon,
         ButtonCheck : Buttons.ButtonCheck,
         ButtonMenu  : Buttons.ButtonMenu,
         ButtonLink  : Buttons.ButtonLink,
-        Icon        : Icon,
-        Image       : Image,
         Input       : Input,
         Label       : Label,
         Message     : Message,
@@ -267,7 +152,6 @@ define(['utils/utils',
         RadioButton : Options.RadioButton,
         Checkbox    : Options.Checkbox,
         Radio       : Options.Radio,
-        Searchbox   : Searchbox,
         Select      : Select,
         Hidden      : Hidden,
         Slider      : Slider,

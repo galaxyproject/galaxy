@@ -103,7 +103,7 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
 def check_tool_tag_set( elem, migrated_tool_configs_dict, missing_tool_configs_dict ):
     file_path = elem.get( 'file', None )
     if file_path:
-        path, name = os.path.split( file_path )
+        name = os.path.basename( file_path )
         for migrated_tool_config in migrated_tool_configs_dict.keys():
             if migrated_tool_config in [ file_path, name ]:
                 missing_tool_configs_dict[ name ] = migrated_tool_configs_dict[ migrated_tool_config ]
@@ -163,7 +163,7 @@ def get_repository_dependencies( app, tool_shed_url, repository_name, repository
         tool_shed_accessible = True
     except Exception, e:
         tool_shed_accessible = False
-        print "The URL\n%s\nraised the exception:\n%s\n" % ( url_join( tool_shed_url, pathspec=pathspec, params=params ), str( e ) )
+        log.warn( "The URL\n%s\nraised the exception:\n%s\n", url_join( tool_shed_url, pathspec=pathspec, params=params ), e )
     if tool_shed_accessible:
         if len( raw_text ) > 2:
             encoded_text = json.loads( raw_text )
@@ -180,7 +180,7 @@ def get_protocol_from_tool_shed_url( tool_shed_url ):
         # We receive a lot of calls here where the tool_shed_url is None.  The container_util uses
         # that value when creating a header row.  If the tool_shed_url is not None, we have a problem.
         if tool_shed_url is not None:
-            log.exception( "Handled exception getting the protocol from Tool Shed URL %s:\n%s" % ( str( tool_shed_url ), str( e ) ) )
+            log.exception( "Handled exception getting the protocol from Tool Shed URL %s:\n%s", str( tool_shed_url ), e )
         # Default to HTTP protocol.
         return 'http'
 
@@ -195,11 +195,11 @@ def get_tool_dependencies( app, tool_shed_url, repository_name, repository_owner
         tool_shed_accessible = True
     except Exception, e:
         tool_shed_accessible = False
-        print "The URL\n%s\nraised the exception:\n%s\n" % ( url_join( tool_shed_url, pathspec=pathspec, params=params ), str( e ) )
+        log.warn( "The URL\n%s\nraised the exception:\n%s\n", url_join( tool_shed_url, pathspec=pathspec, params=params ), e )
     if tool_shed_accessible:
         if text:
             tool_dependencies_dict = encoding_util.tool_shed_decode( text )
-            for dependency_key, requirements_dict in tool_dependencies_dict.items():
+            for requirements_dict in tool_dependencies_dict.values():
                 tool_dependency_name = requirements_dict[ 'name' ]
                 tool_dependency_version = requirements_dict[ 'version' ]
                 tool_dependency_type = requirements_dict[ 'type' ]
@@ -225,7 +225,7 @@ def get_tool_shed_repository_ids( as_string=False, **kwd ):
                 return ','.join( tsridslist )
             return tsridslist
     if as_string:
-        ''
+        return ''
     return []
 
 
@@ -235,7 +235,7 @@ def get_tool_shed_url_from_tool_shed_registry( app, tool_shed ):
     something like: http://toolshed.g2.bx.psu.edu/
     """
     cleaned_tool_shed = remove_protocol_from_tool_shed_url( tool_shed )
-    for shed_name, shed_url in app.tool_shed_registry.tool_sheds.items():
+    for shed_url in app.tool_shed_registry.tool_sheds.values():
         if shed_url.find( cleaned_tool_shed ) >= 0:
             if shed_url.endswith( '/' ):
                 shed_url = shed_url.rstrip( '/' )
@@ -266,7 +266,7 @@ def handle_tool_shed_url_protocol( app, shed_url ):
         # We receive a lot of calls here where the tool_shed_url is None.  The container_util uses
         # that value when creating a header row.  If the tool_shed_url is not None, we have a problem.
         if shed_url is not None:
-            log.exception( "Handled exception removing protocol from URL %s:\n%s" % ( str( shed_url ), str( e ) ) )
+            log.exception( "Handled exception removing protocol from URL %s:\n%s", str( shed_url ), e )
         return shed_url
 
 
@@ -307,7 +307,7 @@ def remove_port_from_tool_shed_url( tool_shed_url ):
         # We receive a lot of calls here where the tool_shed_url is None.  The container_util uses
         # that value when creating a header row.  If the tool_shed_url is not None, we have a problem.
         if tool_shed_url is not None:
-            log.exception( "Handled exception removing the port from Tool Shed URL %s:\n%s" % ( str( tool_shed_url ), str( e ) ) )
+            log.exception( "Handled exception removing the port from Tool Shed URL %s:\n%s", str( tool_shed_url ), e )
         return tool_shed_url
 
 
@@ -337,18 +337,7 @@ def remove_protocol_and_user_from_clone_url( repository_clone_url ):
 
 def remove_protocol_from_tool_shed_url( tool_shed_url ):
     """Return a partial Tool Shed URL, eliminating the protocol if it exists."""
-    try:
-        if tool_shed_url.find( '://' ) > 0:
-            new_tool_shed_url = tool_shed_url.split( '://' )[1]
-        else:
-            new_tool_shed_url = tool_shed_url
-        return new_tool_shed_url.rstrip( '/' )
-    except Exception, e:
-        # We receive a lot of calls here where the tool_shed_url is None.  The container_util uses
-        # that value when creating a header row.  If the tool_shed_url is not None, we have a problem.
-        if tool_shed_url is not None:
-            log.exception( "Handled exception removing the protocol from Tool Shed URL %s:\n%s" % ( str( tool_shed_url ), str( e ) ) )
-        return tool_shed_url
+    return util.remove_protocol_from_url( tool_shed_url )
 
 
 def tool_shed_get( app, base_url, pathspec=[], params={} ):

@@ -3,12 +3,17 @@ define([
     'utils/localization'
 ], function( BASE_MVC, _l ){
 
+'use strict';
+
+var logNamespace = 'list';
 //==============================================================================
 /** A view which, when first rendered, shows only summary data/attributes, but
  *      can be expanded to show further details (and optionally fetch those
  *      details from the server).
  */
 var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
+    _logNamespace : logNamespace,
+
 //TODO: Although the reasoning behind them is different, this shares a lot with HiddenUntilActivated above: combine them
     //PRECONDITION: model must have method hasDetails
     //PRECONDITION: subclasses must have templates.el and templates.details
@@ -472,7 +477,7 @@ var FoldoutListItemView = ListItemView.extend({
     _expandByDrilldown : function(){
         var view = this;
         // attachment and rendering done by listener
-        view.foldout.on( 'close', function(){
+        view.listenTo( view.foldout, 'close', function(){
             view.trigger( 'collapsed:drilldown', view, view.foldout );
         });
         view.trigger( 'expanded:drilldown', view, view.foldout );

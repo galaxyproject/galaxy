@@ -17,8 +17,6 @@ from galaxy.util.sanitize_html import sanitize_html
 
 import dataproviders
 
-from galaxy import eggs
-eggs.require( "Paste" )
 import paste
 
 XSS_VULNERABLE_MIME_TYPES = [
@@ -345,7 +343,7 @@ class Data( object ):
                 self._clean_and_set_mime_type( trans, mime )
                 return open( file_path )
             else:
-                return trans.show_error_message( "Could not find '%s' on the extra files path %s." % ( filename, file_path ) )
+                return paste.httpexceptions.HTTPNotFound( "Could not find '%s' on the extra files path %s." % ( filename, file_path ) )
         self._clean_and_set_mime_type( trans, data.get_mime() )
 
         trans.log_event( "Display dataset id: %s" % str( data.id ) )
@@ -744,13 +742,13 @@ class Text( Data ):
                 data_lines += 1
         return data_lines
 
-    def set_peek( self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None ):
+    def set_peek( self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None, line_wrap=True ):
         """
         Set the peek.  This method is used by various subclasses of Text.
         """
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
-            dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte, WIDTH=WIDTH, skipchars=skipchars )
+            dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte, WIDTH=WIDTH, skipchars=skipchars, line_wrap=line_wrap )
             if line_count is None:
                 # See if line_count is stored in the metadata
                 if dataset.metadata.data_lines:
@@ -952,7 +950,7 @@ def get_test_fname( fname ):
     return full_path
 
 
-def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipchars=None ):
+def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipchars=None, line_wrap=True ):
     """
     Returns the first LINE_COUNT lines wrapped to WIDTH
 
@@ -973,8 +971,9 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
     file_type = None
     data_checked = False
     temp = open( file_name, "U" )
+    last_line = ''
     while count <= LINE_COUNT:
-        line = temp.readline( WIDTH )
+        line = last_line + temp.readline( WIDTH - len( last_line ) )
         if line and not is_multi_byte and not data_checked:
             # See if we have a compressed or binary file
             if line[0:2] == util.gzip_magic:
@@ -988,6 +987,17 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
             data_checked = True
         if file_type in [ 'gzipped', 'binary' ]:
             break
+        if not line_wrap:
+            if '\n' in line:
+                i = line.index( '\n' )
+                last_line = line[i:]
+                line = line[:i]
+            else:
+                last_line = ''
+                while True:
+                    i = temp.read(1)
+                    if not i or i == '\n':
+                        break
         skip_line = False
         for skipchar in skipchars:
             if line.startswith( skipchar ):

@@ -4,8 +4,6 @@ import logging
 
 from sqlalchemy import and_, desc, false, or_, true
 from paste.httpexceptions import HTTPNotFound, HTTPBadRequest
-from galaxy import eggs
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
 
 from galaxy import managers
@@ -35,7 +33,7 @@ log = logging.getLogger( __name__ )
 
 class NameColumn( grids.TextColumn ):
     def get_value( self, trans, grid, history ):
-        return history.get_display_name()
+        return escape(history.get_display_name())
 
     def get_link( self, trans, grid, history ):
         # Provide link to list all datasets in history that have a given dbkey.
@@ -459,7 +457,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         """ Import a visualization into user's workspace. """
         # Set referer message.
         referer = trans.request.referer
-        if referer is not "":
+        if referer:
             referer_message = "<a href='%s'>return to the previous page</a>" % escape(referer)
         else:
             referer_message = "<a href='%s'>go to Galaxy's start page</a>" % web.url_for( '/' )

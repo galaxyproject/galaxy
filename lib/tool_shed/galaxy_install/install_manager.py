@@ -5,12 +5,7 @@ import sys
 import tempfile
 import traceback
 
-from galaxy import eggs
-eggs.require( 'paramiko' )
-eggs.require( 'ssh' )
-eggs.require( 'Fabric' )
 from fabric.api import lcd
-eggs.require('SQLAlchemy')
 from sqlalchemy import or_
 
 from galaxy import exceptions, util
@@ -131,10 +126,10 @@ class InstallToolDependencyManager( object ):
             # Since there was an installation error, update the tool dependency status to Error. The remove_installation_path option must
             # be left False here.
             error_message = '%s\n%s' % ( self.format_traceback(), str( e ) )
-            tool_dependency = tool_dependency_util.handle_tool_dependency_installation_error( self.app,
-                                                                                              tool_dependency,
-                                                                                              error_message,
-                                                                                              remove_installation_path=False )
+            tool_dependency = tool_dependency_util.set_tool_dependency_attributes(self.app,
+                                                                                  tool_dependency=tool_dependency,
+                                                                                  status=self.app.install_model.ToolDependency.installation_status.ERROR,
+                                                                                  error_message=error_message)
         tool_dependency = self.mark_tool_dependency_installed( tool_dependency )
         return tool_dependency
 
@@ -209,10 +204,10 @@ class InstallToolDependencyManager( object ):
                                 # Since there was an installation error, update the tool dependency status to Error. The
                                 # remove_installation_path option must be left False here.
                                 tool_dependency = \
-                                    tool_dependency_util.handle_tool_dependency_installation_error( self.app,
-                                                                                                    tool_dependency,
-                                                                                                    error_message,
-                                                                                                    remove_installation_path=False )
+                                    tool_dependency_util.set_tool_dependency_attributes(self.app,
+                                                                                        tool_dependency=tool_dependency,
+                                                                                        status=self.app.install_model.ToolDependency.installation_status.ERROR,
+                                                                                        error_message=error_message)
                         if tool_dependency and tool_dependency.status in [ self.install_model.ToolDependency.installation_status.INSTALLED,
                                                                            self.install_model.ToolDependency.installation_status.ERROR ]:
                             installed_packages.append( tool_dependency )
@@ -427,9 +422,7 @@ class InstallToolDependencyManager( object ):
             status = self.install_model.ToolDependency.installation_status.INSTALLED
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes( self.app,
                                                                                    tool_dependency=tool_dependency,
-                                                                                   status=status,
-                                                                                   error_message=None,
-                                                                                   remove_from_disk=False )
+                                                                                   status=status )
         return tool_dependency
 
 
@@ -841,6 +834,7 @@ class InstallRepositoryManager( object ):
 
     def install_tool_shed_repository( self, tool_shed_repository, repo_info_dict, tool_panel_section_key, shed_tool_conf, tool_path,
                                       install_tool_dependencies, reinstalling=False ):
+        self.app.install_model.context.flush()
         if tool_panel_section_key:
             _, tool_section = self.app.toolbox.get_section( tool_panel_section_key )
             if tool_section is None:

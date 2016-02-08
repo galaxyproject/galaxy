@@ -15,7 +15,7 @@ from galaxy.util import relpath
 from galaxy.util import sanitize_for_filename
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
-from galaxy.model.item_attrs import Dictifiable
+from galaxy.util.dictifiable import Dictifiable
 
 
 class Group( object, Dictifiable ):
@@ -43,7 +43,7 @@ class Group( object, Dictifiable ):
         """
         return value
 
-    def get_initial_value( self, trans, context, history=None ):
+    def get_initial_value( self, trans, context ):
         """
         Return the initial state/value for this group
         """
@@ -120,12 +120,12 @@ class Repeat( Group ):
                 else:
                     input.visit_inputs( new_prefix, d[input.name], callback )
 
-    def get_initial_value( self, trans, context, history=None ):
+    def get_initial_value( self, trans, context ):
         rval = []
         for i in range( self.default ):
             rval_dict = { '__index__': i}
             for input in self.inputs.itervalues():
-                rval_dict[ input.name ] = input.get_initial_value( trans, context, history=history )
+                rval_dict[ input.name ] = input.get_initial_value( trans, context )
             rval.append( rval_dict )
         return rval
 
@@ -182,11 +182,11 @@ class Section( Group ):
             else:
                 input.visit_inputs( prefix, value[input.name], callback )
 
-    def get_initial_value( self, trans, context, history=None ):
+    def get_initial_value( self, trans, context ):
         rval = {}
         child_context = ExpressionContext( rval, context )
         for child_input in self.inputs.itervalues():
-            rval[ child_input.name ] = child_input.get_initial_value( trans, child_context, history=history )
+            rval[ child_input.name ] = child_input.get_initial_value( trans, child_context )
         return rval
 
     def to_dict( self, trans, view='collection', value_mapper=None ):
@@ -296,14 +296,14 @@ class UploadDataset( Group ):
                 else:
                     input.visit_inputs( new_prefix, d[input.name], callback )
 
-    def get_initial_value( self, trans, context, history=None ):
+    def get_initial_value( self, trans, context ):
         d_type = self.get_datatype( trans, context )
         rval = []
         for i, ( composite_name, composite_file ) in enumerate( d_type.writable_files.iteritems() ):
             rval_dict = {}
             rval_dict['__index__'] = i  # create __index__
             for input in self.inputs.itervalues():
-                rval_dict[ input.name ] = input.get_initial_value( trans, context, history=history )  # input.value_to_basic( d[input.name], app )
+                rval_dict[ input.name ] = input.get_initial_value( trans, context )
             rval.append( rval_dict )
         return rval
 
@@ -323,11 +323,9 @@ class UploadDataset( Group ):
                 if not dataset_info:
                     dataset_info = 'uploaded file'
                 return Bunch( type='file', path=data_file['local_filename'], name=dataset_name )
-                # return 'file', data_file['local_filename'], get_file_name( data_file.filename ), dataset_name, dataset_info
             except:
                 # The uploaded file should've been persisted by the upload tool action
                 return Bunch( type=None, path=None, name=None )
-                # return None, None, None, None, None
 
         def get_url_paste_urls_or_filename( group_incoming, override_name=None, override_info=None ):
             url_paste_file = group_incoming.get( 'url_paste', None )
@@ -347,7 +345,6 @@ class UploadDataset( Group ):
                             if not dataset_info:
                                 dataset_info = 'uploaded url'
                             yield Bunch( type='url', path=line, name=dataset_name )
-                            # yield ( 'url', line, precreated_name, dataset_name, dataset_info )
                 else:
                     dataset_name = dataset_info = precreated_name = 'Pasted Entry'  # we need to differentiate between various url pastes here
                     if override_name:
@@ -355,7 +352,6 @@ class UploadDataset( Group ):
                     if override_info:
                         dataset_info = override_info
                     yield Bunch( type='file', path=url_paste_file, name=precreated_name )
-                    # yield ( 'file', url_paste_file, precreated_name, dataset_name, dataset_info )
 
         def get_one_filename( context ):
             data_file = context['file_data']
@@ -561,7 +557,7 @@ class Conditional( Group ):
         if isinstance( value, bool ):
             str_value = self.test_param.to_param_dict_string( value )
         else:
-            str_value = self.test_param.filter_value( value, trans )
+            str_value = value
         # Find the matching case
         for index, case in enumerate( self.cases ):
             if str_value == case.value:
@@ -611,12 +607,12 @@ class Conditional( Group ):
             else:
                 input.visit_inputs( prefix, value[input.name], callback )
 
-    def get_initial_value( self, trans, context, history=None ):
+    def get_initial_value( self, trans, context ):
         # State for a conditional is a plain dictionary.
         rval = {}
         # Get the default value for the 'test element' and use it
         # to determine the current case
-        test_value = self.test_param.get_initial_value( trans, context, history=history )
+        test_value = self.test_param.get_initial_value( trans, context )
         current_case = self.get_current_case( test_value, trans )
         # Store the current case in a special value
         rval['__current_case__'] = current_case
@@ -625,7 +621,7 @@ class Conditional( Group ):
         # Fill in state for selected case
         child_context = ExpressionContext( rval, context )
         for child_input in self.cases[current_case].inputs.itervalues():
-            rval[ child_input.name ] = child_input.get_initial_value( trans, child_context, history=history )
+            rval[ child_input.name ] = child_input.get_initial_value( trans, child_context )
         return rval
 
     def to_dict( self, trans, view='collection', value_mapper=None ):

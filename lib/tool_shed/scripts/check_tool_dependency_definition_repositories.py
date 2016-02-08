@@ -11,10 +11,7 @@ from time import strftime
 sys.path[1:1] = [ os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ),
                   os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir, 'test' ) ]
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
 from mercurial import __version__
-eggs.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_, false, not_, select, true
 
 import galaxy.webapps.tool_shed.config as tool_shed_config

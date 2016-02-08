@@ -1,20 +1,22 @@
+import logging
 import os
 import os.path
 import galaxy.tools.parameters.basic
 import galaxy.tools.parameters.grouping
 from galaxy.util import string_as_bool
+
 try:
     from nose.tools import nottest
 except ImportError:
-    nottest = lambda x: x
-import logging
+    def nottest(x):
+        return x
 
 log = logging.getLogger( __name__ )
 
 DEFAULT_FTYPE = 'auto'
 DEFAULT_DBKEY = 'hg17'
 DEFAULT_INTERACTOR = "api"  # Default mechanism test code uses for interacting with Galaxy instance.
-DEFAULT_MAX_SECS = 120
+DEFAULT_MAX_SECS = None
 
 
 @nottest
@@ -42,7 +44,9 @@ class ToolTestBuilder( object ):
 
     def __init__( self, tool, test_dict, i, default_interactor ):
         name = test_dict.get( 'name', 'Test-%d' % (i + 1) )
-        maxseconds = int( test_dict.get( 'maxseconds', DEFAULT_MAX_SECS ) )
+        maxseconds = test_dict.get( 'maxseconds', DEFAULT_MAX_SECS )
+        if maxseconds is not None:
+            maxseconds = int( maxseconds )
 
         self.tool = tool
         self.name = name
@@ -72,11 +76,15 @@ class ToolTestBuilder( object ):
                 query_value = test_param.checked
             else:
                 query_value = _process_bool_param_value( test_param, declared_value )
-            matches_declared_value = lambda case_value: _process_bool_param_value( test_param, case_value ) == query_value
+
+            def matches_declared_value(case_value):
+                return _process_bool_param_value( test_param, case_value ) == query_value
         elif isinstance(test_param, galaxy.tools.parameters.basic.SelectToolParameter):
             if declared_value is not None:
                 # Test case supplied explicit value to check against.
-                matches_declared_value = lambda case_value: case_value == declared_value
+
+                def matches_declared_value(case_value):
+                    return case_value == declared_value
             elif test_param.static_options:
                 # No explicit value in test case, not much to do if options are dynamic but
                 # if static options are available can find the one specified as default or
@@ -88,7 +96,9 @@ class ToolTestBuilder( object ):
                     first_option = test_param.static_options[0]
                     first_option_value = first_option[1]
                     default_option = first_option_value
-                matches_declared_value = lambda case_value: case_value == default_option
+
+                def matches_declared_value(case_value):
+                    return case_value == default_option
             else:
                 # No explicit value for this param and cannot determine a
                 # default - give up. Previously this would just result in a key

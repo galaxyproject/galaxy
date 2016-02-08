@@ -85,7 +85,8 @@ opened using [this form](https://github.com/galaxyproject/galaxy/issues/new).
   and run any that seem relevant. Developers reviewing your pull
   request will be happy to help guide you to running the most relevant
   tests as part of the pull request review process and may request the
-  output of these tests.
+  output of these tests. You can run the continuous integration tests locally
+  using `tox`, example: `tox -e py27-lint,py27-unit`.
 
 * Commit and push your changes to your
   [fork](https://help.github.com/articles/pushing-to-a-remote/).

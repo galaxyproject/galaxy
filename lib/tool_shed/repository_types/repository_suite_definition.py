@@ -1,7 +1,5 @@
 import logging
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
 from mercurial import hg, ui
 
 import tool_shed.repository_types.util as rt_util

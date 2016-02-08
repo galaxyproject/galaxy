@@ -1,6 +1,7 @@
 """
 Job control via the DRMAA API.
 """
+from __future__ import absolute_import
 
 import json
 import logging
@@ -9,20 +10,17 @@ import string
 import subprocess
 import time
 
-from galaxy import eggs
 from galaxy import model
 from galaxy.jobs import JobDestination
 from galaxy.jobs.handler import DEFAULT_JOB_PUT_FAILURE_MESSAGE
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 from galaxy.util import asbool
 
-eggs.require( "drmaa" )
+drmaa = None
 
 log = logging.getLogger( __name__ )
 
 __all__ = [ 'DRMAAJobRunner' ]
-
-drmaa = None
 
 DRMAA_jobTemplate_attributes = [ 'args', 'remoteCommand', 'outputPath', 'errorPath', 'nativeSpecification',
                                  'workingDirectory', 'jobName', 'email', 'project' ]
@@ -36,7 +34,6 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
 
     def __init__( self, app, nworkers, **kwargs ):
         """Start the job runner"""
-
         global drmaa
 
         runner_param_specs = dict(
@@ -57,9 +54,15 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             log.info( 'Overriding DRMAA_LIBRARY_PATH due to runner plugin parameter: %s', self.runner_params.drmaa_library_path )
             os.environ['DRMAA_LIBRARY_PATH'] = self.runner_params.drmaa_library_path
 
-        # We foolishly named this file the same as the name exported by the drmaa
-        # library... 'import drmaa' imports itself.
-        drmaa = __import__( "drmaa" )
+        # Import is delayed until runner initialization to allow for the
+        # drmaa_library_path plugin param to override $DRMAA_LIBRARY_PATH
+        try:
+            drmaa = __import__( "drmaa" )
+        except (ImportError, RuntimeError) as exc:
+            raise exc.__class__('The Python drmaa package is required to use this '
+                                'feature, please install it or correct the '
+                                'following error:\n%s: %s' %
+                                (exc.__class__.__name__, str(exc)))
 
         # Subclasses may need access to state constants
         self.drmaa_job_states = drmaa.JobState
@@ -329,7 +332,6 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         ajs.command_line = job.get_command_line()
         ajs.job_wrapper = job_wrapper
         ajs.job_destination = job_wrapper.job_destination
-        self.__old_state_paths( ajs )
         if job.state == model.Job.states.RUNNING:
             log.debug( "(%s/%s) is still in running state, adding to the DRM queue" % ( job.get_id(), job.get_job_runner_external_id() ) )
             ajs.old_state = drmaa.JobState.RUNNING
@@ -340,18 +342,6 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             ajs.old_state = drmaa.JobState.QUEUED_ACTIVE
             ajs.running = False
             self.monitor_queue.put( ajs )
-
-    def __old_state_paths( self, ajs ):
-        """For recovery of jobs started prior to standardizing the naming of
-        files in the AsychronousJobState object
-        """
-        if ajs.job_wrapper is not None:
-            job_file = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, ajs.job_wrapper.job_id)
-            if not os.path.exists( ajs.job_file ) and os.path.exists( job_file ):
-                ajs.output_file = "%s.drmout" % os.path.join(os.getcwd(), ajs.job_wrapper.working_directory, ajs.job_wrapper.get_id_tag())
-                ajs.error_file = "%s.drmerr" % os.path.join(os.getcwd(), ajs.job_wrapper.working_directory, ajs.job_wrapper.get_id_tag())
-                ajs.exit_code_file = "%s.drmec" % os.path.join(os.getcwd(), ajs.job_wrapper.working_directory, ajs.job_wrapper.get_id_tag())
-                ajs.job_file = job_file
 
     def store_jobtemplate(self, job_wrapper, jt):
         """ Stores the content of a DRMAA JobTemplate object in a file as a JSON string.

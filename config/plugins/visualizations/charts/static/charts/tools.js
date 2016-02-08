@@ -7,7 +7,7 @@ function panelHelper (app, options) {
     var self = this;
     
     // require parameters
-    var process_id          = options.process_id;
+    var process             = options.process;
     var chart               = options.chart;
     var request_dictionary  = options.request_dictionary;
     var render              = options.render;
@@ -41,7 +41,7 @@ function panelHelper (app, options) {
             }
             
             // unregister process
-            app.deferred.done(process_id);
+            process.resolve();
         } catch (err) {
             // log
             console.debug('FAILED: Tools::panelHelper() - ' + err);
@@ -50,7 +50,7 @@ function panelHelper (app, options) {
             chart.state('failed', err);
             
             // unregister process
-            app.deferred.done(process_id);
+            process.reject();
         }
     };
     

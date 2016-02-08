@@ -2,8 +2,6 @@ import inspect
 from traceback import format_exc
 from functools import wraps
 
-from galaxy import eggs
-eggs.require( "Paste" )
 import paste.httpexceptions
 
 from galaxy.web.framework import url_for

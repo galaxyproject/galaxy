@@ -20,6 +20,7 @@ var View = Backbone.View.extend({
     initialize: function(options) {
         // link this
         var self = this;
+        this.model = new Backbone.Model();
 
         // configure options
         this.options = Utils.merge(options, this.optionsDefault);
@@ -29,8 +30,21 @@ var View = Backbone.View.extend({
 
         // link elements
         this.$select = this.$el.find('.select');
-        this.$icon = this.$el.find('.icon');
-        this.$button = this.$el.find('.button');
+        this.$icon_dropdown = this.$el.find('.icon-dropdown');
+        this.$icon_dropdown.on( 'click', function() { self.$select.select2 && self.$select.select2( 'open' ) });
+
+        // allow regular multi-select field to be resized
+        var minHeight = null;
+        this.$('.icon-resize').on('mousedown', function(event) {
+            var currentY = event.pageY;
+            var currentHeight = self.$select.height();
+            minHeight = minHeight || currentHeight;
+            $('#dd-helper').show().on('mousemove', function(event) {
+                self.$select.height(Math.max(currentHeight + (event.pageY - currentY), minHeight));
+            }).on('mouseup mouseleave', function() {
+                $('#dd-helper').hide().off();
+            });
+        });
 
         // multiple select fields have an additional button and other custom properties
         if (this.options.multiple) {
@@ -47,11 +61,11 @@ var View = Backbone.View.extend({
                     }
                 });
                 this.$el.prepend(this.all_button.$el);
+            } else {
+                this.$el.addClass('ui-select-multiple');
             }
-            // customize style and content
-            this.$el.addClass('ui-select-multiple');
             this.$select.prop('multiple', true);
-            this.$button.remove();
+            this.$icon_dropdown.remove();
         }
 
         // update initial options
@@ -142,15 +156,15 @@ var View = Backbone.View.extend({
     /** Show a spinner indicating that the select options are currently loaded
     */
     wait: function() {
-        this.$icon.removeClass();
-        this.$icon.addClass('fa fa-spinner fa-spin');
+        this.$icon_dropdown.removeClass();
+        this.$icon_dropdown.addClass('icon-dropdown fa fa-spinner fa-spin');
     },
 
     /** Hide spinner indicating that the request has been completed
     */
     unwait: function() {
-        this.$icon.removeClass();
-        this.$icon.addClass('fa fa-caret-down');
+        this.$icon_dropdown.removeClass();
+        this.$icon_dropdown.addClass('icon-dropdown fa fa-caret-down');
     },
 
     /** Returns true if the field is disabled
@@ -173,6 +187,13 @@ var View = Backbone.View.extend({
 
     /** Update all available options at once
     */
+    add: function( options, sorter ) {
+        _.each( this.model.get( 'options' ), function( v ) {
+            !_.findWhere( options, v ) && options.push( v );
+        });
+        sorter && options.sort( sorter );
+        this.update( options );
+    },
     update: function(options) {
         // backup current value
         var current = this._getValue();
@@ -186,6 +207,7 @@ var View = Backbone.View.extend({
         }
 
         // add new options
+        this.model.set( 'options', options );
         for (var key in options) {
             this.$select.append(this._templateOption(options[key]));
         }
@@ -205,7 +227,7 @@ var View = Backbone.View.extend({
         // update to searchable field (in this case select2)
         if (this.options.searchable) {
             this.$select.select2('destroy');
-            this.$select.select2();
+            this.$select.select2({ closeOnSelect: !this.options.multiple });
             this.$( '.select2-container .select2-search input' ).off( 'blur' );
         }
 
@@ -259,7 +281,7 @@ var View = Backbone.View.extend({
     /** Template for select options
     */
     _templateOption: function(options) {
-        return '<option value="' + options.value + '">' + options.label + '</option>';
+        return '<option value="' + options.value + '">' + _.escape(options.label) + '</option>';
     },
 
     /** Template for select view
@@ -267,8 +289,9 @@ var View = Backbone.View.extend({
     _template: function(options) {
         return  '<div id="' + options.id + '" class="' + options.cls + '">' +
                     '<select id="' + options.id + '_select" class="select"/>' +
-                    '<div class="button">' +
-                        '<i class="icon"/>' +
+                    '<div class="icon-dropdown"/>' +
+                    '<div class="icon-resize">' +
+                         '<i class="fa fa-angle-double-right fa-rotate-45"/>' +
                     '</div>' +
                 '</div>';
     }

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<tool name="GenomeSpace Importer" id="genomespace_importer" tool_type="data_source" force_history_refresh="True" hidden="True" display_interface="False" require_login="True" version="0.0.1">
+<tool name="GenomeSpace Importer" id="genomespace_importer" tool_type="data_source" force_history_refresh="True" hidden="True" display_interface="False" require_login="True" version="0.0.2">
     <description> - receive data from GenomeSpace</description>
     <command interpreter="python">genomespace_importer.py
         --genomespace_site "prod"
@@ -22,5 +22,5 @@
     <help>
        some help text here...
     </help>
-    <options refresh="True"/>
+    <options sanitize="False" refresh="True"/>
 </tool>

@@ -17,7 +17,7 @@
             progress        : function() {},
             url             : null,
             maxfilesize     : 2048,
-            error_filesize  : 'File exceeds 2GB. Please use an FTP client.',
+            error_filesize  : 'File exceeds 2GB. Please use a FTP client.',
             error_default   : 'Please make sure the file is available.',
             error_server    : 'Upload request failed.',
             error_login     : 'Uploads require you to log in.'
@@ -97,8 +97,7 @@
         }, false);
 
         // send request
-        console.debug('uploadbox::uploadpost() - Posting following data:');
-        console.debug(cnf);
+        Galaxy.emit.debug('uploadbox::uploadpost()', 'Posting following data.', cnf);
         xhr.send(form);
     }
 
@@ -117,10 +116,10 @@
 
         // append hidden upload field
         var $input = $('<input type="file" style="display: none" ' + (opts.multiple && 'multiple' || '') + '/>');
-        el.append($input).change(function (e) {
+        el.append($input.change(function (e) {
             opts.onchange(e.target.files);
             $(this).val('');
-        });
+        }));
 
         // drag/drop events
         el.on('drop', function (e) {
@@ -186,12 +185,21 @@
         function add(files) {
             if (files && files.length && !queue_running) {
                 var current_index = queue_index;
-                for (var i = 0; i < files.length; i++) {
-                    var index = String(queue_index++);
-                    queue[index] = files[i];
-                    opts.announce(index, queue[index]);
-                    queue_length++;
-                }
+                _.each(files, function(file, key) {
+                    if (file.mode !== 'new' && _.filter(queue, function(f) {
+                        return f.name === file.name && f.size === file.size;
+                    }).length) {
+                        file.duplicate = true;
+                    }
+                });
+                _.each(files, function(file) {
+                    if (!file.duplicate) {
+                        var index = String(queue_index++);
+                        queue[index] = file;
+                        opts.announce(index, queue[index]);
+                        queue_length++;
+                    }
+                });
                 return current_index;
             }
         }

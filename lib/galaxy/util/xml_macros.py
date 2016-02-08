@@ -16,7 +16,7 @@ def load(path):
     _import_macros(root, path)
 
     # Collect tokens
-    tokens = _macros_of_type(root, 'token', lambda el: el.text)
+    tokens = _macros_of_type(root, 'token', lambda el: el.text or '')
 
     # Expand xml macros
     macro_dict = _macros_of_type(root, 'xml', lambda el: XmlMacroDef(el))
@@ -32,7 +32,7 @@ def template_macro_params(root):
     """
     param_dict = {}
     macro_dict = _macros_of_type(root, 'template', lambda el: el.text)
-    for key, value in macro_dict.iteritems():
+    for key, value in macro_dict.items():
         param_dict[key] = value
     return param_dict
 
@@ -88,7 +88,7 @@ def _expand_tokens_for_el(element, tokens):
         new_value = _expand_tokens_str(element.text, tokens)
         if not (new_value is value):
             element.text = new_value
-    for key, value in element.attrib.iteritems():
+    for key, value in element.attrib.items():
         new_value = _expand_tokens_str(value, tokens)
         if not (new_value is value):
             element.attrib[key] = new_value
@@ -96,7 +96,7 @@ def _expand_tokens_for_el(element, tokens):
 
 
 def _expand_tokens_str(str, tokens):
-    for key, value in tokens.iteritems():
+    for key, value in tokens.items():
         if str.find(key) > -1:
             str = str.replace(key, value)
     return str

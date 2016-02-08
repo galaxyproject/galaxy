@@ -110,9 +110,10 @@ class JobsApiTestCase( api.ApiTestCase, TestsDatasets ):
         show_jobs_response = self._get( "jobs/%s" % job_id, admin=False )
         self._assert_not_has_keys( show_jobs_response.json(), "command_line", "external_id" )
 
-        with self._different_user():
-            show_jobs_response = self._get( "jobs/%s" % job_id, admin=False )
-            self._assert_status_code_is( show_jobs_response, 404 )
+        # TODO: Re-activate test case when API accepts privacy settings
+        # with self._different_user():
+        #    show_jobs_response = self._get( "jobs/%s" % job_id, admin=False )
+        #    self._assert_status_code_is( show_jobs_response, 200 )
 
         show_jobs_response = self._get( "jobs/%s" % job_id, admin=True )
         self._assert_has_keys( show_jobs_response.json(), "command_line", "external_id" )
@@ -199,8 +200,8 @@ class JobsApiTestCase( api.ApiTestCase, TestsDatasets ):
         return history_id, dataset_id
 
     def __history_with_ok_dataset( self ):
-        history_id, dataset_id = self.__history_with_new_dataset()
-        self._wait_for_history( history_id, assert_ok=True )
+        history_id = self._new_history()
+        dataset_id = self._new_dataset( history_id, wait=True )[ "id" ]
         return history_id, dataset_id
 
     def __jobs_index( self, **kwds ):

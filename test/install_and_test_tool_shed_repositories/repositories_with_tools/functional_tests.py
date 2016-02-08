@@ -22,13 +22,6 @@ sys.path[1:1] = [ os.path.join( galaxy_root, "scripts" ),
                   os.path.join( galaxy_root, 'test' ),
                   os.path.join( galaxy_root, 'scripts', 'api' ) ]
 
-from galaxy import eggs
-eggs.require( "nose" )
-eggs.require( "Paste" )
-eggs.require( 'mercurial' )
-# This should not be required, but it is under certain conditions thanks to this bug:
-# http://code.google.com/p/python-nose/issues/detail?id=284
-eggs.require( "pysqlite" )
 import nose
 from paste import httpserver
 

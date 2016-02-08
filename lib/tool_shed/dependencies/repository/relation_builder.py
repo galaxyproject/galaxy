@@ -373,7 +373,7 @@ class RelationBuilder( object ):
         if current_repository_key_rd_dicts and current_repository_key:
             # Remove all repository dependencies that point to a revision within its own repository.
             current_repository_key_rd_dicts = \
-                self.remove_ropository_dependency_reference_to_self( current_repository_key_rd_dicts )
+                self.remove_repository_dependency_reference_to_self( current_repository_key_rd_dicts )
         current_repository_key_rd_dicts = \
             self.get_updated_changeset_revisions_for_repository_dependencies( current_repository_key_rd_dicts )
         for key_rd_dict in current_repository_key_rd_dicts:
@@ -445,7 +445,7 @@ class RelationBuilder( object ):
             clean_key_rd_dicts.append( krd_dict )
         return clean_key_rd_dicts
 
-    def remove_ropository_dependency_reference_to_self( self, key_rd_dicts ):
+    def remove_repository_dependency_reference_to_self( self, key_rd_dicts ):
         """Remove all repository dependencies that point to a revision within its own repository."""
         clean_key_rd_dicts = []
         key = key_rd_dicts[ 0 ].keys()[ 0 ]

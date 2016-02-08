@@ -10,11 +10,6 @@ try:
     from urllib2 import Request
 except ImportError:
     from urllib.request import Request
-try:
-    from galaxy import eggs
-    eggs.require("poster")
-except ImportError:
-    pass
 
 try:
     import poster

@@ -2,15 +2,17 @@
 """
 import os
 import re
+import operator
 import glob
 import json
 
 from galaxy import jobs
 from galaxy import util
 from galaxy.util import odict
+from galaxy.tools.parser.output_collection_def import DEFAULT_DATASET_COLLECTOR_DESCRIPTION
 
 DATASET_ID_TOKEN = "DATASET_ID"
-DEFAULT_EXTRA_FILENAME_PATTERN = r"primary_DATASET_ID_(?P<designation>[^_]+)_(?P<visible>[^_]+)_(?P<ext>[^_]+)(_(?P<dbkey>[^_]+))?"
+
 
 import logging
 log = logging.getLogger( __name__ )
@@ -92,7 +94,7 @@ class JobContext( object ):
         #    <sort by="reverse_lexical" />
         #    <sort regex="example.(\d+).fastq" by="1:numerical" />
         #    <sort regex="part_(\d+)_sample_([^_]+).fastq" by="2:lexical,1:numerical" />
-        dataset_collectors = output_collection_def.dataset_collectors
+        dataset_collectors = map(dataset_collector, output_collection_def.dataset_collector_descriptions)
         filenames = self.find_files( collection, dataset_collectors )
 
         for filename, extra_file_collector in filenames.iteritems():
@@ -194,7 +196,7 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
     new_outdata_name = None
     primary_datasets = {}
     for output_index, ( name, outdata ) in enumerate( output.items() ):
-        dataset_collectors = tool.outputs[ name ].dataset_collectors if name in tool.outputs else [ DEFAULT_DATASET_COLLECTOR ]
+        dataset_collectors = map(dataset_collector, tool.outputs[ name ].dataset_collector_descriptions) if name in tool.outputs else [ DEFAULT_DATASET_COLLECTOR ]
         filenames = odict.odict()
         if 'new_file_path' in app.config.collect_outputs_from:
             if DEFAULT_DATASET_COLLECTOR in dataset_collectors:
@@ -219,7 +221,7 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
                 primary_output_assigned = True
                 continue
             if name not in primary_datasets:
-                primary_datasets[ name ] = {}
+                primary_datasets[ name ] = odict.odict()
             visible = fields_match.visible
             ext = fields_match.ext
             if ext == "input":
@@ -309,6 +311,7 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
 
 def walk_over_extra_files( extra_file_collectors, job_working_directory, matchable ):
     for extra_file_collector in extra_file_collectors:
+        matches = []
         directory = job_working_directory
         if extra_file_collector.directory:
             directory = os.path.join( directory, extra_file_collector.directory )
@@ -316,50 +319,41 @@ def walk_over_extra_files( extra_file_collectors, job_working_directory, matchab
                 raise Exception( "Problem with tool configuration, attempting to pull in datasets from outside working directory." )
         if not os.path.isdir( directory ):
             continue
-        for filename in sorted( os.listdir( directory ) ):
+        for filename in os.listdir( directory ):
             path = os.path.join( directory, filename )
             if not os.path.isfile( path ):
                 continue
-            if extra_file_collector.match( matchable, filename ):
-                yield path, extra_file_collector
+            match = extra_file_collector.match( matchable, filename, path=path )
+            if match:
+                matches.append(match)
 
-# XML can describe custom patterns, but these literals describe named
-# patterns that will be replaced.
-NAMED_PATTERNS = {
-    "__default__": DEFAULT_EXTRA_FILENAME_PATTERN,
-    "__name__": r"(?P<name>.*)",
-    "__designation__": r"(?P<designation>.*)",
-    "__name_and_ext__": r"(?P<name>.*)\.(?P<ext>[^\.]+)?",
-    "__designation_and_ext__": r"(?P<designation>.*)\.(?P<ext>[^\._]+)?",
-}
+        for match in extra_file_collector.sort(matches):
+            yield match.path, extra_file_collector
 
 
-def dataset_collectors_from_elem( elem ):
-    primary_dataset_elems = elem.findall( "discover_datasets" )
-    if not primary_dataset_elems:
-        return [ DEFAULT_DATASET_COLLECTOR ]
+def dataset_collector( dataset_collection_description ):
+    if dataset_collection_description is DEFAULT_DATASET_COLLECTOR_DESCRIPTION:
+        # Use 'is' and 'in' operators, so lets ensure this is
+        # treated like a singleton.
+        return DEFAULT_DATASET_COLLECTOR
     else:
-        return map( lambda elem: DatasetCollector( **elem.attrib ), primary_dataset_elems )
-
-
-def dataset_collectors_from_list( discover_datasets_dicts ):
-    return map( lambda kwds: DatasetCollector( **kwds ), discover_datasets_dicts )
+        return DatasetCollector( dataset_collection_description )
 
 
 class DatasetCollector( object ):
 
-    def __init__( self, **kwargs ):
-        pattern = kwargs.get( "pattern", "__default__" )
-        if pattern in NAMED_PATTERNS:
-            pattern = NAMED_PATTERNS.get( pattern )
-        self.pattern = pattern
-        self.default_dbkey = kwargs.get( "dbkey", None )
-        self.default_ext = kwargs.get( "ext", None )
-        if self.default_ext is None and "format" in kwargs:
-            self.default_ext = kwargs.get( "format" )
-        self.default_visible = util.asbool( kwargs.get( "visible", None ) )
-        self.directory = kwargs.get( "directory", None )
-        self.assign_primary_output = util.asbool( kwargs.get( 'assign_primary_output', False ) )
+    def __init__( self, dataset_collection_description ):
+        # dataset_collection_description is an abstract description
+        # built from the tool parsing module - see galaxy.tools.parser.output_colleciton_def
+        self.sort_key = dataset_collection_description.sort_key
+        self.sort_reverse = dataset_collection_description.sort_reverse
+        self.sort_comp = dataset_collection_description.sort_comp
+        self.pattern = dataset_collection_description.pattern
+        self.default_dbkey = dataset_collection_description.default_dbkey
+        self.default_ext = dataset_collection_description.default_ext
+        self.default_visible = dataset_collection_description.default_visible
+        self.directory = dataset_collection_description.directory
+        self.assign_primary_output = dataset_collection_description.assign_primary_output
 
     def pattern_for_dataset( self, dataset_instance=None ):
         token_replacement = r'\d+'
@@ -367,20 +361,38 @@ class DatasetCollector( object ):
             token_replacement = str( dataset_instance.id )
         return self.pattern.replace( DATASET_ID_TOKEN, token_replacement )
 
-    def match( self, dataset_instance, filename ):
+    def match( self, dataset_instance, filename, path=None ):
         pattern = self.pattern_for_dataset( dataset_instance )
         re_match = re.match( pattern, filename )
         match_object = None
         if re_match:
-            match_object = CollectedDatasetMatch( re_match, self )
+            match_object = CollectedDatasetMatch( re_match, self, filename, path=path )
         return match_object
+
+    def sort( self, matches ):
+        reverse = self.sort_reverse
+        sort_key = self.sort_key
+        sort_comp = self.sort_comp
+        assert sort_key in ["filename", "dbkey", "name", "designation"]
+        assert sort_comp in ["lexical", "numeric"]
+        key = operator.attrgetter(sort_key)
+        if sort_comp == "numeric":
+            key = _compose(int, key)
+
+        return sorted(matches, key=key, reverse=reverse)
+
+
+def _compose(f, g):
+    return lambda x: f(g(x))
 
 
 class CollectedDatasetMatch( object ):
 
-    def __init__( self, re_match, collector ):
+    def __init__( self, re_match, collector, filename, path=None ):
         self.re_match = re_match
         self.collector = collector
+        self.filename = filename
+        self.path = path
 
     @property
     def designation( self ):
@@ -448,4 +460,4 @@ class CollectedDatasetMatch( object ):
             return self.collector.default_visible
 
 
-DEFAULT_DATASET_COLLECTOR = DatasetCollector()
+DEFAULT_DATASET_COLLECTOR = DatasetCollector(DEFAULT_DATASET_COLLECTOR_DESCRIPTION)

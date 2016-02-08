@@ -16,19 +16,7 @@ sys.path = new_path
 from base.test_logging import logging_config_file
 from base.tool_shed_util import parse_tool_panel_config
 
-from galaxy import eggs
 from galaxy.util.properties import load_app_properties
-
-eggs.require( "nose" )
-eggs.require( "NoseHTML" )
-eggs.require( "NoseTestDiff" )
-eggs.require( "Paste" )
-eggs.require( "PasteDeploy" )
-eggs.require( "Cheetah" )
-
-# this should not be required, but it is under certain conditions, thanks to this bug:
-# http://code.google.com/p/python-nose/issues/detail?id=284
-eggs.require( "pysqlite" )
 
 import logging
 import os.path
@@ -338,6 +326,7 @@ def main():
                        user_library_import_dir=user_library_import_dir,
                        master_api_key=master_api_key,
                        use_tasked_jobs=True,
+                       check_migrate_tools=False,
                        cleanup_job='onsuccess',
                        enable_beta_tool_formats=True,
                        auto_configure_logging=logging_config_file is None,
