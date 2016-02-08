@@ -124,7 +124,7 @@ def add_file( dataset, registry, json_file, output_path ):
     # Is dataset content multi-byte?
     elif dataset.is_multi_byte:
         data_type = 'multi-byte char'
-        ext = sniff.guess_ext( dataset.path, is_multi_byte=True )
+        ext = sniff.guess_ext( dataset.path, registry.sniff_order, is_multi_byte=True )
     # Is dataset content supported sniffable binary?
     else:
         # FIXME: This ignores the declared sniff order in datatype_conf.xml
