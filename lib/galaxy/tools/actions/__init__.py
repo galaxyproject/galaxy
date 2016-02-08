@@ -329,8 +329,6 @@ class DefaultToolAction( object ):
             data.blurb = "queued"
             # Set output label
             data.name = self.get_output_name( output, data, tool, on_text, trans, incoming, history, wrapped_params.params, job_params )
-            # Also set the default values of actions of type metadata
-            self.set_metadata_defaults( output, data, tool, on_text, trans, incoming, history, wrapped_params.params, job_params )
             # Store output
             out_data[ name ] = data
             if output.actions:
@@ -338,6 +336,8 @@ class DefaultToolAction( object ):
                 output_action_params = dict( out_data )
                 output_action_params.update( incoming )
                 output.actions.apply_action( data, output_action_params )
+            # Also set the default values of actions of type metadata
+            self.set_metadata_defaults( output, data, tool, on_text, trans, incoming, history, wrapped_params.params, job_params )
             # Flush all datasets at once.
             return data
 
@@ -618,7 +618,7 @@ class DefaultToolAction( object ):
         if output.actions:
             for action in output.actions.actions:
                 if action.tag == "metadata":
-                    metadata_new_value = fill_template( action.default, context=wrapped_params.params ).split(",")
+                    metadata_new_value = fill_template( action.default, context=params ).split(",")
                     dataset.metadata.__setattr__(str(action.name), metadata_new_value)
 
     def _get_default_data_name( self, dataset, tool, on_text=None, trans=None, incoming=None, history=None, params=None, job_params=None, **kwd ):
