@@ -42,7 +42,6 @@ Members
 - Björn Grüning (@bgruening)
 - Aysam Guerler (@guerler)
 - Jennifer Hillman Jackson (@jennaj)
-- Ross Lazarus (@fubar2)
 - Anton Nekrutenko (@nekrut)
 - Eric Rasche (@erasche)
 - Nicola Soranzo (@nsoranzo)
