@@ -140,6 +140,8 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         metadata = dict( full_path=full_path,
                          can_add_library_item=can_add_library_item,
                          can_modify_folder=can_modify_folder,
+                         folder_name=folder.name,
+                         folder_description=folder.description,
                          parent_library_id=parent_library_id )
         folder_container = dict( metadata=metadata, folder_contents=folder_contents )
         return folder_container
