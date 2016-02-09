@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-
 """
 This tool takes the following file pairs as input:
 a) input_snp  : A file with identifiers for SNPs (one on each line)
 b) ldfile     : A file where each line has  the following
                 snp     list
-                where "snp" is an identifier for one SNP and the "list" is a 
+                where "snp" is an identifier for one SNP and the "list" is a
                 comma separated list of all the other snps that are in LD with
                 it (as per some threshold of rsquare)
 
@@ -23,22 +22,23 @@ done for each population.
 e) Continue steps b-e until all SNPs, in all populations have been visited.
 """
 
-from sys import argv, stderr, exit
-from getopt import getopt, GetoptError
-
-import os
 import heapq
+import os
+
+from getopt import getopt, GetoptError
+from sys import argv, exit, stderr
 
 __author__ = "Aakrosh Ratan"
-__email__  = "ratan@bx.psu.edu"
+__email__ = "ratan@bx.psu.edu"
 
 # do we want the debug information to be printed?
 debug_flag = False
 
+
 class node:
     def __init__(self, name):
-        self.name    = name
-        self.edges   = []
+        self.name = name
+        self.edges = []
         self.visited = False
 
     # return the number of nodes connected to this node, that have yet to be
@@ -46,14 +46,16 @@ class node:
     def num_not_visited(self):
         num = 0
         for n in self.edges:
-            if n.visited is False: num += 1
-        return num 
+            if n.visited is False:
+                num += 1
+        return num
 
     def __cmp__(self, other):
         return other.num_not_visited() - self.num_not_visited()
 
-    def __str__(self):  
+    def __str__(self):
         return self.name
+
 
 class graph:
     def __init__(self):
@@ -80,7 +82,8 @@ class graph:
             ms = [x for x in n.edges]
             for m in ms:
                 if n not in m.edges:
-                    print >> stderr, "check : %s - %s" % (n,m)
+                    print >> stderr, "check : %s - %s" % (n, m)
+
 
 def construct_graph(ldfile, snpfile):
     # construct the initial graph. add all the SNPs as nodes
@@ -89,15 +92,16 @@ def construct_graph(ldfile, snpfile):
 
     for line in file:
         # ignore empty lines and add the remainder to the graph
-        if len(line.strip()) == 0: continue
-        n = node(line.strip())           
+        if len(line.strip()) == 0:
+            continue
+        n = node(line.strip())
         g.add_node(n)
 
     file.close()
     print >> stderr, "Added %d nodes to a graph" % len(g.nodes)
-  
+
     # now add all the edges
-    file   = open(ldfile, "r")
+    file = open(ldfile, "r")
 
     for line in file:
         tokens = line.split()
@@ -106,7 +110,7 @@ def construct_graph(ldfile, snpfile):
         # if this node is in the graph, then we need to construct an edge from
         # this node to all the nodes which are highly related to it
         if tokens[0] in g.nodes:
-            n1  = g.nodes[tokens[0]]
+            n1 = g.nodes[tokens[0]]
             n2s = [g.nodes[x] for x in tokens[1].split(",")]
 
             for n2 in n2s:
@@ -116,9 +120,10 @@ def construct_graph(ldfile, snpfile):
     print >> stderr, "Added all edges to the graph"
 
     return g
-     
+
+
 def check_output(g, tagsnps):
-    # find all the nodes in the graph 
+    # find all the nodes in the graph
     allsnps = [x.name for x in g.nodes.values()]
 
     # find the nodes that are covered by our tagsnps
@@ -134,12 +139,14 @@ def check_output(g, tagsnps):
         diff = list(set(allsnps) - set(mysnps))
         print >> stderr, "%s are not covered" % ",".join(diff)
 
+
 def main(ldfile, snpsfile, required, excluded):
     # construct the graph
     g = construct_graph(ldfile, snpsfile)
-    if debug_flag is True: g.check_graph()
+    if debug_flag is True:
+        g.check_graph()
 
-    tagsnps   = []
+    tagsnps = []
     neighbors = {}
 
     # take care of the SNPs that are required to be TagSNPs
@@ -148,11 +155,12 @@ def main(ldfile, snpsfile, required, excluded):
 
         t.visited = True
         ns = []
- 
+
         for n in t.edges:
-            if n.visited is False: ns.append(n.name)
-            n.visited = True 
-        
+            if n.visited is False:
+                ns.append(n.name)
+            n.visited = True
+
         tagsnps.append(t)
         neighbors[t.name] = list(set(ns))
 
@@ -163,28 +171,32 @@ def main(ldfile, snpsfile, required, excluded):
     while data:
         s = heapq.heappop(data)
 
-        if s.visited is True or s.name in excluded: continue
+        if s.visited is True or s.name in excluded:
+            continue
 
         s.visited = True
         ns = []
 
         for n in s.edges:
-            if n.visited is False: ns.append(n.name)
+            if n.visited is False:
+                ns.append(n.name)
             n.visited = True
-            
+
         tagsnps.append(s)
         neighbors[s.name] = list(set(ns))
 
         heapq.heapify(data)
 
     for s in tagsnps:
-        if len(neighbors[s.name]) > 0: 
+        if len(neighbors[s.name]) > 0:
             print "%s\t%s" % (s, ",".join(neighbors[s.name]))
             continue
         print s
-        
-    if debug_flag is True: check_output(g, tagsnps) 
-       
+
+    if debug_flag is True:
+        check_output(g, tagsnps)
+
+
 def read_list(filename):
     assert os.path.exists(filename)
     file = open(filename, "r")
@@ -195,7 +207,8 @@ def read_list(filename):
 
     file.close()
     return list
-           
+
+
 def usage():
     f = stderr
     print >> f, "usage:"
@@ -210,12 +223,12 @@ def usage():
 
 if __name__ == "__main__":
     try:
-        opts, args = getopt(argv[1:], "hdr:e:",\
-                     ["help", "debug", "required=", "excluded="])
+        opts, args = getopt(argv[1:], "hdr:e:",
+                            ["help", "debug", "required=", "excluded="])
     except GetoptError, err:
         print str(err)
         usage()
-        exit(2) 
+        exit(2)
 
     required = {}
     excluded = {}
@@ -239,5 +252,5 @@ if __name__ == "__main__":
 
     assert os.path.exists(args[0])
     assert os.path.exists(args[1])
-    
+
     main(args[0], args[1], required, excluded)
