@@ -472,7 +472,6 @@ class ModelManager( object ):
             self.session().flush()
         return item
 
-    # TODO: yagni?
     def associate( self, associate_with, item, foreign_key_name=None ):
         """
         Generically associate `item` with `associate_with` based on `foreign_key_name`.
@@ -481,17 +480,48 @@ class ModelManager( object ):
         setattr( associate_with, foreign_key_name, item )
         return item
 
+    def _foreign_key( self, associated_model_class, foreign_key_name=None ):
+        foreign_key_name = foreign_key_name or self.foreign_key_name
+        return getattr( associated_model_class, foreign_key_name )
+
     def query_associated( self, associated_model_class, item, foreign_key_name=None ):
         """
         Generically query other items that have been associated with this `item`.
         """
-        foreign_key_name = foreign_key_name or self.foreign_key_name
-        foreign_key = getattr( associated_model_class, foreign_key_name )
+        foreign_key = self._foreign_key( associated_model_class, foreign_key_name=foreign_key_name )
         return self.session().query( associated_model_class ).filter( foreign_key == item )
 
     # a rename of sql DELETE to differentiate from the Galaxy notion of mark_as_deleted
     # def destroy( self, item, **kwargs ):
     #    return item
+
+
+# ---- code for classes that use one *main* model manager
+# TODO: this may become unecessary if we can access managers some other way (class var, app, etc.)
+class HasAModelManager( object ):
+    """
+    Mixin used where serializers, deserializers, filter parsers, etc.
+    need some functionality around the model they're mainly concerned with
+    and would perform that functionality with a manager.
+    """
+
+    #: the class used to create this serializer's generically accessible model_manager
+    model_manager_class = None
+    # examples where this doesn't really work are ConfigurationSerializer (no manager)
+    # and contents (2 managers)
+
+    def __init__( self, app, manager=None, **kwargs ):
+        self._manager = manager
+
+    @property
+    def manager( self ):
+        """Return an appropriate manager if it exists, instantiate if not."""
+        # PRECONDITION: assumes self.app is assigned elsewhere
+        if not self._manager:
+            # TODO: pass this serializer to it
+            self._manager = self.model_manager_class( self.app )
+            # this will error for unset model_manager_class'es
+        return self._manager
 
 
 # ==== SERIALIZERS/to_dict,from_dict
@@ -515,7 +545,7 @@ class SkipAttribute( Exception ):
     pass
 
 
-class ModelSerializer( object ):
+class ModelSerializer( HasAModelManager ):
     """
     Turns models into JSONable dicts.
 
@@ -535,10 +565,11 @@ class ModelSerializer( object ):
     #: 'service' to use for getting urls - use class var to allow overriding when testing
     url_for = staticmethod( routes.url_for )
 
-    def __init__( self, app ):
+    def __init__( self, app, **kwargs ):
         """
         Set up serializer map, any additional serializable keys, and views here.
         """
+        super( ModelSerializer, self ).__init__( app, **kwargs )
         self.app = app
 
         # a list of valid serializable keys that can use the default (string) serializer
@@ -697,20 +728,18 @@ class ModelSerializer( object ):
         return self.views[ view ][:]
 
 
-class ModelDeserializer( object ):
+class ModelDeserializer( HasAModelManager ):
     """
     An object that converts an incoming serialized dict into values that can be
     directly assigned to an item's attributes and assigns them.
     """
-    #: the class used to create this deserializer's generically accessible model_manager
-    model_manager_class = None
-
     # TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
 
-    def __init__( self, app ):
+    def __init__( self, app, **kwargs ):
         """
         Set up deserializers and validator.
         """
+        super( ModelDeserializer, self ).__init__( app, **kwargs )
         self.app = app
 
         self.deserializers = {}
@@ -718,11 +747,6 @@ class ModelDeserializer( object ):
         self.add_deserializers()
         # a sub object that can validate incoming values
         self.validate = ModelValidator( self.app )
-
-        # create a generically accessible manager for the model this deserializer works with/for
-        self.manager = None
-        if self.model_manager_class:
-            self.manager = self.model_manager_class( self.app )
 
     def add_deserializers( self ):
         """
@@ -789,7 +813,7 @@ class ModelDeserializer( object ):
         return self.default_deserializer( item, key, val, **context )
 
 
-class ModelValidator( object ):
+class ModelValidator( HasAModelManager ):
     """
     An object that inspects a dictionary (generally meant to be a set of
     new/updated values for the model) and raises an error if a value is
@@ -797,6 +821,7 @@ class ModelValidator( object ):
     """
 
     def __init__( self, app, *args, **kwargs ):
+        super( ModelValidator, self ).__init__( app, **kwargs )
         self.app = app
 
     def type( self, key, val, types ):
@@ -872,7 +897,7 @@ class ModelValidator( object ):
 
 
 # ==== Building query filters based on model data
-class ModelFilterParser( object ):
+class ModelFilterParser( HasAModelManager ):
     """
     Converts string tuples (partially converted query string params) of
     attr, op, val into either:
@@ -898,10 +923,11 @@ class ModelFilterParser( object ):
     #: model class
     model_class = None
 
-    def __init__( self, app ):
+    def __init__( self, app, **kwargs ):
         """
         Set up serializer map, any additional serializable keys, and views here.
         """
+        super( ModelFilterParser, self ).__init__( app, **kwargs )
         self.app = app
 
         # dictionary containing parsing data for ORM/SQLAlchemy-based filters
@@ -933,6 +959,7 @@ class ModelFilterParser( object ):
         """
         Parse string 3-tuples (attr, op, val) into orm or functional filters.
         """
+        # TODO: allow defining the default filter op in this class (and not 'eq' in base/controller.py)
         parsed = []
         for ( attr, op, val ) in filter_tuple_list:
             filter_ = self.parse_filter( attr, op, val )

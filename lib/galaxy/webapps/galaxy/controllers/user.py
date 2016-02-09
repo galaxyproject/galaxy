@@ -79,7 +79,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     installed_len_files = None
 
     @web.expose
-    def index( self, trans, cntrller, **kwd ):
+    def index( self, trans, cntrller='user', **kwd ):
         return trans.fill_template( '/user/index.mako', cntrller=cntrller )
 
     @web.expose

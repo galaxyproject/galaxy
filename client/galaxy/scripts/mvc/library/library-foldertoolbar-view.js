@@ -20,7 +20,7 @@ var FolderToolbarView = Backbone.View.extend({
     'click #toolbtn_bulk_import'          : 'modalBulkImport',
     'click #include_deleted_datasets_chk' : 'checkIncludeDeleted',
     'click #toolbtn_show_libinfo'         : 'showLibInfo',
-    'click #toolbtn_bulk_delete'          : 'deleteSelectedDatasets',
+    'click #toolbtn_bulk_delete'          : 'deleteSelectedItems',
     'click #page_size_prompt'             : 'showPageSizePrompt'
 
   },
@@ -252,10 +252,10 @@ var FolderToolbarView = Backbone.View.extend({
     var dataset_ids = [];
     var folder_ids = [];
     $('#folder_table').find(':checked').each(function(){
-        if (this.parentElement.parentElement.id !== '' && this.parentElement.parentElement.classList.contains('dataset_row') ) {
-            dataset_ids.push(this.parentElement.parentElement.id);
-        } else if (this.parentElement.parentElement.id !== '' && this.parentElement.parentElement.classList.contains('folder_row') ) {
-            folder_ids.push(this.parentElement.parentElement.id);
+        if ($(this.parentElement.parentElement).data('id') !== '' && this.parentElement.parentElement.classList.contains('dataset_row') ) {
+            dataset_ids.push($(this.parentElement.parentElement).data('id'));
+        } else if ($(this.parentElement.parentElement).data('id') !== '' && this.parentElement.parentElement.classList.contains('folder_row') ) {
+            folder_ids.push($(this.parentElement.parentElement).data('id'));
         }
     });
     // prepare the dataset objects to be imported
@@ -306,10 +306,10 @@ var FolderToolbarView = Backbone.View.extend({
     var dataset_ids = [];
     var folder_ids = [];
         $( '#folder_table' ).find( ':checked' ).each( function(){
-            if ( this.parentElement.parentElement.id !== '' && this.parentElement.parentElement.classList.contains('dataset_row') ) {
-                dataset_ids.push( this.parentElement.parentElement.id );
-            } else if ( this.parentElement.parentElement.id !== '' && this.parentElement.parentElement.classList.contains('folder_row') ) {
-                folder_ids.push( this.parentElement.parentElement.id );
+            if ( $(this.parentElement.parentElement).data('id') !== '' && this.parentElement.parentElement.classList.contains('dataset_row') ) {
+                dataset_ids.push( $(this.parentElement.parentElement).data('id') );
+            } else if ( $(this.parentElement.parentElement).data('id') !== '' && this.parentElement.parentElement.classList.contains('folder_row') ) {
+                folder_ids.push( $(this.parentElement.parentElement).data('id') );
             }
         } );
     var url = Galaxy.root + 'api/libraries/datasets/download/' + format;
@@ -868,6 +868,8 @@ var FolderToolbarView = Backbone.View.extend({
    * @param  {array} lddas_set array of lddas to delete
    */
   chainCallDeletingItems: function( items_to_delete ){
+  console.log('chaincall');
+  console.log(items_to_delete);
   var self = this;
   this.deleted_items = new mod_library_model.Folder();
   var popped_item = items_to_delete.pop();
@@ -898,6 +900,8 @@ var FolderToolbarView = Backbone.View.extend({
                 console.error('Unknown library item type found.');
                 console.error(item.type || item.model_class);
               }
+              console.log('updated item')
+              console.log(updated_item);
               Galaxy.libraries.folderListView.collection.add( updated_item );
             }
             self.chainCallDeletingItems( items_to_delete );
@@ -921,9 +925,9 @@ var FolderToolbarView = Backbone.View.extend({
   },
 
   /**
-   * Deletes the selected datasets. Atomic. One by one.
+   * Delete the selected items. Atomic. One by one.
    */
-  deleteSelectedDatasets: function(){
+  deleteSelectedItems: function(){
     var checkedValues = $('#folder_table').find(':checked');
     if(checkedValues.length === 0){
         mod_toastr.info('You must select at least one dataset for deletion.');
@@ -945,11 +949,11 @@ var FolderToolbarView = Backbone.View.extend({
       var dataset_ids = [];
       var folder_ids = [];
       checkedValues.each(function(){
-          if (this.parentElement.parentElement.id !== '') {
-              if (this.parentElement.parentElement.id.substring(0,1) == 'F'){
-                folder_ids.push(this.parentElement.parentElement.id);
+          if ($(this.parentElement.parentElement).data('id') !== '') {
+              if ($(this.parentElement.parentElement).data('id').substring(0,1) == 'F'){
+                folder_ids.push($(this.parentElement.parentElement).data('id'));
               } else {
-                dataset_ids.push(this.parentElement.parentElement.id);
+                dataset_ids.push($(this.parentElement.parentElement).data('id'));
               }
           }
       });
@@ -968,6 +972,7 @@ var FolderToolbarView = Backbone.View.extend({
           var folder = new mod_library_model.FolderAsModel({id:folder_ids[i]});
           items_to_delete.push(folder);
       }
+      console.log(items_to_delete);
 
       this.options.chain_call_control.total_number = items_total.length;
       // call the recursive function to call ajax one after each other (request FIFO queue)
@@ -1104,7 +1109,7 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('        <li><a href="#/folders/<%= id %>/download/zip">.zip</a></li>');
     tmpl_array.push('     </ul>');
     tmpl_array.push('   </div>');
-    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Mark selected datasets deleted" id="toolbtn_bulk_delete" class="primary-button logged-dataset-manipulation" style="margin-left: 0.5em; display:none; " type="button"><span class="fa fa-times"></span> Delete</button>');
+    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Mark selected items deleted" id="toolbtn_bulk_delete" class="primary-button logged-dataset-manipulation" style="margin-left: 0.5em; display:none; " type="button"><span class="fa fa-times"></span> Delete</button>');
     tmpl_array.push('   <button data-id="<%- id %>" data-toggle="tooltip" data-placement="top" title="Show library information" id="toolbtn_show_libinfo" class="primary-button" style="margin-left: 0.5em;" type="button"><span class="fa fa-info-circle"></span> Library Info</button>');
     tmpl_array.push('   <span class="help-button" data-toggle="tooltip" data-placement="top" title="Visit Libraries Wiki"><a href="https://wiki.galaxyproject.org/DataLibraries/screen/FolderContents" target="_blank"><button class="primary-button" type="button"><span class="fa fa-question-circle"></span> Help</button></a></span>');
     tmpl_array.push(' </div>');

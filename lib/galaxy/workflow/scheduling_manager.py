@@ -156,7 +156,8 @@ class WorkflowRequestMonitor( object ):
                     return
 
                 self.__schedule( workflow_scheduler_id, workflow_scheduler )
-                time.sleep(1)  # TODO: wake if stopped
+                # TODO: wake if stopped
+                time.sleep(1)
 
     def __schedule( self, workflow_scheduler_id, workflow_scheduler ):
         invocation_ids = self.__active_invocation_ids( workflow_scheduler_id )

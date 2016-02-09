@@ -61,7 +61,6 @@ return Backbone.View.extend({
             css: 'upload-genome',
             onchange : function(genome) {
                 self.model.set('genome', genome);
-                self.app.updateGenome(genome, true);
             },
             data: self.app.list_genomes,
             container: this.$('#genome'),
@@ -79,7 +78,6 @@ return Backbone.View.extend({
             css: 'upload-extension',
             onchange : function(extension) {
                 self.model.set('extension', extension);
-                self.app.updateExtension(extension, true);
             },
             data: self.app.list_extensions,
             container: this.$('#extension'),

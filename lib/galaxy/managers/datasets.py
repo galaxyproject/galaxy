@@ -133,10 +133,11 @@ class DatasetRBACPermissions( object ):
 
 
 class DatasetSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
+    model_manager_class = DatasetManager
 
     def __init__( self, app ):
         super( DatasetSerializer, self ).__init__( app )
-        self.dataset_manager = DatasetManager( app )
+        self.dataset_manager = self.manager
         # needed for admin test
         self.user_manager = users.UserManager( app )
 
@@ -273,6 +274,8 @@ class DatasetAssociationManager( base.ModelManager,
     # DA's were meant to be proxies - but were never fully implemented as them
     # Instead, a dataset association HAS a dataset but contains metadata specific to a library (lda) or user (hda)
     model_class = model.DatasetInstance
+
+    # NOTE: model_manager_class should be set in HDA/LDA subclasses
 
     def __init__( self, app ):
         super( DatasetAssociationManager, self ).__init__( app )

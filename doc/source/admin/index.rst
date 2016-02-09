@@ -12,4 +12,6 @@ documentation. These resources should be used together.
 
    dependency_resolvers.rst
 
+   framework_dependencies.rst
+
    useful_scripts.rst

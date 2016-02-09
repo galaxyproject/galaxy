@@ -419,7 +419,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
 
         self.history_deserializer.deserialize( history, payload, user=trans.user, trans=trans )
         return self.history_serializer.serialize_to_view( history,
-                                                          user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+            user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api
     def archive_export( self, trans, id, **kwds ):

@@ -243,12 +243,11 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         datasets.DatasetAssociationSerializer,
         taggable.TaggableSerializerMixin,
         annotatable.AnnotatableSerializerMixin ):
-    # TODO: inherit from datasets.DatasetAssociationSerializer
-    # TODO: move what makes sense into DatasetSerializer
+    model_manager_class = HDAManager
 
     def __init__( self, app ):
         super( HDASerializer, self ).__init__( app )
-        self.hda_manager = HDAManager( app )
+        self.hda_manager = self.manager
 
         self.default_view = 'summary'
         self.add_view( 'summary', [
@@ -460,6 +459,7 @@ class HDADeserializer( datasets.DatasetAssociationDeserializer,
 class HDAFilterParser( datasets.DatasetAssociationFilterParser,
                        taggable.TaggableFilterMixin,
                        annotatable.AnnotatableFilterMixin ):
+    model_manager_class = HDAManager
     model_class = model.HistoryDatasetAssociation
 
     def _add_parsers( self ):

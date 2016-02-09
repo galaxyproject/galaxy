@@ -39,7 +39,7 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
         # the state we about to execute one last time. Consider whether tool executions
         # should run this as well.
         if workflow_invocation_uuid:
-            messages = tool.check_and_update_param_values( params, trans, update_values=False, allow_workflow_parameters=False )
+            messages = tool.check_and_update_param_values( params, trans, update_values=False )
             if messages:
                 execution_tracker.record_error( messages )
                 return

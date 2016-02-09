@@ -98,7 +98,7 @@ var FolderView = Backbone.View.extend({
   _serializeRoles : function(role_list){
     var selected_roles = [];
     for (var i = 0; i < role_list.length; i++) {
-      selected_roles.push(role_list[i] + ':' + role_list[i]);
+      selected_roles.push(role_list[i][1] + ':' + role_list[i][0]);
     }
     return selected_roles;
   },
@@ -156,7 +156,7 @@ var FolderView = Backbone.View.extend({
           $(element.val().split(",")).each(function() {
               var item = this.split(':');
               data.push({
-                  id: item[1],
+                  id: item[0],
                   name: item[1]
               });
           });
