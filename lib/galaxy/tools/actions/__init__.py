@@ -336,6 +336,8 @@ class DefaultToolAction( object ):
                 output_action_params = dict( out_data )
                 output_action_params.update( incoming )
                 output.actions.apply_action( data, output_action_params )
+            # Also set the default values of actions of type metadata
+            self.set_metadata_defaults( output, data, tool, on_text, trans, incoming, history, wrapped_params.params, job_params )
             # Flush all datasets at once.
             return data
 
@@ -602,6 +604,22 @@ class DefaultToolAction( object ):
             return fill_template( output.label, context=params )
         else:
             return self._get_default_data_name( dataset, tool, on_text=on_text, trans=trans, incoming=incoming, history=history, params=params, job_params=job_params )
+
+    def set_metadata_defaults( self, output, dataset, tool, on_text, trans, incoming, history, params, job_params ):
+        """
+        This allows to map names of input files to metadata default values. Example:
+
+        <data format="tabular" name="output" label="Tabular output, aggregates data from individual_inputs" >
+            <actions>
+                <action name="column_names" type="metadata" default="${','.join([input.name for input in $individual_inputs ])}" />
+            </actions>
+        </data>
+        """
+        if output.actions:
+            for action in output.actions.actions:
+                if action.tag == "metadata":
+                    metadata_new_value = fill_template( action.default, context=params ).split(",")
+                    dataset.metadata.__setattr__(str(action.name), metadata_new_value)
 
     def _get_default_data_name( self, dataset, tool, on_text=None, trans=None, incoming=None, history=None, params=None, job_params=None, **kwd ):
         name = tool.name
