@@ -1145,6 +1145,8 @@ class ToolModule( WorkflowModule ):
                         if isinstance( input, DataToolParameter ):
                             # Pull out dataset instance from element.
                             replacement = iteration_elements[ prefixed_name ].dataset_instance
+                            if hasattr(iteration_elements[ prefixed_name ], u'element_identifier') and iteration_elements[ prefixed_name ].element_identifier:
+                                replacement.element_identifier = iteration_elements[ prefixed_name ].element_identifier
                         else:
                             # If collection - just use element model object.
                             replacement = iteration_elements[ prefixed_name ]
