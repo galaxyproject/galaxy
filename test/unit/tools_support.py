@@ -18,6 +18,11 @@ from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.jobs import NoopQueue
 from galaxy.tools.parser import get_tool_source
 from galaxy.tools.deps.containers import NullContainerFinder
+import galaxy.datatypes.registry
+
+datatypes_registry = galaxy.datatypes.registry.Registry()
+datatypes_registry.load_datatypes()
+galaxy.model.set_datatypes_registry(datatypes_registry)
 
 
 class UsesApp( object ):

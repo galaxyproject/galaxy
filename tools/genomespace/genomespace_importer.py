@@ -10,7 +10,7 @@ import urllib
 import urllib2
 import urlparse
 
-import galaxy.model # need to import model before sniff to resolve a circular import dependency
+import galaxy.model # import no longer needed, remove next time this file is modified
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
 
