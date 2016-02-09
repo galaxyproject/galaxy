@@ -19,6 +19,9 @@ NAMED_PATTERNS = {
     "__designation_and_ext__": r"(?P<designation>.*)\.(?P<ext>[^\._]+)?",
 }
 
+INPUT_DBKEY_TOKEN = "__input__"
+LEGACY_DEFAULT_DBKEY = None  # don't use __input__ for legacy default collection
+
 
 def dataset_collector_descriptions_from_elem( elem ):
     primary_dataset_elems = elem.findall( "discover_datasets" )
@@ -39,7 +42,7 @@ class DatasetCollectionDescription(object):
         if pattern in NAMED_PATTERNS:
             pattern = NAMED_PATTERNS.get( pattern )
         self.pattern = pattern
-        self.default_dbkey = kwargs.get( "dbkey", None )
+        self.default_dbkey = kwargs.get( "dbkey", INPUT_DBKEY_TOKEN )
         self.default_ext = kwargs.get( "ext", None )
         if self.default_ext is None and "format" in kwargs:
             self.default_ext = kwargs.get( "format" )
@@ -66,4 +69,6 @@ class DatasetCollectionDescription(object):
         self.sort_key = sort_by
         self.sort_comp = sort_comp
 
-DEFAULT_DATASET_COLLECTOR_DESCRIPTION = DatasetCollectionDescription()
+DEFAULT_DATASET_COLLECTOR_DESCRIPTION = DatasetCollectionDescription(
+    default_dbkey=LEGACY_DEFAULT_DBKEY,
+)
