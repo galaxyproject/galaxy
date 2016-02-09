@@ -31,6 +31,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         - validating and parsing params into resources (based on a context)
             used in the visualization template
     """
+    NAMED_ROUTE = 'visualization_plugin'
     DEFAULT_BASE_URL = 'visualizations'
     # these should be handled somewhat differently - and be passed onto their resp. methods in ctrl.visualization
     # TODO: change/remove if/when they can be updated to use this system
@@ -165,7 +166,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
             # log.debug( '\t passed tests' )
 
             param_data = data_source[ 'to_params' ]
-            url = self.get_visualization_url( trans, target_object, visualization_name, param_data )
+            url = self.get_visualization_url( trans, target_object, visualization, param_data )
             display_name = visualization.config.get( 'name', None )
             render_target = visualization.config.get( 'render_target', 'galaxy_main' )
             embeddable = visualization.config.get( 'embeddable', False )
@@ -214,9 +215,9 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
 
         return False
 
-    def get_visualization_url( self, trans, target_object, visualization_name, param_data ):
+    def get_visualization_url( self, trans, target_object, visualization, param_data ):
         """
-        Generates a url for the visualization with `visualization_name`
+        Generates a url for the visualization with `visualization`
         for use with the given `target_object` with a query string built
         from the configuration data in `param_data`.
         """
@@ -227,11 +228,13 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         # we want existing visualizations to work as normal but still be part of the registry (without mod'ing)
         #   so generate their urls differently
         url = None
-        if visualization_name in self.BUILT_IN_VISUALIZATIONS:
-            url = url_for( controller='visualization', action=visualization_name, **params )
+        if visualization.name in self.BUILT_IN_VISUALIZATIONS:
+            url = url_for( controller='visualization', action=visualization.name, **params )
+        # TODO: needs to be split off as it's own registry
+        elif isinstance( visualization, vis_plugins.InteractiveEnvironmentPlugin ):
+            url = url_for( 'interactive_environment_plugin', visualization_name=visualization.name, **params )
         else:
-            url = url_for( controller='visualization', action='render',
-                           visualization_name=visualization_name, **params )
+            url = url_for( self.NAMED_ROUTE, visualization_name=visualization.name, **params )
 
         # TODO:?? not sure if embedded would fit/used here? or added in client...
         return url
