@@ -642,7 +642,7 @@ class FTPFileToolParameter( ToolParameter ):
         if len( lst ) == 0:
             if not self.optional and validate:
                 raise ValueError( "Please select a valid FTP file." )
-            return ''
+            return None
         if validate and self.tool.app.config.ftp_upload_dir is None:
             raise ValueError( "The FTP directory is not configured." )
         return lst
