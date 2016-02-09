@@ -127,27 +127,12 @@ class CheckboxField(BaseField):
 
     def get_html( self, prefix="", disabled=False ):
         if self.checked:
-            checked_text = ' checked="checked"'
+            checked_text = ' checked="checked" '
         else:
-            checked_text = ""
+            checked_text = ''
         id_name = prefix + self.name
-        # The hidden field is necessary because if the check box is not checked on the form, it will
-        # not be included in the request params.  The hidden field ensure that this will happen.  When
-        # parsing the request, the value 'true' in the hidden field actually means it is NOT checked.
-        # See the is_checked() method below.  The prefix is necessary in each case to ensure functional
-        # correctness when the param is inside a conditional.
-        return unicodify( '<input type="checkbox" id="%s" name="%s" value="true"%s%s%s><input type="hidden" name="%s%s" value="true"%s>'
-                          % ( id_name, id_name, checked_text, self.get_disabled_str( disabled ), self.refresh_on_change_text, prefix, self.name, self.get_disabled_str( disabled ) ) )
-
-    @staticmethod
-    def is_checked( value ):
-        if value is True:
-            return True
-        # This may look strange upon initial inspection, but see the comments in the get_html() method
-        # above for clarification.  Basically, if value is not True, then it will always be a list with
-        # 2 input fields ( a checkbox and a hidden field ) if the checkbox is checked.  If it is not
-        # checked, then value will be only the hidden field.
-        return isinstance( value, list ) and len( value ) == 2
+        return unicodify( '<input type="checkbox" id="%s" name="%s" value="__CHECKED__"%s%s%s><input type="hidden" name="%s" value="__NOTHING__"%s>'
+                          % ( id_name, id_name, checked_text, self.get_disabled_str( disabled ), self.refresh_on_change_text, id_name, self.get_disabled_str( disabled ) ) )
 
     def set_checked(self, value):
         if isinstance( value, basestring ):

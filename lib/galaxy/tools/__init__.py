@@ -1146,7 +1146,7 @@ class Tool( object, Dictifiable ):
                 # If `self.check_values` is false we don't do any checking or
                 # processing on input  This is used to pass raw values
                 # through to/from external sites.
-                state_inputs = expanded_incoming
+                params = expanded_incoming
             else:
                 # Update state for all inputs on the current page taking new
                 # values from `incoming`.
@@ -1220,18 +1220,6 @@ class Tool( object, Dictifiable ):
                 del result[ key ]
         return result
 
-    def __meta_properties_for_state( self, key, incoming, incoming_val, state_val, input_name ):
-        meta_properties = {}
-        meta_property_suffixes = [
-            "__multirun__",
-            "__collection_multirun__",
-        ]
-        for meta_property_suffix in meta_property_suffixes:
-            multirun_key = "%s|%s" % ( key, meta_property_suffix )
-            if multirun_key in incoming:
-                multi_value = incoming[ multirun_key ]
-                meta_properties[ "%s|%s" % ( input_name, meta_property_suffix ) ] = multi_value
-        return meta_properties
 
     @property
     def params_with_missing_data_table_entry( self ):
@@ -1954,7 +1942,7 @@ class Tool( object, Dictifiable ):
                     rep_prefix = '%s_%d|' % ( key, rep_index )
                     self.populate_state( request_context, input.inputs, incoming, rep_state, errors, prefix=rep_prefix, context=context )
             else:
-                param_value = incoming.get( key, state.get( input.name ) )
+                param_value = get_incoming_value( incoming, key, state.get( input.name ) )
                 value, error = check_param( request_context, input, param_value, context )
                 if error:
                     errors[ key ] = error

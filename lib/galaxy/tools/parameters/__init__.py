@@ -46,6 +46,7 @@ def visit_input_values( inputs, input_values, callback, name_prefix="", label_pr
             }
             if details:
                 args[ 'context' ] = context
+                args[ 'state'   ] = input_values
             new_value = callback( **args )
             if no_replacement_value is REPLACE_ON_TRUTHY:
                 replace = bool( new_value )

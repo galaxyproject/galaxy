@@ -474,10 +474,12 @@ class BooleanToolParameter( ToolParameter ):
     def get_html_field( self, trans=None, value=None, other_values={} ):
         checked = self.checked
         if value is not None:
-            checked = form_builder.CheckboxField.is_checked( value )
+            checked = self.from_html( value )
         return form_builder.CheckboxField( self.name, checked, refresh_on_change=self.refresh_on_change )
 
     def from_html( self, value, trans=None, other_values={} ):
+        if value is True or '__CHECKED__' in value:
+            return True
         return string_as_bool( value )
 
     def to_python( self, value, app ):

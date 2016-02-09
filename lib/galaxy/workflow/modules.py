@@ -1050,7 +1050,6 @@ class ToolModule( WorkflowModule ):
     def update_state( self, incoming ):
         self.label = incoming.get( 'label' )
         self.state.inputs = copy.deepcopy( incoming )
-        print self.state.inputs
 
     def check_and_update_state( self ):
         inputs = self.state.inputs
@@ -1058,16 +1057,38 @@ class ToolModule( WorkflowModule ):
 
     def compute_runtime_state( self, trans, step_updates=None ):
         # Warning: This method destructively modifies existing step state.
-        step_errors = None
+        step_errors = {}
         state = self.state
         self.runtime_post_job_actions = {}
         if step_updates:
-            self.runtime_post_job_actions = step_updates.get(RUNTIME_POST_JOB_ACTIONS_KEY, {})
-            self.tool.populate_state( trans, self.tool.inputs, state.inputs, step_updates, step_errors )
+
+            def update_value ( input, value, state, context, prefixed_name, **args ):
+                if prefixed_name in step_updates:
+                    value, error = check_param( trans, input, step_updates[ prefixed_name ], context )
+                    if not error is None:
+                        step_errors[ prefixed_name ] = error
+                    state[ input.name ] = value
+                    state.update( self.__meta_properties_for_state( prefixed_name, step_updates, input.name ) )
+
+            self.runtime_post_job_actions = step_updates.get( RUNTIME_POST_JOB_ACTIONS_KEY, {} )
+            visit_input_values( self.tool.inputs, state.inputs, update_value, details=True )
             step_metadata_runtime_state = self.__step_meta_runtime_state()
             if step_metadata_runtime_state:
                 state.inputs[ RUNTIME_STEP_META_STATE_KEY ] = step_metadata_runtime_state
         return state, step_errors
+
+    def __meta_properties_for_state( self, key, incoming, input_name ):
+        meta_properties = {}
+        meta_property_suffixes = [
+            "__multirun__",
+            "__collection_multirun__",
+        ]
+        for meta_property_suffix in meta_property_suffixes:
+            multirun_key = "%s|%s" % ( key, meta_property_suffix )
+            if multirun_key in incoming:
+                multi_value = incoming[ multirun_key ]
+                meta_properties[ "%s|%s" % ( input_name, meta_property_suffix ) ] = multi_value
+        return meta_properties
 
     def __step_meta_runtime_state( self ):
         """ Build a dictionary a of meta-step runtime state (state about how

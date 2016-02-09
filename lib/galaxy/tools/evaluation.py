@@ -56,7 +56,7 @@ class ToolEvaluator( object ):
         # Full parameter validation
         request_context = WorkRequestContext( app=self.app, user=job.history and job.history.user, history=job.history )
 
-        def validate_inputs( input, value, prefixed_name, prefixed_label, context ):
+        def validate_inputs( input, value, context, **args ):
             value = input.from_html( value, request_context, context )
             input.validate( value, request_context )
         visit_input_values( self.tool.inputs, incoming, validate_inputs, details=True )
