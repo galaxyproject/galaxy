@@ -199,9 +199,6 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
 
         self.serializers.update({
             'model_class'   : lambda *a, **c: 'History',
-            'id'            : self.serialize_id,
-            'create_time'   : self.serialize_date,
-            'update_time'   : self.serialize_date,
             'size'          : lambda i, k, **c: int( i.disk_size ),
             'nice_size'     : lambda i, k, **c: i.disk_nice_size,
             'state'         : self.serialize_history_state,

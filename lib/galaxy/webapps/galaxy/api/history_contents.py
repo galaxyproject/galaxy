@@ -16,6 +16,7 @@ from galaxy.web.base.controller import UsesTagsMixin
 from galaxy.managers import histories
 from galaxy.managers import history_contents
 from galaxy.managers import hdas
+from galaxy.managers import hdcas
 from galaxy.managers import folders
 from galaxy.managers.collections_util import api_payload_to_create_params
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
@@ -34,6 +35,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         self.folder_manager = folders.FolderManager()
         self.hda_serializer = hdas.HDASerializer( app )
         self.hda_deserializer = hdas.HDADeserializer( app )
+        self.hdca_serializer = hdcas.HDCASerializer( app )
         self.history_contents_filters = history_contents.HistoryContentsFilters( app )
 
     @expose_api_anonymous
@@ -540,24 +542,21 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         'order' defaults to 'hid-asc'
         """
         rval = []
-        print '-' * 40
 
         history = self.history_manager.get_accessible( self.decode_id( history_id ), trans.user, current_history=trans.history )
 
         filter_params = self.parse_filter_params( kwd )
         filters = self.history_contents_filters.parse_filters( filter_params )
-
         limit, offset = self.parse_limit_offset( kwd )
         order_by = self._parse_order_by( kwd.get( 'order', 'hid-asc' ) )
         serialization_params = self._parse_serialization_params( kwd, 'summary' )
-
         # TODO: > 16.04: remove these
         # TODO: remove 'dataset_details' and the following section when the UI doesn't need it
         # details param allows a mixed set of summary and detailed hdas
         # Ever more convoluted due to backwards compat..., details
         # should be considered deprecated in favor of more specific
         # dataset_details (and to be implemented dataset_collection_details).
-        details = kwd.get( 'details', None ) or kwd.get( 'dataset_details', None ) or []
+        details = kwd.get( 'details', [] )
         if details and details != 'all':
             details = util.listify( details )
         view = serialization_params.pop( 'view' )
@@ -566,6 +565,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             filters=filters, limit=limit, offset=offset, order_by=order_by )
         for content in contents:
 
+            # TODO: remove split
             if isinstance( content, trans.app.model.HistoryDatasetAssociation ):
                 # TODO: remove split
                 if details == 'all' or trans.security.encode_id( content.id ) in details:
@@ -576,10 +576,16 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                         user=trans.user, trans=trans, view=view, **serialization_params ) )
 
             elif isinstance( content, trans.app.model.HistoryDatasetCollectionAssociation ):
-                rval.append( self.__collection_dict( trans, content, view='summary' ) )
+                collection = self.hdca_serializer.serialize_to_view( content,
+                    user=trans.user, trans=trans, view=view, **serialization_params )
+                rval.append( collection )
 
-        print '-' * 40
         return rval
+
+    def encode_type_id( self, type_id ):
+        TYPE_ID_SEP = '-'
+        split = type_id.split( TYPE_ID_SEP, 1 )
+        return TYPE_ID_SEP.join([ split[0], self.app.security.encode_id( split[1] )])
 
     def _parse_order_by( self, order_by_string ):
         ORDER_BY_SEP_CHAR = ','

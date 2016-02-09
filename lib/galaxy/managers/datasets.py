@@ -406,6 +406,9 @@ class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,
         self.serializable_keyset.update([ 'name', 'state', 'tool_version', 'extension', 'visible', 'dbkey' ])
 
     def _proxy_to_dataset( self, serializer=None, key=None ):
+        # dataset associations are (rough) proxies to datasets - access their serializer using this remapping fn
+        # remapping done by either kwarg key: IOW dataset attr key (e.g. uuid)
+        # or by kwarg serializer: a function that's passed in (e.g. permissions)
         if key:
             serializer = self.dataset_serializer.serializers.get( key )
         if serializer:

@@ -351,9 +351,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'type'          : lambda *a, **c: 'file'
         })
 
-    def serialize_type_id( self, hda, key, **context ):
-        return 'dataset-' + self.serializers[ 'id' ]( hda, 'id' )
-
     def serialize_display_apps( self, hda, key, trans=None, **context ):
         """
         Return dictionary containing new-style display app urls.
