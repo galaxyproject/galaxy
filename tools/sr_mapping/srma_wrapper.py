@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 Runs SRMA on a SAM/BAM file;
 TODO: more documentation
@@ -9,11 +8,18 @@ usage: srma_wrapper.py [options]
 See below for options
 """
 
-import optparse, os, shutil, subprocess, sys, tempfile
+import optparse
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+
 
 def stop_err( msg ):
     sys.stderr.write( '%s\n' % msg )
     sys.exit()
+
 
 def parseRefLoc( refLoc, refUID ):
     for line in open( refLoc ):
@@ -24,12 +30,11 @@ def parseRefLoc( refLoc, refUID ):
                     return fields[1]
     return None
 
+
 def __main__():
-    #Parse Command Line
     parser = optparse.OptionParser()
     parser.add_option( '-r', '--ref', dest='ref', help='The reference genome to index and use' )
     parser.add_option( '-u', '--refUID', dest='refUID', help='The pre-index reference genome unique Identifier' )
-    #parser.add_option( '-L', '--refLocations', dest='refLocations', help='The filepath to the srma indices location file' )
     parser.add_option( '-i', '--input', dest='input', help='The SAM/BAM input file' )
     parser.add_option( '-I', '--inputIndex', dest='inputIndex', help='The SAM/BAM input index file' )
     parser.add_option( '-o', '--output', dest='output', help='The SAM/BAM output file' )
@@ -59,7 +64,6 @@ def __main__():
             reference_filepath = tempfile.NamedTemporaryFile( dir=tmp_dir, suffix='.fa' )
             reference_filepath_name = reference_filepath.name
             reference_filepath.close()
-            fai_filepath_name = '%s.fai' % reference_filepath_name
             dict_filepath_name = reference_filepath_name.replace( '.fa', '.dict' )
             os.symlink( options.ref, reference_filepath_name )
             # create fai file using Samtools
@@ -82,8 +86,8 @@ def __main__():
                     pass
                 tmp_stderr.close()
                 if returncode != 0:
-                    raise Exception, stderr
-            except Exception, e:
+                    raise Exception(stderr)
+            except Exception as e:
                 # clean up temp dir
                 if os.path.exists( tmp_dir ):
                     shutil.rmtree( tmp_dir )
@@ -108,13 +112,13 @@ def __main__():
                     pass
                 tmp_stderr.close()
                 if returncode != 0:
-                    raise Exception, stderr
-            except Exception, e:
+                    raise Exception(stderr)
+            except Exception as e:
                 # clean up temp dir
                 if os.path.exists( tmp_dir ):
                     shutil.rmtree( tmp_dir )
                 stop_err( 'Error creating index for custom genome file: %s\n' % str( e ) )
-        except Exception, e:
+        except Exception as e:
             # clean up temp dir
             if os.path.exists( tmp_dir ):
                 shutil.rmtree( tmp_dir )
@@ -132,29 +136,25 @@ def __main__():
     if options.params == 'pre_set':
         srma_cmds = ''
     else:
-        if options.useSequenceQualities == 'true':
-            useSequenceQualities = 'true'
-        else:
-            useSequenceQualities = 'false'
         ranges = 'null'
         if options.range == 'None':
             range = 'null'
         else:
             range = options.range
         srma_cmds = "OFFSET=%s MIN_MAPQ=%s MINIMUM_ALLELE_PROBABILITY=%s MINIMUM_ALLELE_COVERAGE=%s RANGES=%s RANGE=%s CORRECT_BASES=%s USE_SEQUENCE_QUALITIES=%s MAX_HEAP_SIZE=%s" % ( options.offset, options.minMappingQuality, options.minAlleleProbability, options.minAlleleCoverage, ranges, range, options.correctBases, options.useSequenceQualities, options.maxHeapSize )
-        
+
     srma_cmds = "%s VALIDATION_STRINGENCY=LENIENT" % srma_cmds
 
     # perform alignments
     buffsize = 1048576
     try:
-        #symlink input bam and index files due to the naming conventions required by srma here
+        # symlink input bam and index files due to the naming conventions required by srma here
         input_bam_filename = os.path.join( tmp_dir, '%s.bam' % os.path.split( options.input )[-1] )
         os.symlink( options.input, input_bam_filename )
         input_bai_filename = "%s.bai" % os.path.splitext( input_bam_filename )[0]
         os.symlink( options.inputIndex, input_bai_filename )
 
-        #create a temp output name, ending in .bam due to required naming conventions? unkown if required
+        # create a temp output name, ending in .bam due to required naming conventions? unkown if required
         output_bam_filename = os.path.join( tmp_dir, "%s.bam" % os.path.split( options.output )[-1] )
         # generate commandline
         java_opts = ''
@@ -181,19 +181,20 @@ def __main__():
                     pass
                 tmp_stderr.close()
                 if returncode != 0:
-                    raise Exception, stderr
-            except Exception, e:
-                raise Exception, 'Error executing SRMA. ' + str( e )
+                    raise Exception(stderr)
+            except Exception as e:
+                raise Exception('Error executing SRMA. ' + str( e ))
             # move file from temp location (with .bam name) to provided path
             shutil.move( output_bam_filename, options.output )
             # check that there are results in the output file
             if os.path.getsize( options.output ) <= 0:
-                raise Exception, 'The output file is empty. You may simply have no matches, or there may be an error with your input file or settings.'
-        except Exception, e:
+                raise Exception('The output file is empty. You may simply have no matches, or there may be an error with your input file or settings.')
+        except Exception as e:
             stop_err( 'The re-alignment failed.\n' + str( e ) )
     finally:
         # clean up temp dir
         if os.path.exists( tmp_dir ):
             shutil.rmtree( tmp_dir )
 
-if __name__=="__main__": __main__()
+if __name__ == "__main__":
+    __main__()
