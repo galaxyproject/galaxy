@@ -21,6 +21,8 @@ from uuid import UUID, uuid4
 from sqlalchemy import and_, func, not_, or_, true, join, select
 from sqlalchemy.orm import joinedload, object_session, aliased
 from sqlalchemy.ext import hybrid
+from sqlalchemy import types
+from sqlalchemy import type_coerce
 
 try:
     import pexpect
@@ -2451,6 +2453,18 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
     def history_content_type( self ):
         return "dataset"
 
+    # TODO: down into DatasetInstance
+    content_type = u'dataset'
+
+    @hybrid.hybrid_property
+    def type_id( self ):
+        return u'-'.join([ self.content_type, str( self.id ) ])
+
+    @type_id.expression
+    def type_id( cls ):
+        return (( type_coerce( cls.content_type, types.Unicode ) + u'-' +
+                  type_coerce( cls.id, types.Unicode ) ).label( 'type_id' ))
+
     def copy_tags_from( self, target_user, source_hda ):
         """
         Copy tags from `source_hda` to this HDA and assign them the user `target_user`.
@@ -3212,6 +3226,18 @@ class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnota
     @property
     def history_content_type( self ):
         return "dataset_collection"
+
+    # TODO: down into DatasetCollectionInstance
+    content_type = u'dataset_collection'
+
+    @hybrid.hybrid_property
+    def type_id( self ):
+        return u'-'.join([ self.content_type, str( self.id ) ])
+
+    @type_id.expression
+    def type_id( cls ):
+        return (( type_coerce( cls.content_type, types.Unicode ) + u'-' +
+                  type_coerce( cls.id, types.Unicode ) ).label( 'type_id' ))
 
     def to_dict( self, view='collection' ):
         dict_value = dict(

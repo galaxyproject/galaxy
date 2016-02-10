@@ -13,6 +13,7 @@ from sqlalchemy import true
 from sqlalchemy import false
 from sqlalchemy import desc
 from sqlalchemy.sql import text
+from sqlalchemy import column
 
 from base import BaseTestCase
 from base import CreatesCollectionsMixin
@@ -229,6 +230,77 @@ class HistoryAsContainerTestCase( BaseTestCase, CreatesCollectionsMixin ):
         self.app.model.context.flush()
         results = self.contents_manager.contents( history, order_by=desc( 'update_time' ) )
         self.assertEqual( contents[0], results[0] )
+
+    def test_update_time_filter( self ):
+        user2 = self.user_manager.create( **user2_data )
+        history = self.history_manager.create( name='history', user=user2 )
+        contents = []
+        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ])
+        contents.append( self.add_list_collection_to_history( history, contents[:3] ) )
+        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 4, 6 ) ])
+        contents.append( self.add_list_collection_to_history( history, contents[4:6] ) )
+
+        self.log( "should allow filtering by update_time" )
+        # in the case of collections we have to change the collection.collection (ugh) to change the update_time
+        contents[3].collection.populated_state = 'big ball of mud'
+        self.app.model.context.flush()
+        update_time = contents[3].collection.update_time
+
+        def get_update_time( item ):
+            update_time = getattr( item, 'update_time', None )
+            if not update_time:
+                update_time = item.collection.update_time
+            return update_time
+
+        results = self.contents_manager.contents( history, filters=[ column( 'update_time' ) >= update_time ] )
+        self.assertEqual( results, [ contents[3] ] )
+
+    def test_filtered_counting( self ):
+        user2 = self.user_manager.create( **user2_data )
+        history = self.history_manager.create( name='history', user=user2 )
+        contents = []
+        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ])
+        contents.append( self.add_list_collection_to_history( history, contents[:3] ) )
+        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 4, 6 ) ])
+        contents.append( self.add_list_collection_to_history( history, contents[4:6] ) )
+
+        self.log( "should show correct count with filters" )
+        self.hda_manager.delete( contents[1] )
+        self.hda_manager.delete( contents[4] )
+        contents[6].deleted = True
+        self.app.model.context.flush()
+
+        contents[2].visible = False
+        contents[5].visible = False
+        contents[6].visible = False
+        self.app.model.context.flush()
+
+        HDA = self.hda_manager.model_class
+        self.assertEqual( self.contents_manager.contents_count( history, filters=[ HDA.deleted == true() ] ), 3 )
+        filters = [ text( 'visible = 0' ) ]
+        self.assertEqual( self.contents_manager.contents_count( history, filters=filters ), 3 )
+
+        filters = [ text( 'deleted = 1' ), text( 'visible = 0' ) ]
+        self.assertEqual( self.contents_manager.contents_count( history, filters=filters ), 1 )
+
+    def test_type_id( self ):
+        user2 = self.user_manager.create( **user2_data )
+        history = self.history_manager.create( name='history', user=user2 )
+        contents = []
+        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ])
+        contents.append( self.add_list_collection_to_history( history, contents[:3] ) )
+        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 4, 6 ) ])
+        contents.append( self.add_list_collection_to_history( history, contents[4:6] ) )
+
+        self.log( "should be able to use eq and in with hybrid type_id" )
+        filters = [ column( 'type_id' ) == u'dataset-2' ]
+        self.assertEqual( self.contents_manager.contents( history, filters=filters ), [ contents[1] ])
+        filters = [ column( 'type_id' ).in_([ u'dataset-1', u'dataset-3' ]) ]
+        self.assertEqual( self.contents_manager.contents( history, filters=filters ), [ contents[0], contents[2] ])
+        filters = [ column( 'type_id' ) == u'dataset_collection-1' ]
+        self.assertEqual( self.contents_manager.contents( history, filters=filters ), [ contents[3] ])
+        filters = [ column( 'type_id' ).in_([ u'dataset-2', u'dataset_collection-2' ]) ]
+        self.assertEqual( self.contents_manager.contents( history, filters=filters ), [ contents[1], contents[6] ])
 
 
 # =============================================================================
