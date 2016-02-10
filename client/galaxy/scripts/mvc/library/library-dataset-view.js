@@ -29,7 +29,6 @@ var LibraryDatasetView = Backbone.View.extend({
     "click .btn-remove-restrictions"      :   "removeDatasetRestrictions",
     "click .toolbtn_save_permissions"     :   "savePermissions",
 
-    // missing features below
     "click .toolbtn_save_modifications"   :   "comingSoon",
     // "click .btn-share-dataset"            :   "comingSoon"
 
@@ -44,8 +43,7 @@ var LibraryDatasetView = Backbone.View.extend({
 
   fetchDataset: function(options){
     this.options = _.extend(this.options, options);
-
-    this.model = new mod_library_model.Item({id:this.options.id});
+    this.model = new mod_library_model.Item({id: this.options.id});
     var that = this;
     this.model.fetch({
       success: function() {
@@ -490,490 +488,438 @@ var LibraryDatasetView = Backbone.View.extend({
   },
 
   templateDataset : function(){
-    var tmpl_array = [];
+    return _.template([
     // CONTAINER START
-    tmpl_array.push('<div class="library_style_container">');
-
-    tmpl_array.push('  <div id="library_toolbar">');
-    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Download dataset" class="btn btn-default toolbtn-download-dataset primary-button" type="button"><span class="fa fa-download"></span> Download</span></button>');
-    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Import dataset into history" class="btn btn-default toolbtn-import-dataset primary-button" type="button"><span class="fa fa-book"></span> to History</span></button>');
-
-    tmpl_array.push('   <% if (item.get("can_user_modify")) { %>');
-    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Modify library item" class="btn btn-default toolbtn_modify_dataset primary-button" type="button"><span class="fa fa-pencil"></span> Modify</span></button>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (item.get("can_user_manage")) { %>');
-    tmpl_array.push('   <a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>/permissions"><button data-toggle="tooltip" data-placement="top" title="Manage permissions" class="btn btn-default toolbtn_change_permissions primary-button" type="button"><span class="fa fa-group"></span> Permissions</span></button></a>');
-    // tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Share dataset" class="btn btn-default toolbtn-share-dataset primary-button" type="button"><span class="fa fa-share"></span> Share</span></button>');
-    tmpl_array.push('   <% } %>');
-
-
-    tmpl_array.push('  </div>');
+    '<div class="library_style_container">',
+      '<div id="library_toolbar">',
+        '<button data-toggle="tooltip" data-placement="top" title="Download dataset" class="btn btn-default toolbtn-download-dataset primary-button toolbar-item" type="button">',
+          '<span class="fa fa-download"> Download</span>',
+        '</button>',
+        '<button data-toggle="tooltip" data-placement="top" title="Import dataset into history" class="btn btn-default toolbtn-import-dataset primary-button toolbar-item" type="button"><span class="fa fa-book"> to History</span></button>',
+        '<% if (item.get("can_user_modify")) { %>',
+          '<button data-toggle="tooltip" data-placement="top" title="Modify library item" class="btn btn-default toolbtn_modify_dataset primary-button toolbar-item" type="button"><span class="fa fa-pencil"> Modify</span></button>',
+        '<% } %>',
+        '<% if (item.get("can_user_manage")) { %>',
+          '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>/permissions"><button data-toggle="tooltip" data-placement="top" title="Manage permissions" class="btn btn-default toolbtn_change_permissions primary-button toolbar-item" type="button"><span class="fa fa-group"></span> Permissions</span></button></a>',
+          // '<button data-toggle="tooltip" data-placement="top" title="Share dataset" class="btn btn-default toolbtn-share-dataset primary-button toolbar-item" type="button"><span class="fa fa-share"> Share</span></button>',
+        '<% } %>',
+      '</div>',
 
     // BREADCRUMBS
-    tmpl_array.push('<ol class="breadcrumb">');
-    tmpl_array.push('   <li><a title="Return to the list of libraries" href="#">Libraries</a></li>');
-    tmpl_array.push('   <% _.each(item.get("full_path"), function(path_item) { %>');
-    tmpl_array.push('   <% if (path_item[0] != item.id) { %>');
-    tmpl_array.push('   <li><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ');
-    tmpl_array.push(    '<% } else { %>');
-    tmpl_array.push('   <li class="active"><span title="You are here"><%- path_item[1] %></span></li>');
-    tmpl_array.push('   <% } %>');
-    tmpl_array.push('   <% }); %>');
-    tmpl_array.push('</ol>');
+    '<ol class="breadcrumb">',
+      '<li><a title="Return to the list of libraries" href="#">Libraries</a></li>',
+      '<% _.each(item.get("full_path"), function(path_item) { %>',
+        '<% if (path_item[0] != item.id) { %>',
+          '<li><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
+        '<% } else { %>',
+          '<li class="active"><span title="You are here"><%- path_item[1] %></span></li>',
+        '<% } %>',
+      '<% }); %>',
+    '</ol>',
 
-    tmpl_array.push('<% if (item.get("is_unrestricted")) { %>');
-    tmpl_array.push('  <div class="alert alert-info">');
-    tmpl_array.push('  This dataset is unrestricted so everybody can access it. Just share the URL of this page. ');
-    tmpl_array.push('  <button data-toggle="tooltip" data-placement="top" title="Copy to clipboard" class="btn btn-default btn-copy-link-to-clipboard primary-button" type="button"><span class="fa fa-clipboard"></span> To Clipboard</span></button> ');
-    tmpl_array.push('  </div>');
-    tmpl_array.push('<% } %>');
+    '<% if (item.get("is_unrestricted")) { %>',
+      '<div class="alert alert-info">',
+        'This dataset is unrestricted so everybody can access it. Just share the URL of this page. ',
+        '<button data-toggle="tooltip" data-placement="top" title="Copy to clipboard" class="btn btn-default btn-copy-link-to-clipboard primary-button" type="button">',
+          '<span class="fa fa-clipboard"> To Clipboard</span>',
+        '</button> ',
+      '</div>',
+    '<% } %>',
 
-    tmpl_array.push('<div class="dataset_table">');
+    // TABLE START
+    '<div class="dataset_table">',
+      '<table class="grid table table-striped table-condensed">',
+        '<tr>',
+          '<th scope="row" id="id_row" data-id="<%= _.escape(item.get("ldda_id")) %>">Name</th>',
+        '<td><%= _.escape(item.get("name")) %></td>',
+        '</tr>',
+        '<% if (item.get("file_ext")) { %>',
+          '<tr>',
+          '<th scope="row">Data type</th>',
+            '<td><%= _.escape(item.get("file_ext")) %></td>',
+          '</tr>',
+        '<% } %>',
+        '<% if (item.get("genome_build")) { %>',
+          '<tr>',
+            '<th scope="row">Genome build</th>',
+            '<td><%= _.escape(item.get("genome_build")) %></td>',
+          '</tr>',
+        '<% } %>',
+        '<% if (item.get("file_size")) { %>',
+          '<tr>',
+            '<th scope="row">Size</th>',
+            '<td><%= _.escape(item.get("file_size")) %></td>',
+          '</tr>',
+        '<% } %>',
+        '<% if (item.get("date_uploaded")) { %>',
+          '<tr>',
+            '<th scope="row">Date uploaded (UTC)</th>',
+            '<td><%= _.escape(item.get("date_uploaded")) %></td>',
+          '</tr>',
+        '<% } %>',
+        '<% if (item.get("uploaded_by")) { %>',
+          '<tr>',
+            '<th scope="row">Uploaded by</th>',
+            '<td><%= _.escape(item.get("uploaded_by")) %></td>',
+          '</tr>',
+        '<% } %>',
+        '<% if (item.get("metadata_data_lines")) { %>',
+          '<tr>',
+            '<th scope="row">Data Lines</th>',
+            '<td scope="row"><%= _.escape(item.get("metadata_data_lines")) %></td>',
+          '</tr>',
+        '<% } %>',
+        '<% if (item.get("metadata_comment_lines")) { %>',
+          '<tr>',
+            '<th scope="row">Comment Lines</th>',
+            '<td scope="row"><%= _.escape(item.get("metadata_comment_lines")) %></td>',
+          '</tr>',
+        '<% } %>',
+        '<% if (item.get("metadata_columns")) { %>',
+          '<tr>',
+            '<th scope="row">Number of Columns</th>',
+            '<td scope="row"><%= _.escape(item.get("metadata_columns")) %></td>',
+          '</tr>',
+        '<% } %>',
+        '<% if (item.get("metadata_column_types")) { %>',
+          '<tr>',
+            '<th scope="row">Column Types</th>',
+            '<td scope="row"><%= _.escape(item.get("metadata_column_types")) %></td>',
+          '</tr>',
+        '<% } %>',
+        '<% if (item.get("message")) { %>',
+          '<tr>',
+            '<th scope="row">Message</th>',
+            '<td scope="row"><%= _.escape(item.get("message")) %></td>',
+          '</tr>',
+        '<% } %>',
+        '<% if (item.get("misc_blurb")) { %>',
+          '<tr>',
+            '<th scope="row">Miscellaneous blurb</th>',
+            '<td scope="row"><%= _.escape(item.get("misc_blurb")) %></td>',
+          '</tr>',
+        '<% } %>',
+        '<% if (item.get("misc_info")) { %>',
+          '<tr>',
+            '<th scope="row">Miscellaneous information</th>',
+            '<td scope="row"><%= _.escape(item.get("misc_info")) %></td>',
+          '</tr>',
+        '<% } %>',
+      '</table>',
 
-    tmpl_array.push('   <table class="grid table table-striped table-condensed">');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row" id="id_row" data-id="<%= _.escape(item.get("ldda_id")) %>">Name</th>');
-    tmpl_array.push('           <td><%= _.escape(item.get("name")) %></td>');
-    tmpl_array.push('       </tr>');
+    '<div>',
+      '<pre class="peek">',
+      '</pre>',
+    '</div>',
 
-    tmpl_array.push('   <% if (item.get("file_ext")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Data type</th>');
-    tmpl_array.push('           <td><%= _.escape(item.get("file_ext")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (item.get("genome_build")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Genome build</th>');
-    tmpl_array.push('           <td><%= _.escape(item.get("genome_build")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (item.get("file_size")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Size</th>');
-    tmpl_array.push('           <td><%= _.escape(item.get("file_size")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (item.get("date_uploaded")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Date uploaded (UTC)</th>');
-    tmpl_array.push('           <td><%= _.escape(item.get("date_uploaded")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (item.get("uploaded_by")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Uploaded by</th>');
-    tmpl_array.push('           <td><%= _.escape(item.get("uploaded_by")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (item.get("metadata_data_lines")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Data Lines</th>');
-    tmpl_array.push('           <td scope="row"><%= _.escape(item.get("metadata_data_lines")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (item.get("metadata_comment_lines")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Comment Lines</th>');
-    tmpl_array.push('           <td scope="row"><%= _.escape(item.get("metadata_comment_lines")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (item.get("metadata_columns")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Number of Columns</th>');
-    tmpl_array.push('           <td scope="row"><%= _.escape(item.get("metadata_columns")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (item.get("metadata_column_types")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Column Types</th>');
-    tmpl_array.push('           <td scope="row"><%= _.escape(item.get("metadata_column_types")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (item.get("message")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Message</th>');
-    tmpl_array.push('           <td scope="row"><%= _.escape(item.get("message")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (item.get("misc_blurb")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Miscellaneous blurb</th>');
-    tmpl_array.push('           <td scope="row"><%= _.escape(item.get("misc_blurb")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (item.get("misc_info")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Miscellaneous information</th>');
-    tmpl_array.push('           <td scope="row"><%= _.escape(item.get("misc_info")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('    </table>');
-    tmpl_array.push('    <div>');
-    tmpl_array.push('        <pre class="peek">');
-    tmpl_array.push('        </pre>');
-    tmpl_array.push('    </div>');
-
-    tmpl_array.push('   <% if (item.get("has_versions")) { %>');
-    tmpl_array.push('      <div>');
-    tmpl_array.push('      <h3>Expired versions:</h3>');
-    tmpl_array.push('      <ul>');
-    tmpl_array.push('      <% _.each(item.get("expired_versions"), function(version) { %>');
-    tmpl_array.push('        <li><a title="See details of this version" href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>/versions/<%- version[0] %>"><%- version[1] %></a></li>');
-    tmpl_array.push('      <% }) %>');
-    tmpl_array.push('      <ul>');
-    tmpl_array.push('      </div>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('</div>');
-
+    '<% if (item.get("has_versions")) { %>',
+      '<div>',
+        '<h3>Expired versions:</h3>',
+        '<ul>',
+          '<% _.each(item.get("expired_versions"), function(version) { %>',
+            '<li><a title="See details of this version" href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>/versions/<%- version[0] %>"><%- version[1] %></a></li>',
+          '<% }) %>',
+        '<ul>',
+      '</div>',
+    '<% } %>',
+    // TABLE END
+    '</div>',
     // CONTAINER END
-    tmpl_array.push('</div>');
-
-    return _.template(tmpl_array.join(''));
+    '</div>'
+    ].join(''));
   },
 
   templateVersion : function(){
-    var tmpl_array = [];
+    return _.template([
     // CONTAINER START
-    tmpl_array.push('<div class="library_style_container">');
+    '<div class="library_style_container">',
+      '<div id="library_toolbar">',
+        '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>"><button data-toggle="tooltip" data-placement="top" title="Go to latest dataset" class="btn btn-default primary-button" type="button"><span class="fa fa-caret-left fa-lg"> Latest dataset</span></button><a>',
+      '</div>',
 
-    tmpl_array.push('  <div id="library_toolbar">');
-    tmpl_array.push('   <a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>"><button data-toggle="tooltip" data-placement="top" title="Go to latest dataset" class="btn btn-default primary-button" type="button"><span class="fa fa-caret-left fa-lg"></span> Latest dataset</span></button><a>');
-    tmpl_array.push('  </div>');
+      // BREADCRUMBS
+      '<ol class="breadcrumb">',
+        '<li><a title="Return to the list of libraries" href="#">Libraries</a></li>',
+        '<% _.each(item.get("full_path"), function(path_item) { %>',
+          '<% if (path_item[0] != item.id) { %>',
+            '<li><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
+          '<% } else { %>',
+            '<li class="active"><span title="You are here"><%- path_item[1] %></span></li>',
+          '<% } %>',
+        '<% }); %>',
+      '</ol>',
 
-    // BREADCRUMBS
-    tmpl_array.push('<ol class="breadcrumb">');
-    tmpl_array.push('   <li><a title="Return to the list of libraries" href="#">Libraries</a></li>');
-    tmpl_array.push('   <% _.each(item.get("full_path"), function(path_item) { %>');
-    tmpl_array.push('   <% if (path_item[0] != item.id) { %>');
-    tmpl_array.push('   <li><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ');
-    tmpl_array.push(    '<% } else { %>');
-    tmpl_array.push('   <li class="active"><span title="You are here"><%- path_item[1] %></span></li>');
-    tmpl_array.push('   <% } %>');
-    tmpl_array.push('   <% }); %>');
-    tmpl_array.push('</ol>');
+      '<div class="alert alert-warning">This is an expired version of the library dataset: <%= _.escape(item.get("name")) %></div>',
+      // DATASET START
+      '<div class="dataset_table">',
+        '<table class="grid table table-striped table-condensed">',
+          '<tr>',
+            '<th scope="row" id="id_row" data-id="<%= _.escape(ldda.id) %>">Name</th>',
+            '<td><%= _.escape(ldda.get("name")) %></td>',
+          '</tr>',
+          '<% if (ldda.get("file_ext")) { %>',
+            '<tr>',
+              '<th scope="row">Data type</th>',
+              '<td><%= _.escape(ldda.get("file_ext")) %></td>',
+            '</tr>',
+          '<% } %>',
+          '<% if (ldda.get("genome_build")) { %>',
+            '<tr>',
+              '<th scope="row">Genome build</th>',
+              '<td><%= _.escape(ldda.get("genome_build")) %></td>',
+            '</tr>',
+          '<% } %>',
+          '<% if (ldda.get("file_size")) { %>',
+            '<tr>',
+              '<th scope="row">Size</th>',
+              '<td><%= _.escape(ldda.get("file_size")) %></td>',
+            '</tr>',
+          '<% } %>',
+          '<% if (ldda.get("date_uploaded")) { %>',
+            '<tr>',
+              '<th scope="row">Date uploaded (UTC)</th>',
+              '<td><%= _.escape(ldda.get("date_uploaded")) %></td>',
+            '</tr>',
+          '<% } %>',
+          '<% if (ldda.get("uploaded_by")) { %>',
+            '<tr>',
+              '<th scope="row">Uploaded by</th>',
+              '<td><%= _.escape(ldda.get("uploaded_by")) %></td>',
+            '</tr>',
+          '<% } %>',
+          '<% if (ldda.get("metadata_data_lines")) { %>',
+            '<tr>',
+              '<th scope="row">Data Lines</th>',
+              '<td scope="row"><%= _.escape(ldda.get("metadata_data_lines")) %></td>',
+            '</tr>',
+          '<% } %>',
+          '<% if (ldda.get("metadata_comment_lines")) { %>',
+            '<tr>',
+              '<th scope="row">Comment Lines</th>',
+              '<td scope="row"><%= _.escape(ldda.get("metadata_comment_lines")) %></td>',
+            '</tr>',
+          '<% } %>',
+          '<% if (ldda.get("metadata_columns")) { %>',
+            '<tr>',
+              '<th scope="row">Number of Columns</th>',
+              '<td scope="row"><%= _.escape(ldda.get("metadata_columns")) %></td>',
+            '</tr>',
+          '<% } %>',
+          '<% if (ldda.get("metadata_column_types")) { %>',
+            '<tr>',
+              '<th scope="row">Column Types</th>',
+              '<td scope="row"><%= _.escape(ldda.get("metadata_column_types")) %></td>',
+            '</tr>',
+          '<% } %>',
+          '<% if (ldda.get("message")) { %>',
+            '<tr>',
+              '<th scope="row">Message</th>',
+              '<td scope="row"><%= _.escape(ldda.get("message")) %></td>',
+            '</tr>',
+          '<% } %>',
+          '<% if (ldda.get("misc_blurb")) { %>',
+            '<tr>',
+              '<th scope="row">Miscellaneous blurb</th>',
+              '<td scope="row"><%= _.escape(ldda.get("misc_blurb")) %></td>',
+            '</tr>',
+          '<% } %>',
+          '<% if (ldda.get("misc_info")) { %>',
+            '<tr>',
+              '<th scope="row">Miscellaneous information</th>',
+              '<td scope="row"><%= _.escape(ldda.get("misc_info")) %></td>',
+            '</tr>',
+          '<% } %>',
+        '</table>',
 
-    tmpl_array.push('  <div class="alert alert-warning">This is an expired version of the library dataset: <%= _.escape(item.get("name")) %></div>');
-
-    tmpl_array.push('<div class="dataset_table">');
-
-    tmpl_array.push('   <table class="grid table table-striped table-condensed">');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row" id="id_row" data-id="<%= _.escape(ldda.id) %>">Name</th>');
-    tmpl_array.push('           <td><%= _.escape(ldda.get("name")) %></td>');
-    tmpl_array.push('       </tr>');
-
-    tmpl_array.push('   <% if (ldda.get("file_ext")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Data type</th>');
-    tmpl_array.push('           <td><%= _.escape(ldda.get("file_ext")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (ldda.get("genome_build")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Genome build</th>');
-    tmpl_array.push('           <td><%= _.escape(ldda.get("genome_build")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (ldda.get("file_size")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Size</th>');
-    tmpl_array.push('           <td><%= _.escape(ldda.get("file_size")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (ldda.get("date_uploaded")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Date uploaded (UTC)</th>');
-    tmpl_array.push('           <td><%= _.escape(ldda.get("date_uploaded")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (ldda.get("uploaded_by")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Uploaded by</th>');
-    tmpl_array.push('           <td><%= _.escape(ldda.get("uploaded_by")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (ldda.get("metadata_data_lines")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Data Lines</th>');
-    tmpl_array.push('           <td scope="row"><%= _.escape(ldda.get("metadata_data_lines")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (ldda.get("metadata_comment_lines")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Comment Lines</th>');
-    tmpl_array.push('           <td scope="row"><%= _.escape(ldda.get("metadata_comment_lines")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (ldda.get("metadata_columns")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Number of Columns</th>');
-    tmpl_array.push('           <td scope="row"><%= _.escape(ldda.get("metadata_columns")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (ldda.get("metadata_column_types")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Column Types</th>');
-    tmpl_array.push('           <td scope="row"><%= _.escape(ldda.get("metadata_column_types")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (ldda.get("message")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Message</th>');
-    tmpl_array.push('           <td scope="row"><%= _.escape(ldda.get("message")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (ldda.get("misc_blurb")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Miscellaneous blurb</th>');
-    tmpl_array.push('           <td scope="row"><%= _.escape(ldda.get("misc_blurb")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('   <% if (ldda.get("misc_info")) { %>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Miscellaneous information</th>');
-    tmpl_array.push('           <td scope="row"><%= _.escape(ldda.get("misc_info")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   <% } %>');
-
-    tmpl_array.push('    </table>');
-    tmpl_array.push('    <div>');
-    tmpl_array.push('        <pre class="peek">');
-    tmpl_array.push('        </pre>');
-    tmpl_array.push('    </div>');
-
-    tmpl_array.push('</div>');
-
+      '<div>',
+        '<pre class="peek">',
+        '</pre>',
+      '</div>',
+      // DATASET END
+      '</div>',
     // CONTAINER END
-    tmpl_array.push('</div>');
-
-    return _.template(tmpl_array.join(''));
+    '</div>'
+    ].join(''));
   },
 
   templateModifyDataset : function(){
-    var tmpl_array = [];
+    return _.template([
     // CONTAINER START
-    tmpl_array.push('<div class="library_style_container">');
+    '<div class="library_style_container">',
+      '<div id="library_toolbar">',
+        '<button data-toggle="tooltip" data-placement="top" title="Cancel modifications" class="btn btn-default toolbtn_cancel_modifications primary-button" type="button"><span class="fa fa-times"> Cancel</span></button>',
+        '<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-default toolbtn_save_modifications primary-button" type="button"><span class="fa fa-floppy-o"> Save</span></button>',
+      '</div>',
 
-    tmpl_array.push('  <div id="library_toolbar">');
-    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Cancel modifications" class="btn btn-default toolbtn_cancel_modifications primary-button" type="button"><span class="fa fa-times"></span> Cancel</span></button>');
-    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-default toolbtn_save_modifications primary-button" type="button"><span class="fa fa-floppy-o"></span> Save</span></button>');
+      // BREADCRUMBS
+      '<ol class="breadcrumb">',
+        '<li><a title="Return to the list of libraries" href="#">Libraries</a></li>',
+        '<% _.each(item.get("full_path"), function(path_item) { %>',
+          '<% if (path_item[0] != item.id) { %>',
+            '<li><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
+          '<% } else { %>',
+            '<li class="active"><span title="You are here"><%- path_item[1] %></span></li>',
+          '<% } %>',
+        '<% }); %>',
+      '</ol>',
 
-    tmpl_array.push('  </div>');
-
-    // BREADCRUMBS
-    tmpl_array.push('<ol class="breadcrumb">');
-    tmpl_array.push('   <li><a title="Return to the list of libraries" href="#">Libraries</a></li>');
-    tmpl_array.push('   <% _.each(item.get("full_path"), function(path_item) { %>');
-    tmpl_array.push('   <% if (path_item[0] != item.id) { %>');
-    tmpl_array.push('   <li><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ');
-    tmpl_array.push(    '<% } else { %>');
-    tmpl_array.push('   <li class="active"><span title="You are here"><%- path_item[1] %></span></li>');
-    tmpl_array.push('   <% } %>');
-    tmpl_array.push('   <% }); %>');
-    tmpl_array.push('</ol>');
-
-    tmpl_array.push('<div class="dataset_table">');
-    tmpl_array.push('<p>For more editing options please import the dataset to history and use "Edit attributes" on it.</p>');
-    tmpl_array.push('   <table class="grid table table-striped table-condensed">');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row" id="id_row" data-id="<%= _.escape(item.get("ldda_id")) %>">Name</th>');
-    tmpl_array.push('           <td><input class="input_dataset_name form-control" type="text" placeholder="name" value="<%= _.escape(item.get("name")) %>"></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Data type</th>');
-    tmpl_array.push('           <td><%= _.escape(item.get("file_ext")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Genome build</th>');
-    tmpl_array.push('           <td><%= _.escape(item.get("genome_build")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Size</th>');
-    tmpl_array.push('           <td><%= _.escape(item.get("file_size")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Date uploaded (UTC)</th>');
-    tmpl_array.push('           <td><%= _.escape(item.get("date_uploaded")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Uploaded by</th>');
-    tmpl_array.push('           <td><%= _.escape(item.get("uploaded_by")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('           <tr scope="row">');
-    tmpl_array.push('           <th scope="row">Data Lines</th>');
-    tmpl_array.push('           <td scope="row"><%= _.escape(item.get("metadata_data_lines")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('       <th scope="row">Comment Lines</th>');
-    tmpl_array.push('           <% if (item.get("metadata_comment_lines") === "") { %>');
-    tmpl_array.push('               <td scope="row"><%= _.escape(item.get("metadata_comment_lines")) %></td>');
-    tmpl_array.push('           <% } else { %>');
-    tmpl_array.push('               <td scope="row">unknown</td>');
-    tmpl_array.push('           <% } %>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Number of Columns</th>');
-    tmpl_array.push('           <td scope="row"><%= _.escape(item.get("metadata_columns")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Column Types</th>');
-    tmpl_array.push('           <td scope="row"><%= _.escape(item.get("metadata_column_types")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Message</th>');
-    tmpl_array.push('           <td scope="row"><%= _.escape(item.get("message")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Miscellaneous information</th>');
-    tmpl_array.push('           <td scope="row"><%= _.escape(item.get("misc_info")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('       <tr>');
-    tmpl_array.push('           <th scope="row">Miscellaneous blurb</th>');
-    tmpl_array.push('           <td scope="row"><%= _.escape(item.get("misc_blurb")) %></td>');
-    tmpl_array.push('       </tr>');
-    tmpl_array.push('   </table>');
-    tmpl_array.push('<div>');
-    tmpl_array.push('   <pre class="peek">');
-    tmpl_array.push('   </pre>');
-    tmpl_array.push('</div>');
-    tmpl_array.push('</div>');
-
+      '<div class="dataset_table">',
+        '<p>For more editing options please import the dataset to history and use "Edit attributes" on it.</p>',
+        '<table class="grid table table-striped table-condensed">',
+          '<tr>',
+            '<th scope="row" id="id_row" data-id="<%= _.escape(item.get("ldda_id")) %>">Name</th>',
+            '<td><input class="input_dataset_name form-control" type="text" placeholder="name" value="<%= _.escape(item.get("name")) %>"></td>',
+          '</tr>',
+          '<tr>',
+            '<th scope="row">Data type</th>',
+            '<td><%= _.escape(item.get("file_ext")) %></td>',
+          '</tr>',
+          '<tr>',
+            '<th scope="row">Genome build</th>',
+            '<td><%= _.escape(item.get("genome_build")) %></td>',
+          '</tr>',
+          '<tr>',
+            '<th scope="row">Size</th>',
+            '<td><%= _.escape(item.get("file_size")) %></td>',
+          '</tr>',
+          '<tr>',
+            '<th scope="row">Date uploaded (UTC)</th>',
+            '<td><%= _.escape(item.get("date_uploaded")) %></td>',
+          '</tr>',
+          '<tr>',
+            '<th scope="row">Uploaded by</th>',
+            '<td><%= _.escape(item.get("uploaded_by")) %></td>',
+          '</tr>',
+          '<tr scope="row">',
+            '<th scope="row">Data Lines</th>',
+            '<td scope="row"><%= _.escape(item.get("metadata_data_lines")) %></td>',
+          '</tr>',
+            '<th scope="row">Comment Lines</th>',
+            '<% if (item.get("metadata_comment_lines") === "") { %>',
+              '<td scope="row"><%= _.escape(item.get("metadata_comment_lines")) %></td>',
+            '<% } else { %>',
+              '<td scope="row">unknown</td>',
+            '<% } %>',
+          '</tr>',
+          '<tr>',
+            '<th scope="row">Number of Columns</th>',
+            '<td scope="row"><%= _.escape(item.get("metadata_columns")) %></td>',
+          '</tr>',
+          '<tr>',
+            '<th scope="row">Column Types</th>',
+            '<td scope="row"><%= _.escape(item.get("metadata_column_types")) %></td>',
+          '</tr>',
+          '<tr>',
+            '<th scope="row">Message</th>',
+            '<td scope="row"><%= _.escape(item.get("message")) %></td>',
+          '</tr>',
+          '<tr>',
+            '<th scope="row">Miscellaneous information</th>',
+            '<td scope="row"><%= _.escape(item.get("misc_info")) %></td>',
+          '</tr>',
+          '<tr>',
+            '<th scope="row">Miscellaneous blurb</th>',
+            '<td scope="row"><%= _.escape(item.get("misc_blurb")) %></td>',
+          '</tr>',
+        '</table>',
+        '<div>',
+          '<pre class="peek">',
+          '</pre>',
+        '</div>',
+      '</div>',
     // CONTAINER END
-    tmpl_array.push('</div>');
-
-    return _.template(tmpl_array.join(''));
+    '</div>'
+    ].join(''));
   },
 
   templateDatasetPermissions : function(){
-    var tmpl_array = [];
+    return _.template([
     // CONTAINER START
-    tmpl_array.push('<div class="library_style_container">');
+    '<div class="library_style_container">',
+      '<div id="library_toolbar">',
+        '<a href="#folders/<%- item.get("folder_id") %>"><button data-toggle="tooltip" data-placement="top" title="Go back to containing folder" class="btn btn-default primary-button" type="button"><span class="fa fa-folder-open-o"> Containing Folder</span></button></a>',
+        '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>"><button data-toggle="tooltip" data-placement="top" title="Go back to dataset" class="btn btn-default primary-button" type="button"><span class="fa fa-file-o"> Dataset Details</span></button><a>',
+      '</div>',
 
-    tmpl_array.push('  <div id="library_toolbar">');
-    tmpl_array.push('   <a href="#folders/<%- item.get("folder_id") %>"><button data-toggle="tooltip" data-placement="top" title="Go back to containing folder" class="btn btn-default primary-button" type="button"><span class="fa fa-folder-open-o"></span> Containing Folder</span></button></a>');
-    tmpl_array.push('   <a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>"><button data-toggle="tooltip" data-placement="top" title="Go back to dataset" class="btn btn-default primary-button" type="button"><span class="fa fa-file-o"></span> Dataset Details</span></button><a>');
+      // BREADCRUMBS
+      '<ol class="breadcrumb">',
+        '<li><a title="Return to the list of libraries" href="#">Libraries</a></li>',
+          '<% _.each(item.get("full_path"), function(path_item) { %>',
+            '<% if (path_item[0] != item.id) { %>',
+              '<li><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
+            '<% } else { %>',
+              '<li class="active"><span title="You are here"><%- path_item[1] %></span></li>',
+            '<% } %>',
+        '<% }); %>',
+      '</ol>',
 
-    tmpl_array.push('  </div>');
+      '<h1>Dataset: <%= _.escape(item.get("name")) %></h1>',
+      '<div class="alert alert-warning">',
+        '<% if (is_admin) { %>',
+          'You are logged in as an <strong>administrator</strong> therefore you can manage any dataset on this Galaxy instance. Please make sure you understand the consequences.',
+        '<% } else { %>',
+          'You can assign any number of roles to any of the following permission types. However please read carefully the implications of such actions.',
+        '<% } %>',
+      '</div>',
+      '<div class="dataset_table">',
+        '<h2>Library-related permissions</h2>',
+        '<h4>Roles that can modify the library item</h4>',
+        '<div id="modify_perm" class="modify_perm roles-selection"></div>',
+        '<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can modify name, metadata, and other information about this library item.</div>',
+        '<hr/>',
+        '<h2>Dataset-related permissions</h2>',
+        '<div class="alert alert-warning">Changes made below will affect <strong>every</strong> library item that was created from this dataset and also every history this dataset is part of.</div>',
 
-    // BREADCRUMBS
-    tmpl_array.push('<ol class="breadcrumb">');
-    tmpl_array.push('   <li><a title="Return to the list of libraries" href="#">Libraries</a></li>');
-    tmpl_array.push('   <% _.each(item.get("full_path"), function(path_item) { %>');
-    tmpl_array.push('   <% if (path_item[0] != item.id) { %>');
-    tmpl_array.push('   <li><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ');
-    tmpl_array.push(    '<% } else { %>');
-    tmpl_array.push('   <li class="active"><span title="You are here"><%- path_item[1] %></span></li>');
-    tmpl_array.push('   <% } %>');
-    tmpl_array.push('   <% }); %>');
-    tmpl_array.push('</ol>');
-
-    tmpl_array.push('<h1>Dataset: <%= _.escape(item.get("name")) %></h1>');
-
-    tmpl_array.push('<div class="alert alert-warning">');
-    tmpl_array.push('<% if (is_admin) { %>');
-    tmpl_array.push('You are logged in as an <strong>administrator</strong> therefore you can manage any dataset on this Galaxy instance. Please make sure you understand the consequences.');
-    tmpl_array.push('<% } else { %>');
-    tmpl_array.push('You can assign any number of roles to any of the following permission types. However please read carefully the implications of such actions.');
-    tmpl_array.push('<% } %>');
-    tmpl_array.push('</div>');
-
-    tmpl_array.push('<div class="dataset_table">');
-
-    tmpl_array.push('<h2>Library-related permissions</h2>');
-    tmpl_array.push('<h4>Roles that can modify the library item</h4>');
-    tmpl_array.push('<div id="modify_perm" class="modify_perm roles-selection"></div>');
-    tmpl_array.push('<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can modify name, metadata, and other information about this library item.</div>');
-    tmpl_array.push('<hr/>');
-
-    tmpl_array.push('<h2>Dataset-related permissions</h2>');
-    tmpl_array.push('<div class="alert alert-warning">Changes made below will affect <strong>every</strong> library item that was created from this dataset and also every history this dataset is part of.</div>');
-
-    tmpl_array.push('<% if (!item.get("is_unrestricted")) { %>');
-    tmpl_array.push(' <p>You can remove all access restrictions on this dataset. ');
-    tmpl_array.push(' <button data-toggle="tooltip" data-placement="top" title="Everybody will be able to access the dataset." class="btn btn-default btn-remove-restrictions primary-button" type="button">');
-    tmpl_array.push(' <span class="fa fa-globe"> Remove restrictions</span>');
-    tmpl_array.push(' </button>');
-    tmpl_array.push(' </p>');
-    tmpl_array.push('<% } else { %>');
-    tmpl_array.push('  This dataset is unrestricted so everybody can access it. Just share the URL of this page.');
-    tmpl_array.push('  <button data-toggle="tooltip" data-placement="top" title="Copy to clipboard" class="btn btn-default btn-copy-link-to-clipboard primary-button" type="button"><span class="fa fa-clipboard"> To Clipboard</span></button> ');
-    tmpl_array.push('  <p>You can make this dataset private to you. ');
-    tmpl_array.push(' <button data-toggle="tooltip" data-placement="top" title="Only you will be able to access the dataset." class="btn btn-default btn-make-private primary-button" type="button"><span class="fa fa-key"> Make Private</span></button>');
-    tmpl_array.push(' </p>');
-    // tmpl_array.push(' <p>You can share this dataset privately with other Galaxy users. ');
-    // tmpl_array.push(' <button data-toggle="tooltip" data-placement="top" title="Only you and the suers you choose will be able to access the dataset." class="btn btn-default btn-share-dataset primary-button" type="button"><span class="fa fa-share"> Share Privately</span></button>');
-    // tmpl_array.push(' </p>');
-    tmpl_array.push('<% } %>');
-
-    tmpl_array.push('<h4>Roles that can access the dataset</h4>');
-    tmpl_array.push('<div id="access_perm" class="access_perm roles-selection"></div>');
-    tmpl_array.push('<div class="alert alert-info roles-selection">User has to have <strong>all these roles</strong> in order to access this dataset. Users without access permission <strong>cannot</strong> have other permissions on this dataset. If there are no access roles set on the dataset it is considered <strong>unrestricted</strong>.</div>');
-    tmpl_array.push('<h4>Roles that can manage permissions on the dataset</h4>');
-    tmpl_array.push('<div id="manage_perm" class="manage_perm roles-selection"></div>');
-    tmpl_array.push('<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can manage permissions of this dataset. If you remove yourself you will loose the ability manage this dataset unless you are an admin.</div>');
-    tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Save modifications made on this page" class="btn btn-default toolbtn_save_permissions primary-button" type="button"><span class="fa fa-floppy-o"></span> Save</span></button>');
-
-    tmpl_array.push('</div>');
-
+        '<% if (!item.get("is_unrestricted")) { %>',
+          '<p>You can remove all access restrictions on this dataset. ',
+          '<button data-toggle="tooltip" data-placement="top" title="Everybody will be able to access the dataset." class="btn btn-default btn-remove-restrictions primary-button" type="button">',
+            '<span class="fa fa-globe"> Remove restrictions</span>',
+          '</button>',
+        '</p>',
+        '<% } else { %>',
+          'This dataset is unrestricted so everybody can access it. Just share the URL of this page.',
+          '<button data-toggle="tooltip" data-placement="top" title="Copy to clipboard" class="btn btn-default btn-copy-link-to-clipboard primary-button" type="button"><span class="fa fa-clipboard"> To Clipboard</span></button> ',
+          '<p>You can make this dataset private to you. ',
+            '<button data-toggle="tooltip" data-placement="top" title="Only you will be able to access the dataset." class="btn btn-default btn-make-private primary-button" type="button"><span class="fa fa-key"> Make Private</span></button>',
+          '</p>',
+          // '<p>You can share this dataset privately with other Galaxy users. ',
+          // '<button data-toggle="tooltip" data-placement="top" title="Only you and the suers you choose will be able to access the dataset." class="btn btn-default btn-share-dataset primary-button" type="button"><span class="fa fa-share"> Share Privately</span></button>',
+          // '</p>',
+        '<% } %>',
+        '<h4>Roles that can access the dataset</h4>',
+        '<div id="access_perm" class="access_perm roles-selection"></div>',
+        '<div class="alert alert-info roles-selection">User has to have <strong>all these roles</strong> in order to access this dataset. Users without access permission <strong>cannot</strong> have other permissions on this dataset. If there are no access roles set on the dataset it is considered <strong>unrestricted</strong>.</div>',
+        '<h4>Roles that can manage permissions on the dataset</h4>',
+        '<div id="manage_perm" class="manage_perm roles-selection"></div>',
+        '<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can manage permissions of this dataset. If you remove yourself you will loose the ability manage this dataset unless you are an admin.</div>',
+        '<button data-toggle="tooltip" data-placement="top" title="Save modifications made on this page" class="btn btn-default toolbtn_save_permissions primary-button" type="button"><span class="fa fa-floppy-o"> Save</span></button>',
+      '</div>',
     // CONTAINER END
-    tmpl_array.push('</div>');
-
-    return _.template(tmpl_array.join(''));
+    '</div>'
+    ].join(''));
   },
 
   templateBulkImportInModal: function(){
-    var tmpl_array = [];
-
-    tmpl_array.push('<span id="history_modal_combo_bulk" style="width:90%; margin-left: 1em; margin-right: 1em; ">');
-    tmpl_array.push('Select history: ');
-    tmpl_array.push('<select id="dataset_import_single" name="dataset_import_single" style="width:50%; margin-bottom: 1em; "> ');
-    tmpl_array.push('   <% _.each(histories, function(history) { %>'); //history select box
-    tmpl_array.push('       <option value="<%= _.escape(history.get("id")) %>"><%= _.escape(history.get("name")) %></option>');
-    tmpl_array.push('   <% }); %>');
-    tmpl_array.push('</select>');
-    tmpl_array.push('</span>');
-
-    return _.template(tmpl_array.join(''));
+    return _.template([
+    '<span id="history_modal_combo_bulk" style="width:90%; margin-left: 1em; margin-right: 1em; ">',
+      'Select history: ',
+      '<select id="dataset_import_single" name="dataset_import_single" style="width:50%; margin-bottom: 1em; "> ',
+        '<% _.each(histories, function(history) { %>', //history select btn
+          '<option value="<%= _.escape(history.get("id")) %>"><%= _.escape(history.get("name")) %></option>',
+        '<% }); %>',
+      '</select>',
+    '</span>'
+    ].join(''));
   },
 
   templateAccessSelect: function(){
-    var tmpl_array = [];
-
-    tmpl_array.push('<select id="access_select" multiple>');
-
-    tmpl_array.push('   <% _.each(options, function(option) { %>');
-    tmpl_array.push('       <option value="<%- option.name %>"><%- option.name %></option>');
-    tmpl_array.push('   <% }); %>');
-
-    tmpl_array.push('</select>');
-
-
-    return _.template(tmpl_array.join(''));
+    return _.template([
+    '<select id="access_select" multiple>',
+      '<% _.each(options, function(option) { %>',
+        '<option value="<%- option.name %>"><%- option.name %></option>',
+      '<% }); %>',
+    '</select>'
+    ].join(''));
   }
 
 });
