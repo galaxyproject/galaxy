@@ -1,11 +1,13 @@
 define([
   "libs/toastr",
   "mvc/library/library-model",
+  "utils/utils",
   'mvc/ui/ui-select'
   ],
 function(
         mod_toastr,
         mod_library_model,
+        mod_utils,
         mod_select
         ) {
 
@@ -34,8 +36,33 @@ var LibraryDatasetView = Backbone.View.extend({
 
   },
 
+  // genome select
+  select_genome : null,
+
+  // extension select
+  select_extension : null,
+
+  // extension types
+  list_extensions :[],
+
+  // datatype placeholder for extension auto-detection
+  auto: {
+      id          : 'auto',
+      text        : 'Auto-detect',
+      description : 'This system will try to detect the file type automatically.' +
+                    ' If your file is not detected properly as one of the known formats,' +
+                    ' it most likely means that it has some format problems (e.g., different' +
+                    ' number of columns on different rows). You can still coerce the system' +
+                    ' to set your data to the format you think it should be.' +
+                    ' You can also upload compressed files, which will automatically be decompressed.'
+  },
+
+  // genomes
+  list_genomes : [],
+
   initialize: function(options){
     this.options = _.extend(this.options, options);
+    this.fetchExtAndGenomes();
     if (this.options.id){
       this.fetchDataset();
     }
@@ -109,6 +136,7 @@ var LibraryDatasetView = Backbone.View.extend({
     $(".tooltip").remove();
     var template = this.templateModifyDataset();
     this.$el.html(template({item: this.model}));
+    this.renderSelectBoxes({genome_build: this.model.get('genome_build'), file_ext: this.model.get('file_ext') });
     $(".peek").html(this.model.get("peek"));
     $("#center [data-toggle]").tooltip();
   },
@@ -487,6 +515,75 @@ var LibraryDatasetView = Backbone.View.extend({
     })
   },
 
+  /**
+   * Request all extensions and genomes from Galaxy
+   * and save them sorted in arrays.
+   */
+  fetchExtAndGenomes: function(){
+    var that = this;
+    mod_utils.get({
+        url      :  Galaxy.root + "api/datatypes?extension_only=False",
+        success  :  function( datatypes ) {
+                        for (key in datatypes) {
+                            that.list_extensions.push({
+                                id              : datatypes[key].extension,
+                                text            : datatypes[key].extension,
+                                description     : datatypes[key].description,
+                                description_url : datatypes[key].description_url
+                            });
+                        }
+                        that.list_extensions.sort(function(a, b) {
+                            return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
+                        });
+                        that.list_extensions.unshift(that.auto);
+                    }
+      });
+    mod_utils.get({
+        url     :    Galaxy.root + "api/genomes",
+        success : function( genomes ) {
+                    for ( key in genomes ) {
+                        that.list_genomes.push({
+                            id      : genomes[key][1],
+                            text    : genomes[key][0]
+                        });
+                    }
+                    that.list_genomes.sort(function(a, b) {
+                        return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
+                    });
+                }
+    });
+  },
+
+  renderSelectBoxes: function(options){
+    // This won't work properly unlesss we already have the data fetched.
+    // See this.fetchExtAndGenomes()
+    // TODO switch to common resources:
+    // https://trello.com/c/dIUE9YPl/1933-ui-common-resources-and-data-into-galaxy-object
+    var current_genome = '?';
+    var current_ext = 'auto';
+    if (typeof options !== 'undefined'){
+      if (typeof options.genome_build !== 'undefined'){
+        current_genome = options.genome_build;
+      }
+      if (typeof options.file_ext !== 'undefined'){
+        current_ext = options.file_ext;
+      }
+    }
+    var that = this;
+    this.select_genome = new mod_select.View( {
+        css: 'dataset-genome-select',
+        data: that.list_genomes,
+        container: that.$el.find( '#dataset_genome_select' ),
+        value: current_genome
+    } );
+    this.select_extension = new mod_select.View({
+      css: 'dataset-extension-select',
+      data: that.list_extensions,
+      container: that.$el.find( '#dataset_extension_select' ),
+      value: current_ext
+    });
+  },
+
   templateDataset : function(){
     return _.template([
     // CONTAINER START
@@ -530,12 +627,12 @@ var LibraryDatasetView = Backbone.View.extend({
     '<div class="dataset_table">',
       '<table class="grid table table-striped table-condensed">',
         '<tr>',
-          '<th scope="row" id="id_row" data-id="<%= _.escape(item.get("ldda_id")) %>">Name</th>',
-        '<td><%= _.escape(item.get("name")) %></td>',
+          '<th class="dataset-first-column" scope="row" id="id_row" data-id="<%= _.escape(item.get("ldda_id")) %>">Name</th>',
+          '<td><%= _.escape(item.get("name")) %></td>',
         '</tr>',
         '<% if (item.get("file_ext")) { %>',
           '<tr>',
-          '<th scope="row">Data type</th>',
+            '<th scope="row">Data type</th>',
             '<td><%= _.escape(item.get("file_ext")) %></td>',
           '</tr>',
         '<% } %>',
@@ -730,11 +827,10 @@ var LibraryDatasetView = Backbone.View.extend({
             '</tr>',
           '<% } %>',
         '</table>',
-
-      '<div>',
-        '<pre class="peek">',
-        '</pre>',
-      '</div>',
+        '<div>',
+          '<pre class="peek">',
+          '</pre>',
+        '</div>',
       // DATASET END
       '</div>',
     // CONTAINER END
@@ -764,19 +860,23 @@ var LibraryDatasetView = Backbone.View.extend({
       '</ol>',
 
       '<div class="dataset_table">',
-        '<p>For more editing options please import the dataset to history and use "Edit attributes" on it.</p>',
+        '<p>For full editing options please import the dataset to history and use "Edit attributes" on it.</p>',
         '<table class="grid table table-striped table-condensed">',
           '<tr>',
-            '<th scope="row" id="id_row" data-id="<%= _.escape(item.get("ldda_id")) %>">Name</th>',
+            '<th class="dataset-first-column" scope="row" id="id_row" data-id="<%= _.escape(item.get("ldda_id")) %>">Name</th>',
             '<td><input class="input_dataset_name form-control" type="text" placeholder="name" value="<%= _.escape(item.get("name")) %>"></td>',
           '</tr>',
           '<tr>',
             '<th scope="row">Data type</th>',
-            '<td><%= _.escape(item.get("file_ext")) %></td>',
+            '<td>',
+              '<span id="dataset_extension_select" class="dataset-extension-select" />',
+            '</td>',
           '</tr>',
           '<tr>',
             '<th scope="row">Genome build</th>',
-            '<td><%= _.escape(item.get("genome_build")) %></td>',
+            '<td>',
+              '<span id="dataset_genome_select" class="dataset-genome-select" />',
+            '</td>',
           '</tr>',
           '<tr>',
             '<th scope="row">Size</th>',
