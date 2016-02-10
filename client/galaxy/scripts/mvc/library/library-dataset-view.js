@@ -634,7 +634,7 @@ var LibraryDatasetView = Backbone.View.extend({
     // CONTAINER START
     '<div class="library_style_container">',
       '<div id="library_toolbar">',
-        '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>"><button data-toggle="tooltip" data-placement="top" title="Go to latest dataset" class="btn btn-default primary-button" type="button"><span class="fa fa-caret-left fa-lg"> Latest dataset</span></button><a>',
+        '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>"><button data-toggle="tooltip" data-placement="top" title="Go to latest dataset" class="btn btn-default primary-button toolbar-item" type="button"><span class="fa fa-caret-left fa-lg"> Latest dataset</span></button><a>',
       '</div>',
 
       // BREADCRUMBS
@@ -747,8 +747,8 @@ var LibraryDatasetView = Backbone.View.extend({
     // CONTAINER START
     '<div class="library_style_container">',
       '<div id="library_toolbar">',
-        '<button data-toggle="tooltip" data-placement="top" title="Cancel modifications" class="btn btn-default toolbtn_cancel_modifications primary-button" type="button"><span class="fa fa-times"> Cancel</span></button>',
-        '<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-default toolbtn_save_modifications primary-button" type="button"><span class="fa fa-floppy-o"> Save</span></button>',
+        '<button data-toggle="tooltip" data-placement="top" title="Cancel modifications" class="btn btn-default toolbtn_cancel_modifications primary-button toolbar-item" type="button"><span class="fa fa-times"> Cancel</span></button>',
+        '<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-default toolbtn_save_modifications primary-button toolbar-item" type="button"><span class="fa fa-floppy-o"> Save</span></button>',
       '</div>',
 
       // BREADCRUMBS
@@ -837,8 +837,8 @@ var LibraryDatasetView = Backbone.View.extend({
     // CONTAINER START
     '<div class="library_style_container">',
       '<div id="library_toolbar">',
-        '<a href="#folders/<%- item.get("folder_id") %>"><button data-toggle="tooltip" data-placement="top" title="Go back to containing folder" class="btn btn-default primary-button" type="button"><span class="fa fa-folder-open-o"> Containing Folder</span></button></a>',
-        '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>"><button data-toggle="tooltip" data-placement="top" title="Go back to dataset" class="btn btn-default primary-button" type="button"><span class="fa fa-file-o"> Dataset Details</span></button><a>',
+        '<a href="#folders/<%- item.get("folder_id") %>"><button data-toggle="tooltip" data-placement="top" title="Go back to containing folder" class="btn btn-default primary-button toolbar-item" type="button"><span class="fa fa-folder-open-o"> Containing Folder</span></button></a>',
+        '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>"><button data-toggle="tooltip" data-placement="top" title="Go back to dataset" class="btn btn-default primary-button toolbar-item" type="button"><span class="fa fa-file-o"> Dataset Details</span></button><a>',
       '</div>',
 
       // BREADCRUMBS
