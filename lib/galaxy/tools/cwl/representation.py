@@ -39,7 +39,7 @@ def to_cwl_job(tool, param_dict):
             current_case = param_dict[input_name]["_cwl__type_"]
             if current_case != "null":
                 # TODO: make sure trans is not needed here...
-                case_index = input.get_current_case( current_case, None )
+                case_index = input.get_current_case( current_case )
                 case_input = input.cases[ case_index ].inputs[ "_cwl__value_"]
                 case_value = param_dict[input_name]["_cwl__value_"]
                 input_json[input_name] = simple_value(case_input, case_value)
@@ -86,7 +86,7 @@ def to_galaxy_parameters(tool, as_dict):
                 cwl_type = "string"
             galaxy_request["%s|_cwl__type_" % input_name] = cwl_type
             if cwl_type != "null":
-                current_case_index = input.get_current_case(cwl_type, None)
+                current_case_index = input.get_current_case(cwl_type)
                 current_case_input = input.cases[ current_case_index ].inputs[ "_cwl__value_" ]
                 galaxy_value = from_simple_value(current_case_input, as_dict_value)
                 galaxy_request["%s|_cwl__value_" % input_name] = galaxy_value

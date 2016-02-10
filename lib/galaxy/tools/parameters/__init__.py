@@ -4,14 +4,13 @@ Classes encapsulating Galaxy tool parameters.
 import re
 from basic import RuntimeValue
 from grouping import Conditional, Repeat, Section, UploadDataset
-from galaxy.util import string_as_bool
 from galaxy.util.json import dumps, json_fix, loads
 from galaxy.util.expressions import ExpressionContext
 
 REPLACE_ON_TRUTHY = object()
 
 
-def visit_input_values( inputs, input_values, callback, name_prefix="", label_prefix="", no_replacement_value=REPLACE_ON_TRUTHY, context=None, details=False ):
+def visit_input_values( inputs, input_values, callback, name_prefix="", label_prefix="", no_replacement_value=REPLACE_ON_TRUTHY, context=None ):
     """
     Given a tools parameter definition (`inputs`) and a specific set of
     parameter `values`, call `callback` for each non-grouping parameter,
@@ -20,40 +19,42 @@ def visit_input_values( inputs, input_values, callback, name_prefix="", label_pr
 
     If the callback returns a value, it will be replace the old value.
     """
+    def callback_helper( input, input_values, context, name_prefix, label_prefix ):
+        args = {
+            'input'             : input,
+            'value'             : input_values.get( input.name ),
+            'prefixed_name'     : '%s%s' % ( name_prefix, input.name ),
+            'prefixed_label'    : '%s%s' % ( label_prefix, input.label ),
+            'context'           : context
+        }
+        new_value = callback( **args )
+        if no_replacement_value is REPLACE_ON_TRUTHY:
+            replace = bool( new_value )
+        else:
+            replace = new_value != no_replacement_value
+        if replace:
+            input_values[ input.name ] = new_value
+
     context = ExpressionContext( input_values, context )
     for input in inputs.itervalues():
         if isinstance( input, Repeat ) or isinstance( input, UploadDataset ):
             for i, d in enumerate( input_values[ input.name ] ):
-                index = d['__index__']
+                index = d[ '__index__' ]
                 new_name_prefix = name_prefix + '%s_%d|' % ( input.name, index )
                 new_label_prefix = label_prefix + '%s %d > ' % ( input.title, i + 1 )
-                visit_input_values( input.inputs, d, callback, new_name_prefix, new_label_prefix, no_replacement_value=no_replacement_value, context=context, details=details )
+                visit_input_values( input.inputs, d, callback, new_name_prefix, new_label_prefix, no_replacement_value=no_replacement_value, context=context )
         elif isinstance( input, Conditional ):
             values = input_values[ input.name ]
-            current = values[ '__current_case__' ]
             new_name_prefix = name_prefix + input.name + '|'
-            visit_input_values( input.cases[current].inputs, values, callback, new_name_prefix, label_prefix, no_replacement_value=no_replacement_value, context=context, details=details )
+            callback_helper( input.test_param, values, context, new_name_prefix, label_prefix )
+            values[ '__current_case__' ] = input.get_current_case( values.get( input.test_param.name ) )
+            visit_input_values( input.cases[ values[ '__current_case__' ] ].inputs, values, callback, new_name_prefix, label_prefix, no_replacement_value=no_replacement_value, context=context )
         elif isinstance( input, Section ):
             values = input_values[ input.name ]
             new_name_prefix = name_prefix + input.name + '|'
-            visit_input_values( input.inputs, values, callback, new_name_prefix, label_prefix, no_replacement_value=no_replacement_value, context=context, details=details )
+            visit_input_values( input.inputs, values, callback, new_name_prefix, label_prefix, no_replacement_value=no_replacement_value, context=context )
         else:
-            args = {
-                'input'             : input,
-                'value'             : input_values.get( input.name ),
-                'prefixed_name'     : '%s%s' % ( name_prefix, input.name ),
-                'prefixed_label'    : '%s%s' % ( label_prefix, input.label )
-            }
-            if details:
-                args[ 'context' ] = context
-                args[ 'state'   ] = input_values
-            new_value = callback( **args )
-            if no_replacement_value is REPLACE_ON_TRUTHY:
-                replace = bool( new_value )
-            else:
-                replace = new_value != no_replacement_value
-            if replace:
-                input_values[ input.name ] = new_value
+            callback_helper( input, input_values, context, name_prefix, label_prefix )
 
 
 def check_param( trans, param, incoming_value, param_values ):

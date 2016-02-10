@@ -10,8 +10,6 @@ from xml.etree.ElementTree import XML
 from galaxy import util
 from galaxy.web import form_builder
 from galaxy.util import string_as_bool, sanitize_param, unicodify
-from galaxy.util import listify
-from galaxy.util.odict import odict
 from galaxy.util.expressions import ExpressionContext
 from sanitize import ToolParameterSanitizer
 import validation
@@ -454,12 +452,12 @@ class BooleanToolParameter( ToolParameter ):
     >>> print p.name
     blah
     >>> print p.get_html()
-    <input type="checkbox" id="blah" name="blah" value="true" checked="checked"><input type="hidden" name="blah" value="true">
-    >>> print p.from_html( ["true","true"] )
+    <input type="checkbox" id="blah" name="blah" value="__CHECKED__" checked="checked"><input type="hidden" name="blah" value="__NOTHING__">
+    >>> print p.from_html( ["__CHECKED__","__NOTHING__"] )
     True
     >>> print p.to_param_dict_string( True )
     bulletproof vests
-    >>> print p.from_html( ["true"] )
+    >>> print p.from_html( ["__NOTHING__"] )
     False
     >>> print p.to_param_dict_string( False )
     cellophane chests
@@ -478,18 +476,18 @@ class BooleanToolParameter( ToolParameter ):
         return form_builder.CheckboxField( self.name, checked, refresh_on_change=self.refresh_on_change )
 
     def from_html( self, value, trans=None, other_values={} ):
-        if value is True or '__CHECKED__' in value:
+        if form_builder.CheckboxField.is_checked( value ):
             return True
-        return string_as_bool( value )
+        return self.to_python( value )
 
-    def to_python( self, value, app ):
-        return ( value in [ 'True', 'true' ])
+    def to_python( self, value, app=None ):
+        return ( value in [ True, 'True', 'true' ] )
 
     def get_initial_value( self, trans, other_values ):
         return self.checked
 
     def to_param_dict_string( self, value, other_values={} ):
-        if value:
+        if self.to_python( value ):
             return self.truevalue
         else:
             return self.falsevalue
@@ -1705,13 +1703,6 @@ class BaseDataToolParameter( ToolParameter ):
             self.options_filter_attribute = options_elem.get(  'options_filter_attribute', None )
         self.is_dynamic = self.options is not None
 
-    def _switch_fields( self, fields, default_field ):
-        if len(fields) > 1:
-            field = form_builder.SwitchingSelectField( fields, default_field=default_field )
-        else:
-            field = fields.values()[0]
-        return field
-
 
 class DataToolParameter( BaseDataToolParameter ):
     # TODO, Nate: Make sure the following unit tests appropriately test the dataset security
@@ -1762,80 +1753,10 @@ class DataToolParameter( BaseDataToolParameter ):
 
     def get_html_field( self, trans, value=None, other_values={} ):
         if value is not None:
-            if type( value ) != list:
+            if not isinstance( value, list ):
                 value = [ value ]
-
-        history = self._get_history( trans )
         dataset_matcher = DatasetMatcher( trans, self, value, other_values )
-        multiple = self.multiple
-        fields = odict()
-        if multiple:
-            # Select one dataset, run one job.
-            default_field = "multiselect_single"
-            multi_select = self._get_select_dataset_field( history, dataset_matcher, multiple=True )
-            fields[ "multiselect_single" ] = multi_select
-
-            if self.__display_multirun_option():
-                collection_select = self._get_select_dataset_collection_fields( trans, dataset_matcher, suffix="", reduction=True )
-                if collection_select.get_selected(return_value=True):
-                    default_field = "multiselect_collection"
-                fields[ "multiselect_collection" ] = collection_select
-                self._ensure_selection( collection_select )
-
-        else:
-            # Select one dataset, run one job.
-            default_field = "select_single"
-            single_select = self._get_select_dataset_field( history, dataset_matcher, multiple=False )
-            fields[ "select_single" ] = single_select
-
-            if self.__display_multirun_option():
-                # Select multiple datasets, run multiple jobs.
-                multirun_key = "%s|__multirun__" % self.name
-                collection_multirun_key = "%s|__collection_multirun__" % self.name
-                if multirun_key in (other_values or {}):
-                    multirun_value = listify( other_values[ multirun_key ] )
-                    if multirun_value and len( multirun_value ) > 1:
-                        default_field = "select_multiple"
-                elif collection_multirun_key in (other_values or {}):
-                    multirun_value = listify( other_values[ collection_multirun_key ] )
-                    if multirun_value:
-                        default_field = "select_collection"
-                else:
-                    multirun_value = value
-                multi_dataset_matcher = DatasetMatcher( trans, self, multirun_value, other_values )
-                multi_select = self._get_select_dataset_field( history, multi_dataset_matcher, multiple=True, suffix="|__multirun__" )
-                fields[ "select_multiple" ] = multi_select
-                collection_field = self._get_select_dataset_collection_fields( trans, dataset_matcher, multiple=False, reduction=False )
-                fields[ "select_collection" ] = collection_field
-
-        return self._switch_fields( fields, default_field=default_field )
-
-    def _get_select_dataset_collection_fields( self, trans, dataset_matcher, multiple=False, suffix="|__collection_multirun__", reduction=False ):
-        if not reduction:
-            def value_modifier(x):
-                return x
-        else:
-            def value_modifier(value):
-                return "__collection_reduce__|%s" % value
-
-        value = dataset_matcher.value
-        if value is not None:
-            if type( value ) != list:
-                value = [ value ]
-
-        field_name = "%s%s" % ( self.name, suffix )
-        field = form_builder.SelectField( field_name, multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
-
-        for history_dataset_collection in self.match_collections( trans.history, dataset_matcher, reduction=reduction ):
-            name = history_dataset_collection.name
-            hid = str( history_dataset_collection.hid )
-            hidden_text = ""  # TODO
-            id = value_modifier( trans.security.encode_id( history_dataset_collection.id ) )
-            selected = value and history_dataset_collection in value
-            text = "%s:%s %s" % ( hid, hidden_text, name )
-            field.add_option( text, id, selected )
-
-        return field
+        return self._get_select_dataset_field( self._get_history( trans ), dataset_matcher, multiple=self.multiple )
 
     def _get_select_dataset_field( self, history, dataset_matcher, multiple=False, suffix="" ):
         field_name = "%s%s" % ( self.name, suffix )
@@ -2003,7 +1924,7 @@ class DataToolParameter( BaseDataToolParameter ):
             return str( value )
         elif isinstance( value, RuntimeValue ):
             return None
-        elif isinstance( value, list) and len(value) > 0 and isinstance( value[0], RuntimeValue):
+        elif isinstance( value, list ) and len( value ) > 0 and isinstance( value[ 0 ], RuntimeValue ):
             return None
         elif isinstance( value, list ):
             return ",".join( [ str( self.to_string( val, app ) ) for val in value ] )
@@ -2107,15 +2028,6 @@ class DataToolParameter( BaseDataToolParameter ):
         self.tool.visit_inputs( other_values, visitor )
         return False not in converter_safe
 
-    def __display_multirun_option( self ):
-        """ Certain parameters may not make sense to allow multi-run variants
-        of for instance if other parameters are filtered or contrained based on
-        this one. TODO: Figure out if these exist and how to detect them (
-        for instance should I just be checking dynamic options).
-        """
-        allow = True
-        return allow
-
     def _options_filter_attribute( self, value ):
         # HACK to get around current hardcoded limitation of when a set of dynamic options is defined for a DataToolParameter
         # it always causes available datasets to be filtered by dbkey
@@ -2213,23 +2125,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         return history_query.HistoryQuery.from_parameter( self, dataset_collection_type_descriptions )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
-        # dropped refresh values, may be needed..
-        default_field = "select_single_collection"
-        fields = odict()
-
-        collection_multirun_key = "%s|__collection_multirun__" % self.name
-        if collection_multirun_key in (other_values or {}):
-            multirun_value = other_values[ collection_multirun_key ]
-            if multirun_value:
-                default_field = "select_map_over_collections"
-        else:
-            multirun_value = value
-
-        history = self._get_history( trans )
-        fields[ "select_single_collection" ] = self._get_single_collection_field( trans=trans, history=history, value=value, other_values=other_values )
-        fields[ "select_map_over_collections" ] = self._get_select_dataset_collection_field( trans=trans, history=history, value=multirun_value, other_values=other_values )
-
-        return self._switch_fields( fields, default_field=default_field )
+        return self._get_single_collection_field( trans=trans, history=self._get_history( trans ), value=value, other_values=other_values )
 
     def match_collections( self, trans, history, dataset_matcher ):
         dataset_collections = trans.app.dataset_collections_service.history_dataset_collections( history, self._history_query( trans ) )
@@ -2265,23 +2161,6 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
                 hidden_text = " (hidden)"
             field.add_option( "%s:%s %s" % ( instance_id, hidden_text, instance_name ), dataset_collection_instance.id, selected )
         self._ensure_selection( field )
-        return field
-
-    def _get_select_dataset_collection_field( self, trans, history, multiple=False, suffix="|__collection_multirun__", value=None, other_values=None ):
-        field_name = "%s%s" % ( self.name, suffix )
-        field = form_builder.SelectField( field_name, multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
-        dataset_matcher = DatasetMatcher( trans, self, value, other_values )
-
-        for history_dataset_collection in self.match_multirun_collections( trans, history, dataset_matcher ):
-            name = history_dataset_collection.name
-            hid = str( history_dataset_collection.hid )
-            hidden_text = ""  # TODO
-            subcollection_type = self._history_query( trans ).can_map_over( history_dataset_collection ).collection_type
-            id = "%s|%s" % ( trans.security.encode_id( history_dataset_collection.id ), subcollection_type )
-            text = "%s:%s %s" % ( hid, hidden_text, name )
-
-            field.add_option( text, id, False )
-
         return field
 
     def from_html( self, value, trans, other_values={} ):

@@ -21,7 +21,7 @@ def expand_meta_parameters( trans, tool, incoming ):
     for key in to_remove:
         incoming.pop(key)
 
-    def classify_unmodified_parameter( input_key ):
+    def classifier( input_key ):
         value = incoming[ input_key ]
         if isinstance( value, dict ) and 'values' in value:
             # Explicit meta wrapper for inputs...
@@ -46,53 +46,9 @@ def expand_meta_parameters( trans, tool, incoming ):
     from galaxy.dataset_collections import matching
     collections_to_match = matching.CollectionsToMatch()
 
-    def classifier( input_key ):
-        collection_multirun_key = "%s|__collection_multirun__" % input_key
-        multirun_key = "%s|__multirun__" % input_key
-        if multirun_key in incoming:
-            multi_value = util.listify( incoming[ multirun_key ] )
-            if len( multi_value ) > 1:
-                return permutations.input_classification.MATCHED, multi_value
-            else:
-                if len( multi_value ) == 0:
-                    multi_value = None
-                return permutations.input_classification.SINGLE, multi_value[ 0 ]
-        elif collection_multirun_key in incoming:
-            incoming_val = incoming[ collection_multirun_key ]
-            values = __expand_collection_parameter( trans, input_key, incoming_val, collections_to_match )
-            return permutations.input_classification.MATCHED, values
-        else:
-            return classify_unmodified_parameter( input_key )
-
     # Stick an unexpanded version of multirun keys so they can be replaced,
     # by expand_mult_inputs.
     incoming_template = incoming.copy()
-
-    # Will reuse this in subsequent work, so design this way now...
-    def try_replace_key( key, suffix ):
-        found = key.endswith( suffix )
-        if found:
-            simple_key = key[ 0:-len( suffix ) ]
-            if simple_key not in incoming_template:
-                incoming_template[ simple_key ] = None
-        return found
-
-    multirun_found = False
-    collection_multirun_found = False
-    for key, value in incoming.iteritems():
-        if isinstance( value, dict ) and 'values' in value:
-            batch = value.get( 'batch', False )
-            if batch:
-                if __collection_multirun_parameter( value ):
-                    collection_multirun_found = True
-                else:
-                    multirun_found = True
-            else:
-                continue
-        else:
-            # Old-style batching (remove someday? - pretty hacky and didn't live in API long)
-            try_replace_key( key, "|__multirun__" ) or multirun_found
-            try_replace_key( key, "|__collection_multirun__" ) or collection_multirun_found
 
     expanded_incomings = permutations.expand_multi_inputs( incoming_template, classifier )
     if collections_to_match.has_collections():

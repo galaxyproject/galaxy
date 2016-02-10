@@ -8,7 +8,6 @@ import logging
 from operator import itemgetter
 from cgi import escape
 from galaxy.util import restore_text, relpath, nice_size, unicodify
-from galaxy.util.json import dumps
 from galaxy.web import url_for
 from binascii import hexlify
 
@@ -108,9 +107,9 @@ class CheckboxField(BaseField):
     A checkbox (boolean input)
 
     >>> print CheckboxField( "foo" ).get_html()
-    <input type="checkbox" id="foo" name="foo" value="true"><input type="hidden" name="foo" value="true">
+    <input type="checkbox" id="foo" name="foo" value="__CHECKED__"><input type="hidden" name="foo" value="__NOTHING__">
     >>> print CheckboxField( "bar", checked="yes" ).get_html()
-    <input type="checkbox" id="bar" name="bar" value="true" checked="checked"><input type="hidden" name="bar" value="true">
+    <input type="checkbox" id="bar" name="bar" value="__CHECKED__" checked="checked"><input type="hidden" name="bar" value="__NOTHING__">
     """
 
     def __init__( self, name, checked=None, refresh_on_change=False, refresh_on_change_values=None ):
@@ -127,12 +126,18 @@ class CheckboxField(BaseField):
 
     def get_html( self, prefix="", disabled=False ):
         if self.checked:
-            checked_text = ' checked="checked" '
+            checked_text = ' checked="checked"'
         else:
             checked_text = ''
         id_name = prefix + self.name
         return unicodify( '<input type="checkbox" id="%s" name="%s" value="__CHECKED__"%s%s%s><input type="hidden" name="%s" value="__NOTHING__"%s>'
                           % ( id_name, id_name, checked_text, self.get_disabled_str( disabled ), self.refresh_on_change_text, id_name, self.get_disabled_str( disabled ) ) )
+
+    @staticmethod
+    def is_checked( value ):
+        if value is True:
+            return True
+        return isinstance( value, list ) and ( '__CHECKED__' in value or len( value ) == 2 )
 
     def set_checked(self, value):
         if isinstance( value, basestring ):
@@ -564,41 +569,6 @@ class DrillDownField( BaseField ):
         recurse_options( rval, self.options, drilldown_id, expanded_options )
         rval.append( '</div>' )
         return unicodify( '\n'.join( rval ) )
-
-
-class SwitchingSelectField(BaseField):
-
-    def __init__( self, delegate_fields, default_field=None ):
-        self.delegate_fields = delegate_fields
-        self.default_field = default_field or delegate_fields.keys()[ 0 ]
-
-    @property
-    def primary_field( self ):
-        primary_field = self.delegate_fields[ self.delegate_fields.keys()[ 0 ] ]
-        return primary_field
-
-    def get_html( self, prefix="", disabled=False ):
-        primary_field = self.primary_field
-        html = '<div class="switch-option">'
-        html += primary_field.get_html( prefix=prefix, disabled=disabled )
-        html += '<input name="__switch_default__" type="hidden" value="%s" />' % self.default_field
-        options = []
-        for name, delegate_field in self.delegate_fields.items():
-            field = escape( dumps( delegate_field.to_dict() ) )
-            option = " '%s': %s" % ( name, field )
-            options.append( option )
-        html += '<script>$(document).ready( function() {\nvar switchOptions = {\n'
-        html += ','.join( options )
-        html += '};\n'
-        html += 'if ( window.enhanced_galaxy_tools ) {\n'
-        html += 'require( [ "galaxy.tools" ], function( mod_tools ) { new mod_tools.SwitchSelectView({\n'
-        html += 'el: $(\'[name="%s%s"]\').closest( "div.switch-option" ),' % ( prefix, primary_field.name )
-        html += 'default_option: "%s",\n' % self.default_field
-        html += 'prefix: "%s",\n' % prefix
-        html += 'switch_options: switchOptions }); } )\n'
-        html += "}"
-        html += '});\n</script></div>'
-        return html
 
 
 class AddressField(BaseField):

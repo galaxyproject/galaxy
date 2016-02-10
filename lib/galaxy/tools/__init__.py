@@ -1174,14 +1174,12 @@ class Tool( object, Dictifiable ):
             else:
                 raise exceptions.MessageException( execution_tracker.execution_errors[ 0 ] )
 
-
     def handle_single_execution( self, trans, rerun_remap_job_id, params, history, mapping_over_collection, execution_cache=None ):
         """
         Return a pair with whether execution is successful as well as either
         resulting output data or an error message indicating the problem.
         """
         try:
-            params = self.__remove_meta_properties( params )
             job, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id, mapping_over_collection=mapping_over_collection, execution_cache=execution_cache )
         except httpexceptions.HTTPFound, e:
             # if it's a paste redirect exception, pass it up the stack
@@ -1199,7 +1197,6 @@ class Tool( object, Dictifiable ):
                 message = 'Failure executing tool (invalid data returned from tool execution)'
             return False, message
 
-
     def find_fieldstorage( self, x ):
         if isinstance( x, FieldStorage ):
             raise InterruptedUpload( None )
@@ -1207,19 +1204,6 @@ class Tool( object, Dictifiable ):
             [ self.find_fieldstorage( y ) for y in x.values() ]
         elif isinstance(x, list):
             [ self.find_fieldstorage( y ) for y in x ]
-
-
-    def __remove_meta_properties( self, incoming ):
-        result = incoming.copy()
-        meta_property_suffixes = [
-            "__multirun__",
-            "__collection_multirun__",
-        ]
-        for key, value in incoming.iteritems():
-            if any( map( lambda s: key.endswith(s), meta_property_suffixes ) ):
-                del result[ key ]
-        return result
-
 
     @property
     def params_with_missing_data_table_entry( self ):
@@ -1307,7 +1291,7 @@ class Tool( object, Dictifiable ):
                         cond_messages = { input.test_param.name: "No value found for '%s%s', using default" % ( prefix, input.test_param.label ) }
                         messages[ input.name ] = cond_messages
                     test_value = input.test_param.get_initial_value( trans, context )
-                    current_case = input.get_current_case( test_value, trans )
+                    current_case = input.get_current_case( test_value )
                     self.check_and_update_param_values_helper( input.cases[ current_case ].inputs, {}, trans, cond_messages, context, prefix, update_values=update_values )
                 elif isinstance( input, Repeat ):
                     if input.min:
@@ -1815,8 +1799,13 @@ class Tool( object, Dictifiable ):
                     tool_dict = input.to_dict( request_context )
                     populate_model( tool_dict[ 'inputs' ], input.inputs, group_state, other_values )
                 else:
-                    tool_dict = input.to_dict( request_context, other_values=other_values )
-                    tool_dict[ 'value' ] = state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) )
+                    try:
+                        tool_dict = input.to_dict( request_context, other_values=other_values )
+                        tool_dict[ 'value' ] = state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) )
+                    except Exception as e:
+                        tool_dict = input.to_dict( request_context )
+                        log.exception('tools::to_json() - Skipping parameter expansion \'%s\': %s.' % ( input.name, e ) )
+                        pass
                     tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ], self.app )
                     sanitize( tool_dict, 'value' )
                 group_inputs[ input_index ] = tool_dict
@@ -1890,7 +1879,7 @@ class Tool( object, Dictifiable ):
         return tool_model
 
     # populates state from incoming parameters
-    def populate_state( self, request_context, inputs, incoming, state, errors, prefix='', context=None ):
+    def populate_state( self, request_context, inputs, incoming, state, errors={}, prefix='', context=None ):
         context = ExpressionContext( state, context )
         for input in inputs.itervalues():
             state[ input.name ] = input.get_initial_value( request_context, context )
@@ -1910,14 +1899,17 @@ class Tool( object, Dictifiable ):
                         self.populate_state( request_context, input.inputs, incoming, new_state, errors, prefix=rep_prefix + '|', context=context )
                     rep_index += 1
             elif input.type == 'conditional':
-                test_param_key = group_prefix + input.test_param.name
+                if input.value_ref and not input.value_ref_in_group:
+                    test_param_key = prefix + input.test_param.name
+                else:
+                    test_param_key = group_prefix + input.test_param.name
                 test_param_value = incoming.get( test_param_key, group_state.get( input.test_param.name ) )
                 value, error = check_param( request_context, input.test_param, test_param_value, context )
                 if error:
                     errors[ test_param_key ] = error
                 else:
                     try:
-                        current_case = input.get_current_case( value, request_context )
+                        current_case = input.get_current_case( value )
                         group_state = state[ input.name ] = {}
                         self.populate_state( request_context, input.cases[ current_case ].inputs, incoming, group_state, errors, prefix=group_prefix, context=context )
                         group_state[ '__current_case__' ] = current_case
@@ -1942,7 +1934,7 @@ class Tool( object, Dictifiable ):
                     rep_prefix = '%s_%d|' % ( key, rep_index )
                     self.populate_state( request_context, input.inputs, incoming, rep_state, errors, prefix=rep_prefix, context=context )
             else:
-                param_value = get_incoming_value( incoming, key, state.get( input.name ) )
+                param_value = incoming.get( key, state.get( input.name ) )
                 value, error = check_param( request_context, input, param_value, context )
                 if error:
                     errors[ key ] = error
@@ -1997,7 +1989,7 @@ class Tool( object, Dictifiable ):
             else:
                 return None
 
-        def mapping_callback( input, value, prefixed_name, prefixed_label ):
+        def mapping_callback( input, value, **kwargs ):
             if isinstance( input, DataToolParameter ):
                 if isinstance(value, list):
                     values = []
@@ -2379,21 +2371,6 @@ def json_fix( val ):
         return val.encode( "utf8" )
     else:
         return val
-
-
-def get_incoming_value( incoming, key, default ):
-    """
-    Fetch value from incoming dict directly or check special nginx upload
-    created variants of this key.
-    """
-    if "__" + key + "__is_composite" in incoming:
-        composite_keys = incoming["__" + key + "__keys"].split()
-        value = dict()
-        for composite_key in composite_keys:
-            value[composite_key] = incoming[key + "_" + composite_key]
-        return value
-    else:
-        return incoming.get( key, default )
 
 
 class InterruptedUpload( Exception ):

@@ -3,7 +3,6 @@ Modules used in building workflows
 """
 
 import logging
-import re
 import copy
 
 from xml.etree.ElementTree import Element
@@ -962,7 +961,7 @@ class ToolModule( WorkflowModule ):
     def get_data_inputs( self ):
         data_inputs = []
 
-        def callback( input, value, prefixed_name, prefixed_label ):
+        def callback( input, prefixed_name, prefixed_label, **kwargs ):
             if isinstance( input, DataToolParameter ):
                 data_inputs.append( dict(
                     name=prefixed_name,
@@ -1062,33 +1061,20 @@ class ToolModule( WorkflowModule ):
         self.runtime_post_job_actions = {}
         if step_updates:
 
-            def update_value ( input, value, state, context, prefixed_name, **args ):
-                if prefixed_name in step_updates:
-                    value, error = check_param( trans, input, step_updates[ prefixed_name ], context )
-                    if not error is None:
+            def update_value( input, context, prefixed_name, **kwargs ):
+                if prefixed_name in step_updates or '__force_update__' + prefixed_name in step_updates:
+                    value, error = check_param( trans, input, step_updates.get( prefixed_name ), context )
+                    if error is not None:
                         step_errors[ prefixed_name ] = error
-                    state[ input.name ] = value
-                    state.update( self.__meta_properties_for_state( prefixed_name, step_updates, input.name ) )
+                    return value
+                return NO_REPLACEMENT
 
             self.runtime_post_job_actions = step_updates.get( RUNTIME_POST_JOB_ACTIONS_KEY, {} )
-            visit_input_values( self.tool.inputs, state.inputs, update_value, details=True )
+            visit_input_values( self.tool.inputs, state.inputs, update_value, no_replacement_value=NO_REPLACEMENT )
             step_metadata_runtime_state = self.__step_meta_runtime_state()
             if step_metadata_runtime_state:
                 state.inputs[ RUNTIME_STEP_META_STATE_KEY ] = step_metadata_runtime_state
         return state, step_errors
-
-    def __meta_properties_for_state( self, key, incoming, input_name ):
-        meta_properties = {}
-        meta_property_suffixes = [
-            "__multirun__",
-            "__collection_multirun__",
-        ]
-        for meta_property_suffix in meta_property_suffixes:
-            multirun_key = "%s|%s" % ( key, meta_property_suffix )
-            if multirun_key in incoming:
-                multi_value = incoming[ multirun_key ]
-                meta_properties[ "%s|%s" % ( input_name, meta_property_suffix ) ] = multi_value
-        return meta_properties
 
     def __step_meta_runtime_state( self ):
         """ Build a dictionary a of meta-step runtime state (state about how
@@ -1127,7 +1113,7 @@ class ToolModule( WorkflowModule ):
             execution_state.inputs = make_dict_copy( execution_state.inputs )
 
             # Connect up
-            def callback( input, value, prefixed_name, prefixed_label ):
+            def callback( input, prefixed_name, **kwargs ):
                 replacement = NO_REPLACEMENT
                 if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
                     if iteration_elements and prefixed_name in iteration_elements:
@@ -1182,7 +1168,7 @@ class ToolModule( WorkflowModule ):
     def _find_collections_to_match( self, tool, progress, step ):
         collections_to_match = matching.CollectionsToMatch()
 
-        def callback( input, value, prefixed_name, prefixed_label ):
+        def callback( input, prefixed_name, **kwargs ):
             is_data_param = isinstance( input, DataToolParameter )
             if is_data_param and not input.multiple:
                 data = progress.replacement_for_tool_input( step, input, prefixed_name )
@@ -1226,7 +1212,7 @@ class ToolModule( WorkflowModule ):
         # Any connected input needs to have value RuntimeValue (these
         # are not persisted so we need to do it every time)
 
-        def callback( input, value, prefixed_name, prefixed_label ):
+        def callback( input, prefixed_name, **kwargs ):
             replacement = None
             if isinstance( input, DataToolParameter ):
                 if connections is None or prefixed_name in input_connections_by_name:
