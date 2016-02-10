@@ -61,7 +61,7 @@ def upgrade(migrate_engine):
         if r[1]:
             dataset_files = loads(r[1])
             for df in dataset_files:
-                if type(df) == type(dict()):
+                if isinstance(df, dict):
                     cmd = "INSERT INTO sample_dataset VALUES (%s, %s, %s, %s, '%s', '%s', '%s', '%s', '%s')"
                     cmd = cmd % ( nextval(migrate_engine, 'sample_dataset'),
                                   localtimestamp(migrate_engine),

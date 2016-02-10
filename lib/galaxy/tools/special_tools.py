@@ -10,4 +10,4 @@ SPECIAL_TOOLS = {
 def load_lib_tools( toolbox ):
     for name, path in SPECIAL_TOOLS.items():
         tool = toolbox.load_hidden_lib_tool( path )
-        log.debug( "Loaded %s tool: %s", ( name, tool.id ) )
+        log.debug( "Loaded %s tool: %s", name, tool.id )

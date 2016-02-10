@@ -64,7 +64,38 @@
 
 .ui-message {
     padding: 2px 10px 2px 10px;
-    margin: 0px;
+    margin-top: @ui-margin-vertical-large;
+    margin-bottom: 0px;
+    float: left;
+    width: 100%;
+    display: none;
+}
+
+.ui-modal {
+    display: none;
+    .modal-header.no-separator {
+        border: none !important;
+        padding-bottom: 0px !important;
+    }
+    .modal-backdrop {
+        z-index: -1;
+    }
+    .modal-body {
+        position: static;
+    }
+    .modal-footer {
+        .buttons {
+            float: right;
+        }
+    }
+}
+
+.ui-modal-styled {
+    &:extend(.ui-modal all);
+    ul {
+        list-style-type: square;
+        padding: 5px 25px;
+    }
 }
 
 // icons
@@ -250,6 +281,10 @@
 	font-size: 0.9em;
 }
 
+.ui-form-help {
+    overflow: auto;
+}
+
 .ui-form-info {
         &:extend(.toolParamHelp);
         clear: both !important;
@@ -422,7 +457,6 @@
 .ui-popover {
     max-width: 700px;
     display: none;
-
     .popover-close {
         position: absolute;
         right: 10px;
@@ -430,7 +464,6 @@
         font-size: 1.2em;
         cursor: pointer;
     }
-    
     .popover-title {
         padding: 4px 10px;
     }

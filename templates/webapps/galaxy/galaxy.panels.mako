@@ -102,16 +102,6 @@
                 },
                 "libs/d3": { exports: "d3" },
             },
-            // this section allows us to require the compiled tool menu handlebars templates from compiled/ using requirejs
-            // even if they're formatted (with the extension) to load via handlebars-loader when using webpack
-            map: {
-                'mvc/tool/tools': {
-                    'templates/tool_form.handlebars'    : 'templates/compiled/tool_form',
-                    'templates/tool_search.handlebars'  : 'templates/compiled/tool_search',
-                    'templates/panel_section.handlebars': 'templates/compiled/panel_section',
-                    'templates/tool_link.handlebars'    : 'templates/compiled/tool_link',
-                },
-            },
             // cache buster based on templated server (re)start time
             urlArgs: 'v=${app.server_starttime}'
         });
@@ -144,7 +134,6 @@
 
     ## alternate call where the module calls itself when included (no call to GalaxyApp()) - the above won't be needed
     ##precondition: module must call jq onready itself
-    ##<% app_config = self.galaxy_config[ 'app' ]; print app_config %>
     ##${ galaxy_client.load( app=( app_config[ 'jscript' ] if 'jscript' in app_config else None )) }
 
     ##TODO: at that point, we can think about optimizing the various apps

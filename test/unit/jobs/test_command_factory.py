@@ -1,4 +1,7 @@
+import os
 from os import getcwd
+import shutil
+from tempfile import mkdtemp
 from unittest import TestCase
 
 from galaxy.jobs.command_factory import build_command
@@ -12,7 +15,8 @@ TEST_FILES_PATH = "file_path"
 class TestCommandFactory(TestCase):
 
     def setUp(self):
-        self.job_wrapper = MockJobWrapper()
+        self.job_dir = mkdtemp()
+        self.job_wrapper = MockJobWrapper(self.job_dir)
         self.workdir_outputs = []
 
         def workdir_outputs(job_wrapper, **kwds):
@@ -23,6 +27,9 @@ class TestCommandFactory(TestCase):
         self.include_metadata = False
         self.include_work_dir_outputs = True
 
+    def tearDown(self):
+        shutil.rmtree(self.job_dir)
+
     def test_simplest_command(self):
         self.include_work_dir_outputs = False
         self.__assert_command_is( MOCK_COMMAND_LINE )
@@ -32,6 +39,14 @@ class TestCommandFactory(TestCase):
         dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
         self.job_wrapper.dependency_shell_commands = dep_commands
         self.__assert_command_is( "%s; %s" % (dep_commands[0], MOCK_COMMAND_LINE) )
+
+    def test_shell_commands_external(self):
+        self.job_wrapper.commands_in_new_shell = True
+        self.include_work_dir_outputs = False
+        dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
+        self.job_wrapper.dependency_shell_commands = dep_commands
+        self.__assert_command_is( "%s/tool_script.sh" % self.job_wrapper.working_directory)
+        self.__assert_tool_script_is( "#!/bin/sh\n%s; %s" % (dep_commands[0], MOCK_COMMAND_LINE) )
 
     def test_remote_dependency_resolution(self):
         self.include_work_dir_outputs = False
@@ -119,6 +134,13 @@ class TestCommandFactory(TestCase):
         command = self.__command(**command_kwds)
         self.assertEqual(command, expected_command)
 
+    def __assert_tool_script_is(self, expected_command):
+        self.assertEqual(open(self.__tool_script, "r").read(), expected_command)
+
+    @property
+    def __tool_script(self):
+        return os.path.join(self.job_dir, "tool_script.sh")
+
     def __command(self, **extra_kwds):
         kwds = dict(
             runner=self.runner,
@@ -132,15 +154,21 @@ class TestCommandFactory(TestCase):
 
 class MockJobWrapper(object):
 
-    def __init__(self):
+    def __init__(self, job_dir):
         self.write_version_cmd = None
         self.command_line = MOCK_COMMAND_LINE
         self.dependency_shell_commands = []
         self.metadata_line = None
         self.configured_external_metadata_kwds = None
-        self.working_directory = "job1"
+        self.working_directory = job_dir
         self.prepare_input_files_cmds = None
         self.commands_in_new_shell = False
+        self.app = Bunch(
+            config=Bunch(
+                check_job_script_integrity=False,
+            )
+        )
+        self.shell = "/bin/sh"
 
     def get_command_line(self):
         return self.command_line

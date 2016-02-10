@@ -5,6 +5,8 @@ from abc import (
 import os
 import string
 
+import six
+
 from galaxy.util import asbool
 from ..deps import docker_util
 
@@ -208,7 +210,7 @@ class DockerContainer(Container):
         # Allow destinations to explicitly set environment variables just for
         # docker container. Better approach is to set for destination and then
         # pass through only what tool needs however. (See todo in ToolInfo.)
-        for key, value in self.destination_info.iteritems():
+        for key, value in six.iteritems(self.destination_info):
             if key.startswith("docker_env_"):
                 env = key[len("docker_env_"):]
                 env_directives.append('"%s=%s"' % (env, value))

@@ -34,7 +34,8 @@ from pip.platform import get_specific_platform
 
 
 compatible_platforms = {
-    'centos': 'rhel'
+    'centos': 'rhel',
+    'scientific': 'rhel',
 }
 
 
@@ -46,7 +47,7 @@ def install_compat():
     compat_plat = compatible_platforms.get(this_plat, None)
     rval = {}
     if compat_plat:
-        print('{} is binary compatible with {} (and can install {} wheels)'
+        print('{0} is binary compatible with {1} (and can install {2} wheels)'
               .format(this_plat, compat_plat, compat_plat),
               file=sys.stderr)
         for py, abi, plat in get_supported():

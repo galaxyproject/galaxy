@@ -14,6 +14,7 @@
     "underscore": "~1.7.0",
     "backbone": "~1.1.2",
     "bootstrap": "~3.3.2",
+    "bootstrap-tour": "~0.10.2",
     "d3": "~3.5.3",
     "farbtastic": "~2.0.0-alpha.1",
     "toastr": "~2.1.0",
@@ -30,7 +31,6 @@
     "jstree": "~3.0.9",
     "jquery-ui": "git://github.com/jquery/jquery-ui.git#~1.11.2",
     "threedubmedia.jquery.event": "*",
-    "handlebars": "~3.0.0",
     "jquery-migrate": "~1.2.1",
     "requirejs": "~2.1.17"
   },

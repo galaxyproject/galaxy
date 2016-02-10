@@ -6,6 +6,8 @@ define([
     "utils/localization"
 ], function( HISTORY_CONTENT, HDA_MODEL, HDCA_MODEL, BASE_MVC, _l ){
 
+'use strict';
+
 var logNamespace = 'history';
 //==============================================================================
 /** @class Backbone collection for history content.

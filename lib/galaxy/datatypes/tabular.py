@@ -1,6 +1,8 @@
 """
 Tabular datatype
 """
+from __future__ import absolute_import
+
 import csv
 import gzip
 import logging
@@ -18,7 +20,7 @@ from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers
 from galaxy.util.json import dumps
 
-import dataproviders
+from . import dataproviders
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +41,7 @@ class TabularData( data.Text ):
     MetadataElement( name="delimiter", default='\t', desc="Data delimiter", readonly=True, visible=False, optional=True, no_value=[] )
 
     def set_peek( self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None ):
-        super(TabularData, self).set_peek( dataset, line_count=line_count, is_multi_byte=is_multi_byte, WIDTH=WIDTH, skipchars=skipchars)
+        super(TabularData, self).set_peek( dataset, line_count=line_count, is_multi_byte=is_multi_byte, WIDTH=WIDTH, skipchars=skipchars, line_wrap=False )
         if dataset.metadata.comment_lines:
             dataset.blurb = "%s, %s comments" % ( dataset.blurb, util.commaify( str( dataset.metadata.comment_lines ) ) )
 
@@ -81,6 +83,7 @@ class TabularData( data.Text ):
             # For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
             max_peek_size = 1000000  # 1 MB
             if os.stat( dataset.file_name ).st_size < max_peek_size:
+                self._clean_and_set_mime_type( trans, dataset.get_mime() )
                 return open( dataset.file_name )
             else:
                 trans.response.set_content_type( "text/html" )
@@ -179,6 +182,9 @@ class TabularData( data.Text ):
                     out.append( '<tr><td colspan="100%%">%s</td></tr>' % escape( line ) )
                 elif line:
                     elems = line.split( dataset.metadata.delimiter )
+                    # pad shortened elems, since lines could have been truncated by width
+                    if len( elems ) < columns:
+                        elems.extend( [''] * ( columns - len( elems ) ) )
                     # we may have an invalid comment line or invalid data
                     if len( elems ) != columns:
                         out.append( '<tr><td colspan="100%%">%s</td></tr>' % escape( line ) )
@@ -457,15 +463,15 @@ class Sam( Tabular ):
                     break  # EOF
                 if line:
                     if line[0] != '@':
-                        linePieces = line.split('\t')
-                        if len(linePieces) < 11:
+                        line_pieces = line.split('\t')
+                        if len(line_pieces) < 11:
                             return False
                         try:
-                            int(linePieces[1])
-                            int(linePieces[3])
-                            int(linePieces[4])
-                            int(linePieces[7])
-                            int(linePieces[8])
+                            int(line_pieces[1])
+                            int(line_pieces[3])
+                            int(line_pieces[4])
+                            int(line_pieces[7])
+                            int(line_pieces[8])
                         except ValueError:
                             return False
                         count += 1
@@ -788,18 +794,18 @@ class Eland( Tabular ):
                 if not line:
                     break  # EOF
                 if line:
-                    linePieces = line.split('\t')
-                    if len(linePieces) != 22:
+                    line_pieces = line.split('\t')
+                    if len(line_pieces) != 22:
                         return False
                     try:
-                        if long(linePieces[1]) < 0:
+                        if long(line_pieces[1]) < 0:
                             raise Exception('Out of range')
-                        if long(linePieces[2]) < 0:
+                        if long(line_pieces[2]) < 0:
                             raise Exception('Out of range')
-                        if long(linePieces[3]) < 0:
+                        if long(line_pieces[3]) < 0:
                             raise Exception('Out of range')
-                        int(linePieces[4])
-                        int(linePieces[5])
+                        int(line_pieces[4])
+                        int(line_pieces[5])
                         # can get a lot more specific
                     except ValueError:
                         fh.close()
@@ -834,13 +840,13 @@ class Eland( Tabular ):
             # Otherwise, read the whole thing and set num data lines.
             for i, line in enumerate(dataset_fh):
                 if line:
-                    linePieces = line.split('\t')
-                    if len(linePieces) != 22:
+                    line_pieces = line.split('\t')
+                    if len(line_pieces) != 22:
                         raise Exception('%s:%d:Corrupt line!' % (dataset.file_name, i))
-                    lanes[linePieces[2]] = 1
-                    tiles[linePieces[3]] = 1
-                    barcodes[linePieces[6]] = 1
-                    reads[linePieces[7]] = 1
+                    lanes[line_pieces[2]] = 1
+                    tiles[line_pieces[3]] = 1
+                    barcodes[line_pieces[6]] = 1
+                    reads[line_pieces[7]] = 1
                 pass
             dataset.metadata.data_lines = i + 1
             dataset_fh.close()

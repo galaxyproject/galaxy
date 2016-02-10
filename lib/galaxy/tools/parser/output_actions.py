@@ -593,7 +593,9 @@ def parse_cast_attribute( cast ):
     elif cast == 'str':
         cast = str
     else:
-        cast = lambda x: x  # return value as-is
+        # return value as-is
+        def cast(x):
+            return x
     return cast
 
 

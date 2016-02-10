@@ -9,6 +9,8 @@ define([
     "ui/hoverhighlight"
 ], function( HDCA, STATES, BASE_MVC, UI_MODAL, naturalSort, _l ){
 
+'use strict';
+
 var logNamespace = 'collections';
 /*==============================================================================
 TODO:
@@ -1008,7 +1010,7 @@ var collectionCreatorModal = function _collectionCreatorModal( elements, options
         title   : options.title || _l( 'Create a collection' ),
         body    : creator.$el,
         width   : '80%',
-        height  : 'min-content',
+        height  : '100%',
         closing_events: true
     });
     creator.render();

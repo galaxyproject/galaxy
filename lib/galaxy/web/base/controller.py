@@ -1147,7 +1147,9 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         # Copy workflow.
         imported_stored = model.StoredWorkflow()
         imported_stored.name = "imported: " + stored.name
-        imported_stored.latest_workflow = stored.latest_workflow
+        workflow = stored.latest_workflow.copy()
+        workflow.stored_workflow = imported_stored
+        imported_stored.latest_workflow = workflow
         imported_stored.user = trans.user
         # Save new workflow.
         session = trans.sa_session

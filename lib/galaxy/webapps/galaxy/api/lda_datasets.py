@@ -392,15 +392,16 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         trans.sa_session.flush()
 
         rval = trans.security.encode_all_ids( dataset.to_dict() )
+        nice_size = util.nice_size( int( dataset.library_dataset_dataset_association.get_size() ) )
+        rval[ 'file_size' ] = nice_size
         rval[ 'update_time' ] = dataset.update_time.strftime( "%Y-%m-%d %I:%M %p" )
         rval[ 'deleted' ] = dataset.deleted
         rval[ 'folder_id' ] = 'F' + rval[ 'folder_id' ]
         return rval
 
     @expose_api
-    def load( self, trans, **kwd ):
+    def load( self, trans, payload=None, **kwd ):
         """
-        load( self, trans, **kwd ):
         * POST /api/libraries/datasets
         Load dataset from the given source into the library.
         Source can be:
@@ -411,30 +412,34 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 example path: path/to/galaxy/$library_import_dir/{admin can browse everything here}
             (admin)any absolute or relative path - option allowed with "allow_library_path_paste" in galaxy.ini
 
-        :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
-        :type   encoded_folder_id:      an encoded id string
-        :param  source:                 source the datasets should be loaded form
-        :type   source:                 str
-        :param  link_data:              flag whether to link the dataset to data or copy it to Galaxy, defaults to copy
-                                        while linking is set to True all symlinks will be resolved _once_
-        :type   link_data:              bool
-        :param  preserve_dirs:          flag whether to preserve the directory structure when importing dir
-                                        if False only datasets will be imported
-        :type   preserve_dirs:          bool
-        :param  file_type:              file type of the loaded datasets, defaults to 'auto' (autodetect)
-        :type   file_type:              str
-        :param  dbkey:                  dbkey of the loaded genome, defaults to '?' (unknown)
-        :type   dbkey:                  str
-
+        :param   payload: dictionary structure containing:
+            :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
+            :type   encoded_folder_id:      an encoded id string
+            :param  source:                 source the datasets should be loaded from
+            :type   source:                 str
+            :param  link_data:              flag whether to link the dataset to data or copy it to Galaxy, defaults to copy
+                                            while linking is set to True all symlinks will be resolved _once_
+            :type   link_data:              bool
+            :param  preserve_dirs:          flag whether to preserve the directory structure when importing dir
+                                            if False only datasets will be imported
+            :type   preserve_dirs:          bool
+            :param  file_type:              file type of the loaded datasets, defaults to 'auto' (autodetect)
+            :type   file_type:              str
+            :param  dbkey:                  dbkey of the loaded genome, defaults to '?' (unknown)
+            :type   dbkey:                  str
+        :type   dictionary
         :returns:   dict containing information about the created upload job
         :rtype:     dictionary
+        :raises: RequestParameterMissingException, AdminRequiredException, ConfigDoesNotAllowException, RequestParameterInvalidException
+                    InsufficientPermissionsException, ObjectNotFound
         """
-
+        if payload:
+            kwd.update(payload)
         kwd[ 'space_to_tab' ] = 'False'
         kwd[ 'to_posix_lines' ] = 'True'
         kwd[ 'dbkey' ] = kwd.get( 'dbkey', '?' )
         kwd[ 'file_type' ] = kwd.get( 'file_type', 'auto' )
-        kwd[' link_data_only' ] = 'link_to_files' if util.string_as_bool( kwd.get( 'link_data', False ) ) else 'copy_files'
+        kwd['link_data_only'] = 'link_to_files' if util.string_as_bool( kwd.get( 'link_data', False ) ) else 'copy_files'
         encoded_folder_id = kwd.get( 'encoded_folder_id', None )
         if encoded_folder_id is not None:
             folder_id = self.folder_manager.cut_and_decode( trans, encoded_folder_id )
@@ -488,16 +493,15 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         kwd[ 'filesystem_paths' ] = path
         if source in [ 'importdir_folder' ]:
             kwd[ 'filesystem_paths' ] = os.path.join( import_base_dir, path )
-        params = util.Params( kwd )
         # user wants to import one file only
         if source in [ "userdir_file", "importdir_file" ]:
             file = os.path.abspath( path )
             abspath_datasets.append( trans.webapp.controllers[ 'library_common' ].make_library_uploaded_dataset(
-                trans, 'api', params, os.path.basename( file ), file, 'server_dir', library_bunch ) )
+                trans, 'api', kwd, os.path.basename( file ), file, 'server_dir', library_bunch ) )
         # user wants to import whole folder
         if source == "userdir_folder":
             uploaded_datasets_bunch = trans.webapp.controllers[ 'library_common' ].get_path_paste_uploaded_datasets(
-                trans, 'api', params, library_bunch, 200, '' )
+                trans, 'api', kwd, library_bunch, 200, '' )
             uploaded_datasets = uploaded_datasets_bunch[ 0 ]
             if uploaded_datasets is None:
                 raise exceptions.ObjectNotFound( 'Given folder does not contain any datasets.' )
@@ -508,7 +512,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         if source in [ "admin_path", "importdir_folder" ]:
             # validate the path is within root
             uploaded_datasets_bunch = trans.webapp.controllers[ 'library_common' ].get_path_paste_uploaded_datasets(
-                trans, 'api', params, library_bunch, 200, '' )
+                trans, 'api', kwd, library_bunch, 200, '' )
             uploaded_datasets = uploaded_datasets_bunch[0]
             if uploaded_datasets is None:
                 raise exceptions.ObjectNotFound( 'Given folder does not contain any datasets.' )
@@ -517,10 +521,10 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 abspath_datasets.append( ud )
         json_file_path = upload_common.create_paramfile( trans, abspath_datasets )
         data_list = [ ud.data for ud in abspath_datasets ]
-        job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=folder )
-        # HACK: Prevent outputs_to_working_directory from overwriting inputs when "linking"
-        job.add_parameter( 'link_data_only', dumps( kwd.get( 'link_data_only', 'copy_files' ) ) )
-        job.add_parameter( 'uuid', dumps( kwd.get( 'uuid', None ) ) )
+        job_params = {}
+        job_params['link_data_only'] = dumps( kwd.get( 'link_data_only', 'copy_files' ) )
+        job_params['uuid'] = dumps( kwd.get( 'uuid', None ) )
+        job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=folder, job_params=job_params )
         trans.sa_session.add( job )
         trans.sa_session.flush()
         job_dict = job.to_dict()

@@ -24,34 +24,55 @@ def lint_inputs(tool_xml, lint_ctx):
         if param_type == "data":
             if "format" not in param_attrib:
                 lint_ctx.warn("Param input [%s] with no format specified - 'data' format will be assumed.", param_name)
-        # TODO: Validate type, much more...
 
-    conditional_selects = tool_xml.findall("./inputs//conditional")
-    for conditional in conditional_selects:
-        select = conditional.find('./param[@type="select"]') or []
-        boolean = conditional.find('./param[@type="boolean"]') or []
-        # Should conditionals ever not have a select?
-        if not len(select) and not len(boolean):
-            lint_ctx.warn("Conditional without <param type=\"select\" /> or <param type=\"boolean\" />")
-            continue
+        if param_type == "select":
+            dynamic_options = param.get("dynamic_options", None)
+            if dynamic_options is None:
+                dynamic_options = param.find("options")
 
-        if len(select):
-            select_options = select.findall('./option[@value]')
+            select_options = _find_with_attribute(param, 'option', 'value')
             if any(['value' not in option.attrib for option in select_options]):
                 lint_ctx.error("Option without value")
 
             select_option_ids = [option.attrib.get('value', None) for option in select_options]
-        else:
+
+            if dynamic_options is None and len(select_options) == 0:
+                message = "No options defined for select [%s]" % param_name
+                lint_ctx.warn(message)
+
+        # TODO: Validate type, much more...
+
+    conditional_selects = tool_xml.findall("./inputs//conditional")
+    for conditional in conditional_selects:
+        booleans = _find_with_attribute(conditional, "param", "type", "boolean")
+        selects = _find_with_attribute(conditional, "param", "type", "select")
+        # Should conditionals ever not have a select?
+        if not len(selects) and not len(booleans):
+            lint_ctx.warn("Conditional without <param type=\"select\" /> or <param type=\"boolean\" />")
+            continue
+
+        test_param_optional = False
+        for select in selects:
+            test_param_optional = test_param_optional or (select.attrib.get('optional', None) is not None)
+            select_options = _find_with_attribute(select, 'option', 'value')
+            select_option_ids = [option.attrib.get('value', None) for option in select_options]
+
+        for boolean in booleans:
+            test_param_optional = test_param_optional or (boolean.attrib.get('optional', None) is not None)
             select_option_ids = [
-                boolean.attrib.get('truevalue', 'True'),
-                boolean.attrib.get('falsevalue', 'False')
+                boolean.attrib.get('truevalue', 'true'),
+                boolean.attrib.get('falsevalue', 'false')
             ]
+
+        if test_param_optional:
+            lint_ctx.warn("Conditional test parameter declares an invalid optional attribute.")
 
         whens = conditional.findall('./when')
         if any(['value' not in when.attrib for when in whens]):
             lint_ctx.error("When without value")
 
-        when_ids = [when.attrib.get('value', None) for when in whens]
+        when_ids = [w.attrib.get('value', None) for w in whens]
+        when_ids = [i.lower() if i in ["True", "False"] else i for i in when_ids]
 
         for select_id in select_option_ids:
             if select_id not in when_ids:
@@ -82,3 +103,17 @@ def lint_repeats(tool_xml, lint_ctx):
             lint_ctx.error("Repeat does not specify name attribute.")
         if "title" not in repeat.attrib:
             lint_ctx.error("Repeat does not specify title attribute.")
+
+
+def _find_with_attribute(element, tag, attribute, test_value=None):
+    rval = []
+    for el in (element.findall('./%s' % tag) or []):
+        if attribute not in el.attrib:
+            continue
+        value = el.attrib[attribute]
+        if test_value is not None:
+            if value == test_value:
+                rval.append(el)
+        else:
+            rval.append(el)
+    return rval

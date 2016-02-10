@@ -91,9 +91,9 @@ class Ipynb( Json ):
         config = trans.app.config
         trust = getattr( config, 'trust_ipython_notebook_conversion', False )
         if trust:
-            return self._display_data_trusted(trans, dataset, preview=preview, fileame=filename, to_ext=to_ext, chunk=chunk, **kwd)
+            return self._display_data_trusted(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, chunk=chunk, **kwd)
         else:
-            return super(Ipynb, self).display_data( trans, dataset, preview=preview, fileame=filename, to_ext=to_ext, chunk=chunk, **kwd )
+            return super(Ipynb, self).display_data( trans, dataset, preview=preview, filename=filename, to_ext=to_ext, chunk=chunk, **kwd )
 
     def _display_data_trusted(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
         preview = string_as_bool( preview )

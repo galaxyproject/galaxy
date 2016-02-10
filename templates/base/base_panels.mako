@@ -22,7 +22,8 @@
 <%def name="stylesheets()">
     ${h.css(
         'base',
-        'jquery.rating'
+        'jquery.rating',
+        'bootstrap-tour'
     )}
     <style type="text/css">
     #center {
@@ -76,16 +77,6 @@
             },
             // cache busting using time server was restarted
             urlArgs: 'v=${app.server_starttime}',
-            // this section allows us to require the compiled tool menu handlebars templates from compiled/ using requirejs
-            // even if they're formatted (with the extension) to load via handlebars-loader when using webpack
-            map: {
-                'mvc/tool/tools': {
-                    'templates/tool_form.handlebars'    : 'templates/compiled/tool_form',
-                    'templates/tool_search.handlebars'  : 'templates/compiled/tool_search',
-                    'templates/panel_section.handlebars': 'templates/compiled/panel_section',
-                    'templates/tool_link.handlebars'    : 'templates/compiled/tool_link',
-                },
-            },
         });
     </script>
 

@@ -1,23 +1,25 @@
 """
 Provides mapping between extensions and datatypes, mime-types, etc.
 """
+from __future__ import absolute_import
+
 import os
 import tempfile
 import logging
 import imp
-import data
-import tabular
-import interval
-import images
-import sequence
-import qualityscore
-import xml
-import coverage
-import tracks
-import binary
+from . import data
+from . import tabular
+from . import interval
+from . import images
+from . import sequence
+from . import qualityscore
+from . import xml
+from . import coverage
+from . import tracks
+from . import binary
 import galaxy.util
 from galaxy.util.odict import odict
-from display_applications.application import DisplayApplication
+from .display_applications.application import DisplayApplication
 
 
 class ConfigurationError( Exception ):

@@ -1,11 +1,12 @@
 """
 File format detector
 """
+from __future__ import absolute_import
+
 import gzip
 import logging
 import os
 import re
-import registry
 import shutil
 import sys
 import tempfile
@@ -253,75 +254,75 @@ def is_column_based( fname, sep='\t', skip=0, is_multi_byte=False ):
     return True
 
 
-def guess_ext( fname, sniff_order=None, is_multi_byte=False ):
+def guess_ext( fname, sniff_order, is_multi_byte=False ):
     """
     Returns an extension that can be used in the datatype factory to
     generate a data for the 'fname' file
 
     >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
-    >>> guess_ext(fname)
+    >>> from galaxy.datatypes import registry
+    >>> datatypes_registry = registry.Registry()
+    >>> datatypes_registry.load_datatypes()
+    >>> sniff_order = datatypes_registry.sniff_order
+    >>> guess_ext(fname, sniff_order)
     'xml'
     >>> fname = get_test_fname('interval.interval')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'interval'
     >>> fname = get_test_fname('interval1.bed')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'bed'
     >>> fname = get_test_fname('test_tab.bed')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'bed'
     >>> fname = get_test_fname('sequence.maf')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'maf'
     >>> fname = get_test_fname('sequence.fasta')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'fasta'
     >>> fname = get_test_fname('file.html')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'html'
     >>> fname = get_test_fname('test.gtf')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'gtf'
     >>> fname = get_test_fname('test.gff')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'gff'
     >>> fname = get_test_fname('gff_version_3.gff')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'gff3'
     >>> fname = get_test_fname('temp.txt')
     >>> file(fname, 'wt').write("a\\t2\\nc\\t1\\nd\\t0")
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'tabular'
     >>> fname = get_test_fname('temp.txt')
     >>> file(fname, 'wt').write("a 1 2 x\\nb 3 4 y\\nc 5 6 z")
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'txt'
     >>> fname = get_test_fname('test_tab1.tabular')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'tabular'
     >>> fname = get_test_fname('alignment.lav')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'lav'
     >>> fname = get_test_fname('1.sff')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'sff'
     >>> fname = get_test_fname('1.bam')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'bam'
     >>> fname = get_test_fname('3unsorted.bam')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'bam'
     >>> fname = get_test_fname('test.idpDB')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'idpdb'
     >>> fname = get_test_fname('test.mz5')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'h5'
     """
-    if sniff_order is None:
-        datatypes_registry = registry.Registry()
-        datatypes_registry.load_datatypes()
-        sniff_order = datatypes_registry.sniff_order
     for datatype in sniff_order:
         """
         Some classes may not have a sniff function, which is ok.  In fact, the

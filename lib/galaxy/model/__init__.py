@@ -27,12 +27,10 @@ try:
 except ImportError:
     pexpect = None
 
-import galaxy.datatypes
-import galaxy.datatypes.registry
 import galaxy.model.orm.now
+import galaxy.model.metadata
 import galaxy.security.passwords
 import galaxy.util
-from galaxy.datatypes.metadata import MetadataCollection
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.security import get_permitted_actions
@@ -50,9 +48,7 @@ from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
 
 log = logging.getLogger( __name__ )
 
-datatypes_registry = galaxy.datatypes.registry.Registry()
-# Default Value Required for unit tests
-datatypes_registry.load_datatypes()
+_datatypes_registry = None
 
 # When constructing filters with in for a fixed set of ids, maximum
 # number of items to place in the IN statement. Different databases
@@ -80,12 +76,18 @@ class ConverterDependencyException(Exception):
         return repr(self.value)
 
 
+def _get_datatypes_registry():
+    if _datatypes_registry is None:
+        raise Exception("galaxy.model.set_datatypes_registry must be called before performing certain DatasetInstance operations.")
+    return _datatypes_registry
+
+
 def set_datatypes_registry( d_registry ):
     """
     Set up datatypes_registry
     """
-    global datatypes_registry
-    datatypes_registry = d_registry
+    global _datatypes_registry
+    _datatypes_registry = d_registry
 
 
 class HasName:
@@ -1398,7 +1400,6 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         assert db_session is not None
         query = db_session.query( content_class ).filter( content_class.table.c.history_id == self.id )
         query = query.order_by( content_class.table.c.hid.asc() )
-        python_filter = None
         deleted = galaxy.util.string_as_bool_or_none( kwds.get( 'deleted', None ) )
         if deleted is not None:
             query = query.filter( content_class.deleted == deleted )
@@ -1411,11 +1412,8 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             if len(ids) < max_in_filter_length:
                 query = query.filter( content_class.id.in_(ids) )
             else:
-                python_filter = lambda content: content.id in ids
-        if python_filter:
-            return ifilter(python_filter, query)
-        else:
-            return query
+                query = ifilter(lambda content: content.id in ids, query)
+        return query
 
     def __collection_contents_iter( self, **kwds ):
         return self.__filter_contents( HistoryDatasetCollectionAssociation, **kwds )
@@ -1862,13 +1860,13 @@ class DatasetInstance( object ):
 
     @property
     def datatype( self ):
-        return datatypes_registry.get_datatype_by_extension( self.extension )
+        return _get_datatypes_registry().get_datatype_by_extension( self.extension )
 
     def get_metadata( self ):
         # using weakref to store parent (to prevent circ ref),
         #   does a Session.clear() cause parent to be invalidated, while still copying over this non-database attribute?
         if not hasattr( self, '_metadata_collection' ) or self._metadata_collection.parent != self:
-            self._metadata_collection = MetadataCollection( self )
+            self._metadata_collection = galaxy.model.metadata.MetadataCollection( self )
         return self._metadata_collection
 
     def set_metadata( self, bunch ):
@@ -1896,7 +1894,7 @@ class DatasetInstance( object ):
 
     def change_datatype( self, new_ext ):
         self.clear_associated_files()
-        datatypes_registry.change_datatype( self, new_ext )
+        _get_datatypes_registry().change_datatype( self, new_ext )
 
     def get_size( self, nice_size=False ):
         """Returns the size of the data on disk"""
@@ -1933,7 +1931,7 @@ class DatasetInstance( object ):
     def get_mime( self ):
         """Returns the mime type of the data"""
         try:
-            return datatypes_registry.get_mimetype_by_extension( self.extension.lower() )
+            return _get_datatypes_registry().get_mimetype_by_extension( self.extension.lower() )
         except AttributeError:
             # extension is None
             return 'data'
@@ -2058,14 +2056,14 @@ class DatasetInstance( object ):
         return None
 
     def get_converter_types(self):
-        return self.datatype.get_converter_types( self, datatypes_registry )
+        return self.datatype.get_converter_types( self, _get_datatypes_registry() )
 
     def can_convert_to(self, format):
         return format in self.get_converter_types()
 
     def find_conversion_destination( self, accepted_formats, **kwd ):
         """Returns ( target_ext, existing converted dataset )"""
-        return self.datatype.find_conversion_destination( self, accepted_formats, datatypes_registry, **kwd )
+        return self.datatype.find_conversion_destination( self, accepted_formats, _get_datatypes_registry(), **kwd )
 
     def add_validation_error( self, validation_error ):
         self.validation_errors.append( validation_error )
@@ -3181,7 +3179,7 @@ class DatasetCollectionInstance( object, HasName ):
         return changed
 
 
-class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, Dictifiable ):
+class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnotations, Dictifiable ):
     """ Associates a DatasetCollection with a History. """
     editable_keys = ( 'name', 'deleted', 'visible' )
 
@@ -3561,6 +3559,28 @@ class Workflow( object, Dictifiable ):
         """
         return self.top_level_workflow.stored_workflow
 
+    def copy(self):
+        """ Copy a workflow (without user information) for a new
+        StoredWorkflow object.
+        """
+        copied_workflow = Workflow()
+        copied_workflow.name = self.name
+        copied_workflow.has_cycles = self.has_cycles
+        copied_workflow.has_errors = self.has_errors
+
+        # Map old step ids to new steps
+        step_mapping = {}
+        copied_steps = []
+        for step in self.steps:
+            copied_step = WorkflowStep()
+            copied_steps.append(copied_step)
+            step_mapping[step.id] = copied_step
+
+        for old_step, new_step in zip(self.steps, copied_steps):
+            old_step.copy_to(new_step, step_mapping)
+        copied_workflow.steps = copied_steps
+        return copied_workflow
+
     def log_str(self):
         extra = ""
         if self.stored_workflow:
@@ -3579,8 +3599,9 @@ class WorkflowStep( object ):
         self.position = None
         self.input_connections = []
         self.config = None
+        self.label = None
         self.uuid = uuid4()
-        self.worklfow_outputs = []
+        self.workflow_outputs = []
         self._input_connections_by_name = None
 
     @property
@@ -3630,6 +3651,34 @@ class WorkflowStep( object ):
                 break
         return target_output
 
+    def copy_to(self, copied_step, step_mapping):
+        copied_step.order_index = self.order_index
+        copied_step.type = self.type
+        copied_step.tool_id = self.tool_id
+        copied_step.tool_inputs = self.tool_inputs
+        copied_step.tool_errors = self.tool_errors
+        copied_step.position = self.position
+        copied_step.config = self.config
+        copied_step.label = self.label
+        copied_step.input_connections = copy_list(self.input_connections)
+
+        subworkflow_step_mapping = {}
+        subworkflow = self.subworkflow
+        if subworkflow:
+            copied_subworkflow = subworkflow.copy()
+            copied_step.subworkflow = copied_subworkflow
+            for subworkflow_step, copied_subworkflow_step in zip(subworkflow.steps, copied_subworkflow.steps):
+                subworkflow_step_mapping[subworkflow_step.id] = copied_subworkflow_step
+
+        for old_conn, new_conn in zip(self.input_connections, copied_step.input_connections):
+            # new_conn.input_step = new_
+            new_conn.input_step = step_mapping[old_conn.input_step_id]
+            new_conn.output_step = step_mapping[old_conn.output_step_id]
+            if old_conn.input_subworkflow_step_id:
+                new_conn.input_subworkflow_step = subworkflow_step_mapping[old_conn.input_subworkflow_step_id]
+
+        copied_step.workflow_outputs = copy_list(self.workflow_outputs, copied_step)
+
     def log_str(self):
         return "WorkflowStep[index=%d,type=%s]" % (self.order_index, self.type)
 
@@ -3657,6 +3706,13 @@ class WorkflowStepConnection( object ):
         return (self.output_name == WorkflowStepConnection.NON_DATA_CONNECTION and
                 self.input_name == WorkflowStepConnection.NON_DATA_CONNECTION)
 
+    def copy(self):
+        # TODO: handle subworkflow ids...
+        copied_connection = WorkflowStepConnection()
+        copied_connection.output_name = self.output_name
+        copied_connection.input_name = self.input_name
+        return copied_connection
+
 
 class WorkflowOutput(object):
 
@@ -3668,6 +3724,12 @@ class WorkflowOutput(object):
             self.uuid = uuid4()
         else:
             self.uuid = UUID(str(uuid))
+
+    def copy(self, copied_step):
+        copied_output = WorkflowOutput(copied_step)
+        copied_output.output_name = self.output_name
+        copied_output.label = self.label
+        return copied_output
 
 
 class StoredWorkflowUserShareAssociation( object ):
@@ -5021,3 +5083,10 @@ class APIKeys( object ):
         self.id = id
         self.user_id = user_id
         self.key = key
+
+
+def copy_list(lst, *args, **kwds):
+    if lst is None:
+        return lst
+    else:
+        return list(map(lambda el: el.copy(*args, **kwds), lst))

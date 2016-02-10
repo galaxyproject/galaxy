@@ -8,7 +8,6 @@ window[ 'jQuery' ] = jQuery; // a weird form to prevent webpack from sub'ing 'wi
 window.$ = jQuery;
 window._ = _;
 window.Backbone = Backbone;
-window.Handlebars = Handlebars;
 // console.debug('globals loaded:', window.jQuery, window.Backbone, '...');
 
 // these are galaxy globals not defined in the provider (although they could be - but why encourage that?)
@@ -20,6 +19,8 @@ var POPUPMENU = require( 'ui/popupmenu' );
 window.make_popupmenu = POPUPMENU.make_popupmenu;
 window.make_popup_menus = POPUPMENU.make_popup_menus;
 window.init_tag_click_function = require( 'ui/autocom_tagging' );
+var TOURS = require( 'mvc/tours' );
+var QUERY_STRING = require( 'utils/query-string-parsing' );
 // console.debug( 'galaxy globals loaded' );
 
 // ============================================================================
@@ -127,25 +128,6 @@ function init_refresh_on_change () {
 window.init_refresh_on_change = init_refresh_on_change;
 
 $(document).ready( function() {
-
-    // Masthead dropdown menus
-    var $dropdowns = $("#masthead ul.nav > li.dropdown > .dropdown-menu");
-    $("body").on( "click.nav_popups", function( e ) {
-        $dropdowns.hide();
-        $("#dd-helper").hide();
-        // If the target is in the menu, treat normally
-        if ( $(e.target).closest( "#masthead ul.nav > li.dropdown > .dropdown-menu" ).length ) {
-            return;
-        }
-        // Otherwise, was the click in a tab
-        var $clicked = $(e.target).closest( "#masthead ul.nav > li.dropdown" );
-        if ( $clicked.length ) {
-            $("#dd-helper").show();
-            $clicked.children( ".dropdown-menu" ).show();
-            e.preventDefault();
-        }
-    });
-
     // Refresh events for form fields.
     init_refresh_on_change();
 
@@ -184,4 +166,15 @@ $(document).ready( function() {
         return anchor;
     });
 
+    var et = JSON.parse(sessionStorage.getItem('activeGalaxyTour'));
+    if (et){
+        et = TOURS.hooked_tour_from_data(et);
+        if (et && et.steps){
+            var tour = new Tour(_.extend({
+                steps: et.steps,
+            }, TOURS.tour_opts));
+            tour.init();
+            tour.restart();
+        }
+    }
 });

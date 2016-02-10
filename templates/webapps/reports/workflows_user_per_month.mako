@@ -12,7 +12,7 @@
 %endif
 
 ${get_css()}
-    
+
 <%
    _email = util.restore_text( email )
 %>
@@ -33,29 +33,11 @@ ${get_css()}
             %else:
                 <tr class="header">
                     <td class="third_width">
-                        ${
-                            get_sort_url(
-                                sort_id,
-                                order,
-                                'date',
-                                'workflows',
-                                'user_per_month',
-                                'Month',
-                                email=util.sanitize_text( email ))
-                        }
+                        ${get_sort_url(sort_id, order, 'date', 'workflows', 'user_per_month', 'Month', email=util.sanitize_text( email ))}
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
                     <td class="third_width">
-                        ${
-                            get_sort_url(
-                                sort_id,
-                                order,
-                                'total_workflows',
-                                'workflows',
-                                'user_per_month',
-                                'Total',
-                                email=util.sanitize_text( email ))
-                        }
+                        ${get_sort_url(sort_id, order, 'total_workflows', 'workflows', 'user_per_month', 'Total', email=util.sanitize_text( email ))}
                         <span class='dir_arrow total_workflows'>${arrow}</span>
                     </td>
                     <td></td>
@@ -74,13 +56,7 @@ ${get_css()}
                     %endif
                         <td>${month}</td>
                         <td>${total}</td>
-                        ${
-                            make_sparkline(
-                                key,
-                                trends[key],
-                                "bar",
-                                "/ day")
-                        }
+                        ${make_sparkline(key, trends[key], "bar", "/ day")}
                         <td id="${key}"></td>
                     </tr>
                     <% ctr += 1 %>

@@ -74,7 +74,7 @@ __WRAP_MAPPINGS__ = ( dict, UserDict, )
 
 # Define the set of characters that are not sanitized, and define a set of mappings for those that are.
 # characters that are valid
-VALID_CHARACTERS = set( string.letters + string.digits + " -=_.()/+*^,:?!@" )
+VALID_CHARACTERS = set( string.ascii_letters + string.digits + " -=_.()/+*^,:?!@" )
 
 # characters that are allowed but need to be escaped
 CHARACTER_MAP = { '>': '__gt__',
@@ -94,7 +94,8 @@ INVALID_CHARACTER = "X"
 
 if sys.version_info > (3, 0):
     # __coerce__ doesn't do anything under Python anyway.
-    coerce = lambda x, y: x
+    def coerce(x, y):
+        return x
 
 
 def sanitize_lists_to_string( values, valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP, invalid_character=INVALID_CHARACTER  ):

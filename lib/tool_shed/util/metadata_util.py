@@ -12,7 +12,7 @@ def get_latest_changeset_revision( app, repository, repo ):
                                                                              repository_tip )
     if repository_metadata and repository_metadata.downloadable:
         return repository_tip
-    changeset_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=False )
+    changeset_revisions = [ revision[ 1 ] for revision in suc.get_metadata_revisions( repository, repo ) ]
     if changeset_revisions:
         return changeset_revisions[ -1 ]
     return hg_util.INITIAL_CHANGELOG_HASH
@@ -38,7 +38,7 @@ def get_previous_metadata_changeset_revision( repository, repo, before_changeset
     the changeset to which before_changeset_revision refers.  If there isn't one, return the hash value
     of an empty repository changelog, hg_util.INITIAL_CHANGELOG_HASH.
     """
-    changeset_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=downloadable )
+    changeset_revisions = [ revision[ 1 ] for revision in suc.get_metadata_revisions( repository, repo ) ]
     if len( changeset_revisions ) == 1:
         changeset_revision = changeset_revisions[ 0 ]
         if changeset_revision == before_changeset_revision:

@@ -3,10 +3,10 @@ define([
     'layout/panel',
     'mvc/ui/ui-modal',
     'mvc/base-mvc'
-], function( MASTHEAD, PANEL, MODAL, BASE_MVC ) {
+], function( Masthead, Panel, Modal, BaseMVC ) {
 
 // ============================================================================
-var PageLayoutView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
+var PageLayoutView = Backbone.View.extend( BaseMVC.LoggableMixin ).extend({
     _logNamespace : 'layout',
 
     el : 'body',
@@ -17,112 +17,101 @@ var PageLayoutView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
     ],
 
     defaultOptions : {
-        message_box_visible : false,
-        message_box_content : '',
-        message_box_class   : 'info',
-
+        message_box_visible     : false,
+        message_box_content     : '',
+        message_box_class       : 'info',
         show_inactivity_warning : false,
-        inactivity_box_content  : '',
+        inactivity_box_content  : ''
     },
 
-    initialize : function( options ){
+    initialize : function( options ) {
+        // TODO: remove globals
         this.log( this + '.initialize:', options );
         _.extend( this, _.pick( options, this._panelIds ) );
         this.options = _.defaults( _.omit( options, this._panelIds ), this.defaultOptions );
-
-        // TODO: remove globals
-        Galaxy.modal = this.modal = new MODAL.View();
-    },
-
-    /**  */
-    $everything : function(){
-        return this.$( '#everything' );
-    },
-
-    render : function(){
-        this.log( this + '.render:' );
+        Galaxy.modal = this.modal = new Modal.View();
+        this.masthead = new Masthead.View( this.options.config );
         this.$el.attr( 'scroll', 'no' );
-        this.$el.html( this.template( this.options ) );
+        this.$el.append( this._template() );
+        this.$el.append( this.masthead.$el );
+        this.$el.append( this.modal.$el );
+        this.$messagebox = this.$( '#messagebox' );
+        this.$inactivebox = this.$( '#inactivebox' );
+    },
 
-        //TODO: no render on masthead, needs init each time
-        Galaxy.masthead = this.masthead = new MASTHEAD.GalaxyMasthead( _.extend( this.options.config, {
-            el: this.$( '#masthead' ).get(0)
-        }));
-
-        if( this.options.message_box_visible ){
-            this.messageBox( this.options.message_box_content, this.options.message_box_class );
-        }
-        if( this.options.show_inactivity_warning ){
-            this.inactivityWarning( this.options.inactivity_box_content );
-        }
-
+    render : function() {
+        // TODO: Remove this line after select2 update
+        $( '.select2-hidden-accessible' ).remove();
+        this.log( this + '.render:' );
+        this.masthead.render();
+        this.renderMessageBox();
+        this.renderInactivityBox();
         this.renderPanels();
         return this;
     },
 
-    /**  */
-    messageBox : function( content, level ){
-        content = content || '';
-        level = level || 'info';
-        this.$el.addClass( 'has-message-box' );
-        this.$( '#messagebox' )
-            .attr( 'class', 'panel-' + level + '-message' )
-            .html( content )
-            .toggle( !!content );
+    /** Render message box */
+    renderMessageBox : function() {
+        if ( this.options.message_box_visible ){
+            var content = this.options.message_box_content || '';
+            var level = this.options.message_box_class || 'info';
+            this.$el.addClass( 'has-message-box' );
+            this.$messagebox
+                .attr( 'class', 'panel-' + level + '-message' )
+                .html( content )
+                .toggle( !!content )
+                .show();
+        } else {
+            this.$el.removeClass( 'has-message-box' );
+            this.$messagebox.hide();
+        }
         return this;
     },
 
-    /**  */
-    inactivityWarning : function( content ){
-        var verificationLink = '<a href="' + Galaxy.root + 'user/resend_verification">Resend verification.</a>';
-        this.$el.addClass( 'has-inactivity-box' );
-        this.$( '#inactivebox' )
-            .html( content )
-            .append( ' ' + verificationLink )
-            .toggle( !!content );
+    /** Render inactivity warning */
+    renderInactivityBox : function() {
+        if( this.options.show_inactivity_warning ){
+            var content = this.options.inactivity_box_content || '';
+            var verificationLink = $( '<a/>' ).attr( 'href', Galaxy.root + 'user/resend_verification' ).html( 'Resend verification.' );
+            this.$el.addClass( 'has-inactivity-box' );
+            this.$inactivebox
+                .html( content )
+                .append( ' ' + verificationLink )
+                .toggle( !!content )
+                .show();
+        } else {
+            this.$el.removeClass( 'has-inactivity-box' );
+            this.$inactivebox.hide();
+        }
         return this;
     },
 
-    /**  */
-    renderPanels : function(){
+    /** Render panels */
+    renderPanels : function() {
         var page = this;
-        // TODO: Remove this line after select2 update
-        $( '.select2-hidden-accessible' ).remove();
         this._panelIds.forEach( function( panelId ){
             if( _.has( page, panelId ) ){
-                var panelView = page[ panelId ];
-                panelView.setElement( '#' + panelId );
-                panelView.render();
+                page[ panelId ].setElement( '#' + panelId );
+                page[ panelId ].render();
+            } else if ( panelId !== 'center' ) {
+                page.center.$el.css( panelId, 0 );
             }
         });
-        if( !this.left ){
-            this.center.$el.css( 'left', 0 );
-        }
-        if( !this.right ){
-            this.center.$el.css( 'right', 0 );
-        }
         return this;
     },
 
     /** body template */
-    //TODO: to underscore
-    template: function( options ){
-        //TODO: remove inline styling
+    _template: function() {
         return [
-            '<div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">',
+            '<div id="everything">',
                 '<div id="background"/>',
-                '<div id="masthead" class="navbar navbar-fixed-top navbar-inverse"></div>',
-                '<div id="messagebox" style="display: none;"></div>',
-                '<div id="inactivebox" class="panel-warning-message" style="display: none;"></div>',
-                // content here
-                // TODO: wrapping div
-                this.left?   '<div id="left"/>' : '',
-                this.center? '<div id="center" class="inbound"/>' : '',
-                this.right?  '<div id="right"/>' : '',
+                '<div id="messagebox"/>',
+                '<div id="inactivebox" class="panel-warning-message"/>',
+                '<div id="left"/>',
+                '<div id="center" class="inbound"/>',
+                '<div id="right"/>',
             '</div>',
-            // a dropdown overlay for capturing clicks/drags
-            '<div id="dd-helper" style="display: none;"></div>',
-            // display message when js is disabled
+            '<div id="dd-helper"/>',
             '<noscript>',
                 '<div class="overlay overlay-background noscript-overlay">',
                     '<div>',
@@ -137,16 +126,7 @@ var PageLayoutView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
         ].join('');
     },
 
-    hideSidePanels : function(){
-        if( this.left ){
-            this.left.hide();
-        }
-        if( this.right ){
-            this.right.hide();
-        }
-    },
-
-    toString : function(){ return 'PageLayoutView'; }
+    toString : function() { return 'PageLayoutView' }
 });
 
 // ============================================================================

@@ -8,6 +8,8 @@ define([
     "ui/search-input"
 ], function( HISTORY_MODEL, HISTORY_VIEW_EDIT, historyCopyDialog, baseMVC, ajaxQueue ){
 
+'use strict';
+
 var logNamespace = 'history';
 /* ==============================================================================
 TODO:
