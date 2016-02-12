@@ -3607,6 +3607,23 @@ class WorkflowStep( object ):
         self._input_connections_by_name = None
 
     @property
+    def unique_workflow_outputs(self):
+        # Older Galaxy workflows may have multiple WorkflowOutputs
+        # per "output_name", when serving these back to the editor
+        # feed only a "best" output per "output_name.""
+        outputs = {}
+        for workflow_output in self.workflow_outputs:
+            output_name = workflow_output.output_name
+
+            if output_name in outputs:
+                found_output = outputs[output_name]
+                if found_output.label is None and workflow_output.label is not None:
+                    outputs[output_name] = workflow_output
+            else:
+                outputs[output_name] = workflow_output
+        return outputs.values()
+
+    @property
     def content_id( self ):
         content_id = None
         if self.type == "tool":
