@@ -557,8 +557,10 @@ class Tool( object, Dictifiable ):
         self.__parse_legacy_features(tool_source)
 
         # Load any tool specific options (optional)
-        self.options = dict( sanitize=True, refresh=False )
-        self.__update_options_dict( tool_source )
+        self.options = dict(
+            sanitize=tool_source.parse_sanitize(),
+            refresh=tool_source.parse_refresh(),
+        )
         self.options = Bunch(** self.options)
 
         # Parse tool inputs (if there are any required)
@@ -627,19 +629,6 @@ class Tool( object, Dictifiable ):
         if uihints_elem is not None:
             for key, value in uihints_elem.attrib.iteritems():
                 self.uihints[ key ] = value
-
-    def __update_options_dict(self, tool_source):
-        # TODO: Move following logic into ToolSource abstraction.
-        if not hasattr(tool_source, 'root'):
-            return
-
-        root = tool_source.root
-        for option_elem in root.findall("options"):
-            for option, value in self.options.copy().items():
-                if isinstance(value, type(False)):
-                    self.options[option] = string_as_bool(option_elem.get(option, str(value)))
-                else:
-                    self.options[option] = option_elem.get(option, str(value))
 
     def __parse_tests(self, tool_source):
         self.__tests_source = tool_source

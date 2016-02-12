@@ -151,6 +151,20 @@ class XmlToolSource(ToolSource):
     def parse_redirect_url_params_elem(self):
         return self.root.find("redirect_url_params")
 
+    def parse_sanitize(self):
+        return self._get_option_value("sanitize", True)
+
+    def parse_refresh(self):
+        return self._get_option_value("refresh", False)
+
+    def _get_option_value(self, key, default):
+        root = self.root
+        for option_elem in root.findall("options"):
+            if key in option_elem.attrib:
+                return string_as_bool(option_elem.get(key))
+
+        return default
+
     @property
     def _command_el(self):
         return self.root.find("command")

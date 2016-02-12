@@ -130,6 +130,16 @@ class ToolSource(object):
         """
         return False
 
+    def parse_sanitize(self):
+        """ Return boolean indicating whether tool should be sanitized or not.
+        """
+        return True
+
+    def parse_refresh(self):
+        """ Return boolean indicating ... I have no clue...
+        """
+        return False
+
     @abstractmethod
     def parse_requirements_and_containers(self):
         """ Return pair of ToolRequirement and ContainerDescription lists. """
