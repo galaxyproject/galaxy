@@ -458,10 +458,13 @@ class WorkflowContentsManager(UsesAnnotations):
 
             # workflow outputs
             outputs = []
-            for output in step.workflow_outputs:
-                outputs.append({"output_name": output.output_name,
-                                "uuid": str(output.uuid) if output.uuid else None,
-                                "label": output.label})
+            for output in step.unique_workflow_outputs:
+                output_label = output.label
+                output_name = output.output_name
+                output_uuid = str(output.uuid) if output.uuid else None
+                outputs.append({"output_name": output_name,
+                                "uuid": output_uuid,
+                                "label": output_label})
             step_dict['workflow_outputs'] = outputs
 
             # Encode input connections as dictionary
