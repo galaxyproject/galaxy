@@ -2,6 +2,7 @@
 <toolbox tool_path="${tool_conf_dir}">
   <tool file="upload.xml"/>
   <tool file="simple_constructs.xml" />
+  <tool file="optional_params.xml" />
   <tool file="inheritance_simple.xml" />
   <tool file="boolean_conditional.xml" />
   <tool file="composite.xml" />
