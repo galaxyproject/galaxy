@@ -2,9 +2,10 @@ from __future__ import absolute_import
 
 import logging
 
-from sqlalchemy import and_, desc, false, or_, true
-from paste.httpexceptions import HTTPNotFound, HTTPBadRequest
 from markupsafe import escape
+from paste.httpexceptions import HTTPNotFound, HTTPBadRequest
+from six import string_types
+from sqlalchemy import and_, desc, false, or_, true
 
 from galaxy import managers
 from galaxy import model, web
@@ -808,7 +809,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         # post to saved in order to save a visualization
         if type is None or config is None:
             return HTTPBadRequest( 'A visualization type and config are required to save a visualization' )
-        if isinstance( config, basestring ):
+        if isinstance( config, string_types ):
             config = loads( config )
         title = title or DEFAULT_VISUALIZATION_NAME
 
@@ -931,7 +932,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
             dataset = self.get_hda_or_ldda( trans, dataset_dict[ 'hda_ldda'], dataset_dict[ 'id' ] )
 
             genome_data = self._get_genome_data( trans, dataset, dbkey )
-            if not isinstance( genome_data, str ):
+            if not isinstance( genome_data, string_types ):
                 track[ 'preloaded_data' ] = genome_data
 
         # define app configuration for generic mako template

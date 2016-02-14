@@ -6,7 +6,7 @@ import re
 import sgmllib
 
 from six import unichr
-from six import text_type as unicode
+from six import text_type
 
 
 # reversable htmlentitydefs mappings for Python 2.2
@@ -87,7 +87,7 @@ class _BaseHTMLProcessor(sgmllib.SGMLParser):
         data = re.sub(r'<([^<>\s]+?)\s*/>', self._shorttag_replace, data)
         data = data.replace('&#39;', "'")
         data = data.replace('&#34;', '"')
-        if self.encoding and isinstance(data, unicode):
+        if self.encoding and isinstance(data, text_type):
             data = data.encode(self.encoding)
         sgmllib.SGMLParser.feed(self, data)
         sgmllib.SGMLParser.close(self)
@@ -112,12 +112,12 @@ class _BaseHTMLProcessor(sgmllib.SGMLParser):
                 value = value.replace('>', '&gt;').replace('<', '&lt;').replace('"', '&quot;')
                 value = self.bare_ampersand.sub("&amp;", value)
                 # thanks to Kevin Marks for this breathtaking hack to deal with (valid) high-bit attribute values in UTF-8 feeds
-                if isinstance(value, unicode):
+                if isinstance(value, text_type):
                     try:
-                        value = unicode(value, self.encoding)
+                        value = text_type(value, self.encoding)
                     except:
-                        value = unicode(value, 'iso-8859-1')
-                uattrs.append((unicode(key, self.encoding), value))
+                        value = text_type(value, 'iso-8859-1')
+                uattrs.append((text_type(key, self.encoding), value))
             strattrs = u''.join([u' %s="%s"' % (key, val) for key, val in uattrs])
             if self.encoding:
                 try:

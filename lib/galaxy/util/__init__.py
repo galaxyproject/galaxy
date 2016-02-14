@@ -22,20 +22,21 @@ import sys
 import time
 import tempfile
 import threading
-from six.moves.urllib import parse as urlparse
-from six import iteritems
-
-from galaxy.util import json
-from datetime import datetime
-
-from six import PY3
-from six import string_types, text_type
-from six.moves import xrange
-from six.moves import email_mime_text
-from six.moves import zip
 
 from os.path import relpath
 from hashlib import md5
+
+from six import iteritems
+from six import PY3
+from six import string_types, text_type
+from six.moves import email_mime_text
+from six.moves.urllib import parse as urlparse
+from six.moves import xrange
+from six.moves import zip
+from xml.etree import ElementTree, ElementInclude
+
+from galaxy.util import json
+from datetime import datetime
 
 try:
     import docutils.core as docutils_core
@@ -43,8 +44,6 @@ try:
 except ImportError:
     docutils_core = None
     docutils_html4css1 = None
-
-from xml.etree import ElementTree, ElementInclude
 
 from .inflection import Inflector, English
 inflector = Inflector(English)
@@ -852,13 +851,18 @@ def unicodify( value, encoding=DEFAULT_ENCODING, error='replace', default=None )
     """
     Returns a unicode string or None
     """
-
-    if isinstance( value, text_type ):
-        return value
+    if value is None:
+        return None
     try:
-        return text_type( str( value ), encoding, error )
-    except:
+        if not isinstance(value, string_types):
+            value = str(value)
+        # At this point value is of type str, which in Python 2 needs to be converted to unicode
+        if not isinstance(value, text_type):
+            value = text_type(value, encoding, error)
+    except Exception:
+        log.exception("value %s could not be coerced to unicode" % value)
         return default
+    return value
 
 
 def smart_str(s, encoding='utf-8', strings_only=False, errors='strict'):

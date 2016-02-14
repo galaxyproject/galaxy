@@ -1,4 +1,5 @@
 from markupsafe import escape
+from six import text_type
 from sqlalchemy import and_, desc, false, true
 
 from galaxy import managers, model, util, web
@@ -625,7 +626,7 @@ class PageController( BaseUIController, SharableMixin,
         ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, page )
 
         # Output is string, so convert to unicode for display.
-        page_content = unicode( processor.output(), 'utf-8' )
+        page_content = text_type( processor.output(), 'utf-8' )
         return trans.fill_template_mako( "page/display.mako", item=page,
                                          item_data=page_content,
                                          user_item_rating=user_item_rating,

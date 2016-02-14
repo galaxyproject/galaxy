@@ -1,6 +1,7 @@
 import json
 import os
 import tempfile
+from six import string_types
 
 from galaxy import model
 from galaxy.util.object_wrapper import wrap_with_safe_string
@@ -542,7 +543,7 @@ class ToolEvaluator( object ):
             return None
 
     def __build_config_file_text( self, content ):
-        if isinstance( content, basestring ):
+        if isinstance( content, string_types ):
             return content, True
 
         content_format = content["format"]

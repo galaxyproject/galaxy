@@ -2,6 +2,7 @@ import csv
 import logging
 import re
 
+from six import text_type
 from sqlalchemy import and_, false, func, select
 from markupsafe import escape
 
@@ -121,7 +122,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                     sample = trans.sa_session.query( self.app.model.Sample ).get( id )
                     if sample.state.name != state:
                         rval[ id ] = { "state": sample.state.name,
-                                       "html_state": unicode( trans.fill_template( "requests/common/sample_state.mako",
+                                       "html_state": text_type( trans.fill_template( "requests/common/sample_state.mako",
                                                                                    sample=sample),
                                                               'utf-8' ) }
         return rval
@@ -142,7 +143,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                     sample = trans.sa_session.query( self.app.model.Sample ).get( id )
                     if len( sample.datasets ) != number_of_datasets:
                         rval[ id ] = { "datasets": len( sample.datasets ),
-                                       "html_datasets": unicode( trans.fill_template( "requests/common/sample_datasets.mako",
+                                       "html_datasets": text_type( trans.fill_template( "requests/common/sample_datasets.mako",
                                                                                       sample=sample),
                                                                  'utf-8' ) }
         return rval
@@ -163,7 +164,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                     sample_dataset = trans.sa_session.query( self.app.model.SampleDataset ).get( trans.security.decode_id( id ) )
                     if sample_dataset.status != transfer_status:
                         rval[ id ] = { "status": sample_dataset.status,
-                                       "html_status": unicode( trans.fill_template( "requests/common/sample_dataset_transfer_status.mako",
+                                       "html_status": text_type( trans.fill_template( "requests/common/sample_dataset_transfer_status.mako",
                                                                                     sample_dataset=sample_dataset),
                                                                'utf-8' ) }
         return rval

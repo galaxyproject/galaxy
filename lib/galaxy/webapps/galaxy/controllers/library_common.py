@@ -12,6 +12,7 @@ import urllib2
 import zipfile
 
 from markupsafe import escape
+from six import text_type
 from sqlalchemy import and_, false
 from sqlalchemy.orm import eagerload_all
 
@@ -86,7 +87,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         job_ldda = job_ldda.copied_from_library_dataset_dataset_association
                     rval[id] = {
                         "state": data.state,
-                        "html": unicode( trans.fill_template( "library/common/library_item_info.mako", ldda=data ), 'utf-8' )
+                        "html": text_type( trans.fill_template( "library/common/library_item_info.mako", ldda=data ), 'utf-8' )
                         # "force_history_refresh": force_history_refresh
                     }
         return rval

@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import logging
 import os
+from six import text_type
 
 from galaxy import model, util
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, web
@@ -465,7 +466,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
             # Eliminate the output created using ssh from the tree
             if password_str in output:
                 output = output.replace( password_str, '' )
-        return unicode( output.replace( '\r\n', '<br/>' ) )
+        return text_type( output.replace( '\r\n', '<br/>' ) )
 
     @web.json
     def open_folder( self, trans, request_id, external_service_id, key ):

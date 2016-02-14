@@ -16,6 +16,8 @@ import sys
 import tempfile
 import threading
 from datetime import timedelta
+from six import string_types
+
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
 from galaxy.util import string_as_bool
@@ -125,7 +127,7 @@ class Configuration( object ):
         self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
         self.hours_between_check = kwargs.get( 'hours_between_check', 12 )
         self.enable_tool_shed_check = string_as_bool( kwargs.get( 'enable_tool_shed_check', False ) )
-        if isinstance( self.hours_between_check, basestring ):
+        if isinstance( self.hours_between_check, string_types ):
             self.hours_between_check = float( self.hours_between_check )
         try:
             if isinstance( self.hours_between_check, int ):

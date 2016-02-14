@@ -5,6 +5,7 @@ import os
 import time
 import logging
 
+from six import string_types
 from operator import itemgetter
 from cgi import escape
 from galaxy.util import restore_text, relpath, nice_size, unicodify
@@ -42,7 +43,7 @@ class TextField(BaseField):
 
     def get_html( self, prefix="", disabled=False ):
         value = self.value
-        if not isinstance( value, basestring ):
+        if not isinstance( value, string_types ):
             value = str( value )
         value = unicodify( value )
         return unicodify( '<input type="text" name="%s%s" size="%d" value="%s"%s>'
@@ -114,7 +115,7 @@ class CheckboxField(BaseField):
 
     def __init__( self, name, checked=None, refresh_on_change=False, refresh_on_change_values=None ):
         self.name = name
-        self.checked = ( checked is True ) or ( isinstance( checked, basestring ) and ( checked.lower() in ( "yes", "true", "on" ) ) )
+        self.checked = ( checked is True ) or ( isinstance( checked, string_types ) and ( checked.lower() in ( "yes", "true", "on" ) ) )
         self.refresh_on_change = refresh_on_change
         self.refresh_on_change_values = refresh_on_change_values or []
         if self.refresh_on_change:
@@ -140,7 +141,7 @@ class CheckboxField(BaseField):
         return isinstance( value, list ) and ( '__CHECKED__' in value or len( value ) == 2 )
 
     def set_checked(self, value):
-        if isinstance( value, basestring ):
+        if isinstance( value, string_types ):
             self.checked = value.lower() in [ "yes", "true", "on" ]
         else:
             self.checked = value
@@ -328,9 +329,9 @@ class SelectField(BaseField):
             rval.append( '<div class="checkUncheckAllPlaceholder" checkbox_name="%s%s"></div>' % ( prefix, self.name ) )  # placeholder for the insertion of the Select All/Unselect All buttons
         for text, value, selected in self.options:
             style = ""
-            if not isinstance( value, basestring ):
+            if not isinstance( value, string_types ):
                 value = str( value )
-            if not isinstance( text, basestring ):
+            if not isinstance( text, string_types ):
                 text = str( text )
             text = unicodify( text )
             escaped_value = escape( unicodify( value ), quote=True )
@@ -386,13 +387,13 @@ class SelectField(BaseField):
             if selected:
                 selected_text = " selected"
                 last_selected_value = value
-                if not isinstance( last_selected_value, basestring ):
+                if not isinstance( last_selected_value, string_types ):
                     last_selected_value = str( last_selected_value )
             else:
                 selected_text = ""
-            if not isinstance( value, basestring ):
+            if not isinstance( value, string_types ):
                 value = str( value )
-            if not isinstance( text, basestring ):
+            if not isinstance( text, string_types ):
                 text = str( text )
             rval.append( '<option value="%s"%s>%s</option>' % ( escape( unicodify( value ), quote=True ), selected_text, escape( unicodify( text ), quote=True ) ) )
         if last_selected_value:

@@ -4,6 +4,8 @@ Galaxy web framework helpers
 
 import time
 from datetime import datetime, timedelta
+from six import string_types, text_type
+
 from galaxy.util import hash_util
 from galaxy.util.json import safe_dumps as dumps  # noqa (used by mako templates)
 from webhelpers import date
@@ -103,11 +105,10 @@ def to_unicode( a_string ):
     Convert a string to unicode in utf-8 format; if string is already unicode,
     does nothing because string's encoding cannot be determined by introspection.
     """
-    a_string_type = type( a_string )
-    if a_string_type is str:
-        return unicode( a_string, 'utf-8' )
-    elif a_string_type is unicode:
+    if isinstance( a_string, text_type):
         return a_string
+    elif isinstance( a_string, string_types):
+        return text_type( a_string, 'utf-8' )
 
 
 def is_true( val ):

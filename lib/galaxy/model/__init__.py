@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 from itertools import ifilter, imap
 from string import Template
 from uuid import UUID, uuid4
+from six import string_types, text_type
 
 from sqlalchemy import and_, func, not_, or_, true, join, select
 from sqlalchemy.orm import joinedload, object_session, aliased
@@ -100,8 +101,8 @@ class HasName:
         object. If string, convert to unicode object assuming 'utf-8' format.
         """
         name = self.name
-        if isinstance(name, str):
-            name = unicode(name, 'utf-8')
+        if not isinstance( name, text_type ):
+            name = text_type( name, 'utf-8' )
         return name
 
 
@@ -112,18 +113,18 @@ class JobLike:
         self.numeric_metrics = []
 
     def add_metric( self, plugin, metric_name, metric_value ):
-        if isinstance( plugin, str ):
-            plugin = unicode( plugin, 'utf-8' )
+        if isinstance( plugin, string_types ) and not isinstance( plugin, text_type ):
+            plugin = text_type( plugin, 'utf-8' )
 
-        if isinstance( metric_name, str ):
-            metric_name = unicode( metric_name, 'utf-8' )
+        if isinstance( metric_name, string_types ) and not isinstance( metric_name, text_type ):
+            metric_name = text_type( metric_name, 'utf-8' )
 
         if isinstance( metric_value, numbers.Number ):
             metric = self._numeric_metric( plugin, metric_name, metric_value )
             self.numeric_metrics.append( metric )
         else:
-            if isinstance( metric_value, str ):
-                metric_value = unicode( metric_value, 'utf-8' )
+            if isinstance( metric_value, string_types ) and not isinstance( metric_value, text_type ):
+                metric_value = text_type( metric_value, 'utf-8' )
             if len( metric_value ) > 1022:
                 # Truncate these values - not needed with sqlite
                 # but other backends must need it.
@@ -2178,7 +2179,7 @@ class DatasetInstance( object ):
                 data_source = source_list
             else:
                 # Convert.
-                if isinstance( source_list, str ):
+                if isinstance( source_list, string_types ):
                     source_list = [ source_list ]
 
                 # Loop through sources until viable one is found.
@@ -2413,7 +2414,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                      update_time=hda.update_time.isoformat(),
                      data_type=hda.datatype.__class__.__module__ + '.' + hda.datatype.__class__.__name__,
                      genome_build=hda.dbkey,
-                     misc_info=hda.info.strip() if isinstance( hda.info, basestring ) else hda.info,
+                     misc_info=hda.info.strip() if isinstance( hda.info, string_types ) else hda.info,
                      misc_blurb=hda.blurb )
 
         # add tags string list

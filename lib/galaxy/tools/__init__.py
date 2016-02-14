@@ -18,6 +18,7 @@ from cgi import FieldStorage
 from xml.etree import ElementTree
 from mako.template import Template
 from paste import httpexceptions
+from six import string_types, text_type
 
 from galaxy import model
 from galaxy.managers import histories
@@ -48,6 +49,7 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.hash_util import hmac_new
 from galaxy.util.odict import odict
+from galaxy.util import unicodify
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
@@ -1191,7 +1193,7 @@ class Tool( object, Dictifiable ):
         if isinstance( out_data, odict ):
             return job, out_data.items()
         else:
-            if isinstance( out_data, str ):
+            if isinstance( out_data, string_types ):
                 message = out_data
             else:
                 message = 'Failure executing tool (invalid data returned from tool execution)'
@@ -1742,7 +1744,7 @@ class Tool( object, Dictifiable ):
                     return 'true'
                 else:
                     return 'false'
-            elif isinstance(v, basestring) or isnumber:
+            elif isinstance(v, string_types) or isnumber:
                 return v
             elif isinstance(v, dict) and hasattr(v, '__class__'):
                 return v
@@ -1850,8 +1852,7 @@ class Tool( object, Dictifiable ):
         tool_help = ''
         if self.help:
             tool_help = self.help.render( static_path=url_for( '/static' ), host_url=url_for( '/', qualified=True ) )
-            if type( tool_help ) is not unicode:
-                tool_help = unicode( tool_help, 'utf-8' )
+            tool_help = unicodify( tool_help, 'utf-8' )
 
         # create tool versions
         tool_versions = []
@@ -2367,7 +2368,7 @@ def json_fix( val ):
         return [ json_fix( v ) for v in val ]
     elif isinstance( val, dict ):
         return dict( [ ( json_fix( k ), json_fix( v ) ) for ( k, v ) in val.iteritems() ] )
-    elif isinstance( val, unicode ):
+    elif isinstance( val, text_type ):
         return val.encode( "utf8" )
     else:
         return val

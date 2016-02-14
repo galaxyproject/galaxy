@@ -6,7 +6,9 @@ import logging
 import re
 import os
 import os.path
+from six import string_types
 from xml.etree.ElementTree import XML
+
 from galaxy import util
 from galaxy.web import form_builder
 from galaxy.util import string_as_bool, sanitize_param, unicodify
@@ -30,7 +32,7 @@ WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile( '''\$\{.+?\}''' )
 
 
 def contains_workflow_parameter(value, search=False):
-    if not isinstance( value, basestring ):
+    if not isinstance( value, string_types ):
         return False
     if search and WORKFLOW_PARAMETER_REGULAR_EXPRESSION.search(value):
         return True
@@ -141,8 +143,6 @@ class ToolParameter( object, Dictifiable ):
 
     def to_string( self, value, app ):
         """Convert a value to a string representation suitable for persisting"""
-        if not isinstance( value, basestring ):
-            value = str( value )
         return unicodify( value )
 
     def to_python( self, value, app ):
@@ -158,9 +158,6 @@ class ToolParameter( object, Dictifiable ):
         return self.to_string( value, app )
 
     def value_from_basic( self, value, app, ignore_errors=False ):
-        # HACK: Some things don't deal with unicode well, psycopg problem?
-        if type( value ) == unicode:
-            value = str( value )
         # Handle Runtime values (valid for any parameter?)
         if isinstance( value, dict ) and '__class__' in value and value['__class__'] == "RuntimeValue":
             return RuntimeValue()
@@ -184,7 +181,7 @@ class ToolParameter( object, Dictifiable ):
         """Called via __str__ when used in the Cheetah template"""
         if value is None:
             value = ""
-        elif not isinstance( value, basestring ):
+        elif not isinstance( value, string_types ):
             value = str( value )
         if self.tool is None or self.tool.options.sanitize:
             if self.sanitizer:
@@ -555,7 +552,7 @@ class FileToolParameter( ToolParameter ):
     def to_string( self, value, app ):
         if value in [ None, '' ]:
             return None
-        elif isinstance( value, unicode ) or isinstance( value, str ):
+        elif isinstance( value, string_types ):
             return value
         elif isinstance( value, dict ):
             # or should we jsonify?
@@ -568,7 +565,7 @@ class FileToolParameter( ToolParameter ):
     def to_python( self, value, app ):
         if value is None:
             return None
-        elif isinstance( value, unicode ) or isinstance( value, str ):
+        elif isinstance( value, string_types ):
             return value
         else:
             raise Exception( "FileToolParameter cannot be persisted" )
@@ -907,7 +904,7 @@ class SelectToolParameter( ToolParameter ):
                 if value == '':
                     value = None
                 else:
-                    if isinstance( value, basestring ):
+                    if isinstance( value, string_types ):
                         # Split on all whitespace. This not only provides flexibility
                         # in interpreting values but also is needed because many browsers
                         # use \r\n to separate lines.
@@ -1172,7 +1169,7 @@ class ColumnListParameter( SelectToolParameter ):
         """
         if self.multiple:
             # split on newline and ,
-            if isinstance( value, list ) or isinstance( value, basestring ):
+            if isinstance( value, list ) or isinstance( value, string_types ):
                 column_list = []
                 if not isinstance( value, list ):
                     value = value.split( '\n' )
@@ -1196,7 +1193,7 @@ class ColumnListParameter( SelectToolParameter ):
 
     @staticmethod
     def _strip_c(column):
-        if isinstance(column, basestring):
+        if isinstance(column, string_types):
             if column.startswith( 'c' ):
                 column = column.strip().lower()[1:]
         return column
@@ -1837,7 +1834,7 @@ class DataToolParameter( BaseDataToolParameter ):
             raise ValueError( "History does not include a dataset of the required format / build" )
         if value in [ None, "None", '' ]:
             return None
-        if isinstance( value, str ) and value.find( "," ) > 0:
+        if isinstance( value, string_types ) and value.find( "," ) > 0:
             value = [ int( value_part ) for value_part in value.split( "," ) ]
         if isinstance( value, list ):
             rval = []
@@ -1900,7 +1897,7 @@ class DataToolParameter( BaseDataToolParameter ):
         return rval
 
     def to_string( self, value, app ):
-        if value is None or isinstance( value, basestring ):
+        if value is None or isinstance( value, string_types ):
             return value
         elif isinstance( value, int ):
             return str( value )
@@ -1934,7 +1931,7 @@ class DataToolParameter( BaseDataToolParameter ):
             else:
                 return app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( value ) )
 
-        if isinstance(value, str) and value.find(",") > -1:
+        if isinstance(value, string_types) and value.find(",") > -1:
             values = value.split(",")
             return [v for v in map( single_to_python, values ) if v not in none_values]
         else:
@@ -2150,7 +2147,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
             raise ValueError( "History does not include a dataset collection of the correct type or containing the correct types of datasets" )
         if value in [None, "None"]:
             return None
-        if isinstance( value, str ) and value.find( "," ) > 0:
+        if isinstance( value, string_types ) and value.find( "," ) > 0:
             value = [ int( value_part ) for value_part in value.split( "," ) ]
         elif isinstance( value, trans.app.model.HistoryDatasetCollectionAssociation ):
             rval = value
@@ -2168,7 +2165,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
                 if isinstance( value, dict ) and 'src' in value and 'id' in value:
                     if value['src'] == 'hdca':
                         rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( trans.security.decode_id(value['id']) )
-        elif isinstance( value, basestring ):
+        elif isinstance( value, string_types ):
             if value.startswith( "dce:" ):
                 rval = trans.sa_session.query( trans.app.model.DatasetCollectionElement ).get( value[ len( "dce:"): ] )
             elif value.startswith( "hdca:" ):
@@ -2182,7 +2179,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         return rval
 
     def to_string( self, value, app ):
-        if value is None or isinstance( value, basestring ):
+        if value is None or isinstance( value, string_types ):
             return value
         elif isinstance( value, RuntimeValue ):
             return None
@@ -2201,7 +2198,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         if value is None or value == '' or value == 'None':
             return value
 
-        if not isinstance( value, basestring ):
+        if not isinstance( value, string_types ):
             raise ValueError( "Can not convert data collection parameter value to python object - %s" % value )
 
         if value.startswith( "dce:" ):
@@ -2358,7 +2355,7 @@ class LibraryDatasetToolParameter( ToolParameter ):
                 encoded_id = None
                 if isinstance(item, dict):
                     encoded_id = item.get('id')
-                elif isinstance(item, basestring):
+                elif isinstance(item, string_types):
                     encoded_id = item
                 else:
                     lst = []

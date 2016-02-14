@@ -5,6 +5,8 @@ Mixins for Taggable model managers and serializers.
 # from galaxy import exceptions as galaxy_exceptions
 
 import logging
+from six import text_type
+
 log = logging.getLogger( __name__ )
 
 
@@ -34,7 +36,9 @@ def _tags_from_strings( item, tag_handler, new_tags_list, user=None ):
     # TODO: duped from tags manager - de-dupe when moved to taggable mixin
     tag_handler.delete_item_tags( user, item )
     new_tags_str = ','.join( new_tags_list )
-    tag_handler.apply_item_tags( user, item, unicode( new_tags_str.encode( 'utf-8' ), 'utf-8' ) )
+    if not isinstance( new_tags_str, text_type):
+        new_tags_str = text_type( new_tags_str, 'utf-8' )
+    tag_handler.apply_item_tags( user, item, new_tags_str )
     # TODO:!! does the creation of new_tags_list mean there are now more and more unused tag rows in the db?
 
 

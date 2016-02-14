@@ -7,6 +7,7 @@ import tempfile
 import zipfile
 from cgi import escape
 from inspect import isclass
+from six import string_types, text_type
 
 from . import metadata
 from galaxy import util
@@ -201,10 +202,10 @@ class Data( object ):
                 line = line.strip()
                 if not line:
                     continue
-                if isinstance(line, unicode):
+                if isinstance(line, text_type):
                     out.append( '<tr><td>%s</td></tr>' % escape( line ) )
                 else:
-                    out.append( '<tr><td>%s</td></tr>' % escape( unicode( line, 'utf-8' ) ) )
+                    out.append( '<tr><td>%s</td></tr>' % escape( text_type( line, 'utf-8' ) ) )
             out.append( '</table>' )
             out = "".join( out )
         except Exception as exc:
@@ -327,7 +328,7 @@ class Data( object ):
         # Prevent IE8 from sniffing content type since we're explicit about it.  This prevents intentionally text/plain
         # content from being rendered in the browser
         trans.response.headers['X-Content-Type-Options'] = 'nosniff'
-        if isinstance( data, basestring ):
+        if isinstance( data, string_types ):
             return data
         if filename and filename != "index":
             # For files in extra_files_path
@@ -385,10 +386,10 @@ class Data( object ):
     def display_name(self, dataset):
         """Returns formatted html of dataset name"""
         try:
-            if isinstance(dataset.name, unicode):
+            if isinstance(dataset.name, text_type):
                 return escape( dataset.name )
             else:
-                return escape( unicode( dataset.name, 'utf-8 ') )
+                return escape( text_type( dataset.name, 'utf-8 ') )
         except:
             return "name unavailable"
 
@@ -404,9 +405,8 @@ class Data( object ):
             if info.find( '\n' ) >= 0:
                 info = info.replace( '\n', '<br/>' )
 
-            # Convert to unicode to display non-ascii characters.
-            if not isinstance(info, unicode):
-                info = unicode( info, 'utf-8')
+            if not isinstance(info, text_type):
+                info = text_type( info, 'utf-8')
 
             return info
         except:

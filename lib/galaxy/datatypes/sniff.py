@@ -13,6 +13,7 @@ import tempfile
 import zipfile
 
 from encodings import search_function as encodings_search_function
+from six import text_type
 
 from galaxy import util
 from galaxy.util import multi_byte
@@ -51,7 +52,7 @@ def stream_to_open_named_file( stream, fd, filename, source_encoding=None, sourc
                 is_compressed = True
             else:
                 try:
-                    if unicode( chunk[:2] ) == unicode( util.gzip_magic ):
+                    if text_type( chunk[:2] ) == text_type( util.gzip_magic ):
                         is_compressed = True
                 except:
                     pass
@@ -63,7 +64,7 @@ def stream_to_open_named_file( stream, fd, filename, source_encoding=None, sourc
                     is_binary = util.is_binary( chunk )
             data_checked = True
         if not is_compressed and not is_binary:
-            if not isinstance( chunk, unicode ):
+            if not isinstance( chunk, text_type ):
                 chunk = chunk.decode( source_encoding, source_error )
             os.write( fd, chunk.encode( target_encoding, target_error ) )
         else:
@@ -200,7 +201,7 @@ def get_headers( fname, sep, count=60, is_multi_byte=False ):
         line = line.rstrip('\n\r')
         if is_multi_byte:
             # TODO: fix this - sep is never found in line
-            line = unicode( line, 'utf-8' )
+            line = text_type( line, 'utf-8' )
             sep = sep.encode( 'utf-8' )
         headers.append( line.split(sep) )
         if idx == count:
