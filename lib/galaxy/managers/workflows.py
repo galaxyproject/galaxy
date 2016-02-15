@@ -675,7 +675,8 @@ class WorkflowContentsManager(UsesAnnotations):
                          'tool_version': step.tool_version,
                          'annotation': self.get_item_annotation_str( sa_session, stored.user, step ),
                          'tool_inputs': step.tool_inputs,
-                         'input_steps': {}}
+                         'input_steps': {},
+                         'workflow_outputs': []}
 
             if step_type == 'subworkflow':
                 del step_dict['tool_id']
@@ -691,6 +692,16 @@ class WorkflowContentsManager(UsesAnnotations):
                 source_step = source_id if legacy else steps_to_order_index[source_id]
                 step_dict['input_steps'][conn.input_name] = {'source_step': source_step,
                                                              'step_output': conn.output_name}
+            # workflow outputs
+            outputs = []
+            for output in step.unique_workflow_outputs:
+                output_label = output.label
+                output_name = output.output_name
+                output_uuid = str(output.uuid) if output.uuid else None
+                outputs.append({"output_name": output_name,
+                                "uuid": output_uuid,
+                                "label": output_label})
+            step_dict['workflow_outputs'] = outputs
 
             steps[step_id] = step_dict
 
