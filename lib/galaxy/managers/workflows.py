@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+from six import string_types
+
 from collections import namedtuple
 import logging
 import json
@@ -239,15 +241,13 @@ class WorkflowContentsManager(UsesAnnotations):
             missing_tools=missing_tool_tups
         )
 
-    def update_workflow_from_dict(self, trans, stored_workflow, workflow_data, from_editor=False):
+    def update_workflow_from_dict(self, trans, stored_workflow, workflow_data):
         # Put parameters in workflow mode
         trans.workflow_building_mode = True
-        # Convert incoming workflow data from json if coming from editor
-        data = json.loads(workflow_data) if from_editor else workflow_data
 
         workflow, missing_tool_tups = self._workflow_from_dict(
             trans,
-            data,
+            workflow_data,
             name=stored_workflow.name,
         )
 
@@ -271,6 +271,10 @@ class WorkflowContentsManager(UsesAnnotations):
         return workflow, errors
 
     def _workflow_from_dict(self, trans, data, name):
+        if isinstance(data, string_types):
+            # If coming from the editor...
+            data = json.loads(data)
+
         # Create new workflow from source data
         workflow = model.Workflow()
 
