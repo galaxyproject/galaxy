@@ -566,7 +566,7 @@ class WorkflowContentsManager(UsesAnnotations):
             # User outputs
 
             workflow_outputs_dicts = []
-            for workflow_output in step.workflow_outputs:
+            for workflow_output in step.unique_workflow_outputs:
                 workflow_output_dict = dict(
                     output_name=workflow_output.output_name,
                     label=workflow_output.label,
