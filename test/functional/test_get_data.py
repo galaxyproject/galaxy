@@ -633,5 +633,3 @@ class UploadData( TwillTestCase ):
         self.check_metadata_for_string( 'value="1.bigwig" value="\?" Change data type selected value="bigwig" selected="yes"' )
 
         self.delete_history( id=self.security.encode_id( history.id ) )
-
-    def test_9999_clean_up( self ):
