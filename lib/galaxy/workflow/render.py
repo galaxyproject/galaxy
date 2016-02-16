@@ -37,7 +37,7 @@ class WorkflowCanvas( object ):
         box_height = ( len( step_dict[ 'data_inputs' ] ) + len( step_dict[ 'data_outputs' ] ) ) * LINE_SPACING + MARGIN
         # Draw separator line.
         if len( step_dict[ 'data_inputs' ] ) > 0:
-            box_height += 15
+            box_height += LINE_SPACING
             sep_y = y + len( step_dict[ 'data_inputs' ] ) * LINE_SPACING + 40
             self.text.append( svgwrite.shapes.Line( (x - MARGIN, sep_y), (x + width - MARGIN, sep_y ), stroke=svgwrite.rgb(0, 0, 0)) )
         # Define an input/output box.
@@ -62,7 +62,7 @@ class WorkflowCanvas( object ):
             count += 1
             max_len = max( max_len, len( di[ 'label' ] ) )
         if len( module_data_inputs ) > 0:
-            y += 15
+            y += LINE_SPACING
         for do in module_data_outputs:
             cur_y = y + count * LINE_SPACING
             if order_index not in out_pos:
@@ -100,13 +100,14 @@ class WorkflowCanvas( object ):
                                                  r=5,
                                                  fill="#ffffff",
                                                  stroke="#000000" ) )
-        marker = self.canvas.marker(refX="1.5", refY="3.6", overflow='visible',
-                                    viewBox="0 0 10.5 7.2",
-                                    markerWidth="10.5",
-                                    markerHeight="7.2",
+        marker = self.canvas.marker(overflow='visible',
+                                    refX="0", refY="5",
+                                    viewBox="0 0 10 5",
+                                    markerWidth="8",
+                                    markerHeight="10",
                                     markerUnits="strokeWidth",
                                     orient="auto", stroke="none", fill="black")
-        marker.add(self.canvas.path(d="M 1.5 3.6 L 0 0 L 10.5 3.6 L 0 7.2 L 1.5 3.6 Z"))
+        marker.add(self.canvas.path(d="M 0 0 L 10 5 L 0 10 z"))
         self.canvas.defs.add(marker)
         conn = svgwrite.shapes.Line( (adjusted[ 0 ], adjusted[ 1 ] - MARGIN),
                                      (in_coords[ 0 ] - 10, in_coords[ 1 ]),
