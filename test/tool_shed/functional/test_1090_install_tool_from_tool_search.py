@@ -35,12 +35,10 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
 
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         self.test_db_util.get_private_role( test_user_1 )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
@@ -49,7 +47,6 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
     def test_0005_create_bwa_base_repository( self ):
         '''Create and populate bwa_base_0090.'''
         category = self.create_category( name=category_name, description=category_description )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         global running_standalone
         repository = self.get_or_create_repository( name=bwa_base_repository_name,
@@ -215,7 +212,6 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
 
     def test_0045_install_freebayes_repository( self ):
         '''Install freebayes without repository dependencies.'''
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         # After this test, the repositories should be in the following states:
         # Installed: freebayes

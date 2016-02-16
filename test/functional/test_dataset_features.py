@@ -6,7 +6,6 @@ class TestDatasetFeatures( TwillTestCase ):
 
     def test_0000_initiate_users( self ):
         """Ensuring all required user accounts exist"""
-        self.logout()
         self.login( email='test@bx.psu.edu', username='admin-user' )
         global admin_user
         admin_user = test_db_util.get_user( 'test@bx.psu.edu' )

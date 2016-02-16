@@ -14,7 +14,6 @@ class UploadData( TwillTestCase ):
         """
         Configuring upload tests, setting admin_user
         """
-        self.logout()
         self.login( email='test@bx.psu.edu' )
         global admin_user
         admin_user = get_user( email='test@bx.psu.edu' )
@@ -636,4 +635,3 @@ class UploadData( TwillTestCase ):
         self.delete_history( id=self.security.encode_id( history.id ) )
 
     def test_9999_clean_up( self ):
-        self.logout()

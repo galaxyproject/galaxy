@@ -11,28 +11,24 @@ from base.test_db_util import get_user, admin_user, \
 class TestLibrarySecurity( TwillTestCase ):
     def test_000_initiate_users( self ):
         """Ensuring all required user accounts exist"""
-        self.logout()
         self.login( email='test1@bx.psu.edu', username='regular-user1' )
         global regular_user1
         regular_user1 = get_user( 'test1@bx.psu.edu' )
         assert regular_user1 is not None, 'Problem retrieving user with email "test1@bx.psu.edu" from the database'
         global regular_user1_private_role
         regular_user1_private_role = get_private_role( regular_user1 )
-        self.logout()
         self.login( email='test2@bx.psu.edu', username='regular-user2' )
         global regular_user2
         regular_user2 = get_user( 'test2@bx.psu.edu' )
         assert regular_user2 is not None, 'Problem retrieving user with email "test2@bx.psu.edu" from the database'
         global regular_user2_private_role
         regular_user2_private_role = get_private_role( regular_user2 )
-        self.logout()
         self.login( email='test3@bx.psu.edu', username='regular-user3' )
         global regular_user3
         regular_user3 = get_user( 'test3@bx.psu.edu' )
         assert regular_user3 is not None, 'Problem retrieving user with email "test3@bx.psu.edu" from the database'
         global regular_user3_private_role
         regular_user3_private_role = get_private_role( regular_user3 )
-        self.logout()
         self.login( email='test@bx.psu.edu', username='admin-user' )
         global admin_user
         admin_user = get_user( 'test@bx.psu.edu' )
@@ -113,7 +109,6 @@ class TestLibrarySecurity( TwillTestCase ):
         self.visit_url( '%s/library/browse_libraries' % self.url )
         self.check_page_for_string( library1.name )
         # Make sure the library is not accessible by regular_user2 since regular_user2 does not have Role1.
-        self.logout()
         self.login( email=regular_user2.email )
         self.visit_url( '%s/library/browse_libraries' % self.url )
         try:
@@ -121,7 +116,6 @@ class TestLibrarySecurity( TwillTestCase ):
             raise AssertionError( 'Library %s is accessible by %s when it should be restricted' % ( library1.name, regular_user2.email ) )
         except:
             pass
-        self.logout()
         self.login( email=admin_user.email )
 
     def test_020_add_folder_to_library1( self ):
@@ -190,25 +184,21 @@ class TestLibrarySecurity( TwillTestCase ):
         self.browse_library( cntrller='library',
                              library_id=self.security.encode_id( library1.id ),
                              strings_not_displayed=[ folder1.name, ldda1.name, ldda1.message ] )
-        self.logout()
         # regular_user1 should be able to see 1.bed from the Data Libraries view
         # since it was associated with regular_user1's private role
         self.login( email=regular_user1.email )
         self.browse_library( cntrller='library',
                              library_id=self.security.encode_id( library1.id ),
                              strings_displayed=[ folder1.name, ldda1.name, ldda1.message ] )
-        self.logout()
         # regular_user2 should not be to see library1 since they do not have
         # Role1 which is associated with the LIBRARY_ACCESS permission
         self.login( email=regular_user2.email )
         self.browse_libraries_regular_user( strings_not_displayed=[ library1.name ] )
-        self.logout()
         # regular_user3 should not be able to see 1.bed from the analysis view's access librarys
         self.login( email=regular_user3.email )
         self.browse_library( cntrller='library',
                              library_id=self.security.encode_id( library1.id ),
                              strings_not_displayed=[ folder1.name ] )
-        self.logout()
         self.login( email=admin_user.email )
 
     def test_035_change_ldda1_access_permission( self ):
@@ -286,7 +276,6 @@ class TestLibrarySecurity( TwillTestCase ):
         self.browse_library( cntrller='library',
                              library_id=self.security.encode_id( library1.id ),
                              strings_displayed=[ ldda2.name, ldda2.message, 'bed' ] )
-        self.logout()
         # regular_user1 should be able to see 2.bed since she is associated with group_two
         self.login( email=regular_user1.email )
         self.browse_library( cntrller='library',
@@ -317,47 +306,40 @@ class TestLibrarySecurity( TwillTestCase ):
                                            ldda_ids=self.security.encode_id( ldda2.id ),
                                            new_history_name='goodbye',
                                            strings_displayed=[ '1 dataset imported into 1 history' ] )
-        self.logout()
         # regular_user2 should not be able to see ldda2
         self.login( email=regular_user2.email )
         self.browse_library( cntrller='library',
                              library_id=self.security.encode_id( library1.id ),
                              strings_not_displayed=[ folder1.name, ldda2.name, ldda2.message ] )
 
-        self.logout()
         # regular_user3 should not be able to see ldda2
         self.login( email=regular_user3.email )
         self.browse_library( cntrller='library',
                              library_id=self.security.encode_id( library1.id ),
                              strings_displayed=[ folder1.name ],
                              strings_not_displayed=[ ldda2.name, ldda2.message ] )
-        self.logout()
         self.login( email=admin_user.email )
         # Now makse ldda2 publicly accessible
         self.make_library_item_public( self.security.encode_id( library1.id ),
                                        self.security.encode_id( ldda2.id ),
                                        item_type='ldda',
                                        ldda_name=ldda2.name )
-        self.logout()
         # regular_user2 should now be able to see ldda2
         self.login( email=regular_user2.email )
         self.browse_library( cntrller='library',
                              library_id=self.security.encode_id( library1.id ),
                              strings_displayed=[ folder1.name, ldda2.name, ldda2.message ] )
-        self.logout()
         self.login( email=admin_user.email )
         # Now make folder1 publicly acessible
         self.make_library_item_public( self.security.encode_id( library1.id ),
                                        self.security.encode_id( folder1.id ),
                                        item_type='folder',
                                        folder_name=folder1.name )
-        self.logout()
         # regular_user3 should now be able to see ldda1
         self.login( email=regular_user3.email )
         self.browse_library( cntrller='library',
                              library_id=self.security.encode_id( library1.id ),
                              strings_displayed=[ folder1.name, ldda1.name, ldda1.message ] )
-        self.logout()
         self.login( email=admin_user.email )
 
     def test_050_upload_directory_of_files_from_admin_view( self ):
@@ -414,22 +396,18 @@ class TestLibrarySecurity( TwillTestCase ):
                          strings_displayed=[ 'Manage dataset permissions on',
                                              'can manage the roles associated with permissions on this dataset',
                                              'can import this dataset into their history for analysis' ] )
-        self.logout()
         # regular_user1 is associated with role1, so should have all permissions on imported datasets
         self.login( email=regular_user1.email )
         check_edit_page( latest_3_lddas )
-        self.logout()
         # Since regular_user2 is not associated with role1, she should not have
         # access to any of the 3 datasets, so she will not see folder1 on the libraries page
         self.login( email=regular_user2.email )
         self.browse_library( cntrller='library',
                              library_id=self.security.encode_id( library1.id ),
                              strings_not_displayed=[ folder1.name ] )
-        self.logout()
         # regular_user3 is associated with role1, so should have all permissions on imported datasets
         self.login( email=regular_user3.email )
         check_edit_page( latest_3_lddas )
-        self.logout()
         self.login( email=admin_user.email )
         # Change the permissions and test again
         self.ldda_permissions( 'library_admin',
@@ -460,7 +438,6 @@ class TestLibrarySecurity( TwillTestCase ):
                                   permissions_in,
                                   permissions_out )
         # Make sure library2 is not accessible by regular_user2.
-        self.logout()
         self.login( email=regular_user2.email )
         self.visit_url( '%s/library/browse_libraries' % self.url )
         try:
@@ -468,7 +445,6 @@ class TestLibrarySecurity( TwillTestCase ):
             raise AssertionError( 'Library %s is accessible by %s when it should be restricted' % ( library2.name, regular_user2.email ) )
         except:
             pass
-        self.logout()
         self.login( email=admin_user.email )
 
     def test_065_create_ldda6( self ):
@@ -559,7 +535,6 @@ class TestLibrarySecurity( TwillTestCase ):
                                        contents=True,
                                        library_name=library2.name )
         # Make sure library2 is now accessible by regular_user2
-        self.logout()
         self.login( email=regular_user2.email )
         self.visit_url( '%s/library/browse_libraries' % self.url )
         self.check_page_for_string( library2.name )
@@ -570,7 +545,6 @@ class TestLibrarySecurity( TwillTestCase ):
     def test_999_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         # Logged in as regular_user2
-        self.logout()
         self.login( email=admin_user.email )
         ##################
         # Purge all libraries

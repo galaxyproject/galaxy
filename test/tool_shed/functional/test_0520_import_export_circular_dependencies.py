@@ -28,12 +28,10 @@ class TestExportImportRepository( ShedTwillTestCase ):
 
     def test_0000_initiate_users( self ):
         """Create necessary user accounts and login as an admin user."""
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         self.test_db_util.get_private_role( test_user_1 )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
@@ -45,10 +43,8 @@ class TestExportImportRepository( ShedTwillTestCase ):
         This is step 1 - Upload a capsule with 2 repositories that define simple repository dependencies on each other, resulting in
         circular dependencies to a tool shed.
         '''
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         self.create_category( name=category_name, description=category_description )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         self.import_capsule( self.get_filename( 'repository_capsules/0520_filtering.tar.gz' ),
                              strings_displayed=[ filtering_repository_name, freebayes_repository_name, '<b>Exists' ],

@@ -1,6 +1,6 @@
 import os
 
-from tool_shed.base.twilltestcase import common, ShedTwillTestCase
+from tool_shed.base.twilltestcase  common, ShedTwillTestCase
 
 matplotlib_repository_name = 'package_matplotlib_1_2_0170'
 matplotlib_repository_description = "Contains a tool dependency definition that downloads and compiles version 1.2.x of the the python matplotlib package."
@@ -29,12 +29,10 @@ class TestComplexPriorInstallation( ShedTwillTestCase ):
 
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         self.test_db_util.get_private_role( test_user_1 )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
@@ -47,7 +45,6 @@ class TestComplexPriorInstallation( ShedTwillTestCase ):
         '''
         global running_standalone
         category = self.create_category( name=category_name, description=category_description )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name=matplotlib_repository_name,
                                                     description=matplotlib_repository_description,
@@ -74,7 +71,6 @@ class TestComplexPriorInstallation( ShedTwillTestCase ):
         '''
         global running_standalone
         category = self.create_category( name=category_name, description=category_description )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         if running_standalone:
             repository = self.get_or_create_repository( name=numpy_repository_name,
@@ -151,7 +147,6 @@ class TestComplexPriorInstallation( ShedTwillTestCase ):
         '''
         This is step 4 - Install package_matplotlib_1_2_0170 with repository dependencies.
         '''
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         matplotlib_repository = self.test_db_util.get_repository_by_name_and_owner( matplotlib_repository_name, common.test_user_1_name )
         preview_strings_displayed = [ 'package_matplotlib_1_2_0170', self.get_repository_tip( matplotlib_repository ) ]

@@ -29,17 +29,14 @@ class TestUpdateManager( ShedTwillTestCase ):
         Create all the user accounts that are needed for this test script to run independently of other tests.
         Previously created accounts will not be re-created.
         """
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         self.test_db_util.get_private_role( test_user_1 )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
         self.test_db_util.get_private_role( admin_user )
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         galaxy_admin_user = self.test_db_util.get_galaxy_user( common.admin_email )
         assert galaxy_admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
@@ -52,7 +49,6 @@ class TestUpdateManager( ShedTwillTestCase ):
         Create filtering_1410 and upload the tool tarball to it.
         '''
         category = self.create_category( name=category_name, description=category_description )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name=repository_name,
                                                     description=repository_description,
@@ -75,7 +71,6 @@ class TestUpdateManager( ShedTwillTestCase ):
         We are at step 2 - Install filtering_1410 to Galaxy.
         Install the filtering repository to Galaxy.
         '''
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         self.install_repository( 'filtering_1410',
                                  common.test_user_1_name,
@@ -100,7 +95,6 @@ class TestUpdateManager( ShedTwillTestCase ):
         but without generating a second downloadable revision. Then sleep for 3 seconds to make sure the update manager picks up the new
         revision.
         '''
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository,
@@ -121,7 +115,6 @@ class TestUpdateManager( ShedTwillTestCase ):
         '''
         # Wait 3 seconds, just to be sure we're past hours_between_check.
         time.sleep( 3 )
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         self.update_tool_shed_status()
         ok_title = r'title=\"Updates are available in the Tool Shed for this revision\"'

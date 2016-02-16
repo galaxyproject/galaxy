@@ -20,28 +20,24 @@ class TestUserInfo( TwillTestCase ):
 
     def test_000_initiate_users( self ):
         """Ensuring all required user accounts exist"""
-        self.logout()
         self.login( email='test1@bx.psu.edu', username='regular-user1' )
         global regular_user1
         regular_user1 = get_user( 'test1@bx.psu.edu' )
         assert regular_user1 is not None, 'Problem retrieving user with email "test1@bx.psu.edu" from the database'
         global regular_user1_private_role
         regular_user1_private_role = get_private_role( regular_user1 )
-        self.logout()
         self.login( email='test2@bx.psu.edu', username='regular-user2' )
         global regular_user2
         regular_user2 = get_user( 'test2@bx.psu.edu' )
         assert regular_user2 is not None, 'Problem retrieving user with email "test2@bx.psu.edu" from the database'
         global regular_user2_private_role
         regular_user2_private_role = get_private_role( regular_user2 )
-        self.logout()
         self.login( email='test3@bx.psu.edu', username='regular-user3' )
         global regular_user3
         regular_user3 = get_user( 'test3@bx.psu.edu' )
         assert regular_user3 is not None, 'Problem retrieving user with email "test3@bx.psu.edu" from the database'
         global regular_user3_private_role
         regular_user3_private_role = get_private_role( regular_user3 )
-        self.logout()
         self.login( email='test@bx.psu.edu', username='admin-user' )
         global admin_user
         admin_user = get_user( 'test@bx.psu.edu' )
@@ -115,7 +111,6 @@ class TestUserInfo( TwillTestCase ):
     def test_010_user_reqistration_multiple_user_info_forms( self ):
         """Testing user registration with multiple user info forms"""
         # Logged in as admin_user
-        self.logout()
         # Create a new user with 'Student' user info form.  The user_info_values will be the values
         # filled into the fields defined in field_dicts above ( 'Educational' -> 'Affiliation,
         # 'Penn State' -> 'Name of Organization', '1' -> 'Contact for feedback' )
@@ -137,7 +132,6 @@ class TestUserInfo( TwillTestCase ):
         assert regular_user11 is not None, 'Problem retrieving user with email "%s" from the database' % email
         global regular_user11_private_role
         regular_user11_private_role = get_private_role( regular_user11 )
-        self.logout()
         self.login( email=regular_user11.email, username=username )
         global form_checkbox_field3_string
         form_checkbox_field3_string = '<input type="checkbox" id="contact_for_feedback" name="contact_for_feedback" value="true" checked="checked">'
@@ -150,7 +144,6 @@ class TestUserInfo( TwillTestCase ):
     def test_015_user_reqistration_single_user_info_forms( self ):
         """Testing user registration with a single user info form"""
         # Logged in as regular_user_11
-        self.logout()
         self.login( email=admin_user.email )
         # Delete the 'Researcher' user info form
         self.mark_form_deleted( self.security.encode_id( form_two.current.id ) )
@@ -175,7 +168,6 @@ class TestUserInfo( TwillTestCase ):
         assert regular_user12 is not None, 'Problem retrieving user with email "%s" from the database' % email
         global regular_user12_private_role
         regular_user12_private_role = get_private_role( regular_user12 )
-        self.logout()
         self.login( email=regular_user12.email, username=username )
         self.edit_user_info( cntrller='user',
                              strings_displayed=[ "Manage User Information",
@@ -205,7 +197,6 @@ class TestUserInfo( TwillTestCase ):
                              password='testuser',
                              new_password='testuser#',
                              strings_displayed_after_submit=[ 'The password has been changed' ] )
-        self.logout()
         refresh( regular_user12 )
         # Test logging in with new email and password
         self.login( email=regular_user12.email, password='testuser#' )
@@ -219,7 +210,6 @@ class TestUserInfo( TwillTestCase ):
     def test_999_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         # Logged in as regular_user_12
-        self.logout()
         self.login( email=admin_user.email )
         ##################
         # Mark all forms deleted that have not yet been marked deleted ( form_two has )
