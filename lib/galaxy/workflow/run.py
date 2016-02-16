@@ -177,7 +177,7 @@ class WorkflowInvoker( object ):
                 )
                 raise
 
-            log.debug("Workflow step %s invoked %s" % (step.id, step_timer))
+            log.debug("Workflow step %s of invocation %s invoked %s" % (step.id, workflow_invocation.id, step_timer))
 
         if delayed_steps:
             state = model.WorkflowInvocation.states.READY
