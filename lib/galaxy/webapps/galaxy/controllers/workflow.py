@@ -514,7 +514,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
     def gen_image( self, trans, id ):
         stored = self.get_stored_workflow( trans, id, check_ownership=True )
         trans.response.set_content_type("image/svg+xml")
-        return self._workflow_to_svg_canvas( trans, stored )
+        return self._workflow_to_svg_canvas( trans, stored ).tostring()
 
     @web.expose
     @web.require_login( "use Galaxy workflows" )
