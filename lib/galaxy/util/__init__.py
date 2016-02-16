@@ -26,6 +26,7 @@ import threading
 from os.path import relpath
 from hashlib import md5
 
+from six import binary_type
 from six import iteritems
 from six import PY3
 from six import string_types, text_type
