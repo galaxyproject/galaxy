@@ -2078,10 +2078,10 @@ class DataToolParameter( BaseDataToolParameter ):
         visible_hda = other_values.get( self.name )
         has_matched = False
         for hda in history.active_datasets_children_and_roles:
-            match = dataset_matcher.hda_match( hda, ensure_visible=visible_hda != hda )
+            match = dataset_matcher.hda_match( hda )
             if match:
                 m = match.hda
-                has_matched = has_matched or visible_hda == m
+                has_matched = has_matched or visible_hda == m or visible_hda == hda
                 append( d[ 'options' ][ 'hda' ], m.id, m.hid, m.name if m.visible else '(hidden) %s' % m.name, 'hda' )
         if not has_matched and isinstance( visible_hda, trans.app.model.HistoryDatasetAssociation ):
             append( d[ 'options' ][ 'hda' ], visible_hda.id, visible_hda.hid, '(unavailable) %s' % visible_hda.name, 'hda' )
