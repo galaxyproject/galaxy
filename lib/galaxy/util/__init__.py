@@ -847,16 +847,19 @@ def roundify(amount, sfs=2):
         return amount[0:sfs] + '0' * (len(amount) - sfs)
 
 
-def unicodify( value, encoding=DEFAULT_ENCODING, error='replace', default=None ):
+def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', default=None):
     """
-    Returns a unicode string or None
+    Returns a unicode string or None.
     """
     if value is None:
         return None
     try:
-        if not isinstance(value, string_types):
+        if not isinstance(value, string_types) and not isinstance(value, binary_type):
+            # In Python 2, value is not an instance of basestring
+            # In Python 3, value is not an instance of bytes or str
             value = str(value)
-        # At this point value is of type str, which in Python 2 needs to be converted to unicode
+        # Now in Python 2, value is an instance of basestring, but may be not unicode
+        # Now in Python 3, value is an instance of bytes or str
         if not isinstance(value, text_type):
             value = text_type(value, encoding, error)
     except Exception:

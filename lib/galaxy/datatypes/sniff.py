@@ -17,6 +17,7 @@ from six import text_type
 
 from galaxy import util
 from galaxy.util import multi_byte
+from galaxy.util import unicodify
 from galaxy.util.checkers import check_binary, check_html, is_gzip
 from galaxy.datatypes.binary import Binary
 
@@ -201,7 +202,7 @@ def get_headers( fname, sep, count=60, is_multi_byte=False ):
         line = line.rstrip('\n\r')
         if is_multi_byte:
             # TODO: fix this - sep is never found in line
-            line = text_type( line, 'utf-8' )
+            line = unicodify( line, 'utf-8' )
             sep = sep.encode( 'utf-8' )
         headers.append( line.split(sep) )
         if idx == count:

@@ -5,8 +5,9 @@ HTML Sanitizer (ripped from feedparser)
 import re
 import sgmllib
 
-from six import unichr
+from galaxy.util import unicodify
 from six import text_type
+from six import unichr
 
 
 # reversable htmlentitydefs mappings for Python 2.2
@@ -21,6 +22,7 @@ except:
             codepoint = unichr(int(codepoint[2:-1]))
         name2codepoint[name] = ord(codepoint)
         codepoint2name[ord(codepoint)] = name
+
 
 _cp1252 = {
     unichr(128): unichr(8364),  # euro sign
@@ -114,15 +116,15 @@ class _BaseHTMLProcessor(sgmllib.SGMLParser):
                 # thanks to Kevin Marks for this breathtaking hack to deal with (valid) high-bit attribute values in UTF-8 feeds
                 if isinstance(value, text_type):
                     try:
-                        value = text_type(value, self.encoding)
-                    except:
-                        value = text_type(value, 'iso-8859-1')
-                uattrs.append((text_type(key, self.encoding), value))
+                        value = unicodify(value, self.encoding)
+                    except Exception:
+                        value = unicodify(value, 'iso-8859-1')
+                uattrs.append(unicodify(key, self.encoding), value)
             strattrs = u''.join([u' %s="%s"' % (key, val) for key, val in uattrs])
             if self.encoding:
                 try:
                     strattrs = strattrs.encode(self.encoding)
-                except:
+                except Exception:
                     pass
         if tag in self.elements_no_end_tag:
             self.pieces.append('<%(tag)s%(strattrs)s />' % locals())

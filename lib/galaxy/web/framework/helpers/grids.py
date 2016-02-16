@@ -8,6 +8,7 @@ from sqlalchemy.sql.expression import and_, func, or_, null, false, true
 
 from galaxy.model.item_attrs import RuntimeException, UsesAnnotations, UsesItemRatings
 from galaxy.util import sanitize_text
+from galaxy.util import unicodify
 from galaxy.util.json import loads, dumps
 from galaxy.util.odict import odict
 from galaxy.web.framework import decorators
@@ -163,7 +164,7 @@ class Grid( object ):
                         # Filter is a list; process each item.
                         for filter in column_filter:
                             if not isinstance( filter, string_types ):
-                                filter = text_type( filter ).encode("utf-8")
+                                filter = unicodify( filter, 'utf-8' )
                         extra_url_args[ "f-" + column.key ] = dumps( column_filter )
                     else:
                         # Process singleton filter.

@@ -18,7 +18,8 @@ from cgi import FieldStorage
 from xml.etree import ElementTree
 from mako.template import Template
 from paste import httpexceptions
-from six import string_types, text_type
+from six import string_types
+from six import text_type
 
 from galaxy import model
 from galaxy.managers import histories
@@ -44,6 +45,7 @@ from galaxy.tools.toolbox import BaseGalaxyToolBox
 from galaxy.util import rst_to_html, string_as_bool
 from galaxy.util import ExecutionTimer
 from galaxy.util import listify
+from galaxy.util import unicodify
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
@@ -1851,8 +1853,20 @@ class Tool( object, Dictifiable ):
         # create tool help
         tool_help = ''
         if self.help:
+<<<<<<< 015094511b27a2267ab55621577ed05f3be092d3
             tool_help = self.help.render( static_path=url_for( '/static' ), host_url=url_for( '/', qualified=True ) )
             tool_help = unicodify( tool_help, 'utf-8' )
+=======
+            tool_help = self.help
+            tool_help = tool_help.render( static_path=url_for( '/static' ), host_url=url_for('/', qualified=True) )
+            if not isinstance( tool_help, text_type ):
+                tool_help = unicodify( tool_help, 'utf-8')
+
+        # check if citations exist
+        tool_citations = False
+        if self.citations:
+            tool_citations = True
+>>>>>>> Use unicodify
 
         # create tool versions
         tool_versions = []

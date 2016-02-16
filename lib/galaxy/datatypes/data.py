@@ -13,6 +13,7 @@ from . import metadata
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
 from galaxy.util import inflector
+from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
@@ -205,7 +206,7 @@ class Data( object ):
                 if isinstance(line, text_type):
                     out.append( '<tr><td>%s</td></tr>' % escape( line ) )
                 else:
-                    out.append( '<tr><td>%s</td></tr>' % escape( text_type( line, 'utf-8' ) ) )
+                    out.append( '<tr><td>%s</td></tr>' % escape( unicodify( line, 'utf-8' ) ) )
             out.append( '</table>' )
             out = "".join( out )
         except Exception as exc:
@@ -389,7 +390,7 @@ class Data( object ):
             if isinstance(dataset.name, text_type):
                 return escape( dataset.name )
             else:
-                return escape( text_type( dataset.name, 'utf-8 ') )
+                return escape( unicodify( dataset.name, 'utf-8' ) )
         except:
             return "name unavailable"
 
@@ -406,7 +407,7 @@ class Data( object ):
                 info = info.replace( '\n', '<br/>' )
 
             if not isinstance(info, text_type):
-                info = text_type( info, 'utf-8')
+                info = unicodify( info, 'utf-8' )
 
             return info
         except:

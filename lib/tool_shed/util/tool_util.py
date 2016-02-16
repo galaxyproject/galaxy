@@ -1,11 +1,11 @@
 import logging
 import os
 import shutil
-from six import text_type
 
 import galaxy.tools
 from galaxy import util
 from galaxy.util import checkers
+from galaxy.util import unicodify
 from galaxy.util.expressions import ExpressionContext
 from galaxy.web.form_builder import SelectField
 
@@ -132,7 +132,7 @@ def get_headers( fname, sep, count=60, is_multi_byte=False ):
     for idx, line in enumerate( file( fname ) ):
         line = line.rstrip( '\n\r' )
         if is_multi_byte:
-            line = text_type( line, 'utf-8' )
+            line = unicodify( line, 'utf-8' )
             sep = sep.encode( 'utf-8' )
         headers.append( line.split( sep ) )
         if idx == count:

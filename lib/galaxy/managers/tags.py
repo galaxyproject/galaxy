@@ -1,7 +1,8 @@
 import logging
 import re
 
-from six import string_types, text_type
+from galaxy.util import unicodify
+from six import string_types
 from sqlalchemy.sql import select
 from sqlalchemy.sql.expression import func
 
@@ -42,9 +43,7 @@ class TagManager( object ):
 
         self.delete_item_tags( user, item )
         new_tags_str = ','.join( new_tags_list )
-        if not isinstance( new_tags_str, text_type):
-            new_tags_str = text_type(new_tags_str, 'utf-8')
-        self.apply_item_tags( user, item, new_tags_str)
+        self.apply_item_tags( user, item, unicodify( new_tags_str, 'utf-8' ) )
         self.app.model.context.flush()
         return item.tags
 

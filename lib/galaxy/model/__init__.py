@@ -38,10 +38,11 @@ from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.security import get_permitted_actions
 from galaxy.util import Params, restore_text, send_mail
-from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util import ready_name_for_url, unique_id
-from galaxy.util.bunch import Bunch
+from galaxy.util import unicodify
+from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util.hash_util import new_secure_hash
+from galaxy.util.bunch import Bunch
 from galaxy.util.directory_hash import directory_hash_id
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.framework.helpers import to_unicode
@@ -102,7 +103,7 @@ class HasName:
         """
         name = self.name
         if not isinstance( name, text_type ):
-            name = text_type( name, 'utf-8' )
+            name = unicodify( name, 'utf-8' )
         return name
 
 
@@ -114,17 +115,17 @@ class JobLike:
 
     def add_metric( self, plugin, metric_name, metric_value ):
         if isinstance( plugin, string_types ) and not isinstance( plugin, text_type ):
-            plugin = text_type( plugin, 'utf-8' )
+            plugin = unicodify( plugin, 'utf-8' )
 
         if isinstance( metric_name, string_types ) and not isinstance( metric_name, text_type ):
-            metric_name = text_type( metric_name, 'utf-8' )
+            metric_name = unicodify( metric_name, 'utf-8' )
 
         if isinstance( metric_value, numbers.Number ):
             metric = self._numeric_metric( plugin, metric_name, metric_value )
             self.numeric_metrics.append( metric )
         else:
             if isinstance( metric_value, string_types ) and not isinstance( metric_value, text_type ):
-                metric_value = text_type( metric_value, 'utf-8' )
+                metric_value = unicodify( metric_value, 'utf-8' )
             if len( metric_value ) > 1022:
                 # Truncate these values - not needed with sqlite
                 # but other backends must need it.
