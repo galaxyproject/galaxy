@@ -11,6 +11,7 @@ import random
 import string
 
 from six import text_type, string_types, iteritems
+from galaxy.util.string_conversion import to_unicode
 
 dumps = json.dumps
 loads = json.loads
@@ -27,7 +28,7 @@ def json_fix( val ):
     elif isinstance( val, dict ):
         return dict( [ ( json_fix( k ), json_fix( v ) ) for ( k, v ) in iteritems(val) ] )
     elif isinstance( val, text_type ):
-        return val.encode( "utf8" )
+        return to_unicode( val )
     else:
         return val
 
