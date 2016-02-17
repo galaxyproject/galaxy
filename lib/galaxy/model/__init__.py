@@ -113,18 +113,13 @@ class JobLike:
         self.numeric_metrics = []
 
     def add_metric( self, plugin, metric_name, metric_value ):
-        if isinstance( plugin, string_types ):
-            plugin = unicodify( plugin, 'utf-8' )
-
-        if isinstance( metric_name, string_types ):
-            metric_name = unicodify( metric_name, 'utf-8' )
-
+        plugin = unicodify( plugin, 'utf-8' )
+        metric_name = unicodify( metric_name, 'utf-8' )
         if isinstance( metric_value, numbers.Number ):
             metric = self._numeric_metric( plugin, metric_name, metric_value )
             self.numeric_metrics.append( metric )
         else:
-            if isinstance( metric_value, string_types ):
-                metric_value = unicodify( metric_value, 'utf-8' )
+            metric_value = unicodify( metric_value, 'utf-8' )
             if len( metric_value ) > 1022:
                 # Truncate these values - not needed with sqlite
                 # but other backends must need it.
