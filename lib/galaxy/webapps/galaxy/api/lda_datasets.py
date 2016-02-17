@@ -200,31 +200,32 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         return dict( access_dataset_roles=access_dataset_role_list, modify_item_roles=modify_item_role_list, manage_dataset_roles=manage_dataset_role_list )
 
     @expose_api
-    def update_permissions( self, trans, encoded_dataset_id, **kwd ):
+    def update_permissions( self, trans, encoded_dataset_id, payload=None, **kwd ):
         """
         *POST /api/libraries/datasets/{encoded_dataset_id}/permissions
             Set permissions of the given dataset to the given role ids.
 
         :param  encoded_dataset_id:      the encoded id of the dataset to update permissions of
         :type   encoded_dataset_id:      an encoded id string
-
-        :param  action:     (required) describes what action should be performed
-                            available actions: make_private, remove_restrictions, set_permissions
-        :type   action:     string
-
-        :param  access_ids[]:      list of Role.name defining roles that should have access permission on the dataset
-        :type   access_ids[]:      string or list
-        :param  manage_ids[]:      list of Role.name defining roles that should have manage permission on the dataset
-        :type   manage_ids[]:      string or list
-        :param  modify_ids[]:      list of Role.name defining roles that should have modify permission on the library dataset item
-        :type   modify_ids[]:      string or list
-
-        :rtype:     dictionary
+        :param   payload: dictionary structure containing:
+            :param  action:     (required) describes what action should be performed
+                                available actions: make_private, remove_restrictions, set_permissions
+            :type   action:     string
+            :param  access_ids[]:      list of Role.name defining roles that should have access permission on the dataset
+            :type   access_ids[]:      string or list
+            :param  manage_ids[]:      list of Role.name defining roles that should have manage permission on the dataset
+            :type   manage_ids[]:      string or list
+            :param  modify_ids[]:      list of Role.name defining roles that should have modify permission on the library dataset item
+            :type   modify_ids[]:      string or list
+        :type:      dictionary
         :returns:   dict of current roles for all available permission types
+        :rtype:     dictionary
 
         :raises: RequestParameterInvalidException, ObjectNotFound, InsufficientPermissionsException, InternalServerError
                     RequestParameterMissingException
         """
+        if payload:
+            kwd.update(payload)
         try:
             library_dataset = self.get_library_dataset( trans, id=encoded_dataset_id, check_ownership=False, check_accessible=False )
         except Exception as e:
