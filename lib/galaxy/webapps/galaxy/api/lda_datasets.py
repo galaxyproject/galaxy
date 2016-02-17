@@ -211,11 +211,11 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             :param  action:     (required) describes what action should be performed
                                 available actions: make_private, remove_restrictions, set_permissions
             :type   action:     string
-            :param  access_ids[]:      list of Role.name defining roles that should have access permission on the dataset
+            :param  access_ids[]:      list of Role.id defining roles that should have access permission on the dataset
             :type   access_ids[]:      string or list
-            :param  manage_ids[]:      list of Role.name defining roles that should have manage permission on the dataset
+            :param  manage_ids[]:      list of Role.id defining roles that should have manage permission on the dataset
             :type   manage_ids[]:      string or list
-            :param  modify_ids[]:      list of Role.name defining roles that should have modify permission on the library dataset item
+            :param  modify_ids[]:      list of Role.id defining roles that should have modify permission on the library dataset item
             :type   modify_ids[]:      string or list
         :type:      dictionary
         :returns:   dict of current roles for all available permission types
@@ -257,7 +257,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         elif action == 'set_permissions':
             # ACCESS DATASET ROLES
             valid_access_roles = []
-            invalid_access_roles_names = []
+            invalid_access_roles_ids = []
             if new_access_roles_ids is None:
                 trans.app.security_agent.make_dataset_public( dataset )
             else:
@@ -268,16 +268,16 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                     if role in valid_roles:
                         valid_access_roles.append( role )
                     else:
-                        invalid_access_roles_names.append( role_id )
-                if len( invalid_access_roles_names ) > 0:
-                    log.warning( "The following roles could not be added to the dataset access permission: " + str( invalid_access_roles_names ) )
+                        invalid_access_roles_ids.append( role_id )
+                if len( invalid_access_roles_ids ) > 0:
+                    log.warning( "The following roles could not be added to the dataset access permission: " + str( invalid_access_roles_ids ) )
 
                 access_permission = dict( access=valid_access_roles )
                 trans.app.security_agent.set_dataset_permission( dataset, access_permission )
 
             # MANAGE DATASET ROLES
             valid_manage_roles = []
-            invalid_manage_roles_names = []
+            invalid_manage_roles_ids = []
             new_manage_roles_ids = util.listify( new_manage_roles_ids )
 
             #  Load all access roles to check
@@ -289,17 +289,17 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 if role in active_access_roles:
                     valid_manage_roles.append( role )
                 else:
-                    invalid_manage_roles_names.append( role_id )
+                    invalid_manage_roles_ids.append( role_id )
 
-            if len( invalid_manage_roles_names ) > 0:
-                log.warning( "The following roles could not be added to the dataset manage permission: " + str( invalid_manage_roles_names ) )
+            if len( invalid_manage_roles_ids ) > 0:
+                log.warning( "The following roles could not be added to the dataset manage permission: " + str( invalid_manage_roles_ids ) )
 
             manage_permission = { trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS: valid_manage_roles }
             trans.app.security_agent.set_dataset_permission( dataset, manage_permission )
 
             # MODIFY LIBRARY ITEM ROLES
             valid_modify_roles = []
-            invalid_modify_roles_names = []
+            invalid_modify_roles_ids = []
             new_modify_roles_ids = util.listify( new_modify_roles_ids )
 
             #  Load all access roles to check
@@ -311,10 +311,10 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 if role in active_access_roles:
                     valid_modify_roles.append( role )
                 else:
-                    invalid_modify_roles_names.append( role_id )
+                    invalid_modify_roles_ids.append( role_id )
 
-            if len( invalid_modify_roles_names ) > 0:
-                log.warning( "The following roles could not be added to the dataset modify permission: " + str( invalid_modify_roles_names ) )
+            if len( invalid_modify_roles_ids ) > 0:
+                log.warning( "The following roles could not be added to the dataset modify permission: " + str( invalid_modify_roles_ids ) )
 
             modify_permission = { trans.app.security_agent.permitted_actions.LIBRARY_MODIFY: valid_modify_roles }
             trans.app.security_agent.set_library_item_permission( library_dataset, modify_permission )
