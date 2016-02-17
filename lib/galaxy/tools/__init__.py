@@ -2007,6 +2007,15 @@ class Tool( object, Dictifiable ):
         # Basic information
         tool_dict = super( Tool, self ).to_dict()
 
+        # Fill in ToolShedRepository info
+        if isinstance(self.tool_shed_repository, self.app.install_model.ToolShedRepository):
+            tool_dict['tool_shed_repository'] = {
+                'name': self.tool_shed_repository.name,
+                'owner': self.tool_shed_repository.owner,
+                'changeset_revision': self.tool_shed_repository.changeset_revision,
+                'tool_shed': self.tool_shed_repository.tool_shed
+            }
+
         # If an admin user, expose the path to the actual tool config XML file.
         if trans.user_is_admin():
             tool_dict['config_file'] = os.path.abspath(self.config_file)
