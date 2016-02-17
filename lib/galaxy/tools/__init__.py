@@ -19,7 +19,6 @@ from xml.etree import ElementTree
 from mako.template import Template
 from paste import httpexceptions
 from six import string_types
-from six import text_type
 
 from galaxy import model
 from galaxy.managers import histories
@@ -1859,8 +1858,7 @@ class Tool( object, Dictifiable ):
 =======
             tool_help = self.help
             tool_help = tool_help.render( static_path=url_for( '/static' ), host_url=url_for('/', qualified=True) )
-            if not isinstance( tool_help, text_type ):
-                tool_help = unicodify( tool_help, 'utf-8')
+            tool_help = unicodify( tool_help, 'utf-8')
 
         # check if citations exist
         tool_citations = False
@@ -2382,10 +2380,8 @@ def json_fix( val ):
         return [ json_fix( v ) for v in val ]
     elif isinstance( val, dict ):
         return dict( [ ( json_fix( k ), json_fix( v ) ) for ( k, v ) in val.iteritems() ] )
-    elif isinstance( val, text_type ):
-        return val.encode( "utf8" )
     else:
-        return val
+        return unicodify(val, "utf8" )
 
 
 class InterruptedUpload( Exception ):

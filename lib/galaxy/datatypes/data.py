@@ -7,7 +7,7 @@ import tempfile
 import zipfile
 from cgi import escape
 from inspect import isclass
-from six import string_types, text_type
+from six import string_types
 
 from . import metadata
 from galaxy import util
@@ -203,10 +203,7 @@ class Data( object ):
                 line = line.strip()
                 if not line:
                     continue
-                if isinstance(line, text_type):
-                    out.append( '<tr><td>%s</td></tr>' % escape( line ) )
-                else:
-                    out.append( '<tr><td>%s</td></tr>' % escape( unicodify( line, 'utf-8' ) ) )
+                out.append( '<tr><td>%s</td></tr>' % escape( unicodify( line, 'utf-8' ) ) )
             out.append( '</table>' )
             out = "".join( out )
         except Exception as exc:
@@ -387,11 +384,8 @@ class Data( object ):
     def display_name(self, dataset):
         """Returns formatted html of dataset name"""
         try:
-            if isinstance(dataset.name, text_type):
-                return escape( dataset.name )
-            else:
-                return escape( unicodify( dataset.name, 'utf-8' ) )
-        except:
+            return escape( unicodify( dataset.name, 'utf-8' ) )
+        except Exception:
             return "name unavailable"
 
     def display_info(self, dataset):
@@ -406,8 +400,7 @@ class Data( object ):
             if info.find( '\n' ) >= 0:
                 info = info.replace( '\n', '<br/>' )
 
-            if not isinstance(info, text_type):
-                info = unicodify( info, 'utf-8' )
+            info = unicodify( info, 'utf-8' )
 
             return info
         except:

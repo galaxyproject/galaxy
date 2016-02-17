@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 from itertools import ifilter, imap
 from string import Template
 from uuid import UUID, uuid4
-from six import string_types, text_type
+from six import string_types
 
 from sqlalchemy import and_, func, not_, or_, true, join, select
 from sqlalchemy.orm import joinedload, object_session, aliased
@@ -102,8 +102,7 @@ class HasName:
         object. If string, convert to unicode object assuming 'utf-8' format.
         """
         name = self.name
-        if not isinstance( name, text_type ):
-            name = unicodify( name, 'utf-8' )
+        name = unicodify( name, 'utf-8' )
         return name
 
 
@@ -114,17 +113,17 @@ class JobLike:
         self.numeric_metrics = []
 
     def add_metric( self, plugin, metric_name, metric_value ):
-        if isinstance( plugin, string_types ) and not isinstance( plugin, text_type ):
+        if isinstance( plugin, string_types ):
             plugin = unicodify( plugin, 'utf-8' )
 
-        if isinstance( metric_name, string_types ) and not isinstance( metric_name, text_type ):
+        if isinstance( metric_name, string_types ):
             metric_name = unicodify( metric_name, 'utf-8' )
 
         if isinstance( metric_value, numbers.Number ):
             metric = self._numeric_metric( plugin, metric_name, metric_value )
             self.numeric_metrics.append( metric )
         else:
-            if isinstance( metric_value, string_types ) and not isinstance( metric_value, text_type ):
+            if isinstance( metric_value, string_types ):
                 metric_value = unicodify( metric_value, 'utf-8' )
             if len( metric_value ) > 1022:
                 # Truncate these values - not needed with sqlite

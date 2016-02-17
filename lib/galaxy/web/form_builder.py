@@ -43,8 +43,6 @@ class TextField(BaseField):
 
     def get_html( self, prefix="", disabled=False ):
         value = self.value
-        if not isinstance( value, string_types ):
-            value = str( value )
         value = unicodify( value )
         return unicodify( '<input type="text" name="%s%s" size="%d" value="%s"%s>'
                           % ( prefix, self.name, self.size, escape( value, quote=True ), self.get_disabled_str( disabled ) ) )
@@ -329,10 +327,6 @@ class SelectField(BaseField):
             rval.append( '<div class="checkUncheckAllPlaceholder" checkbox_name="%s%s"></div>' % ( prefix, self.name ) )  # placeholder for the insertion of the Select All/Unselect All buttons
         for text, value, selected in self.options:
             style = ""
-            if not isinstance( value, string_types ):
-                value = str( value )
-            if not isinstance( text, string_types ):
-                text = str( text )
             text = unicodify( text )
             escaped_value = escape( unicodify( value ), quote=True )
             uniq_id = "%s%s|%s" % (prefix, self.name, escaped_value)
@@ -391,10 +385,6 @@ class SelectField(BaseField):
                     last_selected_value = str( last_selected_value )
             else:
                 selected_text = ""
-            if not isinstance( value, string_types ):
-                value = str( value )
-            if not isinstance( text, string_types ):
-                text = str( text )
             rval.append( '<option value="%s"%s>%s</option>' % ( escape( unicodify( value ), quote=True ), selected_text, escape( unicodify( text ), quote=True ) ) )
         if last_selected_value:
             last_selected_value = ' last_selected_value="%s"' % escape( unicodify( last_selected_value ), quote=True )
