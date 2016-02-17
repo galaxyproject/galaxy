@@ -13,12 +13,14 @@ sys.path.insert( 0, os.path.dirname( __file__ ) )
 from common import display
 from common import submit
 
+
 def clean_url( url ):
     if url.find( '//' ) > 0:
         # We have an url that includes a protocol, something like: http://localhost:9009
         items = url.split( '//' )
         return items[ 1 ].rstrip( '/' )
     return url.rstrip( '/' )
+
 
 def main( options ):
     api_key = options.api
@@ -41,9 +43,9 @@ def main( options ):
         url = '%s%s' % ( base_galaxy_url, '/api/tool_shed_repositories/%s/exported_workflows' % str( tool_shed_repository_id ) )
         exported_workflows = display( api_key, url, return_formatted=False )
         if exported_workflows:
-            # Import all of the workflows in the list of exported workflows.  
+            # Import all of the workflows in the list of exported workflows.
             data = {}
-            # NOTE: to import a single workflow, add an index to data (e.g., 
+            # NOTE: to import a single workflow, add an index to data (e.g.,
             # data[ 'index' ] = 0
             # and change the url to be ~/import_workflow (singular).  For example,
             # url = '%s%s' % ( base_galaxy_url, '/api/tool_shed_repositories/%s/import_workflow' % str( tool_shed_repository_id ) )

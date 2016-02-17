@@ -1,7 +1,10 @@
 #!/usr/bin/env python
+import os
+import sys
+import urllib2
 
-import os, sys, urllib2
 sys.path.insert( 0, os.path.dirname( __file__ ) )
+
 from common import display
 
 try:

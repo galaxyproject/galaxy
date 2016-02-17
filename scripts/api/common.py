@@ -3,13 +3,13 @@ Common methods used by the API sample scripts.
 """
 import json
 import logging
-import os
 import sys
 import urllib2
 
 from Crypto.Cipher import Blowfish
 
 log = logging.getLogger( __name__ )
+
 
 def make_url( api_key, url, args=None ):
     """
@@ -24,6 +24,7 @@ def make_url( api_key, url, args=None ):
         args.insert( 0, ( 'key', api_key ) )
     return url + argsep + '&'.join( [ '='.join( t ) for t in args ] )
 
+
 def get( api_key, url ):
     """
     Do the actual GET.
@@ -35,29 +36,32 @@ def get( api_key, url ):
         print "URL did not return JSON data: %s" % e
         sys.exit(1)
 
+
 def post( api_key, url, data ):
     """
     Do the actual POST.
     """
     url = make_url( api_key, url )
-    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ) )
+    req = urllib2.Request( url, headers={ 'Content-Type': 'application/json' }, data=json.dumps( data ) )
     return json.loads( urllib2.urlopen( req ).read() )
+
 
 def put( api_key, url, data ):
     """
     Do the actual PUT
     """
     url = make_url( api_key, url )
-    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ))
+    req = urllib2.Request( url, headers={ 'Content-Type': 'application/json' }, data=json.dumps( data ))
     req.get_method = lambda: 'PUT'
     return json.loads( urllib2.urlopen( req ).read() )
+
 
 def __del( api_key, url, data ):
     """
     Do the actual DELETE
     """
     url = make_url( api_key, url )
-    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ))
+    req = urllib2.Request( url, headers={ 'Content-Type': 'application/json' }, data=json.dumps( data ))
     req.get_method = lambda: 'DELETE'
     return json.loads( urllib2.urlopen( req ).read() )
 
@@ -70,7 +74,7 @@ def display( api_key, url, return_formatted=True ):
         r = get( api_key, url )
     except urllib2.HTTPError, e:
         print e
-        print e.read( 1024 ) # Only return the first 1K of errors.
+        print e.read( 1024 )  # Only return the first 1K of errors.
         sys.exit( 1 )
     if type( r ) == unicode:
         print 'error: %s' % r
@@ -85,7 +89,7 @@ def display( api_key, url, return_formatted=True ):
             # All collection members should have a name in the response.
             # url is optional
             if 'url' in i:
-                print '#%d: %s' % (n+1, i.pop( 'url' ) )
+                print '#%d: %s' % (n + 1, i.pop( 'url' ) )
             if 'name' in i:
                 print '  name: %s' % i.pop( 'name' )
             for k, v in i.items():
@@ -103,6 +107,7 @@ def display( api_key, url, return_formatted=True ):
     else:
         print 'response is unknown type: %s' % type( r )
 
+
 def submit( api_key, url, data, return_formatted=True ):
     """
     Sends an API POST request and acts as a generic formatter for the JSON response.
@@ -116,7 +121,7 @@ def submit( api_key, url, data, return_formatted=True ):
             print e.read( 1024 )
             sys.exit( 1 )
         else:
-            return 'Error. '+ str( e.read( 1024 ) )
+            return 'Error. ' + str( e.read( 1024 ) )
     if not return_formatted:
         return r
     print 'Response'
@@ -139,6 +144,7 @@ def submit( api_key, url, data, return_formatted=True ):
     else:
         print r
 
+
 def update( api_key, url, data, return_formatted=True ):
     """
     Sends an API PUT request and acts as a generic formatter for the JSON response.
@@ -152,12 +158,13 @@ def update( api_key, url, data, return_formatted=True ):
             print e.read( 1024 )
             sys.exit( 1 )
         else:
-            return 'Error. '+ str( e.read( 1024 ) )
+            return 'Error. ' + str( e.read( 1024 ) )
     if not return_formatted:
         return r
     print 'Response'
     print '--------'
     print r
+
 
 def delete( api_key, url, data, return_formatted=True ):
     """
@@ -172,12 +179,13 @@ def delete( api_key, url, data, return_formatted=True ):
             print e.read( 1024 )
             sys.exit( 1 )
         else:
-            return 'Error. '+ str( e.read( 1024 ) )
+            return 'Error. ' + str( e.read( 1024 ) )
     if not return_formatted:
         return r
     print 'Response'
     print '--------'
     print r
+
 
 def encode_id( config_id_secret, obj_id ):
     """
@@ -190,4 +198,3 @@ def encode_id( config_id_secret, obj_id ):
     s = ( "!" * ( 8 - len(s) % 8 ) ) + s
     # Encrypt
     return id_cipher.encrypt( s ).encode( 'hex' )
-

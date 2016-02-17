@@ -2,15 +2,17 @@
 """
 # ---------------------------------------------- #
 # PARKLAB, Author: RPARK
-API example script for deleting workflows 
+API example script for deleting workflows
 # ---------------------------------------------- #
 
 Example calls:
 python workflow_delete.py <api_key> <galaxy_url>/api/workflows/<workflow id> True
 """
+import os
+import sys
 
-import os, sys
 sys.path.insert( 0, os.path.dirname( __file__ ) )
+
 from common import delete
 
 try:

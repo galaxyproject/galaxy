@@ -13,13 +13,15 @@ sys.path.insert( 0, os.path.dirname( __file__ ) )
 from common import display
 from common import submit
 
+
 def clean_url( url ):
     if url.find( '//' ) > 0:
         # We have an url that includes a protocol, something like: http://localhost:9009
         items = url.split( '//' )
         return items[ 1 ].rstrip( '/' )
     return url.rstrip( '/' )
-        
+
+
 def main( options ):
     """Collect all user data and install the tools via the Galaxy API."""
     api_key = options.api

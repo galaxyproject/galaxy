@@ -23,6 +23,7 @@ import argparse
 sys.path.insert( 0, os.path.dirname( __file__ ) )
 from common import submit
 
+
 def main( options ):
     """Collect all user data and install the tools via the Galaxy API."""
     data = {}

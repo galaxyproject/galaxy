@@ -4,9 +4,11 @@ Generic POST/create script
 
 usage: create.py key url [key=value ...]
 """
+import os
+import sys
 
-import os, sys
 sys.path.insert( 0, os.path.dirname( __file__ ) )
+
 from common import submit
 
 data = {}
