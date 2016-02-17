@@ -1,5 +1,5 @@
 #
-# Filters a GFF file using a list of attribute values. Attribute values must 
+# Filters a GFF file using a list of attribute values. Attribute values must
 # be in the first column of the file; subsequent columns are ignored.
 # Usage:
 # python gff_filter_by_attribute_values.py <gff_file> <attribute_name> <ids_file> <output_file>
@@ -7,17 +7,18 @@
 
 import sys
 
+
 def parse_gff_attributes( attr_str ):
     """
-    Parses a GFF/GTF attribute string and returns a dictionary of name-value 
-    pairs. The general format for a GFF3 attributes string is 
+    Parses a GFF/GTF attribute string and returns a dictionary of name-value
+    pairs. The general format for a GFF3 attributes string is
         name1=value1;name2=value2
-    The general format for a GTF attribute string is 
+    The general format for a GTF attribute string is
         name1 "value1" ; name2 "value2"
     The general format for a GFF attribute string is a single string that
-    denotes the interval's group; in this case, method returns a dictionary 
+    denotes the interval's group; in this case, method returns a dictionary
     with a single key-value pair, and key name is 'group'
-    """    
+    """
     attributes_list = attr_str.split(";")
     attributes = {}
     for name_value_pair in attributes_list:
@@ -36,12 +37,13 @@ def parse_gff_attributes( attr_str ):
         # Need to strip double quote from values
         value = pair[1].strip(" \"")
         attributes[ name ] = value
-        
+
     if len( attributes ) == 0:
-        # Could not split attributes string, so entire string must be 
+        # Could not split attributes string, so entire string must be
         # 'group' attribute. This is the case for strictly GFF files.
         attributes['group'] = attr_str
     return attributes
+
 
 def filter( gff_file, attribute_name, ids_file, output_file ):
     # Put ids in dict for quick lookup.
@@ -57,11 +59,11 @@ def filter( gff_file, attribute_name, ids_file, output_file ):
         if ( attribute_name in attributes ) and ( attributes[ attribute_name ] in ids_dict ):
             output.write( line )
     output.close()
-        
+
 if __name__ == "__main__":
     # Handle args.
     if len( sys.argv ) != 5:
-        print >> sys.stderr, "usage: python %s <gff_file> <attribute_name> <ids_file> <output_file>"  % sys.argv[0]
+        print >> sys.stderr, "usage: python %s <gff_file> <attribute_name> <ids_file> <output_file>" % sys.argv[0]
         sys.exit( -1 )
     gff_file, attribute_name, ids_file, output_file = sys.argv[1:]
     filter( gff_file, attribute_name, ids_file, output_file )
