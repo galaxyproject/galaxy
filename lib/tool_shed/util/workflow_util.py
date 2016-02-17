@@ -202,7 +202,7 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
     workflow_canvas.add_steps( highlight_errors=True )
     workflow_canvas.finish( )
     trans.response.set_content_type( "image/svg+xml" )
-    return canvas.standalone_xml()
+    return canvas.tostring()
 
 
 def get_workflow_data_inputs( step, module ):
