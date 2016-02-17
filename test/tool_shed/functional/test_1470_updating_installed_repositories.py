@@ -85,6 +85,7 @@ class TestUpdateInstalledRepository( ShedTwillTestCase ):
         Importantly, this update should *not* create a new installable changeset revision, because that would
         eliminate the process we're testing in this script. So, we upload a readme file.
         '''
+        self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository,
                           filename='filtering/readme.txt',
@@ -101,6 +102,7 @@ class TestUpdateInstalledRepository( ShedTwillTestCase ):
         '''
         This is step 3 - In Galaxy, get updates to the repository.
         '''
+        self.galaxy_login( email=common.admin_email, username=common.admin_username )
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner( repository_name,
                                                                                          common.test_user_1_name )
         self.update_installed_repository( installed_repository )

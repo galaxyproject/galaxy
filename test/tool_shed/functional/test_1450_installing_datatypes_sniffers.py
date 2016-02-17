@@ -42,6 +42,7 @@ class TestInstallDatatypesSniffers( ShedTwillTestCase ):
     def test_0005_ensure_repositories_and_categories_exist( self ):
         '''Create the 1450 category and proteomics_datatypes_1450 repository.'''
         global repository_datatypes_count
+        self.login( email=common.admin_email, username=common.admin_username )
         category = self.create_category( name=category_name, description=category_description )
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name=repository_name,

@@ -88,6 +88,7 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
 
     def test_0020_upload_dependency_xml( self ):
         '''Upload a repository_dependencies.xml file to column_maker that specifies convert_chars.'''
+        self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         convert_repository = self.test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
         column_repository = self.test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
         repository_dependencies_path = self.generate_temp_path( 'test_1085', additional_paths=[ 'column' ] )
@@ -102,6 +103,7 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
 
     def test_0030_reinstall_column_repository( self ):
         '''Reinstall column_maker and verify that it now shows repository dependencies.'''
+        self.galaxy_login( email=common.admin_email, username=common.admin_username )
         installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner( column_repository_name, common.test_user_1_name )
         convert_repository = self.test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
         strings_displayed = [ 'Handle repository dependencies', 'convert_chars_1087', self.get_repository_tip( convert_repository ) ]

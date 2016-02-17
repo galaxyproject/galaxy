@@ -48,6 +48,7 @@ class TestUpdateManager( ShedTwillTestCase ):
         We are at step 1 - Create and populate the filtering_1410 repository.
         Create filtering_1410 and upload the tool tarball to it.
         '''
+        self.login( email=common.admin_email, username=common.admin_username )
         category = self.create_category( name=category_name, description=category_description )
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name=repository_name,
