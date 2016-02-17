@@ -48,6 +48,8 @@ Members
 - Nicola Soranzo (@nsoranzo)
 - James Taylor (@jxtx)
 - Nitesh Turaga (@nitesh1989)
+- Marius van den Beek (@mvdbeek)
+
 
 Membership
 ----------
