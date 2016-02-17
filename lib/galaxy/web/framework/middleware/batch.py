@@ -1,16 +1,14 @@
 """
 """
-
-import StringIO
+import io
 from urlparse import urlparse
-import simplejson as json
+import json
 
 import pkg_resources
 pkg_resources.require( "Paste" )
 from paste import httpexceptions
 
 import pprint
-
 import logging
 log = logging.getLogger( __name__ )
 
@@ -37,21 +35,29 @@ class BatchMiddleware(object):
         return self.application( environ, start_response )
 
     def process_batch_requests( self, batch_environ, start_response ):
-        # log.debug( ( '=' * 40 ) )
-        # log.debug( 'BATCH_REQUEST' )
+        print '=' * 40, 'BATCH_REQUEST'
+        pprint.pprint( batch_environ )
+        print
+        print 'batch environ body:', batch_environ[ 'wsgi.input' ]
 
         payload = self._read_post_payload( batch_environ )
+        print 'payload:', payload
         requests = payload.get( 'batch', [] )
+        print 'requests:', requests
+
         responses = []
         for request in requests:
             if not self._valid( request ):
                 continue
 
-            # log.debug( ( '-' * 40 ) + 'REQUEST BEGIN' )
+            print '-' * 40, 'REQUEST BEGIN'
             request_environ = self._build_request_environ( batch_environ, request )
-            # log.debug( 'request: %s', request )
-            responses.append( self._proccess_batch_request( request, request_environ, start_response ) )
-            # log.debug( ( '-' * 40 ) + 'END' )
+            pprint.pprint( request_environ )
+            response = self._proccess_batch_request( request, request_environ, start_response )
+            print '-' * 40, 'RESPONSE'
+            pprint.pprint( response )
+            responses.append( response )
+            print '-' * 40, 'REQUEST END'
 
         # log.debug( 'batch_response_body: %s', pprint.pformat( responses ) )
         batch_response_body = json.dumps( responses )
@@ -59,7 +65,7 @@ class BatchMiddleware(object):
             ( 'Content-Length', len( batch_response_body ) ),
             ( 'Content-Type', 'application/json' ),
         ])
-        # log.debug( ( '=' * 40 ) )
+        print '=' * 40
         return batch_response_body
 
     def _valid( self, request ):
@@ -90,9 +96,16 @@ class BatchMiddleware(object):
         parsed = urlparse( url )
         request_environ[ 'PATH_INFO' ] = parsed.path
         request_environ[ 'QUERY_STRING' ] = parsed.query
-        request_environ[ 'wsgi.input' ] = StringIO.StringIO( request.get( 'body', '' ) )
 
+        request_body = request.get( 'body', u'' )
+        # set this to None so webob/request will copy the body using the raw bytes
+        # if we set it, webob will try to use the buffer interface on a unicode string
+        request_environ[ 'CONTENT_LENGTH' ] = None
+        # this may well need to change in py3
+        request_body = io.BytesIO( bytearray( request_body, encoding='utf8' ) )
+        request_environ[ 'wsgi.input' ] = request_body
         # log.debug( 'request_environ:\n%s', pprint.pformat( request_environ ) )
+
         return request_environ
 
     def _proccess_batch_request( self, request, environ, start_response ):
