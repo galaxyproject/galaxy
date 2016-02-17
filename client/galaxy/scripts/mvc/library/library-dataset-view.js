@@ -108,7 +108,7 @@ var LibraryDatasetView = Backbone.View.extend({
       this.render();
       mod_toastr.error('Library dataset version requested but no id provided.');
     } else {
-      this.ldda = new mod_library_model.Ldda({id:this.options.ldda_id});
+      this.ldda = new mod_library_model.Ldda({id: this.options.ldda_id});
       this.ldda.url = this.ldda.urlRoot + this.model.id + '/versions/' + this.ldda.id;
       this.ldda.fetch({
         success: function(){
@@ -143,7 +143,7 @@ var LibraryDatasetView = Backbone.View.extend({
 
   downloadDataset: function(){
     var url = Galaxy.root + 'api/libraries/datasets/download/uncompressed';
-    var data = {'ld_ids' : this.id};
+    var data = {'ld_ids': this.id};
     this.processDownload(url, data);
   },
 
@@ -240,7 +240,6 @@ var LibraryDatasetView = Backbone.View.extend({
   showPermissions: function(options){
     this.options = _.extend(this.options, options);
     $(".tooltip").remove();
-
     if (this.options.fetched_permissions !== undefined){
       if (this.options.fetched_permissions.access_dataset_roles.length === 0){
         this.model.set({is_unrestricted:true});
@@ -248,28 +247,33 @@ var LibraryDatasetView = Backbone.View.extend({
         this.model.set({is_unrestricted:false});
       }
     }
-    // Select works different for admins
+    // Select works different for admins, details in this.prepareSelectBoxes
     var is_admin = false;
     if (Galaxy.user){
       is_admin = Galaxy.user.isAdmin();
     }
     var template = this.templateDatasetPermissions();
     this.$el.html(template({item: this.model, is_admin: is_admin}));
-
     var self = this;
     if (this.options.fetched_permissions === undefined){
       $.get( Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
-        self.prepareSelectBoxes({fetched_permissions:fetched_permissions, is_admin:is_admin});
+        self.prepareSelectBoxes({fetched_permissions: fetched_permissions, is_admin: is_admin});
       }).fail(function(){
           mod_toastr.error('An error occurred while attempting to fetch dataset permissions.');
       });
     } else {
-      this.prepareSelectBoxes({is_admin:is_admin});
+      this.prepareSelectBoxes({is_admin: is_admin});
     }
-
     $("#center [data-toggle]").tooltip();
-    //hack to show scrollbars
     $("#center").css('overflow','auto');
+  },
+
+  _serializeRoles : function(role_list){
+    var selected_roles = [];
+    for (var i = 0; i < role_list.length; i++) {
+      selected_roles.push(role_list[i][1] + ':' + role_list[i][0]);
+    }
+    return selected_roles;
   },
 
   prepareSelectBoxes: function(options){
@@ -278,174 +282,167 @@ var LibraryDatasetView = Backbone.View.extend({
     var is_admin = this.options.is_admin
     var self = this;
     var selected_access_dataset_roles = [];
-        for (var i = 0; i < fetched_permissions.access_dataset_roles.length; i++) {
-            selected_access_dataset_roles.push(fetched_permissions.access_dataset_roles[i] + ':' + fetched_permissions.access_dataset_roles[i]);
-        }
-        var selected_modify_item_roles = [];
-        for (var i = 0; i < fetched_permissions.modify_item_roles.length; i++) {
-            selected_modify_item_roles.push(fetched_permissions.modify_item_roles[i] + ':' + fetched_permissions.modify_item_roles[i]);
-        }
-        var selected_manage_dataset_roles = [];
-        for (var i = 0; i < fetched_permissions.manage_dataset_roles.length; i++) {
-            selected_manage_dataset_roles.push(fetched_permissions.manage_dataset_roles[i] + ':' + fetched_permissions.manage_dataset_roles[i]);
-        }
+    var selected_modify_item_roles = [];
+    var selected_manage_dataset_roles = [];
+    selected_access_dataset_roles = this._serializeRoles(fetched_permissions.access_dataset_roles);
+    selected_modify_item_roles = this._serializeRoles(fetched_permissions.modify_item_roles);
+    selected_manage_dataset_roles = this._serializeRoles(fetched_permissions.manage_dataset_roles);
 
-        // ACCESS PERMISSIONS
-        if (is_admin){ // Admin has a special select that allows AJAX searching
-            var access_select_options = {
-              minimumInputLength: 0,
-              css: 'access_perm',
-              multiple:true,
-              placeholder: 'Click to select a role',
-              container: self.$el.find('#access_perm'),
-              ajax: {
-                  url: Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=available",
-                  dataType: 'json',
-                  quietMillis: 100,
-                  data: function (term, page) { // page is the one-based page number tracked by Select2
-                      return {
-                          q: term, //search term
-                          page_limit: 10, // page size
-                          page: page // page number
-                      };
-                  },
-                  results: function (data, page) {
-                      var more = (page * 10) < data.total; // whether or not there are more results available
-                      // notice we return the value of more so Select2 knows if more results can be loaded
-                      return {results: data.roles, more: more};
-                  }
+    if (is_admin){ // Admin has a special select that allows AJAX searching
+        var access_select_options = {
+          minimumInputLength: 0,
+          css: 'access_perm',
+          multiple:true,
+          placeholder: 'Click to select a role',
+          container: self.$el.find('#access_perm'),
+          ajax: {
+              url: Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=available",
+              dataType: 'json',
+              quietMillis: 100,
+              data: function (term, page) { // page is the one-based page number tracked by Select2
+                  return {
+                      q: term, //search term
+                      page_limit: 10, // page size
+                      page: page // page number
+                  };
               },
-              formatResult : function roleFormatResult(role) {
-                  return role.name + ' type: ' + role.type;
-              },
+              results: function (data, page) {
+                  var more = (page * 10) < data.total; // whether or not there are more results available
+                  // notice we return the value of more so Select2 knows if more results can be loaded
+                  return {results: data.roles, more: more};
+              }
+          },
+          formatResult : function roleFormatResult(role) {
+              return role.name + ' type: ' + role.type;
+          },
 
-              formatSelection: function roleFormatSelection(role) {
-                  return role.name;
-              },
-              initSelection: function(element, callback) {
-              // the input tag has a value attribute preloaded that points to a preselected role's id
-              // this function resolves that id attribute to an object that select2 can render
-              // using its formatResult renderer - that way the role name is shown preselected
-                  var data = [];
-                  $(element.val().split(",")).each(function() {
-                      var item = this.split(':');
-                      data.push({
-                          id: item[1],
-                          name: item[1]
-                      });
+          formatSelection: function roleFormatSelection(role) {
+              return role.name;
+          },
+          initSelection: function(element, callback) {
+          // the input tag has a value attribute preloaded that points to a preselected role's id
+          // this function resolves that id attribute to an object that select2 can render
+          // using its formatResult renderer - that way the role name is shown preselected
+              var data = [];
+              $(element.val().split(",")).each(function() {
+                  var item = this.split(':');
+                  data.push({
+                      id: item[0],
+                      name: item[1]
                   });
-                  callback(data);
+              });
+              callback(data);
+          },
+          initialData: selected_access_dataset_roles.join(','),
+          dropdownCssClass: "bigdrop" // apply css that makes the dropdown taller
+        };
+        var modify_select_options = {
+          minimumInputLength: 0,
+          css: 'modify_perm',
+          multiple:true,
+          placeholder: 'Click to select a role',
+          container: self.$el.find('#modify_perm'),
+          ajax: {
+              url: Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=available",
+              dataType: 'json',
+              quietMillis: 100,
+              data: function (term, page) { // page is the one-based page number tracked by Select2
+                  return {
+                      q: term, //search term
+                      page_limit: 10, // page size
+                      page: page // page number
+                  };
               },
-              initialData: selected_access_dataset_roles.join(','),
-              dropdownCssClass: "bigdrop" // apply css that makes the dropdown taller
-            };
-            var modify_select_options = {
-              minimumInputLength: 0,
-              css: 'modify_perm',
-              multiple:true,
-              placeholder: 'Click to select a role',
-              container: self.$el.find('#modify_perm'),
-              ajax: {
-                  url: Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=available",
-                  dataType: 'json',
-                  quietMillis: 100,
-                  data: function (term, page) { // page is the one-based page number tracked by Select2
-                      return {
-                          q: term, //search term
-                          page_limit: 10, // page size
-                          page: page // page number
-                      };
-                  },
-                  results: function (data, page) {
-                      var more = (page * 10) < data.total; // whether or not there are more results available
-                      // notice we return the value of more so Select2 knows if more results can be loaded
-                      return {results: data.roles, more: more};
-                  }
-              },
-              formatResult : function roleFormatResult(role) {
-                  return role.name + ' type: ' + role.type;
-              },
+              results: function (data, page) {
+                  var more = (page * 10) < data.total; // whether or not there are more results available
+                  // notice we return the value of more so Select2 knows if more results can be loaded
+                  return {results: data.roles, more: more};
+              }
+          },
+          formatResult : function roleFormatResult(role) {
+              return role.name + ' type: ' + role.type;
+          },
 
-              formatSelection: function roleFormatSelection(role) {
-                  return role.name;
-              },
-              initSelection: function(element, callback) {
-              // the input tag has a value attribute preloaded that points to a preselected role's id
-              // this function resolves that id attribute to an object that select2 can render
-              // using its formatResult renderer - that way the role name is shown preselected
-                  var data = [];
-                  $(element.val().split(",")).each(function() {
-                      var item = this.split(':');
-                      data.push({
-                          id: item[1],
-                          name: item[1]
-                      });
+          formatSelection: function roleFormatSelection(role) {
+              return role.name;
+          },
+          initSelection: function(element, callback) {
+          // the input tag has a value attribute preloaded that points to a preselected role's id
+          // this function resolves that id attribute to an object that select2 can render
+          // using its formatResult renderer - that way the role name is shown preselected
+              var data = [];
+              $(element.val().split(",")).each(function() {
+                  var item = this.split(':');
+                  data.push({
+                      id: item[0],
+                      name: item[1]
                   });
-                  callback(data);
+              });
+              callback(data);
+          },
+          initialData: selected_modify_item_roles.join(','),
+          dropdownCssClass: "bigdrop" // apply css that makes the dropdown taller
+        };
+        var manage_select_options = {
+          minimumInputLength: 0,
+          css: 'manage_perm',
+          multiple:true,
+          placeholder: 'Click to select a role',
+          container: self.$el.find('#manage_perm'),
+          ajax: {
+              url: Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=available",
+              dataType: 'json',
+              quietMillis: 100,
+              data: function (term, page) { // page is the one-based page number tracked by Select2
+                  return {
+                      q: term, //search term
+                      page_limit: 10, // page size
+                      page: page // page number
+                  };
               },
-              initialData: selected_modify_item_roles.join(','),
-              dropdownCssClass: "bigdrop" // apply css that makes the dropdown taller
-            };
-            var manage_select_options = {
-              minimumInputLength: 0,
-              css: 'manage_perm',
-              multiple:true,
-              placeholder: 'Click to select a role',
-              container: self.$el.find('#manage_perm'),
-              ajax: {
-                  url: Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=available",
-                  dataType: 'json',
-                  quietMillis: 100,
-                  data: function (term, page) { // page is the one-based page number tracked by Select2
-                      return {
-                          q: term, //search term
-                          page_limit: 10, // page size
-                          page: page // page number
-                      };
-                  },
-                  results: function (data, page) {
-                      var more = (page * 10) < data.total; // whether or not there are more results available
-                      // notice we return the value of more so Select2 knows if more results can be loaded
-                      return {results: data.roles, more: more};
-                  }
-              },
-              formatResult : function roleFormatResult(role) {
-                  return role.name + ' type: ' + role.type;
-              },
+              results: function (data, page) {
+                  var more = (page * 10) < data.total; // whether or not there are more results available
+                  // notice we return the value of more so Select2 knows if more results can be loaded
+                  return {results: data.roles, more: more};
+              }
+          },
+          formatResult : function roleFormatResult(role) {
+              return role.name + ' type: ' + role.type;
+          },
 
-              formatSelection: function roleFormatSelection(role) {
-                  return role.name;
-              },
-              initSelection: function(element, callback) {
-              // the input tag has a value attribute preloaded that points to a preselected role's id
-              // this function resolves that id attribute to an object that select2 can render
-              // using its formatResult renderer - that way the role name is shown preselected
-                  var data = [];
-                  $(element.val().split(",")).each(function() {
-                      var item = this.split(':');
-                      data.push({
-                          id: item[1],
-                          name: item[1]
-                      });
+          formatSelection: function roleFormatSelection(role) {
+              return role.name;
+          },
+          initSelection: function(element, callback) {
+          // the input tag has a value attribute preloaded that points to a preselected role's id
+          // this function resolves that id attribute to an object that select2 can render
+          // using its formatResult renderer - that way the role name is shown preselected
+              var data = [];
+              $(element.val().split(",")).each(function() {
+                  var item = this.split(':');
+                  data.push({
+                      id: item[0],
+                      name: item[1]
                   });
-                  callback(data);
-              },
-              initialData: selected_manage_dataset_roles.join(','),
-              dropdownCssClass: "bigdrop" // apply css that makes the dropdown taller
-            };
+              });
+              callback(data);
+          },
+          initialData: selected_manage_dataset_roles.join(','),
+          dropdownCssClass: "bigdrop" // apply css that makes the dropdown taller
+        };
 
-            self.accessSelectObject = new mod_select.View(access_select_options);
-            self.modifySelectObject = new mod_select.View(modify_select_options);
-            self.manageSelectObject = new mod_select.View(manage_select_options);
-        } else { // Non-admins have select with pre-loaded options
-            var template = self.templateAccessSelect();
-            $.get( Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=available", function( data ) {
-                $('.access_perm').html(template({options:data.roles}));
-                self.accessSelectObject = $('#access_select').select2();
-            }).fail(function() {
-                mod_toastr.error('An error occurred while attempting to fetch dataset permissions.');
-            });
-        }
+        self.accessSelectObject = new mod_select.View(access_select_options);
+        self.modifySelectObject = new mod_select.View(modify_select_options);
+        self.manageSelectObject = new mod_select.View(manage_select_options);
+    } else { // Non-admins have select with pre-loaded options
+        var template = self.templateAccessSelect();
+        $.get( Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=available", function( data ) {
+            $('.access_perm').html(template({options: data.roles}));
+            self.accessSelectObject = $('#access_select').select2();
+        }).fail(function() {
+            mod_toastr.error('An error occurred while attempting to fetch dataset permissions.');
+        });
+    }
   },
 
   comingSoon: function(){
@@ -463,8 +460,8 @@ var LibraryDatasetView = Backbone.View.extend({
   makeDatasetPrivate: function(){
     var self = this;
     $.post( Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?action=make_private").done(function(fetched_permissions) {
-      self.model.set({is_unrestricted:false});
-      self.showPermissions({fetched_permissions:fetched_permissions})
+      self.model.set({is_unrestricted: false});
+      self.showPermissions({fetched_permissions: fetched_permissions})
       mod_toastr.success('The dataset is now private to you.');
     }).fail(function(){
       mod_toastr.error('An error occurred while attempting to make dataset private.');
@@ -475,8 +472,8 @@ var LibraryDatasetView = Backbone.View.extend({
     var self = this;
     $.post( Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?action=remove_restrictions")
     .done(function(fetched_permissions) {
-      self.model.set({is_unrestricted:true});
-      self.showPermissions({fetched_permissions:fetched_permissions})
+      self.model.set({is_unrestricted: true});
+      self.showPermissions({fetched_permissions: fetched_permissions})
       mod_toastr.success('Access to this dataset is now unrestricted.');
     })
     .fail(function(){
@@ -484,30 +481,28 @@ var LibraryDatasetView = Backbone.View.extend({
     });
   },
 
+  /**
+   * Extract the role ids from Select2 elements's 'data'
+   */
+  _extractIds: function(roles_list){
+    ids_list = [];
+    for (var i = roles_list.length - 1; i >= 0; i--) {
+      ids_list.push(roles_list[i].id);
+    };
+    return ids_list;
+  },
+
+  /**
+   * Save the permissions for roles entered in the select boxes.
+   */
   savePermissions: function(event){
     var self = this;
-    var access_roles = this.accessSelectObject.$el.select2('data');
-    var manage_roles = this.manageSelectObject.$el.select2('data');
-    var modify_roles = this.modifySelectObject.$el.select2('data');
-
-    var access_ids = [];
-    var manage_ids = [];
-    var modify_ids = [];
-
-    for (var i = access_roles.length - 1; i >= 0; i--) {
-      access_ids.push(access_roles[i].id);
-    };
-    for (var i = manage_roles.length - 1; i >= 0; i--) {
-      manage_ids.push(manage_roles[i].id);
-    };
-    for (var i = modify_roles.length - 1; i >= 0; i--) {
-      modify_ids.push(modify_roles[i].id);
-    };
-
+    var access_ids = this._extractIds(this.accessSelectObject.$el.select2('data'));
+    var manage_ids = this._extractIds(this.manageSelectObject.$el.select2('data'));
+    var modify_ids = this._extractIds(this.modifySelectObject.$el.select2('data'));
     $.post( Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?action=set_permissions", { 'access_ids[]': access_ids, 'manage_ids[]': manage_ids, 'modify_ids[]': modify_ids, } )
     .done(function(fetched_permissions){
-      //fetch dataset again
-      self.showPermissions({fetched_permissions:fetched_permissions})
+      self.showPermissions({fetched_permissions: fetched_permissions})
       mod_toastr.success('Permissions saved.');
     })
     .fail(function(){
