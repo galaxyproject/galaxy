@@ -365,21 +365,6 @@ def get_tool_dependency_definition_metadata_from_tool_shed( app, tool_shed_url, 
     return metadata
 
 
-def get_metadata_changeset_revisions( repository, repo ):
-    """
-    Return an unordered list of changeset_revisions and changeset numbers that are defined as installable.
-    """
-    changeset_tups = []
-    for repository_metadata in repository.downloadable_revisions:
-        ctx = hg_util.get_changectx_for_changeset( repo, repository_metadata.changeset_revision )
-        if ctx:
-            rev = ctx.rev()
-        else:
-            rev = -1
-        changeset_tups.append( ( rev, repository_metadata.changeset_revision ) )
-    return sorted( changeset_tups )
-
-
 def get_next_downloadable_changeset_revision( repository, repo, after_changeset_revision ):
     """
     Return the installable changeset_revision in the repository changelog after the changeset to which

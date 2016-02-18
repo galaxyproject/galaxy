@@ -71,11 +71,6 @@ def get_latest_repository_metadata( app, decoded_repository_id, downloadable=Fal
                                                               changeset_revision )
 
 
-def get_metadata_by_id( app, metadata_id ):
-    sa_session = app.model.context.current
-    return sa_session.query( app.model.RepositoryMetadata ).filter( app.model.RepositoryMetadata.table.c.id == metadata_id ).one()
-
-
 def get_previous_metadata_changeset_revision( repository, repo, before_changeset_revision, downloadable=True ):
     """
     Return the changeset_revision in the repository changelog that has associated metadata prior to

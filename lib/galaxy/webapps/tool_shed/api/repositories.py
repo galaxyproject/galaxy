@@ -721,6 +721,7 @@ class RepositoriesController( BaseAPIController ):
             if metadata is None:
                 continue
             metadata_dict = metadata.to_dict( value_mapper={ 'id': self.app.security.encode_id, 'repository_id': self.app.security.encode_id } )
+            metadata_dict[ 'repository' ] = repository.to_dict( value_mapper={ 'id': self.app.security.encode_id } )
             if metadata.has_repository_dependencies:
                 metadata_dict[ 'repository_dependencies' ] = metadata_util.get_all_dependencies( self.app, metadata, processed_dependency_links=[] )
             else:
