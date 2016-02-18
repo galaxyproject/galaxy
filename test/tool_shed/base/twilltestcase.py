@@ -686,7 +686,6 @@ class ShedTwillTestCase( TwillTestCase ):
             strings_not_displayed = []
         repository = test_db_util.get_repository_by_name_and_owner( kwd[ 'name' ], owner )
         if repository is None:
-            log.debug( kwd )
             self.visit_url( '/repository/create_repository' )
             self.submit_form( 1, 'create_repository_button', **kwd )
             self.check_for_strings( strings_displayed, strings_not_displayed )
