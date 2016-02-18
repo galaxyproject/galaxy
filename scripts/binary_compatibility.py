@@ -34,7 +34,8 @@ from pip.platform import get_specific_platform
 
 
 compatible_platforms = {
-    'centos': 'rhel'
+    'centos': 'rhel',
+    'scientific': 'rhel',
 }
 
 

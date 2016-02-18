@@ -28,7 +28,7 @@ class SelectToolParameterTestCase( BaseParameterTestCase ):
     def test_unvalidated_values( self ):
         self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
         self.trans.workflow_building_mode = True
-        assert self.param.from_html("42", self.trans).value == "42"
+        assert self.param.from_html("42", self.trans) == "42"
 
     def test_validated_datasets( self ):
         self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
@@ -42,7 +42,7 @@ class SelectToolParameterTestCase( BaseParameterTestCase ):
     def test_unvalidated_datasets( self ):
         self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
         self.trans.workflow_building_mode = True
-        assert isinstance( self.param.from_html( model.HistoryDatasetAssociation(), self.trans, { "input_bam": basic.RuntimeValue() } ).value, model.HistoryDatasetAssociation )
+        assert isinstance( self.param.from_html( model.HistoryDatasetAssociation(), self.trans, { "input_bam": basic.RuntimeValue() } ), model.HistoryDatasetAssociation )
 
     def test_filter_param_value( self ):
         self.options_xml = '''<options from_data_table="test_table"><filter type="param_value" ref="input_bam" column="0" /></options>'''

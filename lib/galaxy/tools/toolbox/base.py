@@ -220,6 +220,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             tool_section = ToolSection( section_dict )
             self._tool_panel.append_section( tool_panel_section_key, tool_section )
             log.debug( "Loading new tool panel section: %s" % str( tool_section.name ) )
+            self._save_integrated_tool_panel()
         else:
             tool_section = None
         return tool_panel_section_key, tool_section

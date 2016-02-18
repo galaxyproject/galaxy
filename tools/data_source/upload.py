@@ -14,8 +14,6 @@ import urllib
 import zipfile
 
 from galaxy import util
-# need to import model before sniff to resolve a circular import dependency
-import galaxy.model  # noqa
 from galaxy.datatypes import sniff
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.registry import Registry
@@ -126,7 +124,7 @@ def add_file( dataset, registry, json_file, output_path ):
     # Is dataset content multi-byte?
     elif dataset.is_multi_byte:
         data_type = 'multi-byte char'
-        ext = sniff.guess_ext( dataset.path, is_multi_byte=True )
+        ext = sniff.guess_ext( dataset.path, registry.sniff_order, is_multi_byte=True )
     # Is dataset content supported sniffable binary?
     else:
         # FIXME: This ignores the declared sniff order in datatype_conf.xml

@@ -5,10 +5,11 @@ Classes encapsulating decypher tool.
 James E Johnson - University of Minnesota
 """
 import os
-import sys
 import subprocess
+import sys
 
 assert sys.version_info[:2] >= ( 2, 4 )
+
 
 def stop_err( msg ):
     sys.stderr.write( "%s\n" % msg )
@@ -16,7 +17,7 @@ def stop_err( msg ):
 
 
 def __main__():
-    #Parse Command Line
+    # Parse Command Line
     working_dir = sys.argv[1]
     inputs = ' '.join(sys.argv[2:])
     for _ in ('Roadmaps', 'Sequences'):
@@ -37,8 +38,8 @@ def __main__():
         except OverflowError:
             pass
         if returncode != 0:
-            raise Exception, stderr
-    except Exception, e:
+            raise Exception(stderr)
+    except Exception as e:
         stop_err( 'Error running velvetg ' + str( e ) )
 
 

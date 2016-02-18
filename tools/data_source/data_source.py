@@ -7,7 +7,6 @@ import sys
 import urllib
 from json import loads, dumps
 
-# need to import TOOL_PROVIDED_JOB_METADATA_FILE (which will import galaxy.model) before sniff to resolve a circular import between galaxy.datatypes.registry and galaxy.model
 from galaxy.jobs import TOOL_PROVIDED_JOB_METADATA_FILE
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry

@@ -458,10 +458,13 @@ class WorkflowContentsManager(UsesAnnotations):
 
             # workflow outputs
             outputs = []
-            for output in step.workflow_outputs:
-                outputs.append({"output_name": output.output_name,
-                                "uuid": str(output.uuid) if output.uuid else None,
-                                "label": output.label})
+            for output in step.unique_workflow_outputs:
+                output_label = output.label
+                output_name = output.output_name
+                output_uuid = str(output.uuid) if output.uuid else None
+                outputs.append({"output_name": output_name,
+                                "uuid": output_uuid,
+                                "label": output_label})
             step_dict['workflow_outputs'] = outputs
 
             # Encode input connections as dictionary
@@ -535,8 +538,16 @@ class WorkflowContentsManager(UsesAnnotations):
                 # 'data_outputs': module.get_data_outputs(),
                 'annotation': annotation_str
             }
-            # Add post-job actions to step dict.
+            # Add tool shed repository information and post-job actions to step dict.
             if module.type == 'tool':
+                if module.tool.tool_shed_repository:
+                    tsr = module.tool.tool_shed_repository
+                    step_dict["tool_shed_repository"] = {
+                        'name': tsr.name,
+                        'owner': tsr.owner,
+                        'changeset_revision': tsr.changeset_revision,
+                        'tool_shed': tsr.tool_shed
+                    }
                 pja_dict = {}
                 for pja in step.post_job_actions:
                     pja_dict[pja.action_type + pja.output_name] = dict(
@@ -563,7 +574,7 @@ class WorkflowContentsManager(UsesAnnotations):
             # User outputs
 
             workflow_outputs_dicts = []
-            for workflow_output in step.workflow_outputs:
+            for workflow_output in step.unique_workflow_outputs:
                 workflow_output_dict = dict(
                     output_name=workflow_output.output_name,
                     label=workflow_output.label,

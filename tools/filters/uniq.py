@@ -16,10 +16,10 @@
 # -d            Delimiter
 # -c            Column list (Comma Seperated)
 
-import sys
-import re
-import string
 import commands
+import re
+import sys
+
 
 # This function is exceedingly useful, perhaps package for reuse?
 def getopts(argv):
@@ -31,6 +31,7 @@ def getopts(argv):
         else:
             argv = argv[1:]
     return opts
+
 
 def main():
     args = sys.argv[1:]
@@ -54,22 +55,22 @@ def main():
         return 0
 
     outputfile = opts.get("-o")
-    if outputfile == None:
+    if outputfile is None:
         print "No output file specified."
         return -1
-    
+
     inputfile = opts.get("-i")
-    if inputfile == None:
+    if inputfile is None:
         print "No input file specified."
         return -2
 
     delim = opts.get("-d")
-    if delim == None:
+    if delim is None:
         print "Field delimiter not specified."
         return -3
 
     columns = opts.get("-c")
-    if columns == None or columns == 'None':
+    if columns is None or columns == 'None':
         print "Columns not specified."
         return -4
 
@@ -94,22 +95,22 @@ def main():
         print "Illegal input filename."
         return -6
 
-    column_list = re.split(",",columns)
+    column_list = re.split(",", columns)
     columns_for_display = "c" + ", c".join(column_list)
 
     commandline = "cut "
     # Set delimiter
-    if delim=='C':
+    if delim == 'C':
         commandline += "-d \",\" "
-    if delim=='D':
+    if delim == 'D':
         commandline += "-d \"-\" "
-    if delim=='U':
+    if delim == 'U':
         commandline += "-d \"_\" "
-    if delim=='P':
+    if delim == 'P':
         commandline += "-d \"|\" "
-    if delim=='Dt':
+    if delim == 'Dt':
         commandline += "-d \".\" "
-    if delim=='Sp':
+    if delim == 'Sp':
         commandline += "-d \" \" "
 
     # set columns

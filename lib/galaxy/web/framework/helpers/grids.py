@@ -252,6 +252,7 @@ class Grid( object ):
 
         # Render grid.
         def url( *args, **kwargs ):
+            route_name = kwargs.pop( '__route_name__', None )
             # Only include sort/filter arguments if not linking to another
             # page. This is a bit of a hack.
             if 'action' in kwargs:
@@ -274,7 +275,9 @@ class Grid( object ):
                 new_kwargs['controller'] = trans.controller
             if 'action' not in new_kwargs:
                 new_kwargs['action'] = trans.action
-            return url_for( **new_kwargs)
+            if route_name:
+                return url_for( route_name, **new_kwargs )
+            return url_for( **new_kwargs )
 
         self.use_panels = ( kwargs.get( 'use_panels', False ) in [ True, 'True', 'true' ] )
         self.advanced_search = ( kwargs.get( 'advanced_search', False ) in [ True, 'True', 'true' ] )

@@ -154,6 +154,7 @@ class DataToolParameterTestCase( BaseParameterTestCase ):
             get_current_user_roles=lambda: [],
             workflow_building_mode=False,
             webapp=bunch.Bunch( name="galaxy" ),
+            history=self.test_history,
         )
         self.multiple = False
         self.optional = False

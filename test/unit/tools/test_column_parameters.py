@@ -5,6 +5,7 @@ test_select_parameters.py.
 from galaxy.util import bunch
 from galaxy import model
 from .test_parameter_parsing import BaseParameterTestCase
+from tools_support import datatypes_registry
 
 
 class DataColumnParameterTestCase( BaseParameterTestCase ):
@@ -99,6 +100,6 @@ class DataColumnParameterTestCase( BaseParameterTestCase ):
             template_xml = '''<param name="my_name" type="%s" %s %s %s %s></param>'''
             param_str = template_xml % ( self.type, data_ref_text, multi_text, optional_text, self.other_attributes )
             self._param = self._parameter_for( xml=param_str )
-            self._param.ref_input = bunch.Bunch(formats=[model.datatypes_registry.get_datatype_by_extension("tabular")])
+            self._param.ref_input = bunch.Bunch(formats=[datatypes_registry.get_datatype_by_extension("tabular")])
 
         return self._param
