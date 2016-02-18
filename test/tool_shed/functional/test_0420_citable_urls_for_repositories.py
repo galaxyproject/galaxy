@@ -32,12 +32,10 @@ class TestRepositoryCitableURLs( ShedTwillTestCase ):
         Create all the user accounts that are needed for this test script to run independently of other tests.
         Previously created accounts will not be re-created.
         """
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         self.test_db_util.get_private_role( test_user_1 )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
@@ -52,7 +50,6 @@ class TestRepositoryCitableURLs( ShedTwillTestCase ):
         global first_changeset_hash
         category = self.create_category( name='Test 0400 Repository Citable URLs',
                                          description='Test 0400 Repository Citable URLs category' )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         strings_displayed = self.expect_repo_created_strings(repository_name)
         repository = self.get_or_create_repository( name=repository_name,

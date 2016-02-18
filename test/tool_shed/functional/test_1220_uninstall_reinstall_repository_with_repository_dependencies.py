@@ -18,17 +18,14 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
 
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         galaxy_admin_user = self.test_db_util.get_galaxy_user( common.admin_email )
         assert galaxy_admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
         self.test_db_util.get_galaxy_private_role( galaxy_admin_user )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         self.test_db_util.get_private_role( test_user_1 )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
@@ -39,7 +36,6 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
         global repository_datatypes_count
         global running_standalone
         category = self.create_category( name='Test 0020 Basic Repository Dependencies', description='Tests for a repository with tool dependencies.' )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         datatypes_repository = self.get_or_create_repository( name=datatypes_repository_name,
                                                               description=datatypes_repository_description,
@@ -82,7 +78,6 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
         '''Install the emboss repository into the Galaxy instance.'''
         global repository_datatypes_count
         global base_datatypes_count
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         base_datatypes_count = int( self.get_datatypes_count() )
         strings_displayed = [ 'Handle', 'Never installed', 'tool dependencies', 'emboss', '5.0.0', 'package' ]

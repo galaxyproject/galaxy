@@ -562,7 +562,9 @@ class ShedTwillTestCase( TwillTestCase ):
             strings_displayed.append( 'Reviews were saved' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
 
-    def galaxy_login( self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):
+    def galaxy_login( self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='', logout_first=True ):
+        if logout_first:
+            self.galaxy_logout()
         previously_created, username_taken, invalid_username = \
             self.create_user_in_galaxy( email=email, password=password, username=username, redirect=redirect )
         if previously_created:
@@ -572,6 +574,7 @@ class ShedTwillTestCase( TwillTestCase ):
     def galaxy_logout( self ):
         self.visit_galaxy_url( "/user/logout" )
         self.check_page_for_string( "You have been logged out" )
+        tc.browser.cj.clear()
 
     def generate_complex_dependency_xml( self, filename, filepath, repository_tuples, package, version ):
         file_path = os.path.join( filepath, filename )
