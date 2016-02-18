@@ -593,7 +593,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
 
             # If data is binary or an image, stream without template; otherwise, use display template.
             # TODO: figure out a way to display images in display template.
-            if isinstance(dataset.datatype, datatypes.binary.Binary) or isinstance(dataset.datatype, datatypes.images.Image) or isinstance(dataset.datatype, datatypes.images.Html):
+            if isinstance(dataset.datatype, datatypes.binary.Binary) or isinstance(dataset.datatype, datatypes.images.Image) or isinstance(dataset.datatype, datatypes.text.Html):
                 trans.response.set_content_type( dataset.get_mime() )
                 return open( dataset.file_name )
             else:

@@ -17,6 +17,7 @@ from . import xml
 from . import coverage
 from . import tracks
 from . import binary
+from . import text
 import galaxy.util
 from galaxy.util.odict import odict
 from .display_applications.application import DisplayApplication
@@ -746,7 +747,7 @@ class Registry( object ):
                 sequence.Fasta(),
                 sequence.Fastq(),
                 interval.Wiggle(),
-                images.Html(),
+                text.Html(),
                 sequence.Axt(),
                 interval.Bed(),
                 interval.CustomTrack(),
