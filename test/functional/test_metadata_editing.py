@@ -10,7 +10,6 @@ class TestMetadataEdit( TwillTestCase ):
     def test_00_metadata_edit( self ):
         """test_metadata_edit: Testing metadata editing"""
         sa_session = database_contexts.galaxy_context
-        self.logout()
         self.login( email='test@bx.psu.edu', username='admin-user' )
         admin_user = sa_session.query( galaxy.model.User ) \
             .filter( galaxy.model.User.table.c.email == 'test@bx.psu.edu' ) \
@@ -51,4 +50,3 @@ class TestMetadataEdit( TwillTestCase ):
         self.change_datatype( hda_id=str( latest_hda.id ), datatype='gff3' )
         self.check_metadata_for_string( 'gff3', hid=str( latest_hda.hid ) )
         self.delete_history( id=self.security.encode_id( history1.id ) )
-        self.logout()

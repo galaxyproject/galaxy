@@ -8,17 +8,14 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
 
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_galaxy_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
         self.test_db_util.get_galaxy_private_role( admin_user )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         self.test_db_util.get_private_role( test_user_1 )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
@@ -27,7 +24,6 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
     def test_0005_ensure_repositories_and_categories_exist( self ):
         '''Create the 0010 category and upload the freebayes repository to the tool shed, if necessary.'''
         category = self.create_category( name='Test 0010 Repository With Tool Dependencies', description='Tests for a repository with tool dependencies.' )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name='freebayes_0010',
                                                     description="Galaxy's freebayes tool",
@@ -92,7 +88,6 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
 
     def test_0010_install_freebayes_repository( self ):
         '''Install the freebayes repository into the Galaxy instance.'''
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         strings_displayed = [ 'Handle', 'tool dependencies', 'freebayes', '0.9.4_9696d0ce8a9', 'samtools', '0.1.18' ]
         self.install_repository( 'freebayes_0010',

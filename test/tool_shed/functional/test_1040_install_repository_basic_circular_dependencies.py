@@ -18,12 +18,10 @@ class TestInstallingCircularDependencies( ShedTwillTestCase ):
 
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         self.test_db_util.get_private_role( test_user_1 )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
@@ -33,7 +31,6 @@ class TestInstallingCircularDependencies( ShedTwillTestCase ):
         '''Create and populate freebayes_0040.'''
         global running_standalone
         category = self.create_category( name=category_name, description='Testing handling of circular repository dependencies.' )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name=freebayes_repository_name,
                                                     description=freebayes_repository_description,
@@ -57,7 +54,6 @@ class TestInstallingCircularDependencies( ShedTwillTestCase ):
         '''Create and populate filtering_0040.'''
         global running_standalone
         category = self.create_category( name=category_name, description='Testing handling of circular repository dependencies.' )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name=filtering_repository_name,
                                                     description=filtering_repository_description,
@@ -95,7 +91,6 @@ class TestInstallingCircularDependencies( ShedTwillTestCase ):
 
     def test_0025_install_freebayes_repository( self ):
         '''Install freebayes with blank tool panel section, without tool dependencies but with repository dependencies.'''
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         strings_displayed = [ 'Handle', 'tool dependencies', 'freebayes', '0.9.4_9696d0ce8a9', 'samtools', '0.1.18' ]
         self.install_repository( freebayes_repository_name,
