@@ -123,7 +123,8 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                     if sample.state.name != state:
                         rval[ id ] = { "state": sample.state.name,
                                        "html_state": unicodify( trans.fill_template( "requests/common/sample_state.mako",
-                                                                                   sample=sample), 'utf-8' ) }
+                                                                                     sample=sample),
+                                                                'utf-8' ) }
         return rval
 
     @web.json
@@ -143,7 +144,8 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                     if len( sample.datasets ) != number_of_datasets:
                         rval[ id ] = { "datasets": len( sample.datasets ),
                                        "html_datasets": unicodify( trans.fill_template( "requests/common/sample_datasets.mako",
-                                                                                      sample=sample), 'utf-8' ) }
+                                                                                        sample=sample),
+                                                                   'utf-8' ) }
         return rval
 
     @web.json
@@ -163,7 +165,8 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                     if sample_dataset.status != transfer_status:
                         rval[ id ] = { "status": sample_dataset.status,
                                        "html_status": unicodify( trans.fill_template( "requests/common/sample_dataset_transfer_status.mako",
-                                                                                    sample_dataset=sample_dataset), 'utf-8' ) }
+                                                                                      sample_dataset=sample_dataset),
+                                                                 'utf-8' ) }
         return rval
 
     @web.expose

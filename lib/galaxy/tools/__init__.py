@@ -49,6 +49,7 @@ from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.hash_util import hmac_new
+from galaxy.util.json import json_fix
 from galaxy.util.odict import odict
 from galaxy.util import unicodify
 from galaxy.util.template import fill_template
@@ -1852,19 +1853,8 @@ class Tool( object, Dictifiable ):
         # create tool help
         tool_help = ''
         if self.help:
-<<<<<<< 015094511b27a2267ab55621577ed05f3be092d3
             tool_help = self.help.render( static_path=url_for( '/static' ), host_url=url_for( '/', qualified=True ) )
             tool_help = unicodify( tool_help, 'utf-8' )
-=======
-            tool_help = self.help
-            tool_help = tool_help.render( static_path=url_for( '/static' ), host_url=url_for('/', qualified=True) )
-            tool_help = unicodify( tool_help, 'utf-8')
-
-        # check if citations exist
-        tool_citations = False
-        if self.citations:
-            tool_citations = True
->>>>>>> Use unicodify
 
         # create tool versions
         tool_versions = []
@@ -2375,6 +2365,7 @@ class BadValue( object ):
         self.value = value
 
 
+<<<<<<< 371751996916d9995b60a600a1a95456c14bdb2a
 def json_fix( val ):
     if isinstance( val, list ):
         return [ json_fix( v ) for v in val ]
