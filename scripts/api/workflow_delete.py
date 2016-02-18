@@ -11,8 +11,6 @@ python workflow_delete.py <api_key> <galaxy_url>/api/workflows/<workflow id> Tru
 import os
 import sys
 
-sys.path.insert( 0, os.path.dirname( __file__ ) )
-
 from common import delete
 
 try:

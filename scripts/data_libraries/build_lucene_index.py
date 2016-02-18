@@ -9,7 +9,6 @@ details.
 Run from the ~/scripts/data_libraries directory:
 %sh build_lucene_index.sh
 """
-
 import ConfigParser
 import csv
 import os
@@ -17,9 +16,7 @@ import sys
 import urllib
 import urllib2
 
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] )  # remove scripts/ from the path
-sys.path = new_path
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
 import galaxy.model.mapping
 from galaxy import config, model

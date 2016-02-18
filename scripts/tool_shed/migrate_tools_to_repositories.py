@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 '''
 Migrate old Galaxy tool shed to next gen Galaxy tool shed.  Specifically, the tool archives stored as
 files in the old tool shed will be migrated to mercurial repositories in the next gen tool shed.  This
@@ -19,7 +18,6 @@ enable_next_gen_tool_shed = True
 
 To run this script, use "sh migrate_tools_to_repositories.sh" from this directory
 '''
-
 import ConfigParser
 import os
 import shutil
@@ -30,9 +28,7 @@ from time import strftime
 
 from mercurial import hg, ui
 
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] )  # remove scripts/ from the path
-sys.path = new_path
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
 import galaxy.webapps.tool_shed.app
 

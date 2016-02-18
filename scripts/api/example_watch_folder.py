@@ -15,9 +15,7 @@ import shutil
 import sys
 import time
 
-sys.path.insert( 0, os.path.dirname( __file__ ) )
-
-from common import submit, display
+from common import display, submit
 
 
 def main(api_key, api_url, in_folder, out_folder, data_library, workflow):

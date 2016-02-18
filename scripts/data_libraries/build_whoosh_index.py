@@ -12,10 +12,7 @@ import ConfigParser
 import os
 import sys
 
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] )  # remove scripts/ from the path
-sys.path = new_path
-
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
 # Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether search is enabled.
 try:

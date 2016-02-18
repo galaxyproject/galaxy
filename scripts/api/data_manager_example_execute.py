@@ -3,16 +3,11 @@
 # Very simple example of using the API to run Data Managers
 # Script makes the naive assumption that dbkey==sequence id, which in many cases is not true nor desired
 # *** This script is not recommended for use as-is on a production server ***
-
-import os
-import sys
 import optparse
-import urlparse
 import time
+import urlparse
 
-sys.path.insert( 0, os.path.dirname( __file__ ) )
-
-from common import post, get
+from common import get, post
 
 DEFAULT_SLEEP_TIME = 3
 FETCH_GENOME_TOOL_ID = 'testtoolshed.g2.bx.psu.edu/repos/blankenberg/data_manager_fetch_genome_all_fasta/data_manager_fetch_genome_all_fasta/0.0.1'

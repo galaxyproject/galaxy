@@ -5,13 +5,9 @@ Import one or more exported workflows contained within a specified tool shed rep
 Here is a working example of how to use this script to repair a repository installed into Galaxy.
 python ./import_workflows_from_installed_tool_shed_repository.py -a 22be3b -l http://localhost:8763/ -n workflow_with_tools -o test -r ef45bb64237e -u http://localhost:9009/
 """
-
-import os
-import sys
 import argparse
-sys.path.insert( 0, os.path.dirname( __file__ ) )
-from common import display
-from common import submit
+
+from common import display, submit
 
 
 def clean_url( url ):

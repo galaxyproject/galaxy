@@ -7,8 +7,6 @@ python workflow_import.py <api_key> <galaxy_url> '/path/to/workflow/file [--add_
 import os
 import sys
 
-sys.path.insert( 0, os.path.dirname( __file__ ) )
-
 from common import submit
 
 

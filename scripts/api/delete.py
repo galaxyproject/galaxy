@@ -4,10 +4,7 @@ Generic DELETE/delete script
 
 usage: delete.py key url
 """
-import os
 import sys
-
-sys.path.insert( 0, os.path.dirname( __file__ ) )
 
 from common import delete
 

@@ -14,9 +14,7 @@ import json
 import os
 import sys
 
-sys.path.insert( 0, os.path.dirname( __file__ ) )
-
-from common import submit, display
+from common import display, submit
 
 
 def load_file(fullpath, api_key, api_url, library_id, library_folder_id, uuid_field=None):

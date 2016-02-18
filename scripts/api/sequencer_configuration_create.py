@@ -2,8 +2,7 @@
 import os
 import sys
 
-sys.path.insert( 0, os.path.dirname( __file__ ) )
-from common import submit, get
+from common import get, submit
 
 
 def create_sequencer_configuration( key, base_url, request_form_filename, sample_form_filename, request_type_filename, email_addresses, return_formatted=True ):

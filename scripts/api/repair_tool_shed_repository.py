@@ -5,13 +5,9 @@ Repair a specified repository revision previously installed into Galaxy.
 Here is a working example of how to use this script to repair a repository installed into Galaxy.
 ./repair_tool_shed_repository.py --api <api key> --local <galaxy base url> --url http://testtoolshed.g2.bx.psu.edu --name gregs_filter --owner greg --revision f28d5018f9cb
 """
-
-import os
-import sys
 import argparse
-sys.path.insert( 0, os.path.dirname( __file__ ) )
-from common import display
-from common import submit
+
+from common import display, submit
 
 
 def clean_url( url ):

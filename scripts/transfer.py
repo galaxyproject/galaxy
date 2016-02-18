@@ -17,7 +17,7 @@ import time
 import urllib2
 
 galaxy_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir ) )
-sys.path.insert( 0, os.path.abspath( os.path.join( galaxy_root, 'lib' ) ) )
+sys.path.insert( 1, os.path.join( galaxy_root, 'lib' ) )
 
 try:
     import pexpect

@@ -9,10 +9,6 @@ Here is a working example of how to use this script.
 python ./reset_metadata_on_installed_repositories.py -a 22be3b -u http://localhost:8763/
 """
 import argparse
-import os
-import sys
-
-sys.path.insert( 0, os.path.dirname( __file__ ) )
 
 from common import submit
 

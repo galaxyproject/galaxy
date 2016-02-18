@@ -4,10 +4,7 @@ Generic PUT/update script
 
 usage: create.py key url [key=value ...]
 """
-import os
 import sys
-
-sys.path.insert( 0, os.path.dirname( __file__ ) )
 
 from common import update
 

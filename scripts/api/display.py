@@ -6,8 +6,6 @@ import sys
 
 from six.moves.urllib.error import URLError
 
-sys.path.insert( 0, os.path.dirname( __file__ ) )
-
 from common import display
 
 try:
