@@ -1760,7 +1760,7 @@ class DataToolParameter( BaseDataToolParameter ):
         if not self.multiple and (self.max is not None):
             raise ValueError( "Cannot specify max property on single data parameter '%s'. Set multiple=\"true\" to enable this option." % self.name )
         self.is_dynamic = True
-        default = input_source.get('default')
+        default = input_source.get('value')
         if default is not None:
             default = os.path.join(tool.tool_dir, default)
             self.optional = True

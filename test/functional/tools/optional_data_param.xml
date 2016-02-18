@@ -4,7 +4,7 @@
         cat $input1 > $out_file1;
     </command>
     <inputs>
-        <param name="input1" type="data" label="A File" default="README.txt" />
+        <param name="input1" type="data" label="A File" value="README.txt" />
     </inputs>
     <outputs>
         <data name="out_file1" format="txt" />
