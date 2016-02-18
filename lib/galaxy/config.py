@@ -262,9 +262,7 @@ class Configuration( object ):
         self.log_events = string_as_bool( kwargs.get( 'log_events', 'False' ) )
         self.sanitize_all_html = string_as_bool( kwargs.get( 'sanitize_all_html', True ) )
         self.sanitize_whitelist_file = resolve_path( kwargs.get( 'sanitize_whitelist_file', "config/sanitize_whitelist.txt" ), self.root )
-        self.sanitize_whitelist = []
-        if kwargs.get('sanitize_whitelist_file', None) is not None:
-            self.reload_sanitize_whitelist()
+        self.reload_sanitize_whitelist()
         self.serve_xss_vulnerable_mimetypes = string_as_bool( kwargs.get( 'serve_xss_vulnerable_mimetypes', False ) )
         self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames( kwargs )
         self.trust_ipython_notebook_conversion = string_as_bool( kwargs.get( 'trust_ipython_notebook_conversion', False ) )
