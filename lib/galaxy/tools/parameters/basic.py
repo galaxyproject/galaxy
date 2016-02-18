@@ -1149,8 +1149,10 @@ class ColumnListParameter( SelectToolParameter ):
         SelectToolParameter.__init__( self, tool, input_source )
         self.tool = tool
         self.numerical = input_source.get_bool( "numerical", False )
-        self.force_select = not input_source.parse_optional( False )
+        self.optional = input_source.parse_optional( False )
         self.accept_default = input_source.get_bool( "accept_default", False )
+        if self.accept_default:
+            self.optional = True
         self.data_ref = input_source.get( "data_ref", None )
         self.ref_input = None
         # Legacy style default value specification...
@@ -1187,6 +1189,9 @@ class ColumnListParameter( SelectToolParameter ):
                 value = ColumnListParameter._strip_c( value )
             else:
                 value = None
+        if not value and not self.get_legal_values( trans, other_values ) and self.accept_default:
+            value = self.default_value or '1'
+            return [ value ] if self.multiple else value
         return super( ColumnListParameter, self ).from_html( value, trans, other_values )
 
     @staticmethod
@@ -1201,30 +1206,18 @@ class ColumnListParameter( SelectToolParameter ):
         Generate a select list containing the columns of the associated
         dataset (if found).
         """
-        # No value indicates a configuration error, the named DataToolParameter
-        # must preceed this parameter in the config
-        assert self.data_ref in other_values, "Value for associated DataToolParameter not found"
-        # Get the value of the associated DataToolParameter (a dataset)
+        # No value indicates a configuration error
+        assert self.data_ref in other_values, "Value for associated data reference not found (data_ref)."
+        # Get the value of the associated data reference (a dataset)
         dataset = other_values[ self.data_ref ]
         # Check if a dataset is selected
-        if dataset is None or dataset == '' or dataset == []:
-            # NOTE: Both of these values indicate that no dataset is selected.
-            #       However, 'None' indicates that the dataset is optional
-            #       while '' indicates that it is not. Currently column
-            #       parameters do not work well with optional datasets
+        if not dataset:
             return []
         column_list = None
         for dataset in util.listify( dataset ):
-            unavailable = False
-            if not hasattr(dataset, 'metadata'):
-                unavailable = True
-            elif not dataset.metadata.columns:
-                unavailable = True
-            if unavailable:
-                default_column_list = []
-                if self.accept_default:
-                    default_column_list.append( self.default_value or '1' )
-                return default_column_list
+            # Columns can only be identified if metadata is available
+            if not hasattr( dataset, 'metadata' ) or not hasattr( dataset.metadata, 'columns' ) or not dataset.metadata.columns:
+                return []
 
             # Build up possible columns for this dataset
             this_column_list = []
@@ -1234,47 +1227,42 @@ class ColumnListParameter( SelectToolParameter ):
                     if col == 'int' or col == 'float':
                         this_column_list.append( str( i + 1 ) )
             else:
-                for i in range(0, dataset.metadata.columns):
+                for i in range( 0, dataset.metadata.columns ):
                     this_column_list.append( str( i + 1 ) )
 
             # Take the intersection of these columns with the other columns.
             if column_list is None:
                 column_list = this_column_list
             else:
-                column_list = filter(lambda c: c in this_column_list, column_list)
-
-        if not self.force_select and 'None' not in column_list:
-            column_list.append( 'None' )
-
+                column_list = filter( lambda c: c in this_column_list, column_list )
         return column_list
 
     def get_options( self, trans, other_values ):
-        """ show column labels rather than c1..cn if use_header_names=True
+        """
+        Show column labels rather than c1..cn if use_header_names=True
         """
         options = []
         if self.usecolnames:  # read first row - assume is a header with metadata useful for making good choices
-            assert self.data_ref in other_values, "Value for associated DataToolParameter not found"
+            assert self.data_ref in other_values, "Value for associated data reference not found (data_ref)."
             dataset = other_values[ self.data_ref ]
             try:
-                head = open(dataset.get_file_name(), 'r').readline()
-                cnames = head.rstrip().split('\t')
-                column_list = [('%d' % (i + 1), 'c%d: %s' % (i + 1, x)) for i, x in enumerate(cnames)]
+                head = open( dataset.get_file_name(), 'r' ).readline()
+                cnames = head.rstrip().split( '\t' )
+                column_list = [ ( '%d' % ( i + 1 ), 'c%d: %s' % ( i + 1, x ) ) for i, x in enumerate( cnames ) ]
                 if self.numerical:  # If numerical was requested, filter columns based on metadata
-                    if len(dataset.metadata.column_types) >= len(cnames):
-                        numerics = [i for i, x in enumerate(dataset.metadata.column_types) if x == 'int' or x == 'float']
-                        column_list = [column_list[i] for i in numerics]
+                    if hasattr( dataset, 'metadata' ) and hasattr( dataset.metadata, 'column_types' ):
+                        if len( dataset.metadata.column_types ) >= len( cnames ):
+                            numerics = [ i for i, x in enumerate( dataset.metadata.column_types ) if x in [ 'int', 'float' ] ]
+                            column_list = [ column_list[ i ] for i in numerics ]
             except:
                 column_list = self.get_column_list( trans, other_values )
         else:
             column_list = self.get_column_list( trans, other_values )
-        if len( column_list ) > 0 and not self.force_select:
-            options.append( ('?', 'None', False) )
         for col in column_list:
-            if col != 'None':
-                if isinstance(col, tuple) and len(col) == 2:  # fiddled
-                    options.append((col[1], col[0], False))
-                else:
-                    options.append( ( 'Column: ' + col, col, False ) )
+            if isinstance( col, tuple ) and len( col ) == 2:
+                options.append( ( col[ 1 ], col[ 0 ], False ) )
+            else:
+                options.append( ( 'Column: ' + col, col, False ) )
         return options
 
     def get_initial_value( self, trans, other_values ):
@@ -1289,16 +1277,9 @@ class ColumnListParameter( SelectToolParameter ):
         return [ self.data_ref ]
 
     def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
-        # call parent to_dict
         d = super( ColumnListParameter, self ).to_dict( trans, other_values=other_values)
-
-        # add data reference
-        d['data_ref'] = self.data_ref
-
-        # add numerical flag
-        d['numerical'] = self.numerical
-
-        # return
+        d[ 'data_ref' ] = self.data_ref
+        d[ 'numerical' ] = self.numerical
         return d
 
 
@@ -1470,9 +1451,10 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                     dataset = dataset.dataset
                 if dataset:
                     for meta_key, meta_dict in filter_value.iteritems():
-                        check_meta_val = dataset.metadata.spec[meta_key].param.to_string( dataset.metadata.get( meta_key ) )
-                        if check_meta_val in meta_dict:
-                            options.extend( meta_dict[check_meta_val] )
+                        if hasattr( dataset, 'metadata' ) and hasattr( dataset.metadata, 'spec' ):
+                            check_meta_val = dataset.metadata.spec[ meta_key ].param.to_string( dataset.metadata.get( meta_key ) )
+                            if check_meta_val in meta_dict:
+                                options.extend( meta_dict[ check_meta_val ] )
             return options
         return self.options
 
