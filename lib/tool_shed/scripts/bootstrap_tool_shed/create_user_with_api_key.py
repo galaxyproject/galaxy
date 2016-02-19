@@ -5,7 +5,7 @@ import logging
 import os
 import re
 import sys
-import argparse
+import optparse
 
 sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir ) )
 sys.path.insert(1, os.path.join( os.path.dirname( __file__ ) ) )
@@ -117,9 +117,9 @@ def validate_publicname( username ):
     return ''
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser( description='Create a user with API key.' )
-    parser.add_argument( '-c', dest='config', action='store', help='.ini file to retried toolshed configuration from' )
-    args = parser.parse_args()
+    parser = optparse.OptionParser( description='Create a user with API key.' )
+    parser.add_option( '-c', dest='config', action='store', help='.ini file to retried toolshed configuration from' )
+    ( args, options ) = parser.parse_args()
     ini_file = args.config
     config_parser = ConfigParser.ConfigParser( { 'here': os.getcwd() } )
     print "Reading ini file: ", ini_file
