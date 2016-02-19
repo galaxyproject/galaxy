@@ -361,7 +361,11 @@ def pretty_print_time_interval( time=False, precise=False ):
     elif isinstance( time, datetime ):
         diff = now - time
     elif isinstance( time, string_types ):
-        time = datetime.strptime( time, "%Y-%m-%dT%H:%M:%S.%f" )
+        try:
+            time = datetime.strptime( time, "%Y-%m-%dT%H:%M:%S.%f" )
+        except ValueError:
+            # MySQL may not support microseconds precision
+            time = datetime.strptime( time, "%Y-%m-%dT%H:%M:%S" )
         diff = now - time
     else:
         diff = now - now

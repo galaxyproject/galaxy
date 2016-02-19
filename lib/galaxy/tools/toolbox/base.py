@@ -176,7 +176,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         elif item_type == 'workflow':
             self._load_workflow_tag_set( item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, load_panel_dict=load_panel_dict, index=index )
         elif item_type == 'section':
-            self._load_section_tag_set( item, tool_path=tool_path, load_panel_dict=load_panel_dict, index=index )
+            self._load_section_tag_set( item, tool_path=tool_path, load_panel_dict=load_panel_dict, index=index, internal=internal )
         elif item_type == 'label':
             self._load_label_tag_set( item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, load_panel_dict=load_panel_dict, index=index )
         elif item_type == 'tool_dir':
@@ -652,7 +652,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             panel_dict[ key ] = label
         integrated_panel_dict.update_or_append( index, key, label )
 
-    def _load_section_tag_set( self, item, tool_path, load_panel_dict, index=None ):
+    def _load_section_tag_set( self, item, tool_path, load_panel_dict, index=None, internal=False ):
         key = item.get( "id" )
         if key in self._tool_panel:
             section = self._tool_panel[ key ]
@@ -675,7 +675,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                 load_panel_dict=load_panel_dict,
                 guid=sub_item.get( 'guid' ),
                 index=sub_index,
-                internal=True,
+                internal=internal,
             )
 
         # Ensure each tool's section is stored
