@@ -161,9 +161,7 @@ class Grid( object ):
                     # that we can encode to UTF-8 and thus handle user input to filters.
                     if isinstance( column_filter, list ):
                         # Filter is a list; process each item.
-                        for filter in column_filter:
-                            if not isinstance( filter, string_types ):
-                                text_type( filter ).encode("utf-8")
+                        column_filter = [ text_type(_).encode('utf-8') if not isinstance(_, string_types) else _ for _ in column_filter ]
                         extra_url_args[ "f-" + column.key ] = dumps( column_filter )
                     else:
                         # Process singleton filter.
