@@ -51,7 +51,6 @@ from galaxy.util.expressions import ExpressionContext
 from galaxy.util.hash_util import hmac_new
 from galaxy.util.json import json_fix
 from galaxy.util.odict import odict
-from galaxy.util import unicodify
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
@@ -2363,16 +2362,6 @@ class SetParamAction:
 class BadValue( object ):
     def __init__( self, value ):
         self.value = value
-
-
-<<<<<<< 371751996916d9995b60a600a1a95456c14bdb2a
-def json_fix( val ):
-    if isinstance( val, list ):
-        return [ json_fix( v ) for v in val ]
-    elif isinstance( val, dict ):
-        return dict( [ ( json_fix( k ), json_fix( v ) ) for ( k, v ) in val.iteritems() ] )
-    else:
-        return unicodify(val, "utf8" )
 
 
 class InterruptedUpload( Exception ):
