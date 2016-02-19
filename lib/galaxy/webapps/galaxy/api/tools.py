@@ -255,7 +255,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         # TODO: handle dbkeys
         params = util.Params( inputs, sanitize=False )
         incoming = params.__dict__
-        vars = tool.handle_input( trans, incoming, history=target_history, source='json' )
+        vars = tool.handle_input( trans, incoming, history=target_history )
 
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get( 'out_data', [] )

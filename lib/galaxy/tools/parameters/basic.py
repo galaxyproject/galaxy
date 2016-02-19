@@ -10,8 +10,6 @@ from xml.etree.ElementTree import XML
 from galaxy import util
 from galaxy.web import form_builder
 from galaxy.util import string_as_bool, sanitize_param, unicodify
-from galaxy.util import listify
-from galaxy.util.odict import odict
 from galaxy.util.expressions import ExpressionContext
 from sanitize import ToolParameterSanitizer
 import validation
@@ -110,9 +108,6 @@ class ToolParameter( object, Dictifiable ):
         format.
         """
         return value
-
-    def from_json( self, value, trans=None, other_values={} ):
-        return self.from_html( value, trans, other_values )
 
     def get_initial_value( self, trans, other_values ):
         """
@@ -457,12 +452,12 @@ class BooleanToolParameter( ToolParameter ):
     >>> print p.name
     blah
     >>> print p.get_html()
-    <input type="checkbox" id="blah" name="blah" value="true" checked="checked"><input type="hidden" name="blah" value="true">
-    >>> print p.from_html( ["true","true"] )
+    <input type="checkbox" id="blah" name="blah" value="__CHECKED__" checked="checked"><input type="hidden" name="blah" value="__NOTHING__">
+    >>> print p.from_html( ["__CHECKED__","__NOTHING__"] )
     True
     >>> print p.to_param_dict_string( True )
     bulletproof vests
-    >>> print p.from_html( ["true"] )
+    >>> print p.from_html( ["__NOTHING__"] )
     False
     >>> print p.to_param_dict_string( False )
     cellophane chests
@@ -477,23 +472,22 @@ class BooleanToolParameter( ToolParameter ):
     def get_html_field( self, trans=None, value=None, other_values={} ):
         checked = self.checked
         if value is not None:
-            checked = form_builder.CheckboxField.is_checked( value )
+            checked = self.from_html( value )
         return form_builder.CheckboxField( self.name, checked, refresh_on_change=self.refresh_on_change )
 
     def from_html( self, value, trans=None, other_values={} ):
-        return form_builder.CheckboxField.is_checked( value )
+        if form_builder.CheckboxField.is_checked( value ):
+            return True
+        return self.to_python( value )
 
-    def from_json( self, value, trans=None, other_values={} ):
-        return string_as_bool( value )
-
-    def to_python( self, value, app ):
-        return ( value in [ 'True', 'true' ])
+    def to_python( self, value, app=None ):
+        return ( value in [ True, 'True', 'true' ] )
 
     def get_initial_value( self, trans, other_values ):
         return self.checked
 
     def to_param_dict_string( self, value, other_values={} ):
-        if value:
+        if self.to_python( value ):
             return self.truevalue
         else:
             return self.falsevalue
@@ -646,7 +640,7 @@ class FTPFileToolParameter( ToolParameter ):
         if len( lst ) == 0:
             if not self.optional and validate:
                 raise ValueError( "Please select a valid FTP file." )
-            return ''
+            return None
         if validate and self.tool.app.config.ftp_upload_dir is None:
             raise ValueError( "The FTP directory is not configured." )
         return lst
@@ -1155,8 +1149,10 @@ class ColumnListParameter( SelectToolParameter ):
         SelectToolParameter.__init__( self, tool, input_source )
         self.tool = tool
         self.numerical = input_source.get_bool( "numerical", False )
-        self.force_select = not input_source.parse_optional( False )
+        self.optional = input_source.parse_optional( False )
         self.accept_default = input_source.get_bool( "accept_default", False )
+        if self.accept_default:
+            self.optional = True
         self.data_ref = input_source.get( "data_ref", None )
         self.ref_input = None
         # Legacy style default value specification...
@@ -1193,6 +1189,9 @@ class ColumnListParameter( SelectToolParameter ):
                 value = ColumnListParameter._strip_c( value )
             else:
                 value = None
+        if not value and not self.get_legal_values( trans, other_values ) and self.accept_default:
+            value = self.default_value or '1'
+            return [ value ] if self.multiple else value
         return super( ColumnListParameter, self ).from_html( value, trans, other_values )
 
     @staticmethod
@@ -1207,30 +1206,18 @@ class ColumnListParameter( SelectToolParameter ):
         Generate a select list containing the columns of the associated
         dataset (if found).
         """
-        # No value indicates a configuration error, the named DataToolParameter
-        # must preceed this parameter in the config
-        assert self.data_ref in other_values, "Value for associated DataToolParameter not found"
-        # Get the value of the associated DataToolParameter (a dataset)
+        # No value indicates a configuration error
+        assert self.data_ref in other_values, "Value for associated data reference not found (data_ref)."
+        # Get the value of the associated data reference (a dataset)
         dataset = other_values[ self.data_ref ]
         # Check if a dataset is selected
-        if dataset is None or dataset == '' or dataset == []:
-            # NOTE: Both of these values indicate that no dataset is selected.
-            #       However, 'None' indicates that the dataset is optional
-            #       while '' indicates that it is not. Currently column
-            #       parameters do not work well with optional datasets
+        if not dataset:
             return []
         column_list = None
         for dataset in util.listify( dataset ):
-            unavailable = False
-            if not hasattr(dataset, 'metadata'):
-                unavailable = True
-            elif not dataset.metadata.columns:
-                unavailable = True
-            if unavailable:
-                default_column_list = []
-                if self.accept_default:
-                    default_column_list.append( self.default_value or '1' )
-                return default_column_list
+            # Columns can only be identified if metadata is available
+            if not hasattr( dataset, 'metadata' ) or not hasattr( dataset.metadata, 'columns' ) or not dataset.metadata.columns:
+                return []
 
             # Build up possible columns for this dataset
             this_column_list = []
@@ -1240,47 +1227,42 @@ class ColumnListParameter( SelectToolParameter ):
                     if col == 'int' or col == 'float':
                         this_column_list.append( str( i + 1 ) )
             else:
-                for i in range(0, dataset.metadata.columns):
+                for i in range( 0, dataset.metadata.columns ):
                     this_column_list.append( str( i + 1 ) )
 
             # Take the intersection of these columns with the other columns.
             if column_list is None:
                 column_list = this_column_list
             else:
-                column_list = filter(lambda c: c in this_column_list, column_list)
-
-        if not self.force_select and 'None' not in column_list:
-            column_list.append( 'None' )
-
+                column_list = filter( lambda c: c in this_column_list, column_list )
         return column_list
 
     def get_options( self, trans, other_values ):
-        """ show column labels rather than c1..cn if use_header_names=True
+        """
+        Show column labels rather than c1..cn if use_header_names=True
         """
         options = []
         if self.usecolnames:  # read first row - assume is a header with metadata useful for making good choices
-            assert self.data_ref in other_values, "Value for associated DataToolParameter not found"
+            assert self.data_ref in other_values, "Value for associated data reference not found (data_ref)."
             dataset = other_values[ self.data_ref ]
             try:
-                head = open(dataset.get_file_name(), 'r').readline()
-                cnames = head.rstrip().split('\t')
-                column_list = [('%d' % (i + 1), 'c%d: %s' % (i + 1, x)) for i, x in enumerate(cnames)]
+                head = open( dataset.get_file_name(), 'r' ).readline()
+                cnames = head.rstrip().split( '\t' )
+                column_list = [ ( '%d' % ( i + 1 ), 'c%d: %s' % ( i + 1, x ) ) for i, x in enumerate( cnames ) ]
                 if self.numerical:  # If numerical was requested, filter columns based on metadata
-                    if len(dataset.metadata.column_types) >= len(cnames):
-                        numerics = [i for i, x in enumerate(dataset.metadata.column_types) if x == 'int' or x == 'float']
-                        column_list = [column_list[i] for i in numerics]
+                    if hasattr( dataset, 'metadata' ) and hasattr( dataset.metadata, 'column_types' ):
+                        if len( dataset.metadata.column_types ) >= len( cnames ):
+                            numerics = [ i for i, x in enumerate( dataset.metadata.column_types ) if x in [ 'int', 'float' ] ]
+                            column_list = [ column_list[ i ] for i in numerics ]
             except:
                 column_list = self.get_column_list( trans, other_values )
         else:
             column_list = self.get_column_list( trans, other_values )
-        if len( column_list ) > 0 and not self.force_select:
-            options.append( ('?', 'None', False) )
         for col in column_list:
-            if col != 'None':
-                if isinstance(col, tuple) and len(col) == 2:  # fiddled
-                    options.append((col[1], col[0], False))
-                else:
-                    options.append( ( 'Column: ' + col, col, False ) )
+            if isinstance( col, tuple ) and len( col ) == 2:
+                options.append( ( col[ 1 ], col[ 0 ], False ) )
+            else:
+                options.append( ( 'Column: ' + col, col, False ) )
         return options
 
     def get_initial_value( self, trans, other_values ):
@@ -1295,16 +1277,9 @@ class ColumnListParameter( SelectToolParameter ):
         return [ self.data_ref ]
 
     def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
-        # call parent to_dict
         d = super( ColumnListParameter, self ).to_dict( trans, other_values=other_values)
-
-        # add data reference
-        d['data_ref'] = self.data_ref
-
-        # add numerical flag
-        d['numerical'] = self.numerical
-
-        # return
+        d[ 'data_ref' ] = self.data_ref
+        d[ 'numerical' ] = self.numerical
         return d
 
 
@@ -1476,9 +1451,10 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                     dataset = dataset.dataset
                 if dataset:
                     for meta_key, meta_dict in filter_value.iteritems():
-                        check_meta_val = dataset.metadata.spec[meta_key].param.to_string( dataset.metadata.get( meta_key ) )
-                        if check_meta_val in meta_dict:
-                            options.extend( meta_dict[check_meta_val] )
+                        if hasattr( dataset, 'metadata' ) and hasattr( dataset.metadata, 'spec' ):
+                            check_meta_val = dataset.metadata.spec[ meta_key ].param.to_string( dataset.metadata.get( meta_key ) )
+                            if check_meta_val in meta_dict:
+                                options.extend( meta_dict[ check_meta_val ] )
             return options
         return self.options
 
@@ -1646,10 +1622,6 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         return d
 
 
-class DummyDataset( object ):
-    pass
-
-
 class BaseDataToolParameter( ToolParameter ):
 
     def __init__( self, tool, input_source, trans ):
@@ -1713,13 +1685,6 @@ class BaseDataToolParameter( ToolParameter ):
             self.options_filter_attribute = options_elem.get(  'options_filter_attribute', None )
         self.is_dynamic = self.options is not None
 
-    def _switch_fields( self, fields, default_field ):
-        if len(fields) > 1:
-            field = form_builder.SwitchingSelectField( fields, default_field=default_field )
-        else:
-            field = fields.values()[0]
-        return field
-
 
 class DataToolParameter( BaseDataToolParameter ):
     # TODO, Nate: Make sure the following unit tests appropriately test the dataset security
@@ -1770,80 +1735,10 @@ class DataToolParameter( BaseDataToolParameter ):
 
     def get_html_field( self, trans, value=None, other_values={} ):
         if value is not None:
-            if type( value ) != list:
+            if not isinstance( value, list ):
                 value = [ value ]
-
-        history = self._get_history( trans )
         dataset_matcher = DatasetMatcher( trans, self, value, other_values )
-        multiple = self.multiple
-        fields = odict()
-        if multiple:
-            # Select one dataset, run one job.
-            default_field = "multiselect_single"
-            multi_select = self._get_select_dataset_field( history, dataset_matcher, multiple=True )
-            fields[ "multiselect_single" ] = multi_select
-
-            if self.__display_multirun_option():
-                collection_select = self._get_select_dataset_collection_fields( trans, dataset_matcher, suffix="", reduction=True )
-                if collection_select.get_selected(return_value=True):
-                    default_field = "multiselect_collection"
-                fields[ "multiselect_collection" ] = collection_select
-                self._ensure_selection( collection_select )
-
-        else:
-            # Select one dataset, run one job.
-            default_field = "select_single"
-            single_select = self._get_select_dataset_field( history, dataset_matcher, multiple=False )
-            fields[ "select_single" ] = single_select
-
-            if self.__display_multirun_option():
-                # Select multiple datasets, run multiple jobs.
-                multirun_key = "%s|__multirun__" % self.name
-                collection_multirun_key = "%s|__collection_multirun__" % self.name
-                if multirun_key in (other_values or {}):
-                    multirun_value = listify( other_values[ multirun_key ] )
-                    if multirun_value and len( multirun_value ) > 1:
-                        default_field = "select_multiple"
-                elif collection_multirun_key in (other_values or {}):
-                    multirun_value = listify( other_values[ collection_multirun_key ] )
-                    if multirun_value:
-                        default_field = "select_collection"
-                else:
-                    multirun_value = value
-                multi_dataset_matcher = DatasetMatcher( trans, self, multirun_value, other_values )
-                multi_select = self._get_select_dataset_field( history, multi_dataset_matcher, multiple=True, suffix="|__multirun__" )
-                fields[ "select_multiple" ] = multi_select
-                collection_field = self._get_select_dataset_collection_fields( trans, dataset_matcher, multiple=False, reduction=False )
-                fields[ "select_collection" ] = collection_field
-
-        return self._switch_fields( fields, default_field=default_field )
-
-    def _get_select_dataset_collection_fields( self, trans, dataset_matcher, multiple=False, suffix="|__collection_multirun__", reduction=False ):
-        if not reduction:
-            def value_modifier(x):
-                return x
-        else:
-            def value_modifier(value):
-                return "__collection_reduce__|%s" % value
-
-        value = dataset_matcher.value
-        if value is not None:
-            if type( value ) != list:
-                value = [ value ]
-
-        field_name = "%s%s" % ( self.name, suffix )
-        field = form_builder.SelectField( field_name, multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
-
-        for history_dataset_collection in self.match_collections( trans.history, dataset_matcher, reduction=reduction ):
-            name = history_dataset_collection.name
-            hid = str( history_dataset_collection.hid )
-            hidden_text = ""  # TODO
-            id = value_modifier( trans.security.encode_id( history_dataset_collection.id ) )
-            selected = value and history_dataset_collection in value
-            text = "%s:%s %s" % ( hid, hidden_text, name )
-            field.add_option( text, id, selected )
-
-        return field
+        return self._get_select_dataset_field( self._get_history( trans ), dataset_matcher, multiple=self.multiple )
 
     def _get_select_dataset_field( self, history, dataset_matcher, multiple=False, suffix="" ):
         field_name = "%s%s" % ( self.name, suffix )
@@ -1905,7 +1800,7 @@ class DataToolParameter( BaseDataToolParameter ):
         """
         # Can't look at history in workflow mode. Tool shed has no histories.
         if trans.workflow_building_mode or trans.app.name == 'tool_shed':
-            return DummyDataset()
+            return RuntimeValue()
         history = self._get_history( trans )
         dataset_matcher = DatasetMatcher( trans, self, None, other_values )
         if self.optional:
@@ -2009,9 +1904,9 @@ class DataToolParameter( BaseDataToolParameter ):
             return value
         elif isinstance( value, int ):
             return str( value )
-        elif isinstance( value, DummyDataset ):
+        elif isinstance( value, RuntimeValue ):
             return None
-        elif isinstance( value, list) and len(value) > 0 and isinstance( value[0], DummyDataset):
+        elif isinstance( value, list ) and len( value ) > 0 and isinstance( value[ 0 ], RuntimeValue ):
             return None
         elif isinstance( value, list ):
             return ",".join( [ str( self.to_string( val, app ) ) for val in value ] )
@@ -2115,15 +2010,6 @@ class DataToolParameter( BaseDataToolParameter ):
         self.tool.visit_inputs( other_values, visitor )
         return False not in converter_safe
 
-    def __display_multirun_option( self ):
-        """ Certain parameters may not make sense to allow multi-run variants
-        of for instance if other parameters are filtered or contrained based on
-        this one. TODO: Figure out if these exist and how to detect them (
-        for instance should I just be checking dynamic options).
-        """
-        allow = True
-        return allow
-
     def _options_filter_attribute( self, value ):
         # HACK to get around current hardcoded limitation of when a set of dynamic options is defined for a DataToolParameter
         # it always causes available datasets to be filtered by dbkey
@@ -2174,10 +2060,10 @@ class DataToolParameter( BaseDataToolParameter ):
         visible_hda = other_values.get( self.name )
         has_matched = False
         for hda in history.active_datasets_children_and_roles:
-            match = dataset_matcher.hda_match( hda, ensure_visible=visible_hda != hda )
+            match = dataset_matcher.hda_match( hda )
             if match:
                 m = match.hda
-                has_matched = has_matched or visible_hda == m
+                has_matched = has_matched or visible_hda == m or visible_hda == hda
                 append( d[ 'options' ][ 'hda' ], m.id, m.hid, m.name if m.visible else '(hidden) %s' % m.name, 'hda' )
         if not has_matched and isinstance( visible_hda, trans.app.model.HistoryDatasetAssociation ):
             append( d[ 'options' ][ 'hda' ], visible_hda.id, visible_hda.hid, '(unavailable) %s' % visible_hda.name, 'hda' )
@@ -2221,23 +2107,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         return history_query.HistoryQuery.from_parameter( self, dataset_collection_type_descriptions )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
-        # dropped refresh values, may be needed..
-        default_field = "select_single_collection"
-        fields = odict()
-
-        collection_multirun_key = "%s|__collection_multirun__" % self.name
-        if collection_multirun_key in (other_values or {}):
-            multirun_value = other_values[ collection_multirun_key ]
-            if multirun_value:
-                default_field = "select_map_over_collections"
-        else:
-            multirun_value = value
-
-        history = self._get_history( trans )
-        fields[ "select_single_collection" ] = self._get_single_collection_field( trans=trans, history=history, value=value, other_values=other_values )
-        fields[ "select_map_over_collections" ] = self._get_select_dataset_collection_field( trans=trans, history=history, value=multirun_value, other_values=other_values )
-
-        return self._switch_fields( fields, default_field=default_field )
+        return self._get_single_collection_field( trans=trans, history=self._get_history( trans ), value=value, other_values=other_values )
 
     def match_collections( self, trans, history, dataset_matcher ):
         dataset_collections = trans.app.dataset_collections_service.history_dataset_collections( history, self._history_query( trans ) )
@@ -2273,23 +2143,6 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
                 hidden_text = " (hidden)"
             field.add_option( "%s:%s %s" % ( instance_id, hidden_text, instance_name ), dataset_collection_instance.id, selected )
         self._ensure_selection( field )
-        return field
-
-    def _get_select_dataset_collection_field( self, trans, history, multiple=False, suffix="|__collection_multirun__", value=None, other_values=None ):
-        field_name = "%s%s" % ( self.name, suffix )
-        field = form_builder.SelectField( field_name, multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
-        dataset_matcher = DatasetMatcher( trans, self, value, other_values )
-
-        for history_dataset_collection in self.match_multirun_collections( trans, history, dataset_matcher ):
-            name = history_dataset_collection.name
-            hid = str( history_dataset_collection.hid )
-            hidden_text = ""  # TODO
-            subcollection_type = self._history_query( trans ).can_map_over( history_dataset_collection ).collection_type
-            id = "%s|%s" % ( trans.security.encode_id( history_dataset_collection.id ), subcollection_type )
-            text = "%s:%s %s" % ( hid, hidden_text, name )
-
-            field.add_option( text, id, False )
-
         return field
 
     def from_html( self, value, trans, other_values={} ):
@@ -2331,7 +2184,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
     def to_string( self, value, app ):
         if value is None or isinstance( value, basestring ):
             return value
-        elif isinstance( value, DummyDataset ):
+        elif isinstance( value, RuntimeValue ):
             return None
         try:
             if isinstance( value, galaxy.model.DatasetCollectionElement ):

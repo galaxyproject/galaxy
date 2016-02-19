@@ -617,45 +617,30 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         return trans.fill_template( "workflow/editor.mako", workflows=workflows, stored=stored, annotation=self.get_item_annotation_str( trans.sa_session, trans.user, stored ) )
 
     @web.json
-    def editor_form_post( self, trans, type='tool', content_id=None, annotation=None, label=None, **incoming ):
+    def editor_form_post( self, trans, type=None, content_id=None, annotation=None, label=None, **incoming ):
         """
         Accepts a tool state and incoming values, and generates a new tool
         form and some additional information, packed into a json dictionary.
         This is used for the form shown in the right pane when a node
         is selected.
         """
-        tool_state = incoming.pop('tool_state', None)
-        trans.workflow_building_mode = True
+        tool_state = incoming.pop( 'tool_state' )
         module = module_factory.from_dict( trans, {
             'type': type,
             'content_id': content_id,
             'tool_state': tool_state,
-            'label': label or None,
-            'tool_state': tool_state
+            'label': label or None
         } )
-        # update module state
         module.update_state( incoming )
-        if type == 'tool':
-            return {
-                'label': module.label,
-                'tool_state': module.get_state(),
-                'data_inputs': module.get_data_inputs(),
-                'data_outputs': module.get_data_outputs(),
-                'tool_errors': module.get_errors(),
-                'form_html': module.get_config_form(),
-                'annotation': annotation,
-                'post_job_actions': module.get_post_job_actions()
-            }
-        else:
-            return {
-                'label': module.label,
-                'tool_state': module.get_state(),
-                'data_inputs': module.get_data_inputs(),
-                'data_outputs': module.get_data_outputs(),
-                'tool_errors': module.get_errors(),
-                'form_html': module.get_config_form(),
-                'annotation': annotation
-            }
+        return {
+            'label': module.label,
+            'tool_state': module.get_state(),
+            'data_inputs': module.get_data_inputs(),
+            'data_outputs': module.get_data_outputs(),
+            'tool_errors': module.get_errors(),
+            'form_html': module.get_config_form(),
+            'annotation': annotation
+        }
 
     @web.json
     def get_new_module_info( self, trans, type, **kwargs ):

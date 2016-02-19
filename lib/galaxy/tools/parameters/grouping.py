@@ -552,12 +552,9 @@ class Conditional( Group ):
     def label( self ):
         return "Conditional (%s)" % self.name
 
-    def get_current_case( self, value, trans ):
+    def get_current_case( self, value ):
         # Convert value to user representation
-        if isinstance( value, bool ):
-            str_value = self.test_param.to_param_dict_string( value )
-        else:
-            str_value = value
+        str_value = self.test_param.to_param_dict_string( value )
         # Find the matching case
         for index, case in enumerate( self.cases ):
             if str_value == case.value:
@@ -613,7 +610,7 @@ class Conditional( Group ):
         # Get the default value for the 'test element' and use it
         # to determine the current case
         test_value = self.test_param.get_initial_value( trans, context )
-        current_case = self.get_current_case( test_value, trans )
+        current_case = self.get_current_case( test_value )
         # Store the current case in a special value
         rval['__current_case__'] = current_case
         # Store the value of the test element

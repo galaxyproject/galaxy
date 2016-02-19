@@ -23,7 +23,7 @@ class DataColumnParameterTestCase( BaseParameterTestCase ):
 
     def __param_optional(self):
         # TODO: don't break abstraction, try setting null value instead
-        return not self.param.force_select
+        return self.param.optional
 
     def test_from_html(self):
         value = self.param.from_html("3", self.trans, { "input_tsv": self.build_ready_hda()  } )

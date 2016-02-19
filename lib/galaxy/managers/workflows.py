@@ -434,7 +434,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 # Determine full (prefixed) names of valid input datasets
                 data_input_names = {}
 
-                def callback( input, value, prefixed_name, prefixed_label ):
+                def callback( input, prefixed_name, **kwargs ):
                     if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
                         data_input_names[ prefixed_name ] = True
                         multiple_input[ prefixed_name ] = input.multiple
@@ -595,7 +595,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 # Determine full (prefixed) names of valid input datasets
                 data_input_names = {}
 
-                def callback( input, value, prefixed_name, prefixed_label ):
+                def callback( input, prefixed_name, **kwargs ):
                     if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
                         data_input_names[ prefixed_name ] = True
                 # FIXME: this updates modules silently right now; messages from updates should be provided.

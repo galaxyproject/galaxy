@@ -77,7 +77,7 @@ class RepoToolModule( ToolModule ):
     def get_data_inputs( self ):
         data_inputs = []
 
-        def callback( input, value, prefixed_name, prefixed_label ):
+        def callback( input, prefixed_name, prefixed_label, **kwargs ):
             if isinstance( input, galaxy.tools.parameters.basic.DataToolParameter ):
                 data_inputs.append( dict( name=prefixed_name,
                                           label=prefixed_label,
