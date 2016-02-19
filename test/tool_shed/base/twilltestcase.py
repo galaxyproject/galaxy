@@ -543,6 +543,11 @@ class ShedTwillTestCase( TwillTestCase ):
             f.write( self.last_page() )
         return capsule_filename
 
+    def fetch_repository_metadata( self, repository, strings_displayed=None, strings_not_displayed=None ):
+        url = '/api/repositories/%s/metadata' % self.security.encode_id( repository.id )
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+
     def fill_review_form( self, review_contents_dict, strings_displayed=[], strings_not_displayed=[] ):
         kwd = dict()
         changed = False
@@ -672,7 +677,13 @@ class ShedTwillTestCase( TwillTestCase ):
                              repository.name,
                              repository.installed_changeset_revision )
 
-    def get_or_create_repository( self, owner=None, strings_displayed=[], strings_not_displayed=[], **kwd ):
+    def get_or_create_repository( self, owner=None, strings_displayed=None, strings_not_displayed=None, **kwd ):
+        # If not checking for a specific string, it should be safe to assume that
+        # we expect repository creation to be successful.
+        if strings_displayed is None:
+            strings_displayed = [ 'Repository', kwd[ 'name' ], 'has been created' ]
+        if strings_not_displayed is None:
+            strings_not_displayed = []
         repository = test_db_util.get_repository_by_name_and_owner( kwd[ 'name' ], owner )
         if repository is None:
             self.visit_url( '/repository/create_repository' )
