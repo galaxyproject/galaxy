@@ -678,10 +678,10 @@ class ShedTwillTestCase( TwillTestCase ):
                              repository.installed_changeset_revision )
 
     def get_or_create_repository( self, owner=None, strings_displayed=None, strings_not_displayed=None, **kwd ):
+        # If not checking for a specific string, it should be safe to assume that
+        # we expect repository creation to be successful.
         if strings_displayed is None:
             strings_displayed = [ 'Repository', kwd[ 'name' ], 'has been created' ]
-        else:
-            strings_displayed.extend( [ 'Repository', kwd[ 'name' ], 'has been created' ] )
         if strings_not_displayed is None:
             strings_not_displayed = []
         repository = test_db_util.get_repository_by_name_and_owner( kwd[ 'name' ], owner )
