@@ -133,10 +133,11 @@ class DatasetRBACPermissions( object ):
 
 
 class DatasetSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
+    model_manager_class = DatasetManager
 
     def __init__( self, app ):
         super( DatasetSerializer, self ).__init__( app )
-        self.dataset_manager = DatasetManager( app )
+        self.dataset_manager = self.manager
         # needed for admin test
         self.user_manager = users.UserManager( app )
 
@@ -274,6 +275,8 @@ class DatasetAssociationManager( base.ModelManager,
     # Instead, a dataset association HAS a dataset but contains metadata specific to a library (lda) or user (hda)
     model_class = model.DatasetInstance
 
+    # NOTE: model_manager_class should be set in HDA/LDA subclasses
+
     def __init__( self, app ):
         super( DatasetAssociationManager, self ).__init__( app )
         self.dataset_manager = DatasetManager( app )
@@ -406,6 +409,9 @@ class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,
         self.serializable_keyset.update([ 'name', 'state', 'tool_version', 'extension', 'visible', 'dbkey' ])
 
     def _proxy_to_dataset( self, serializer=None, key=None ):
+        # dataset associations are (rough) proxies to datasets - access their serializer using this remapping fn
+        # remapping done by either kwarg key: IOW dataset attr key (e.g. uuid)
+        # or by kwarg serializer: a function that's passed in (e.g. permissions)
         if key:
             serializer = self.dataset_serializer.serializers.get( key )
         if serializer:

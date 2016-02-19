@@ -1,26 +1,26 @@
 """
     Sorts tabular data on one or more columns. All comments of the file are collected
     and placed at the beginning of the sorted output file.
-    
+
     usage: sorter.py [options]
     -i, --input: Tabular file to be sorted
     -o, --output: Sorted output file
     -k, --key: Key (see manual for bash/sort)
-    
+
     usage: sorter.py input output [key ...]
 """
 # 03/05/2013 guerler
 
-# imports
-import os, re, string, sys
+import os
+import sys
 from optparse import OptionParser
 
-# error
+
 def stop_err( msg ):
     sys.stderr.write( "%s\n" % msg )
     sys.exit()
 
-# main
+
 def main():
     # define options
     parser = OptionParser()
@@ -30,25 +30,23 @@ def main():
 
     # parse
     options, args = parser.parse_args()
-    
+
     try:
         # retrieve options
-        input   = options.input
-        output  = options.output
-        key     = [" -k" + k for k in options.key]
-        
+        input = options.input
+        output = options.output
+        key = [" -k" + k for k in options.key]
+
         # grep comments
         grep_comments = "(grep '^#' %s) > %s" % (input, output)
-        #print grep_comments
-        
+
         # grep and sort columns
-        sort_columns  = "(grep '^[^#]' %s | sort -f -t '\t' %s) >> %s" % (input, ' '.join(key), output)
-        #print sort_columns
-        
+        sort_columns = "(grep '^[^#]' %s | sort -f -t '\t' %s) >> %s" % (input, ' '.join(key), output)
+
         # execute
         os.system(grep_comments)
         os.system(sort_columns)
-    
+
     except Exception, ex:
         stop_err('Error running sorter.py\n' + str(ex))
 

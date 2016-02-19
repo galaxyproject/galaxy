@@ -251,7 +251,10 @@ class Repository( object, Dictifiable ):
         return []
 
     def installable_revisions( self, app ):
-        return suc.get_metadata_changeset_revisions( self, hg.repository( ui.ui(), self.repo_path( app ) ) )
+        return suc.get_metadata_revisions( self, hg.repository( ui.ui(), self.repo_path( app ) ), sort_revisions=True )
+
+    def ordered_installable_revisions( self, app ):
+        return suc.get_ordered_metadata_changeset_revisions( self, hg.repository( ui.ui(), self.repo_path( app ) ), downloadable=True )
 
     def is_new( self, app ):
         repo = hg.repository( ui.ui(), self.repo_path( app ) )

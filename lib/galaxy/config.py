@@ -9,6 +9,7 @@ import logging
 import logging.config
 import os
 import re
+import signal
 import socket
 import string
 import sys
@@ -255,13 +256,13 @@ class Configuration( object ):
         self.external_chown_script = kwargs.get('external_chown_script', None)
         self.environment_setup_file = kwargs.get( 'environment_setup_file', None )
         self.use_heartbeat = string_as_bool( kwargs.get( 'use_heartbeat', 'False' ) )
+        self.heartbeat_interval = int( kwargs.get( 'heartbeat_interval', 20 ) )
+        self.heartbeat_log = kwargs.get( 'heartbeat_log', None )
         self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )
         self.log_events = string_as_bool( kwargs.get( 'log_events', 'False' ) )
         self.sanitize_all_html = string_as_bool( kwargs.get( 'sanitize_all_html', True ) )
         self.sanitize_whitelist_file = resolve_path( kwargs.get( 'sanitize_whitelist_file', "config/sanitize_whitelist.txt" ), self.root )
-        self.sanitize_whitelist = []
-        if kwargs.get('sanitize_whitelist_file', None) is not None:
-            self.reload_sanitize_whitelist()
+        self.reload_sanitize_whitelist()
         self.serve_xss_vulnerable_mimetypes = string_as_bool( kwargs.get( 'serve_xss_vulnerable_mimetypes', False ) )
         self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames( kwargs )
         self.trust_ipython_notebook_conversion = string_as_bool( kwargs.get( 'trust_ipython_notebook_conversion', False ) )
@@ -306,7 +307,7 @@ class Configuration( object ):
             self.use_tool_dependencies = True
         else:
             self.tool_dependency_dir = None
-            self.use_tool_dependencies = False
+            self.use_tool_dependencies = os.path.exists(self.dependency_resolvers_config_file)
         # Configuration options for taking advantage of nginx features
         self.upstream_gzip = string_as_bool( kwargs.get( 'upstream_gzip', False ) )
         self.apache_xsendfile = string_as_bool( kwargs.get( 'apache_xsendfile', False ) )
@@ -351,8 +352,10 @@ class Configuration( object ):
             self.config_file = global_conf['__file__']
             global_conf_parser.read(global_conf['__file__'])
         # Heartbeat log file name override
-        if global_conf is not None:
-            self.heartbeat_log = global_conf.get( 'heartbeat_log', 'heartbeat.log' )
+        if global_conf is not None and 'heartbeat_log' in global_conf:
+            self.heartbeat_log = global_conf['heartbeat_log']
+        if self.heartbeat_log is None:
+            self.heartbeat_log = 'heartbeat_{server_name}.log'
         # Determine which 'server:' this is
         self.server_name = 'main'
         for arg in sys.argv:
@@ -912,3 +915,7 @@ class ConfiguresGalaxyMixin:
             install_db_engine_options = self.config.install_database_engine_options
             self.install_model = install_mapping.init( install_db_url,
                                                        install_db_engine_options )
+
+    def _configure_signal_handlers( self, handlers ):
+        for sig, handler in handlers.items():
+            signal.signal( sig, handler )

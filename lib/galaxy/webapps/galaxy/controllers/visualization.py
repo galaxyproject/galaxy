@@ -191,6 +191,8 @@ class VisualizationListGrid( grids.Grid ):
         if item.type in registry.VisualizationsRegistry.BUILT_IN_VISUALIZATIONS:
             url_kwargs[ 'action' ] = item.type
         else:
+            url_kwargs[ '__route_name__' ] = 'saved_visualization'
+            url_kwargs[ 'visualization_name' ] = item.type
             url_kwargs[ 'action' ] = 'saved'
         return url_kwargs
 

@@ -50,9 +50,9 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
                     if ( [ 'data', 'data_collection' ].indexOf( input.type ) != -1 ) {
                         input.type = 'hidden';
                         input.info = 'Data input \'' + input.name + '\' (' + Utils.textify( input.extensions && input.extensions.toString() ) + ')';
-                        input.value = null;
+                        input.value = { '__class__': 'RuntimeValue' };
                     } else {
-                        input.collapsible_value = {'__class__': 'RuntimeValue'};
+                        input.collapsible_value = { '__class__': 'RuntimeValue' };
                         input.is_workflow = ( input.options && input.options.length == 0 ) ||
                                             ( [ 'integer', 'float' ].indexOf( input.type ) != -1 );
                     }

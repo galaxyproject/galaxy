@@ -62,7 +62,8 @@
         $( '.history-copy-link' ).click( function( ev ){
             historyCopyDialog( history, { useImport: true, allowAll: false })
                 .done( function(){
-                    window.location.href = Galaxy.root;
+                    var mainWindow = ( window && ( window !== window.parent ) )? window.top : window;
+                    mainWindow.location.href = Galaxy.root;
                 });
         });
 

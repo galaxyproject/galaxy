@@ -21,18 +21,18 @@ from uuid import UUID, uuid4
 from sqlalchemy import and_, func, not_, or_, true, join, select
 from sqlalchemy.orm import joinedload, object_session, aliased
 from sqlalchemy.ext import hybrid
+from sqlalchemy import types
+from sqlalchemy import type_coerce
 
 try:
     import pexpect
 except ImportError:
     pexpect = None
 
-import galaxy.datatypes
-import galaxy.datatypes.registry
 import galaxy.model.orm.now
+import galaxy.model.metadata
 import galaxy.security.passwords
 import galaxy.util
-from galaxy.datatypes.metadata import MetadataCollection
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.security import get_permitted_actions
@@ -50,9 +50,7 @@ from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
 
 log = logging.getLogger( __name__ )
 
-datatypes_registry = galaxy.datatypes.registry.Registry()
-# Default Value Required for unit tests
-datatypes_registry.load_datatypes()
+_datatypes_registry = None
 
 # When constructing filters with in for a fixed set of ids, maximum
 # number of items to place in the IN statement. Different databases
@@ -80,12 +78,18 @@ class ConverterDependencyException(Exception):
         return repr(self.value)
 
 
+def _get_datatypes_registry():
+    if _datatypes_registry is None:
+        raise Exception("galaxy.model.set_datatypes_registry must be called before performing certain DatasetInstance operations.")
+    return _datatypes_registry
+
+
 def set_datatypes_registry( d_registry ):
     """
     Set up datatypes_registry
     """
-    global datatypes_registry
-    datatypes_registry = d_registry
+    global _datatypes_registry
+    _datatypes_registry = d_registry
 
 
 class HasName:
@@ -1858,13 +1862,13 @@ class DatasetInstance( object ):
 
     @property
     def datatype( self ):
-        return datatypes_registry.get_datatype_by_extension( self.extension )
+        return _get_datatypes_registry().get_datatype_by_extension( self.extension )
 
     def get_metadata( self ):
         # using weakref to store parent (to prevent circ ref),
         #   does a Session.clear() cause parent to be invalidated, while still copying over this non-database attribute?
         if not hasattr( self, '_metadata_collection' ) or self._metadata_collection.parent != self:
-            self._metadata_collection = MetadataCollection( self )
+            self._metadata_collection = galaxy.model.metadata.MetadataCollection( self )
         return self._metadata_collection
 
     def set_metadata( self, bunch ):
@@ -1892,7 +1896,7 @@ class DatasetInstance( object ):
 
     def change_datatype( self, new_ext ):
         self.clear_associated_files()
-        datatypes_registry.change_datatype( self, new_ext )
+        _get_datatypes_registry().change_datatype( self, new_ext )
 
     def get_size( self, nice_size=False ):
         """Returns the size of the data on disk"""
@@ -1929,7 +1933,7 @@ class DatasetInstance( object ):
     def get_mime( self ):
         """Returns the mime type of the data"""
         try:
-            return datatypes_registry.get_mimetype_by_extension( self.extension.lower() )
+            return _get_datatypes_registry().get_mimetype_by_extension( self.extension.lower() )
         except AttributeError:
             # extension is None
             return 'data'
@@ -2054,14 +2058,14 @@ class DatasetInstance( object ):
         return None
 
     def get_converter_types(self):
-        return self.datatype.get_converter_types( self, datatypes_registry )
+        return self.datatype.get_converter_types( self, _get_datatypes_registry() )
 
     def can_convert_to(self, format):
         return format in self.get_converter_types()
 
     def find_conversion_destination( self, accepted_formats, **kwd ):
         """Returns ( target_ext, existing converted dataset )"""
-        return self.datatype.find_conversion_destination( self, accepted_formats, datatypes_registry, **kwd )
+        return self.datatype.find_conversion_destination( self, accepted_formats, _get_datatypes_registry(), **kwd )
 
     def add_validation_error( self, validation_error ):
         self.validation_errors.append( validation_error )
@@ -2448,6 +2452,18 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
     @property
     def history_content_type( self ):
         return "dataset"
+
+    # TODO: down into DatasetInstance
+    content_type = u'dataset'
+
+    @hybrid.hybrid_property
+    def type_id( self ):
+        return u'-'.join([ self.content_type, str( self.id ) ])
+
+    @type_id.expression
+    def type_id( cls ):
+        return (( type_coerce( cls.content_type, types.Unicode ) + u'-' +
+                  type_coerce( cls.id, types.Unicode ) ).label( 'type_id' ))
 
     def copy_tags_from( self, target_user, source_hda ):
         """
@@ -3211,6 +3227,18 @@ class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnota
     def history_content_type( self ):
         return "dataset_collection"
 
+    # TODO: down into DatasetCollectionInstance
+    content_type = u'dataset_collection'
+
+    @hybrid.hybrid_property
+    def type_id( self ):
+        return u'-'.join([ self.content_type, str( self.id ) ])
+
+    @type_id.expression
+    def type_id( cls ):
+        return (( type_coerce( cls.content_type, types.Unicode ) + u'-' +
+                  type_coerce( cls.id, types.Unicode ) ).label( 'type_id' ))
+
     def to_dict( self, view='collection' ):
         dict_value = dict(
             hid=self.hid,
@@ -3601,6 +3629,23 @@ class WorkflowStep( object ):
         self.uuid = uuid4()
         self.workflow_outputs = []
         self._input_connections_by_name = None
+
+    @property
+    def unique_workflow_outputs(self):
+        # Older Galaxy workflows may have multiple WorkflowOutputs
+        # per "output_name", when serving these back to the editor
+        # feed only a "best" output per "output_name.""
+        outputs = {}
+        for workflow_output in self.workflow_outputs:
+            output_name = workflow_output.output_name
+
+            if output_name in outputs:
+                found_output = outputs[output_name]
+                if found_output.label is None and workflow_output.label is not None:
+                    outputs[output_name] = workflow_output
+            else:
+                outputs[output_name] = workflow_output
+        return outputs.values()
 
     @property
     def content_id( self ):

@@ -17,17 +17,14 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
 
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         self.test_db_util.get_private_role( test_user_1 )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
         self.test_db_util.get_private_role( admin_user )
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         galaxy_admin_user = self.test_db_util.get_galaxy_user( common.admin_email )
         assert galaxy_admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
@@ -37,7 +34,6 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
         '''Create the 0020 category and any missing repositories.'''
         global repository_datatypes_count
         category = self.create_category( name='Test 0020 Basic Repository Dependencies', description='Test 0020 Basic Repository Dependencies' )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         datatypes_repository = self.get_or_create_repository( name=datatypes_repository_name,
                                                               description=datatypes_repository_description,
@@ -78,7 +74,6 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
     def test_0010_browse_tool_shed( self ):
         """Browse the available tool sheds in this Galaxy instance and preview the emboss tool."""
         global base_datatypes_count
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         base_datatypes_count = int( self.get_datatypes_count() )
         self.browse_tool_shed( url=self.url, strings_displayed=[ 'Test 0020 Basic Repository Dependencies' ] )

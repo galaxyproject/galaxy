@@ -30,6 +30,7 @@ from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import workflow_util
 from tool_shed.util.web_util import escape
+from galaxy.tools.deps import views
 
 log = logging.getLogger( __name__ )
 
@@ -788,11 +789,14 @@ class AdminToolshed( AdminGalaxy ):
                                                                                 repository=repository,
                                                                                 reinstalling=False,
                                                                                 required_repo_info_dicts=None )
+        view = views.DependencyResolversView(self.app)
+        resolver_dependency_dict = view.manager_dependency(name=name)
         return trans.fill_template( '/admin/tool_shed_repository/manage_repository.mako',
                                     repository=repository,
                                     description=description,
                                     repo_files_dir=repo_files_dir,
                                     containers_dict=containers_dict,
+                                    resolver_dependency_dict=resolver_dependency_dict,
                                     message=message,
                                     status=status )
 

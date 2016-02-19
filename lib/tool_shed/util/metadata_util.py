@@ -31,7 +31,6 @@ def get_all_dependencies( app, metadata_entry, processed_dependency_links=[] ):
             dependency_dict['repository_dependencies'] = get_all_dependencies( app, dependency_metadata, processed_dependency_links )
         else:
             dependency_dict['repository_dependencies'] = []
-        processed_dependency_links.append( dependency_dict['id'] )
         returned_dependencies.append( dependency_dict )
     return returned_dependencies
 
@@ -99,6 +98,12 @@ def get_previous_metadata_changeset_revision( repository, repo, before_changeset
                 return hg_util.INITIAL_CHANGELOG_HASH
         else:
             previous_changeset_revision = changeset_revision
+
+
+def get_repository_dependencies( app, metadata_id ):
+    '''Return a list of RepositoryDependency objects that specify the provided repository metadata record as the parent.'''
+    sa_session = app.model.context.current
+    return sa_session.query( app.model.RepositoryDependency ).filter( app.model.RepositoryDependency.table.c.parent_metadata_id == metadata_id ).all()
 
 
 def get_repository_dependency_tups_from_repository_metadata( app, repository_metadata, deprecated_only=False ):

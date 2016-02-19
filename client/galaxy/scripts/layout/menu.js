@@ -144,8 +144,13 @@ var Collection = Backbone.Collection.extend({
                     target  : '_blank'
                 },{
                     title   : 'Interactive Tours',
-                    onclick : function(c){
-                        Galaxy.app.display(new Tours.ToursView());
+                    onclick : function(){
+                        if (Galaxy.app){
+                            Galaxy.app.display(new Tours.ToursView());
+                        } else {
+                            // Redirect and use clientside routing to go to tour index
+                            window.location = Galaxy.root + "#/tours";
+                        }
                     },
                     target  : 'galaxy_main'
             }]
