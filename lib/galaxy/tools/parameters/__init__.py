@@ -10,7 +10,7 @@ from galaxy.util.expressions import ExpressionContext
 REPLACE_ON_TRUTHY = object()
 
 
-def visit_input_values( inputs, input_values, callback, name_prefix="", label_prefix="", no_replacement_value=REPLACE_ON_TRUTHY, context=None ):
+def visit_input_values( inputs, input_values, callback, name_prefix='', label_prefix='', parent_prefix='', no_replacement_value=REPLACE_ON_TRUTHY, context=None, ignore_errors=False ):
     """
     Given a tools parameter definition (`inputs`) and a specific set of
     parameter `values`, call `callback` for each non-grouping parameter,
@@ -19,10 +19,12 @@ def visit_input_values( inputs, input_values, callback, name_prefix="", label_pr
 
     If the callback returns a value, it will be replace the old value.
     """
-    def callback_helper( input, input_values, context, name_prefix, label_prefix ):
+    def callback_helper( input, input_values, context, name_prefix, label_prefix, parent_prefix ):
         args = {
             'input'             : input,
+            'parent'            : input_values,
             'value'             : input_values.get( input.name ),
+            'prefix'            : parent_prefix,
             'prefixed_name'     : '%s%s' % ( name_prefix, input.name ),
             'prefixed_label'    : '%s%s' % ( label_prefix, input.label ),
             'context'           : context
@@ -36,25 +38,27 @@ def visit_input_values( inputs, input_values, callback, name_prefix="", label_pr
             input_values[ input.name ] = new_value
 
     context = ExpressionContext( input_values, context )
+    payload = { 'context': context, 'no_replacement_value': no_replacement_value, 'ignore_errors': ignore_errors, 'parent_prefix': name_prefix }
     for input in inputs.itervalues():
         if isinstance( input, Repeat ) or isinstance( input, UploadDataset ):
-            for i, d in enumerate( input_values[ input.name ] ):
-                index = d[ '__index__' ]
+            values = input_values[ input.name ] = input_values.get( input.name, [] )
+            for i, d in enumerate( values ):
+                index = d[ '__index__' ] = i
                 new_name_prefix = name_prefix + '%s_%d|' % ( input.name, index )
                 new_label_prefix = label_prefix + '%s %d > ' % ( input.title, i + 1 )
-                visit_input_values( input.inputs, d, callback, new_name_prefix, new_label_prefix, no_replacement_value=no_replacement_value, context=context )
+                visit_input_values( input.inputs, d, callback, new_name_prefix, new_label_prefix, **payload )
         elif isinstance( input, Conditional ):
-            values = input_values[ input.name ]
+            values = input_values[ input.name ] = input_values.get( input.name, {} )
             new_name_prefix = name_prefix + input.name + '|'
-            callback_helper( input.test_param, values, context, new_name_prefix, label_prefix )
-            values[ '__current_case__' ] = input.get_current_case( values.get( input.test_param.name ) )
-            visit_input_values( input.cases[ values[ '__current_case__' ] ].inputs, values, callback, new_name_prefix, label_prefix, no_replacement_value=no_replacement_value, context=context )
+            callback_helper( input.test_param, values, context, new_name_prefix, label_prefix, parent_prefix )
+            values[ '__current_case__' ] = input.get_current_case( values.get( input.test_param.name ), ignore_errors=ignore_errors )
+            visit_input_values( input.cases[ values[ '__current_case__' ] ].inputs, values, callback, new_name_prefix, label_prefix, **payload )
         elif isinstance( input, Section ):
-            values = input_values[ input.name ]
+            values = input_values[ input.name ] = input_values.get( input.name, {} )
             new_name_prefix = name_prefix + input.name + '|'
-            visit_input_values( input.inputs, values, callback, new_name_prefix, label_prefix, no_replacement_value=no_replacement_value, context=context )
+            visit_input_values( input.inputs, values, callback, new_name_prefix, label_prefix, **payload )
         else:
-            callback_helper( input, input_values, context, name_prefix, label_prefix )
+            callback_helper( input, input_values, context, name_prefix, label_prefix, parent_prefix )
 
 
 def check_param( trans, param, incoming_value, param_values ):

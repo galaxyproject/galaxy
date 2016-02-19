@@ -9,8 +9,6 @@ import os
 import StringIO
 import unicodedata
 from six import text_type
-
-from basic import ToolParameter
 from galaxy.datatypes import sniff
 from galaxy.util import inflector
 from galaxy.util import relpath
@@ -113,15 +111,6 @@ class Repeat( Group ):
                 raise e
         return rval
 
-    def visit_inputs( self, prefix, value, callback ):
-        for i, d in enumerate( value ):
-            for input in self.inputs.itervalues():
-                new_prefix = prefix + "%s_%d|" % ( self.name, i )
-                if isinstance( input, ToolParameter ):
-                    callback( new_prefix, input, d[input.name], parent=d )
-                else:
-                    input.visit_inputs( new_prefix, d[input.name], callback )
-
     def get_initial_value( self, trans, context ):
         rval = []
         for i in range( self.default ):
@@ -176,13 +165,6 @@ class Section( Group ):
             if not ignore_errors:
                 raise e
         return rval
-
-    def visit_inputs( self, prefix, value, callback ):
-        for input in self.inputs.itervalues():
-            if isinstance( input, ToolParameter ):
-                callback( prefix, input, value[input.name], parent=value )
-            else:
-                input.visit_inputs( prefix, value[input.name], callback )
 
     def get_initial_value( self, trans, context ):
         rval = {}
@@ -288,15 +270,6 @@ class UploadDataset( Group ):
                     rval_dict[ input.name ] = input.value_from_basic( d[input.name], app, ignore_errors )
             rval.append( rval_dict )
         return rval
-
-    def visit_inputs( self, prefix, value, callback ):
-        for i, d in enumerate( value ):
-            for input in self.inputs.itervalues():
-                new_prefix = prefix + "%s_%d|" % ( self.name, i )
-                if isinstance( input, ToolParameter ):
-                    callback( new_prefix, input, d[input.name], parent=d )
-                else:
-                    input.visit_inputs( new_prefix, d[input.name], callback )
 
     def get_initial_value( self, trans, context ):
         d_type = self.get_datatype( trans, context )
@@ -554,14 +527,16 @@ class Conditional( Group ):
     def label( self ):
         return "Conditional (%s)" % self.name
 
-    def get_current_case( self, value ):
+    def get_current_case( self, value, ignore_errors=False ):
         # Convert value to user representation
         str_value = self.test_param.to_param_dict_string( value )
         # Find the matching case
         for index, case in enumerate( self.cases ):
             if str_value == case.value:
                 return index
-        raise ValueError( "No case matched value:", self.name, str_value )
+        if not ignore_errors:
+            raise ValueError( "No case matched value:", self.name, str_value )
+        return 0
 
     def value_to_basic( self, value, app ):
         rval = dict()
@@ -597,14 +572,6 @@ class Conditional( Group ):
             if not ignore_errors:
                 raise e
         return rval
-
-    def visit_inputs( self, prefix, value, callback ):
-        current_case = value['__current_case__']
-        for input in self.cases[current_case].inputs.itervalues():
-            if isinstance( input, ToolParameter ):
-                callback( prefix, input, value[input.name], parent=value )
-            else:
-                input.visit_inputs( prefix, value[input.name], callback )
 
     def get_initial_value( self, trans, context ):
         # State for a conditional is a plain dictionary.
