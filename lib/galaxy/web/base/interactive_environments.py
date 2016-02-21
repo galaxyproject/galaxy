@@ -286,7 +286,7 @@ class InteractiveEnviornmentRequest(object):
         #                     "HostPort" : "3306"
         #                 }
         #             ]
-        gateway_ip = inspect_data[0]['NetworkSettings'][Gateway]
+        gateway_ip = inspect_data[0]['NetworkSettings']['Gateway']
         mappings = []
         port_mappings = inspect_data[0]['NetworkSettings']['Ports']
         for port_name in port_mappings:
