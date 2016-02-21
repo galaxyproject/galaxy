@@ -214,7 +214,7 @@ class InteractiveEnviornmentRequest(object):
         ))
         p = Popen( raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
         stdout, stderr = p.communicate()
-        if p.returncode != 0 or len(stderr):
+        if p.returncode != 0:
             log.error( "%s\n%s" % (stdout, stderr) )
             return None
         else:
@@ -270,7 +270,7 @@ class InteractiveEnviornmentRequest(object):
 
         p = Popen(command, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
         stdout, stderr = p.communicate()
-        if p.returncode != 0 or len(stderr):
+        if p.returncode != 0:
             log.error( "%s\n%s" % (stdout, stderr) )
             return None
 
