@@ -219,7 +219,9 @@ class InteractiveEnviornmentRequest(object):
             return None
         else:
             log.debug( "Container id: %s" % stdout)
-            port_mappings = self.get_proxied_ports(stdout)
+            port_mappings, gateway_ip = self.get_proxied_ports(stdout)
+            if self.attr.docker_hostname == 'localhost':
+                self.attr.docker_hostname = gateway_ip
             if len(port_mappings) > 1:
                 log.warning("Don't know how to handle proxies to containers with multiple exposed ports. Arbitrarily choosing first")
             elif len(port_mappings) == 0:
@@ -284,6 +286,7 @@ class InteractiveEnviornmentRequest(object):
         #                     "HostPort" : "3306"
         #                 }
         #             ]
+        gateway_ip = inspect_data[0]['NetworkSettings'][Gateway]
         mappings = []
         port_mappings = inspect_data[0]['NetworkSettings']['Ports']
         for port_name in port_mappings:
@@ -293,4 +296,4 @@ class InteractiveEnviornmentRequest(object):
                     binding['HostIp'],
                     binding['HostPort']
                 ))
-        return mappings
+        return mappings, gateway_ip
