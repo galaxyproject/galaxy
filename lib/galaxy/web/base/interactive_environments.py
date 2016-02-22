@@ -252,12 +252,12 @@ class InteractiveEnvironmentRequest(object):
             # self.attr.PORT = self.attr.proxy_request[ 'proxied_port' ]
 
     def inspect_container(self, container_id):
-        """Run docker inspect on a container and return json response as python dictionary inspect_data.
+        """Runs docker inspect on a container and returns json response as python dictionary inspect_data.
 
         :type container_id: str
         :param container_id: a docker container ID
 
-        :returns: inspect_data: dict
+        :returns: inspect_data, a dict of docker inspect output
         """
         command = self.attr.viz_config.get("docker", "command")
         command = command.format(docker_args="inspect %s" % container_id)
@@ -287,15 +287,17 @@ class InteractiveEnvironmentRequest(object):
     def get_container_gateway_ip(self, inspect_data):
         """
         Returns gateway ip from inspect_data
-        :param inspect_data: dict
-        :returns: gateway_ip: str
+        :type inspect_data: dict
+        :param inspect_data: output of docker inspect
+        :returns: gateway_ip
         """
         gateway_ip = inspect_data[0]['NetworkSettings']['Gateway']
         return gateway_ip
 
     def get_container_port_mapping(self, inspect_data):
         """
-        :param inspect_data: dict
+        :type inspect_data: dict
+        :param inspect_data: output of docker inspect
         :returns: a list of triples containing (internal_port, external_ip,
                   external_port), of which the ports are probably the only
                   useful information.
