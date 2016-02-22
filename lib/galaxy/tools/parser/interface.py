@@ -1,9 +1,12 @@
 from abc import ABCMeta
 from abc import abstractmethod
 
+import six
+
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
 
 
+@six.python_2_unicode_compatible
 class ToolSource(object):
     """ This interface represents an abstract source to parse tool
     information from.
@@ -181,6 +184,14 @@ class ToolSource(object):
 
     def parse_tests_to_dict(self):
         return {'tests': []}
+
+    def __str__(self):
+        source_path = getattr(self, "_soure_path", None)
+        if source_path:
+            as_str = u'%s[%s]' % (self.__class__.__name__, source_path)
+        else:
+            as_str = u'%s[In-memory]' % (self.__class__.__name__)
+        return as_str
 
 
 class PagesSource(object):

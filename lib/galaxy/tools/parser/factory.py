@@ -21,20 +21,20 @@ def get_tool_source(config_file, enable_beta_formats=True):
     if not enable_beta_formats:
         tree = load_tool_xml(config_file)
         root = tree.getroot()
-        return XmlToolSource(root)
+        return XmlToolSource(root, source_path=config_file)
 
     if config_file.endswith(".yml"):
         log.info("Loading tool from YAML - this is experimental - tool will not function in future.")
         with open(config_file, "r") as f:
             as_dict = ordered_load(f)
-            return YamlToolSource(as_dict)
+            return YamlToolSource(as_dict, source_path=config_file)
     elif config_file.endswith(".json") or config_file.endswith(".cwl"):
         log.info("Loading CWL tool - this is experimental - tool likely will not function in future at least in same way.")
         return CwlToolSource(config_file)
     else:
         tree = load_tool_xml(config_file)
         root = tree.getroot()
-        return XmlToolSource(root)
+        return XmlToolSource(root, source_path=config_file)
 
 
 def ordered_load(stream):

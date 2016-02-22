@@ -469,7 +469,7 @@ class Tool( object, Dictifiable ):
         else:
             self.id = guid
         if not self.id:
-            raise Exception( "Missing tool 'id'" )
+            raise Exception( "Missing tool 'id' for tool at '%s'" % tool_source )
 
         if not self.legacy_defaults and VERSION_MAJOR < tool_profile:
             template = "The tool %s targets version %s of Galaxy, you should upgrade Galaxy to ensure proper functioning of this tool."
@@ -479,7 +479,7 @@ class Tool( object, Dictifiable ):
         # Get the (user visible) name of the tool
         self.name = tool_source.parse_name()
         if not self.name:
-            raise Exception( "Missing tool 'name'" )
+            raise Exception( "Missing tool 'name' for tool with id '%s' at '%s'" % (self.id, tool_source) )
 
         self.version = tool_source.parse_version()
         if not self.version:
@@ -487,7 +487,7 @@ class Tool( object, Dictifiable ):
                 # For backward compatibility, some tools may not have versions yet.
                 self.version = "1.0.0"
             else:
-                raise Exception( "Missing tool version.")
+                raise Exception( "Missing tool 'version' for tool with id '%s' at '%s'" % (self.id, tool_source) )
 
         # Support multi-byte tools
         self.is_multi_byte = tool_source.parse_is_multi_byte()

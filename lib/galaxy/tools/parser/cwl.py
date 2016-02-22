@@ -24,6 +24,7 @@ class CwlToolSource(ToolSource):
         self._cwl_tool_file = tool_file
         self._id, _ = os.path.splitext(os.path.basename(tool_file))
         self._tool_proxy = tool_proxy(tool_file)
+        self._source_path = tool_file
 
     @property
     def tool_proxy(self):

@@ -17,8 +17,9 @@ from .output_objects import (
 
 class YamlToolSource(ToolSource):
 
-    def __init__(self, root_dict):
+    def __init__(self, root_dict, source_path=None):
         self.root_dict = root_dict
+        self._source_path = source_path
 
     def parse_id(self):
         return self.root_dict.get("id")
