@@ -1232,8 +1232,7 @@ class JobWrapper( object ):
                     # it would be quicker to just copy the metadata from the originating output dataset,
                     # but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
                     retry_internally = util.asbool(self.get_destination_configuration("retry_metadata_internally", True))
-                    if ( retry_internally and
-                            not self.external_output_metadata.external_metadata_set_successfully(dataset, self.sa_session ) ):
+                    if retry_internally and not self.external_output_metadata.external_metadata_set_successfully(dataset, self.sa_session ):
                         # If Galaxy was expected to sniff type and didn't - do so.
                         if dataset.ext == "_sniff_":
                             extension = sniff.handle_uploaded_dataset_file( dataset.dataset.file_name, self.app.datatypes_registry )
