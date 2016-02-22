@@ -2,12 +2,8 @@ import logging
 import os
 import shutil
 
-<<<<<<< HEAD
-from sqlalchemy import or_
-=======
 from sqlalchemy import false, or_
 from six import string_types
->>>>>>> 1b25944a5d83bf8893d4969452db67a0b2e61ba0
 
 import tool_shed.repository_types.util as rt_util
 from admin import AdminGalaxy
