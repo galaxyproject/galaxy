@@ -4,6 +4,7 @@ import urllib
 
 from markupsafe import escape
 import paste.httpexceptions
+from six import string_types, text_type
 from sqlalchemy import false, true
 
 from galaxy import datatypes, model, util, web
@@ -219,7 +220,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         """ Primarily used for the S3ObjectStore - get the status of data transfer
         if the file is not in cache """
         data = self._check_dataset(trans, dataset_id)
-        if isinstance( data, basestring ):
+        if isinstance( data, string_types ):
             return data
         log.debug( "Checking transfer status for dataset %s..." % data.dataset.id )
 
@@ -651,7 +652,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         if not dataset:
             web.httpexceptions.HTTPNotFound()
         annotation = self.get_item_annotation_str( trans.sa_session, trans.user, dataset )
-        if annotation and isinstance( annotation, unicode ):
+        if annotation and isinstance( annotation, text_type ):
             annotation = annotation.encode( 'ascii', 'replace' )  # paste needs ascii here
         return annotation
 

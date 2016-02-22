@@ -19,6 +19,7 @@ from galaxy import web
 from galaxy.managers import workflows
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
+from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
@@ -752,7 +753,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             workflow_svg=self._workflow_to_svg_canvas( trans, stored ).standalone_xml()
         )
         # strip() b/c myExperiment XML parser doesn't allow white space before XML; utf-8 handles unicode characters.
-        request = unicode( request_raw.strip(), 'utf-8' )
+        request = unicodify( request_raw.strip(), 'utf-8' )
 
         # Do request and get result.
         auth_header = base64.b64encode( '%s:%s' % ( myexp_username, myexp_password ))

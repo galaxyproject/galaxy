@@ -19,6 +19,7 @@ from galaxy import util, web
 from galaxy.security import Action
 from galaxy.tools.actions import upload_common
 from galaxy.util import inflector
+from galaxy.util import unicodify
 from galaxy.util.json import dumps, loads
 from galaxy.util.streamball import StreamBall
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin, UsesLibraryMixinItems
@@ -86,7 +87,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         job_ldda = job_ldda.copied_from_library_dataset_dataset_association
                     rval[id] = {
                         "state": data.state,
-                        "html": unicode( trans.fill_template( "library/common/library_item_info.mako", ldda=data ), 'utf-8' )
+                        "html": unicodify( trans.fill_template( "library/common/library_item_info.mako", ldda=data ), 'utf-8' )
                         # "force_history_refresh": force_history_refresh
                     }
         return rval

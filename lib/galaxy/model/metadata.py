@@ -14,6 +14,7 @@ import weakref
 
 from os.path import abspath
 
+from six import string_types
 from sqlalchemy.orm import object_session
 
 import galaxy.model
@@ -151,7 +152,7 @@ class MetadataCollection( object ):
             JSONified_dict = json.load( open( filename ) )
         elif json_dict is not None:
             log.debug( 'loading metadata from dict for: %s %s' % ( dataset.__class__.__name__, dataset.id ) )
-            if isinstance( json_dict, basestring ):
+            if isinstance( json_dict, string_types ):
                 JSONified_dict = json.loads( json_dict )
             elif isinstance( json_dict, dict ):
                 JSONified_dict = json_dict

@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 from itertools import ifilter, imap
 from string import Template
 from uuid import UUID, uuid4
+from six import string_types
 
 from sqlalchemy import and_, func, not_, or_, true, join, select
 from sqlalchemy.orm import joinedload, object_session, aliased
@@ -37,10 +38,11 @@ from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.security import get_permitted_actions
 from galaxy.util import Params, restore_text, send_mail
-from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util import ready_name_for_url, unique_id
-from galaxy.util.bunch import Bunch
+from galaxy.util import unicodify
+from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util.hash_util import new_secure_hash
+from galaxy.util.bunch import Bunch
 from galaxy.util.directory_hash import directory_hash_id
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.framework.helpers import to_unicode
@@ -100,8 +102,7 @@ class HasName:
         object. If string, convert to unicode object assuming 'utf-8' format.
         """
         name = self.name
-        if isinstance(name, str):
-            name = unicode(name, 'utf-8')
+        name = unicodify( name, 'utf-8' )
         return name
 
 
@@ -112,18 +113,13 @@ class JobLike:
         self.numeric_metrics = []
 
     def add_metric( self, plugin, metric_name, metric_value ):
-        if isinstance( plugin, str ):
-            plugin = unicode( plugin, 'utf-8' )
-
-        if isinstance( metric_name, str ):
-            metric_name = unicode( metric_name, 'utf-8' )
-
+        plugin = unicodify( plugin, 'utf-8' )
+        metric_name = unicodify( metric_name, 'utf-8' )
         if isinstance( metric_value, numbers.Number ):
             metric = self._numeric_metric( plugin, metric_name, metric_value )
             self.numeric_metrics.append( metric )
         else:
-            if isinstance( metric_value, str ):
-                metric_value = unicode( metric_value, 'utf-8' )
+            metric_value = unicodify( metric_value, 'utf-8' )
             if len( metric_value ) > 1022:
                 # Truncate these values - not needed with sqlite
                 # but other backends must need it.
@@ -2178,7 +2174,7 @@ class DatasetInstance( object ):
                 data_source = source_list
             else:
                 # Convert.
-                if isinstance( source_list, str ):
+                if isinstance( source_list, string_types ):
                     source_list = [ source_list ]
 
                 # Loop through sources until viable one is found.
@@ -2413,7 +2409,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                      update_time=hda.update_time.isoformat(),
                      data_type=hda.datatype.__class__.__module__ + '.' + hda.datatype.__class__.__name__,
                      genome_build=hda.dbkey,
-                     misc_info=hda.info.strip() if isinstance( hda.info, basestring ) else hda.info,
+                     misc_info=hda.info.strip() if isinstance( hda.info, string_types ) else hda.info,
                      misc_blurb=hda.blurb )
 
         # add tags string list

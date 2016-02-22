@@ -16,6 +16,7 @@ import mako.runtime
 import mako.lookup
 from babel.support import Translations
 from babel import Locale
+from six import string_types
 from sqlalchemy import and_, true
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import joinedload
@@ -277,7 +278,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
 
         # singular match
         def matches_allowed_origin( origin, allowed_origin ):
-            if isinstance( allowed_origin, str ):
+            if isinstance( allowed_origin, string_types ):
                 return origin == allowed_origin
             match = allowed_origin.match( origin )
             return match and match.group() == origin
