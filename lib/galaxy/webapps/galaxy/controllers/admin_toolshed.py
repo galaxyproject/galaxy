@@ -2,7 +2,7 @@ import logging
 import os
 import shutil
 
-from sqlalchemy import false, or_
+from sqlalchemy import or_
 from six import string_types
 
 import tool_shed.repository_types.util as rt_util
