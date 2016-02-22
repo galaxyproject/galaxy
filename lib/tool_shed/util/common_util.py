@@ -3,6 +3,7 @@ import logging
 import os
 import urllib
 import urllib2
+from six import string_types
 
 from galaxy import util
 from galaxy.util.odict import odict
@@ -363,7 +364,7 @@ def url_join( base_url, pathspec=None, params=None ):
     """Return a valid URL produced by appending a base URL and a set of request parameters."""
     url = base_url.rstrip( '/' )
     if pathspec is not None:
-        if not isinstance( pathspec, basestring ):
+        if not isinstance( pathspec, string_types ):
             pathspec = '/'.join( pathspec )
         url = '%s/%s' % ( url, pathspec )
     if params is not None:

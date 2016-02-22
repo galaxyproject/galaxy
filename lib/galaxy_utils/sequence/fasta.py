@@ -1,4 +1,5 @@
 # Dan Blankenberg
+from six import string_types
 
 
 class fastaSequence( object ):
@@ -63,7 +64,7 @@ class fastaNamedReader( object ):
         return self.file.close()
 
     def get( self, sequence_id ):
-        if not isinstance( sequence_id, basestring ):
+        if not isinstance( sequence_id, string_types ):
             sequence_id = sequence_id.identifier
         rval = None
         if sequence_id in self.offset_dict:

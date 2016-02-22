@@ -4,6 +4,8 @@ Classes related to parameter validation.
 
 import logging
 import re
+from six import string_types
+
 from galaxy import model
 from galaxy import util
 
@@ -383,7 +385,7 @@ class MetadataInDataTableColumnValidator( Validator ):
         self.valid_values = []
         self._data_table_content_version = None
         self._tool_data_table = tool_data_table
-        if isinstance( metadata_column, basestring ):
+        if isinstance( metadata_column, string_types ):
             metadata_column = tool_data_table.columns[ metadata_column ]
         self._metadata_column = metadata_column
         self._load_values()

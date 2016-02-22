@@ -2,6 +2,7 @@
 import math
 import string
 import transform
+from six import string_types
 from sequence import SequencingRead
 from fasta import fastaSequence
 
@@ -633,7 +634,7 @@ class fastqNamedReader( object ):
 
     def get( self, sequence_identifier ):
         # Input is either a sequence ID or a sequence object
-        if not isinstance( sequence_identifier, basestring ):
+        if not isinstance( sequence_identifier, string_types ):
             # Input was a sequence object (not a sequence ID). Get the sequence ID
             sequence_identifier = sequence_identifier.identifier
         # Get only the ID part of the sequence header
@@ -764,7 +765,7 @@ class fastqJoiner( object ):
 
     def is_first_mate( self, sequence_id ):
         is_first = None
-        if not isinstance( sequence_id, basestring ):
+        if not isinstance( sequence_id, string_types ):
             sequence_id = sequence_id.identifier
         sequence_id, sequence_sep, sequence_desc = sequence_id.partition(' ')
         if sequence_id[-2] == '/':

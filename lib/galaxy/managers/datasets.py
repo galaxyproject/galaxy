@@ -1,6 +1,8 @@
 """
 Manager and Serializer for Datasets.
 """
+from six import string_types
+
 from galaxy import model
 from galaxy import exceptions
 import galaxy.datatypes.metadata
@@ -379,7 +381,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,
             # common to lddas and hdas - from mapping.py
             'copied_from_history_dataset_association_id'        : self.serialize_id,
             'copied_from_library_dataset_dataset_association_id': self.serialize_id,
-            'info'          : lambda i, k, **c: i.info.strip() if isinstance( i.info, basestring ) else i.info,
+            'info'          : lambda i, k, **c: i.info.strip() if isinstance( i.info, string_types ) else i.info,
             'blurb'         : lambda i, k, **c: i.blurb,
             'peek'          : lambda i, k, **c: i.display_peek() if i.peek and i.peek != 'no peek' else None,
 
