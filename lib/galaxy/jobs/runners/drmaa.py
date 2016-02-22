@@ -311,7 +311,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         try:
             ext_id = job.get_job_runner_external_id()
             assert ext_id not in ( None, 'None' ), 'External job id is None'
-            kill_script = job.get_destination_configuration(self.app.config, "external_killJob_script", None)
+            kill_script = job.get_destination_configuration(self.app.config, "drmaa_external_killjob_script", None)
             if kill_script is None:
                 self.ds.control( ext_id, drmaa.JobControlAction.TERMINATE )
             else:
