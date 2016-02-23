@@ -5,9 +5,7 @@ os:
 env:
   - TOX_ENV=py34-lint
   - TOX_ENV=py27-lint
-  - TOX_ENV=py26-lint
   - TOX_ENV=py27-unit
-  - TOX_ENV=py26-unit
   - TOX_ENV=qunit
   - TOX_ENV=first_startup
 matrix:
