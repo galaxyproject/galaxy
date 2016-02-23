@@ -64,17 +64,6 @@ import galaxy.jobs
 
 log = logging.getLogger( __name__ )
 
-
-JOB_RESOURCE_CONDITIONAL_XML = """<conditional name="__job_resource">
-    <param name="__job_resource__select" type="select" label="Job Resource Parameters">
-        <option value="no">Use default job resource parameters</option>
-        <option value="yes">Specify job resource parameters</option>
-    </param>
-    <when value="no"></when>
-    <when value="yes">
-    </when>
-</conditional>"""
-
 HELP_UNINITIALIZED = threading.Lock()
 
 
@@ -135,27 +124,8 @@ class ToolBox( BaseGalaxyToolBox ):
             tool_type = tool_source.parse_tool_type()
             ToolClass = tool_types.get( tool_type )
         else:
-            # Normal tool - only insert dynamic resource parameters for these
-            # tools.
-            root = getattr( tool_source, "root", None )
-            # TODO: mucking with the XML directly like this is terrible,
-            # modify inputs directly post load if possible.
-            if root is not None and hasattr( self.app, "job_config" ):  # toolshed may not have job_config?
-                tool_id = root.get( 'id' )
-                parameters = self.app.job_config.get_tool_resource_parameters( tool_id )
-                if parameters:
-                    inputs = root.find('inputs')
-                    # If tool has not inputs, create some so we can insert conditional
-                    if inputs is None:
-                        inputs = ElementTree.fromstring( "<inputs></inputs>")
-                        root.append( inputs )
-                    # Insert a conditional allowing user to specify resource parameters.
-                    conditional_element = ElementTree.fromstring( JOB_RESOURCE_CONDITIONAL_XML )
-                    when_yes_elem = conditional_element.findall( "when" )[ 1 ]
-                    for parameter in parameters:
-                        when_yes_elem.append( parameter )
-                    inputs.append( conditional_element )
-
+            # Normal tool
+            root = getattr( tool_source, 'root', None )
             ToolClass = Tool
         tool = ToolClass( config_file, tool_source, self.app, guid=guid, repository_id=repository_id, **kwds )
         return tool
@@ -336,6 +306,8 @@ class Tool( object, Dictifiable ):
         self.lineage_ids = []
         # populate toolshed repository info, if available
         self.populate_tool_shed_info()
+        # add tool resource parameters
+        self.populate_resource_parameters( tool_source )
         # Parse XML element containing configuration
         try:
             self.parse( tool_source, guid=guid )
@@ -536,8 +508,9 @@ class Tool( object, Dictifiable ):
             # Handle toolshed guids
             self_ids = [ self.id.lower(), self.id.lower().rsplit('/', 1)[0], self.old_id.lower() ]
         self.all_ids = self_ids
+
         # In the toolshed context, there is no job config.
-        if 'job_config' in dir(self.app):
+        if hasattr( self.app, 'job_config' ):
             self.job_tool_configurations = self.app.job_config.get_job_tool_configurations(self_ids)
 
         # Is this a 'hidden' tool (hidden in tool menu)
@@ -725,7 +698,8 @@ class Tool( object, Dictifiable ):
                 # Parse the actual parameters
                 # Handle multiple page case
             for page_source in pages.page_sources:
-                display, inputs = self.parse_input_page( page_source, enctypes )
+                inputs = self.parse_input_elem( page_source, enctypes )
+                display = page_source.parse_display()
                 self.inputs_by_page.append( inputs )
                 self.inputs.update( inputs )
                 self.display_by_page.append( display )
@@ -803,17 +777,6 @@ class Tool( object, Dictifiable ):
             if citation:
                 citations.append( citation )
         return citations
-
-    def parse_input_page( self, page_source, enctypes ):
-        """
-        Parse a page of inputs. This basically just calls 'parse_input_elem',
-        but it also deals with possible 'display' elements which are supported
-        only at the top/page level (not in groups).
-        """
-        inputs = self.parse_input_elem( page_source, enctypes )
-        # Display
-        display = page_source.parse_display()
-        return display, inputs
 
     def parse_input_elem( self, page_source, enctypes, context=None ):
         """
@@ -942,6 +905,17 @@ class Tool( object, Dictifiable ):
                 log.error("Could not find dependency '%s' of parameter '%s' in tool %s" % (name, param.name, self.name) )
             context[ name ].refresh_on_change = True
         return param
+
+    def populate_resource_parameters( self, tool_source ):
+        root = getattr( tool_source, 'root', None )
+        if root is not None and hasattr( self.app, 'job_config' ) and hasattr( self.app.job_config, 'get_tool_resource_xml' ):
+            resource_xml = self.app.job_config.get_tool_resource_xml( root.get( 'id' ), self.tool_type )
+            if resource_xml is not None:
+                inputs = root.find( 'inputs' )
+                if inputs is None:
+                    inputs = ElementTree.fromstring( '<inputs/>' )
+                    root.append( inputs )
+                inputs.append( resource_xml )
 
     def populate_tool_shed_info( self ):
         if self.repository_id is not None and self.app.name == 'galaxy':
@@ -1278,7 +1252,8 @@ class Tool( object, Dictifiable ):
                 if update_values:
                     try:
                         value = input.get_initial_value( request_context, context )
-                        messages[ prefixed_name ] = 'No proper value found for \'%s\', using default: \'%s\' (%s).' % ( prefixed_label, value, error )
+                        if not prefixed_name.startswith( '__' ):
+                            messages[ prefixed_name ] = 'No proper value found for \'%s\', using default: \'%s\' (%s).' % ( prefixed_label, value, error )
                         return value
                     except:
                         messages[ prefixed_name ] = 'Attempt to replace invalid value for \'%s\' failed.' % ( prefixed_label )
