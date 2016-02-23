@@ -170,6 +170,13 @@ define([
         ok( this.test_accept( other ) );
     } );
 
+    test( "input type can accept any datatype", function() {
+        this.input.extensions = [ "input" ];
+        this.input_terminal.update( this.input );
+        var other = { node: {}, datatypes: [ "binary" ] };
+        ok( this.test_accept( other ) );
+    } );
+
     test( "cannot accept when already connected", function() {
         var self = this;
         // If other is subtype but already connected, cannot accept
