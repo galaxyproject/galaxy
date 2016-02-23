@@ -223,11 +223,13 @@ class AdminToolshed( AdminGalaxy ):
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         category_id = kwd.get( 'category_id', '' )
         url = common_util.url_join( tool_shed_url )
-        log.debug( url )
         json_data = json.loads( common_util.tool_shed_get( trans.app, url, pathspec=[ 'api', 'categories', category_id, 'repositories' ] ) )
         for idx, repository in enumerate( json_data[ 'repositories' ] ):
             try:
-                metadata = json.loads( common_util.tool_shed_get( trans.app, url, pathspec=[ 'api', 'repositories', repository[ 'id' ], 'metadata' ] ) )
+                metadata = json.loads( common_util.tool_shed_get( trans.app,
+                                                                  url,
+                                                                  pathspec=[ 'api', 'repositories', repository[ 'id' ], 'metadata' ],
+                                                                  params=dict( recursive=False ) ) )
                 json_data[ 'repositories' ][ idx ][ 'metadata' ] = metadata
             except:
                 json_data[ 'repositories' ][ idx ][ 'metadata' ] = { 'tools_functionally_correct': True }

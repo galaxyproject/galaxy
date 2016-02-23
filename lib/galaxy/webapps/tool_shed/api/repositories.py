@@ -763,6 +763,7 @@ class RepositoriesController( BaseAPIController ):
             trans.security.decode_id( id )
         except Exception:
             raise MalformedId( 'The given id is invalid.' )
+        recursive = util.asbool( kwd.get( 'recursive', 'True' ) )
         all_metadata = {}
         repository = suc.get_repository_in_tool_shed( self.app, id )
         for changeset, changehash in repository.installable_revisions( self.app ):
@@ -771,15 +772,15 @@ class RepositoriesController( BaseAPIController ):
                 continue
             metadata_dict = metadata.to_dict( value_mapper={ 'id': self.app.security.encode_id, 'repository_id': self.app.security.encode_id } )
             metadata_dict[ 'repository' ] = repository.to_dict( value_mapper={ 'id': self.app.security.encode_id } )
-            if metadata.has_repository_dependencies:
+            if metadata.has_repository_dependencies and recursive:
                 metadata_dict[ 'repository_dependencies' ] = metadata_util.get_all_dependencies( self.app, metadata, processed_dependency_links=[] )
             else:
                 metadata_dict[ 'repository_dependencies' ] = []
-            if metadata.includes_tool_dependencies:
+            if metadata.includes_tool_dependencies and recursive:
                 metadata_dict[ 'tool_dependencies' ] = repository.get_tool_dependencies( changehash )
             else:
                 metadata_dict[ 'tool_dependencies' ] = {}
-            all_metadata[ '%s:%s' % ( changeset, changehash ) ] = metadata_dict
+            all_metadata[ '%s:%s' % ( int( changeset ), changehash ) ] = metadata_dict
         return all_metadata
 
     @expose_api
