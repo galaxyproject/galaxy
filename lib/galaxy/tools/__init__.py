@@ -1800,7 +1800,7 @@ class Tool( object, Dictifiable ):
                             populate_model( input.cases[ i ].inputs, current_state, tool_dict[ 'cases' ][ i ][ 'inputs' ], other_values )
                 elif input.type == 'section':
                     tool_dict = input.to_dict( request_context )
-                    populate_model( tool_dict[ 'inputs' ], input.inputs, group_state, other_values )
+                    populate_model( input.inputs, group_state, tool_dict[ 'inputs' ], other_values )
                 else:
                     try:
                         tool_dict = input.to_dict( request_context, other_values=other_values )
