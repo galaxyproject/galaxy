@@ -876,8 +876,8 @@ class CSV( TabularData ):
     This includes CSV, TSV and other dialects understood by the
     Python 'csv' module https://docs.python.org/2/library/csv.html
 
-    WARNING: This type is BUGGY it is kept purely for backward compatability
-    It will incorrectly sniff tab seperated files for which the get_meta method fails!
+    WARNING: This type is BUGGY it is kept purely for backward compatibility
+    It will incorrectly sniff tab separated files for which the get_meta method fails!
     """
     delimiter = ','
     file_ext = 'csv'  # File extension
@@ -964,7 +964,7 @@ class BaseCSV( CSV ):
             # Check we can read header and get columns
             header_row = reader.next()
             if len(header_row) < 2:
-                # No columns so not seperated by this dialect.
+                # No columns so not separated by this dialect.
                 return False
 
             # check all rows can be read as otherwise set_meta throws an exception
@@ -978,7 +978,7 @@ class BaseCSV( CSV ):
                 # Check the next row as it is used by set_meta
                 data_row = reader.next()
                 if len(data_row) < 2:
-                    # No columns so not seperated by this dialect.
+                    # No columns so not separated by this dialect.
                     return False
                 # ignore the length in the rest
                 for data_row in reader:
@@ -1040,7 +1040,7 @@ class BaseCSV( CSV ):
 class ExcelCSV( BaseCSV ):
     """
     Comma separated table data.
-    Only sniffs comma seperated files with at least 2 columns
+    Only sniffs comma separated files with at least 2 columns
     """
 
     def __init__(self, **kwd):
@@ -1054,10 +1054,10 @@ class ExcelCSV( BaseCSV ):
 class ExcelTSV( BaseCSV ):
     """
     Comma separated table data.
-    Only sniff tab seperated files with at least two columns
+    Only sniff tab separated files with at least two columns
 
-    Note: Use of this datatype is optional as the general tabular format will handle most tab seperated files.
-    This datatye would only be required for dataset with tabs INSIDE double quotes.
+    Note: Use of this datatype is optional as the general tabular format will handle most tab separated files.
+    This datatype would only be required for dataset with tabs INSIDE double quotes.
 
     This datatype currently does not support tsv files where the header has one column less to indicate first column is row names
     This kind of file is handled fine by tabular.
