@@ -575,7 +575,7 @@ class Conditional( Group ):
     def value_from_basic( self, value, app, ignore_errors=False ):
         rval = dict()
         try:
-            current_case = rval['__current_case__'] = value['__current_case__']
+            current_case = rval['__current_case__'] = self._current_case_from_basic(value, app)
             # Test param
             if ignore_errors and self.test_param.name not in value:
                 # If ignoring errors, do nothing. However this is potentially very
@@ -636,6 +636,19 @@ class Conditional( Group ):
     @property
     def is_job_resource_conditional(self):
         return self.name == "__job_resource"
+
+    def _current_case_from_basic(self, value, app):
+        if '__current_case__' in value:
+            return value['__current_case__']
+        else:
+            # For hand-crafted workflow and tool API requests, don't require
+            # __current_case__ to be set.
+            test_param_name = self.test_param.name
+            if test_param_name not in value:
+                raise Exception("Conditional value '%s' must specify __current_case__ or param value for '%s'" % (value, test_param_name))
+            raw_value = value[test_param_name]
+            test_value = self.test_param.value_from_basic(raw_value, app)
+            return self.get_current_case(test_value)
 
 
 class ConditionalWhen( object, Dictifiable ):
