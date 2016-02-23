@@ -231,6 +231,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         return tool_shed_repository_dicts
 
     @expose_api
+    @web.require_admin
     def install( self, trans, **kwd ):
         """
         POST /api/tool_shed_repositories/install

@@ -207,8 +207,15 @@ class AdminToolshed( AdminGalaxy ):
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
         url = common_util.url_join( tool_shed_url, pathspec=[ 'api', 'categories' ] )
-        json_data = json.loads( common_util.tool_shed_get( trans.app, url ) )
-        return trans.fill_template( '/admin/tool_shed_repository/browse_categories.mako', tool_shed_url=tool_shed_url, categories=json_data )
+        categories = json.loads( common_util.tool_shed_get( trans.app, url ) )
+        repositories = []
+        url = common_util.url_join( tool_shed_url, pathspec=[ 'api', 'repositories' ] )
+        for repo in json.loads( common_util.tool_shed_get( trans.app, url ) ):
+            repositories.append( dict( value=repo[ 'id' ], label='%s/%s' % ( repo[ 'owner' ], repo[ 'name' ] ) ) )
+        return trans.fill_template( '/admin/tool_shed_repository/browse_categories.mako',
+                                    tool_shed_url=tool_shed_url,
+                                    categories=categories,
+                                    repositories=json.dumps( repositories ) )
 
     @web.expose
     @web.require_admin
@@ -224,7 +231,6 @@ class AdminToolshed( AdminGalaxy ):
                 json_data[ 'repositories' ][ idx ][ 'metadata' ] = metadata
             except:
                 json_data[ 'repositories' ][ idx ][ 'metadata' ] = { 'tools_functionally_correct': True }
-                log.debug(json_data[ 'repositories' ][ idx ])
         return trans.fill_template( '/admin/tool_shed_repository/browse_category.mako', tool_shed_url=tool_shed_url, category=json_data )
 
     @web.expose

@@ -15,37 +15,41 @@
 %if message:
     ${render_msg( message, status )}
 %endif
+<script type="text/javascript">
+var repositories = ${repositories};
+var preview_repo_url = '${h.url_for(controller='admin_toolshed', action='preview_repository', tool_shed_url=tool_shed_url)}';
+var repository_listing = {};
+$(function() {
+    console.log(repositories);
+    require(["libs/jquery/jquery-ui"], function() {
+        $( "#repository_search" ).autocomplete({
+            source: repositories,
+            select: function(event, ui) {
+                window.location.href = preview_repo_url + '&tsr_id=' + ui.item.value;
+            }
+        });
+    });
+});
+</script>
+<style type="text/css">
+.ui-autocomplete {
+    width: 30%;
+    border: 1px solid #000;
+    background: #fff;
+}
+.ui-state-focus {
+    background: #bbf;
+}
+</style>
 <div class="grid-header"><h2>Repositories by Category</h2><ul class="manage-table-actions"></ul>
     <div id="standard-search" style="display: block;">
-        <table>
-            <tbody><tr><td style="padding: 0;">
-                <table>
-                    <tbody>
-                        <tr>
-                            <td style="padding: 0;">
-                                <form class="text-filter-form" column_key="free-text-search" action="/repository/browse_categories?sort=name" method="get">
-                                    <span id="free-text-search-filtering-criteria"></span>
-                                    <span class="search-box">
-                                        <input class="search-box-input" id="input-free-text-search-filter" name="f-free-text-search" value="non-functional search box for cosmetic purposes" size="39" type="text">
-                                        <button class="submit-image" type="submit" title="Search" />
-                                    </span>
-                                </form>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </td></tr>
-            </tbody></table>
+        <span class="ui-widget">
+            <input class="search-box-input" id="repository_search" name="search" value="Search" size="39" type="text">
+            <input class="search-box-input" id="repo_id" name="search" value="Search" size="39" type="hidden">
+            <button class="submit-image" type="submit" title="Search" />
+        </span>
     </div>
-    
-    <div id="advanced-search" style="display: none; margin-top: 5px; border: 1px solid #ccc;">
-        <table>
-            <tbody><tr><td style="text-align: left" colspan="100">
-                <a href="/repository/browse_categories?sort=name&amp;advanced-search=False" class="advanced-search-toggle">Close Advanced Search</a>
-            </td></tr>
-        </tbody></table>
-    </div>
-<div id="standard-search" style="display: block;"><table><tbody><tr><td style="padding: 0;"><table></table></td></tr><tr><td></td></tr></tbody></table></div><div id="advanced-search" style="display: none; margin-top: 5px; border: 1px solid #ccc;"><table><tbody><tr><td style="text-align: left" colspan="100"><a href="" class="advanced-search-toggle">Close Advanced Search</a></td></tr></tbody></table></div></div>
+</div>
 <table class="grid">
     <thead id="grid-table-header">
         <tr>
