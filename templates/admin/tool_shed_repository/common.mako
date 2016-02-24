@@ -17,14 +17,16 @@
                 fx: { height: "toggle", duration: 200 },
                 // initAjax is hard to fake, so we pass the children as object array:
                 initAjax: {url: "${h.url_for( controller='admin_toolshed', action='open_folder' )}",
-                           dataType: "json", 
-                           data: { folder_path: "${directory_path|h}" },
+                           dataType: "json",
+                           data: { folder_path: "${directory_path|h}",
+                                   repository_id: "${trans.security.encode_id( repository.id )}" },
                 },
                 onLazyRead: function(dtnode){
                     dtnode.appendAjax({
-                        url: "${h.url_for( controller='admin_toolshed', action='open_folder' )}", 
+                        url: "${h.url_for( controller='admin_toolshed', action='open_folder' )}",
                         dataType: "json",
-                        data: { folder_path: dtnode.data.key },
+                        data: { folder_path: dtnode.data.key,
+                                repository_id: "${trans.security.encode_id( repository.id )}" },
                     });
                 },
                 onSelect: function(select, dtnode) {
@@ -49,7 +51,7 @@
                             type: "POST",
                             url: "${h.url_for( controller='admin_toolshed', action='get_file_contents' )}",
                             dataType: "json",
-                            data: { file_path: selected_value },
+                            data: { file_path: selected_value, repository_id: "${trans.security.encode_id( repository.id )}" },
                             success : function( data ) {
                                 cell.html( '<label>'+data+'</label>' )
                             }
