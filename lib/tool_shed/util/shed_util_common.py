@@ -600,9 +600,17 @@ def get_repository_for_dependency_relationship( app, tool_shed, name, owner, cha
     return repository
 
 
-def get_repository_file_contents( file_path ):
+def get_repository_file_contents( app, file_path, repository_id ):
     """Return the display-safe contents of a repository file for display in a browser."""
-    if checkers.is_gzip( file_path ):
+    safe_str = ''
+    if not is_path_within_repo( app, file_path, repository_id ):
+        log.warning( 'Request tries to access a file outside of the repository location. File path: %s', file_path )
+        return 'Invalid file path'
+    # Symlink targets are checked by is_path_within_repo
+    if os.path.islink( file_path ):
+        safe_str = 'link to: ' + basic_util.to_html_string( os.readlink( file_path ) )
+        return safe_str
+    elif checkers.is_gzip( file_path ):
         return '<br/>gzip compressed file<br/>'
     elif checkers.is_bz2( file_path ):
         return '<br/>bz2 compressed file<br/>'
@@ -611,7 +619,6 @@ def get_repository_file_contents( file_path ):
     elif checkers.check_binary( file_path ):
         return '<br/>Binary file<br/>'
     else:
-        safe_str = ''
         for i, line in enumerate( open( file_path ) ):
             safe_str = '%s%s' % ( safe_str, basic_util.to_html_string( line ) )
             # Stop reading after string is larger than MAX_CONTENT_SIZE.
@@ -621,6 +628,7 @@ def get_repository_file_contents( file_path ):
                     util.nice_size( MAX_CONTENT_SIZE )
                 safe_str = '%s%s' % ( safe_str, large_str )
                 break
+
         if len( safe_str ) > basic_util.MAX_DISPLAY_SIZE:
             # Eliminate the middle of the file to display a file no larger than basic_util.MAX_DISPLAY_SIZE.
             # This may not be ideal if the file is larger than MAX_CONTENT_SIZE.
@@ -642,9 +650,6 @@ def get_repository_files( folder_path ):
         # Skip .hg directories
         if item.startswith( '.hg' ):
             continue
-        if os.path.isdir( os.path.join( folder_path, item ) ):
-            # Append a '/' character so that our jquery dynatree will function properly.
-            item = '%s/' % item
         contents.append( item )
     if contents:
         contents.sort()
@@ -1109,11 +1114,15 @@ def is_tool_shed_client( app ):
     return hasattr( app, "install_model" )
 
 
-def open_repository_files_folder( folder_path ):
+def open_repository_files_folder( app, folder_path, repository_id ):
     """
     Return a list of dictionaries, each of which contains information for a file or directory contained
     within a directory in a repository file hierarchy.
     """
+    # Symlink targets are checked by is_path_within_repo
+    if not is_path_within_repo( app, folder_path, repository_id ):
+        log.warning( 'Request tries to access a folder outside of the repository location. Folder path: %s', folder_path )
+        return []
     try:
         files_list = get_repository_files( folder_path )
     except OSError, e:
@@ -1123,10 +1132,17 @@ def open_repository_files_folder( folder_path ):
     folder_contents = []
     for filename in files_list:
         is_folder = False
-        if filename and filename[ -1 ] == os.sep:
-            is_folder = True
+        full_path = os.path.join( folder_path, filename )
+        is_link = os.path.islink( full_path )
+        path_is_within_repo = is_path_within_repo( app, full_path, repository_id )
+        if is_link and not path_is_within_repo:
+            log.warning( 'Valid folder contains a symlink outside of the repository location. Link found in: ' + str( full_path ) )
         if filename:
-            full_path = os.path.join( folder_path, filename )
+            if os.path.isdir( full_path ) and path_is_within_repo:
+                # Append a '/' character so that our jquery dynatree will function properly.
+                filename = '%s/' % filename
+                full_path = '%s/' % full_path
+                is_folder = True
             node = { "title": filename,
                      "isFolder": is_folder,
                      "isLazy": is_folder,
@@ -1134,6 +1150,16 @@ def open_repository_files_folder( folder_path ):
                      "key": full_path }
             folder_contents.append( node )
     return folder_contents
+
+
+def is_path_within_repo( app, path, repository_id ):
+    """
+    Detect whether the given path is within the repository folde ron the disk.
+    Use to filter malicious symlinks targeting outside paths.
+    """
+    repo_path = os.path.abspath( get_repository_by_id( app, repository_id ).repo_path( app ) )
+    resolved_path = os.path.realpath( path )
+    return os.path.commonprefix( [ repo_path, resolved_path ] ) == repo_path
 
 
 def repository_was_previously_installed( app, tool_shed_url, repository_name, repo_info_tuple, from_tip=False ):
