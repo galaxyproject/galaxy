@@ -7,11 +7,13 @@ import tempfile
 import zipfile
 from cgi import escape
 from inspect import isclass
+from six import string_types
 
 from . import metadata
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
 from galaxy.util import inflector
+from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
@@ -201,10 +203,7 @@ class Data( object ):
                 line = line.strip()
                 if not line:
                     continue
-                if isinstance(line, unicode):
-                    out.append( '<tr><td>%s</td></tr>' % escape( line ) )
-                else:
-                    out.append( '<tr><td>%s</td></tr>' % escape( unicode( line, 'utf-8' ) ) )
+                out.append( '<tr><td>%s</td></tr>' % escape( unicodify( line, 'utf-8' ) ) )
             out.append( '</table>' )
             out = "".join( out )
         except Exception as exc:
@@ -327,7 +326,7 @@ class Data( object ):
         # Prevent IE8 from sniffing content type since we're explicit about it.  This prevents intentionally text/plain
         # content from being rendered in the browser
         trans.response.headers['X-Content-Type-Options'] = 'nosniff'
-        if isinstance( data, basestring ):
+        if isinstance( data, string_types ):
             return data
         if filename and filename != "index":
             # For files in extra_files_path
@@ -364,7 +363,7 @@ class Data( object ):
         if not os.path.exists( data.file_name ):
             raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % data.file_name )
         max_peek_size = 1000000  # 1 MB
-        if isinstance(data.datatype, datatypes.images.Html):
+        if isinstance(data.datatype, datatypes.text.Html):
             max_peek_size = 10000000  # 10 MB for html
         preview = util.string_as_bool( preview )
         if not preview or isinstance(data.datatype, datatypes.images.Image) or os.stat( data.file_name ).st_size < max_peek_size:
@@ -385,11 +384,8 @@ class Data( object ):
     def display_name(self, dataset):
         """Returns formatted html of dataset name"""
         try:
-            if isinstance(dataset.name, unicode):
-                return escape( dataset.name )
-            else:
-                return escape( unicode( dataset.name, 'utf-8 ') )
-        except:
+            return escape( unicodify( dataset.name, 'utf-8' ) )
+        except Exception:
             return "name unavailable"
 
     def display_info(self, dataset):
@@ -404,9 +400,7 @@ class Data( object ):
             if info.find( '\n' ) >= 0:
                 info = info.replace( '\n', '<br/>' )
 
-            # Convert to unicode to display non-ascii characters.
-            if not isinstance(info, unicode):
-                info = unicode( info, 'utf-8')
+            info = unicodify( info, 'utf-8' )
 
             return info
         except:

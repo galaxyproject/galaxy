@@ -48,12 +48,10 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
 
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         self.test_db_util.get_private_role( test_user_1 )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
@@ -62,10 +60,8 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
     def test_0005_create_filtering_repository( self ):
         '''Create and populate the filtering_0000 repository.'''
         global running_standalone
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         category_0000 = self.create_category( name='Test 0000 Basic Repository Features 1', description='Test 0000 Basic Repository Features 1' )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name='filtering_0000',
                                                     description="Galaxy's filtering tool",
@@ -96,10 +92,8 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
     def test_0010_create_freebayes_repository( self ):
         '''Create and populate the freebayes_0010 repository.'''
         global running_standalone
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         category_0010 = self.create_category( name='Test 0010 Repository With Tool Dependencies', description='Tests for a repository with tool dependencies.' )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name='freebayes_0010',
                                                     description="Galaxy's freebayes tool",
@@ -149,10 +143,8 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         '''Create and populate the emboss_datatypes_0020 repository.'''
         global running_standalone
         if running_standalone:
-            self.logout()
             self.login( email=common.admin_email, username=common.admin_username )
             category_0020 = self.create_category( name='Test 0020 Basic Repository Dependencies', description='Testing basic repository dependency features.' )
-            self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
             repository = self.get_or_create_repository( name='emboss_datatypes_0020',
                                                         description=datatypes_repository_description,
@@ -174,10 +166,8 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         '''Create and populate the emboss_0020 repository.'''
         global running_standalone
         if running_standalone:
-            self.logout()
             self.login( email=common.admin_email, username=common.admin_username )
             category_0020 = self.create_category( name='Test 0020 Basic Repository Dependencies', description='Testing basic repository dependency features.' )
-            self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
             repository = self.get_or_create_repository( name='emboss_0020',
                                                         description=emboss_repository_long_description,
@@ -199,10 +189,8 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         '''Create and populate the emboss_0030 repository.'''
         global running_standalone
         if running_standalone:
-            self.logout()
             self.login( email=common.admin_email, username=common.admin_username )
             category_0030 = self.create_category( name='Test 0030 Repository Dependency Revisions', description='Testing repository dependencies by revision.' )
-            self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
             datatypes_repository = self.get_or_create_repository( name='emboss_datatypes_0030',
                                                                   description=datatypes_repository_description,
@@ -224,10 +212,8 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         '''Create and populate the emboss_5_0030 repository.'''
         global running_standalone
         if running_standalone:
-            self.logout()
             self.login( email=common.admin_email, username=common.admin_username )
             category_0030 = self.create_category( name='Test 0030 Repository Dependency Revisions', description='Testing repository dependencies by revision.' )
-            self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
             emboss_5_repository = self.get_or_create_repository( name='emboss_5_0030',
                                                                  description=emboss_repository_description,
@@ -249,10 +235,8 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         '''Create and populate the emboss_6_0030 repository.'''
         global running_standalone
         if running_standalone:
-            self.logout()
             self.login( email=common.admin_email, username=common.admin_username )
             category_0030 = self.create_category( name='Test 0030 Repository Dependency Revisions', description='Testing repository dependencies by revision.' )
-            self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
             emboss_6_repository = self.get_or_create_repository( name='emboss_6_0030',
                                                                  description=emboss_repository_description,
@@ -274,10 +258,8 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         '''Create and populate the emboss_0030 repository.'''
         global running_standalone
         if running_standalone:
-            self.logout()
             self.login( email=common.admin_email, username=common.admin_username )
             category_0030 = self.create_category( name='Test 0030 Repository Dependency Revisions', description='Testing repository dependencies by revision.' )
-            self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
             emboss_repository = self.get_or_create_repository( name='emboss_0030',
                                                                description=emboss_repository_description,
@@ -315,10 +297,8 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
     def test_0050_create_freebayes_repository( self ):
         '''Create and populate the freebayes_0040 repository.'''
         global running_standalone
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         category_0040 = self.create_category( name='test_0040_repository_circular_dependencies', description='Testing handling of circular repository dependencies.' )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name='freebayes_0040',
                                                     description="Galaxy's freebayes tool",
@@ -341,10 +321,8 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         '''Create and populate the filtering_0040 repository.'''
         global running_standalone
         if running_standalone:
-            self.logout()
             self.login( email=common.admin_email, username=common.admin_username )
             category_0040 = self.create_category( name='test_0040_repository_circular_dependencies', description='Testing handling of circular repository dependencies.' )
-            self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
             repository = self.get_or_create_repository( name='filtering_0040',
                                                         description="Galaxy's filtering tool",
@@ -378,10 +356,8 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         '''Create and populate convert_chars_0050.'''
         global running_standalone
         if running_standalone:
-            self.logout()
             self.login( email=common.admin_email, username=common.admin_username )
             category = self.create_category( name=category_0050_name, description=category_0050_description )
-            self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
             repository = self.get_or_create_repository( name=convert_repository_name,
                                                         description=convert_repository_description,
@@ -403,10 +379,8 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         '''Create and populate convert_chars_0050.'''
         global running_standalone
         if running_standalone:
-            self.logout()
             self.login( email=common.admin_email, username=common.admin_username )
             category = self.create_category( name=category_0050_name, description=category_0050_description )
-            self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
             repository = self.get_or_create_repository( name=column_repository_name,
                                                         description=column_repository_description,
@@ -428,10 +402,8 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         '''Create and populate emboss_datatypes_0050.'''
         global running_standalone
         if running_standalone:
-            self.logout()
             self.login( email=common.admin_email, username=common.admin_username )
             category = self.create_category( name=category_0050_name, description=category_0050_description )
-            self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
             repository = self.get_or_create_repository( name=emboss_datatypes_repository_name,
                                                         description=datatypes_repository_description,
@@ -453,10 +425,8 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         '''Create and populate emboss_0050.'''
         global running_standalone
         if running_standalone:
-            self.logout()
             self.login( email=common.admin_email, username=common.admin_username )
             category = self.create_category( name=category_0050_name, description=category_0050_description )
-            self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
             repository = self.get_or_create_repository( name=emboss_repository_name,
                                                         description=emboss_repository_description,
@@ -478,10 +448,8 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         '''Create and populate filtering_0050.'''
         global running_standalone
         if running_standalone:
-            self.logout()
             self.login( email=common.admin_email, username=common.admin_username )
             category = self.create_category( name=category_0050_name, description=category_0050_description )
-            self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
             filtering_repository = self.get_or_create_repository( name=filtering_repository_name,
                                                                   description=filtering_repository_description,
@@ -503,10 +471,8 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         '''Create and populate freebayes_0050.'''
         global running_standalone
         if running_standalone:
-            self.logout()
             self.login( email=common.admin_email, username=common.admin_username )
             category = self.create_category( name=category_0050_name, description=category_0050_description )
-            self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
             repository = self.get_or_create_repository( name=freebayes_repository_name,
                                                         description=freebayes_repository_description,
@@ -528,10 +494,8 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         '''Create and populate bismark_0050.'''
         global running_standalone
         if running_standalone:
-            self.logout()
             self.login( email=common.admin_email, username=common.admin_username )
             category = self.create_category( name=category_0050_name, description=category_0050_description )
-            self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
             repository = self.get_or_create_repository( name=bismark_repository_name,
                                                         description=bismark_repository_description,
@@ -553,7 +517,6 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         '''Create the dependency structure for test 0050.'''
         global running_standalone
         if running_standalone:
-            self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
             column_repository = self.test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
             convert_repository = self.test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
@@ -586,10 +549,8 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
 
     def test_0105_create_filtering_repository( self ):
         '''Create and populate the filtering_0060 repository.'''
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         category_0060 = self.create_category( name='Test 0060 Workflow Features', description='Test 0060 - Workflow Features' )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         workflow_repository = self.get_or_create_repository( name='filtering_0060',
                                                              description="Galaxy's filtering tool",
@@ -625,7 +586,6 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
 
     def test_0110_reset_metadata_on_all_repositories( self ):
         '''Reset metadata on all repositories, then verify that it has not changed.'''
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         old_metadata = dict()
         new_metadata = dict()

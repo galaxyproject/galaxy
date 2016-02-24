@@ -14,17 +14,14 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
 
     def test_0000_initiate_users( self ):
         """Create necessary user accounts and login as an admin user."""
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         self.test_db_util.get_private_role( test_user_1 )
-        self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
         test_user_2 = self.test_db_util.get_user( common.test_user_2_email )
         assert test_user_2 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_2_email
         self.test_db_util.get_private_role( test_user_2 )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
@@ -43,7 +40,6 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
 
     def test_0015_create_repository( self ):
         """Create the filtering repository"""
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         category = self.test_db_util.get_category_by_name( 'Test 0000 Basic Repository Features 1' )
         strings_displayed = self.expect_repo_created_strings(repository_name)
@@ -115,7 +111,6 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
     def test_0045_alter_repository_states( self ):
         '''Test toggling the malicious and deprecated repository flags.'''
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         self.set_repository_malicious( repository,
                                        set_malicious=True,
@@ -123,7 +118,6 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         self.set_repository_malicious( repository,
                                        set_malicious=False,
                                        strings_displayed=[ 'The repository tip has been defined as <b>not</b> malicious.' ] )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         self.set_repository_deprecated( repository,
                                         strings_displayed=[ 'has been marked as deprecated' ] )
@@ -264,7 +258,6 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
 
     def test_0100_verify_reserved_username_handling( self ):
         '''Check that reserved usernames are handled correctly.'''
-        self.logout()
         self.login( email='baduser@bx.psu.edu', username='repos' )
         test_user_1 = self.test_db_util.get_user( 'baduser@bx.psu.edu' )
         assert test_user_1 is None, 'Creating user with public name "repos" succeeded.'
@@ -279,7 +272,6 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         with an SMTP server address that will not and should not resolve correctly. However, since the successful sending of
         the email is the last step in the process, this will verify functional correctness of all preceding steps.
         '''
-        self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         message = 'This is a test message.'
@@ -293,7 +285,6 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
     def test_0110_delete_filtering_repository( self ):
         '''Delete the filtering_0000 repository and verify that it no longer has any downloadable revisions.'''
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         self.delete_repository( repository )
         # Explicitly reload all metadata revisions from the database, to ensure that we have the current status of the downloadable flag.
@@ -305,7 +296,6 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
     def test_0115_undelete_filtering_repository( self ):
         '''Undelete the filtering_0000 repository and verify that it now has two downloadable revisions.'''
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         self.undelete_repository( repository )
         # Explicitly reload all metadata revisions from the database, to ensure that we have the current status of the downloadable flag.
@@ -319,7 +309,6 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
     def test_0120_enable_email_notifications( self ):
         '''Enable email notifications for test user 2 on filtering_0000.'''
         # Log in as test_user_2
-        self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
         # Get the repository, so we can pass the encoded repository id and browse_repositories method to the set_email_alerts method.
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
@@ -328,7 +317,6 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
 
     def test_0125_upload_new_readme_file( self ):
         '''Upload a new readme file to the filtering_0000 repository and verify that there is no error.'''
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         # Upload readme.txt to the filtering_0000 repository and verify that it is now displayed.

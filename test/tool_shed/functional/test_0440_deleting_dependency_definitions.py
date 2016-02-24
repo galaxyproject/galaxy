@@ -53,12 +53,10 @@ class TestDeletedDependencies( ShedTwillTestCase ):
         Create all the user accounts that are needed for this test script to run independently of other tests.
         Previously created accounts will not be re-created.
         """
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         self.test_db_util.get_private_role( test_user_1 )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
@@ -71,7 +69,6 @@ class TestDeletedDependencies( ShedTwillTestCase ):
         '''
         category = self.create_category( name='Test 0440 Deleted Dependency Definitions',
                                          description='Description of Deleted Dependency Definitions category for test 0440' )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         strings_displayed = [ "Repository <b>column_maker_0440</b> has been created"  ]
         repository = self.get_or_create_repository( name=column_repository_name,
@@ -96,7 +93,6 @@ class TestDeletedDependencies( ShedTwillTestCase ):
         We are at simple repository dependencies, step 2 - Create and populate convert_chars_0440 so that it has an installable revision 0.
         '''
         category = self.test_db_util.get_category_by_name( 'Test 0440 Deleted Dependency Definitions' )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         strings_displayed = [ "Repository <b>convert_chars_0440</b> has been created"  ]
         repository = self.get_or_create_repository( name=convert_repository_name,
@@ -179,7 +175,6 @@ class TestDeletedDependencies( ShedTwillTestCase ):
         tool dependency definition and an installable revision 0.
         '''
         category = self.test_db_util.get_category_by_name( 'Test 0440 Deleted Dependency Definitions' )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         strings_displayed = [ "Repository <b>bwa_package_0440</b> has been created"  ]
         repository = self.get_or_create_repository( name=bwa_package_repository_name,
@@ -205,7 +200,6 @@ class TestDeletedDependencies( ShedTwillTestCase ):
         This repository should contain a tool with a defined dependency that will be satisfied by the tool dependency defined in bwa_package_0440.
         '''
         category = self.test_db_util.get_category_by_name( 'Test 0440 Deleted Dependency Definitions' )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         strings_displayed = [ "Repository <b>bwa_base_0440</b> has been created"  ]
         repository = self.get_or_create_repository( name=bwa_base_repository_name,
@@ -288,7 +282,6 @@ class TestDeletedDependencies( ShedTwillTestCase ):
         dependency definition and an installable revision 0.
         '''
         category = self.test_db_util.get_category_by_name( 'Test 0440 Deleted Dependency Definitions' )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         strings_displayed = [ "Repository <b>bwa_tool_dependency_0440</b> has been created"  ]
         repository = self.get_or_create_repository( name=bwa_tool_dependency_repository_name,

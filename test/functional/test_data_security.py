@@ -21,28 +21,24 @@ class TestDataSecurity( TwillTestCase ):
 
     def test_000_initiate_users( self ):
         """Ensuring all required user accounts exist"""
-        self.logout()
         self.login( email='test1@bx.psu.edu', username='regular-user1' )
         global regular_user1
         regular_user1 = get_user( 'test1@bx.psu.edu' )
         assert regular_user1 is not None, 'Problem retrieving user with email "test1@bx.psu.edu" from the database'
         global regular_user1_private_role
         regular_user1_private_role = get_private_role( regular_user1 )
-        self.logout()
         self.login( email='test2@bx.psu.edu', username='regular-user2' )
         global regular_user2
         regular_user2 = get_user( 'test2@bx.psu.edu' )
         assert regular_user2 is not None, 'Problem retrieving user with email "test2@bx.psu.edu" from the database'
         global regular_user2_private_role
         regular_user2_private_role = get_private_role( regular_user2 )
-        self.logout()
         self.login( email='test3@bx.psu.edu', username='regular-user3' )
         global regular_user3
         regular_user3 = get_user( 'test3@bx.psu.edu' )
         assert regular_user3 is not None, 'Problem retrieving user with email "test3@bx.psu.edu" from the database'
         global regular_user3_private_role
         regular_user3_private_role = get_private_role( regular_user3 )
-        self.logout()
         self.login( email='test@bx.psu.edu', username='admin-user' )
         global admin_user
         admin_user = get_user( 'test@bx.psu.edu' )
@@ -82,7 +78,6 @@ class TestDataSecurity( TwillTestCase ):
     def test_010_private_role_creation_and_default_history_permissions( self ):
         """Testing private role creation and changing DefaultHistoryPermissions for new histories"""
         # Logged in as admin_user
-        self.logout()
         # Some of the history related tests here are similar to some tests in the
         # test_history_functions.py script, so we could potentially eliminate 1 or 2 of them.
         self.login( email='test1@bx.psu.edu' )
@@ -150,7 +145,6 @@ class TestDataSecurity( TwillTestCase ):
     def test_015_change_default_permissions_for_current_history( self ):
         """Testing changing DefaultHistoryPermissions for the current history"""
         # logged in a regular_user1
-        self.logout()
         self.login( email=regular_user2.email )
         latest_history = get_latest_history_for_user( regular_user2 )
         self.upload_file( '1.bed' )
@@ -191,7 +185,6 @@ class TestDataSecurity( TwillTestCase ):
     def test_999_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         # Logged in as regular_user2
-        self.logout()
         self.login( email=admin_user.email )
         ##################
         # Make sure all users are associated only with their private roles
@@ -203,7 +196,6 @@ class TestDataSecurity( TwillTestCase ):
         #####################
         # Reset DefaultHistoryPermissions for regular_user1
         #####################
-        self.logout()
         self.login( email=regular_user1.email )
         # Change DefaultHistoryPermissions for regular_user1 back to the default
         permissions_in = [ 'DATASET_MANAGE_PERMISSIONS' ]
@@ -211,5 +203,4 @@ class TestDataSecurity( TwillTestCase ):
         self.user_set_default_permissions( permissions_in=permissions_in,
                                            permissions_out=permissions_out,
                                            role_id=str( regular_user1_private_role.id ) )
-        self.logout()
         self.login( email=admin_user.email )

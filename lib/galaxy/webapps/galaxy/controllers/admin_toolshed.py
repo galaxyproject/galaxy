@@ -3,6 +3,7 @@ import os
 import shutil
 
 from sqlalchemy import false, or_
+from six import string_types
 
 import tool_shed.repository_types.util as rt_util
 from admin import AdminGalaxy
@@ -1334,7 +1335,7 @@ class AdminToolshed( AdminGalaxy ):
         repo_info_dicts = []
         repo_info_dict = kwd.get( 'repo_info_dict', None )
         if repo_info_dict:
-            if isinstance( repo_info_dict, basestring ):
+            if isinstance( repo_info_dict, string_types ):
                 repo_info_dict = encoding_util.tool_shed_decode( repo_info_dict )
         else:
             # Entering this else block occurs only if the tool_shed_repository does not include any valid tools.

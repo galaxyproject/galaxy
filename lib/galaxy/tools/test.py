@@ -1,6 +1,8 @@
 import logging
 import os
 import os.path
+from six import string_types
+
 import galaxy.tools.parameters.basic
 import galaxy.tools.parameters.grouping
 from galaxy.util import string_as_bool
@@ -117,7 +119,7 @@ class ToolTestBuilder( object ):
             log.info( msg )
 
     def __split_if_str( self, value ):
-        split = isinstance(value, str)
+        split = isinstance(value, string_types)
         if split:
             value = value.split(",")
         return value

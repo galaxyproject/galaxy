@@ -8,6 +8,8 @@ log = logging.getLogger( __name__ )
 import os
 import StringIO
 import unicodedata
+from six import text_type
+
 from basic import ToolParameter
 from galaxy.datatypes import sniff
 from galaxy.util import inflector
@@ -32,7 +34,7 @@ class Group( object, Dictifiable ):
     def value_to_basic( self, value, app ):
         """
         Convert value to a (possibly nested) representation using only basic
-        types (dict, list, tuple, str, unicode, int, long, float, bool, None)
+        types (dict, list, tuple, string_types, int, long, float, bool, None)
         """
         return value
 
@@ -431,7 +433,7 @@ class UploadDataset( Group ):
             if ftp_files is not None:
                 # Normalize input paths to ensure utf-8 encoding is normal form c.
                 # This allows for comparison when the filesystem uses a different encoding than the browser.
-                ftp_files = [unicodedata.normalize('NFC', f) for f in ftp_files if isinstance(f, unicode)]
+                ftp_files = [unicodedata.normalize('NFC', f) for f in ftp_files if isinstance(f, text_type)]
                 if trans.user is None:
                     log.warning( 'Anonymous user passed values in ftp_files: %s' % ftp_files )
                     ftp_files = []
@@ -443,7 +445,7 @@ class UploadDataset( Group ):
                             path = relpath( os.path.join( dirpath, filename ), user_ftp_dir )
                             if not os.path.islink( os.path.join( dirpath, filename ) ):
                                 # Normalize filesystem paths
-                                if isinstance(path, unicode):
+                                if isinstance(path, text_type):
                                     valid_files.append(unicodedata.normalize('NFC', path ))
                                 else:
                                     valid_files.append(path)
@@ -552,12 +554,9 @@ class Conditional( Group ):
     def label( self ):
         return "Conditional (%s)" % self.name
 
-    def get_current_case( self, value, trans ):
+    def get_current_case( self, value ):
         # Convert value to user representation
-        if isinstance( value, bool ):
-            str_value = self.test_param.to_param_dict_string( value )
-        else:
-            str_value = value
+        str_value = self.test_param.to_param_dict_string( value )
         # Find the matching case
         for index, case in enumerate( self.cases ):
             if str_value == case.value:
@@ -613,7 +612,7 @@ class Conditional( Group ):
         # Get the default value for the 'test element' and use it
         # to determine the current case
         test_value = self.test_param.get_initial_value( trans, context )
-        current_case = self.get_current_case( test_value, trans )
+        current_case = self.get_current_case( test_value )
         # Store the current case in a special value
         rval['__current_case__'] = current_case
         # Store the value of the test element

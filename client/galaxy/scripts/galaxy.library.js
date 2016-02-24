@@ -181,7 +181,7 @@ var GalaxyLibrary = Backbone.View.extend({
             if (Galaxy.libraries.datasetView){
                 Galaxy.libraries.datasetView.$el.unbind('click');
             }
-            Galaxy.libraries.datasetView = new mod_library_dataset_view.LibraryDatasetView({id: dataset_id});
+            Galaxy.libraries.datasetView = new mod_library_dataset_view.LibraryDatasetView({id: dataset_id, show_version: false, show_permissions: false});
         });
 
         this.library_router.on( 'route:dataset_version', function(folder_id, dataset_id, ldda_id){

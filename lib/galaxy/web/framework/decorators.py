@@ -1,6 +1,7 @@
 import inspect
 from traceback import format_exc
 from functools import wraps
+from six import string_types
 
 import paste.httpexceptions
 
@@ -163,7 +164,7 @@ def __extract_payload_from_request(trans, func, kwargs):
         for arg in named_args:
             payload.pop(arg, None)
         for k, v in payload.iteritems():
-            if isinstance(v, (str, unicode)):
+            if isinstance(v, string_types):
                 try:
                     payload[k] = loads(v)
                 except:

@@ -57,18 +57,15 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
 
     def test_0000_initiate_users_and_category( self ):
         """Create necessary user accounts and login as an admin user."""
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
         self.test_db_util.get_private_role( admin_user )
         self.create_category( name=category_name, description=category_description )
-        self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
         test_user_2 = self.test_db_util.get_user( common.test_user_2_email )
         assert test_user_2 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_2_email
         self.test_db_util.get_private_role( test_user_2 )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
@@ -288,7 +285,6 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         and package_lapack_3_4_1420 being installed, and an env.sh generated for package_rdkit_2012_12_1420 that
         contains environment variables defined in package_boost_1_53_1420 and package_numpy_1_7_1420.
         '''
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         post_submit_strings_displayed = [ 'package_rdkit_2012_12_1420', 'package_atlas_3_10_1420', 'package_bzlib_1_0_1420',
                                           'package_numpy_1_7_1420', 'package_lapack_3_4_1420', 'package_boost_1_53_1420' ]

@@ -3,10 +3,8 @@ from abc import abstractmethod
 from string import Template
 
 from six import BytesIO
-try:
-    from six import text_type
-except ImportError:
-    from galaxy.util import unicodify as text_type
+from six import text_type
+
 try:
     from urllib import urlencode
 except ImportError:

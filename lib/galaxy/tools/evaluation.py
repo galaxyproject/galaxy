@@ -1,6 +1,7 @@
 import json
 import os
 import tempfile
+from six import string_types
 
 from galaxy import model
 from galaxy.util.object_wrapper import wrap_with_safe_string
@@ -56,10 +57,10 @@ class ToolEvaluator( object ):
         # Full parameter validation
         request_context = WorkRequestContext( app=self.app, user=job.history and job.history.user, history=job.history )
 
-        def validate_inputs( input, value, prefixed_name, prefixed_label, context ):
+        def validate_inputs( input, value, context, **kwargs ):
             value = input.from_html( value, request_context, context )
             input.validate( value, request_context )
-        visit_input_values( self.tool.inputs, incoming, validate_inputs, details=True )
+        visit_input_values( self.tool.inputs, incoming, validate_inputs )
 
         # Restore input / output data lists
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
@@ -542,7 +543,7 @@ class ToolEvaluator( object ):
             return None
 
     def __build_config_file_text( self, content ):
-        if isinstance( content, basestring ):
+        if isinstance( content, string_types ):
             return content, True
 
         content_format = content["format"]
