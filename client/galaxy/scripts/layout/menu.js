@@ -112,7 +112,7 @@ var GalaxyMenu = Backbone.Model.extend({
 
         var visualization_options = {
             id              : 'visualization',
-            title           : 'Visualization',
+            title           : 'Visualization/Scripting',
             content         : 'visualization/list',
             title_attribute : 'Visualize datasets'
         }
@@ -134,6 +134,11 @@ var GalaxyMenu = Backbone.Model.extend({
                 title   : 'Saved Visualizations',
                 content : 'visualization/list',
                 target  : '_frame'
+            });
+            tab_visualization.add({
+                title   : 'Launch a Galaxy Interactive Environment (GIE)',
+                content : 'visualization/gie_list',
+                target  : 'galaxy_main'
             });
         }
         this.masthead.append( tab_visualization );
