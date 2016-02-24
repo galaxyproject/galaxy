@@ -67,6 +67,11 @@ class MalformedId( MessageException ):
     err_code = error_codes.MALFORMED_ID
 
 
+class MalformedContents( MessageException ):
+    status_code = 400
+    err_code = error_codes.MALFORMED_CONTENTS
+
+
 class UnknownContentsType( MessageException ):
     status_code = 400
     err_code = error_codes.UNKNOWN_CONTENTS_TYPE
