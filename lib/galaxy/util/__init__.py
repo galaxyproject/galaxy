@@ -23,7 +23,7 @@ import time
 import tempfile
 import threading
 
-from os.path import relpath
+from os.path import relpath, normpath
 from hashlib import md5
 
 from six import binary_type
@@ -1348,6 +1348,22 @@ def parse_int(value, min_val=None, max_val=None, default=None, allow_none=False)
             return default
         else:
             raise
+
+
+def safe_relpath(path):
+    """
+    Given what we expect to be a relative path, determine whether the path
+    would exist inside the current directory.
+
+    :type   path:   string
+    :param  path:   a path to check
+    :rtype:         bool
+    :returns:       ``True`` if path is relative and does not reference a path
+        in a parent directory, ``False`` otherwise.
+    """
+    if path.startswith(os.sep) or normpath(path).startswith(os.pardir):
+        return False
+    return True
 
 
 class ExecutionTimer(object):
