@@ -9,7 +9,7 @@ from paste.auth.basic import AuthBasicAuthenticator
 from paste.httpheaders import AUTH_TYPE
 from paste.httpheaders import REMOTE_USER
 
-from galaxy.util import asbool
+from galaxy.util import asbool, safe_relpath
 from galaxy.util.hash_util import new_secure_hash
 from tool_shed.util import hg_util
 import tool_shed.repository_types.util as rt_util
@@ -113,7 +113,11 @@ class Hg( object ):
                     fh.write( chunk )
                 fh.close()
                 fh = open( tmp_filename, 'rb' )
-                changeset_groups = json.loads( hg_util.bundle_to_json( fh ) )
+                try:
+                    changeset_groups = json.loads( hg_util.bundle_to_json( fh ) )
+                except AttributeError:
+                    msg = 'Your version of Mercurial is not supported. Please use a version < 3.5'
+                    return self.__display_exception_remotely( start_response, msg )
                 fh.close()
                 try:
                     os.unlink( tmp_filename )
@@ -122,6 +126,19 @@ class Hg( object ):
                 if changeset_groups:
                     # Check the repository type to make sure inappropriate files are not being pushed.
                     if 'PATH_INFO' in environ:
+                        # Ensure there are no symlinks with targets outside the repo
+                        for entry in changeset_groups:
+                            if len( entry ) == 2:
+                                filename, change_list = entry
+                                if not isinstance(change_list, list):
+                                    change_list = [change_list]
+                                for change in change_list:
+                                    for patch in change['data']:
+                                        target = patch['block'].strip()
+                                        if ( ( patch['end'] - patch['start'] == 0 ) and not safe_relpath( target ) ):
+                                            msg = "Changes include a symlink outside of the repository: %s -> %s" % ( filename, target )
+                                            log.warning( msg )
+                                            return self.__display_exception_remotely( start_response, msg )
                         # Instantiate a database connection
                         engine = sqlalchemy.create_engine( self.db_url )
                         connection = engine.connect()
