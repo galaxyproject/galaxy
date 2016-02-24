@@ -5,15 +5,11 @@ Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 
-from galaxy import eggs
-eggs.require("pexpect")
-
 import codecs
 import errno
 import logging
 import operator
 import os
-import pexpect
 import json
 import socket
 import time
@@ -3694,27 +3690,6 @@ class Sample( object, Dictifiable ):
                 untransferred_datasets.append( dataset )
         return untransferred_datasets
 
-    def get_untransferred_dataset_size( self, filepath, scp_configs ):
-        def print_ticks( d ):
-            pass
-        error_msg = 'Error encountered in determining the file size of %s on the external_service.' % filepath
-        if not scp_configs['host'] or not scp_configs['user_name'] or not scp_configs['password']:
-            return error_msg
-        login_str = '%s@%s' % ( scp_configs['user_name'], scp_configs['host'] )
-        cmd  = 'ssh %s "du -sh \'%s\'"' % ( login_str, filepath )
-        try:
-            output = pexpect.run( cmd,
-                                  events={ '.ssword:*': scp_configs['password']+'\r\n',
-                                           pexpect.TIMEOUT:print_ticks},
-                                  timeout=10 )
-        except Exception:
-            return error_msg
-        # cleanup the output to get just the file size
-        return  output.replace( filepath, '' )\
-                      .replace( 'Password:', '' )\
-                      .replace( "'s password:", '' )\
-                      .replace( login_str, '' )\
-                      .strip()
     @property
     def run_details( self ):
         # self.runs is a list of SampleRunAssociations ordered descending on update_time.
