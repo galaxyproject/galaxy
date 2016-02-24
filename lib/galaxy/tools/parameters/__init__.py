@@ -10,7 +10,7 @@ from galaxy.util.expressions import ExpressionContext
 REPLACE_ON_TRUTHY = object()
 
 
-def visit_input_values( inputs, input_values, callback, name_prefix='', label_prefix='', parent_prefix='', no_replacement_value=REPLACE_ON_TRUTHY, context=None, ignore_errors=False ):
+def visit_input_values( inputs, input_values, callback, name_prefix='', label_prefix='', parent_prefix='', context=None, no_replacement_value=REPLACE_ON_TRUTHY ):
     """
     Given a tools parameter definition (`inputs`) and a specific set of
     parameter `values`, call `callback` for each non-grouping parameter,
@@ -18,17 +18,35 @@ def visit_input_values( inputs, input_values, callback, name_prefix='', label_pr
     and a display label.
 
     If the callback returns a value, it will be replace the old value.
+
+    >>> from xml.etree.ElementTree import XML
+    >>> from galaxy.util.odict import odict
+    >>> from galaxy.tools.parameters.basic import TextToolParameter
+    >>> from galaxy.tools.parameters.grouping import Repeat
+    >>> a = TextToolParameter( None, XML( '<param name="a" type="text"/>' ) )
+    >>> b = Repeat()
+    >>> c = TextToolParameter( None, XML( '<param name="c" type="text"/>' ) )
+    >>> b.name = 'b'
+    >>> b.inputs = { 'c': c }
+    >>> def visitor( input, value, prefixed_name, **kwargs ):
+    ...     print '%s, %s, %s' % ( input.name, prefixed_name, value )
+    >>> visit_input_values( odict( [ ('a', a), ('b', b ) ] ), odict( [ ('a', 1), ('b', [ { 'c': 3 } ] ) ] ), visitor )
+    a, a, 1
+    c, b_0|c, 3
     """
-    def callback_helper( input, input_values, context, name_prefix, label_prefix, parent_prefix ):
+    def callback_helper( input, input_values, name_prefix, label_prefix, parent_prefix, context=None, error=None ):
         args = {
             'input'             : input,
             'parent'            : input_values,
             'value'             : input_values.get( input.name ),
-            'prefix'            : parent_prefix,
             'prefixed_name'     : '%s%s' % ( name_prefix, input.name ),
-            'prefixed_label'    : '%s%s' % ( label_prefix, input.label ),
-            'context'           : context
+            'prefixed_label'    : '%s%s' % ( label_prefix, input.label or input.name ),
+            'prefix'            : parent_prefix,
+            'context'           : context,
+            'error'             : error
         }
+        if input.name not in input_values:
+            args[ 'error' ] = 'No value found for \'%s\'.' % args.get( 'prefixed_label' )
         new_value = callback( **args )
         if no_replacement_value is REPLACE_ON_TRUTHY:
             replace = bool( new_value )
@@ -38,27 +56,33 @@ def visit_input_values( inputs, input_values, callback, name_prefix='', label_pr
             input_values[ input.name ] = new_value
 
     context = ExpressionContext( input_values, context )
-    payload = { 'context': context, 'no_replacement_value': no_replacement_value, 'ignore_errors': ignore_errors, 'parent_prefix': name_prefix }
+    payload = { 'parent_prefix': name_prefix, 'context': context, 'no_replacement_value': no_replacement_value }
     for input in inputs.itervalues():
         if isinstance( input, Repeat ) or isinstance( input, UploadDataset ):
             values = input_values[ input.name ] = input_values.get( input.name, [] )
             for i, d in enumerate( values ):
-                index = d[ '__index__' ] = i
-                new_name_prefix = name_prefix + '%s_%d|' % ( input.name, index )
+                d[ '__index__' ] = i
+                new_name_prefix = name_prefix + '%s_%d|' % ( input.name, i )
                 new_label_prefix = label_prefix + '%s %d > ' % ( input.title, i + 1 )
                 visit_input_values( input.inputs, d, callback, new_name_prefix, new_label_prefix, **payload )
         elif isinstance( input, Conditional ):
             values = input_values[ input.name ] = input_values.get( input.name, {} )
             new_name_prefix = name_prefix + input.name + '|'
-            callback_helper( input.test_param, values, context, new_name_prefix, label_prefix, parent_prefix )
-            values[ '__current_case__' ] = input.get_current_case( values.get( input.test_param.name ), ignore_errors=ignore_errors )
+            case_error = None
+            try:
+                input.get_current_case( values[ input.test_param.name ] )
+            except:
+                case_error = 'The selected case is unavailable/invalid.'
+                pass
+            callback_helper( input.test_param, values, new_name_prefix, label_prefix, parent_prefix, context=context, error=case_error )
+            values[ '__current_case__' ] = input.get_current_case( values[ input.test_param.name ] )
             visit_input_values( input.cases[ values[ '__current_case__' ] ].inputs, values, callback, new_name_prefix, label_prefix, **payload )
         elif isinstance( input, Section ):
             values = input_values[ input.name ] = input_values.get( input.name, {} )
             new_name_prefix = name_prefix + input.name + '|'
             visit_input_values( input.inputs, values, callback, new_name_prefix, label_prefix, **payload )
         else:
-            callback_helper( input, input_values, context, name_prefix, label_prefix, parent_prefix )
+            callback_helper( input, input_values, name_prefix, label_prefix, parent_prefix, context=context )
 
 
 def check_param( trans, param, incoming_value, param_values ):

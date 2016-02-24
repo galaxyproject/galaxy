@@ -345,7 +345,7 @@ def __cleanup_param_values( inputs, values ):
                 # Scrub dynamic resource related parameters from workflows,
                 # they cause problems and the workflow probably should include
                 # their state in workflow encoding.
-                if prefix.startswith( '__job_resource' ):
+                if input.name == '__job_resource':
                     if input.name in values:
                         del values[input.name]
                     return

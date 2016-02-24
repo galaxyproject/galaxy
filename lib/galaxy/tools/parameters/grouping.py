@@ -527,21 +527,19 @@ class Conditional( Group ):
     def label( self ):
         return "Conditional (%s)" % self.name
 
-    def get_current_case( self, value, ignore_errors=False ):
+    def get_current_case( self, value ):
         # Convert value to user representation
         str_value = self.test_param.to_param_dict_string( value )
         # Find the matching case
         for index, case in enumerate( self.cases ):
             if str_value == case.value:
                 return index
-        if not ignore_errors:
-            raise ValueError( "No case matched value:", self.name, str_value )
-        return 0
+        raise ValueError( "No case matched value:", self.name, str_value )
 
     def value_to_basic( self, value, app ):
         rval = dict()
         rval[ self.test_param.name ] = self.test_param.value_to_basic( value[ self.test_param.name ], app )
-        current_case = rval['__current_case__'] = self.get_current_case( value[ self.test_param.name ] )
+        current_case = rval[ '__current_case__' ] = self.get_current_case( value[ self.test_param.name ] )
         for input in self.cases[ current_case ].inputs.itervalues():
             if input.name in value:  # parameter might be absent in unverified workflow
                 rval[ input.name ] = input.value_to_basic( value[ input.name ], app )
@@ -551,7 +549,7 @@ class Conditional( Group ):
         rval = dict()
         try:
             rval[ self.test_param.name ] = self.test_param.value_from_basic( value.get( self.test_param.name ), app, ignore_errors )
-            current_case = rval[ '__current_case__' ] = self.get_current_case( rval[ self.test_param.name ], ignore_errors )
+            current_case = rval[ '__current_case__' ] = self.get_current_case( rval[ self.test_param.name ] )
             # Inputs associated with current case
             for input in self.cases[ current_case ].inputs.itervalues():
                 # If we do not have a value, and are ignoring errors, we simply

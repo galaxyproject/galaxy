@@ -1246,21 +1246,22 @@ class Tool( object, Dictifiable ):
         messages = {}
         request_context = WorkRequestContext( app=trans.app, user=trans.user, history=trans.history, workflow_building_mode=workflow_building_mode )
 
-        def validate_inputs( input, value, context, prefixed_name, prefixed_label, **kwargs ):
-            value, error = check_param( request_context, input, value, context )
+        def validate_inputs( input, value, error, parent, context, prefixed_name, prefixed_label, **kwargs ):
+            if not error:
+                value, error = check_param( request_context, input, value, context )
             if error:
                 if update_values:
                     try:
                         value = input.get_initial_value( request_context, context )
                         if not prefixed_name.startswith( '__' ):
-                            messages[ prefixed_name ] = 'No proper value found for \'%s\', using default: \'%s\' (%s).' % ( prefixed_label, value, error )
-                        return value
+                            messages[ prefixed_name ] = '%s Using default: \'%s\'.' % ( error, value )
+                        parent[ input.name ] = value
                     except:
                         messages[ prefixed_name ] = 'Attempt to replace invalid value for \'%s\' failed.' % ( prefixed_label )
                 else:
                     messages[ prefixed_name ] = error
 
-        visit_input_values( self.inputs, values, validate_inputs, ignore_errors=True )
+        visit_input_values( self.inputs, values, validate_inputs )
         return messages
 
     def build_dependency_shell_commands( self, job_directory=None ):
