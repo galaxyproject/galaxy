@@ -370,6 +370,15 @@ class Job( object, JobLike, Dictifiable ):
     terminal_states = [ states.OK,
                         states.ERROR,
                         states.DELETED ]
+    #: job states where the job hasn't finished and the model may still change
+    non_ready_states = [
+        states.NEW,
+        states.RESUBMITTED,
+        states.UPLOAD,
+        states.WAITING,
+        states.QUEUED,
+        states.RUNNING,
+    ]
 
     # Please include an accessor (get/set pair) for any new columns/members.
     def __init__( self ):
@@ -1612,6 +1621,7 @@ class Dataset( StorableObject ):
     # failed_metadata is only valid as DatasetInstance state currently
 
     non_ready_states = (
+        states.NEW,
         states.UPLOAD,
         states.QUEUED,
         states.RUNNING,
