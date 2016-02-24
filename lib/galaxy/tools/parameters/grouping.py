@@ -540,9 +540,9 @@ class Conditional( Group ):
 
     def value_to_basic( self, value, app ):
         rval = dict()
-        current_case = rval['__current_case__'] = value['__current_case__']
         rval[ self.test_param.name ] = self.test_param.value_to_basic( value[ self.test_param.name ], app )
-        for input in self.cases[current_case].inputs.itervalues():
+        current_case = rval['__current_case__'] = self.get_current_case( value[ self.test_param.name ] )
+        for input in self.cases[ current_case ].inputs.itervalues():
             if input.name in value:  # parameter might be absent in unverified workflow
                 rval[ input.name ] = input.value_to_basic( value[ input.name ], app )
         return rval
@@ -550,23 +550,14 @@ class Conditional( Group ):
     def value_from_basic( self, value, app, ignore_errors=False ):
         rval = dict()
         try:
-            current_case = rval['__current_case__'] = value['__current_case__']
-            # Test param
-            if ignore_errors and self.test_param.name not in value:
-                # If ignoring errors, do nothing. However this is potentially very
-                # problematic since if we are missing the value of test param,
-                # the entire conditional is wrong.
-                pass
-            else:
-                rval[ self.test_param.name ] = self.test_param.value_from_basic( value[ self.test_param.name ], app, ignore_errors )
+            rval[ self.test_param.name ] = self.test_param.value_from_basic( value.get( self.test_param.name ), app, ignore_errors )
+            current_case = rval[ '__current_case__' ] = self.get_current_case( rval[ self.test_param.name ], ignore_errors )
             # Inputs associated with current case
-            for input in self.cases[current_case].inputs.itervalues():
-                if ignore_errors and input.name not in value:
-                    # If we do not have a value, and are ignoring errors, we simply
-                    # do nothing. There will be no value for the parameter in the
-                    # conditional's values dictionary.
-                    pass
-                else:
+            for input in self.cases[ current_case ].inputs.itervalues():
+                # If we do not have a value, and are ignoring errors, we simply
+                # do nothing. There will be no value for the parameter in the
+                # conditional's values dictionary.
+                if not ignore_errors or input.name in value:
                     rval[ input.name ] = input.value_from_basic( value[ input.name ], app, ignore_errors )
         except Exception, e:
             if not ignore_errors:

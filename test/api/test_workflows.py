@@ -46,7 +46,6 @@ steps:
             seed_source:
               seed_source_selector: set_seed
               seed: asdf
-              __current_case__: 1
     label: nested_workflow
     connect:
       inner_input: first_cat#out_file1
@@ -944,7 +943,6 @@ steps:
     seed_source:
       seed_source_selector: set_seed
       seed: asdf
-      __current_case__: 1
 test_data:
   test_input: "hello world"
 """, history_id=history_id, wait=False)
@@ -1025,7 +1023,6 @@ steps:
       seed_source_selector: set_seed
       seed:
         $link: text_input
-      __current_case__: 1
 test_data:
   data_input:
     value: 1.bed
