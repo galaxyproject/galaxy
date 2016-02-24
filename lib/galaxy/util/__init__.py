@@ -29,7 +29,7 @@ from datetime import datetime
 
 from email.MIMEText import MIMEText
 
-from os.path import relpath
+from os.path import relpath, normpath
 from hashlib import md5
 from itertools import izip
 
@@ -1250,6 +1250,22 @@ galaxy_root_path = os.path.join(__path__[0], "..", "..", "..")
 
 def galaxy_directory():
     return os.path.abspath(galaxy_root_path)
+
+
+def safe_relpath(path):
+    """
+    Given what we expect to be a relative path, determine whether the path
+    would exist inside the current directory.
+
+    :type   path:   string
+    :param  path:   a path to check
+    :rtype:         bool
+    :returns:       ``True`` if path is relative and does not reference a path
+        in a parent directory, ``False`` otherwise.
+    """
+    if path.startswith(os.sep) or normpath(path).startswith(os.pardir):
+        return False
+    return True
 
 
 class ExecutionTimer(object):
