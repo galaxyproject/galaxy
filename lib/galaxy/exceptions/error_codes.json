@@ -61,9 +61,14 @@
     },
    {
     "name": "USER_TOOL_META_PARAMETER_PROBLEM",
-    "code": 400011,
+    "code": 400012,
     "message": "Supplied incorrect or incompatible tool meta parameters."
    },
+   {
+    "name": "MALFORMED_CONTENTS",
+    "code": 400013,
+    "message": "The contents of the request are malformed."
+    },
    {
     "name": "USER_AUTHENTICATION_FAILED",
     "code": 401001,
