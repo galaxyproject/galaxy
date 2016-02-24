@@ -23,6 +23,8 @@ from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisu
 from galaxy.web.framework.helpers import grids, time_ago
 
 from .library import LibraryListGrid
+import os
+import yaml
 
 log = logging.getLogger( __name__ )
 
@@ -1011,6 +1013,57 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
                 'saved_visualization' : False
             }
         return trans.fill_template_mako( "visualization/phyloviz.mako", data=data, config=config )
+
+    @web.expose
+    @web.require_login( "run Galaxy Interactive Environments" )
+    def gie_list( self, trans, **kwargs ):
+        if not hasattr( self, 'gie_dir' ):
+            self.gie_dir = self._detect_gie_path( trans.app.config.visualization_plugins_directory )
+
+        if self.gie_dir is None:
+            raise Exception( "No Galaxy Interactive Environments configured ( or configuration issue ). Contact your Galaxy Admin" )
+
+        if not hasattr( self, 'gie_image_map' ):
+            gie_list = os.listdir( self.gie_dir )
+            gie_list.remove( 'interactive_environments.dtd' )
+            gie_list.remove( 'common' )
+
+            self.gie_image_map = {}
+
+            for gie in gie_list:
+                if os.path.exists( self._gie_config_dir( gie, 'allowed_images.yml' ) ):
+                    image_file = self._gie_config_dir( gie, 'allowed_images.yml' )
+                elif os.path.exists( self._gie_config_dir( gie, 'allowed_images.yml.sample' ) ):
+                    image_file = self._gie_config_dir( gie, 'allowed_images.yml.sample' )
+                else:
+                    continue
+
+                with open( image_file, 'r' ) as handle:
+                    self.gie_image_map[gie] = yaml.load( handle )
+
+        return trans.fill_template_mako(
+            "visualization/gie.mako",
+            gie_image_map=self.gie_image_map,
+            history=trans.get_history(),
+        )
+
+
+    def _detect_gie_path(self, path):
+        if ',' in path:
+            # Then a GIE path is there. Otherwise just visualizations
+            # This is ugly code due to the ugliness of the code in config.py
+            viz_dir, gie_dir = path.split(',', 1)
+            return gie_dir
+        else:
+            # No GIE path supplied (see config.py for why)
+            # So we can basically quit here.
+            return None
+
+    def _gie_config_dir(self, name, *args):
+        nargs = [self.gie_dir, name, 'config']
+        if len(args) > 0:
+            nargs += args
+        return os.path.join(*nargs)
 
     @web.json
     def bookmarks_from_dataset( self, trans, hda_id=None, ldda_id=None ):
