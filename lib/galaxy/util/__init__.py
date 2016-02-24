@@ -22,25 +22,29 @@ import sys
 import time
 import tempfile
 import threading
-from six.moves.urllib import parse as urlparse
+
+from os.path import relpath, normpath
+from hashlib import md5
+
+from six import binary_type
 from six import iteritems
+from six import PY3
+from six import string_types, text_type
+from six.moves import email_mime_text
+from six.moves.urllib import parse as urlparse
+from six.moves import xrange
+from six.moves import zip
+from xml.etree import ElementTree, ElementInclude
 
 from galaxy.util import json
 from datetime import datetime
 
-from six import PY3
-from six import string_types, text_type
-from six.moves import xrange
-from six.moves import email_mime_text
-from six.moves import zip
-
-from os.path import relpath
-from hashlib import md5
-
-import docutils.core
-import docutils.writers.html4css1
-
-from xml.etree import ElementTree, ElementInclude
+try:
+    import docutils.core as docutils_core
+    import docutils.writers.html4css1 as docutils_html4css1
+except ImportError:
+    docutils_core = None
+    docutils_html4css1 = None
 
 from .inflection import Inflector, English
 inflector = Inflector(English)
@@ -357,7 +361,11 @@ def pretty_print_time_interval( time=False, precise=False ):
     elif isinstance( time, datetime ):
         diff = now - time
     elif isinstance( time, string_types ):
-        time = datetime.strptime( time, "%Y-%m-%dT%H:%M:%S.%f" )
+        try:
+            time = datetime.strptime( time, "%Y-%m-%dT%H:%M:%S.%f" )
+        except ValueError:
+            # MySQL may not support microseconds precision
+            time = datetime.strptime( time, "%Y-%m-%dT%H:%M:%S" )
         diff = now - time
     else:
         diff = now - now
@@ -555,6 +563,30 @@ def ready_name_for_url( raw_name ):
     return slug_base
 
 
+def which(file):
+    # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
+    for path in os.environ["PATH"].split(":"):
+        if os.path.exists(path + "/" + file):
+                return path + "/" + file
+
+    return None
+
+
+def safe_makedirs(path):
+    """ Safely make a directory, do not fail if it already exist or
+    is created during execution.
+    """
+    if not os.path.exists(path):
+        try:
+            os.makedirs(path)
+        except OSError as e:
+            # review source for Python 2.7 this would only ever happen
+            # for the last path anyway so need to recurse - this exception
+            # means the last part of the path was already in existence.
+            if e.errno != errno.EEXIST:
+                raise
+
+
 def in_directory( file, directory, local_path_module=os.path ):
     """
     Return true, if the common prefix of both is equal to directory
@@ -698,6 +730,9 @@ def rst_to_html( s ):
     """Convert a blob of reStructuredText to HTML"""
     log = logging.getLogger( "docutils" )
 
+    if docutils_core is None:
+        raise Exception("Attempted to use rst_to_html but docutils unavailable.")
+
     class FakeStream( object ):
         def write( self, str ):
             if len( str ) > 0 and not str.isspace():
@@ -711,8 +746,8 @@ def rst_to_html( s ):
                                   # number of sections in help content.
     }
 
-    return unicodify( docutils.core.publish_string( s,
-                      writer=docutils.writers.html4css1.Writer(),
+    return unicodify( docutils_core.publish_string( s,
+                      writer=docutils_html4css1.Writer(),
                       settings_overrides=settings_overrides ) )
 
 
@@ -813,17 +848,25 @@ def roundify(amount, sfs=2):
         return amount[0:sfs] + '0' * (len(amount) - sfs)
 
 
-def unicodify( value, encoding=DEFAULT_ENCODING, error='replace', default=None ):
+def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', default=None):
     """
-    Returns a unicode string or None
+    Returns a unicode string or None.
     """
-
-    if isinstance( value, text_type ):
-        return value
+    if value is None:
+        return None
     try:
-        return text_type( str( value ), encoding, error )
-    except:
+        if not isinstance(value, string_types) and not isinstance(value, binary_type):
+            # In Python 2, value is not an instance of basestring
+            # In Python 3, value is not an instance of bytes or str
+            value = str(value)
+        # Now in Python 2, value is an instance of basestring, but may be not unicode
+        # Now in Python 3, value is an instance of bytes or str
+        if not isinstance(value, text_type):
+            value = text_type(value, encoding, error)
+    except Exception:
+        log.exception("value %s could not be coerced to unicode" % value)
         return default
+    return value
 
 
 def smart_str(s, encoding='utf-8', strings_only=False, errors='strict'):
@@ -1174,7 +1217,7 @@ def send_mail( frm, to, subject, body, config ):
     Sends an email.
     """
     to = listify( to )
-    msg = email_mime_text(  body.encode( 'ascii', 'replace' ) )
+    msg = email_mime_text.MIMEText(  body.encode( 'ascii', 'replace' ) )
     msg[ 'To' ] = ', '.join( to )
     msg[ 'From' ] = frm
     msg[ 'Subject' ] = subject
@@ -1260,6 +1303,35 @@ def galaxy_directory():
     return os.path.abspath(galaxy_root_path)
 
 
+def config_directories_from_setting( directories_setting, galaxy_root=galaxy_root_path ):
+    """
+    Parse the ``directories_setting`` into a list of relative or absolute
+    filesystem paths that will be searched to discover plugins.
+
+    :type   galaxy_root:    string
+    :param  galaxy_root:    the root path of this galaxy installation
+    :type   directories_setting: string (default: None)
+    :param  directories_setting: the filesystem path (or paths)
+        to search for plugins. Can be CSV string of paths. Will be treated as
+        absolute if a path starts with '/', relative otherwise.
+    :rtype:                 list of strings
+    :returns:               list of filesystem paths
+    """
+    directories = []
+    if not directories_setting:
+        return directories
+
+    for directory in listify( directories_setting ):
+        directory = directory.strip()
+        if not directory.startswith( '/' ):
+            directory = os.path.join( galaxy_root, directory )
+        if not os.path.exists( directory ):
+            log.warn( 'directory not found: %s', directory )
+            continue
+        directories.append( directory )
+    return directories
+
+
 def parse_int(value, min_val=None, max_val=None, default=None, allow_none=False):
     try:
         value = int(value)
@@ -1276,6 +1348,22 @@ def parse_int(value, min_val=None, max_val=None, default=None, allow_none=False)
             return default
         else:
             raise
+
+
+def safe_relpath(path):
+    """
+    Given what we expect to be a relative path, determine whether the path
+    would exist inside the current directory.
+
+    :type   path:   string
+    :param  path:   a path to check
+    :rtype:         bool
+    :returns:       ``True`` if path is relative and does not reference a path
+        in a parent directory, ``False`` otherwise.
+    """
+    if path.startswith(os.sep) or normpath(path).startswith(os.pardir):
+        return False
+    return True
 
 
 class ExecutionTimer(object):

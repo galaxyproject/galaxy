@@ -15,31 +15,23 @@ def upload_tar( trans, rdah, tdah, repository, tar, uploaded_file, upload_point,
     hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_dir, create=False )
     undesirable_dirs_removed = 0
     undesirable_files_removed = 0
-    ok, message = commit_util.check_archive( repository, tar )
-    if not ok:
+    check_results = commit_util.check_archive( repository, tar )
+    if check_results.invalid:
         tar.close()
         uploaded_file.close()
-        return ok, message, [], '', undesirable_dirs_removed, undesirable_files_removed
+        message = '%s Invalid paths were: %s' % (
+            ' '.join( check_results.errors ), ', '.join( check_results.invalid ) )
+        return False, message, [], '', undesirable_dirs_removed, undesirable_files_removed
     else:
         if upload_point is not None:
             full_path = os.path.abspath( os.path.join( repo_dir, upload_point ) )
         else:
             full_path = os.path.abspath( repo_dir )
-        filenames_in_archive = []
-        for tarinfo_obj in tar.getmembers():
-            ok = os.path.basename( tarinfo_obj.name ) not in commit_util.UNDESIRABLE_FILES
-            if ok:
-                for file_path_item in tarinfo_obj.name.split( '/' ):
-                    if file_path_item in commit_util.UNDESIRABLE_DIRS:
-                        undesirable_dirs_removed += 1
-                        ok = False
-                        break
-            else:
-                undesirable_files_removed += 1
-            if ok:
-                filenames_in_archive.append( tarinfo_obj.name )
+        undesirable_files_removed = len( check_results.undesirable_files )
+        undesirable_dirs_removed = len( check_results.undesirable_dirs )
+        filenames_in_archive = [ ti.name for ti in check_results.valid ]
         # Extract the uploaded tar to the load_point within the repository hierarchy.
-        tar.extractall( path=full_path )
+        tar.extractall( path=full_path, members=check_results.valid )
         tar.close()
         uploaded_file.close()
         for filename in filenames_in_archive:

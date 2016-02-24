@@ -97,7 +97,7 @@
           -->
           <param name="refGenomeSource_type" value="built-in" />
           <param name="ref" value="hg18chr21" />
-          <param name="input" value="srma_in1.bam" type="bam" />
+          <param name="input" value="srma_in1.bam" ftype="bam" />
           <param name="source_select" value="pre_set" />
           <output name="output" file="srma_out1.bam" ftype="bam" lines_diff="2" /><!-- allows tag with version number to be different -->
       </test>

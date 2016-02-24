@@ -5,6 +5,7 @@ try:
 except ImportError:
     from queue import Queue
 from os import getenv
+from six import string_types
 
 from .client import JobClient
 from .client import InputCachingJobClient
@@ -261,11 +262,7 @@ class ClientCacher(object):
 
 
 def _parse_destination_params(destination_params):
-    try:
-        unicode_type = unicode
-    except NameError:
-        unicode_type = str
-    if isinstance(destination_params, str) or isinstance(destination_params, unicode_type):
+    if isinstance(destination_params, string_types):
         destination_params = url_to_destination_params(destination_params)
     return destination_params
 

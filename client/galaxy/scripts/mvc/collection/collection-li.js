@@ -4,7 +4,8 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( LIST_ITEM, DATASET_LI, BASE_MVC, _l ){
-/* global Backbone */
+
+'use strict';
 //==============================================================================
 var FoldoutListItemView = LIST_ITEM.FoldoutListItemView,
     ListItemView = LIST_ITEM.ListItemView;
@@ -33,11 +34,11 @@ var DCListItemView = FoldoutListItemView.extend(
     _setUpListeners : function(){
         FoldoutListItemView.prototype._setUpListeners.call( this );
         // re-rendering on deletion
-        this.model.on( 'change', function( model, options ){
+        this.listenTo( this.model, 'change', function( model, options ){
             if( _.isEqual( _.keys( model.changed ), [ 'deleted' ] ) ){
                 this.render();
             }
-        }, this );
+        });
     },
 
     // ......................................................................... rendering

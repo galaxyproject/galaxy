@@ -79,7 +79,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     installed_len_files = None
 
     @web.expose
-    def index( self, trans, cntrller, **kwd ):
+    def index( self, trans, cntrller='user', **kwd ):
         return trans.fill_template( '/user/index.mako', cntrller=cntrller )
 
     @web.expose
@@ -788,7 +788,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     subject = 'Join Mailing List'
                     try:
                         util.send_mail( frm, to, subject, body, trans.app.config )
-                    except:
+                    except Exception:
+                        log.exception( 'Subscribing to the mailing list has failed.' )
                         error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed."
             if not error and not is_admin:
                 # The handle_user_login() method has a call to the history_set_default_permissions() method
@@ -847,7 +848,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         try:
             util.send_mail( frm, to, subject, body, trans.app.config )
             return True
-        except:
+        except Exception:
+            log.exception( 'Unable to send the activation email.' )
             return False
 
     def prepare_activation_link( self, trans, email ):

@@ -43,6 +43,9 @@ log = logging.getLogger( __name__ )
 # and should eventually become API'd
 TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
 
+# Override with config.default_job_shell.
+DEFAULT_JOB_SHELL = '/bin/sh'
+
 
 class JobDestination( Bunch ):
     """
@@ -55,6 +58,7 @@ class JobDestination( Bunch ):
         self['runner'] = None
         self['legacy'] = False
         self['converted'] = False
+        self['shell'] = None
         self['env'] = []
         self['resubmit'] = []
         # dict is appropriate (rather than a bunch) since keys may not be valid as attributes
@@ -786,6 +790,10 @@ class JobWrapper( object ):
         return self.tool.parallelism
 
     @property
+    def shell(self):
+        return self.job_destination.shell or getattr(self.app.config, 'default_job_shell', DEFAULT_JOB_SHELL)
+
+    @property
     def commands_in_new_shell(self):
         return self.app.config.commands_in_new_shell
 
@@ -863,7 +871,7 @@ class JobWrapper( object ):
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir
         # Shell fragment to inject dependencies
-        self.dependency_shell_commands = self.tool.build_dependency_shell_commands()
+        self.dependency_shell_commands = self.tool.build_dependency_shell_commands(job_directory=self.working_directory)
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
         # if the server was stopped and restarted before the job finished
         job.command_line = unicodify(self.command_line)
@@ -957,9 +965,6 @@ class JobWrapper( object ):
                 # Get the exception and let the tool attempt to generate
                 # a better message
                 etype, evalue, tb = sys.exc_info()
-                m = self.tool.handle_job_failure_exception( evalue )
-                if m:
-                    message = m
             if self.app.config.outputs_to_working_directory:
                 for dataset_path in self.get_output_fnames():
                     try:
@@ -1195,8 +1200,8 @@ class JobWrapper( object ):
                     # either use the metadata from originating output dataset, or call set_meta on the copies
                     # it would be quicker to just copy the metadata from the originating output dataset,
                     # but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
-                    if ( self.app.config.retry_metadata_internally
-                            and not self.external_output_metadata.external_metadata_set_successfully(dataset, self.sa_session ) ):
+                    if ( self.app.config.retry_metadata_internally and
+                            not self.external_output_metadata.external_metadata_set_successfully(dataset, self.sa_session ) ):
                         # If Galaxy was expected to sniff type and didn't - do so.
                         if dataset.ext == "_sniff_":
                             extension = sniff.handle_uploaded_dataset_file( dataset.dataset.file_name, self.app.datatypes_registry )
@@ -1204,8 +1209,8 @@ class JobWrapper( object ):
 
                         # call datatype.set_meta directly for the initial set_meta call during dataset creation
                         dataset.datatype.set_meta( dataset, overwrite=False )
-                    elif ( job.states.ERROR != final_job_state
-                            and not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) ):
+                    elif ( job.states.ERROR != final_job_state and
+                            not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) ):
                         dataset._state = model.Dataset.states.FAILED_METADATA
                     else:
                         # load metadata from file
@@ -1288,26 +1293,27 @@ class JobWrapper( object ):
         out_collections.update( [ ( obj.name, obj.dataset_collection ) for obj in job.output_dataset_collections ] )
 
         input_ext = 'data'
+        input_dbkey = '?'
         for _, data in inp_data.items():
             # For loop odd, but sort simulating behavior in galaxy.tools.actions
             if not data:
                 continue
             input_ext = data.ext
-        # why not re-use self.param_dict here? ##dunno...probably should, this causes
-        # tools.parameters.basic.UnvalidatedValue to be used in following methods
-        # instead of validated and transformed values during i.e. running workflows
+            input_dbkey = data.dbkey or '?'
+        # why not re-use self.param_dict here?
         param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         # Create generated output children and primary datasets and add to param_dict
         collected_datasets = {
             'children': self.tool.collect_child_datasets(out_data, self.working_directory),
-            'primary': self.tool.collect_primary_datasets(out_data, self.working_directory, input_ext)
+            'primary': self.tool.collect_primary_datasets(out_data, self.working_directory, input_ext, input_dbkey)
         }
         self.tool.collect_dynamic_collections(
             out_collections,
             job_working_directory=self.working_directory,
             inp_data=inp_data,
             job=job,
+            input_dbkey=input_dbkey,
         )
         param_dict.update({'__collected_datasets__': collected_datasets})
         # Certain tools require tasks to be completed after job execution
@@ -1569,6 +1575,7 @@ class JobWrapper( object ):
     def setup_external_metadata( self, exec_dir=None, tmp_dir=None,
                                  dataset_files_path=None, config_root=None,
                                  config_file=None, datatypes_config=None,
+                                 resolve_metadata_dependencies=False,
                                  set_extension=True, **kwds ):
         # extension could still be 'auto' if this is the upload tool.
         job = self.get_job()
@@ -1589,19 +1596,26 @@ class JobWrapper( object ):
             config_file = self.app.config.config_file
         if datatypes_config is None:
             datatypes_config = self.app.datatypes_registry.integrated_datatypes_configs
-        return self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for
-                                                                        output_dataset_assoc in
-                                                                        job.output_datasets + job.output_library_datasets ],
-                                                                      self.sa_session,
-                                                                      exec_dir=exec_dir,
-                                                                      tmp_dir=tmp_dir,
-                                                                      dataset_files_path=dataset_files_path,
-                                                                      config_root=config_root,
-                                                                      config_file=config_file,
-                                                                      datatypes_config=datatypes_config,
-                                                                      job_metadata=os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE ),
-                                                                      max_metadata_value_size=self.app.config.max_metadata_value_size,
-                                                                      **kwds )
+        command = self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for
+                                                                           output_dataset_assoc in
+                                                                           job.output_datasets + job.output_library_datasets ],
+                                                                         self.sa_session,
+                                                                         exec_dir=exec_dir,
+                                                                         tmp_dir=tmp_dir,
+                                                                         dataset_files_path=dataset_files_path,
+                                                                         config_root=config_root,
+                                                                         config_file=config_file,
+                                                                         datatypes_config=datatypes_config,
+                                                                         job_metadata=os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE ),
+                                                                         max_metadata_value_size=self.app.config.max_metadata_value_size,
+                                                                         **kwds )
+        if resolve_metadata_dependencies:
+            metadata_tool = self.app.toolbox.get_tool("__SET_METADATA__")
+            dependency_shell_commands = metadata_tool.build_dependency_shell_commands(job_directory=self.working_directory)
+            if dependency_shell_commands:
+                dependency_shell_commands = "; ".join(dependency_shell_commands)
+                command = "%s; %s" % (dependency_shell_commands, command)
+        return command
 
     @property
     def user( self ):
@@ -1751,7 +1765,7 @@ class TaskWrapper(JobWrapper):
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir
         # Shell fragment to inject dependencies
-        self.dependency_shell_commands = self.tool.build_dependency_shell_commands()
+        self.dependency_shell_commands = self.tool.build_dependency_shell_commands(job_directory=self.working_directory)
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
         # if the server was stopped and restarted before the job finished
         task.command_line = self.command_line

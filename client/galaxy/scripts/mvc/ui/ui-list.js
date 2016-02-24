@@ -14,7 +14,7 @@ var View = Backbone.View.extend({
         this.multiple = options.multiple || false;
 
         // create message handler
-        this.message = new Ui.Message({ cls: 'ui-margin-top' });
+        this.message = new Ui.Message();
 
         // create portlet
         this.portlet = new Portlet.View({ cls: 'ui-portlet-section' });

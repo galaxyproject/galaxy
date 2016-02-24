@@ -16,7 +16,7 @@ from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_
 
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter, ListParameter, DictParameter
 from galaxy.datatypes import metadata
-from galaxy.util import nice_size, sqlite
+from galaxy.util import nice_size, sqlite, which
 from . import data, dataproviders
 
 
@@ -146,6 +146,31 @@ class CompressedArchive( Binary ):
 Binary.register_unsniffable_binary_ext("compressed_archive")
 
 
+class CompressedZipArchive( CompressedArchive ):
+    """
+        Class describing an compressed binary file
+        This class can be sublass'ed to implement archive filetypes that will not be unpacked by upload.py.
+    """
+    file_ext = "zip"
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = "Compressed zip file"
+            dataset.blurb = nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek( self, dataset ):
+        try:
+            return dataset.peek
+        except:
+            return "Compressed zip file (%s)" % ( nice_size( dataset.get_size() ) )
+
+
+Binary.register_unsniffable_binary_ext("zip")
+
+
 class GenericAsn1Binary( Binary ):
     """Class for generic ASN.1 binary format"""
     file_ext = "asn1-binary"
@@ -173,6 +198,11 @@ class Bam( Binary ):
         # Determine the version of samtools being used.  Wouldn't it be nice if
         # samtools provided a version flag to make this much simpler?
         version = '0.0.0'
+        samtools_exec = which('samtools')
+        if not samtools_exec:
+            message = 'Attempting to use functionality requiring samtools, but it cannot be located on Galaxy\'s PATH.'
+            raise Exception(message)
+
         output = subprocess.Popen( [ 'samtools' ], stderr=subprocess.PIPE, stdout=subprocess.PIPE ).communicate()[1]
         lines = output.split( '\n' )
         for line in lines:
@@ -334,7 +364,7 @@ class Bam( Binary ):
         os.unlink( stderr_name )
         # Now use pysam with BAI index to determine additional metadata
         try:
-            bam_file = pysam.AlignmentFile( filename=dataset.file_name, mode='rb', index_filename=index_file.file_name )
+            bam_file = pysam.AlignmentFile( dataset.file_name, mode='rb', index_filename=index_file.file_name )
             dataset.metadata.reference_names = list( bam_file.references )
             dataset.metadata.reference_lengths = list( bam_file.lengths )
             dataset.metadata.bam_header = bam_file.header
@@ -461,14 +491,50 @@ class CRAM( Binary ):
     edam_format = "format_3462"
 
     MetadataElement( name="cram_version", default=None, desc="CRAM Version", param=MetadataParameter, readonly=True, visible=False, optional=False, no_value=None )
+    MetadataElement( name="cram_index", desc="CRAM Index File", param=metadata.FileParameter, file_ext="crai", readonly=True, no_value=None, visible=False, optional=True )
 
     def set_meta( self, dataset, overwrite=True, **kwd ):
+        major_version, minor_version = self.get_cram_version( dataset.file_name )
+        if major_version != -1:
+            dataset.metadata.cram_version = str(major_version) + "." + str(minor_version)
+
+        if not dataset.metadata.cram_index:
+            index_file = dataset.metadata.spec['cram_index'].param.new_file( dataset=dataset )
+            if self.set_index_file(dataset, index_file):
+                dataset.metadata.cram_index = index_file
+
+    def get_cram_version( self, filename):
         try:
-            with open(dataset.file_name, "r") as fh:
+            with open( filename , "r") as fh:
                 header = fh.read(6)
-                dataset.metadata.cram_version = str(ord(header[4])) + "." + str(ord(header[5]))
+                return ord( header[4] ), ord( header[5] )
         except Exception as exc:
-            log.warn( '%s, set_meta Exception: %s', self, exc )
+            log.warn( '%s, get_cram_version Exception: %s', self, exc )
+            return -1, -1
+
+    def set_index_file(self, dataset, index_file):
+        try:
+            # @todo when pysam 1.2.1 or pysam 1.3.0 gets released and becomes
+            # a dependency of galaxy, use pysam.index(alignment, target_idx)
+            # This currently gives coredump in the current release but is
+            # fixed in the dev branch:
+            # xref: https://github.com/samtools/samtools/issues/199
+
+            dataset_symlink = os.path.join( os.path.dirname( index_file.file_name ), '__dataset_%d_%s' % ( dataset.id, os.path.basename( index_file.file_name ) ) )
+            os.symlink( dataset.file_name, dataset_symlink )
+            pysam.index( dataset_symlink )
+
+            tmp_index = dataset_symlink + ".crai"
+            if os.path.isfile( tmp_index ):
+                shutil.move( tmp_index, index_file.file_name )
+                return index_file.file_name
+            else:
+                os.unlink( dataset_symlink )
+                log.warn( '%s, expected crai index not created for: %s', self, dataset.file_name )
+                return False
+        except Exception as exc:
+            log.warn( '%s, set_index_file Exception: %s', self, exc )
+            return False
 
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:

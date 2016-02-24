@@ -16,6 +16,7 @@ log = logging.getLogger( __name__ )
 
 # TODO: for lack of a manager file for the config. May well be better in config.py? Circ imports?
 class ConfigSerializer( base.ModelSerializer ):
+    """Configuration (galaxy.ini) settings viewable by all users"""
 
     def __init__( self, app ):
         super( ConfigSerializer, self ).__init__( app )
@@ -37,6 +38,7 @@ class ConfigSerializer( base.ModelSerializer ):
             'brand'                     : _defaults_to( '' ),
             # TODO: this doesn't seem right
             'logo_url'                  : lambda i, k, **c: self.url_for( i.get( k, '/' ) ),
+            'logo_src'                  : lambda i, k, **c: self.url_for( '/static/images/galaxyIcon_noText.png' ),
             'terms_url'                 : _defaults_to( '' ),
 
             # TODO: don't hardcode here - hardcode defaults once in config.py
@@ -75,7 +77,7 @@ class ConfigSerializer( base.ModelSerializer ):
 
 
 class AdminConfigSerializer( ConfigSerializer ):
-    # config attributes viewable by admin users
+    """Configuration attributes viewable only by admin users"""
 
     def add_serializers( self ):
         super( AdminConfigSerializer, self ).add_serializers()

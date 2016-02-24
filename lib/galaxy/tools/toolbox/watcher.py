@@ -1,42 +1,144 @@
+import logging
 import os.path
+import threading
+import time
+
 try:
     from watchdog.events import FileSystemEventHandler
     from watchdog.observers import Observer
     from watchdog.observers.polling import PollingObserver
     can_watch = True
 except ImportError:
+    Observer = None
     FileSystemEventHandler = object
-    PollingObserver = object
+    PollingObserver = None
     can_watch = False
 
-import logging
 log = logging.getLogger( __name__ )
 
 
-def get_watcher(toolbox, config):
-    watch_tools_val = str( getattr(config, "watch_tools", False) ).lower()
-    if watch_tools_val in ( 'true', 'yes', 'on' ):
-        return ToolWatcher(toolbox)
-    elif watch_tools_val == "auto":
-        try:
-            return ToolWatcher(toolbox)
-        except Exception:
-            log.info("Failed to load ToolWatcher (watchdog is likely unavailable) - proceeding without tool monitoring.")
-            return NullWatcher()
-    elif watch_tools_val == "polling":
-        log.info("Using less ineffecient polling toolbox watcher.")
-        return ToolWatcher(toolbox, observer_class=PollingObserver)
+def get_observer_class(config_value, default, monitor_what_str):
+    """
+    """
+    config_value = config_value or default
+    config_value = str(config_value).lower()
+    if config_value in ("true", "yes", "on", "auto"):
+        expect_observer = config_value != "auto"
+        observer_class = Observer
+    elif config_value == "polling":
+        expect_observer = True
+        observer_class = PollingObserver
+    else:
+        expect_observer = False
+        observer_class = None
+
+    if observer_class is None:
+        message = "Watchdog library unavailble, cannot monitor %s." % monitor_what_str
+        log.info(message)
+        if expect_observer:
+            raise Exception(message)
+
+    return observer_class
+
+
+def get_tool_conf_watcher(reload_callback):
+    return ToolConfWatcher(reload_callback)
+
+
+def get_tool_watcher(toolbox, config):
+    config_value = getattr(config, "watch_tools", None)
+    observer_class = get_observer_class(config_value, default="False", monitor_what_str="tools")
+
+    if observer_class is not None:
+        return ToolWatcher(toolbox, observer_class=observer_class)
     else:
         return NullWatcher()
 
 
+class ToolConfWatcher(object):
+
+    def __init__(self, reload_callback):
+        self.paths = {}
+        self._active = False
+        self._lock = threading.Lock()
+        self.thread = threading.Thread(target=self.check)
+        self.thread.daemon = True
+        self.event_handler = ToolConfFileEventHandler(reload_callback)
+
+    def start(self):
+        if not self._active:
+            self._active = True
+            self.thread.start()
+
+    def shutdown(self):
+        if self._active:
+            self._active = False
+            self.thread.join()
+
+    def check(self):
+        while self._active:
+            do_reload = False
+            with self._lock:
+                paths = list(self.paths.keys())
+            for path in paths:
+                if not os.path.exists(path):
+                    continue
+                mod_time = self.paths[path]
+                new_mod_time = None
+                if os.path.exists(path):
+                    new_mod_time = time.ctime(os.path.getmtime(path))
+                if new_mod_time != mod_time:
+                    self.paths[path] = new_mod_time
+                    do_reload = True
+
+            if do_reload:
+                t = threading.Thread(target=lambda: self.event_handler.on_any_event(None))
+                t.daemon = True
+                t.start()
+            time.sleep(1)
+
+    def monitor(self, path):
+        mod_time = None
+        if os.path.exists(path):
+            mod_time = time.ctime(os.path.getmtime(path))
+        with self._lock:
+            self.paths[path] = mod_time
+        self.start()
+
+    def watch_file(self, tool_conf_file):
+        self.monitor(tool_conf_file)
+
+
+class NullToolConfWatcher(object):
+
+    def start(self):
+        pass
+
+    def shutdown(self):
+        pass
+
+    def monitor(self, conf_path):
+        pass
+
+    def watch_file(self, tool_file, tool_id):
+        pass
+
+
+class ToolConfFileEventHandler(FileSystemEventHandler):
+
+    def __init__(self, reload_callback):
+        self.reload_callback = reload_callback
+
+    def on_any_event(self, event):
+        self._handle(event)
+
+    def _handle(self, event):
+        self.reload_callback()
+
+
 class ToolWatcher(object):
 
-    def __init__(self, toolbox, observer_class=None):
-        if not can_watch:
-            raise Exception("Watchdog library unavailble, cannot watch tools.")
-        if observer_class is None:
-            observer_class = Observer
+    def __init__(self, toolbox, observer_class):
         self.toolbox = toolbox
         self.tool_file_ids = {}
         self.tool_dir_callbacks = {}
@@ -47,6 +149,10 @@ class ToolWatcher(object):
 
     def start(self):
         self.observer.start()
+
+    def shutdown(self):
+        self.observer.stop()
+        self.observer.join()
 
     def monitor(self, dir):
         self.observer.schedule(self.event_handler, dir, recursive=False)

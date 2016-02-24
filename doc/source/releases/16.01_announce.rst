@@ -3,8 +3,160 @@
 January 2016 Galaxy Release (v 16.01)
 ===========================================================
 
+.. include:: _header.rst
 
-Schedule
+Highlights
 ===========================================================
- * Planned Freeze Date: 2016-01-04
- * Planned Release Date: 2016-01-25
+
+**Interactive Tours**
+  The interactive tours framework allows developers and deployers to build
+  interactive tutorials for users superimposed on the actual Galaxy web front
+  end. Unlike video tutorials, these will not become stale and are truly 
+  interactive (allowing users to actually navigate and interact with Galaxy).
+  Galaxy 16.01 ships with two example tours and new ones can easily be added by
+  creating a small YAML file describing the tour. Try the `Galaxy UI tour
+  <https://usegalaxy.org/?tour_id=core.galaxy_ui>`__  on Main.
+
+**Wheels**
+  Galaxy's Python dependencies have traditionally been distributed as eggs_ using
+  custom dependency management code to enable Galaxy to distribute binary 
+  dependencies (enabling quick downloads and minimal system requirements). With 
+  this release all of that infrastructure has been replaced with a modern Python
+  infrastructure based on pip_ and wheels_.
+  Work done as part of this to enable binary dependencies on Linux has been 
+  included with the recently released pip_ 8.
+
+  Detailed documentation on these changes and their impact under a variety of
+  Galaxy deployment scenarios can be found in the :ref:`framework-dependencies`
+  section of the Admin documentation.
+
+**Nested Workflows**
+  Workflows may now run other workflows as a single abstract step in the parent
+  workflow. This allows for reusing or subworkflows in your analyses.
+
+`Github <https://github.com/galaxyproject/galaxy>`__
+===========================================================
+
+New
+  .. code-block:: shell
+
+      % git clone -b master https://github.com/galaxyproject/galaxy.git
+
+Update to latest stable release
+  .. code-block:: shell
+
+      % git checkout master && pull --ff-only origin master
+
+Update to exact version
+  .. code-block:: shell
+
+      % git checkout v16.01
+
+
+`BitBucket <https://bitbucket.org/galaxy/galaxy-dist>`__
+===========================================================
+
+Upgrade
+  .. code-block:: shell
+
+      % hg pull
+      % hg update latest_16.01
+
+
+See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additional details regarding the source code locations.
+
+Deprecation Notices
+===========================================================
+
+Barring a strong outcry from deployers, 16.01 will be the last release of Galaxy to
+support Python 2.6. For more information, see Galaxy Github
+`Issue #1596 <https://github.com/galaxyproject/galaxy/issues/1596>`_.
+
+.. _eggs: https://pythonhosted.org/setuptools/formats.html
+.. _wheels: http://pythonwheels.com/
+.. _pip: https://pip.pypa.io/en/stable/
+
+Security
+===========================================================
+
+Multiple security vulnerabilities were identified during this release cycle and
+fixed concurrently with the release. In addition, the fixes have been
+backported to older releases.
+
+The Galaxy Committers would like to thank `Youri Hoogstrate
+<https://github.com/yhoogstrate>`_ at the Erasmus MC, Rotterdam, who initially
+reported the ``hg push`` vulnerability. Through additional auditing based on
+this attack vector, we discovered the other vulnerabilities.
+
+**Galaxy**
+  Multiple security vulnerabilities were discovered in Galaxy that allow
+  malicious actors to read and write files on the Galaxy server. Additionally,
+  Galaxy servers on which a rarely used feature has been enabled are vulnerable
+  to an arbitrary code execution exploit.
+
+  1. A write vulnerability exists in the history import mechanism. It is
+     possible to create a history tar archive that contains files with parent
+     directory components in the file path (e.g. ``foo/../../bar`` would
+     extract to ``../bar``), and these archive members would be written if the
+     user running the Galaxy server had write permission to the given path.
+
+  2. A read vulnerability exists in the object store path composition code.
+     Galaxy allows clients to add elements to the end of a path to "extra"
+     files associated with a dataset (as is the case with composite datatypes).
+     These elements were not being checked to ensure they did not contain
+     relative parent references (``..``) or did not start with an absolute path
+     character (``/``). Because of this, the dataset display methods could be
+     manipulated to return the contents of any files for which the Galaxy
+     server user had read permission.
+
+  3. An arbitrary code execution vulnerability exists in the Galaxy sample
+     tracking system. The sample tracking system included a feature which
+     allowed administrators to browse remote "external services" (such as
+     sequencers) to choose files to transfer to the Galaxy server. This
+     browsing code used a shell invocation which did not sanitize user input.
+     However, this code is only reachable if at least one external service has
+     ever been defined. 
+
+  Fixes for all three issues have been applied to Galaxy releases back to
+  v14.10.
+
+**Tool Shed**
+  Multiple security vulnerabilities were discovered in the Tool Shed that allow
+  malicious actors to read and write files on the Tool Shed server outside of
+  normal Tool Shed repository directories.
+
+  1. A write vulnerability exists in the Tool Shed tarball and capsule upload
+     functionality. It is possible to create a tar archive that contains files
+     with parent directory components in the file path (e.g.  ``foo/../../bar``
+     would extract to ``../bar``), and these archive members would be written
+     if the user running the Tool Shed had write permission to the given path.
+     The Tool Shed tarball handling code checked for invalid characters (``/``
+     or ``..``) at the beginning of the path but not for ``..`` in the middle
+     of a path.
+
+  2. A read vulnerability exists in multiple places. The first is in the (now
+     deprecated) ``hg push`` functionality for updating Tool Shed repositories.
+     This method allows malicious actors to push symlinks whose targets are
+     outside the repository (either via an absolute or relative path). The
+     contents of the targets would then be visible in the Tool Shed repository
+     contents viewer, if the Tool Shed user has read permission on the target.
+
+  3. A second read vulnerability exists in the Tool Shed repository contents
+     viewer. The viewer would allow a malicious actor to specify a path outside
+     the repository, and if the Tool Shed system user had read permissions on
+     that path, it would be displayed. The viewer also did not check to ensure
+     that the targets of symlinks in a repository did not point outside the
+     repository.
+
+  The repository contents viewer read vulnerability also exists in Galaxy, but
+  is only reachable/exploitable by admin users. Fixes for vulnerability #3 have
+  been applied to Galaxy/Tool Shed releases back to v14.10, and issues #1 and
+  #2 have been applied to releases back to v15.01.
+
+Release Notes
+===========================================================
+
+.. include:: 16.01.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

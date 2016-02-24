@@ -3,6 +3,7 @@ from abc import abstractmethod
 from galaxy.util.odict import odict
 from galaxy.util import bunch
 from galaxy.util.dictifiable import Dictifiable
+from .parser import ensure_tool_conf_item
 
 from six import iteritems
 
@@ -49,13 +50,14 @@ class ToolSection( Dictifiable, HasPanelItems, object ):
 
     dict_collection_visible_keys = ( 'id', 'name', 'version' )
 
-    def __init__( self, elem=None ):
+    def __init__( self, item=None ):
         """ Build a ToolSection from an ElementTree element or a dictionary.
         """
-        f = lambda elem, val: elem is not None and elem.get( val ) or ''
-        self.name = f( elem, 'name' )
-        self.id = f( elem, 'id' )
-        self.version = f( elem, 'version' )
+        if item is None:
+            item = dict()
+        self.name = item.get('name') or ''
+        self.id = item.get('id') or ''
+        self.version = item.get('version') or ''
         self.elems = ToolPanelElements()
 
     def copy( self ):
@@ -93,13 +95,14 @@ class ToolSectionLabel( Dictifiable, object ):
 
     dict_collection_visible_keys = ( 'id', 'text', 'version' )
 
-    def __init__( self, elem ):
+    def __init__( self, item ):
         """ Build a ToolSectionLabel from an ElementTree element or a
         dictionary.
         """
-        self.text = elem.get( "text" )
-        self.id = elem.get( "id" )
-        self.version = elem.get( "version" ) or ''
+        item = ensure_tool_conf_item(item)
+        self.text = item.get( "text" )
+        self.id = item.get( "id" )
+        self.version = item.get( "version" ) or ''
 
     def to_dict( self, **kwds ):
         return super( ToolSectionLabel, self ).to_dict()

@@ -190,7 +190,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
             });
 
             // append message
-            this.portlet.append(this.message.$el.addClass('ui-margin-top'));
+            this.portlet.append(this.message.$el);
 
             // append tool section
             this.portlet.append(this.section.$el);

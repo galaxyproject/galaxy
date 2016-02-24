@@ -92,7 +92,7 @@ define([], function() {
         /** Main Template
         */
         _template: function(options) {
-            var tmp =   '<div class="ui-form-element input-name-' + options.name + '">' +
+            var tmp =   '<div class="ui-form-element">' +
                             '<div class="ui-form-error ui-error">' +
                                 '<span class="fa fa-arrow-down"/><span class="ui-form-error-text"/>' +
                             '</div>' +
@@ -109,9 +109,9 @@ define([], function() {
             tmp +=              '<div class="ui-form-info">';
             if (options.help) {
                 tmp +=              options.help;
-                if (options.argument && options.help.indexOf('(' + options.argument + ')') == -1) {
-                    tmp += ' (' + options.argument + ')';
-                }
+            }
+            if (options.argument && options.help.indexOf('(' + options.argument + ')') == -1) {
+                tmp +=              ' (' + options.argument + ')';
             }
             tmp +=              '</div>' +
                                 '<div class="ui-form-backdrop"/>' +

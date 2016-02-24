@@ -170,6 +170,13 @@ define([
         ok( this.test_accept( other ) );
     } );
 
+    test( "input type can accept any datatype", function() {
+        this.input.extensions = [ "input" ];
+        this.input_terminal.update( this.input );
+        var other = { node: {}, datatypes: [ "binary" ] };
+        ok( this.test_accept( other ) );
+    } );
+
     test( "cannot accept when already connected", function() {
         var self = this;
         // If other is subtype but already connected, cannot accept
@@ -267,7 +274,7 @@ define([
     module( "Input collection terminal model test", {
         setup: function( ) {
             this.node = new Node(  create_app(), {  } );
-            this.input = { extensions: [ "txt" ], collection_type: "list" };
+            this.input = { extensions: [ "txt" ], collection_types: ["list"] };
             this.input_terminal = new Terminals.InputCollectionTerminal( { input: this.input } );
             this.input_terminal.node = this.node;
         }
@@ -276,12 +283,13 @@ define([
     test( "Collection output can connect to same collection input type", function() {
         var self = this;
         var inputTerminal = self.input_terminal;
+        ok( inputTerminal );
         var outputTerminal = new Terminals.OutputCollectionTerminal( {
             datatypes: 'txt',
             collection_type: 'list'
         } );
         outputTerminal.node = {};
-        ok( this.input_terminal.canAccept( outputTerminal ) );
+        ok( inputTerminal.canAccept( outputTerminal ), "Input terminal " + inputTerminal + " can not accept " + outputTerminal );
     } );
 
     test( "Collection output cannot connect to different collection input type", function() {
@@ -292,7 +300,7 @@ define([
             collection_type: 'paired'
         } );
         outputTerminal.node = {};
-        ok( ! this.input_terminal.canAccept( outputTerminal ) );
+        ok( ! inputTerminal.canAccept( outputTerminal ) );
     } );
 
     module( "Node unit test", {
@@ -883,7 +891,7 @@ define([
                 outputTerminal = output;
             }
 
-            ok( inputTerminal.attachable( outputTerminal ) );
+            ok( inputTerminal.attachable( outputTerminal ), 'Cannot attach '+ outputTerminal + " to " + inputTerminal );
 
             // Go further... make sure datatypes are being enforced
             inputTerminal.datatypes = [ "bam" ];
@@ -1008,23 +1016,23 @@ define([
     } );
 
     test( "unconstrained collection input can be mapped over", function() {
-        var inputTerminal1 = this.newInputCollectionTerminal( { collection_type: "paired" } );
+        var inputTerminal1 = this.newInputCollectionTerminal( { collection_types: ["paired"] } );
         this.verifyAttachable( inputTerminal1, "list:paired" );
     } );
 
     test( "unconstrained collection input cannot be mapped over by incompatible type", function() {
-        var inputTerminal1 = this.newInputCollectionTerminal( { collection_type: "list" } ); // Would need to be paired...
+        var inputTerminal1 = this.newInputCollectionTerminal( { collection_types: ["list"] } ); // Would need to be paired...
         this.verifyNotAttachable( inputTerminal1, "list:paired" );
     } );
 
     test( "explicitly mapped over collection input can be attached by explicit mapping", function() {
-        var inputTerminal1 = this.newInputCollectionTerminal( { collection_type: "paired" } );
+        var inputTerminal1 = this.newInputCollectionTerminal( { collection_types: ["paired"] } );
         inputTerminal1.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
         this.verifyAttachable( inputTerminal1, "list:paired" );
     } );
 
     test( "explicitly mapped over collection input can be attached by explicit mapping", function() {
-        var inputTerminal1 = this.newInputCollectionTerminal( { collection_type: "list:paired" } );
+        var inputTerminal1 = this.newInputCollectionTerminal( { collection_types: ["list:paired"] } );
         inputTerminal1.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
         // effectively input is list:list:paired so shouldn't be able to attach
         this.verifyNotAttachable( inputTerminal1, "list:paired" );

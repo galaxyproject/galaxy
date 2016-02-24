@@ -2,13 +2,18 @@
 """
 import os
 import re
+import operator
 import glob
 import json
 
 from galaxy import jobs
 from galaxy import util
 from galaxy.util import odict
-from galaxy.tools.parser.output_collection_def import DEFAULT_DATASET_COLLECTOR_DESCRIPTION
+from galaxy.tools.parser.output_collection_def import (
+    DEFAULT_DATASET_COLLECTOR_DESCRIPTION,
+    INPUT_DBKEY_TOKEN,
+)
+
 
 DATASET_ID_TOKEN = "DATASET_ID"
 
@@ -23,6 +28,7 @@ def collect_dynamic_collections(
     job_working_directory,
     inp_data={},
     job=None,
+    input_dbkey="?",
 ):
     collections_service = tool.app.dataset_collections_service
     job_context = JobContext(
@@ -30,6 +36,7 @@ def collect_dynamic_collections(
         job,
         job_working_directory,
         inp_data,
+        input_dbkey,
     )
 
     for name, has_collection in output_collections.items():
@@ -63,8 +70,9 @@ def collect_dynamic_collections(
 
 class JobContext( object ):
 
-    def __init__( self, tool, job, job_working_directory, inp_data ):
+    def __init__( self, tool, job, job_working_directory, inp_data, input_dbkey ):
         self.inp_data = inp_data
+        self.input_dbkey = input_dbkey
         self.app = tool.app
         self.sa_session = tool.sa_session
         self.job = job
@@ -108,6 +116,9 @@ class JobContext( object ):
             visible = fields_match.visible
             ext = fields_match.ext
             dbkey = fields_match.dbkey
+            if dbkey == INPUT_DBKEY_TOKEN:
+                dbkey = self.input_dbkey
+
             # Create new primary dataset
             name = fields_match.name or designation
 
@@ -175,7 +186,7 @@ class JobContext( object ):
         return primary_data
 
 
-def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
+def collect_primary_datasets( tool, output, job_working_directory, input_ext, input_dbkey="?" ):
     app = tool.app
     sa_session = tool.sa_session
     new_primary_datasets = {}
@@ -220,12 +231,14 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
                 primary_output_assigned = True
                 continue
             if name not in primary_datasets:
-                primary_datasets[ name ] = {}
+                primary_datasets[ name ] = odict.odict()
             visible = fields_match.visible
             ext = fields_match.ext
             if ext == "input":
                 ext = input_ext
             dbkey = fields_match.dbkey
+            if dbkey == INPUT_DBKEY_TOKEN:
+                dbkey = input_dbkey
             # Create new primary dataset
             primary_data = app.model.HistoryDatasetAssociation( extension=ext,
                                                                 designation=designation,
@@ -310,6 +323,7 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
 
 def walk_over_extra_files( extra_file_collectors, job_working_directory, matchable ):
     for extra_file_collector in extra_file_collectors:
+        matches = []
         directory = job_working_directory
         if extra_file_collector.directory:
             directory = os.path.join( directory, extra_file_collector.directory )
@@ -317,12 +331,16 @@ def walk_over_extra_files( extra_file_collectors, job_working_directory, matchab
                 raise Exception( "Problem with tool configuration, attempting to pull in datasets from outside working directory." )
         if not os.path.isdir( directory ):
             continue
-        for filename in sorted( os.listdir( directory ) ):
+        for filename in os.listdir( directory ):
             path = os.path.join( directory, filename )
             if not os.path.isfile( path ):
                 continue
-            if extra_file_collector.match( matchable, filename ):
-                yield path, extra_file_collector
+            match = extra_file_collector.match( matchable, filename, path=path )
+            if match:
+                matches.append(match)
+
+        for match in extra_file_collector.sort(matches):
+            yield match.path, extra_file_collector
 
 
 def dataset_collector( dataset_collection_description ):
@@ -339,6 +357,9 @@ class DatasetCollector( object ):
     def __init__( self, dataset_collection_description ):
         # dataset_collection_description is an abstract description
         # built from the tool parsing module - see galaxy.tools.parser.output_colleciton_def
+        self.sort_key = dataset_collection_description.sort_key
+        self.sort_reverse = dataset_collection_description.sort_reverse
+        self.sort_comp = dataset_collection_description.sort_comp
         self.pattern = dataset_collection_description.pattern
         self.default_dbkey = dataset_collection_description.default_dbkey
         self.default_ext = dataset_collection_description.default_ext
@@ -352,20 +373,38 @@ class DatasetCollector( object ):
             token_replacement = str( dataset_instance.id )
         return self.pattern.replace( DATASET_ID_TOKEN, token_replacement )
 
-    def match( self, dataset_instance, filename ):
+    def match( self, dataset_instance, filename, path=None ):
         pattern = self.pattern_for_dataset( dataset_instance )
         re_match = re.match( pattern, filename )
         match_object = None
         if re_match:
-            match_object = CollectedDatasetMatch( re_match, self )
+            match_object = CollectedDatasetMatch( re_match, self, filename, path=path )
         return match_object
+
+    def sort( self, matches ):
+        reverse = self.sort_reverse
+        sort_key = self.sort_key
+        sort_comp = self.sort_comp
+        assert sort_key in ["filename", "dbkey", "name", "designation"]
+        assert sort_comp in ["lexical", "numeric"]
+        key = operator.attrgetter(sort_key)
+        if sort_comp == "numeric":
+            key = _compose(int, key)
+
+        return sorted(matches, key=key, reverse=reverse)
+
+
+def _compose(f, g):
+    return lambda x: f(g(x))
 
 
 class CollectedDatasetMatch( object ):
 
-    def __init__( self, re_match, collector ):
+    def __init__( self, re_match, collector, filename, path=None ):
         self.re_match = re_match
         self.collector = collector
+        self.filename = filename
+        self.path = path
 
     @property
     def designation( self ):

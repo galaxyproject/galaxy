@@ -1467,11 +1467,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         return ''
 
     @web.json
-    def get_file_contents( self, trans, file_path ):
+    def get_file_contents( self, trans, file_path, repository_id ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        return suc.get_repository_file_contents( file_path )
+        return suc.get_repository_file_contents( trans.app, file_path, repository_id )
 
     @web.expose
     def get_functional_test_rss( self, trans, **kwd ):
@@ -2436,11 +2436,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         return ''
 
     @web.json
-    def open_folder( self, trans, folder_path ):
+    def open_folder( self, trans, folder_path, repository_id ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        return suc.open_repository_files_folder( folder_path )
+        return suc.open_repository_files_folder( trans.app, folder_path, repository_id )
 
     @web.expose
     def preview_tools_in_changeset( self, trans, repository_id, **kwd ):
@@ -2946,13 +2946,13 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 else:
                     tool_shed_status_dict[ 'revision_update' ] = 'False'
             # Handle revision upgrades.
-            ordered_metadata_changeset_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
-            num_metadata_revisions = len( ordered_metadata_changeset_revisions )
-            for index, metadata_changeset_revision in enumerate( ordered_metadata_changeset_revisions ):
+            metadata_revisions = [ revision[ 1 ] for revision in suc.get_metadata_revisions( repository, repo ) ]
+            num_metadata_revisions = len( metadata_revisions )
+            for index, metadata_revision in enumerate( metadata_revisions ):
                 if index == num_metadata_revisions:
                     tool_shed_status_dict[ 'revision_upgrade' ] = 'False'
                     break
-                if metadata_changeset_revision == changeset_revision:
+                if metadata_revision == changeset_revision:
                     if num_metadata_revisions - index > 1:
                         tool_shed_status_dict[ 'revision_upgrade' ] = 'True'
                     else:

@@ -19,7 +19,7 @@ import urllib
 from cgi import escape
 
 from galaxy.datatypes import metadata
-from galaxy.datatypes.images import Html
+from galaxy.datatypes.text import Html
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.tabular import Tabular
 from galaxy.util import nice_size

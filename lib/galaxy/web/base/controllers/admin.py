@@ -1,6 +1,7 @@
 import logging
 import os
 from datetime import datetime, timedelta
+from six import string_types
 from string import punctuation as PUNCTUATION
 
 from sqlalchemy import and_, false, func, or_
@@ -68,26 +69,24 @@ class Admin( object ):
     def package_tool( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
         toolbox = self.app.toolbox
         tool_id = None
         if params.get( 'package_tool_button', False ):
             tool_id = params.get('tool_id', None)
-            tool_tarball, success, message = trans.app.toolbox.package_tool( trans, tool_id )
-            if success:
+            try:
+                tool_tarball = trans.app.toolbox.package_tool( trans, tool_id )
                 trans.response.set_content_type( 'application/x-gzip' )
                 download_file = open( tool_tarball )
                 os.unlink( tool_tarball )
                 tarball_path, filename = os.path.split( tool_tarball )
                 trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.tgz"' % ( tool_id )
                 return download_file
-            else:
-                status = 'error'
-        return trans.fill_template( '/admin/package_tool.mako',
-                                    tool_id=tool_id,
-                                    toolbox=toolbox,
-                                    message=message,
-                                    status=status )
+            except Exception:
+                return trans.fill_template( '/admin/package_tool.mako',
+                                            tool_id=tool_id,
+                                            toolbox=toolbox,
+                                            message=message,
+                                            status='error' )
 
     @web.expose
     @web.require_admin
@@ -1131,7 +1130,7 @@ class Admin( object ):
             # write the configured sanitize_whitelist_file with new whitelist
             # and update in-memory list.
             with open(trans.app.config.sanitize_whitelist_file, 'wt') as f:
-                if isinstance(tools_to_whitelist, basestring):
+                if isinstance(tools_to_whitelist, string_types):
                     tools_to_whitelist = [tools_to_whitelist]
                 new_whitelist = sorted([tid for tid in tools_to_whitelist if tid in trans.app.toolbox.tools_by_id])
                 f.write("\n".join(new_whitelist))

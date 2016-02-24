@@ -17,30 +17,27 @@ from datetime import datetime, timedelta
 from itertools import ifilter, imap
 from string import Template
 from uuid import UUID, uuid4
+from six import string_types
 
 from sqlalchemy import and_, func, not_, or_, true, join, select
 from sqlalchemy.orm import joinedload, object_session, aliased
 from sqlalchemy.ext import hybrid
+from sqlalchemy import types
+from sqlalchemy import type_coerce
 
-try:
-    import pexpect
-except ImportError:
-    pexpect = None
-
-import galaxy.datatypes
-import galaxy.datatypes.registry
 import galaxy.model.orm.now
+import galaxy.model.metadata
 import galaxy.security.passwords
 import galaxy.util
-from galaxy.datatypes.metadata import MetadataCollection
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.security import get_permitted_actions
 from galaxy.util import Params, restore_text, send_mail
-from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util import ready_name_for_url, unique_id
-from galaxy.util.bunch import Bunch
+from galaxy.util import unicodify
+from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util.hash_util import new_secure_hash
+from galaxy.util.bunch import Bunch
 from galaxy.util.directory_hash import directory_hash_id
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.framework.helpers import to_unicode
@@ -50,18 +47,13 @@ from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
 
 log = logging.getLogger( __name__ )
 
-datatypes_registry = galaxy.datatypes.registry.Registry()
-# Default Value Required for unit tests
-datatypes_registry.load_datatypes()
+_datatypes_registry = None
 
 # When constructing filters with in for a fixed set of ids, maximum
 # number of items to place in the IN statement. Different databases
 # are going to have different limits so it is likely best to not let
 # this be unlimited - filter in Python if over this limit.
 MAX_IN_FILTER_LENGTH = 100
-
-PEXPECT_IMPORT_MESSAGE = ('The Python pexpect package is required to use this '
-                          'feature, please install it')
 
 
 class NoConverterException(Exception):
@@ -80,12 +72,18 @@ class ConverterDependencyException(Exception):
         return repr(self.value)
 
 
+def _get_datatypes_registry():
+    if _datatypes_registry is None:
+        raise Exception("galaxy.model.set_datatypes_registry must be called before performing certain DatasetInstance operations.")
+    return _datatypes_registry
+
+
 def set_datatypes_registry( d_registry ):
     """
     Set up datatypes_registry
     """
-    global datatypes_registry
-    datatypes_registry = d_registry
+    global _datatypes_registry
+    _datatypes_registry = d_registry
 
 
 class HasName:
@@ -96,8 +94,7 @@ class HasName:
         object. If string, convert to unicode object assuming 'utf-8' format.
         """
         name = self.name
-        if isinstance(name, str):
-            name = unicode(name, 'utf-8')
+        name = unicodify( name, 'utf-8' )
         return name
 
 
@@ -108,18 +105,13 @@ class JobLike:
         self.numeric_metrics = []
 
     def add_metric( self, plugin, metric_name, metric_value ):
-        if isinstance( plugin, str ):
-            plugin = unicode( plugin, 'utf-8' )
-
-        if isinstance( metric_name, str ):
-            metric_name = unicode( metric_name, 'utf-8' )
-
+        plugin = unicodify( plugin, 'utf-8' )
+        metric_name = unicodify( metric_name, 'utf-8' )
         if isinstance( metric_value, numbers.Number ):
             metric = self._numeric_metric( plugin, metric_name, metric_value )
             self.numeric_metrics.append( metric )
         else:
-            if isinstance( metric_value, str ):
-                metric_value = unicode( metric_value, 'utf-8' )
+            metric_value = unicodify( metric_value, 'utf-8' )
             if len( metric_value ) > 1022:
                 # Truncate these values - not needed with sqlite
                 # but other backends must need it.
@@ -1398,7 +1390,6 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         assert db_session is not None
         query = db_session.query( content_class ).filter( content_class.table.c.history_id == self.id )
         query = query.order_by( content_class.table.c.hid.asc() )
-        python_filter = None
         deleted = galaxy.util.string_as_bool_or_none( kwds.get( 'deleted', None ) )
         if deleted is not None:
             query = query.filter( content_class.deleted == deleted )
@@ -1411,11 +1402,8 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             if len(ids) < max_in_filter_length:
                 query = query.filter( content_class.id.in_(ids) )
             else:
-                python_filter = lambda content: content.id in ids
-        if python_filter:
-            return ifilter(python_filter, query)
-        else:
-            return query
+                query = ifilter(lambda content: content.id in ids, query)
+        return query
 
     def __collection_contents_iter( self, **kwds ):
         return self.__filter_contents( HistoryDatasetCollectionAssociation, **kwds )
@@ -1862,13 +1850,13 @@ class DatasetInstance( object ):
 
     @property
     def datatype( self ):
-        return datatypes_registry.get_datatype_by_extension( self.extension )
+        return _get_datatypes_registry().get_datatype_by_extension( self.extension )
 
     def get_metadata( self ):
         # using weakref to store parent (to prevent circ ref),
         #   does a Session.clear() cause parent to be invalidated, while still copying over this non-database attribute?
         if not hasattr( self, '_metadata_collection' ) or self._metadata_collection.parent != self:
-            self._metadata_collection = MetadataCollection( self )
+            self._metadata_collection = galaxy.model.metadata.MetadataCollection( self )
         return self._metadata_collection
 
     def set_metadata( self, bunch ):
@@ -1896,7 +1884,7 @@ class DatasetInstance( object ):
 
     def change_datatype( self, new_ext ):
         self.clear_associated_files()
-        datatypes_registry.change_datatype( self, new_ext )
+        _get_datatypes_registry().change_datatype( self, new_ext )
 
     def get_size( self, nice_size=False ):
         """Returns the size of the data on disk"""
@@ -1933,7 +1921,7 @@ class DatasetInstance( object ):
     def get_mime( self ):
         """Returns the mime type of the data"""
         try:
-            return datatypes_registry.get_mimetype_by_extension( self.extension.lower() )
+            return _get_datatypes_registry().get_mimetype_by_extension( self.extension.lower() )
         except AttributeError:
             # extension is None
             return 'data'
@@ -2058,14 +2046,14 @@ class DatasetInstance( object ):
         return None
 
     def get_converter_types(self):
-        return self.datatype.get_converter_types( self, datatypes_registry )
+        return self.datatype.get_converter_types( self, _get_datatypes_registry() )
 
     def can_convert_to(self, format):
         return format in self.get_converter_types()
 
     def find_conversion_destination( self, accepted_formats, **kwd ):
         """Returns ( target_ext, existing converted dataset )"""
-        return self.datatype.find_conversion_destination( self, accepted_formats, datatypes_registry, **kwd )
+        return self.datatype.find_conversion_destination( self, accepted_formats, _get_datatypes_registry(), **kwd )
 
     def add_validation_error( self, validation_error ):
         self.validation_errors.append( validation_error )
@@ -2178,7 +2166,7 @@ class DatasetInstance( object ):
                 data_source = source_list
             else:
                 # Convert.
-                if isinstance( source_list, str ):
+                if isinstance( source_list, string_types ):
                     source_list = [ source_list ]
 
                 # Loop through sources until viable one is found.
@@ -2413,7 +2401,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                      update_time=hda.update_time.isoformat(),
                      data_type=hda.datatype.__class__.__module__ + '.' + hda.datatype.__class__.__name__,
                      genome_build=hda.dbkey,
-                     misc_info=hda.info.strip() if isinstance( hda.info, basestring ) else hda.info,
+                     misc_info=hda.info.strip() if isinstance( hda.info, string_types ) else hda.info,
                      misc_blurb=hda.blurb )
 
         # add tags string list
@@ -2452,6 +2440,18 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
     @property
     def history_content_type( self ):
         return "dataset"
+
+    # TODO: down into DatasetInstance
+    content_type = u'dataset'
+
+    @hybrid.hybrid_property
+    def type_id( self ):
+        return u'-'.join([ self.content_type, str( self.id ) ])
+
+    @type_id.expression
+    def type_id( cls ):
+        return (( type_coerce( cls.content_type, types.Unicode ) + u'-' +
+                  type_coerce( cls.id, types.Unicode ) ).label( 'type_id' ))
 
     def copy_tags_from( self, target_user, source_hda ):
         """
@@ -3181,7 +3181,7 @@ class DatasetCollectionInstance( object, HasName ):
         return changed
 
 
-class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, Dictifiable ):
+class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnotations, Dictifiable ):
     """ Associates a DatasetCollection with a History. """
     editable_keys = ( 'name', 'deleted', 'visible' )
 
@@ -3214,6 +3214,18 @@ class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, Dictifiabl
     @property
     def history_content_type( self ):
         return "dataset_collection"
+
+    # TODO: down into DatasetCollectionInstance
+    content_type = u'dataset_collection'
+
+    @hybrid.hybrid_property
+    def type_id( self ):
+        return u'-'.join([ self.content_type, str( self.id ) ])
+
+    @type_id.expression
+    def type_id( cls ):
+        return (( type_coerce( cls.content_type, types.Unicode ) + u'-' +
+                  type_coerce( cls.id, types.Unicode ) ).label( 'type_id' ))
 
     def to_dict( self, view='collection' ):
         dict_value = dict(
@@ -3561,6 +3573,28 @@ class Workflow( object, Dictifiable ):
         """
         return self.top_level_workflow.stored_workflow
 
+    def copy(self):
+        """ Copy a workflow (without user information) for a new
+        StoredWorkflow object.
+        """
+        copied_workflow = Workflow()
+        copied_workflow.name = self.name
+        copied_workflow.has_cycles = self.has_cycles
+        copied_workflow.has_errors = self.has_errors
+
+        # Map old step ids to new steps
+        step_mapping = {}
+        copied_steps = []
+        for step in self.steps:
+            copied_step = WorkflowStep()
+            copied_steps.append(copied_step)
+            step_mapping[step.id] = copied_step
+
+        for old_step, new_step in zip(self.steps, copied_steps):
+            old_step.copy_to(new_step, step_mapping)
+        copied_workflow.steps = copied_steps
+        return copied_workflow
+
     def log_str(self):
         extra = ""
         if self.stored_workflow:
@@ -3579,9 +3613,27 @@ class WorkflowStep( object ):
         self.position = None
         self.input_connections = []
         self.config = None
+        self.label = None
         self.uuid = uuid4()
-        self.worklfow_outputs = []
+        self.workflow_outputs = []
         self._input_connections_by_name = None
+
+    @property
+    def unique_workflow_outputs(self):
+        # Older Galaxy workflows may have multiple WorkflowOutputs
+        # per "output_name", when serving these back to the editor
+        # feed only a "best" output per "output_name.""
+        outputs = {}
+        for workflow_output in self.workflow_outputs:
+            output_name = workflow_output.output_name
+
+            if output_name in outputs:
+                found_output = outputs[output_name]
+                if found_output.label is None and workflow_output.label is not None:
+                    outputs[output_name] = workflow_output
+            else:
+                outputs[output_name] = workflow_output
+        return outputs.values()
 
     @property
     def content_id( self ):
@@ -3630,6 +3682,34 @@ class WorkflowStep( object ):
                 break
         return target_output
 
+    def copy_to(self, copied_step, step_mapping):
+        copied_step.order_index = self.order_index
+        copied_step.type = self.type
+        copied_step.tool_id = self.tool_id
+        copied_step.tool_inputs = self.tool_inputs
+        copied_step.tool_errors = self.tool_errors
+        copied_step.position = self.position
+        copied_step.config = self.config
+        copied_step.label = self.label
+        copied_step.input_connections = copy_list(self.input_connections)
+
+        subworkflow_step_mapping = {}
+        subworkflow = self.subworkflow
+        if subworkflow:
+            copied_subworkflow = subworkflow.copy()
+            copied_step.subworkflow = copied_subworkflow
+            for subworkflow_step, copied_subworkflow_step in zip(subworkflow.steps, copied_subworkflow.steps):
+                subworkflow_step_mapping[subworkflow_step.id] = copied_subworkflow_step
+
+        for old_conn, new_conn in zip(self.input_connections, copied_step.input_connections):
+            # new_conn.input_step = new_
+            new_conn.input_step = step_mapping[old_conn.input_step_id]
+            new_conn.output_step = step_mapping[old_conn.output_step_id]
+            if old_conn.input_subworkflow_step_id:
+                new_conn.input_subworkflow_step = subworkflow_step_mapping[old_conn.input_subworkflow_step_id]
+
+        copied_step.workflow_outputs = copy_list(self.workflow_outputs, copied_step)
+
     def log_str(self):
         return "WorkflowStep[index=%d,type=%s]" % (self.order_index, self.type)
 
@@ -3657,6 +3737,13 @@ class WorkflowStepConnection( object ):
         return (self.output_name == WorkflowStepConnection.NON_DATA_CONNECTION and
                 self.input_name == WorkflowStepConnection.NON_DATA_CONNECTION)
 
+    def copy(self):
+        # TODO: handle subworkflow ids...
+        copied_connection = WorkflowStepConnection()
+        copied_connection.output_name = self.output_name
+        copied_connection.input_name = self.input_name
+        return copied_connection
+
 
 class WorkflowOutput(object):
 
@@ -3668,6 +3755,12 @@ class WorkflowOutput(object):
             self.uuid = uuid4()
         else:
             self.uuid = UUID(str(uuid))
+
+    def copy(self, copied_step):
+        copied_output = WorkflowOutput(copied_step)
+        copied_output.output_name = self.output_name
+        copied_output.label = self.label
+        return copied_output
 
 
 class StoredWorkflowUserShareAssociation( object ):
@@ -4520,30 +4613,6 @@ class Sample( object, Dictifiable ):
                 untransferred_datasets.append( dataset )
         return untransferred_datasets
 
-    def get_untransferred_dataset_size( self, filepath, scp_configs ):
-        def print_ticks( d ):
-            pass
-        if pexpect is None:
-            return PEXPECT_IMPORT_MESSAGE
-        error_msg = 'Error encountered in determining the file size of %s on the external_service.' % filepath
-        if not scp_configs['host'] or not scp_configs['user_name'] or not scp_configs['password']:
-            return error_msg
-        login_str = '%s@%s' % ( scp_configs['user_name'], scp_configs['host'] )
-        cmd = 'ssh %s "du -sh \'%s\'"' % ( login_str, filepath )
-        try:
-            output = pexpect.run( cmd,
-                                  events={ '.ssword:*': scp_configs['password'] + '\r\n',
-                                           pexpect.TIMEOUT: print_ticks},
-                                  timeout=10 )
-        except Exception:
-            return error_msg
-        # cleanup the output to get just the file size
-        return output.replace( filepath, '' )\
-                     .replace( 'Password:', '' )\
-                     .replace( "'s password:", '' )\
-                     .replace( login_str, '' )\
-                     .strip()
-
     @property
     def run_details( self ):
         # self.runs is a list of SampleRunAssociations ordered descending on update_time.
@@ -5021,3 +5090,10 @@ class APIKeys( object ):
         self.id = id
         self.user_id = user_id
         self.key = key
+
+
+def copy_list(lst, *args, **kwds):
+    if lst is None:
+        return lst
+    else:
+        return list(map(lambda el: el.copy(*args, **kwds), lst))

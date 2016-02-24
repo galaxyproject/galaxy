@@ -1162,7 +1162,7 @@ SpaceGhost.prototype.getUniverseSetting = function getUniverseSetting( iniKey ){
 };
 
 SpaceGhost.prototype.waitForMasthead = function wait( then ) {
-    return this.waitForText( this.data.labels.masthead.menus.user, then );
+    return this.waitForText( this.data.labels.masthead.menus.analyze, then );
 };
 
 
@@ -1193,7 +1193,8 @@ SpaceGhost.prototype.data = {
             adminLink   : '#masthead a[href="/admin/index"]',
             userMenu    : {
                 userEmail_xpath : '//a[contains(text(),"Logged in as")]'
-            }
+            },
+            user        : '//ul[@id="user"]',
         },
         toolMenu : {
             container   : '.toolMenuContainer'
@@ -1225,7 +1226,12 @@ SpaceGhost.prototype.data = {
     labels : {
         masthead : {
             menus : {
-                user : 'User'
+                analyze: 'Analyze Data',
+                workflow: 'Workflow',
+                libraries: 'Shared Data',
+                visualization: 'Visualization',
+                help: 'Help',
+                user : 'User',
             },
             userMenu : {
                 register    : 'Register',

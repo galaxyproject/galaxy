@@ -4,6 +4,8 @@ Tool Parameter specific sanitizing.
 
 import logging
 import string
+from six import string_types
+
 import galaxy.util
 
 log = logging.getLogger( __name__ )
@@ -134,7 +136,7 @@ class ToolParameterSanitizer( object ):
 
     def restore_param( self, value ):
         if self.sanitize:
-            if isinstance( value, basestring ):
+            if isinstance( value, string_types ):
                 return self.restore_text( value )
             elif isinstance( value, list ):
                 return map( self.restore_text, value )
@@ -160,7 +162,7 @@ class ToolParameterSanitizer( object ):
         """Clean incoming parameters (strings or lists)"""
         if not self.sanitize:
             return value
-        if isinstance( value, basestring ):
+        if isinstance( value, string_types ):
             return self.sanitize_text( value )
         elif isinstance( value, list ):
             return map( self.sanitize_text, value )

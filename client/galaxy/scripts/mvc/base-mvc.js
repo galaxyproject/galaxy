@@ -4,6 +4,9 @@ define([
     'utils/add-logging',
     'utils/localization'
 ], function( _, Backbone, addLogging, _l ){
+
+'use strict';
+
 //==============================================================================
 /** @class Mixin to add logging capabilities to an object.
  *      Designed to allow switching an objects log output off/on at one central

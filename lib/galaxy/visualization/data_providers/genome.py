@@ -847,11 +847,11 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         """
 
         # Open current BAM file using index.
-        bamfile = pysam.AlignmentFile( filename=self.original_dataset.file_name, mode='rb',
+        bamfile = pysam.AlignmentFile( self.original_dataset.file_name, mode='rb',
                                        index_filename=self.converted_dataset.file_name )
 
         # TODO: write headers as well?
-        new_bamfile = pysam.AlignmentFile( template=bamfile, filename=filename, mode='wb' )
+        new_bamfile = pysam.AlignmentFile( filename, template=bamfile, mode='wb' )
 
         for region in regions:
             # Write data from region.
@@ -879,7 +879,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
 
     def open_data_file( self ):
         # Attempt to open the BAM file with index
-        return pysam.AlignmentFile( filename=self.original_dataset.file_name, mode='rb',
+        return pysam.AlignmentFile( self.original_dataset.file_name, mode='rb',
                                   index_filename=self.converted_dataset.file_name )
 
     def get_iterator( self, data_file, chrom, start, end, **kwargs ):

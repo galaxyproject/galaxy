@@ -29,18 +29,15 @@ class TestDataManagers( ShedTwillTestCase ):
 
     def test_0000_initiate_users_and_category( self ):
         """Create necessary user accounts and login as an admin user."""
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
         self.test_db_util.get_private_role( admin_user )
         self.create_category( name=category_name, description=category_description )
-        self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
         test_user_2 = self.test_db_util.get_user( common.test_user_2_email )
         assert test_user_2 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_2_email
         self.test_db_util.get_private_role( test_user_2 )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
@@ -76,7 +73,6 @@ class TestDataManagers( ShedTwillTestCase ):
         '''
         This is step 3 - Attempt to install the repository into a galaxy instance, verify that it is installed.
         '''
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         post_submit_strings_displayed = [ data_manager_repository_name ]
         self.install_repository( data_manager_repository_name,

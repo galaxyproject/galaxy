@@ -6,6 +6,7 @@ import tempfile
 import traceback
 
 from fabric.api import lcd
+from six import string_types
 from sqlalchemy import or_
 
 from galaxy import exceptions, util
@@ -834,6 +835,7 @@ class InstallRepositoryManager( object ):
 
     def install_tool_shed_repository( self, tool_shed_repository, repo_info_dict, tool_panel_section_key, shed_tool_conf, tool_path,
                                       install_tool_dependencies, reinstalling=False ):
+        self.app.install_model.context.flush()
         if tool_panel_section_key:
             _, tool_section = self.app.toolbox.get_section( tool_panel_section_key )
             if tool_section is None:
@@ -841,7 +843,7 @@ class InstallRepositoryManager( object ):
                            str( tool_panel_section_key ) )
         else:
             tool_section = None
-        if isinstance( repo_info_dict, basestring ):
+        if isinstance( repo_info_dict, string_types ):
             repo_info_dict = encoding_util.tool_shed_decode( repo_info_dict )
         # Clone each repository to the configured location.
         self.update_tool_shed_repository_status( tool_shed_repository,

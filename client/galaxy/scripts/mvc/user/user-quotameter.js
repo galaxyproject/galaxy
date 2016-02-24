@@ -2,6 +2,7 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( baseMVC, _l ){
+'use strict';
 
 var logNamespace = 'user';
 //==============================================================================
@@ -27,7 +28,7 @@ var UserQuotaMeter = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
         _.extend( this.options, options );
 
         //this.bind( 'all', function( event, data ){ this.log( this + ' event:', event, data ); }, this );
-        this.model.bind( 'change:quota_percent change:total_disk_usage', this.render, this );
+        this.listenTo( this.model, 'change:quota_percent change:total_disk_usage', this.render );
     },
 
     /** Re-load user model data from the api */

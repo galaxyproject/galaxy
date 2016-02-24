@@ -30,6 +30,7 @@
 ## Default stylesheets
 <%def name="stylesheets()">
     ${h.css('base')}
+    ${h.css('bootstrap-tour')}
 </%def>
 
 ## Default javascripts
@@ -49,6 +50,7 @@
         ## TODO: remove when all libs are required directly in modules
         'bundled/libs.bundled',
         'libs/require',
+        "libs/bootstrap-tour",
     )}
 
     <script type="text/javascript">

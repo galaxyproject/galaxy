@@ -26,86 +26,37 @@ ${get_css()}
         <table id="formHeader">
             <tr>
                 <td>
-                    ${
-                        get_pages(
-                            sort_id,
-                            order,
-                            page_specs,
-                            'workflows',
-                            'per_user',
-                            spark_time=time_period)
-                    }
+                    ${get_pages(sort_id, order, page_specs, 'workflows', 'per_user', spark_time=time_period)}
                 </td>
                 <td>
                     <h3 align="center">Workflows Per User</h3>
                     <h5 align="center">
-                        Graph goes from present to past 
-                        ${
-                            make_spark_settings(
-                                "jobs",
-                                "per_user",
-                                spark_limit,
-                                sort_id, order,
-                                time_period,
-                                page=page,
-                                offset=offset,
-                                entries=entries)
-                        }
+                        Graph goes from present to past
+                        ${make_spark_settings("jobs", "per_user", spark_limit, sort_id, order, time_period, page=page, offset=offset, entries=entries)}
                     </h5>
                 </td>
                 <td align="right">
-                    ${
-                        get_entry_selector(
-                            "workflows",
-                            "per_user",
-                            page_specs.entries,
-                            sort_id,
-                            order)
-                    }
+                    ${get_entry_selector("workflows", "per_user", page_specs.entries, sort_id, order)}
                 </td>
             </tr>
         </table>
-        
+
         <table align="center" width="60%" class="colored">
             %if len( workflows ) == 0:
                 <tr><td colspan="2">There are no workflows</td></tr>
             %else:
                 <tr class="header">
                     <td class="half_width">
-                        ${
-                            get_sort_url(
-                                sort_id,
-                                order,
-                                'user_email',
-                                'workflows',
-                                'per_user',
-                                'User',
-                                spark_time=time_period,
-                                page=page,
-                                offset=offset,
-                                entries=entries)
-                        }
+                        ${get_sort_url(sort_id, order, 'user_email', 'workflows', 'per_user', 'User', spark_time=time_period, page=page, offset=offset, entries=entries)}
                         <span class='dir_arrow user_email'>${arrow}</span>
                     </td>
                     <td class="third_width">
-                        ${
-                            get_sort_url(
-                                sort_id,
-                                order,
-                                'total_workflows',
-                                'workflows',
-                                'per_user',
-                                'Total Workflows',
-                                spark_time=time_period,
-                                page=page,
-                                offset=offset,
-                                entries=entries)
-                        }
+                        ${get_sort_url(sort_id, order, 'total_workflows', 'workflows', 'per_user', 'Total Workflows', spark_time=time_period, page=page, offset=offset, entries=entries)}
                         <span class='dir_arrow total_workflows'>${arrow}</span>
                     </td>
                     <td></td>
                 </tr>
-                <% 
+                <%
                    ctr = 0
                    entries = 1
                 %>
@@ -136,18 +87,12 @@ ${get_css()}
                         </td>
                         <td>${total}</td>
                         %try:
-                            ${
-                                make_sparkline(
-                                    key,
-                                    trends[key],
-                                    "bar",
-                                    "/ " + time_period[:-1])
-                            }
+                            ${make_sparkline(key, trends[key], "bar", "/ " + time_period[:-1])}
                         %except KeyError:
                         %endtry
                         <td id="${key}"></td>
                     </tr>
-                    <% 
+                    <%
                        ctr += 1
                        entries += 1
                     %>

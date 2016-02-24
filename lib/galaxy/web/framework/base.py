@@ -12,6 +12,7 @@ import types
 import routes
 import webob
 
+from six import string_types
 from Cookie import SimpleCookie
 
 # We will use some very basic HTTP/wsgi utilities from the paste library
@@ -209,7 +210,7 @@ class WebApplication( object ):
         if isinstance( body, ( types.GeneratorType, list, tuple ) ):
             # Recursively stream the iterable
             return flatten( body )
-        elif isinstance( body, basestring ):
+        elif isinstance( body, string_types ):
             # Wrap the string so it can be iterated
             return [ body ]
         elif body is None:

@@ -1,9 +1,15 @@
-import wchartype
+try:
+    import wchartype
+except ImportError:
+    wchartype = None
 
 from six import text_type
 
 
 def is_multi_byte( chars ):
+    if wchartype is None:
+        message = "Attempted to use galaxy.util.multi_byte but dependency wchartype is unavailable."
+        raise Exception(message)
     for char in chars:
         try:
             char = text_type( char )

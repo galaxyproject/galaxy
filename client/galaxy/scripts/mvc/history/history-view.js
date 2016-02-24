@@ -23,6 +23,8 @@ define([
     _l
 ){
 
+'use strict';
+
 var logNamespace = 'history';
 
 // ============================================================================
@@ -377,11 +379,13 @@ var HistoryView = _super.extend(
 
         //TODO:?? could use 'view:expanded' here?
         // maintain a list of items whose bodies are expanded
-        view.on( 'expanded', function( v ){
-            panel.storage.addExpanded( v.model );
-        });
-        view.on( 'collapsed', function( v ){
-            panel.storage.removeExpanded( v.model );
+        panel.listenTo( view, {
+            'expanded': function( v ){
+                panel.storage.addExpanded( v.model );
+            },
+            'collapsed': function( v ){
+                panel.storage.removeExpanded( v.model );
+            }
         });
         return this;
     },
