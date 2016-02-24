@@ -22,11 +22,6 @@ from sqlalchemy import and_, func, not_, or_, true, join, select
 from sqlalchemy.orm import joinedload, object_session, aliased
 from sqlalchemy.ext import hybrid
 
-try:
-    import pexpect
-except ImportError:
-    pexpect = None
-
 import galaxy.datatypes
 import galaxy.datatypes.registry
 import galaxy.model.orm.now
@@ -59,9 +54,6 @@ datatypes_registry.load_datatypes()
 # are going to have different limits so it is likely best to not let
 # this be unlimited - filter in Python if over this limit.
 MAX_IN_FILTER_LENGTH = 100
-
-PEXPECT_IMPORT_MESSAGE = ('The Python pexpect package is required to use this '
-                          'feature, please install it')
 
 
 class NoConverterException(Exception):
@@ -4600,30 +4592,6 @@ class Sample( object, Dictifiable ):
             if dataset.status != SampleDataset.transfer_status.COMPLETE:
                 untransferred_datasets.append( dataset )
         return untransferred_datasets
-
-    def get_untransferred_dataset_size( self, filepath, scp_configs ):
-        def print_ticks( d ):
-            pass
-        if pexpect is None:
-            return PEXPECT_IMPORT_MESSAGE
-        error_msg = 'Error encountered in determining the file size of %s on the external_service.' % filepath
-        if not scp_configs['host'] or not scp_configs['user_name'] or not scp_configs['password']:
-            return error_msg
-        login_str = '%s@%s' % ( scp_configs['user_name'], scp_configs['host'] )
-        cmd = 'ssh %s "du -sh \'%s\'"' % ( login_str, filepath )
-        try:
-            output = pexpect.run( cmd,
-                                  events={ '.ssword:*': scp_configs['password'] + '\r\n',
-                                           pexpect.TIMEOUT: print_ticks},
-                                  timeout=10 )
-        except Exception:
-            return error_msg
-        # cleanup the output to get just the file size
-        return output.replace( filepath, '' )\
-                     .replace( 'Password:', '' )\
-                     .replace( "'s password:", '' )\
-                     .replace( login_str, '' )\
-                     .strip()
 
     @property
     def run_details( self ):
