@@ -12,18 +12,8 @@
 
 @import "fontawesome/font-awesome.less";
 .fa-icon {
-  font-family: FontAwesome;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-.fa {
-  // The following overrides the 'font-size: inherit' rule in fontawesome/core.less and prevents an intermittant chrome
-  // bug that makes fa icons render in the default font (e.g. times) which, since most of the icons use unicode, make
-  // the icons invisible. This only occurs when the font-size is further embiggened down the road (e.g. .icon-btn).
-  // see also: https://github.com/galaxyproject/galaxy/issues/1716
-  // and: https://github.com/FortAwesome/Font-Awesome/issues/5128
-  // TODO: remove
-  font-size: 14px;
+    // TODO: remove fa-icon and replace with fa
+    .fa;
 }
 
 @import "select2.less";
