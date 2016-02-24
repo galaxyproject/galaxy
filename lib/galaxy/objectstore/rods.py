@@ -12,7 +12,8 @@ from posixpath import join as path_join
 from posixpath import basename as path_basename
 from posixpath import dirname as path_dirname
 
-from galaxy.exceptions import ObjectNotFound
+from galaxy.exceptions import ObjectNotFound, ObjectInvalid
+from galaxy.util import safe_relpath
 from ..objectstore import DiskObjectStore, ObjectStore, local_extra_dirs
 
 try:
@@ -67,6 +68,20 @@ class IRODSObjectStore( DiskObjectStore, ObjectStore ):
         log.info( "iRODS data for this instance will be stored in collection: %s, resource: %s", self.root_collection_path, self.default_resource )
 
     def __get_rods_path( self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, strip_dat=True, **kwargs ):
+        # extra_dir should never be constructed from provided data but just
+        # make sure there are no shenannigans afoot
+        if extra_dir and extra_dir != os.path.normpath(extra_dir):
+            log.warning('extra_dir is not normalized: %s', extra_dir)
+            raise ObjectInvalid("The requested object is invalid")
+        # ensure that any parent directory references in alt_name would not
+        # result in a path not contained in the directory path constructed here
+        if alt_name:
+            if not safe_relpath(alt_name):
+                log.warning('alt_name would locate path outside dir: %s', alt_name)
+                raise ObjectInvalid("The requested object is invalid")
+            # alt_name can contain parent directory references, but iRODS will
+            # not follow them, so if they are valid we normalize them out
+            alt_name = os.path.normpath(alt_name)
         path = ""
         if extra_dir is not None:
             path = extra_dir
