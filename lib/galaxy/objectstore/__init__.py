@@ -11,7 +11,7 @@ import logging
 import threading
 from xml.etree import ElementTree
 
-from galaxy.util import umask_fix_perms, force_symlink
+from galaxy.util import umask_fix_perms, force_symlink, safe_relpath
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util.sleeper import Sleeper
 from galaxy.util.directory_hash import directory_hash_id
@@ -252,7 +252,17 @@ class DiskObjectStore(ObjectStore):
                          the composed directory structure does not include a hash id
                          (e.g., /files/dataset_10.dat (old) vs. /files/000/dataset_10.dat (new))
         """
-        base = self.extra_dirs.get(base_dir, self.file_path)
+        base = os.path.abspath(self.extra_dirs.get(base_dir, self.file_path))
+        # extra_dir should never be constructed from provided data but just
+        # make sure there are no shenannigans afoot
+        if extra_dir and extra_dir != os.path.normpath(extra_dir):
+            log.warning('extra_dir is not normalized: %s', extra_dir)
+            raise ObjectInvalid("The requested object is invalid")
+        # ensure that any parent directory references in alt_name would not
+        # result in a path not contained in the directory path constructed here
+        if alt_name and not safe_relpath(alt_name):
+            log.warning('alt_name would locate path outside dir: %s', alt_name)
+            raise ObjectInvalid("The requested object is invalid")
         if old_style:
             if extra_dir is not None:
                 path = os.path.join(base, extra_dir)
@@ -619,9 +629,10 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
     elif store == 'irods':
         from .rods import IRODSObjectStore
         return IRODSObjectStore(config=config, config_xml=config_xml)
-    elif store == 'pulsar':
-        from .pulsar import PulsarObjectStore
-        return PulsarObjectStore(config=config, config_xml=config_xml)
+    # Disable the Pulsar object store for now until it receives some attention
+    # elif store == 'pulsar':
+    #    from .pulsar import PulsarObjectStore
+    #    return PulsarObjectStore(config=config, config_xml=config_xml)
     else:
         log.error("Unrecognized object store definition: {0}".format(store))
 
