@@ -952,6 +952,7 @@ class Tool( object, Dictifiable ):
                 self.tool_shed = tool_shed_repository.tool_shed
                 self.repository_name = tool_shed_repository.name
                 self.repository_owner = tool_shed_repository.owner
+                self.changeset_revision = tool_shed_repository.changeset_revision
                 self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
 
     @property
@@ -1645,12 +1646,12 @@ class Tool( object, Dictifiable ):
         tool_dict = super( Tool, self ).to_dict()
 
         # Fill in ToolShedRepository info
-        if isinstance(self.tool_shed_repository, self.app.install_model.ToolShedRepository):
+        if hasattr(self, 'tool_shed') and self.tool_shed:
             tool_dict['tool_shed_repository'] = {
-                'name': self.tool_shed_repository.name,
-                'owner': self.tool_shed_repository.owner,
-                'changeset_revision': self.tool_shed_repository.changeset_revision,
-                'tool_shed': self.tool_shed_repository.tool_shed
+                'name': self.repository_name,
+                'owner': self.repository_owner,
+                'changeset_revision': self.changeset_revision,
+                'tool_shed': self.tool_shed
             }
 
         # If an admin user, expose the path to the actual tool config XML file.
