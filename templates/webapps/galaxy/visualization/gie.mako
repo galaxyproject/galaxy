@@ -90,10 +90,8 @@ $(document).ready(function(){
     ]
 
     var datasets = [
-        % for hda in history.datasets[::-1]:
-            % if not hda.deleted:
-            { id: "${ trans.security.encode_id(hda.dataset_id) }", text: "${ hda.hid } : ${ hda.name }" },
-            % endif
+        % for hda in history.visible_datasets[::-1]:
+            { id: "${ trans.security.encode_id(hda.id) }", text: "${ hda.hid } : ${ hda.name }" },
         % endfor
     ]
 
