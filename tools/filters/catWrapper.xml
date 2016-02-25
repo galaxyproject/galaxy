@@ -23,15 +23,18 @@
             <param name="input2" value="2.bed"/>
             <output name="out_file1" file="cat_wrapper_out1.bed"/>
         </test>
-        <!--TODO: if possible, enhance the underlying test code to handle this test
-            the problem is multiple params with the same name "input2"
+        <test>
+            <param name="input1" value="1.bed,2.bed,3.bed,4.bed,5.bed,6.bed,7.bed,8.bed,9.bed" />
+            <param name="out_file1" file="cat_wrapper_out2.bed" />
+        </test>
         <test>
             <param name="input1" value="1.bed"/>
-            <param name="input2" value="2.bed"/>
-            <param name="input2" value="3.bed"/>
-            <output name="out_file1" file="cat_wrapper_out2.bed"/>
+            <repeat name="queries">
+                <param name="input2" value="2.bed"/>
+                <param name="input2" value="3.bed"/>
+            </repeat>
+            <output name="out_file1" file="cat_wrapper_out3.bed"/>
         </test>
-        -->
     </tests>
     <help>
 
