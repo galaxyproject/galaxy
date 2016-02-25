@@ -315,7 +315,7 @@ class SelectField(BaseField):
 
     def get_html( self, prefix="", disabled=False, extra_attr=None ):
         if extra_attr is not None:
-            self.extra_attributes = ' %s' % ' '.join( [ '%s="%s"' % ( k, v ) for k, v in extra_attr.items() ] )
+            self.extra_attributes = ' %s' % ' '.join( [ '%s="%s"' % ( k, escape( v ) ) for k, v in extra_attr.items() ] )
         else:
             self.extra_attributes = ''
         if self.display == "checkboxes":
