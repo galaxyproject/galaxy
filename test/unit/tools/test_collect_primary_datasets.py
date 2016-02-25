@@ -51,6 +51,9 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
 
         # Test default metadata stuff
         assert created_hda_1.visible
+
+        # Since discovered_datasets not specified, older name based pattern
+        # didn't result in a dbkey being set.
         assert created_hda_1.dbkey == "?"
 
     def test_collect_sorted_reverse( self ):
@@ -171,6 +174,8 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
         created_hda = primary_outputs.values()[ 0 ]
         assert "foo.txt" in created_hda.name
         assert created_hda.ext == "txt"
+        assert created_hda.dbkey == "btau"
+        assert created_hda.dbkey == "btau"
 
     def test_name_and_ext_pattern( self ):
         self._replace_output_collectors( '''<output><discover_datasets pattern="__name_and_ext__" directory="subdir" /></output>''' )
@@ -180,6 +185,8 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
         assert len( primary_outputs ) == 2
         assert primary_outputs[ "foo1" ].ext == "txt"
         assert primary_outputs[ "foo2" ].ext == "tabular"
+        assert primary_outputs[ "foo1" ].dbkey == "btau"
+        assert primary_outputs[ "foo2" ].dbkey == "btau"
 
     def test_custom_pattern( self ):
         # Hypothetical oral metagenomic classifier that populates a directory
@@ -242,7 +249,7 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
     def _collect( self, job_working_directory=None ):
         if not job_working_directory:
             job_working_directory = self.test_directory
-        return self.tool.collect_primary_datasets( self.outputs, job_working_directory, "txt" )
+        return self.tool.collect_primary_datasets( self.outputs, job_working_directory, "txt", input_dbkey="btau" )
 
     def _replace_output_collectors( self, xml_str ):
         # Rewrite tool as if it had been created with output containing

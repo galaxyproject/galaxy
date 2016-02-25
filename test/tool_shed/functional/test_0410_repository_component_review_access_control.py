@@ -23,22 +23,18 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         Create all the user accounts that are needed for this test script to run independently of other test.
         Previously created accounts will not be re-created.
         """
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         self.test_db_util.get_private_role( test_user_1 )
-        self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
         test_user_2 = self.test_db_util.get_user( common.test_user_2_email )
         assert test_user_2 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_2_email
         self.test_db_util.get_private_role( test_user_2 )
-        self.logout()
         self.login( email=common.test_user_3_email, username=common.test_user_3_name )
         test_user_3 = self.test_db_util.get_user( common.test_user_3_email )
         assert test_user_3 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_3_email
         self.test_db_util.get_private_role( test_user_3 )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
@@ -72,7 +68,6 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         components to be reviewed in subsequent tests.
         """
         category = self.create_category( name='Test 0400 Repository Component Reviews', description='Test 0400 Repository Component Reviews' )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         strings_displayed = self.expect_repo_created_strings(repository_name)
         repository = self.get_or_create_repository( name=repository_name,
@@ -115,7 +110,6 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         We are at step 2 - Have test_user_2 complete a review of the repository.
         Review all components of the filtering repository, with the appropriate contents and approved/not approved/not applicable status.
         '''
-        self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         review_contents_dict = { 'Data types': dict(),
@@ -133,7 +127,6 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         We are at step 3 - Have test_user_1 browse the review.
         Verify that all the review components were submitted, and that the repository owner can see the review.
         '''
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         user = self.test_db_util.get_user( common.test_user_2_email )
@@ -149,7 +142,6 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         '''
         We are at step 4 - Have test_user_3 browse the repository and make sure they are not allowed to browse the review.
         '''
-        self.logout()
         self.login( email=common.test_user_3_email, username=common.test_user_3_name )
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         user = self.test_db_util.get_user( common.test_user_2_email )
@@ -166,7 +158,6 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         '''
         We are at step 5 - Have test_user_1 give write permission on the repository to the test_user_3.
         '''
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.grant_write_access( repository, usernames=[ common.test_user_3_name ] )
@@ -176,7 +167,6 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         '''
         We are at step 6 - Have test_user_3 browse the repository again and they should now have the ability to browse the review.
         '''
-        self.logout()
         self.login( email=common.test_user_3_email, username=common.test_user_3_name )
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         strings_displayed = [ 'Browse reviews of this repository' ]
@@ -187,7 +177,6 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         '''
         We are at step 7 - Have test_user_3 browse the review.
         '''
-        self.logout()
         self.login( email=common.test_user_3_email, username=common.test_user_3_name )
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         user = self.test_db_util.get_user( common.test_user_2_email )

@@ -26,17 +26,14 @@ class TestInstallDatatypesSniffers( ShedTwillTestCase ):
 
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         self.test_db_util.get_private_role( test_user_1 )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
         self.test_db_util.get_private_role( admin_user )
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         galaxy_admin_user = self.test_db_util.get_galaxy_user( common.admin_email )
         assert galaxy_admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
@@ -45,8 +42,8 @@ class TestInstallDatatypesSniffers( ShedTwillTestCase ):
     def test_0005_ensure_repositories_and_categories_exist( self ):
         '''Create the 1450 category and proteomics_datatypes_1450 repository.'''
         global repository_datatypes_count
+        self.login( email=common.admin_email, username=common.admin_username )
         category = self.create_category( name=category_name, description=category_description )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name=repository_name,
                                                     description=repository_description,
@@ -77,7 +74,6 @@ class TestInstallDatatypesSniffers( ShedTwillTestCase ):
         global base_sniffers_count
         base_datatypes_count = self.get_datatypes_count()
         base_sniffers_count = self.get_sniffers_count()
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         strings_displayed = [ 'proteomics' ]
         self.install_repository( 'proteomics_datatypes_1450',

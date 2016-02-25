@@ -1,14 +1,16 @@
 # Contains objects for using external display applications
 import logging
 import urllib
+from six import string_types
+from urllib import quote_plus
+from copy import deepcopy
+
 from galaxy.util import parse_xml, string_as_bool
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
 from parameters import DisplayApplicationParameter, DisplayApplicationDataParameter, DEFAULT_DATASET_NAME
-from urllib import quote_plus
 from util import encode_dataset_user
-from copy import deepcopy
 
 log = logging.getLogger( __name__ )
 
@@ -157,7 +159,7 @@ class DynamicDisplayApplicationBuilder( object ):
             display_application.add_data_table_watch( data_table.name, version )
         links = []
         for line in data_iter:
-            if isinstance( line, basestring ):
+            if isinstance( line, string_types ):
                 if not skip_startswith or not line.startswith( skip_startswith ):
                     line = line.rstrip( '\n\r' )
                     if not line:

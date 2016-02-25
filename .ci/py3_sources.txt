@@ -12,3 +12,6 @@ lib/galaxy/tools/toolbox/
 lib/galaxy/tools/parser/
 lib/galaxy/jobs/metrics/
 lib/galaxy/objectstore/
+scripts/api/common.py
+scripts/api/display.py
+scripts/api/workflow_execute_parameters.py

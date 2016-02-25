@@ -1,13 +1,11 @@
-import sys
-import os.path
 import logging
-
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] )  # remove scripts/ from the path
-sys.path = new_path
+import os.path
+import sys
+from ConfigParser import SafeConfigParser
 
 from migrate.versioning.shell import main
-from ConfigParser import SafeConfigParser
+
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
 from galaxy.model.orm.scripts import read_config_file_arg
 from galaxy.util.properties import load_app_properties

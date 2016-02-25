@@ -1,5 +1,6 @@
 import json
 import re
+from six import string_types
 
 from galaxy.exceptions import ObjectInvalid
 from galaxy.model import LibraryDatasetDatasetAssociation
@@ -316,7 +317,7 @@ class DefaultToolAction( object ):
             # or an actual object to copy.
             metadata_source = output.metadata_source
             if metadata_source:
-                if isinstance( metadata_source, basestring ):
+                if isinstance( metadata_source, string_types ):
                     metadata_source = inp_data[metadata_source]
 
             if metadata_source is not None:

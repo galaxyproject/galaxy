@@ -3,6 +3,7 @@ from sqlalchemy import and_, desc, false, true
 
 from galaxy import managers, model, util, web
 from galaxy.model.item_attrs import UsesItemRatings
+from galaxy.util import unicodify
 from galaxy.util.json import loads
 from galaxy.util.sanitize_html import sanitize_html, _BaseHTMLProcessor
 from galaxy.web import error, url_for
@@ -625,7 +626,7 @@ class PageController( BaseUIController, SharableMixin,
         ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, page )
 
         # Output is string, so convert to unicode for display.
-        page_content = unicode( processor.output(), 'utf-8' )
+        page_content = unicodify( processor.output(), 'utf-8' )
         return trans.fill_template_mako( "page/display.mako", item=page,
                                          item_data=page_content,
                                          user_item_rating=user_item_rating,

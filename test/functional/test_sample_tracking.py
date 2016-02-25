@@ -30,28 +30,24 @@ class TestFormsAndSampleTracking( TwillTestCase ):
 
     def test_0000_initiate_users( self ):
         """Ensuring all required user accounts exist"""
-        self.logout()
         self.login( email='test1@bx.psu.edu', username='regular-user1' )
         global regular_user1
         regular_user1 = get_user( 'test1@bx.psu.edu' )
         assert regular_user1 is not None, 'Problem retrieving user with email "test1@bx.psu.edu" from the database'
         global regular_user1_private_role
         regular_user1_private_role = get_private_role( regular_user1 )
-        self.logout()
         self.login( email='test2@bx.psu.edu', username='regular-user2' )
         global regular_user2
         regular_user2 = get_user( 'test2@bx.psu.edu' )
         assert regular_user2 is not None, 'Problem retrieving user with email "test2@bx.psu.edu" from the database'
         global regular_user2_private_role
         regular_user2_private_role = get_private_role( regular_user2 )
-        self.logout()
         self.login( email='test3@bx.psu.edu', username='regular-user3' )
         global regular_user3
         regular_user3 = get_user( 'test3@bx.psu.edu' )
         assert regular_user3 is not None, 'Problem retrieving user with email "test3@bx.psu.edu" from the database'
         global regular_user3_private_role
         regular_user3_private_role = get_private_role( regular_user3 )
-        self.logout()
         self.login( email='test@bx.psu.edu', username='admin-user' )
         global admin_user
         admin_user = get_user( 'test@bx.psu.edu' )
@@ -357,7 +353,6 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                        permissions_in,
                                        permissions_out )
         # Make sure the request_type1 is not accessible by regular_user2 since regular_user2 does not have Role1.
-        self.logout()
         self.login( email=regular_user2.email )
         self.visit_url( '%s/requests_common/create_request?cntrller=requests&request_type=True' % self.url )
         try:
@@ -365,7 +360,6 @@ class TestFormsAndSampleTracking( TwillTestCase ):
             raise AssertionError( 'The request_type %s is accessible by %s when it should be restricted' % ( request_type1.name, regular_user2.email ) )
         except:
             pass
-        self.logout()
         self.login( email=admin_user.email )
     # ====== Sequencing request test methods - regular user perspective ================
 
@@ -373,7 +367,6 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         """Testing creating a sequencing request as a regular user"""
         # logged in as admin_user
         # Create a user_address
-        self.logout()
         self.login( email=regular_user1.email )
         # add new address for this user
         address_dict = dict( short_desc="Office",
@@ -604,7 +597,6 @@ class TestFormsAndSampleTracking( TwillTestCase ):
     def test_0080_receive_request_as_admin( self ):
         """Testing receiving a sequencing request and assigning it barcodes"""
         # logged in as regular_user1
-        self.logout()
         # login as a admin_user to assign bar codes to samples
         self.login( email=admin_user.email )
         self.check_request_grid( cntrller='requests_admin',
@@ -698,7 +690,6 @@ class TestFormsAndSampleTracking( TwillTestCase ):
     def test_0095_admin_create_request_on_behalf_of_regular_user( self ):
         """Testing creating and submitting a request as an admin on behalf of a regular user"""
         # Logged in as regular_user1
-        self.logout()
         self.login( email=admin_user.email )
         # Create the request
         name = "Request2"
@@ -831,7 +822,6 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                    request_id=self.security.encode_id( request2.id ),
                                    strings_displayed=strings_displayed )
         # login as the regular user to make sure that the request2 is fully editable
-        self.logout()
         self.login( email=regular_user1.email )
         strings_displayed = [ 'Sequencing request "%s"' % request2.name,
                             request1.states.REJECTED,
@@ -848,7 +838,6 @@ class TestFormsAndSampleTracking( TwillTestCase ):
     def __test_0115_select_datasets_for_transfer( self ):
         """Testing selecting datasets for data transfer"""
         # Logged in as admin_user
-        self.logout()
         self.login( email=admin_user.email )
         # Setup the dummy datasets for sample1 of request1
         sample_datasets = [ '/path/to/sample1_dataset1',
@@ -932,7 +921,6 @@ class TestFormsAndSampleTracking( TwillTestCase ):
     def test_999_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         # Logged in as admin_user
-        self.logout()
         self.login( email=admin_user.email )
         ##################
         # Purge all libraries

@@ -303,6 +303,10 @@ define(['mvc/workflow/workflow-globals'], function( Globals ) {
         _producesAcceptableDatatype: function( other ) {
             // other is a non-collection output...
             for ( var t in this.datatypes ) {
+                var thisDatatype = this.datatypes[t];
+                if( thisDatatype == "input" ) {
+                    return true;
+                }
                 var cat_outputs = new Array();
                 cat_outputs = cat_outputs.concat(other.datatypes);
                 if (other.node.post_job_actions){
@@ -316,7 +320,7 @@ define(['mvc/workflow/workflow-globals'], function( Globals ) {
                 // FIXME: No idea what to do about case when datatype is 'input'
                 for ( var other_datatype_i in cat_outputs ) {
                     var other_datatype = cat_outputs[other_datatype_i];
-                    if ( other_datatype == "input" || other_datatype == "input_collection" || Globals.app.isSubType( cat_outputs[other_datatype_i], this.datatypes[t] ) ) {
+                    if ( other_datatype == "input" || other_datatype == "input_collection" || Globals.app.isSubType( cat_outputs[other_datatype_i], thisDatatype ) ) {
                         return true;
                     }
                 }

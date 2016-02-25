@@ -3,11 +3,12 @@ Tags Controller: handles tagging/untagging of entities
 and provides autocomplete support.
 """
 
-from galaxy import web
-from galaxy.web.base.controller import BaseUIController, UsesTagsMixin
-
+from six import text_type
 from sqlalchemy.sql import select
 from sqlalchemy.sql.expression import and_, func
+
+from galaxy import web
+from galaxy.web.base.controller import BaseUIController, UsesTagsMixin
 
 import logging
 log = logging.getLogger( __name__ )
@@ -47,7 +48,7 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
         trans.sa_session.flush()
         # Log.
         params = dict( item_id=item.id, item_class=item_class, tag=new_tag )
-        trans.log_action( user, unicode( "tag" ), context, params )
+        trans.log_action( user, text_type( "tag" ), context, params )
 
     @web.expose
     @web.require_login( "remove tag from an item" )
@@ -62,7 +63,7 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
         trans.sa_session.flush()
         # Log.
         params = dict( item_id=item.id, item_class=item_class, tag=tag_name )
-        trans.log_action( user, unicode( "untag" ), context, params )
+        trans.log_action( user, text_type( "untag" ), context, params )
 
     # Retag an item. All previous tags are deleted and new tags are applied.
     @web.expose

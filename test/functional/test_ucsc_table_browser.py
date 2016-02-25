@@ -7,13 +7,11 @@ from base.twilltestcase import TwillTestCase
 class UCSCMain( TwillTestCase ):
 
     def test_0000_create_users( self ):
-        self.logout()
         self.login( email='test@bx.psu.edu' )
         admin_user = test_db_util.get_user( 'test@bx.psu.edu' )
         assert admin_user is not None, 'Problem retrieving user with email "test@bx.psu.edu" from the database'
 
     def test_0005_get_mm10_5HTT_sequence( self ):
-        self.logout()
         self.login( email='test@bx.psu.edu' )
         test_db_util.get_user( 'test@bx.psu.edu' )
         self.new_history( name='UCSC_Main' )

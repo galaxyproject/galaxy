@@ -37,17 +37,14 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
 
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         galaxy_admin_user = self.test_db_util.get_galaxy_user( common.admin_email )
         assert galaxy_admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
         self.test_db_util.get_galaxy_private_role( galaxy_admin_user )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         self.test_db_util.get_private_role( test_user_1 )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
@@ -57,7 +54,6 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
         '''Create and populate convert_chars_0150.'''
         global running_standalone
         category = self.create_category( name=category_name, description=category_description )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name=convert_repository_name,
                                                     description=convert_repository_description,
@@ -126,7 +122,6 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
 
     def test_0025_install_column_repository( self ):
         '''Install column_maker_0150.'''
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         column_repository = self.test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
         preview_strings_displayed = [ 'column_maker_0150', self.get_repository_tip( column_repository ) ]

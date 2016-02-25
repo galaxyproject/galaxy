@@ -1505,7 +1505,10 @@ class TwillTestCase( unittest.TestCase ):
                 break
         self.assertNotEqual(count, maxiter)
 
-    def login( self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):
+    def login( self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='', logout_first=True ):
+        # Clear cookies.
+        if logout_first:
+            self.logout()
         # test@bx.psu.edu is configured as an admin user
         previously_created, username_taken, invalid_username = \
             self.create( email=email, password=password, username=username, redirect=redirect )
@@ -1519,6 +1522,7 @@ class TwillTestCase( unittest.TestCase ):
     def logout( self ):
         self.visit_url( "%s/user/logout" % self.url )
         self.check_page_for_string( "You have been logged out" )
+        tc.browser.cj.clear()
 
     def make_accessible_via_link( self, history_id, strings_displayed=[], strings_displayed_after_submit=[] ):
         # twill barfs on this form, possibly because it contains no fields, but not sure.
