@@ -208,6 +208,27 @@ class FileField(BaseField):
         return unicodify('<input type="file" name="%s%s"%s%s>' % (prefix, self.name, ajax_text, value_text))
 
 
+class GenomespaceFileField(BaseField):
+    """
+    A genomspace file browser field.
+    """
+    def __init__(self, name, value=None):
+        self.name = name
+        self.value = value or ""
+
+    def get_html(self, prefix=""):
+        return unicodify('<script src="https://gsui.genomespace.org/jsui/upload/gsuploadwindow.js"></script>'
+                         '<input type="text" name="{0}{1}" value="{2}">&nbsp;'
+                         '<a href="javascript:gsLocationByGet({{ successCallback: function(config)'
+                         ' {{ selector_name = \'{0}{1}\'; selector = \'input[name=\' + selector_name.replace(\'|\', \'\\\\|\') + \']\';'
+                         ' $(selector).val(config.destination + \'^\' + config.token); }} }});">'
+                         'Browse</a>'.format(prefix, self.name, escape(str(self.value), quote=True)))
+
+    def to_dict( self ):
+        return dict(name=self.name,
+                    token_field=self.token_field)
+
+
 class HiddenField(BaseField):
     """
     A hidden field.

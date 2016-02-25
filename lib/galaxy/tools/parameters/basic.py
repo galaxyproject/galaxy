@@ -626,6 +626,29 @@ class FTPFileToolParameter(ToolParameter):
         return d
 
 
+class GenomespaceFileToolParameter(ToolParameter):
+    """
+    Parameter that takes one of two values.
+    """
+
+    def __init__(self, tool, elem):
+        ToolParameter.__init__(self, tool, elem)
+        self.value = elem.get('value')
+
+    def get_html_field(self, trans=None, value=None, other_values={}):
+        return form_builder.GenomespaceFileField(self.name, value)
+
+    def to_string(self, value, app):
+        """Convert a value to a string representation suitable for persisting"""
+        if value is None:
+            return ''
+        else:
+            return str(value)
+
+    def get_initial_value(self, trans, context, history=None):
+        return self.value
+
+
 class HiddenToolParameter(ToolParameter):
     """
     Parameter that takes one of two values.
@@ -2087,6 +2110,7 @@ parameter_types = dict(
     baseurl=BaseURLToolParameter,
     file=FileToolParameter,
     ftpfile=FTPFileToolParameter,
+    genomespacefile=GenomespaceFileToolParameter,
     data=DataToolParameter,
     data_collection=DataCollectionToolParameter,
     library_data=LibraryDatasetToolParameter,
