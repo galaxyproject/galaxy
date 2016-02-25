@@ -79,8 +79,7 @@ class RemoteUser( object ):
             # Check for API key before checking for header
             return self.app( environ, start_response )
         elif self.config_secret_header is not None:
-            gxSecretIsNone = environ.get('HTTP_GX_SECRET') is None
-            if gxSecretIsNone or not safe_str_cmp(environ.get('HTTP_GX_SECRET'), self.config_secret_header):
+            if not safe_str_cmp(environ.get('HTTP_GX_SECRET',''), self.config_secret_header):
                 title = "Access to Galaxy is denied"
                 message = """
                 Galaxy is configured to authenticate users via an external
