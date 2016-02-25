@@ -10,8 +10,7 @@ import ConfigParser
 import os
 import sys
 
-galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
-sys.path.insert(0, os.path.join(galaxy_root, 'lib'))
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
 import galaxy.app
 import galaxy.datatypes.tabular
