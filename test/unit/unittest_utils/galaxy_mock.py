@@ -82,6 +82,8 @@ class MockAppConfig( Bunch ):
         self.allow_user_dataset_purge = True
         self.enable_old_display_applications = True
 
+        self.umask = 0o77
+
         # set by MockDir
         self.root = root
 

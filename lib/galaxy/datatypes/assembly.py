@@ -11,7 +11,7 @@ import os
 import re
 import sys
 from galaxy.datatypes import sequence
-from galaxy.datatypes.images import Html
+from galaxy.datatypes.text import Html
 from galaxy.datatypes.metadata import MetadataElement
 
 log = logging.getLogger(__name__)

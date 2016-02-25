@@ -342,6 +342,24 @@ Enhancements
 * Add a log.warn() if extracted file does not exist when changing permissions.
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 939`_
+* Add a safe_relpath util function for ensuring a path does not reference an absolute or parent directory.
+  `Commit f540a16`_
+
+Security
+-------------------------------
+
+.. security
+
+* Security fixes for history imports.
+  `Commit bf1c77d`_
+* Security fixes for object store paths.
+  `Commit 5da91bd`_
+* Remove sample tracking manual external service transfer due to security concerns.
+  `Commit cd8b965`_
+* Security fixes for tool shed repository browsing.
+  `Commit e4a1d57`_
+* Security fixes for tool shed hg push and capsule/tarball uploads.
+  `Commit e845d64`_
 
 Fixes
 -------------------------------
@@ -742,3 +760,10 @@ Fixes
 .. _Pull Request 1551: https://github.com/galaxyproject/galaxy/pull/1551
 .. _Pull Request 1554: https://github.com/galaxyproject/galaxy/pull/1554
 .. _Pull Request 1558: https://github.com/galaxyproject/galaxy/pull/1558
+
+.. _Commit f540a16: https://github.com/galaxyproject/galaxy/commit/f540a16768307995ea49c5d241948537ebbfa540
+.. _Commit bf1c77d: https://github.com/galaxyproject/galaxy/commit/bf1c77d171f079f42d481ad465dbaef3bac8b4d4
+.. _Commit 5da91bd: https://github.com/galaxyproject/galaxy/commit/5da91bddcda3ad3a4942e752d9b4bb3e7872046c
+.. _Commit cd8b965: https://github.com/galaxyproject/galaxy/commit/cd8b96553f673145ee64a86d32960ba42643baed
+.. _Commit e4a1d57: https://github.com/galaxyproject/galaxy/commit/e4a1d5727805168a9fd15aca1cdd21630ada2bbc
+.. _Commit e845d64: https://github.com/galaxyproject/galaxy/commit/e845d649c672c51cc2336da0d880c9ff74ea6b5f

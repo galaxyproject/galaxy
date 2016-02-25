@@ -10,10 +10,7 @@ shed repository but not defined in tool_conf.xml.
 import os
 import sys
 
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-# Remove scripts/ from the path.
-new_path.extend( sys.path[ 1: ] )
-sys.path = new_path
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
 from tool_shed.galaxy_install.migrate.common import MigrateToolsApplication
 
