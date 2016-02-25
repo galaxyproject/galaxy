@@ -1050,7 +1050,6 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
             history=trans.get_history(),
         )
 
-
     def _detect_gie_path(self, path):
         if ',' in path:
             # Then a GIE path is there. Otherwise just visualizations
