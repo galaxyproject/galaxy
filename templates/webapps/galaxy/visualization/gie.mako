@@ -47,9 +47,10 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td>Additional Datasets: </td>
+                                <td>Datasets: </td>
                                 <td>
                                     <span id="additional_datasets" style="width:400px"></span>
+                                    <input id="dataset_id" name="dataset_id" type="hidden">
                                     <input id="additional_dataset_ids" name="additional_dataset_ids" type="hidden">
                                 </td>
                             </tr>
@@ -98,7 +99,23 @@ $(document).ready(function(){
         multiple: true,
         data: datasets
     }).on('change', function(e){
-        $("#additional_dataset_ids").val($("#additional_datasets").val())
+        ds_ids = $("#additional_datasets").val().split(',');
+        if(ds_ids.length < 1){
+            $('input[type="submit"]').attr('disabled', '');
+        } else {
+            $("#dataset_id").val(ds_ids[0])
+
+            // In a perfect world the controller would just support a single
+            // parameter passing a list of dataset IDs.
+            //
+            // We aren't in that world (yet).
+            if(ds_ids.length > 1){
+                $("#additional_dataset_ids").val(ds_ids.slice(1).join(","))
+            }else{
+                $("#additional_dataset_ids").val("")
+            }
+            $('input[type="submit"]').removeAttr('disabled');
+        }
     })
 
     function formatter(v){
@@ -116,6 +133,8 @@ $(document).ready(function(){
         $("#launcher").attr("action", "../plugins/interactive_environments/" + e.val + "/show")
         // Update the hidden input
         $("#image_name_hidden").val(e.val)
+        // Set disabled if they switch image family without updating image.
+        $('input[type="submit"]').attr('disabled', '');
 
         // Create our select2 appropriately
         image_tags = $("#image_tag").select2({
@@ -128,7 +147,9 @@ $(document).ready(function(){
             // Inner actions, update the hidden input
             $("#image_tag_hidden").val(e2.val)
             // Enable the button
-            $('input[type="submit"]').removeAttr('disabled');
+            if($("additional_datasets").length > 0){
+                $('input[type="submit"]').removeAttr('disabled');
+            }
         })
     })
 })
