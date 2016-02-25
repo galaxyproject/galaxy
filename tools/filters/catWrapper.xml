@@ -1,15 +1,15 @@
-<tool id="cat1" name="Concatenate datasets" version="1.0.0">
+<tool id="cat1" name="Concatenate datasets" version="1.0.1">
     <description>tail-to-head</description>
     <command interpreter="python">
         catWrapper.py
-        $out_file1
-        $input1
+        "$out_file1"
+        "${'" "'.join(str($input1).split(','))}"
         #for $q in $queries
-            ${q.input2}
+            "${q.input2}"
         #end for
     </command>
     <inputs>
-        <param name="input1" type="data" label="Concatenate Dataset"/>
+        <param name="input1" type="data" label="Concatenate Dataset" multiple="True" />
         <repeat name="queries" title="Dataset">
             <param name="input2" type="data" label="Select" />
         </repeat>
