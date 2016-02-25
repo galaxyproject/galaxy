@@ -3,7 +3,9 @@
     <command interpreter="python">
         catWrapper.py
         "$out_file1"
-        "${'" "'.join(str($input1).split(','))}"
+        #for $dataset in $input1
+            "$dataset"
+        #end for
         #for $q in $queries
             "${q.input2}"
         #end for
