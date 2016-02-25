@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 import logging
 import os
-from six import text_type
 
 from galaxy import model, util
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, web
