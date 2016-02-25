@@ -28,7 +28,7 @@
                         <br />
                         <a href="https://docs.galaxyproject.org/en/master/admin/interactive_environments.html">Admin Docs</a>
                     </p>
-                    <form id='launcher' action="NONE" method="POST">
+                    <form id='launcher' action="NONE" method="GET">
 
                         <table class="table table-striped">
                             <tr>
@@ -90,8 +90,10 @@ $(document).ready(function(){
     ]
 
     var datasets = [
-        % for dataset in history.datasets:
-            { id: "${ trans.security.encode_id(dataset.dataset_id) }", text: "${ dataset.id } : ${ dataset.name }" },
+        % for hda in history.datasets[::-1]:
+            % if not hda.deleted:
+            { id: "${ trans.security.encode_id(hda.dataset_id) }", text: "${ hda.hid } : ${ hda.name }" },
+            % endif
         % endfor
     ]
 
