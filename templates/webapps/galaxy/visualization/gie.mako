@@ -113,7 +113,7 @@ $(document).ready(function(){
         // Get the versions for this image name
         image_versions = gie_image_map[e.val]
         // Update the action
-        $("#launcher").attr("action", e.val)
+        $("#launcher").attr("action", "../plugins/interactive_environments/" + e.val + "/show")
         // Update the hidden input
         $("#image_name_hidden").val(e.val)
 
@@ -129,7 +129,6 @@ $(document).ready(function(){
             $("#image_tag_hidden").val(e2.val)
             // Enable the button
             $('input[type="submit"]').removeAttr('disabled');
-
         })
     })
 })
