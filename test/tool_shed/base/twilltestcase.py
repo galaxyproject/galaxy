@@ -453,8 +453,9 @@ class ShedTwillTestCase( TwillTestCase ):
             relative_path = basepath
         repository_file_list = self.get_repository_file_list( repository=repository, base_path=relative_path, current_path=None )
         assert filename in repository_file_list, 'File %s not found in the repository under %s.' % ( filename, relative_path )
-        url = '/repository/get_file_contents?file_path=%s&repository_id=%s' % (os.path.join( relative_path, filename ), self.security.encode_id(repository.id))
-        self.visit_url( url )
+        params = dict( file_path=os.path.join( relative_path, filename ), repository_id=self.security.encode_id( repository.id ) )
+        url = '/repository/get_file_contents'
+        self.visit_url( url, params=params )
         self.check_for_strings( strings_displayed, strings_not_displayed )
 
     def display_reviewed_repositories_owned_by_user( self, strings_displayed=[], strings_not_displayed=[] ):
@@ -708,8 +709,9 @@ class ShedTwillTestCase( TwillTestCase ):
         else:
             request_param_path = os.path.join( base_path, current_path )
         # Get the current folder's contents.
-        url = '/repository/open_folder?folder_path=%s&repository_id=%s' % (request_param_path, self.security.encode_id(repository.id))
-        self.visit_url( url )
+        params = dict( folder_path=request_param_path, repository_id=self.security.encode_id( repository.id ) )
+        url = '/repository/open_folder'
+        self.visit_url( url, params=params )
         file_list = loads( self.last_page() )
         returned_file_list = []
         if current_path is not None:
