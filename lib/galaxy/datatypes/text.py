@@ -260,6 +260,7 @@ class Obo( Text ):
         OBO file format description
         http://www.geneontology.org/GO.format.obo-1_2.shtml
     """
+    edam_data = "data_0582"
     edam_format = "format_2549"
     file_ext = "obo"
 
@@ -295,6 +296,7 @@ class Arff( Text ):
         An ARFF (Attribute-Relation File Format) file is an ASCII text file that describes a list of instances sharing a set of attributes.
         http://weka.wikispaces.com/ARFF
     """
+    edam_format = "format_3581"
     file_ext = "arff"
 
     """Add metadata elements"""
@@ -392,7 +394,8 @@ class Arff( Text ):
 
 
 class SnpEffDb( Text ):
-    """Class describing a SnpEff genome build"""
+    """Class describing a SnpEff genome build"""i
+    edam_format = "format_3624"
     file_ext = "snpeffdb"
     MetadataElement( name="genome_version", default=None, desc="Genome Version", readonly=True, visible=True, no_value=None )
     MetadataElement( name="snpeff_version", default="SnpEff4.0", desc="SnpEff Version", readonly=True, visible=True, no_value=None )
