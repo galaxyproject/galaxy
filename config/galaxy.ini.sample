@@ -611,6 +611,10 @@ nglims_config_file = tool-data/nglims.yaml
 # launch the proxy if it is actually going to be used (e.g. for IPython).
 #dynamic_proxy_manage=True
 
+# As of 16.04 Galaxy supports multiple proxy types. The original NodeJS
+# implementation, alongside a new Golang single-binary-no-dependencies
+# version. Valid values are (node, golang)
+#dynamic_proxy=node
 # Dynamic proxy can use an SQLite database or a JSON file for IPC, set that
 # here.
 #dynamic_proxy_session_map=database/session_map.sqlite
@@ -632,6 +636,31 @@ nglims_config_file = tool-data/nglims.yaml
 # same path that your cookies are under. This will result in a url like
 # https://FQDN/galaxy-prefix/gie_proxy for proxying
 #dynamic_proxy_prefix=gie_proxy
+
+# The Golang proxy has a large number of extra options which were not available
+# to the NodeJS proxy, as the Golang proxy takes over container management itself.
+# This should actually be a preferrable situation, as there will be less hackery
+# required in GIE configs.
+
+# The length of time a container isn't accessed, before it is culled.
+# Previously, individual containers set their own time limit before killing
+# themselves. This made it harder for the administrator to centarlise configuration.
+# Since the golang proxy manages the containers itself, and tracks when the last packet
+# went through to a container, it has a much better idea of when the last connection was.
+dynamic_proxy_golang_noaccess = 60
+
+# Given the noaccess time, the golang proxy checks regularly for containers
+# which need to be removed. Every $clean_interval seconds, the proxy will check through its route list
+# for all tracks which haven't been accessed in at least $noaccess seconds, and kill those.
+dynamic_proxy_golang_clean_interval = 10
+
+# The golang proxy needs to know how to talk to your docker daemon
+dynamic_proxy_golang_docker_address = unix:///var/run/docker.sock
+
+# The golang proxy uses a RESTful HTTP API for communication with Galaxy
+# instead of a JSON or SQLite file for IPC. If you do not specify this, it will
+# be set randomly for you.
+dynamic_proxy_golang_api_key = password
 
 # -- Logging and Debugging
 
