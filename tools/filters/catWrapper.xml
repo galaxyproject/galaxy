@@ -33,6 +33,8 @@
             <param name="input1" value="1.bed"/>
             <repeat name="queries">
                 <param name="input2" value="2.bed"/>
+            </repeat>
+            <repeat name="queries">
                 <param name="input2" value="3.bed"/>
             </repeat>
             <output name="out_file1" file="cat_wrapper_out3.bed"/>
