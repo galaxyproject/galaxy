@@ -467,7 +467,6 @@ class Configuration( object ):
         self.dynamic_proxy_golang_noaccess = kwargs.get( "dynamic_proxy_golang_noaccess", 60 )
         self.dynamic_proxy_golang_clean_interval = kwargs.get( "dynamic_proxy_golang_clean_interval", 10 )
         self.dynamic_proxy_golang_docker_address = kwargs.get( "dynamic_proxy_golang_docker_address", "unix:///var/run/docker.sock" )
-        self.dynamic_proxy_golang_docker_address = kwargs.get( "dynamic_proxy_golang_docker_address", "unix:///var/run/docker.sock" )
         self.dynamic_proxy_golang_api_key = kwargs.get( "dynamic_proxy_golang_api_key", None )
 
         # Default chunk size for chunkable datatypes -- 64k
