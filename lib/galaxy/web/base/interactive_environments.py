@@ -252,7 +252,7 @@ class InteractiveEnvironmentRequest(object):
         :type image: str
         :param image: Optional image name. If not provided, self.default_image
                       is used, which is the first image listed in the
-                      allowed_images.txt{,.sample} file.
+                      allowed_images.yml{,.sample} file.
 
         :type additional_ids: str
         :param additional_ids: comma separated list of encoded HDA IDs. These

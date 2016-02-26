@@ -1020,29 +1020,29 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
     @web.expose
     @web.require_login( "run Galaxy Interactive Environments" )
     def gie_list( self, trans, **kwargs ):
-        if not hasattr( self, 'gie_dir' ):
-            self.gie_dir = self._detect_gie_path( trans.app.config.visualization_plugins_directory )
-
-        if self.gie_dir is None:
-            raise Exception( "No Galaxy Interactive Environments configured ( or configuration issue ). Contact your Galaxy Admin" )
-
         if not hasattr( self, 'gie_image_map' ):
-            gie_list = os.listdir( self.gie_dir )
-            gie_list.remove( 'interactive_environments.dtd' )
-            gie_list.remove( 'common' )
-
             self.gie_image_map = {}
 
-            for gie in gie_list:
-                if os.path.exists( self._gie_config_dir( gie, 'allowed_images.yml' ) ):
-                    image_file = self._gie_config_dir( gie, 'allowed_images.yml' )
-                elif os.path.exists( self._gie_config_dir( gie, 'allowed_images.yml.sample' ) ):
-                    image_file = self._gie_config_dir( gie, 'allowed_images.yml.sample' )
-                else:
-                    continue
+            for gie_dir in self.app.config.gie_dirs:
+                gie_list = os.listdir( gie_dir )
+                for gie in gie_list:
+                    gie_path = os.path.join(gie_dir, gie)
 
-                with open( image_file, 'r' ) as handle:
-                    self.gie_image_map[gie] = yaml.load( handle )
+                    if not os.path.isdir(gie_path):
+                        continue
+
+                    if not os.path.exists(self._gie_config_dir(gie_path)):
+                        continue
+
+                    if os.path.exists( self._gie_config_dir( gie_path, 'allowed_images.yml' ) ):
+                        image_file = self._gie_config_dir( gie_path, 'allowed_images.yml' )
+                    elif os.path.exists( self._gie_config_dir( gie_path, 'allowed_images.yml.sample' ) ):
+                        image_file = self._gie_config_dir( gie_path, 'allowed_images.yml.sample' )
+                    else:
+                        continue
+
+                    with open( image_file, 'r' ) as handle:
+                        self.gie_image_map[gie] = yaml.load( handle )
 
         return trans.fill_template_mako(
             "visualization/gie.mako",
@@ -1050,19 +1050,8 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
             history=trans.get_history(),
         )
 
-    def _detect_gie_path(self, path):
-        if ',' in path:
-            # Then a GIE path is there. Otherwise just visualizations
-            # This is ugly code due to the ugliness of the code in config.py
-            viz_dir, gie_dir = path.split(',', 1)
-            return gie_dir
-        else:
-            # No GIE path supplied (see config.py for why)
-            # So we can basically quit here.
-            return None
-
-    def _gie_config_dir(self, name, *args):
-        nargs = [self.gie_dir, name, 'config']
+    def _gie_config_dir(self, gie_path, *args):
+        nargs = [gie_path, 'config']
         if len(args) > 0:
             nargs += args
         return os.path.join(*nargs)
