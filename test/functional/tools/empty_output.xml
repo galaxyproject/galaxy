@@ -1,0 +1,12 @@
+<tool id="empty_output" name="empty_output" version="1.0.0">
+    <command>
+        touch $out_file1;
+    </command>
+    <inputs>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+</tool>
