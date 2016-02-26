@@ -368,7 +368,7 @@ class ShedTwillTestCase( TwillTestCase ):
     def delete_files_from_repository( self, repository, filenames=[], strings_displayed=[ 'were deleted from the repository' ], strings_not_displayed=[] ):
         files_to_delete = []
         basepath = self.get_repo_path( repository )
-        repository_files = self.get_repository_file_list( base_path=basepath, current_path=None )
+        repository_files = self.get_repository_file_list( repository=repository, base_path=basepath, current_path=None )
         # Verify that the files to delete actually exist in the repository.
         for filename in repository_files:
             if filename in filenames:
@@ -451,10 +451,11 @@ class ShedTwillTestCase( TwillTestCase ):
             relative_path = os.path.join( basepath, filepath )
         else:
             relative_path = basepath
-        repository_file_list = self.get_repository_file_list( base_path=relative_path, current_path=None )
+        repository_file_list = self.get_repository_file_list( repository=repository, base_path=relative_path, current_path=None )
         assert filename in repository_file_list, 'File %s not found in the repository under %s.' % ( filename, relative_path )
-        url = '/repository/get_file_contents?file_path=%s' % os.path.join( relative_path, filename )
-        self.visit_url( url )
+        params = dict( file_path=os.path.join( relative_path, filename ), repository_id=self.security.encode_id( repository.id ) )
+        url = '/repository/get_file_contents'
+        self.visit_url( url, params=params )
         self.check_for_strings( strings_displayed, strings_not_displayed )
 
     def display_reviewed_repositories_owned_by_user( self, strings_displayed=[], strings_not_displayed=[] ):
@@ -715,15 +716,16 @@ class ShedTwillTestCase( TwillTestCase ):
         else:
             return len( metadata[ 'datatypes' ] )
 
-    def get_repository_file_list( self, base_path, current_path=None ):
+    def get_repository_file_list( self, repository, base_path, current_path=None ):
         '''Recursively load repository folder contents and append them to a list. Similar to os.walk but via /repository/open_folder.'''
         if current_path is None:
             request_param_path = base_path
         else:
             request_param_path = os.path.join( base_path, current_path )
         # Get the current folder's contents.
-        url = '/repository/open_folder?folder_path=%s' % request_param_path
-        self.visit_url( url )
+        params = dict( folder_path=request_param_path, repository_id=self.security.encode_id( repository.id ) )
+        url = '/repository/open_folder'
+        self.visit_url( url, params=params )
         file_list = loads( self.last_page() )
         returned_file_list = []
         if current_path is not None:
@@ -734,10 +736,10 @@ class ShedTwillTestCase( TwillTestCase ):
                 # This is a folder. Get the contents of the folder and append it to the list,
                 # prefixed with the path relative to the repository root, if any.
                 if current_path is None:
-                    returned_file_list.extend( self.get_repository_file_list( base_path=base_path, current_path=file_dict[ 'title' ] ) )
+                    returned_file_list.extend( self.get_repository_file_list( repository=repository, base_path=base_path, current_path=file_dict[ 'title' ] ) )
                 else:
                     sub_path = os.path.join( current_path, file_dict[ 'title' ] )
-                    returned_file_list.extend( self.get_repository_file_list( base_path=base_path, current_path=sub_path ) )
+                    returned_file_list.extend( self.get_repository_file_list( repository=repository, base_path=base_path, current_path=sub_path ) )
             else:
                 # This is a regular file, prefix the filename with the current path and append it to the list.
                 if current_path is not None:

@@ -3,7 +3,6 @@
 check_galaxy can be run by hand, although it is meant to run from cron
 via the check_galaxy.sh script in Galaxy's cron/ directory.
 """
-
 import filecmp
 import formatter
 import getopt
@@ -13,6 +12,9 @@ import socket
 import sys
 import tempfile
 import time
+
+import twill
+import twill.commands as tc
 
 # options
 if "DEBUG" in os.environ:
@@ -93,12 +95,6 @@ check_galaxy@example.com password
 If the user does not exist, check_galaxy will create it for you.""" % login_file
     sys.exit(message)
 ( username, password ) = f.readline().split()
-
-# find/import twill
-lib_dir = os.path.join( scripts_dir, os.pardir, "lib" )
-sys.path.insert( 1, lib_dir )
-import twill
-import twill.commands as tc
 
 # default timeout for twill browser is never
 socket.setdefaulttimeout(300)

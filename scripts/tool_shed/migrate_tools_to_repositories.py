@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 '''
 Migrate old Galaxy tool shed to next gen Galaxy tool shed.  Specifically, the tool archives stored as
 files in the old tool shed will be migrated to mercurial repositories in the next gen tool shed.  This
@@ -15,23 +14,26 @@ associated with them, and migrates old tool shed stuff to new tool shed stuff.
 # Enable next-gen tool shed features
 enable_next_gen_tool_shed = True
 
-2. This script requires the Galaxy instance to use Postgres for database storage.  
+2. This script requires the Galaxy instance to use Postgres for database storage.
 
 To run this script, use "sh migrate_tools_to_repositories.sh" from this directory
 '''
+import ConfigParser
+import os
+import shutil
+import sys
+import tarfile
+import tempfile
+from time import strftime
 
-import sys, os, subprocess, ConfigParser, shutil, tarfile, tempfile
+from mercurial import hg, ui
 
-assert sys.version_info[:2] >= ( 2, 4 )
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] ) # remove scripts/ from the path
-sys.path = new_path
-
-import psycopg2
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
 import galaxy.webapps.tool_shed.app
-from mercurial import hg, ui, httprepo, commands
-from time import strftime
+
+assert sys.version_info[:2] >= ( 2, 4 )
+
 
 def directory_hash_id( id ):
     s = str( id )
@@ -44,13 +46,14 @@ def directory_hash_id( id ):
     # Drop the last three digits -- 1000 files per directory
     padded = padded[:-3]
     # Break into chunks of three
-    return [ padded[i*3:(i+1)*3] for i in range( len( padded ) // 3 ) ]
+    return [ padded[i * 3:(i + 1) * 3] for i in range( len( padded ) // 3 ) ]
+
 
 def get_versions( app, item ):
     """Get all versions of item whose state is a valid state"""
-    valid_states = [ app.model.Tool.states.NEW, 
-                     app.model.Tool.states.WAITING, 
-                     app.model.Tool.states.APPROVED, 
+    valid_states = [ app.model.Tool.states.NEW,
+                     app.model.Tool.states.WAITING,
+                     app.model.Tool.states.APPROVED,
                      app.model.Tool.states.ARCHIVED ]
     versions = [ item ]
     this_item = item
@@ -65,6 +68,7 @@ def get_versions( app, item ):
         item = item.older_version[ 0 ]
     return versions
 
+
 def get_approved_tools( app, sa_session ):
     """Get only the latest version of each tool from the database whose state is approved"""
     tools = []
@@ -74,6 +78,7 @@ def get_approved_tools( app, sa_session ):
             tools.append( tool )
     return tools
 
+
 def create_repository_from_tool( app, sa_session, tool ):
     # Make the repository name a form of the tool's tool_id by
     # lower-casing everything and replacing any blank spaces with underscores.
@@ -81,7 +86,7 @@ def create_repository_from_tool( app, sa_session, tool ):
     print "Creating repository '%s' in database" % ( repo_name )
     repository = app.model.Repository( name=repo_name,
                                        description=tool.description,
-                                       user_id = tool.user_id )
+                                       user_id=tool.user_id )
     # Flush to get the id
     sa_session.add( repository )
     sa_session.flush()
@@ -97,7 +102,7 @@ def create_repository_from_tool( app, sa_session, tool ):
         os.makedirs( repository_path )
     # Create the local hg repository
     print "Creating repository '%s' on disk" % ( os.path.abspath( repository_path ) )
-    repo = hg.repository( ui.ui(), os.path.abspath( repository_path ), create=True )
+    hg.repository( ui.ui(), os.path.abspath( repository_path ), create=True )
     # Add an entry in the hgweb.config file for the new repository - this enables calls to repository.repo_path
     add_hgweb_config_entry( repository, repository_path )
     # Migrate tool categories
@@ -113,14 +118,15 @@ def create_repository_from_tool( app, sa_session, tool ):
         rra = app.model.RepositoryRatingAssociation( user=tra.user,
                                                      rating=tra.rating,
                                                      comment=tra.comment )
-        rra.repository=repository
+        rra.repository = repository
         sa_session.add( rra )
     sa_session.flush()
+
 
 def add_hgweb_config_entry( repository, repository_path ):
     # Add an entry in the hgweb.config file for a new repository.  This enables calls to repository.repo_path.
     # An entry looks something like: repos/test/mira_assembler = database/community_files/000/repo_123
-    hgweb_config = "%s/hgweb.config" %  os.getcwd()
+    hgweb_config = "%s/hgweb.config" % os.getcwd()
     entry = "repos/%s/%s = %s" % ( repository.user.username, repository.name, repository_path.lstrip( './' ) )
     if os.path.exists( hgweb_config ):
         output = open( hgweb_config, 'a' )
@@ -129,6 +135,7 @@ def add_hgweb_config_entry( repository, repository_path ):
         output.write( '[paths]\n' )
     output.write( "%s\n" % entry )
     output.close()
+
 
 def create_hgrc_file( repository ):
     # At this point, an entry for the repository is required to be in the hgweb.config
@@ -150,6 +157,7 @@ def create_hgrc_file( repository ):
     output.flush()
     output.close()
 
+
 def add_tool_files_to_repository( app, sa_session, tool ):
     current_working_dir = os.getcwd()
     # Get the repository to which the tool will be migrated
@@ -169,7 +177,7 @@ def add_tool_files_to_repository( app, sa_session, tool ):
         cmd = "hg clone %s" % repo_path
         os.chdir( tmp_archive_dir )
         os.system( cmd )
-        os.chdir( current_working_dir )        
+        os.chdir( current_working_dir )
         cloned_repo_dir = os.path.join( tmp_archive_dir, 'repo_%d' % repository.id )
         # We want these change sets to be associated with the owner of the repository, so we'll
         # set the HGUSER environment variable accordingly.  We do this because in the mercurial
@@ -194,8 +202,8 @@ def add_tool_files_to_repository( app, sa_session, tool ):
                 # Don't visit .hg directories
                 dirs.remove( '.hg' )
             if 'hgrc' in files:
-                 # Don't include hgrc files in commit - should be impossible
-                 # since we don't visit .hg dirs, but just in case...
+                # Don't include hgrc files in commit - should be impossible
+                # since we don't visit .hg dirs, but just in case...
                 files.remove( 'hgrc' )
             for dir in dirs:
                 os.system( "hg add %s" % dir )
@@ -221,12 +229,15 @@ def add_tool_files_to_repository( app, sa_session, tool ):
         # Remove tmp directory
         shutil.rmtree( tmp_dir )
 
+
 def get_repository_by_name( app, sa_session, repo_name ):
     """Get a repository from the database"""
     return sa_session.query( app.model.Repository ).filter_by( name=repo_name ).one()
 
+
 def contains( containing_str, contained_str ):
     return containing_str.lower().find( contained_str.lower() ) >= 0
+
 
 def tool_archive_extension( file_name ):
     extension = None
@@ -248,9 +259,11 @@ def tool_archive_extension( file_name ):
         extension = 'tar'
     return extension
 
+
 def tool_archive_file_name( tool, file_name ):
     return '%s_%s.%s' % ( tool.tool_id, tool.version, tool_archive_extension( file_name ) )
-    
+
+
 def main():
     if len( sys.argv ) < 2:
         print "Usage: python %s <Tool shed config file>" % sys.argv[0]
@@ -261,24 +274,13 @@ def main():
     print "%s - Migrating current tool archives to new tool repositories" % now
     # tool_shed_wsgi.ini file
     ini_file = sys.argv[1]
-    conf_parser = ConfigParser.ConfigParser( {'here':os.getcwd()} )
+    conf_parser = ConfigParser.ConfigParser( {'here': os.getcwd()} )
     conf_parser.read( ini_file )
     try:
         db_conn_str = conf_parser.get( "app:main", "database_connection" )
-    except ConfigParser.NoOptionError, e:
+    except ConfigParser.NoOptionError:
         db_conn_str = conf_parser.get( "app:main", "database_file" )
     print 'DB Connection: ', db_conn_str
-    # Determine db connection - only postgres is supported
-    if contains( db_conn_str, '///' ) and contains( db_conn_str, '?' ) and contains( db_conn_str, '&' ):
-        # postgres:///galaxy_test?user=postgres&password=postgres 
-        db_str = db_conn_str.split( '///' )[1]
-        db_name = db_str.split( '?' )[0]
-        db_user = db_str.split( '?' )[1].split( '&' )[0].split( '=' )[1]
-        db_password = db_str.split( '?' )[1].split( '&' )[1].split( '=' )[1]
-    elif contains( db_conn_str, '//' ) and contains( db_conn_str, ':' ):
-        # dialect://user:password@host/db_name
-        db_name = db_conn_str.split('/')[-1]
-        db_user = db_conn_str.split('//')[1].split(':')[0]
     # Instantiate app
     configuration = {}
     for key, value in conf_parser.items( "app:main" ):
@@ -286,7 +288,7 @@ def main():
     app = galaxy.webapps.tool_shed.app.UniverseApplication( global_conf=dict( __file__=ini_file ), **configuration )
     sa_session = app.model.context
     # Remove the hgweb.config file if it exists
-    hgweb_config = "%s/hgweb.config" %  os.getcwd()
+    hgweb_config = "%s/hgweb.config" % os.getcwd()
     if os.path.exists( hgweb_config ):
         print "Removing old file: ", hgweb_config
         os.remove( hgweb_config )
@@ -300,7 +302,7 @@ def main():
         if os.path.exists( dir ):
             print "Removing old repository file directory: ", dir
             shutil.rmtree( dir )
-        # Delete all records from db tables: 
+        # Delete all records from db tables:
         # repository_category_association, repository_rating_association, repository
         print "Deleting db records for repository: ", repo.name
         for rca in repo.categories:
@@ -315,7 +317,7 @@ def main():
     print "Deleted %d rows from the repository table" % repo_records
     print "Deleted %d rows from the repository_category_association table" % rca_records
     print "Deleted %d rows from the repository_rating_association table" % rra_records
-    # Migrate database tool, tool category and tool rating records to new 
+    # Migrate database tool, tool category and tool rating records to new
     # database repository, repository category and repository rating records
     # and create the hg repository on disk for each.
     for tool in get_approved_tools( app, sa_session ):
