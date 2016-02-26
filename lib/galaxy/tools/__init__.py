@@ -327,6 +327,7 @@ class Tool( object, Dictifiable ):
         self.tool_shed = None
         self.repository_name = None
         self.repository_owner = None
+        self.changeset_revision = None
         self.installed_changeset_revision = None
         # The tool.id value will be the value of guid, but we'll keep the
         # guid attribute since it is useful to have.
