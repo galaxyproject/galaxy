@@ -278,6 +278,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
                 compute_tool_directory=remote_tool_directory,
                 compute_job_directory=remote_job_directory,
             )
+            job_wrapper.disable_commands_in_new_shell()
             command_line = build_command(
                 self,
                 job_wrapper=job_wrapper,
