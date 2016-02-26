@@ -58,10 +58,10 @@ class ProxyManager(object):
         authentication = AuthenticationToken(trans)
         proxy_requests = ProxyRequests(host=host, port=port)
         self.proxy_ipc.handle_requests(
-                authentication,
-                proxy_requests,
-                '/%s' % route_name,
-                container_ids
+            authentication,
+            proxy_requests,
+            '/%s' % route_name,
+            container_ids
         )
         # TODO: These shouldn't need to be request.host and request.scheme -
         # though they are reasonable defaults.
@@ -98,6 +98,7 @@ class ProxyLauncher(object):
     def launch_proxy_command(self, config):
         raise NotImplementedError()
 
+
 class NodeProxyLauncher(object):
 
     def launch_proxy_command(self, config):
@@ -113,6 +114,7 @@ class NodeProxyLauncher(object):
         path_to_application = os.path.join( parent_directory, "js", "lib", "main.js" )
         command = [ path_to_application ] + args
         return command
+
 
 class GolangProxyLauncher(object):
 
@@ -223,6 +225,7 @@ class SqliteProxyIpc(object):
                 conn.commit()
             finally:
                 conn.close()
+
 
 class RestGolangProxyIpc(object):
 

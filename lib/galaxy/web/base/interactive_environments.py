@@ -59,11 +59,14 @@ class InteractiveEnvironmentRequest(object):
 
         # This duplicates the logic in the proxy manager
         if self.attr.galaxy_config.dynamic_proxy_external_proxy:
-            self.attr.proxy_prefix = '/'.join(('',
-                self.attr.galaxy_config.cookie_path.strip('/'),
-                self.attr.galaxy_config.dynamic_proxy_prefix.strip('/'),
-                self.attr.viz_id,
-            ))
+            self.attr.proxy_prefix = '/'.join(
+                (
+                    '',
+                    self.attr.galaxy_config.cookie_path.strip('/'),
+                    self.attr.galaxy_config.dynamic_proxy_prefix.strip('/'),
+                    self.attr.viz_id,
+                )
+            )
         else:
             self.attr.proxy_prefix = ''
 
