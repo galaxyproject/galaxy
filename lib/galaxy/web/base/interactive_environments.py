@@ -77,7 +77,14 @@ class InteractiveEnvironmentRequest(object):
         elif os.path.exists(os.path.join(self.attr.our_config_dir, 'allowed_images.yml.sample')):
             fn = os.path.join(self.attr.our_config_dir, 'allowed_images.yml.sample')
         else:
-            raise Exception("Could not find allowed_images.yml file for " + self.attr.viz_id)
+            # If we don't have an allowed images, then we fall back to image
+            # name specified in the .ini file
+            try:
+                self.allowed_images = [self.attr.viz_config.image]
+                self.default_image = self.attr.viz_config.image
+                return
+            except AttributeError:
+                raise Exception("[{0}] Could not find allowed_images.yml, or image tag in {0}.ini file for ".format(self.attr.viz_id))
 
         with open(fn, 'r') as handle:
             self.allowed_images = [x['image'] for x in yaml.load(handle)]
