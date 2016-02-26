@@ -14,11 +14,6 @@ class ToolSource(object):
     __metaclass__ = ABCMeta
     default_is_multi_byte = False
 
-    @property
-    def legacy_defaults(self):
-        # Restore oldest defaults for XML-based tools.
-        return self.parse_profile() == "legacy"
-
     @abstractmethod
     def parse_id(self):
         """ Parse an ID describing the abstract tool. This is not the
@@ -178,8 +173,7 @@ class ToolSource(object):
 
     @abstractmethod
     def parse_profile(self):
-        """ Return tool profile to use, currently this should be a Galaxy
-        version (> 16.04) or 'legacy'.
+        """ Return tool profile version as Galaxy major e.g. 16.01 or 16.04.
         """
 
     def parse_tests_to_dict(self):
