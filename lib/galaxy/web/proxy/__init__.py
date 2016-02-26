@@ -240,8 +240,6 @@ class RestGolangProxyIpc(object):
             'ContainerIds': container_ids,
         }
 
-        print values
-        print self.api_url
         req = urllib2.Request(self.api_url)
         req.add_header('Content-Type', 'application/json')
 
