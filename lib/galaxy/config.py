@@ -450,6 +450,7 @@ class Configuration( object ):
         self.visualization_plugins_directory = kwargs.get(
             'visualization_plugins_directory', 'config/plugins/visualizations' )
         ie_dirs = kwargs.get( 'interactive_environment_plugins_directory', None )
+        self.gie_dirs = [d.strip() for d in (ie_dirs.splits(",") if ie_dirs else [])]
         if ie_dirs and not self.visualization_plugins_directory:
             self.visualization_plugins_directory = ie_dirs
         elif ie_dirs:
