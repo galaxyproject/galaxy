@@ -12,9 +12,6 @@ from galaxy.util.bunch import Bunch
 from galaxy.tools import evaluation
 
 from tools_support import UsesApp
-# from tools_support import MockTool
-
-# from ..tools_and_jobs_helpers import MockApp
 
 TEST_TOOL_ID = "cufftest"
 TEST_VERSION_COMMAND = "bwa --version"
@@ -121,26 +118,6 @@ class MockJobDispatcher(object):
 
     def url_to_destination(self):
         pass
-
-
-class MockApp(object):
-
-    def __init__(self, object_store, test_directory, model_objects):
-        self.object_store = object_store
-        self.toolbox = MockToolbox(MockTool(self))
-        self.config = Bunch(
-            outputs_to_working_directory=False,
-            new_file_path=os.path.join(test_directory, "new_files"),
-            tool_data_path=os.path.join(test_directory, "tools"),
-            root=os.path.join(test_directory, "galaxy"),
-            datatypes_registry=Bunch(
-                integrated_datatypes_configs=os.path.join(test_directory, "datatypes_conf.xml"),
-            ),
-        )
-        self.job_config = Bunch(
-            dynamic_params=None,
-        )
-        self.model = Bunch(context=MockContext(model_objects))
 
 
 class MockContext(object):
