@@ -20,6 +20,7 @@ from mako.template import Template
 from paste import httpexceptions
 from six import string_types
 
+from galaxy.version import VERSION_MAJOR
 from galaxy import model
 from galaxy.managers import histories
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
@@ -344,7 +345,6 @@ class Tool( object, Dictifiable ):
         except Exception, e:
             global_tool_errors.add_error(config_file, "Tool Loading", e)
             raise e
-        self.external_runJob_script = app.config.drmaa_external_runjob_script
         self.history_manager = histories.HistoryManager( app )
 
     @property
@@ -461,6 +461,7 @@ class Tool( object, Dictifiable ):
         """
         Read tool configuration from the element `root` and fill in `self`.
         """
+        self.profile = float( tool_source.parse_profile() )
         # Get the UNIQUE id for the tool
         self.old_id = tool_source.parse_id()
         if guid is None:
@@ -468,17 +469,25 @@ class Tool( object, Dictifiable ):
         else:
             self.id = guid
         if not self.id:
-            raise Exception( "Missing tool 'id'" )
+            raise Exception( "Missing tool 'id' for tool at '%s'" % tool_source )
+
+        if self.profile >= 16.04 and VERSION_MAJOR < self.profile:
+            template = "The tool %s targets version %s of Galaxy, you should upgrade Galaxy to ensure proper functioning of this tool."
+            message = template % (self.id, self.profile)
+            log.warn(message)
 
         # Get the (user visible) name of the tool
         self.name = tool_source.parse_name()
         if not self.name:
-            raise Exception( "Missing tool 'name'" )
+            raise Exception( "Missing tool 'name' for tool with id '%s' at '%s'" % (self.id, tool_source) )
 
         self.version = tool_source.parse_version()
         if not self.version:
-            # For backward compatibility, some tools may not have versions yet.
-            self.version = "1.0.0"
+            if self.profile < 16.04:
+                # For backward compatibility, some tools may not have versions yet.
+                self.version = "1.0.0"
+            else:
+                raise Exception( "Missing tool 'version' for tool with id '%s' at '%s'" % (self.id, tool_source) )
 
         # Support multi-byte tools
         self.is_multi_byte = tool_source.parse_is_multi_byte()
@@ -548,8 +557,10 @@ class Tool( object, Dictifiable ):
         self.__parse_legacy_features(tool_source)
 
         # Load any tool specific options (optional)
-        self.options = dict( sanitize=True, refresh=False )
-        self.__update_options_dict( tool_source )
+        self.options = dict(
+            sanitize=tool_source.parse_sanitize(),
+            refresh=tool_source.parse_refresh(),
+        )
         self.options = Bunch(** self.options)
 
         # Parse tool inputs (if there are any required)
@@ -563,6 +574,9 @@ class Tool( object, Dictifiable ):
 
         # Parse result handling for tool exit codes and stdout/stderr messages:
         self.parse_stdio( tool_source )
+
+        self.strict_shell = tool_source.parse_strict_shell()
+
         # Any extra generated config files for the tool
         self.__parse_config_files(tool_source)
         # Action
@@ -615,19 +629,6 @@ class Tool( object, Dictifiable ):
         if uihints_elem is not None:
             for key, value in uihints_elem.attrib.iteritems():
                 self.uihints[ key ] = value
-
-    def __update_options_dict(self, tool_source):
-        # TODO: Move following logic into ToolSource abstraction.
-        if not hasattr(tool_source, 'root'):
-            return
-
-        root = tool_source.root
-        for option_elem in root.findall("options"):
-            for option, value in self.options.copy().items():
-                if isinstance(value, type(False)):
-                    self.options[option] = string_as_bool(option_elem.get(option, str(value)))
-                else:
-                    self.options[option] = option_elem.get(option, str(value))
 
     def __parse_tests(self, tool_source):
         self.__tests_source = tool_source

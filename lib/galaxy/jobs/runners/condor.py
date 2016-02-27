@@ -96,10 +96,11 @@ class CondorJobRunner( AsynchronousJobRunner ):
             log.exception( "(%s) failure preparing job script" % galaxy_id_tag )
             return
 
+        cleanup_job = job_wrapper.cleanup_job
         try:
             open(submit_file, "w").write(submit_file_contents)
-        except:
-            if self.app.config.cleanup_job == "always":
+        except Exception:
+            if cleanup_job == "always":
                 cjs.cleanup()
                 # job_wrapper.fail() calls job_wrapper.cleanup()
             job_wrapper.fail( "failure preparing submit file", exception=True )
@@ -109,7 +110,7 @@ class CondorJobRunner( AsynchronousJobRunner ):
         # job was deleted while we were preparing it
         if job_wrapper.get_state() == model.Job.states.DELETED:
             log.debug( "Job %s deleted by user before it entered the queue" % galaxy_id_tag )
-            if self.app.config.cleanup_job in ( "always", "onsuccess" ):
+            if cleanup_job in ("always", "onsuccess"):
                 os.unlink( submit_file )
                 cjs.cleanup()
                 job_wrapper.cleanup()

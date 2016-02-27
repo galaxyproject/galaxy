@@ -71,8 +71,15 @@ def build_command(
         else:
             commands_builder = CommandsBuilder( externalized_commands )
 
+    # usually working will already exist, but it will not for task
+    # split jobs.
+    commands_builder.prepend_command("mkdir -p working; cd working")
+
     if include_work_dir_outputs:
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)
+
+    commands_builder.capture_return_code()
+    commands_builder.append_command("cd ..")
 
     if include_metadata and job_wrapper.requires_setting_metadata:
         __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params)
@@ -87,7 +94,15 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     integrity_injection = ""
     if check_script_integrity(config):
         integrity_injection = INTEGRITY_INJECTION
-    script_contents = u"#!%s\n%s%s" % (shell, integrity_injection, tool_commands)
+    set_e = ""
+    if job_wrapper.strict_shell:
+        set_e = "set -e\n"
+    script_contents = u"#!%s\n%s%s%s" % (
+        shell,
+        integrity_injection,
+        set_e,
+        tool_commands
+    )
     write_script(local_container_script, script_contents, config)
     commands = local_container_script
     if 'working_directory' in remote_command_params:
@@ -181,19 +196,22 @@ class CommandsBuilder(object):
         self.return_code_captured = False
 
     def prepend_command(self, command):
-        self.commands = u"%s; %s" % (command,
-                                     self.commands)
+        if command:
+            self.commands = u"%s; %s" % (command,
+                                         self.commands)
         return self
 
     def prepend_commands(self, commands):
-        return self.prepend_command(u"; ".join(commands))
+        return self.prepend_command(u"; ".join([c for c in commands if c]))
 
     def append_command(self, command):
-        self.commands = u"%s; %s" % (self.commands,
-                                     command)
+        if command:
+            self.commands = u"%s; %s" % (self.commands,
+                                         command)
+        return self
 
     def append_commands(self, commands):
-        self.append_command(u"; ".join(commands))
+        self.append_command(u"; ".join([c for c in commands if c]))
 
     def capture_return_code(self):
         if not self.return_code_captured:
