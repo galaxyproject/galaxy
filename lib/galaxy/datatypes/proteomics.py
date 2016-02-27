@@ -18,6 +18,8 @@ log = logging.getLogger(__name__)
 
 class Wiff(Binary):
     """Class for wiff files."""
+    edam_data = "data_2536"
+    edam_format = "format_3710"
     file_ext = 'wiff'
     allow_datatype_change = False
     composite_type = 'auto_primary_file'
@@ -56,6 +58,7 @@ Binary.register_sniffable_binary_format("wiff", "wiff", Wiff )
 class PepXmlReport(Tabular):
     """pepxml converted to tabular report"""
     file_ext = "tsv"
+    edam_data = "data_2536"
 
     def __init__(self, **kwd):
         Tabular.__init__(self, **kwd)
@@ -70,6 +73,7 @@ class ProtXmlReport(Tabular):
     """protxml converted to tabular report"""
     file_ext = "tsv"
     comment_lines = 1
+    edam_data = "data_2536"
 
     def __init__(self, **kwd):
         Tabular.__init__(self, **kwd)
@@ -93,6 +97,8 @@ class ProtXmlReport(Tabular):
 class ProteomicsXml(GenericXml):
     """ An enhanced XML datatype used to reuse code across several
     proteomic/mass-spec datatypes. """
+    edam_data = "data_2536"
+    edam_format = "format_2032"
 
     def sniff(self, filename):
         """ Determines whether the file is the correct XML type. """
@@ -117,10 +123,11 @@ class ProteomicsXml(GenericXml):
 
 class PepXml(ProteomicsXml):
     """pepXML data"""
+    edam_format = "format_3655"
     file_ext = "pepxml"
     blurb = 'pepXML data'
     root = "msms_pipeline_analysis"
-
+    
 
 class MzML(ProteomicsXml):
     """mzML data"""
@@ -139,6 +146,7 @@ class ProtXML(ProteomicsXml):
 
 class MzXML(ProteomicsXml):
     """mzXML data"""
+    edam_format = "format_3654"
     file_ext = "mzxml"
     blurb = "mzXML Mass Spectrometry data"
     root = "mzXML"
@@ -184,6 +192,7 @@ class IdXML(ProteomicsXml):
 
 
 class TandemXML(ProteomicsXml):
+    edam_format = "format_3711"
     file_ext = "tandem"
     blurb = "X!Tandem search results file"
     root = "bioml"
@@ -197,6 +206,8 @@ class UniProtXML(ProteomicsXml):
 
 class Mgf(Text):
     """Mascot Generic Format data"""
+    edam_data = "data_2536"
+    edam_format = "format_3651"
     file_ext = "mgf"
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -223,6 +234,8 @@ class Mgf(Text):
 
 class MascotDat(Text):
     """Mascot search results """
+    edam_data = "data_2536"
+    edam_format = "format_3713"
     file_ext = "mascotdat"
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -249,6 +262,8 @@ class MascotDat(Text):
 
 class ThermoRAW(Binary):
     """Class describing a Thermo Finnigan binary RAW file"""
+    edam_data = "data_2536"
+    edam_format = "format_3712"
     file_ext = "raw"
 
     def sniff(self, filename):
