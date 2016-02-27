@@ -256,7 +256,7 @@ class TestComputeEnviornment( SimpleComputeEnvironment ):
 class MockTool( object ):
 
     def __init__( self, app ):
-        self.profile=16.01
+        self.profile = 16.01
         self.app = app
         self.hooks_called = []
         self.environment_variables = []
