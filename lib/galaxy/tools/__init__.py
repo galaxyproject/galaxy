@@ -460,8 +460,7 @@ class Tool( object, Dictifiable ):
         """
         Read tool configuration from the element `root` and fill in `self`.
         """
-        self.legacy_defaults = tool_source.legacy_defaults
-        tool_profile = tool_source.parse_profile()
+        self.profile = float( tool_source.parse_profile() )
         # Get the UNIQUE id for the tool
         self.old_id = tool_source.parse_id()
         if guid is None:
@@ -471,9 +470,9 @@ class Tool( object, Dictifiable ):
         if not self.id:
             raise Exception( "Missing tool 'id' for tool at '%s'" % tool_source )
 
-        if not self.legacy_defaults and VERSION_MAJOR < tool_profile:
+        if self.profile >= 16.04 and VERSION_MAJOR < self.profile:
             template = "The tool %s targets version %s of Galaxy, you should upgrade Galaxy to ensure proper functioning of this tool."
-            message = template % (self.id, tool_profile)
+            message = template % (self.id, self.profile)
             log.warn(message)
 
         # Get the (user visible) name of the tool
@@ -483,7 +482,7 @@ class Tool( object, Dictifiable ):
 
         self.version = tool_source.parse_version()
         if not self.version:
-            if self.legacy_defaults:
+            if self.profile < 16.04:
                 # For backward compatibility, some tools may not have versions yet.
                 self.version = "1.0.0"
             else:

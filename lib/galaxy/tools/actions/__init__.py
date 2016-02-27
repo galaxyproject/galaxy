@@ -227,7 +227,7 @@ class DefaultToolAction( object ):
         # format='input" previously would give you a random extension from
         # the input extensions, now it should just give "input" as the output
         # format.
-        input_ext = 'data' if tool.legacy_defaults else "input"
+        input_ext = 'data' if tool.profile < 16.04 else "input"
         input_dbkey = incoming.get( "dbkey", "?" )
         for name, data in reversed(inp_data.items()):
             if not data:
@@ -242,7 +242,7 @@ class DefaultToolAction( object ):
             else:  # HDA
                 if data.hid:
                     input_names.append( 'data %s' % data.hid )
-            if tool.legacy_defaults:
+            if tool.profile < 16.04:
                 input_ext = data.ext
 
             if data.dbkey not in [None, '?']:

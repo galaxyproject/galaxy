@@ -173,8 +173,6 @@ class YamlToolSource(ToolSource):
         return rval
 
     def parse_profile(self):
-        """
-        """
         return self.root_dict.get("profile", "16.04")
 
 

@@ -41,6 +41,7 @@ class XmlToolSource(ToolSource):
     def __init__(self, root, source_path=None):
         self.root = root
         self._source_path = source_path
+        self.legacy_defaults = self.parse_profile() == "16.01"
 
     def parse_version(self):
         return self.root.get("version", None)
@@ -331,19 +332,14 @@ class XmlToolSource(ToolSource):
 
         return rval
 
-    @property
-    def legacy_defaults(self):
+    def parse_profile(self):
         # Pre-16.04 or default XML defaults
         # - Use standard error for error detection.
         # - Don't run shells with -e
         # - Auto-check for implicit multiple outputs.
         # - Auto-check for $param_file.
         # - Enable buggy interpreter attribute.
-        return self.parse_profile() == "legacy"
-
-    def parse_profile(self):
-        profile = self.root.get("profile", "legacy")
-        return profile
+        return self.root.get("profile", "16.01")
 
 
 def _test_elem_to_dict(test_elem, i):
