@@ -106,6 +106,7 @@ class MockApp( object ):
 
         self.config = Bunch(
             outputs_to_working_directory=False,
+            commands_in_new_shell=True,
             new_file_path=os.path.join(test_directory, "new_files"),
             tool_data_path=os.path.join(test_directory, "tools"),
             root=os.path.join(test_directory, "galaxy"),
