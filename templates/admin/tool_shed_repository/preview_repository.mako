@@ -366,7 +366,10 @@ ul.jstree-container-ul {
                     <option value="${changeset.split(':')[1]}">${changeset}</option>
                 %endfor
             </select>
-            <input type="submit" id="install_repository" name="install_repository" value="Install this revision" />
+            <input class="btn btn-primary" type="submit" id="install_repository" name="install_repository" value="Install this revision" />
+            <div class="toolParamHelp" style="clear: both;">
+            Please select a revision and review the settings below before installing.
+            </div>
         </div>
         %if shed_tool_conf_select_field:
             <div class="toolFormTitle">Shed tool configuration file:</div>
