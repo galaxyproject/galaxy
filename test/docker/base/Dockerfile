@@ -32,7 +32,10 @@ RUN apt-get update -y && apt-get install -y software-properties-common curl && \
     apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
    
 RUN npm install -g grunt-contrib-qunit grunt grunt-cli && \
-    wget -O/bin/phantomjs https://images.galaxyproject.org/phantomjs/2.0.0-dev-2a1aa983d057aa1f835708bd1f32b13a9a46c14f/phantomjs && \
+    cd /tmp && \
+    wget https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
+    tar xf phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
+    mv phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin/phantomjs && \
     mkdir -p /opt/casperjs /casperjs && wget https://github.com/n1k0/casperjs/tarball/master -O- | tar -xzf- --strip-components=1 -C /opt/casperjs && \
     ln -sf /opt/casperjs/bin/casperjs /usr/local/bin/casperjs
 
