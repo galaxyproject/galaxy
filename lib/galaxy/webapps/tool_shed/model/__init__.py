@@ -8,8 +8,8 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.util.dictifiable import Dictifiable
 import tool_shed.repository_types.util as rt_util
-import tool_shed.util.shed_util_common as suc
 from tool_shed.dependencies.repository import relation_builder
+from tool_shed.util import shed_util_common as suc
 
 from mercurial import hg
 from mercurial import ui
@@ -253,13 +253,13 @@ class Repository( object, Dictifiable ):
     def installable_revisions( self, app ):
         return suc.get_metadata_revisions( self, hg.repository( ui.ui(), self.repo_path( app ) ), sort_revisions=True )
 
-    def ordered_installable_revisions( self, app ):
-        return suc.get_ordered_metadata_changeset_revisions( self, hg.repository( ui.ui(), self.repo_path( app ) ), downloadable=True )
-
     def is_new( self, app ):
         repo = hg.repository( ui.ui(), self.repo_path( app ) )
         tip_ctx = repo.changectx( repo.changelog.tip() )
         return tip_ctx.rev() < 0
+
+    def ordered_installable_revisions( self, app ):
+        return suc.get_ordered_metadata_changeset_revisions( self, hg.repository( ui.ui(), self.repo_path( app ) ), downloadable=True )
 
     def repo_path( self, app ):
         return app.hgweb_config_manager.get_entry( os.path.join( "repos", self.user.username, self.name ) )
