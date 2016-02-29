@@ -614,8 +614,8 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             log.exception( "Error reading tool from path: %s" % path )
 
     def _get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
-        # Abstract class does't have a dependency on the database, for full tool shed
-        # support the actual Galaxy ToolBox implement this method and return a ToolShd repository.
+        # Abstract class doesn't have a dependency on the database, for full Tool Shed
+        # support the actual Galaxy ToolBox implements this method and returns a Tool Shed repository.
         return None
 
     def __add_tool( self, tool, load_panel_dict, panel_dict ):
