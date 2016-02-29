@@ -388,16 +388,23 @@ from galaxy.jobs.actions.post import ActionBox
 import re
 import colorsys
 import random
+from six import string_types
+
+def get_wf_parms(v, wf_parms):
+    if isinstance(v, dict):
+        [ get_wf_parms(value, wf_parms) for value in v.values()  ]
+    elif isinstance(v, string_types):
+        for rematch in re.findall('\$\{.+?\}', v):
+            if rematch[2:-1] not in wf_parms:
+                wf_parms[rematch[2:-1]] = ""
 
 used_accumulator = []
-
 wf_parms = {}
+
 for step in steps:
     for v in [ActionBox.get_short_str(pja) for pja in step.post_job_actions] + step.state.inputs.values():
-        if isinstance(v, basestring):
-            for rematch in re.findall('\$\{.+?\}', v):
-                if rematch[2:-1] not in wf_parms:
-                    wf_parms[rematch[2:-1]] = ""
+        get_wf_parms(v, wf_parms)
+
 if wf_parms:
     hue_offset = 1.0 / len(wf_parms)
     hue = 0.0

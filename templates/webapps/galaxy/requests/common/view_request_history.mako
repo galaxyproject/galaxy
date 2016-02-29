@@ -11,7 +11,6 @@
     can_add_samples = is_unsubmitted
     can_edit_request = ( is_admin and not is_complete ) or is_unsubmitted
     can_reject = is_admin and is_submitted
-    can_select_datasets = is_admin and ( is_complete or is_submitted )
     can_submit_request = request.samples and is_unsubmitted
 %>
 
