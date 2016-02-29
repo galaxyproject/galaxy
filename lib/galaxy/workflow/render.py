@@ -8,6 +8,7 @@ class WorkflowCanvas( object ):
 
     def __init__( self ):
         self.canvas = svgwrite.Drawing(profile='full')
+
         self.connectors = []
         self.boxes = []
         self.text = []
@@ -25,10 +26,10 @@ class WorkflowCanvas( object ):
             self.canvas.add(box)
         for connector in self.connectors:
             self.canvas.add(connector)
+        text_style_layer = self.canvas.g(style="font-family: Helvetica, Arial, FreeSans, Sans, sans, sans-serif;")
         for text in self.text:
-            self.canvas.add(text)
-        # width, height = ( max_x + max_width + 50 ), max_y + 300
-        # TODO set width/height?  OR flex is OK?
+            text_style_layer.add(text)
+        self.canvas.add(text_style_layer)
         return self.canvas
 
     def add_boxes( self, step_dict, width, name_fill ):
@@ -48,7 +49,7 @@ class WorkflowCanvas( object ):
         x, y = left, top
         order_index = step.order_index
         max_len = len( module_name ) * 1.5
-        self.text.append(svgwrite.text.Text(module_name, (x, y + 20)))
+        self.text.append(svgwrite.text.Text(module_name, (x, y + 20), style='font-size:14px'))
         y += 45
         count = 0
         in_pos = self.in_pos
@@ -58,7 +59,7 @@ class WorkflowCanvas( object ):
             if order_index not in in_pos:
                 in_pos[ order_index ] = {}
             in_pos[ order_index ][ di[ 'name' ] ] = ( x, cur_y )
-            self.text.append( svgwrite.text.Text( di[ 'label' ], (x, cur_y) ) )
+            self.text.append( svgwrite.text.Text( di[ 'label' ], (x, cur_y), style='font-size:10px' ) )
             count += 1
             max_len = max( max_len, len( di[ 'label' ] ) )
         if len( module_data_inputs ) > 0:
@@ -68,7 +69,7 @@ class WorkflowCanvas( object ):
             if order_index not in out_pos:
                 out_pos[ order_index ] = {}
             out_pos[ order_index ][ do[ 'name' ] ] = ( x, cur_y )
-            self.text.append( svgwrite.text.Text( do[ 'name' ], (x, cur_y) ))
+            self.text.append( svgwrite.text.Text( do[ 'name' ], (x, cur_y), style='font-size:10px' ))
             count += 1
             max_len = max( max_len, len( do['name' ] ) )
         self.widths[ order_index ] = max_len * 5.5
