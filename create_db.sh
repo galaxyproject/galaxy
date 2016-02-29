@@ -1,9 +1,11 @@
 #!/bin/sh
 
-if [ -d .venv ];
+: ${GALAXY_VIRTUAL_ENV:=.venv}
+
+if [ -d "$GALAXY_VIRTUAL_ENV" ];
 then
-    printf "Activating virtualenv at %s/.venv\n" $(pwd)
-    . .venv/bin/activate
+    printf "Activating virtualenv at $GALAXY_VIRTUAL_ENV\n"
+    . "$GALAXY_VIRTUAL_ENV/bin/activate"
 fi
 
 cd `dirname $0`
