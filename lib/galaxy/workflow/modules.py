@@ -819,6 +819,8 @@ class ToolModule( WorkflowModule ):
         tool_id = d.get( 'content_id', None )
         if tool_id is None:
             tool_id = d.get( 'tool_id', None )  # Older workflows will have exported this as tool_id.
+        if tool_id is None:
+            raise exceptions.RequestParameterInvalidException("No content id could be located for for step [%s]" % d)
         tool_version = str( d.get( 'tool_version', None ) )
         module = Class( trans, tool_id, tool_version=tool_version )
         module.state = galaxy.tools.DefaultToolState()

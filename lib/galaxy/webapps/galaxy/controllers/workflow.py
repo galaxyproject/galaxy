@@ -693,7 +693,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 trans,
                 stored,
                 workflow_data,
-                from_editor=True,
             )
         except workflows.MissingToolsException as e:
             return dict(

@@ -331,7 +331,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
     def test_upload_deprecated( self ):
         self.__test_upload( use_deprecated_route=True )
 
-    def __test_upload( self, use_deprecated_route=False, name="test_import", workflow=None ):
+    def __test_upload( self, use_deprecated_route=False, name="test_import", workflow=None, assert_ok=True ):
         if workflow is None:
             workflow = self.workflow_populator.load_workflow( name=name )
         data = dict(
@@ -342,8 +342,9 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         else:
             route = "workflows"
         upload_response = self._post( route, data=data )
-        self._assert_status_code_is( upload_response, 200 )
-        self._assert_user_has_workflow_with_name( "%s (imported from API)" % name )
+        if assert_ok:
+            self._assert_status_code_is( upload_response, 200 )
+            self._assert_user_has_workflow_with_name( "%s (imported from API)" % name )
         return upload_response
 
     def test_update( self ):
@@ -370,12 +371,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         workflow_id = upload_response.json()["id"]
 
         def update(workflow_object):
-            data = dict(
-                workflow=workflow_object
-            )
-            raw_url = 'workflows/%s' % workflow_id
-            url = self._api_url( raw_url, use_key=True )
-            put_response = put( url, data=dumps(data) )
+            put_response = self._update_workflow(workflow_id, workflow_object)
             self._assert_status_code_is( put_response, 200 )
             return put_response
 
@@ -409,6 +405,23 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
 
         # Make sure the positions have been updated.
         map(tweak_step, updated_workflow_content['steps'].iteritems())
+
+    def test_update_no_tool_id( self ):
+        workflow_object = self.workflow_populator.load_workflow( name="test_import" )
+        upload_response = self.__test_upload( workflow=workflow_object )
+        workflow_id = upload_response.json()["id"]
+        del workflow_object["steps"]["2"]["tool_id"]
+        put_response = self._update_workflow(workflow_id, workflow_object)
+        self._assert_status_code_is( put_response, 400 )
+
+    def test_update_missing_tool( self ):
+        # Create allows missing tools, update doesn't currently...
+        workflow_object = self.workflow_populator.load_workflow( name="test_import" )
+        upload_response = self.__test_upload( workflow=workflow_object )
+        workflow_id = upload_response.json()["id"]
+        workflow_object["steps"]["2"]["tool_id"] = "cat-not-found"
+        put_response = self._update_workflow(workflow_id, workflow_object)
+        self._assert_status_code_is( put_response, 400 )
 
     def test_require_unique_step_uuids( self ):
         workflow_dup_uuids = self.workflow_populator.load_workflow( name="test_import" )
@@ -533,6 +546,13 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         steps = workflow_description["steps"]
         missing_tool_steps = filter(lambda v: v['tool_id'] == 'cat_missing_tool', steps.values())
         assert len(missing_tool_steps) == 1
+
+    def test_import_no_tool_id( self ):
+        # Import works with missing tools, but not with absent content/tool id.
+        workflow = self.workflow_populator.load_workflow_from_resource( name="test_workflow_missing_tool" )
+        del workflow["steps"]["2"]["tool_id"]
+        create_response = self.__test_upload(workflow=workflow, assert_ok=False)
+        self._assert_status_code_is( create_response, 400 )
 
     def test_import_export_with_runtime_inputs( self ):
         workflow = self.workflow_populator.load_workflow_from_resource( name="test_workflow_with_runtime_input" )
@@ -1426,6 +1446,15 @@ steps:
         step_response = self._get( "workflows/%s/usage/%s/steps/%s" % ( workflow_id, invocation_id, step_id ) )
         self._assert_status_code_is( step_response, 200 )
         self._assert_has_keys( step_response.json(), "id", "order_index" )
+
+    def _update_workflow(self, workflow_id, workflow_object):
+        data = dict(
+            workflow=workflow_object
+        )
+        raw_url = 'workflows/%s' % workflow_id
+        url = self._api_url( raw_url, use_key=True )
+        put_response = put( url, data=dumps(data) )
+        return put_response
 
     def _invocation_step_details( self, workflow_id, invocation_id, step_id ):
         invocation_step_response = self._get( "workflows/%s/usage/%s/steps/%s" % ( workflow_id, invocation_id, step_id ) )
