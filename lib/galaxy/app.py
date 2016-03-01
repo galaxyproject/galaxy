@@ -31,6 +31,11 @@ app = None
 class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
     """Encapsulates the state of a Universe application"""
     def __init__( self, **kwargs ):
+        if not log.handlers:
+            # Paste didn't handle it, so we need a temporary basic log
+            # configured.  The handler added here gets dumped and replaced with
+            # an appropriately configured logger in configure_logging below.
+            logging.basicConfig(level=logging.DEBUG)
         log.debug( "python path is: %s", ", ".join( sys.path ) )
         self.name = 'galaxy'
         self.new_installation = False
@@ -39,7 +44,6 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.config.check()
         config.configure_logging( self.config )
         self.configure_fluent_log()
-
         self.config.reload_sanitize_whitelist(explicit='sanitize_whitelist_file' in kwargs)
         self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
         # control_worker *can* be initialized with a queue, but here we don't
