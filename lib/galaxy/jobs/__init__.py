@@ -16,6 +16,7 @@ import shutil
 import subprocess
 import sys
 import traceback
+from xml.etree import ElementTree
 from galaxy import model, util
 from galaxy.util.xml_macros import load
 from galaxy.datatypes import metadata
@@ -111,6 +112,15 @@ class JobConfiguration( object ):
     These features are configured in the job configuration, by default, ``job_conf.xml``
     """
     DEFAULT_NWORKERS = 4
+
+    JOB_RESOURCE_CONDITIONAL_XML = """<conditional name="__job_resource">
+        <param name="__job_resource__select" type="select" label="Job Resource Parameters">
+            <option value="no">Use default job resource parameters</option>
+            <option value="yes">Specify job resource parameters</option>
+        </param>
+        <when value="no"/>
+        <when value="yes"/>
+    </conditional>"""
 
     def __init__(self, app):
         """Parse the job configuration XML.
@@ -354,53 +364,44 @@ class JobConfiguration( object ):
 
         log.debug('Done loading job configuration')
 
-    def get_tool_resource_parameters( self, tool_id ):
+    def get_tool_resource_xml( self, tool_id, tool_type ):
         """ Given a tool id, return XML elements describing parameters to
         insert into job resources.
 
         :tool id: A tool ID (a string)
+        :tool type: A tool type (a string)
 
         :returns: List of parameter elements.
         """
-        fields = []
-
-        if not tool_id:
-            return fields
-
-        # TODO: Only works with exact matches, should handle different kinds of ids
-        # the way destination lookup does.
-        resource_group = None
-        if tool_id in self.tools:
-            resource_group = self.tools[ tool_id ][ 0 ].get_resource_group()
-        resource_group = resource_group or self.default_resource_group
-
-        if resource_group and resource_group in self.resource_groups:
-            fields_names = self.resource_groups[ resource_group ]
-            fields = [ self.resource_parameters[ n ] for n in fields_names ]
-
-        return fields
+        if tool_id and tool_type is 'default':
+            # TODO: Only works with exact matches, should handle different kinds of ids
+            # the way destination lookup does.
+            resource_group = None
+            if tool_id in self.tools:
+                resource_group = self.tools[ tool_id ][ 0 ].get_resource_group()
+            resource_group = resource_group or self.default_resource_group
+            if resource_group and resource_group in self.resource_groups:
+                fields_names = self.resource_groups[ resource_group ]
+                fields = [ self.resource_parameters[ n ] for n in fields_names ]
+                if fields:
+                    conditional_element = ElementTree.fromstring( self.JOB_RESOURCE_CONDITIONAL_XML )
+                    when_yes_elem = conditional_element.findall( 'when' )[ 1 ]
+                    for parameter in fields:
+                        when_yes_elem.append( parameter )
+                    return conditional_element
 
     def __parse_resource_parameters( self ):
-        if not os.path.exists( self.app.config.job_resource_params_file ):
-            return
-
-        resource_param_file = self.app.config.job_resource_params_file
-        try:
-            resource_definitions = util.parse_xml( resource_param_file )
-        except Exception as e:
-            raise config_exception(e, resource_param_file)
-
-        resource_definitions_root = resource_definitions.getroot()
-        # TODO: Also handling conditionals would be awesome!
-        for parameter_elem in resource_definitions_root.findall( "param" ):
-            name = parameter_elem.get( "name" )
-            # Considered prepending __job_resource_param__ here and then
-            # stripping it off when making it available to dynamic job
-            # destination. Not needed because resource parameters are wrapped
-            # in a conditional.
-            # # expanded_name = "__job_resource_param__%s" % name
-            # # parameter_elem.set( "name", expanded_name )
-            self.resource_parameters[ name ] = parameter_elem
+        if os.path.exists( self.app.config.job_resource_params_file ):
+            resource_param_file = self.app.config.job_resource_params_file
+            try:
+                resource_definitions = util.parse_xml( resource_param_file )
+            except Exception as e:
+                raise config_exception( e, resource_param_file )
+            resource_definitions_root = resource_definitions.getroot()
+            # TODO: Also handling conditionals would be awesome!
+            for parameter_elem in resource_definitions_root.findall( "param" ):
+                name = parameter_elem.get( "name" )
+                self.resource_parameters[ name ] = parameter_elem
 
     def __get_default(self, parent, names):
         """

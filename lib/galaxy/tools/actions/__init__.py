@@ -50,7 +50,7 @@ class DefaultToolAction( object ):
             current_user_roles = trans.get_current_user_roles()
         input_datasets = odict()
 
-        def visitor( prefix, input, value, parent=None ):
+        def visitor( input, value, prefix, parent=None, **kwargs ):
 
             def process_dataset( data, formats=None ):
                 if not data:
@@ -98,12 +98,12 @@ class DefaultToolAction( object ):
                             else:
                                 raise Exception('A path for explicit datatype conversion has not been found: %s --/--> %s' % ( input_datasets[ prefix + input.name + str( i + 1 ) ].extension, conversion_extensions ) )
                         if parent:
-                            parent[input.name][i] = input_datasets[ prefix + input.name + str( i + 1 ) ]
+                            parent[ input.name ][ i ] = input_datasets[ prefix + input.name + str( i + 1 ) ]
                             for conversion_name, conversion_data in conversions:
                                 # allow explicit conversion to be stored in job_parameter table
-                                parent[ conversion_name ][i] = conversion_data.id  # a more robust way to determine JSONable value is desired
+                                parent[ conversion_name ][ i ] = conversion_data.id  # a more robust way to determine JSONable value is desired
                         else:
-                            param_values[input.name][i] = input_datasets[ prefix + input.name + str( i + 1 ) ]
+                            param_values[ input.name ][ i ] = input_datasets[ prefix + input.name + str( i + 1 ) ]
                             for conversion_name, conversion_data in conversions:
                                 # allow explicit conversion to be stored in job_parameter table
                                 param_values[ conversion_name ][i] = conversion_data.id  # a more robust way to determine JSONable value is desired
@@ -143,10 +143,6 @@ class DefaultToolAction( object ):
                     # Skipping implicit conversion stuff for now, revisit at
                     # some point and figure out if implicitly converting a
                     # dataset collection makes senese.
-
-                    # if i == 0:
-                    #    # Allow copying metadata to output, first item will be source.
-                    #    input_datasets[ prefix + input.name ] = data.dataset_instance
                     input_datasets[ prefix + input.name + str( i + 1 ) ] = data
 
         tool.visit_inputs( param_values, visitor )
@@ -160,7 +156,7 @@ class DefaultToolAction( object ):
 
         input_dataset_collections = dict()
 
-        def visitor( prefix, input, value, parent=None ):
+        def visitor( input, value, prefix, parent=None, **kwargs ):
             if isinstance( input, DataToolParameter ):
                 values = value
                 if not isinstance( values, list ):
@@ -322,7 +318,7 @@ class DefaultToolAction( object ):
             metadata_source = output.metadata_source
             if metadata_source:
                 if isinstance( metadata_source, string_types ):
-                    metadata_source = inp_data[metadata_source]
+                    metadata_source = inp_data.get( metadata_source )
 
             if metadata_source is not None:
                 data.init_meta( copy_from=metadata_source )
