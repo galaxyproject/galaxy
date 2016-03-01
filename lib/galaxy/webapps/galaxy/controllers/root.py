@@ -31,8 +31,21 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
 
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
-        """Called on any url that does not match a controller method.
         """
+        Called on any url that does not match a controller method.
+        """
+        # "dumb" option for handling valid clientside routes.
+        # What else might be in kwd that we'd ever want to handle here?  Safest
+        # to just prune it and return a 'naked' index and let the client handle
+        # the rest?
+        # TODO: unified routing file between client/framework specifying what
+        # the client can/will handle.
+        cmp_path = trans.request.path.strip('/')
+        client_handled_paths = ['tours',
+                                'noop']  # Does nothing, remove me.
+        for path in client_handled_paths:
+            if cmp_path.startswith(path):
+                return self.index( trans )
         raise HTTPNotFound( 'This link may not be followed from within Galaxy.' )
 
     def _get_extended_config( self, trans ):
