@@ -12,7 +12,7 @@ import logging
 import threading
 from xml.etree import ElementTree
 
-from galaxy.util import umask_fix_perms, force_symlink
+from galaxy.util import umask_fix_perms, force_symlink, safe_makedirs, safe_relpath
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util.sleeper import Sleeper
 from galaxy.util.directory_hash import directory_hash_id
@@ -51,8 +51,8 @@ class ObjectStore(object):
     :param extra_dir: Append `extra_dir` to the directory structure where the
         dataset identified by `obj` should be located. (e.g.,
         000/extra_dir/obj.id). Valid values include 'job_work' (defaulting to
-        config.job_working_directory =
-        '$GALAXY_ROOT/database/job_working_directory');
+        config.jobs_directory =
+        '$GALAXY_ROOT/database/jobs_directory');
         'temp' (defaulting to config.new_file_path =
         '$GALAXY_ROOT/database/tmp').
 
@@ -79,7 +79,7 @@ class ObjectStore(object):
         populated from `galaxy/config.ini`. The following attributes are
         currently used:
             object_store_check_old_style (only used by the DiskObjectStore)
-            job_working_directory -- Each job is given a unique empty directory
+            jobs_directory -- Each job is given a unique empty directory
                 as its current working directory. This option defines in what
                 parent directory those directories will be created.
         """
@@ -87,7 +87,7 @@ class ObjectStore(object):
         self.extra_dirs = {}
         self.config = config
         self.check_old_style = config.object_store_check_old_style
-        self.extra_dirs['job_work'] = config.job_working_directory
+        self.extra_dirs['job_work'] = config.jobs_directory
         self.extra_dirs['temp'] = config.new_file_path
 
     def shutdown(self):
@@ -207,7 +207,7 @@ class DiskObjectStore(ObjectStore):
     >>> import tempfile
     >>> file_path=tempfile.mkdtemp()
     >>> obj = Bunch(id=1)
-    >>> s = DiskObjectStore(Bunch(umask=0o077, job_working_directory=file_path, new_file_path=file_path, object_store_check_old_style=False), file_path=file_path)
+    >>> s = DiskObjectStore(Bunch(umask=0o077, jobs_directory=file_path, new_file_path=file_path, object_store_check_old_style=False), file_path=file_path)
     >>> s.create(obj)
     >>> s.exists(obj)
     True
@@ -221,7 +221,7 @@ class DiskObjectStore(ObjectStore):
             populated from `galaxy/config.ini`. The DiskObjectStore specific
             attributes are:
                 object_store_check_old_style
-                job_working_directory -- Each job is given a unique empty
+                job_directory -- Each job is given a unique empty
                     directory as its current working directory. This option
                     defines in what parent directory those directories will be
                     created.
@@ -291,7 +291,17 @@ class DiskObjectStore(ObjectStore):
             hash id (e.g., /files/dataset_10.dat (old) vs.
             /files/000/dataset_10.dat (new))
         """
-        base = self.extra_dirs.get(base_dir, self.file_path)
+        base = os.path.abspath(self.extra_dirs.get(base_dir, self.file_path))
+        # extra_dir should never be constructed from provided data but just
+        # make sure there are no shenannigans afoot
+        if extra_dir and extra_dir != os.path.normpath(extra_dir):
+            log.warning('extra_dir is not normalized: %s', extra_dir)
+            raise ObjectInvalid("The requested object is invalid")
+        # ensure that any parent directory references in alt_name would not
+        # result in a path not contained in the directory path constructed here
+        if alt_name and not safe_relpath(alt_name):
+            log.warning('alt_name would locate path outside dir: %s', alt_name)
+            raise ObjectInvalid("The requested object is invalid")
         if old_style:
             if extra_dir is not None:
                 path = os.path.join(base, extra_dir)
@@ -331,8 +341,7 @@ class DiskObjectStore(ObjectStore):
             dir_only = kwargs.get('dir_only', False)
             # Create directory if it does not exist
             dir = path if dir_only else os.path.dirname(path)
-            if not os.path.exists(dir):
-                os.makedirs(dir)
+            safe_makedirs(dir)
             # Create the file if it does not exist
             if not dir_only:
                 open(path, 'w').close()  # Should be rb?
@@ -713,9 +722,10 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
     elif store == 'irods':
         from .rods import IRODSObjectStore
         return IRODSObjectStore(config=config, config_xml=config_xml)
-    elif store == 'pulsar':
-        from .pulsar import PulsarObjectStore
-        return PulsarObjectStore(config=config, config_xml=config_xml)
+    # Disable the Pulsar object store for now until it receives some attention
+    # elif store == 'pulsar':
+    #    from .pulsar import PulsarObjectStore
+    #    return PulsarObjectStore(config=config, config_xml=config_xml)
     else:
         log.error("Unrecognized object store definition: {0}".format(store))
 

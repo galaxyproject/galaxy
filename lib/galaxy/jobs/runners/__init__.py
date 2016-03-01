@@ -20,6 +20,7 @@ from galaxy.util import in_directory
 from galaxy.util import ParamsWithSpecs
 from galaxy.util import ExecutionTimer
 from galaxy.util.bunch import Bunch
+from galaxy.jobs.runners.util.job_script import write_script
 from galaxy.jobs.runners.util.job_script import job_script
 from galaxy.jobs.runners.util.env import env_to_statement
 
@@ -106,10 +107,12 @@ class BaseJobRunner( object ):
         """Add a job to the queue (by job identifier), indicate that the job is ready to run.
         """
         put_timer = ExecutionTimer()
+        job = job_wrapper.get_job()
         # Change to queued state before handing to worker thread so the runner won't pick it up again
-        job_wrapper.change_state( model.Job.states.QUEUED )
+        job_wrapper.change_state( model.Job.states.QUEUED, flush=False, job=job )
         # Persist the destination so that the job will be included in counts if using concurrency limits
-        job_wrapper.set_job_destination( job_wrapper.job_destination, None )
+        job_wrapper.set_job_destination( job_wrapper.job_destination, None, flush=False, job=job )
+        self.sa_session.flush()
         self.mark_as_queued(job_wrapper)
         log.debug("Job [%s] queued %s" % (job_wrapper.job_id, put_timer))
 
@@ -164,11 +167,11 @@ class BaseJobRunner( object ):
             job_wrapper.runner_command_line = self.build_command_line(
                 job_wrapper,
                 include_metadata=include_metadata,
-                include_work_dir_outputs=include_work_dir_outputs
+                include_work_dir_outputs=include_work_dir_outputs,
             )
-        except:
+        except Exception as e:
             log.exception("(%s) Failure preparing job" % job_id)
-            job_wrapper.fail( "failure preparing job", exception=True )
+            job_wrapper.fail( e.message if hasattr( e, 'message' ) else "Job preparation failed", exception=True )
             return False
 
         if not job_wrapper.runner_command_line:
@@ -224,7 +227,7 @@ class BaseJobRunner( object ):
                 if hda_tool_output and hda_tool_output.from_work_dir:
                     # Copy from working dir to HDA.
                     # TODO: move instead of copy to save time?
-                    source_file = os.path.join( job_working_directory, hda_tool_output.from_work_dir )
+                    source_file = os.path.join( job_working_directory, 'working', hda_tool_output.from_work_dir )
                     destination = job_wrapper.get_output_destination( output_paths[ dataset.dataset_id ] )
                     if in_directory( source_file, job_working_directory ):
                         output_pairs.append( ( source_file, destination ) )
@@ -262,7 +265,7 @@ class BaseJobRunner( object ):
                                                                             kwds={ 'overwrite' : False } )
             external_metadata_script = "%s %s %s" % (lib_adjust, venv, external_metadata_script)
             if resolve_requirements:
-                dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands()
+                dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands(job_directory=job_wrapper.working_directory)
                 if dependency_shell_commands:
                     if isinstance( dependency_shell_commands, list ):
                         dependency_shell_commands = "&&".join( dependency_shell_commands )
@@ -295,6 +298,7 @@ class BaseJobRunner( object ):
             env_setup_commands=env_setup_commands,
             working_directory=os.path.abspath( job_wrapper.working_directory ),
             command=command_line,
+            shell=job_wrapper.shell,
         )
         # Additional logging to enable if debugging from_work_dir handling, metadata
         # commands, etc... (or just peak in the job script.)
@@ -304,41 +308,7 @@ class BaseJobRunner( object ):
         return job_script(**options)
 
     def write_executable_script( self, path, contents, mode=0o755 ):
-        with open( path, 'w' ) as f:
-            if isinstance(contents, unicode):
-                contents = contents.encode("UTF-8")
-            f.write( contents )
-        os.chmod( path, mode )
-        self._handle_script_integrity( path )
-
-    def _handle_script_integrity( self, path ):
-        if not getattr( self.app.config, "check_job_script_integrity", True ):
-            return
-
-        script_integrity_verified = False
-        for i in range(10):
-            try:
-                proc = subprocess.Popen( [path], shell=True, env={"ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ": "1"} )
-                proc.wait()
-                if proc.returncode == 42:
-                    script_integrity_verified = True
-                    break
-
-                # Else we will sync and wait to see if the script becomes
-                # executable.
-                try:
-                    # sync file system to avoid "Text file busy" problems.
-                    # These have occurred both in Docker containers and on EC2 clusters
-                    # under high load.
-                    subprocess.check_call(["/bin/sync"])
-                except Exception:
-                    pass
-                time.sleep( .25 )
-            except Exception:
-                pass
-
-        if not script_integrity_verified:
-            raise Exception("Failed to write job script, could not verify job script integrity.")
+        write_script( path, contents, self.app.config, mode=mode )
 
     def _complete_terminal_job( self, ajs, **kwargs ):
         if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
@@ -613,7 +583,8 @@ class AsynchronousJobRunner( BaseJobRunner ):
             exit_code = 0
 
         # clean up the job files
-        if self.app.config.cleanup_job == "always" or ( not stderr and self.app.config.cleanup_job == "onsuccess" ):
+        cleanup_job = job_state.job_wrapper.cleanup_job
+        if cleanup_job == "always" or ( not stderr and cleanup_job == "onsuccess" ):
             job_state.cleanup()
 
         try:
@@ -630,7 +601,7 @@ class AsynchronousJobRunner( BaseJobRunner ):
         # something necessary
         if not job_state.runner_state_handled:
             job_state.job_wrapper.fail( getattr( job_state, 'fail_message', 'Job failed' ) )
-            if self.app.config.cleanup_job == "always":
+            if job_state.job_wrapper.cleanup_job == "always":
                 job_state.cleanup()
 
     def mark_as_finished(self, job_state):

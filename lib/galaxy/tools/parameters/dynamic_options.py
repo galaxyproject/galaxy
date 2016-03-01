@@ -5,7 +5,6 @@ on the values of other parameters or other aspects of the current state)
 
 import logging
 import os
-import basic
 import validation
 from galaxy.util import string_as_bool
 from galaxy.model import User
@@ -148,7 +147,7 @@ class DataMetaFilter( Filter ):
             meta_value = ref.metadata.get( self.key, None )
 
         if meta_value is None:  # assert meta_value is not None, "Required metadata value '%s' not found in referenced dataset" % self.key
-            return [ ( disp_name, basic.UnvalidatedValue( optval ), selected ) for disp_name, optval, selected in options ]
+            return [ ( disp_name, optval, selected ) for disp_name, optval, selected in options ]
 
         if self.column is not None:
             rval = []
@@ -582,7 +581,7 @@ class DynamicOptions( object ):
     def get_fields( self, trans, other_values ):
         if self.dataset_ref_name:
             dataset = other_values.get( self.dataset_ref_name, None )
-            if not dataset:
+            if not dataset or not hasattr( dataset, 'file_name' ):
                 log.warn( "Required dataset '%s' missing from input" % self.dataset_ref_name )
                 return []  # no valid dataset in history
             # Ensure parsing dynamic options does not consume more than a megabyte worth memory.

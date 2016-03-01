@@ -3,8 +3,8 @@
 <%namespace file="/spark_base.mako" import="make_sparkline" />
 <%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
 
-<% 
-   from galaxy import util 
+<%
+   from galaxy import util
 %>
 
 %if message:
@@ -16,7 +16,7 @@ ${get_css()}
 <%
    _email = util.restore_text( email )
 %>
-    
+
 <!--jobs_user_per_month.mako-->
 <div class="report">
     <div class="reportBody">
@@ -35,29 +35,11 @@ ${get_css()}
             %else:
                 <tr class="header">
                     <td class="third_width">
-                        ${
-                            get_sort_url(
-                                sort_id,
-                                order,
-                                'date',
-                                'jobs',
-                                'user_per_month',
-                                'Month',
-                                email=email)
-                        }
+                        ${get_sort_url(sort_id, order, 'date', 'jobs', 'user_per_month', 'Month', email=email)}
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
                     <td class="third_width">
-                        ${
-                            get_sort_url(
-                                sort_id,
-                                order,
-                                'total_jobs',
-                                'jobs',
-                                'user_per_month',
-                                'Total Jobs',
-                                email=email)
-                        }
+                        ${get_sort_url( sort_id, order, 'total_jobs', 'jobs', 'user_per_month', 'Total Jobs', email=email)}
                         <span class='dir_arrow total_jobs'>${arrow}</span>
                     </td>
                     <td></td>
@@ -76,13 +58,7 @@ ${get_css()}
                                 ${job[1]}
                             </a>
                         </td>
-                        ${
-                            make_sparkline(
-                                key,
-                                trends[key],
-                                "bar",
-                                "/ day")
-                        }
+                        ${make_sparkline(key, trends[key], "bar", "/ day")}
                         <td id="${key}"></td>
                     </tr>
                     <% ctr += 1 %>

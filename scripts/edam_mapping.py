@@ -10,19 +10,16 @@ This file is printed to standard out. This script is designed to be
 run from the Galaxy root.
 
  % python script/edam_mapping.py > edam_mapping.tsv
-
 """
 from __future__ import absolute_import
 from __future__ import print_function
 
 import os
-import urllib2
 import sys
+import urllib2
 from xml import etree
 
-new_path = [ os.path.join( os.path.dirname( __file__ ), os.pardir, "lib" ) ]
-new_path.extend( sys.path[1:] )  # remove scripts/ from the path
-sys.path = new_path
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
 import galaxy.model
 import galaxy.datatypes.registry

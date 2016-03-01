@@ -6,8 +6,8 @@ import tempfile
 from sqlalchemy import and_
 
 from galaxy import util
-from galaxy.datatypes import checkers
 from galaxy.tools.data_manager.manager import DataManager
+from galaxy.tools.loader_directory import looks_like_a_tool
 from galaxy.tools.parser.interface import TestCollectionDef
 from galaxy.web import url_for
 from tool_shed.repository_types import util as rt_util
@@ -312,7 +312,7 @@ class MetadataGenerator( object ):
         readme_file_names = readme_util.get_readme_file_names( str( self.repository.name ) )
         if self.app.name == 'galaxy':
             # Shed related tool panel configs are only relevant to Galaxy.
-            metadata_dict = { 'shed_config_filename' : self.shed_config_dict.get( 'config_filename' ) }
+            metadata_dict = { 'shed_config_filename': self.shed_config_dict.get( 'config_filename' ) }
         else:
             metadata_dict = {}
         readme_files = []
@@ -394,55 +394,47 @@ class MetadataGenerator( object ):
                                                                                              self.shed_config_dict )
                         readme_files.append( relative_path_to_readme )
                     # See if we have a tool config.
-                    elif name not in self.NOT_TOOL_CONFIGS and name.endswith( '.xml' ):
-                        full_path = str( os.path.abspath( os.path.join( root, name ) ) )
-                        if os.path.getsize( full_path ) > 0:
-                            if not ( checkers.check_binary( full_path ) or
-                                     checkers.check_image( full_path ) or
-                                     checkers.check_gzip( full_path )[ 0 ] or
-                                     checkers.check_bz2( full_path )[ 0 ] or
-                                     checkers.check_zip( full_path ) ):
-                                # Make sure we're looking at a tool config and not a display application
-                                # config or something else.
-                                element_tree, error_message = xml_util.parse_xml( full_path )
-                                if element_tree is None:
-                                    is_tool = False
+                    elif looks_like_a_tool(os.path.join( root, name ), invalid_names=self.NOT_TOOL_CONFIGS ):
+                        full_path = str(os.path.abspath(os.path.join( root, name )))  # why the str, seems very odd
+                        element_tree, error_message = xml_util.parse_xml( full_path )
+                        if element_tree is None:
+                            is_tool = False
+                        else:
+                            element_tree_root = element_tree.getroot()
+                            is_tool = element_tree_root.tag == 'tool'
+                        if is_tool:
+                            tool, valid, error_message = \
+                                tv.load_tool_from_config( self.app.security.encode_id( self.repository.id ),
+                                                          full_path )
+                            if tool is None:
+                                if not valid:
+                                    invalid_tool_configs.append( name )
+                                    self.invalid_file_tups.append( ( name, error_message ) )
+                            else:
+                                invalid_files_and_errors_tups = \
+                                    tv.check_tool_input_params( files_dir,
+                                                                name,
+                                                                tool,
+                                                                sample_file_copy_paths )
+                                can_set_metadata = True
+                                for tup in invalid_files_and_errors_tups:
+                                    if name in tup:
+                                        can_set_metadata = False
+                                        invalid_tool_configs.append( name )
+                                        break
+                                if can_set_metadata:
+                                    relative_path_to_tool_config = \
+                                        self.get_relative_path_to_repository_file( root,
+                                                                                   name,
+                                                                                   self.relative_install_dir,
+                                                                                   work_dir,
+                                                                                   self.shed_config_dict )
+                                    metadata_dict = self.generate_tool_metadata( relative_path_to_tool_config,
+                                                                                 tool,
+                                                                                 metadata_dict )
                                 else:
-                                    element_tree_root = element_tree.getroot()
-                                    is_tool = element_tree_root.tag == 'tool'
-                                if is_tool:
-                                    tool, valid, error_message = \
-                                        tv.load_tool_from_config( self.app.security.encode_id( self.repository.id ),
-                                                                  full_path )
-                                    if tool is None:
-                                        if not valid:
-                                            invalid_tool_configs.append( name )
-                                            self.invalid_file_tups.append( ( name, error_message ) )
-                                    else:
-                                        invalid_files_and_errors_tups = \
-                                            tv.check_tool_input_params( files_dir,
-                                                                        name,
-                                                                        tool,
-                                                                        sample_file_copy_paths )
-                                        can_set_metadata = True
-                                        for tup in invalid_files_and_errors_tups:
-                                            if name in tup:
-                                                can_set_metadata = False
-                                                invalid_tool_configs.append( name )
-                                                break
-                                        if can_set_metadata:
-                                            relative_path_to_tool_config = \
-                                                self.get_relative_path_to_repository_file( root,
-                                                                                           name,
-                                                                                           self.relative_install_dir,
-                                                                                           work_dir,
-                                                                                           self.shed_config_dict )
-                                            metadata_dict = self.generate_tool_metadata( relative_path_to_tool_config,
-                                                                                         tool,
-                                                                                         metadata_dict )
-                                        else:
-                                            for tup in invalid_files_and_errors_tups:
-                                                self.invalid_file_tups.append( tup )
+                                    for tup in invalid_files_and_errors_tups:
+                                        self.invalid_file_tups.append( tup )
                     # Find all exported workflows.
                     elif name.endswith( '.ga' ):
                         relative_path = os.path.join( root, name )

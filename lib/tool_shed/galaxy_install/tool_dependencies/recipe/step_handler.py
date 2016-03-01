@@ -284,8 +284,7 @@ class AssertDirectoryExecutable( RecipeStep ):
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes( self.app,
                                                                                    tool_dependency,
                                                                                    status=status,
-                                                                                   error_message=error_message,
-                                                                                   remove_from_disk=False )
+                                                                                   error_message=error_message )
         return tool_dependency, None, None
 
     def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
@@ -330,8 +329,7 @@ class AssertDirectoryExists( RecipeStep ):
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes( self.app,
                                                                                    tool_dependency,
                                                                                    status=status,
-                                                                                   error_message=error_message,
-                                                                                   remove_from_disk=False )
+                                                                                   error_message=error_message )
         return tool_dependency, None, None
 
     def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
@@ -380,8 +378,7 @@ class AssertFileExecutable( RecipeStep ):
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes( self.app,
                                                                                    tool_dependency,
                                                                                    status=status,
-                                                                                   error_message=error_message,
-                                                                                   remove_from_disk=False )
+                                                                                   error_message=error_message )
         return tool_dependency, None, None
 
     def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
@@ -427,8 +424,7 @@ class AssertFileExists( RecipeStep ):
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes( self.app,
                                                                                    tool_dependency,
                                                                                    status=status,
-                                                                                   error_message=error_message,
-                                                                                   remove_from_disk=False )
+                                                                                   error_message=error_message )
         return tool_dependency, None, None
 
     def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
@@ -598,10 +594,10 @@ class DownloadBinary( Download, RecipeStep ):
         # Get the target directory for this download if the user has specified one. Default to the root of $INSTALL_DIR.
         target_directory = action_dict.get( 'target_directory', None )
         # Attempt to download a binary from the specified URL.
-        log.debug( 'Attempting to download from %s to %s', url, str( target_directory ) )
         downloaded_filename = None
         try:
             checksums = self.get_dict_checksums( action_dict )
+            log.debug( 'Attempting to download from %s to %s', url, str( target_directory ) )
             downloaded_filename = self.download_binary( url, work_dir, checksums )
             if initial_download:
                 # Filter out any actions that are not download_binary, chmod, or set_environment.
@@ -679,7 +675,6 @@ class DownloadByUrl( Download, RecipeStep ):
             filtered_actions = actions[ 1: ]
         url = action_dict[ 'url' ]
         is_binary = action_dict.get( 'is_binary', False )
-        log.debug( 'Attempting to download via url: %s', url )
         if 'target_filename' in action_dict:
             # Sometimes compressed archives extract their content to a folder other than the default
             # defined file name.  Using this attribute will ensure that the file name is set appropriately
@@ -689,6 +684,7 @@ class DownloadByUrl( Download, RecipeStep ):
             downloaded_filename = os.path.split( url )[ -1 ]
 
         checksums = self.get_dict_checksums( action_dict )
+        log.debug( 'Attempting to download via url: %s', url )
         dir = self.url_download( work_dir, downloaded_filename, url, extract=True, checksums=checksums )
         if is_binary:
             log_file = os.path.join( install_environment.install_dir, basic_util.INSTALLATION_LOG )
@@ -714,7 +710,7 @@ class DownloadByUrl( Download, RecipeStep ):
         if is_binary_download:
             action_dict[ 'is_binary' ] = True
         if action_elem.text:
-            action_dict[ 'url' ] = action_elem.text
+            action_dict[ 'url' ] = action_elem.text.strip()
             target_filename = action_elem.get( 'target_filename', None )
             if target_filename:
                 action_dict[ 'target_filename' ] = target_filename
@@ -751,6 +747,7 @@ class DownloadFile( Download, RecipeStep ):
         if current_dir is not None:
             work_dir = current_dir
         checksums = self.get_dict_checksums( action_dict )
+        log.debug( 'Attempting to download via url: %s', url )
         self.url_download( work_dir, filename, url, extract=action_dict[ 'extract' ], checksums=checksums )
         if initial_download:
             dir = os.path.curdir
@@ -760,7 +757,7 @@ class DownloadFile( Download, RecipeStep ):
     def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # <action type="download_file">http://effectors.org/download/version/TTSS_GUI-1.0.1.jar</action>
         if action_elem.text:
-            action_dict[ 'url' ] = action_elem.text
+            action_dict[ 'url' ] = action_elem.text.strip()
             target_filename = action_elem.get( 'target_filename', None )
             if target_filename:
                 action_dict[ 'target_filename' ] = target_filename

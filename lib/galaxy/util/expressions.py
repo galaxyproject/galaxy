@@ -5,10 +5,11 @@ For the moment this depends on python's eval. In the future it should be
 replaced with a "safe" parser.
 """
 
-from UserDict import DictMixin
+from collections import MutableMapping
+from itertools import chain
 
 
-class ExpressionContext( object, DictMixin ):
+class ExpressionContext( MutableMapping ):
     def __init__( self, dict, parent=None ):
         """
         Create a new expression context that looks for values in the
@@ -16,6 +17,18 @@ class ExpressionContext( object, DictMixin ):
         """
         self.dict = dict
         self.parent = parent
+
+    def __delitem__(self, key):
+        if key in self.dict:
+            del self.dict[key]
+        elif self.parent is not None and key in self.parent:
+            del self.parent[key]
+
+    def __iter__(self):
+        return chain(iter(self.dict), iter(self.parent or []))
+
+    def __len__(self):
+        return len(self.dict) + len(self.parent or [])
 
     def __getitem__( self, key ):
         if key in self.dict:

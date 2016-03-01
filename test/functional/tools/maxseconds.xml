@@ -1,5 +1,5 @@
 <tool id="maxseconds" name="maxseconds" version="0.1.0">
-    <command>
+    <command detect_errors="exit_code">
         sleep 100
     </command>
     <inputs>

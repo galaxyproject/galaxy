@@ -8,9 +8,9 @@
   </inputs>
   <outputs>
     <!-- Access by element name (for paired data) -->
-    <data format="txt" from_work_dir="1" name="format_source_1_output" format_source="input_collection['forward']" />
+    <data from_work_dir="1" name="format_source_1_output" format_source="input_collection['forward']" />
     <!-- Access by element index (for any collection) -->
-    <data format="txt" from_work_dir="2" name="format_source_2_output" format_source="input_collection[0]" />
+    <data from_work_dir="2" name="format_source_2_output" format_source="input_collection[0]" />
   </outputs>
   <tests>
     <test>

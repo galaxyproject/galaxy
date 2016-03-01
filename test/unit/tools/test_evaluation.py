@@ -15,7 +15,7 @@ from galaxy.util.bunch import Bunch
 
 # For MockTool
 from galaxy.tools.parameters import params_from_strings
-from galaxy.tools import ToolOutput
+from galaxy.tools.parser.output_objects import ToolOutput
 from galaxy.tools.parameters.grouping import Repeat
 from galaxy.tools.parameters.grouping import Conditional
 from galaxy.tools.parameters.grouping import ConditionalWhen
@@ -149,7 +149,10 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
             assert name == "path"
             return ["/old/path/human"]
 
-        parameter.options = Bunch(get_field_by_name_for_value=get_field_by_name_for_value)
+        def get_options( trans, other_values ):
+            return [ [ "", "/old/path/human", "" ] ]
+
+        parameter.options = Bunch(get_field_by_name_for_value=get_field_by_name_for_value, get_options=get_options)
         self.tool.set_params( {
             "index_path": parameter
         } )
@@ -253,6 +256,7 @@ class TestComputeEnviornment( SimpleComputeEnvironment ):
 class MockTool( object ):
 
     def __init__( self, app ):
+        self.profile = 16.01
         self.app = app
         self.hooks_called = []
         self.environment_variables = []

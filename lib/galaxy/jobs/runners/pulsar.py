@@ -69,6 +69,10 @@ PULSAR_PARAM_SPECS = dict(
         map=specs.to_bool_or_none,
         default=None
     ),
+    amqp_ack_republish_time=dict(
+        map=lambda val: None if val == "None" else int(val),
+        default=None,
+    ),
     amqp_consumer_timeout=dict(
         map=lambda val: None if val == "None" else float(val),
         default=None,
@@ -389,7 +393,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             # and cleanup job if needed.
             completed_normally = \
                 job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ]
-            cleanup_job = self.app.config.cleanup_job
+            cleanup_job = job_wrapper.cleanup_job
             client_outputs = self.__client_outputs(client, job_wrapper)
             finish_args = dict( client=client,
                                 job_completed_normally=completed_normally,

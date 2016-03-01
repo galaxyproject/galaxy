@@ -94,36 +94,6 @@ class Sif( tabular.Tabular ):
         return SIFGraphDataProvider( dataset_source, **settings )
 
 
-# TODO: we might want to look at rdflib or a similar, larger lib/egg
-class Rdf( xml.GenericXml ):
-    """
-    Resource Description Framework format (http://www.w3.org/RDF/).
-    """
-    edam_format = "format_2376"
-    file_ext = "rdf"
-
-    def sniff( self, filename ):
-        """
-        Returns false and the user must manually set.
-        """
-        return False
-
-    def set_peek( self, dataset, is_multi_byte=False ):
-        """Set the peek and blurb text"""
-        if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
-            dataset.blurb = 'RDF data'
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-
-    # TODO: won't be as simple
-    # @dataproviders.decorators.dataprovider_factory( 'node-edge', dataproviders.column.ColumnarDataProvider.settings )
-    # def node_edge_dataprovider( self, dataset, **settings ):
-    #    dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
-    #    return None
-
-
 # ----------------------------------------------------------------------------- graph specific data providers
 class XGMMLGraphDataProvider( dataproviders.hierarchy.XMLDataProvider ):
     """

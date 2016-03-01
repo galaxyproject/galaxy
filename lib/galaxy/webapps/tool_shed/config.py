@@ -8,6 +8,7 @@ import logging
 import logging.config
 import ConfigParser
 from galaxy.util import string_as_bool, listify
+from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.version import VERSION, VERSION_MAJOR
 
 log = logging.getLogger( __name__ )
@@ -101,17 +102,18 @@ class Configuration( object ):
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates/community" ), self.root )
         self.admin_users = kwargs.get( "admin_users", "" )
         self.admin_users_list = [u.strip() for u in self.admin_users.split(',') if u]
-        self.sendmail_path = kwargs.get('sendmail_path', "/usr/sbin/sendmail")
         self.mailing_join_addr = kwargs.get('mailing_join_addr', "galaxy-announce-join@bx.psu.edu")
         self.error_email_to = kwargs.get( 'error_email_to', None )
         self.smtp_server = kwargs.get( 'smtp_server', None )
         self.smtp_username = kwargs.get( 'smtp_username', None )
         self.smtp_password = kwargs.get( 'smtp_password', None )
+        self.smtp_ssl = kwargs.get( 'smtp_ssl', None )
         self.start_job_runners = kwargs.get( 'start_job_runners', None )
         self.email_from = kwargs.get( 'email_from', None )
         self.nginx_upload_path = kwargs.get( 'nginx_upload_path', False )
         self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )
         self.brand = kwargs.get( 'brand', None )
+        self.pretty_datetime_format = expand_pretty_datetime_format( kwargs.get( 'pretty_datetime_format', '$locale (UTC)' ) )
         # Configuration for the message box directly below the masthead.
         self.message_box_visible = kwargs.get( 'message_box_visible', False )
         self.message_box_content = kwargs.get( 'message_box_content', None )

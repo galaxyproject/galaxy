@@ -2,6 +2,9 @@ define([
     'utils/graph',
     'utils/add-logging'
 ],function( GRAPH, addLogging ){
+
+'use strict';
+
 // ============================================================================
 var _super = GRAPH.Graph;
 /** A Directed acyclic Graph built from a history's job data.

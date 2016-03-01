@@ -5,16 +5,21 @@ from .interface import InputSource
 from .util import error_on_exit_code
 
 from galaxy.tools.deps import requirements
-from galaxy.tools.parameters import output_collect
-from galaxy.tools.parameters.output import ToolOutputActionGroup
+from .output_collection_def import dataset_collector_descriptions_from_list
+from .output_actions import ToolOutputActionGroup
 from galaxy.util.odict import odict
-import galaxy.tools
+from .output_objects import (
+    ToolOutput,
+    ToolOutputCollection,
+    ToolOutputCollectionStructure,
+)
 
 
 class YamlToolSource(ToolSource):
 
-    def __init__(self, root_dict):
+    def __init__(self, root_dict, source_path=None):
         self.root_dict = root_dict
+        self._source_path = source_path
 
     def parse_id(self):
         return self.root_dict.get("id")
@@ -26,10 +31,13 @@ class YamlToolSource(ToolSource):
         return self.root_dict.get("name")
 
     def parse_description(self):
-        return self.root_dict.get("description")
+        return self.root_dict.get("description", "")
 
     def parse_is_multi_byte(self):
         return self.root_dict.get("is_multi_byte", self.default_is_multi_byte)
+
+    def parse_sanitize(self):
+        return self.root_dict.get("sanitize", True)
 
     def parse_display_interface(self, default):
         return self.root_dict.get('display_interface', default)
@@ -60,6 +68,10 @@ class YamlToolSource(ToolSource):
         page_source = YamlPageSource(self.root_dict.get("inputs", {}))
         return PagesSource([page_source])
 
+    def parse_strict_shell(self):
+        # TODO: Add ability to disable this.
+        return True
+
     def parse_stdio(self):
         return error_on_exit_code()
 
@@ -69,17 +81,28 @@ class YamlToolSource(ToolSource):
     def parse_outputs(self, tool):
         outputs = self.root_dict.get("outputs", {})
         output_defs = []
+        output_collection_defs = []
         for name, output_dict in outputs.items():
-            output_defs.append(self._parse_output(tool, name, output_dict))
+            output_type = output_dict.get("type", "data")
+            if output_type == "data":
+                output_defs.append(self._parse_output(tool, name, output_dict))
+            elif output_type == "collection":
+                output_collection_defs.append(self._parse_output(tool, name, output_dict))
+            else:
+                message = "Unknown output_type [%s] encountered." % output_type
+                raise Exception(message)
         outputs = odict()
         for output in output_defs:
             outputs[output.name] = output
-        # TODO: parse outputs collections
-        return outputs, odict()
+        output_collections = odict()
+        for output in output_collection_defs:
+            output_collections[output.name] = output
+
+        return outputs, output_collections
 
     def _parse_output(self, tool, name, output_dict):
         # TODO: handle filters, actions, change_format
-        output = galaxy.tools.ToolOutput( name )
+        output = ToolOutput( name )
         output.format = output_dict.get("format", "data")
         output.change_format = []
         output.format_source = output_dict.get("format_source", None)
@@ -91,12 +114,52 @@ class YamlToolSource(ToolSource):
         output.tool = tool
         output.from_work_dir = output_dict.get("from_work_dir", None)
         output.hidden = output_dict.get("hidden", "")
+        # TODO: implement tool output action group fixes
         output.actions = ToolOutputActionGroup( output, None )
-        discover_datasets_dicts = output_dict.get( "discover_datasets", [] )
-        if isinstance( discover_datasets_dicts, dict ):
-            discover_datasets_dicts = [ discover_datasets_dicts ]
-        output.dataset_collectors = output_collect.dataset_collectors_from_list( discover_datasets_dicts )
+        output.dataset_collector_descriptions = self._dataset_collector_descriptions( output_dict )
         return output
+
+    def _parse_output_collection(self, tool, name, output_dict):
+        name = output_dict.get("name")
+        label = output_dict.get("label")
+        default_format = output_dict.get( "format", "data" )
+        collection_type = output_dict.get( "type", None )
+        collection_type_source = output_dict.get( "type_source", None )
+        structured_like = output_dict.get( "structured_like", None )
+        inherit_format = False
+        inherit_metadata = False
+        if structured_like:
+            inherit_format = output_dict.get( "inherit_format", None )
+            inherit_metadata = output_dict.get( "inherit_metadata", None )
+        default_format_source = output_dict.get( "format_source", None )
+        default_metadata_source = output_dict.get( "metadata_source", "" )
+        filters = []
+        dataset_collector_descriptions = self._dataset_collector_descriptions( output_dict )
+
+        structure = ToolOutputCollectionStructure(
+            collection_type=collection_type,
+            collection_type_source=collection_type_source,
+            structured_like=structured_like,
+            dataset_collector_descriptions=dataset_collector_descriptions,
+        )
+        output_collection = ToolOutputCollection(
+            name,
+            structure,
+            label=label,
+            filters=filters,
+            default_format=default_format,
+            inherit_format=inherit_format,
+            inherit_metadata=inherit_metadata,
+            default_format_source=default_format_source,
+            default_metadata_source=default_metadata_source,
+        )
+        return output_collection
+
+    def _dataset_collector_descriptions(self, discover_datasets_dicts):
+        if _is_dict(discover_datasets_dicts):
+            discover_datasets_dicts = [ discover_datasets_dicts ]
+        dataset_collector_descriptions = dataset_collector_descriptions_from_list( discover_datasets_dicts )
+        return dataset_collector_descriptions
 
     def parse_tests_to_dict(self):
         tests = []
@@ -109,21 +172,24 @@ class YamlToolSource(ToolSource):
 
         return rval
 
+    def parse_profile(self):
+        return self.root_dict.get("profile", "16.04")
+
 
 def _parse_test(i, test_dict):
     inputs = test_dict["inputs"]
-    if isinstance(inputs, dict):
+    if _is_dict(inputs):
         new_inputs = []
-        for key, value in inputs.iteritems():
+        for key, value in inputs.items():
             new_inputs.append((key, value, {}))
         test_dict["inputs"] = new_inputs
 
     outputs = test_dict["outputs"]
 
     new_outputs = []
-    if isinstance(outputs, dict):
-        for key, value in outputs.iteritems():
-            if isinstance(value, dict):
+    if _is_dict(outputs):
+        for key, value in outputs.items():
+            if _is_dict(value):
                 attributes = value
                 file = attributes.get("file")
             else:
@@ -166,6 +232,10 @@ def _parse_test(i, test_dict):
     return test_dict
 
 
+def _is_dict(item):
+    return isinstance(item, dict) or isinstance(item, odict)
+
+
 def __to_test_assert_list(assertions):
     def expand_dict_form(item):
         key, value = item
@@ -173,7 +243,7 @@ def __to_test_assert_list(assertions):
         new_value["that"] = key
         return new_value
 
-    if isinstance( assertions, dict ):
+    if _is_dict(assertions):
         assertions = map(expand_dict_form, assertions.items() )
 
     assert_list = []
@@ -263,6 +333,6 @@ class YamlInputSource(InputSource):
 
 
 def _ensure_has(dict, defaults):
-    for key, value in defaults.iteritems():
+    for key, value in defaults.items():
         if key not in dict:
             dict[key] = value

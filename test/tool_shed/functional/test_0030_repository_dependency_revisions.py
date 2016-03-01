@@ -16,12 +16,10 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
 
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         self.test_db_util.get_private_role( test_user_1 )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
@@ -33,7 +31,6 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
 
     def test_0010_create_emboss_5_repository( self ):
         '''Create and populate the emboss_5_0030 repository.'''
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         category = self.test_db_util.get_category_by_name( 'Test 0030 Repository Dependency Revisions' )
         repository = self.get_or_create_repository( name=emboss_5_repository_name,
@@ -53,7 +50,6 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
 
     def test_0015_create_emboss_6_repository( self ):
         '''Create and populate the emboss_6_0030 repository.'''
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         category = self.test_db_util.get_category_by_name( 'Test 0030 Repository Dependency Revisions' )
         repository = self.get_or_create_repository( name=emboss_6_repository_name,
@@ -73,7 +69,6 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
 
     def test_0020_create_emboss_datatypes_repository( self ):
         '''Create and populate the emboss_datatypes_0030 repository.'''
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         category = self.test_db_util.get_category_by_name( 'Test 0030 Repository Dependency Revisions' )
         repository = self.get_or_create_repository( name=datatypes_repository_name,
@@ -93,7 +88,6 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
 
     def test_0025_create_emboss_repository( self ):
         '''Create and populate the emboss_0030 repository.'''
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         category = self.test_db_util.get_category_by_name( 'Test 0030 Repository Dependency Revisions' )
         repository = self.get_or_create_repository( name=emboss_repository_name,

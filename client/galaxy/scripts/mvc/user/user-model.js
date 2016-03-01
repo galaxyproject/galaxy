@@ -1,7 +1,10 @@
 define([
-    "mvc/base-mvc",
-    "utils/localization"
-], function( baseMVC, _l ){
+    'libs/underscore',
+    'libs/backbone',
+    'mvc/base-mvc',
+    'utils/localization'
+], function( _, Backbone, baseMVC, _l ){
+'use strict';
 
 var logNamespace = 'user';
 //==============================================================================
@@ -13,7 +16,7 @@ var User = Backbone.Model.extend( baseMVC.LoggableMixin ).extend(
     _logNamespace : logNamespace,
 
     /** API location for this resource */
-    urlRoot : galaxy_config.root + 'api/users',
+    urlRoot : function(){ return Galaxy.root + 'api/users'; },
 
     /** Model defaults
      *  Note: don't check for anon-users with the username as the default is '(anonymous user)'
@@ -113,7 +116,7 @@ User.getCurrentUserFromApi = function( options ){
 // (stub) collection for users (shouldn't be common unless admin UI)
 var UserCollection = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend({
     model   : User,
-    urlRoot : galaxy_config.root + 'api/users'
+    urlRoot : function(){ return Galaxy.root + 'api/users'; },
     //logger  : console,
 });
 

@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import argparse
+import optparse
 import ConfigParser
 import os
 import sys
@@ -120,10 +120,10 @@ def main( args ):
     else:
         return 1
 
-parser = argparse.ArgumentParser()
-parser.add_argument( '-c', '--config_file', dest='config', action='store', default='config/tool_shed.ini.sample' )
-parser.add_argument( '-e', '--execute', dest='method', action='store', default='check_db' )
-args = parser.parse_args()
+parser = optparse.OptionParser()
+parser.add_option( '-c', '--config_file', dest='config', action='store', default='config/tool_shed.ini.sample' )
+parser.add_option( '-e', '--execute', dest='method', action='store', default='check_db' )
+( args, options ) = parser.parse_args()
 
 if __name__ == '__main__':
     sys.exit( main( args ) )

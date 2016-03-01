@@ -9,6 +9,8 @@ define([
     'libs/d3'
 ], function( JobDAG, JOB, JOB_LI, HISTORY_CONTENT, DATASET_LI, BASE_MVC, _l ){
 
+'use strict';
+
 var logNamespace = 'history';
 // ============================================================================
 /*
@@ -157,8 +159,8 @@ var HistoryStructureComponent = Backbone.View.extend( BASE_MVC.LoggableMixin ).e
 
         // create the bbone view for the job (to be positioned later accrd. to the layout) and cache
         var li = new view.JobItemClass({ model: job, tool: jobData.tool, jobData: jobData });
-        li.on( 'expanding expanded collapsing collapsed', view.renderGraph, view );
-        li.foldout.on( 'view:expanding view:expanded view:collapsing view:collapsed', view.renderGraph, view );
+        view.listenTo( li, 'expanding expanded collapsing collapsed', view.renderGraph );
+        view.listenTo( li.foldout, 'view:expanding view:expanded view:collapsing view:collapsed', view.renderGraph );
         return li;
     },
 
@@ -169,7 +171,7 @@ var HistoryStructureComponent = Backbone.View.extend( BASE_MVC.LoggableMixin ).e
             typeId = HISTORY_CONTENT.typeIdStr( content.history_content_type, content.id );
             content = view.model.contents.get( typeId );
         var li = new view.ContentItemClass({ model: content });
-        li.on( 'expanding expanded collapsing collapsed', view.renderGraph, view );
+        view.listenTo( li, 'expanding expanded collapsing collapsed', view.renderGraph );
         return li;
     },
 

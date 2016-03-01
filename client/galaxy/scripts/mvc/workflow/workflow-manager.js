@@ -1,4 +1,8 @@
-define(['mvc/workflow/workflow-connector'], function( Connector ) {
+define([
+    'mvc/workflow/workflow-connector',
+    'libs/toastr'
+    ],
+function( Connector, Toastr ) {
     function Workflow( app, canvas_container ) {
         this.app = app;
         this.canvas_container = canvas_container;
@@ -7,10 +11,87 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
         this.name = null;
         this.has_changes = false;
         this.active_form_has_changes = false;
+        this.nodeLabels = {};
+        this.workflowOutputLabels = {};
     }
     $.extend( Workflow.prototype, {
-        create_node: function ( type, title_text, tool_id ) {
-            var node = this.app.prebuildNode( type, title_text, tool_id );
+        canLabelNodeWith: function( label ) {
+            if( label ) {
+                return ! (label in this.nodeLabels);
+            } else {
+                // empty labels are non-exclusive, so allow this one.
+                return true;
+            }
+        },
+        registerNodeLabel: function( label ) {
+            if( label ) {
+                this.nodeLabels[label] = true;
+            }
+        },
+        unregisterNodeLabel: function( label ) {
+            if( label ) {
+                delete this.nodeLabels[label];
+            }
+        },
+        updateNodeLabel: function( fromLabel, toLabel ) {
+            if( fromLabel ) {
+                this.unregisterNodeLabel( fromLabel );
+            }
+            if( ! this.canLabelNodeWith( toLabel ) ) {
+                Toastr.warning("Workflow contains duplicate node labels " + toLabel + ". This must be fixed before it can be saved.");
+            }
+            if( toLabel ) {
+                this.registerNodeLabel( toLabel );
+            }
+        },
+        attemptUpdateNodeLabel: function( node, label ) {
+            if( this.canLabelNodeWith( label ) ) {
+                node.setLabel( label );
+                return true;
+            } else {
+                return false;
+            }
+        },
+        canLabelOutputWith: function( label ) {
+            if( label ) {
+                return ! (label in this.workflowOutputLabels);
+            } else {
+                // empty labels are non-exclusive, so allow this one.
+                return true;
+            }
+        },
+        registerOutputLabel: function( label ) {
+            if( label ) {
+                this.workflowOutputLabels[label] = true;
+            }
+        },
+        unregisterOutputLabel: function( label ) {
+            if( label ) {
+                delete this.workflowOutputLabels[label];
+            }
+        },
+        updateOutputLabel: function( fromLabel, toLabel ) {
+            if( fromLabel ) {
+                this.unregisterOutputLabel( fromLabel );
+            }
+            if( ! this.canLabelOutputWith( toLabel ) ) {
+                Toastr.warning("Workflow contains duplicate workflow output labels " + toLabel + ". This must be fixed before it can be saved.");
+            }
+            if( toLabel ) {
+                this.registerOutputLabel( toLabel );
+            }
+        },
+        attemptUpdateOutputLabel: function( node, outputName, label ) {
+            if( this.canLabelOutputWith( label ) ) {
+                node.labelWorkflowOutput( outputName, label );
+                node.nodeView.redrawWorkflowOutputs();
+                return true;
+            } else {
+                return false;
+            }
+        },
+        create_node: function ( type, title_text, content_id ) {
+            var node = this.app.prebuildNode( type, title_text, content_id );
             this.add_node( node );
             this.fit_canvas_to_nodes();
             this.app.canvas_manager.draw_overview();
@@ -77,12 +158,7 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
                         }
                         if (using_workflow_outputs){
                             $.each(node.output_terminals, function(ot_id, ot){
-                                var create_pja = true;
-                                $.each(node.workflow_outputs, function(i, wo_name){
-                                    if (ot.name === wo_name){
-                                        create_pja = false;
-                                    }
-                                });
+                                var create_pja = !node.isWorkflowOutput(ot.name);
                                 if (create_pja === true){
                                     node_changed = true;
                                     var pja = {
@@ -113,7 +189,12 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
                     // really a sneaky if statement
                     var cons = []
                     $.each( t.connectors, function ( i, c ) {
-                        cons[i] = { id: c.handle1.node.id, output_name: c.handle1.name };
+                        var con_dict = { id: c.handle1.node.id, output_name: c.handle1.name };
+                        var input_subworkflow_step_id = t.attributes.input.input_subworkflow_step_id;
+                        if( input_subworkflow_step_id !== undefined ) {
+                            con_dict["input_subworkflow_step_id"] = input_subworkflow_step_id;
+                        }
+                        cons[i] = con_dict;
                         input_connections[ t.name ] = cons;
                     });
                 });
@@ -121,8 +202,8 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
                 if (node.post_job_actions){
                     $.each( node.post_job_actions, function ( i, act ) {
                         var pja = {
-                            action_type : act.action_type, 
-                            output_name : act.output_name, 
+                            action_type : act.action_type,
+                            output_name : act.output_name,
                             action_arguments : act.action_arguments
                         }
                         post_job_actions[ act.action_type + act.output_name ] = null;
@@ -136,7 +217,7 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
                 var node_data = {
                     id : node.id,
                     type : node.type,
-                    tool_id : node.tool_id,
+                    content_id : node.content_id,
                     tool_state : node.tool_state,
                     tool_errors : node.tool_errors,
                     input_connections : input_connections,
@@ -151,29 +232,43 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
             });
             return { steps: nodes };
         },
-        from_simple : function ( data ) {
+        from_simple : function ( data, initialImport_ ) {
+            var initialImport = (initialImport_ === undefined) ? true : initialImport_;
             wf = this;
-            var max_id = 0;
-            wf.name = data.name;
+            var offset = 0;
+            if( initialImport ) {
+                wf.name = data.name;
+            } else {
+                offset = Object.keys(wf.nodes).length;
+            }
+            var max_id = offset;
             // First pass, nodes
             var using_workflow_outputs = false;
             $.each( data.steps, function( id, step ) {
-                var node = wf.app.prebuildNode( step.type, step.name, step.tool_id );
+                var node = wf.app.prebuildNode( step.type, step.name, step.content_id );
+                // If workflow being copied into another, wipe UUID and let
+                // Galaxy assign new ones.
+                if( ! initialImport ) {
+                    step.uuid = null;
+                    $.each(step.workflow_outputs, function( name, workflow_output ) {
+                        workflow_output.uuid = null;
+                    });
+                }
                 node.init_field_data( step );
                 if ( step.position ) {
                     node.element.css( { top: step.position.top, left: step.position.left } );
                 }
-                node.id = step.id;
+                node.id = parseInt(step.id) + offset;
                 wf.nodes[ node.id ] = node;
-                max_id = Math.max( max_id, parseInt( id ) );
+                max_id = Math.max( max_id, parseInt( id ) + offset );
                 // For older workflows, it's possible to have HideDataset PJAs, but not WorkflowOutputs.
                 // Check for either, and then add outputs in the next pass.
-                if (!using_workflow_outputs && node.type === 'tool'){
+                if (!using_workflow_outputs){
                     if (node.workflow_outputs.length > 0){
                         using_workflow_outputs = true;
                     }
                     else{
-                        $.each(node.post_job_actions, function(pja_id, pja){
+                        $.each(node.post_job_actions || [], function(pja_id, pja){
                             if (pja.action_type === "HideDatasetAction"){
                                 using_workflow_outputs = true;
                             }
@@ -184,14 +279,14 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
             wf.id_counter = max_id + 1;
             // Second pass, connections
             $.each( data.steps, function( id, step ) {
-                var node = wf.nodes[id];
+                var node = wf.nodes[parseInt(id) + offset];
                 $.each( step.input_connections, function( k, v ) {
                     if ( v ) {
                         if ( ! $.isArray( v ) ) {
                             v = [ v ];
                         }
                         $.each( v, function( l, x ) {
-                            var other_node = wf.nodes[ x.id ];
+                            var other_node = wf.nodes[ parseInt(x.id) + offset ];
                             var c = new Connector();
                             c.connect( other_node.output_terminals[ x.output_name ],
                                        node.input_terminals[ k ] );
@@ -199,13 +294,13 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
                         });
                     }
                 });
-                if(using_workflow_outputs && node.type === 'tool'){
+                if(using_workflow_outputs){
                     // Ensure that every output terminal has a WorkflowOutput or HideDatasetAction.
                     $.each(node.output_terminals, function(ot_id, ot){
                         if(node.post_job_actions['HideDatasetAction'+ot.name] === undefined){
-                            node.workflow_outputs.push(ot.name);
+                            node.addWorkflowOutput(ot.name);
                             callout = $(node.element).find('.callout.'+ot.name);
-                            callout.find('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small.png');
+                            callout.find('img').attr('src', Galaxy.root + 'static/images/fugue/asterisk-small.png');
                             wf.has_changes = true;
                         }
                     });
@@ -285,7 +380,7 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
                     if ( n_pred[ pred_k ] == 0 ) {
                         level_parents.push( pred_k );
                     }
-                }        
+                }
                 if ( level_parents.length == 0 ) {
                     break;
                 }
@@ -307,7 +402,7 @@ define(['mvc/workflow/workflow-connector'], function( Connector ) {
             // Layout each level
             var all_nodes = this.nodes;
             var h_pad = 80; v_pad = 30;
-            var left = h_pad;        
+            var left = h_pad;
             $.each( node_ids_by_level, function( i, ids ) {
                 // We keep nodes in the same order in a level to give the user
                 // some control over ordering

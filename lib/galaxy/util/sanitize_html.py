@@ -5,6 +5,10 @@ HTML Sanitizer (ripped from feedparser)
 import re
 import sgmllib
 
+from galaxy.util import unicodify
+from six import unichr
+
+
 # reversable htmlentitydefs mappings for Python 2.2
 try:
     from htmlentitydefs import name2codepoint, codepoint2name
@@ -17,6 +21,7 @@ except:
             codepoint = unichr(int(codepoint[2:-1]))
         name2codepoint[name] = ord(codepoint)
         codepoint2name[ord(codepoint)] = name
+
 
 _cp1252 = {
     unichr(128): unichr(8364),  # euro sign
@@ -83,8 +88,6 @@ class _BaseHTMLProcessor(sgmllib.SGMLParser):
         data = re.sub(r'<([^<>\s]+?)\s*/>', self._shorttag_replace, data)
         data = data.replace('&#39;', "'")
         data = data.replace('&#34;', '"')
-        if self.encoding and isinstance(data, unicode):
-            data = data.encode(self.encoding)
         sgmllib.SGMLParser.feed(self, data)
         sgmllib.SGMLParser.close(self)
 
@@ -107,23 +110,12 @@ class _BaseHTMLProcessor(sgmllib.SGMLParser):
             for key, value in attrs:
                 value = value.replace('>', '&gt;').replace('<', '&lt;').replace('"', '&quot;')
                 value = self.bare_ampersand.sub("&amp;", value)
-                # thanks to Kevin Marks for this breathtaking hack to deal with (valid) high-bit attribute values in UTF-8 feeds
-                if isinstance(value, unicode):
-                    try:
-                        value = unicode(value, self.encoding)
-                    except:
-                        value = unicode(value, 'iso-8859-1')
-                uattrs.append((unicode(key, self.encoding), value))
-            strattrs = u''.join([u' %s="%s"' % (key, val) for key, val in uattrs])
-            if self.encoding:
-                try:
-                    strattrs = strattrs.encode(self.encoding)
-                except:
-                    pass
+                uattrs.append((key, value))
+            strattrs = ''.join([' %s="%s"' % (k, v) for k, v in uattrs])
         if tag in self.elements_no_end_tag:
-            self.pieces.append('<%(tag)s%(strattrs)s />' % locals())
+            self.pieces.append('<%s%s />' % (tag, strattrs))
         else:
-            self.pieces.append('<%(tag)s%(strattrs)s>' % locals())
+            self.pieces.append('<%s%s>' % (tag, strattrs))
 
     def unknown_endtag(self, tag):
         # called for each end tag, e.g. for </pre>, tag will be 'pre'
@@ -370,7 +362,7 @@ class _HTMLSanitizer(_BaseHTMLProcessor):
 
         # declare xlink namespace, if needed
         if self.mathmlOK or self.svgOK:
-            if filter(lambda (n, v): n.startswith('xlink:'), attrs):
+            if filter(lambda n, v: n.startswith('xlink:'), attrs):
                 if not ('xmlns:xlink', 'http://www.w3.org/1999/xlink') in attrs:
                     attrs.append(('xmlns:xlink', 'http://www.w3.org/1999/xlink'))
 
@@ -442,7 +434,7 @@ class _HTMLSanitizer(_BaseHTMLProcessor):
 
 def sanitize_html(htmlSource, encoding="utf-8", type="text/html"):
     p = _HTMLSanitizer(encoding, type)
-    p.feed(htmlSource)
+    p.feed(unicodify(htmlSource, encoding))
     data = p.output()
     data = data.strip().replace('\r\n', '\n')
     return data

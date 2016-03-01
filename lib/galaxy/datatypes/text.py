@@ -11,10 +11,50 @@ import subprocess
 import tempfile
 
 from galaxy.datatypes.data import get_file_peek, Text
-from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
+from galaxy.datatypes.sniff import get_headers
 from galaxy.util import nice_size, string_as_bool
 
 log = logging.getLogger(__name__)
+
+
+class Html( Text ):
+    """Class describing an html file"""
+    edam_format = "format_2331"
+    file_ext = "html"
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = "HTML file"
+            dataset.blurb = nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def get_mime(self):
+        """Returns the mime type of the datatype"""
+        return 'text/html'
+
+    def sniff( self, filename ):
+        """
+        Determines whether the file is in html format
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'complete.bed' )
+        >>> Html().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'file.html' )
+        >>> Html().sniff( fname )
+        True
+        """
+        headers = get_headers( filename, None )
+        try:
+            for i, hdr in enumerate(headers):
+                if hdr and hdr[0].lower().find( '<html>' ) >= 0:
+                    return True
+            return False
+        except:
+            return True
 
 
 class Json( Text ):
@@ -91,9 +131,9 @@ class Ipynb( Json ):
         config = trans.app.config
         trust = getattr( config, 'trust_ipython_notebook_conversion', False )
         if trust:
-            return self._display_data_trusted(trans, dataset, preview=preview, fileame=filename, to_ext=to_ext, chunk=chunk, **kwd)
+            return self._display_data_trusted(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, chunk=chunk, **kwd)
         else:
-            return super(Ipynb, self).display_data( trans, dataset, preview=preview, fileame=filename, to_ext=to_ext, chunk=chunk, **kwd )
+            return super(Ipynb, self).display_data( trans, dataset, preview=preview, filename=filename, to_ext=to_ext, chunk=chunk, **kwd )
 
     def _display_data_trusted(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
         preview = string_as_bool( preview )
@@ -122,44 +162,97 @@ class Ipynb( Json ):
         pass
 
 
-class Biom1(Json):
+class Biom1( Json ):
+    """
+        BIOM version 1.0 file format description
+        http://biom-format.org/documentation/format_versions/biom-1.0.html
+    """
     file_ext = "biom1"
 
-    def set_peek(self, dataset, is_multi_byte=False):
-        super(Biom1, self).set_peek(dataset, is_multi_byte)
+    MetadataElement( name="table_rows", default=[], desc="table_rows", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
+    MetadataElement( name="table_matrix_element_type", default="", desc="table_matrix_element_type", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value="" )
+    MetadataElement( name="table_format", default="", desc="table_format", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value="" )
+    MetadataElement( name="table_generated_by", default="", desc="table_generated_by", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="" )
+    MetadataElement( name="table_matrix_type", default="", desc="table_matrix_type", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value="" )
+    MetadataElement( name="table_shape", default=[], desc="table_shape", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
+    MetadataElement( name="table_format_url", default="", desc="table_format_url", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value="" )
+    MetadataElement( name="table_date", default="", desc="table_date", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="" )
+    MetadataElement( name="table_type", default="", desc="table_type", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="" )
+    MetadataElement( name="table_id", default=None, desc="table_id", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value=None )
+    MetadataElement( name="table_columns", default=[], desc="table_columns", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        super( Biom1, self ).set_peek( dataset, is_multi_byte )
         if not dataset.dataset.purged:
             dataset.blurb = "Biological Observation Matrix v1"
 
-    def sniff(self, filename):
+    def sniff( self, filename ):
         is_biom = False
         if self._looks_like_json( filename ):
-            is_biom = self._looks_like_biom(filename)
+            is_biom = self._looks_like_biom( filename )
         return is_biom
 
-    def _looks_like_biom(self, filepath, load_size=50000):
+    def _looks_like_biom( self, filepath, load_size=50000 ):
         """
         @param filepath: [str] The path to the evaluated file.
         @param load_size: [int] The size of the file block load in RAM (in
                           bytes).
         """
         is_biom = False
-        segment_size = int(load_size / 2)
+        segment_size = int( load_size / 2 )
         try:
-            with open(filepath, "r") as fh:
+            with open( filepath, "r" ) as fh:
                 prev_str = ""
-                segment_str = fh.read(segment_size)
-                if segment_str.strip().startswith('{'):
-                    while segment_str and not is_biom:
+                segment_str = fh.read( segment_size )
+                if segment_str.strip().startswith( '{' ):
+                    while segment_str:
                         current_str = prev_str + segment_str
                         if '"format"' in current_str:
-                            current_str = re.sub(r'\s', '', current_str)
+                            current_str = re.sub( r'\s', '', current_str )
                             if '"format":"BiologicalObservationMatrix' in current_str:
                                 is_biom = True
+                                break
                         prev_str = segment_str
-                        segment_str = fh.read(segment_size)
-        except:
+                        segment_str = fh.read( segment_size )
+        except Exception:
             pass
         return is_biom
+
+    def set_meta( self, dataset, **kwd ):
+        """
+            Store metadata information from the BIOM file.
+        """
+        if dataset.has_data():
+            with open( dataset.file_name ) as fh:
+                try:
+                    json_dict = json.load( fh )
+                except Exception:
+                    return
+
+                def _transform_dict_list_ids( dict_list ):
+                    if dict_list:
+                        return [ x.get( 'id', None ) for x in dict_list ]
+                    return []
+
+                b_transform = { 'rows': _transform_dict_list_ids, 'columns': _transform_dict_list_ids }
+                for ( m_name, b_name ) in [ ('table_rows', 'rows'),
+                                            ('table_matrix_element_type', 'matrix_element_type'),
+                                            ('table_format', 'format'),
+                                            ('table_generated_by', 'generated_by'),
+                                            ('table_matrix_type', 'matrix_type'),
+                                            ('table_shape', 'shape'),
+                                            ('table_format_url', 'format_url'),
+                                            ('table_date', 'date'),
+                                            ('table_type', 'type'),
+                                            ('table_id', 'id'),
+                                            ('table_columns', 'columns') ]:
+                    try:
+                        metadata_value = json_dict.get( b_name, None )
+                        if b_name in b_transform:
+                            metadata_value = b_transform[ b_name ]( metadata_value )
+                        setattr( dataset.metadata, m_name, metadata_value )
+                    except Exception:
+                        pass
 
 
 class Obo( Text ):
@@ -302,11 +395,27 @@ class SnpEffDb( Text ):
     """Class describing a SnpEff genome build"""
     file_ext = "snpeffdb"
     MetadataElement( name="genome_version", default=None, desc="Genome Version", readonly=True, visible=True, no_value=None )
+    MetadataElement( name="snpeff_version", default="SnpEff4.0", desc="SnpEff Version", readonly=True, visible=True, no_value=None )
     MetadataElement( name="regulation", default=[], desc="Regulation Names", readonly=True, visible=True, no_value=[], optional=True)
     MetadataElement( name="annotation", default=[], desc="Annotation Names", readonly=True, visible=True, no_value=[], optional=True)
 
     def __init__( self, **kwd ):
         Text.__init__( self, **kwd )
+
+    # The SnpEff version line was added in SnpEff version 4.1
+    def getSnpeffVersionFromFile(self, path):
+        snpeff_version = None
+        try:
+            fh = gzip.open(path, 'rb')
+            buf = fh.read(100)
+            lines = buf.splitlines()
+            m = re.match('^(SnpEff)\s+(\d+\.\d+).*$', lines[0].strip())
+            if m:
+                snpeff_version = m.groups()[0] + m.groups()[1]
+            fh.close()
+        except:
+            pass
+        return snpeff_version
 
     def set_meta( self, dataset, **kwd ):
         Text.set_meta(self, dataset, **kwd )
@@ -317,6 +426,8 @@ class SnpEffDb( Text ):
         annotations_dict = {'nextProt.bin' : '-nextprot', 'motif.bin': '-motif'}
         regulations = []
         annotations = []
+        genome_version = None
+        snpeff_version = None
         if data_dir and os.path.isdir(data_dir):
             for root, dirs, files in os.walk(data_dir):
                 for fname in files:
@@ -324,6 +435,10 @@ class SnpEffDb( Text ):
                         # if snpEffectPredictor.bin download succeeded
                         genome_version = os.path.basename(root)
                         dataset.metadata.genome_version = genome_version
+                        # read the first line of the gzipped snpEffectPredictor.bin file to get the SnpEff version
+                        snpeff_version = self.getSnpeffVersionFromFile(os.path.join(root, fname))
+                        if snpeff_version:
+                            dataset.metadata.snpeff_version = snpeff_version
                     else:
                         m = re.match(regulation_pattern, fname)
                         if m:
@@ -337,7 +452,8 @@ class SnpEffDb( Text ):
             dataset.metadata.annotation = annotations
             try:
                 fh = file(dataset.file_name, 'w')
-                fh.write("%s\n" % genome_version)
+                fh.write("%s\n" % genome_version if genome_version else 'Genome unknown')
+                fh.write("%s\n" % snpeff_version if snpeff_version else 'SnpEff version unknown')
                 if annotations:
                     fh.write("annotations: %s\n" % ','.join(annotations))
                 if regulations:
@@ -369,8 +485,8 @@ class SnpSiftDbNSFP( Text ):
     """
     def __init__( self, **kwd ):
         Text.__init__( self, **kwd )
-        self.add_composite_file( '%s.grp', description='Group File', substitute_name_with_metadata='reference_name', is_binary=False )
-        self.add_composite_file( '%s.ti', description='', substitute_name_with_metadata='reference_name', is_binary=False )
+        self.add_composite_file( '%s.gz', description='dbNSFP bgzip', substitute_name_with_metadata='reference_name', is_binary=True )
+        self.add_composite_file( '%s.gz.tbi', description='Tabix Index File', substitute_name_with_metadata='reference_name', is_binary=True )
 
     def init_meta( self, dataset, copy_from=None ):
         Text.init_meta( self, dataset, copy_from=copy_from )
@@ -418,3 +534,11 @@ class SnpSiftDbNSFP( Text ):
             self.regenerate_primary_file(dataset)
         except Exception as e:
             log.warn("set_meta fname: %s  %s" % (dataset.file_name if dataset and dataset.file_name else 'Unkwown', str(e)))
+
+        def set_peek( self, dataset, is_multi_byte=False ):
+            if not dataset.dataset.purged:
+                dataset.peek = '%s :  %s' % (dataset.metadata.reference_name, ','.join(dataset.metadata.annotation))
+                dataset.blurb = '%s' % dataset.metadata.reference_name
+            else:
+                dataset.peek = 'file does not exist'
+                dataset.blurb = 'file purged from disc'

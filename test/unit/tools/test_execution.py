@@ -112,71 +112,6 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
         state = self.__assert_rerenders_tool_without_errors( vars )
         assert hda == state[ "param1" ]
 
-    def test_simple_multirun_state_update( self ):
-        hda1, hda2 = self.__setup_multirun_job()
-        vars = self.__handle_with_incoming( **{
-            "param1|__multirun__": [ 1, 2 ]
-        } )
-        self.__assert_rerenders_tool_without_errors( vars )
-        assert vars[ 'num_jobs' ] == 2
-
-    def test_cannot_multirun_and_remap( self ):
-        hda1, hda2 = self.__setup_multirun_job()
-        try:
-            self.__handle_with_incoming( **{
-                "param1|__multirun__": [ 1, 2 ],
-                "rerun_remap_job_id": self.app.security.encode_id( 123 )
-            } )
-        except Exception, e:
-            assert 'multiple jobs' in str( e )
-
-    def test_collection_multirun_with_state_updates( self ):
-        hda1, hda2 = self.__setup_multirun_job()
-        collection = self.__history_dataset_collection_for( [ hda1, hda2 ] )
-        collection_id = self.app.security.encode_id( collection.id )
-        self.app.dataset_collections_service = Bunch(
-            match_collections=lambda collections: None
-        )
-        vars = self.__handle_with_incoming( **{
-            "param1|__collection_multirun__": collection_id
-        } )
-        self.__assert_executed( vars )
-
-    def __history_dataset_collection_for( self, hdas, collection_type="list", id=1234 ):
-        collection = galaxy.model.DatasetCollection(
-            collection_type=collection_type,
-        )
-        to_element = lambda hda: galaxy.model.DatasetCollectionElement(
-            collection=collection,
-            element=hda,
-        )
-        elements = map(to_element, hdas)
-        if collection_type == "list:paired":
-            paired_collection = galaxy.model.DatasetCollection(
-                collection_type="paired",
-            )
-            paired_collection.elements = elements
-            list_dce = galaxy.model.DatasetCollectionElement(
-                collection=collection,
-                element=paired_collection,
-            )
-            elements = [ list_dce ]
-
-        collection.elements = elements
-
-        history_dataset_collection_association = galaxy.model.HistoryDatasetCollectionAssociation(
-            id=id,
-            collection=collection,
-        )
-        hdcas = self.trans.sa_session.model_objects[ galaxy.model.HistoryDatasetCollectionAssociation ]
-        hdcas[ id ] = history_dataset_collection_association
-        return history_dataset_collection_association
-
-    def __setup_multirun_job( self ):
-        self._init_tool( tools_support.SIMPLE_CAT_TOOL_CONTENTS )
-        hda1, hda2 = self.__add_dataset( 1 ), self.__add_dataset( 2 )
-        return hda1, hda2
-
     def __handle_with_incoming( self, previous_state=None, **kwds ):
         """ Execute tool.handle_input with incoming specified by kwds
         (optionally extending a previous state).
@@ -190,10 +125,6 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
     def __to_incoming( self, state, **kwds ):
         new_incoming = {}
         params_to_incoming( new_incoming, self.tool.inputs, state.inputs, self.app )
-        # Copy meta parameters over lost by params_to_incoming...
-        for key, value in state.inputs.iteritems():
-            if key.endswith( "|__multirun__" ):
-                new_incoming[ key ] = value
         new_incoming[ "tool_state" ] = self.__state_to_string( state )
         new_incoming.update( kwds )
         return new_incoming
@@ -268,6 +199,7 @@ class MockTrans( object ):
     def __init__( self, app, history ):
         self.app = app
         self.history = history
+        self.user = None
         self.history._active_datasets_children_and_roles = filter( lambda hda: hda.active and hda.history == history, self.app.model.context.model_objects[ galaxy.model.HistoryDatasetAssociation ] )
         self.workflow_building_mode = False
         self.webapp = Bunch( name="galaxy" )
@@ -275,6 +207,9 @@ class MockTrans( object ):
 
     def get_history( self, **kwargs ):
         return self.history
+
+    def get_current_user_roles( self ):
+        return []
 
 
 class MockCollectionService( object ):

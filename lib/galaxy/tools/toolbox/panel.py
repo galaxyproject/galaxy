@@ -2,8 +2,10 @@ from abc import abstractmethod
 
 from galaxy.util.odict import odict
 from galaxy.util import bunch
-from galaxy.model.item_attrs import Dictifiable
+from galaxy.util.dictifiable import Dictifiable
+from .parser import ensure_tool_conf_item
 
+from six import iteritems
 
 panel_item_types = bunch.Bunch(
     TOOL="TOOL",
@@ -27,7 +29,7 @@ class HasPanelItems:
         """ Iterate through panel items each represented as a tuple of
         (panel_key, panel_type, panel_content).
         """
-        for panel_key, panel_value in self.panel_items().iteritems():
+        for panel_key, panel_value in iteritems(self.panel_items()):
             if panel_value is None:
                 continue
             panel_type = panel_item_types.SECTION
@@ -40,7 +42,7 @@ class HasPanelItems:
             yield (panel_key, panel_type, panel_value)
 
 
-class ToolSection( object, Dictifiable, HasPanelItems ):
+class ToolSection( Dictifiable, HasPanelItems, object ):
     """
     A group of tools with similar type/purpose that will be displayed as a
     group in the user interface.
@@ -48,13 +50,14 @@ class ToolSection( object, Dictifiable, HasPanelItems ):
 
     dict_collection_visible_keys = ( 'id', 'name', 'version' )
 
-    def __init__( self, elem=None ):
+    def __init__( self, item=None ):
         """ Build a ToolSection from an ElementTree element or a dictionary.
         """
-        f = lambda elem, val: elem is not None and elem.get( val ) or ''
-        self.name = f( elem, 'name' )
-        self.id = f( elem, 'id' )
-        self.version = f( elem, 'version' )
+        if item is None:
+            item = dict()
+        self.name = item.get('name') or ''
+        self.id = item.get('id') or ''
+        self.version = item.get('version') or ''
         self.elems = ToolPanelElements()
 
     def copy( self ):
@@ -84,7 +87,7 @@ class ToolSection( object, Dictifiable, HasPanelItems ):
         return self.elems
 
 
-class ToolSectionLabel( object, Dictifiable ):
+class ToolSectionLabel( Dictifiable, object ):
     """
     A label for a set of tools that can be displayed above groups of tools
     and sections in the user interface
@@ -92,19 +95,20 @@ class ToolSectionLabel( object, Dictifiable ):
 
     dict_collection_visible_keys = ( 'id', 'text', 'version' )
 
-    def __init__( self, elem ):
+    def __init__( self, item ):
         """ Build a ToolSectionLabel from an ElementTree element or a
         dictionary.
         """
-        self.text = elem.get( "text" )
-        self.id = elem.get( "id" )
-        self.version = elem.get( "version" ) or ''
+        item = ensure_tool_conf_item(item)
+        self.text = item.get( "text" )
+        self.id = item.get( "id" )
+        self.version = item.get( "version" ) or ''
 
     def to_dict( self, **kwds ):
         return super( ToolSectionLabel, self ).to_dict()
 
 
-class ToolPanelElements( odict, HasPanelItems ):
+class ToolPanelElements( HasPanelItems, odict ):
     """ Represents an ordered dictionary of tool entries - abstraction
     used both by tool panel itself (normal and integrated) and its sections.
     """

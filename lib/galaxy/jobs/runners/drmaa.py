@@ -84,9 +84,6 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         self.ds = drmaa.Session()
         self.ds.initialize()
 
-        # external_runJob_script can be None, in which case it's not used.
-        self.external_runJob_script = app.config.drmaa_external_runjob_script
-        self.external_killJob_script = app.config.drmaa_external_killjob_script
         self.userid = None
 
         self._init_monitor_thread()
@@ -115,6 +112,10 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
     def queue_job( self, job_wrapper ):
         """Create job script and submit it to the DRM"""
         # prepare the job
+
+        # external_runJob_script can be None, in which case it's not used.
+        external_runjob_script = job_wrapper.get_destination_configuration("drmaa_external_runjob_script", None)
+
         include_metadata = asbool( job_wrapper.job_destination.params.get( "embed_metadata_in_job", True) )
         if not self.prepare_job( job_wrapper, include_metadata=include_metadata):
             return
@@ -129,7 +130,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         job_name = 'g%s' % galaxy_id_tag
         if job_wrapper.tool.old_id:
             job_name += '_%s' % job_wrapper.tool.old_id
-        if self.external_runJob_script is None:
+        if external_runjob_script is None:
             job_name += '_%s' % job_wrapper.user
         job_name = ''.join( map( lambda x: x if x in ( string.letters + string.digits + '_' ) else '_', job_name ) )
         ajs = AsynchronousJobState( files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper, job_name=job_name )
@@ -159,7 +160,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         # job was deleted while we were preparing it
         if job_wrapper.get_state() == model.Job.states.DELETED:
             log.debug( "(%s) Job deleted by user before it entered the queue" % galaxy_id_tag )
-            if self.app.config.cleanup_job in ( "always", "onsuccess" ):
+            if job_wrapper.cleanup_job in ( "always", "onsuccess" ):
                 job_wrapper.cleanup()
             return
 
@@ -168,7 +169,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             log.debug( "(%s) native specification is: %s", galaxy_id_tag, native_spec )
 
         # runJob will raise if there's a submit problem
-        if self.external_runJob_script is None:
+        if external_runjob_script is None:
             # TODO: create a queue for retrying submission indefinitely
             # TODO: configurable max tries and sleep
             trynum = 0
@@ -208,7 +209,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             log.debug( '(%s) submitting with credentials: %s [uid: %s]' % ( galaxy_id_tag, pwent[0], pwent[2] ) )
             filename = self.store_jobtemplate(job_wrapper, jt)
             self.userid = pwent[2]
-            external_job_id = self.external_runjob(filename, pwent[2]).strip()
+            external_job_id = self.external_runjob(external_runjob_script, filename, pwent[2]).strip()
         log.info( "(%s) queued as %s" % ( galaxy_id_tag, external_job_id ) )
 
         # store runner information for tracking if Galaxy restarts
@@ -310,11 +311,12 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         try:
             ext_id = job.get_job_runner_external_id()
             assert ext_id not in ( None, 'None' ), 'External job id is None'
-            if self.external_killJob_script is None:
+            kill_script = job.get_destination_configuration(self.app.config, "drmaa_external_killjob_script", None)
+            if kill_script is None:
                 self.ds.control( ext_id, drmaa.JobControlAction.TERMINATE )
             else:
                 # FIXME: hardcoded path
-                subprocess.Popen( [ '/usr/bin/sudo', '-E', self.external_killJob_script, str( ext_id ), str( self.userid ) ], shell=False )
+                subprocess.Popen( [ '/usr/bin/sudo', '-E', kill_script, str( ext_id ), str( self.userid ) ], shell=False )
             log.debug( "(%s/%s) Removed from DRM queue at user's request" % ( job.get_id(), ext_id ) )
         except drmaa.InvalidJobException:
             log.debug( "(%s/%s) User killed running job, but it was already dead" % ( job.get_id(), ext_id ) )
@@ -332,7 +334,6 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         ajs.command_line = job.get_command_line()
         ajs.job_wrapper = job_wrapper
         ajs.job_destination = job_wrapper.job_destination
-        self.__old_state_paths( ajs )
         if job.state == model.Job.states.RUNNING:
             log.debug( "(%s/%s) is still in running state, adding to the DRM queue" % ( job.get_id(), job.get_job_runner_external_id() ) )
             ajs.old_state = drmaa.JobState.RUNNING
@@ -343,18 +344,6 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             ajs.old_state = drmaa.JobState.QUEUED_ACTIVE
             ajs.running = False
             self.monitor_queue.put( ajs )
-
-    def __old_state_paths( self, ajs ):
-        """For recovery of jobs started prior to standardizing the naming of
-        files in the AsychronousJobState object
-        """
-        if ajs.job_wrapper is not None:
-            job_file = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, ajs.job_wrapper.job_id)
-            if not os.path.exists( ajs.job_file ) and os.path.exists( job_file ):
-                ajs.output_file = "%s.drmout" % os.path.join(os.getcwd(), ajs.job_wrapper.working_directory, ajs.job_wrapper.get_id_tag())
-                ajs.error_file = "%s.drmerr" % os.path.join(os.getcwd(), ajs.job_wrapper.working_directory, ajs.job_wrapper.get_id_tag())
-                ajs.exit_code_file = "%s.drmec" % os.path.join(os.getcwd(), ajs.job_wrapper.working_directory, ajs.job_wrapper.get_id_tag())
-                ajs.job_file = job_file
 
     def store_jobtemplate(self, job_wrapper, jt):
         """ Stores the content of a DRMAA JobTemplate object in a file as a JSON string.
@@ -374,12 +363,12 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         log.debug( '(%s) Job script for external submission is: %s' % ( job_wrapper.job_id, filename ) )
         return filename
 
-    def external_runjob(self, jobtemplate_filename, username):
+    def external_runjob(self, external_runjob_script, jobtemplate_filename, username):
         """ runs an external script the will QSUB a new job.
         The external script will be run with sudo, and will setuid() to the specified user.
         Effectively, will QSUB as a different user (then the one used by Galaxy).
         """
-        script_parts = self.external_runJob_script.split()
+        script_parts = external_runjob_script.split()
         script = script_parts[0]
         command = [ '/usr/bin/sudo', '-E', script]
         for script_argument in script_parts[1:]:

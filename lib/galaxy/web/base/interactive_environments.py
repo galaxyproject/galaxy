@@ -16,7 +16,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class InteractiveEnviornmentRequest(object):
+class InteractiveEnvironmentRequest(object):
 
     def __init__(self, trans, plugin):
         self.trans = trans
@@ -119,14 +119,15 @@ class InteractiveEnviornmentRequest(object):
             'proxy_prefix': self.attr.proxy_prefix,
         }
 
+        web_port = self.attr.galaxy_config.galaxy_infrastructure_web_port
+        conf_file['galaxy_web_port'] = web_port or self.attr.galaxy_config.guess_galaxy_port()
+
         if self.attr.viz_config.has_option("docker", "galaxy_url"):
             conf_file['galaxy_url'] = self.attr.viz_config.get("docker", "galaxy_url")
         elif self.attr.galaxy_config.galaxy_infrastructure_url_set:
             conf_file['galaxy_url'] = self.attr.galaxy_config.galaxy_infrastructure_url.rstrip('/') + '/'
         else:
             conf_file['galaxy_url'] = request.application_url.rstrip('/') + '/'
-            web_port = self.attr.galaxy_config.galaxy_infrastructure_web_port
-            conf_file['galaxy_web_port'] = web_port or self.attr.galaxy_config.guess_galaxy_port()
             # Galaxy paster port is deprecated
             conf_file['galaxy_paster_port'] = conf_file['galaxy_web_port']
 
@@ -213,12 +214,16 @@ class InteractiveEnviornmentRequest(object):
         ))
         p = Popen( raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
         stdout, stderr = p.communicate()
-        if p.returncode != 0 or len(stderr):
+        if p.returncode != 0:
             log.error( "%s\n%s" % (stdout, stderr) )
             return None
         else:
-            log.debug( "Container id: %s" % stdout)
-            port_mappings = self.get_proxied_ports(stdout)
+            container_id = stdout
+            log.debug( "Container id: %s" % container_id)
+            inspect_data = self.inspect_container(container_id)
+            port_mappings = self.get_container_port_mapping(inspect_data)
+            if self.attr.docker_hostname == 'localhost':
+                self.attr.docker_hostname = self.get_container_gateway_ip(inspect_data)
             if len(port_mappings) > 1:
                 log.warning("Don't know how to handle proxies to containers with multiple exposed ports. Arbitrarily choosing first")
             elif len(port_mappings) == 0:
@@ -246,19 +251,13 @@ class InteractiveEnviornmentRequest(object):
             # go through the proxy we ship.
             # self.attr.PORT = self.attr.proxy_request[ 'proxied_port' ]
 
-    def get_proxied_ports(self, container_id):
-        """Run docker inspect on a container to figure out which ports were
-        mapped where.
+    def inspect_container(self, container_id):
+        """Runs docker inspect on a container and returns json response as python dictionary inspect_data.
 
         :type container_id: str
         :param container_id: a docker container ID
 
-        :returns: a list of triples containing (internal_port, external_ip,
-                  external_port), of which the ports are probably the only
-                  useful information.
-
-        Someday code that calls this should be refactored whenever we get
-        containers with multiple ports working.
+        :returns: inspect_data, a dict of docker inspect output
         """
         command = self.attr.viz_config.get("docker", "command")
         command = command.format(docker_args="inspect %s" % container_id)
@@ -269,7 +268,7 @@ class InteractiveEnviornmentRequest(object):
 
         p = Popen(command, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
         stdout, stderr = p.communicate()
-        if p.returncode != 0 or len(stderr):
+        if p.returncode != 0:
             log.error( "%s\n%s" % (stdout, stderr) )
             return None
 
@@ -283,6 +282,29 @@ class InteractiveEnviornmentRequest(object):
         #                     "HostPort" : "3306"
         #                 }
         #             ]
+        return inspect_data
+
+    def get_container_gateway_ip(self, inspect_data):
+        """
+        Returns gateway ip from inspect_data
+        :type inspect_data: dict
+        :param inspect_data: output of docker inspect
+        :returns: gateway_ip
+        """
+        gateway_ip = inspect_data[0]['NetworkSettings']['Gateway']
+        return gateway_ip
+
+    def get_container_port_mapping(self, inspect_data):
+        """
+        :type inspect_data: dict
+        :param inspect_data: output of docker inspect
+        :returns: a list of triples containing (internal_port, external_ip,
+                  external_port), of which the ports are probably the only
+                  useful information.
+
+        Someday code that calls this should be refactored whenever we get
+        containers with multiple ports working.
+        """
         mappings = []
         port_mappings = inspect_data[0]['NetworkSettings']['Ports']
         for port_name in port_mappings:

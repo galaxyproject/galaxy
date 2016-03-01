@@ -3,7 +3,7 @@
 // MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
 define([
-  "galaxy.masthead",
+  "layout/masthead",
   "utils/utils",
   "libs/toastr",
   "mvc/base-mvc",
@@ -32,7 +32,7 @@ define([
 
 // ============================================================================
 /**
- * The Data Libraries router. Takes care about triggering routes 
+ * The Data Libraries router. Takes care about triggering routes
  * and sends users to proper pieces of the application.
  */
 var LibraryRouter = Backbone.Router.extend({
@@ -83,7 +83,7 @@ var LibraryRouter = Backbone.Router.extend({
       url = "/" + url;
     }
     if ( typeof ga !== 'undefined' ) {
-      ga( 'send', 'pageview', galaxy_config.root + 'library/list' + url );
+      ga( 'send', 'pageview', Galaxy.root + 'library/list' + url );
     }
   }
 });
@@ -140,7 +140,7 @@ var GalaxyLibrary = Backbone.View.extend({
             Galaxy.libraries.libraryToolbarView = new mod_librarytoolbar_view.LibraryToolbarView();
             Galaxy.libraries.libraryListView = new mod_librarylist_view.LibraryListView();
         });
-        
+
         this.library_router.on('route:libraries_page', function( show_page ) {
             if ( Galaxy.libraries.libraryToolbarView === null ){
                 Galaxy.libraries.libraryToolbarView = new mod_librarytoolbar_view.LibraryToolbarView();
@@ -151,7 +151,7 @@ var GalaxyLibrary = Backbone.View.extend({
         });
 
         this.library_router.on( 'route:folder_content', function( id ) {
-            if (Galaxy.libraries.folderToolbarView){ 
+            if (Galaxy.libraries.folderToolbarView){
                 Galaxy.libraries.folderToolbarView.$el.unbind( 'click' );
             }
             Galaxy.libraries.folderToolbarView = new mod_foldertoolbar_view.FolderToolbarView( { id: id } );
@@ -181,7 +181,7 @@ var GalaxyLibrary = Backbone.View.extend({
             if (Galaxy.libraries.datasetView){
                 Galaxy.libraries.datasetView.$el.unbind('click');
             }
-            Galaxy.libraries.datasetView = new mod_library_dataset_view.LibraryDatasetView({id: dataset_id});
+            Galaxy.libraries.datasetView = new mod_library_dataset_view.LibraryDatasetView({id: dataset_id, show_version: false, show_permissions: false});
         });
 
         this.library_router.on( 'route:dataset_version', function(folder_id, dataset_id, ldda_id){

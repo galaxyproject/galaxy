@@ -22,8 +22,8 @@ See bottom for instructions on how to add this resolver.
 from os import listdir
 from os.path import join, exists, getmtime
 
-from .galaxy_packages import GalaxyPackageDependencyResolver
-from ..resolvers import INDETERMINATE_DEPENDENCY
+from .galaxy_packages import BaseGalaxyPackageDependencyResolver
+from ..resolvers import INDETERMINATE_DEPENDENCY, Dependency
 
 import logging
 log = logging.getLogger( __name__ )
@@ -32,7 +32,8 @@ MANUAL = "manual"
 PREFERRED_OWNERS = MANUAL + ",iuc,devteam"
 
 
-class UnlinkedToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver):
+class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver):
+    dict_collection_visible_keys = BaseGalaxyPackageDependencyResolver.dict_collection_visible_keys + ['preferred_owners', 'select_by_owner']
     resolver_type = "unlinked_tool_shed_packages"
 
     def __init__(self, dependency_manager, **kwds):
@@ -75,7 +76,7 @@ class UnlinkedToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver)
                 for owner in listdir(path):
                     owner_path = join(path, owner)
                     for package_name in listdir(owner_path):
-                        if package_name.startswith("package_" + name):
+                        if package_name.lower().startswith("package_" + name.lower()):
                             package_path = join(owner_path, package_name)
                             for revision in listdir(package_path):
                                 revision_path = join(package_path, revision)
@@ -132,7 +133,14 @@ class UnlinkedToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver)
     """
 
 
-class CandidateDepenency():
+class CandidateDepenency(Dependency):
+    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['dependency', 'path', 'owner']
+    dependency_type = 'unlinked_tool_shed_package'
+    _exact = True
+
+    @property
+    def exact(self):
+        return self._exact
 
     def __init__(self, dependency, path, owner=MANUAL):
         self.dependency = dependency

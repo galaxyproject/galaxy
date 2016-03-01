@@ -77,7 +77,7 @@ class RepoToolModule( ToolModule ):
     def get_data_inputs( self ):
         data_inputs = []
 
-        def callback( input, value, prefixed_name, prefixed_label ):
+        def callback( input, prefixed_name, prefixed_label, **kwargs ):
             if isinstance( input, galaxy.tools.parameters.basic.DataToolParameter ):
                 data_inputs.append( dict( name=prefixed_name,
                                           label=prefixed_label,
@@ -202,7 +202,7 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
     workflow_canvas.add_steps( highlight_errors=True )
     workflow_canvas.finish( )
     trans.response.set_content_type( "image/svg+xml" )
-    return canvas.standalone_xml()
+    return canvas.tostring()
 
 
 def get_workflow_data_inputs( step, module ):
@@ -267,6 +267,7 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
     for step_dict in workflow_dict[ 'steps' ].itervalues():
         # Create the model class for the step
         step = trans.model.WorkflowStep()
+        step.label = step_dict.get('label', None)
         step.name = step_dict[ 'name' ]
         step.position = step_dict[ 'position' ]
         module = module_factory.from_dict( trans, repository_id, changeset_revision, step_dict, tools_metadata=tools_metadata, secure=False )

@@ -1,4 +1,7 @@
+import os
 from os import getcwd
+import shutil
+from tempfile import mkdtemp
 from unittest import TestCase
 
 from galaxy.jobs.command_factory import build_command
@@ -12,7 +15,8 @@ TEST_FILES_PATH = "file_path"
 class TestCommandFactory(TestCase):
 
     def setUp(self):
-        self.job_wrapper = MockJobWrapper()
+        self.job_dir = mkdtemp()
+        self.job_wrapper = MockJobWrapper(self.job_dir)
         self.workdir_outputs = []
 
         def workdir_outputs(job_wrapper, **kwds):
@@ -23,43 +27,54 @@ class TestCommandFactory(TestCase):
         self.include_metadata = False
         self.include_work_dir_outputs = True
 
+    def tearDown(self):
+        shutil.rmtree(self.job_dir)
+
     def test_simplest_command(self):
         self.include_work_dir_outputs = False
-        self.__assert_command_is( MOCK_COMMAND_LINE )
+        self.__assert_command_is( _surrond_command(MOCK_COMMAND_LINE + "; return_code=$?; cd .." ))
 
     def test_shell_commands(self):
         self.include_work_dir_outputs = False
         dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
         self.job_wrapper.dependency_shell_commands = dep_commands
-        self.__assert_command_is( "%s; %s" % (dep_commands[0], MOCK_COMMAND_LINE) )
+        self.__assert_command_is( _surrond_command("%s; %s; return_code=$?; cd .." % (dep_commands[0], MOCK_COMMAND_LINE) ))
+
+    def test_shell_commands_external(self):
+        self.job_wrapper.commands_in_new_shell = True
+        self.include_work_dir_outputs = False
+        dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
+        self.job_wrapper.dependency_shell_commands = dep_commands
+        self.__assert_command_is( _surrond_command( "%s/tool_script.sh; return_code=$?; cd .." % self.job_wrapper.working_directory)  )
+        self.__assert_tool_script_is( "#!/bin/sh\n%s; %s" % (dep_commands[0], MOCK_COMMAND_LINE) )
 
     def test_remote_dependency_resolution(self):
         self.include_work_dir_outputs = False
         dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
         self.job_wrapper.dependency_shell_commands = dep_commands
-        self.__assert_command_is(MOCK_COMMAND_LINE, remote_command_params=dict(dependency_resolution="remote"))
+        self.__assert_command_is(_surrond_command(MOCK_COMMAND_LINE + "; return_code=$?; cd .."), remote_command_params=dict(dependency_resolution="remote"))
 
     def test_explicit_local_dependency_resolution(self):
         self.include_work_dir_outputs = False
         dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
         self.job_wrapper.dependency_shell_commands = dep_commands
-        self.__assert_command_is("%s; %s" % (dep_commands[0], MOCK_COMMAND_LINE),
+        self.__assert_command_is( _surrond_command("%s; %s; return_code=$?; cd .." % (dep_commands[0], MOCK_COMMAND_LINE)),
                                  remote_command_params=dict(dependency_resolution="local"))
 
     def test_task_prepare_inputs(self):
         self.include_work_dir_outputs = False
         self.job_wrapper.prepare_input_files_cmds = ["/opt/split1", "/opt/split2"]
-        self.__assert_command_is( "/opt/split1; /opt/split2; %s" % MOCK_COMMAND_LINE )
+        self.__assert_command_is( _surrond_command("/opt/split1; /opt/split2; %s; return_code=$?; cd ..") % MOCK_COMMAND_LINE )
 
     def test_workdir_outputs(self):
         self.include_work_dir_outputs = True
         self.workdir_outputs = [("foo", "bar")]
-        self.__assert_command_is( '%s; return_code=$?; if [ -f foo ] ; then cp foo bar ; fi; sh -c "exit $return_code"' % MOCK_COMMAND_LINE )
+        self.__assert_command_is( _surrond_command('%s; return_code=$?; if [ -f foo ] ; then cp foo bar ; fi; cd ..' % MOCK_COMMAND_LINE ))
 
     def test_set_metadata_skipped_if_unneeded(self):
         self.include_metadata = True
         self.include_work_dir_outputs = False
-        self.__assert_command_is( MOCK_COMMAND_LINE )
+        self.__assert_command_is( _surrond_command( MOCK_COMMAND_LINE + "; return_code=$?; cd .." ) )
 
     def test_set_metadata(self):
         self._test_set_metadata()
@@ -72,18 +87,18 @@ class TestCommandFactory(TestCase):
         self.include_metadata = True
         self.include_work_dir_outputs = False
         self.job_wrapper.metadata_line = TEST_METADATA_LINE
-        expected_command = '%s; return_code=$?; %s; sh -c "exit $return_code"' % (MOCK_COMMAND_LINE, TEST_METADATA_LINE)
+        expected_command = _surrond_command('%s; return_code=$?; cd ..; %s' % (MOCK_COMMAND_LINE, TEST_METADATA_LINE))
         self.__assert_command_is( expected_command )
 
     def test_empty_metadata(self):
         """
-        As produced by TaskWrapper.
+        Test empty metadata as produced by TaskWrapper.
         """
         self.include_metadata = True
         self.include_work_dir_outputs = False
         self.job_wrapper.metadata_line = ' '
         # Empty metadata command do not touch command line.
-        expected_command = '%s' % (MOCK_COMMAND_LINE)
+        expected_command = _surrond_command('%s; return_code=$?; cd ..' % (MOCK_COMMAND_LINE))
         self.__assert_command_is( expected_command )
 
     def test_metadata_kwd_defaults(self):
@@ -119,6 +134,13 @@ class TestCommandFactory(TestCase):
         command = self.__command(**command_kwds)
         self.assertEqual(command, expected_command)
 
+    def __assert_tool_script_is(self, expected_command):
+        self.assertEqual(open(self.__tool_script, "r").read(), expected_command)
+
+    @property
+    def __tool_script(self):
+        return os.path.join(self.job_dir, "tool_script.sh")
+
     def __command(self, **extra_kwds):
         kwds = dict(
             runner=self.runner,
@@ -130,17 +152,28 @@ class TestCommandFactory(TestCase):
         return build_command(**kwds)
 
 
+def _surrond_command(command):
+    return '''mkdir -p working; cd working; %s; sh -c "exit $return_code"''' % command
+
+
 class MockJobWrapper(object):
 
-    def __init__(self):
+    def __init__(self, job_dir):
+        self.strict_shell = False
         self.write_version_cmd = None
         self.command_line = MOCK_COMMAND_LINE
         self.dependency_shell_commands = []
         self.metadata_line = None
         self.configured_external_metadata_kwds = None
-        self.working_directory = "job1"
+        self.working_directory = job_dir
         self.prepare_input_files_cmds = None
         self.commands_in_new_shell = False
+        self.app = Bunch(
+            config=Bunch(
+                check_job_script_integrity=False,
+            )
+        )
+        self.shell = "/bin/sh"
 
     def get_command_line(self):
         return self.command_line

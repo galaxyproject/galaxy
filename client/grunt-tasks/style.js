@@ -17,7 +17,6 @@ module.exports = function( grunt ){
             'autocomplete_tagging',
             'embed_item',
             'iphone',
-            'masthead',
             'library',
             'trackster',
             'circster',

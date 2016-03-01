@@ -89,7 +89,7 @@ class RBACAgent:
     def history_set_default_permissions( self, history, permissions=None, dataset=False, bypass_manage_permission=False ):
         raise "Unimplemented Method"
 
-    def set_all_dataset_permissions( self, dataset, permissions ):
+    def set_all_dataset_permissions( self, dataset, permissions, new=False ):
         raise "Unimplemented Method"
 
     def set_dataset_permission( self, dataset, permission ):
@@ -871,7 +871,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 permissions[ action ] = [ dhp.role ]
         return permissions
 
-    def set_all_dataset_permissions( self, dataset, permissions={} ):
+    def set_all_dataset_permissions( self, dataset, permissions={}, new=False ):
         """
         Set new full permissions on a dataset, eliminating all current permissions.
         Permission looks like: { Action : [ Role, Role ] }
@@ -890,14 +890,16 @@ class GalaxyRBACAgent( RBACAgent ):
             return "At least 1 role must be associated with the <b>manage permissions</b> permission on this dataset."
         flush_needed = False
         # Delete all of the current permissions on the dataset
-        for dp in dataset.actions:
-            self.sa_session.delete( dp )
-            flush_needed = True
+        if not new:
+            for dp in dataset.actions:
+                self.sa_session.delete( dp )
+                flush_needed = True
         # Add the new permissions on the dataset
         for action, roles in permissions.items():
             if isinstance( action, Action ):
                 action = action.action
-            for dp in [ self.model.DatasetPermissions( action, dataset, role ) for role in roles ]:
+            for role in roles:
+                dp = self.model.DatasetPermissions( action, dataset, role_id=role.id )
                 self.sa_session.add( dp )
                 flush_needed = True
         if flush_needed:

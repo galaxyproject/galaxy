@@ -1505,7 +1505,10 @@ class TwillTestCase( unittest.TestCase ):
                 break
         self.assertNotEqual(count, maxiter)
 
-    def login( self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):
+    def login( self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='', logout_first=True ):
+        # Clear cookies.
+        if logout_first:
+            self.logout()
         # test@bx.psu.edu is configured as an admin user
         previously_created, username_taken, invalid_username = \
             self.create( email=email, password=password, username=username, redirect=redirect )
@@ -1519,6 +1522,7 @@ class TwillTestCase( unittest.TestCase ):
     def logout( self ):
         self.visit_url( "%s/user/logout" % self.url )
         self.check_page_for_string( "You have been logged out" )
+        tc.browser.cj.clear()
 
     def make_accessible_via_link( self, history_id, strings_displayed=[], strings_displayed_after_submit=[] ):
         # twill barfs on this form, possibly because it contains no fields, but not sure.
@@ -2445,7 +2449,8 @@ class TwillTestCase( unittest.TestCase ):
         walltime_exceeded = kwd.get("maxseconds", None)
         if walltime_exceeded is None:
             walltime_exceeded = DEFAULT_TOOL_TEST_WAIT
-        log.info("walltime_exceeded is %s" % walltime_exceeded)
+
+        exceeded = True
         while slept <= walltime_exceeded:
             result = func()
             if result:
@@ -2453,8 +2458,13 @@ class TwillTestCase( unittest.TestCase ):
                 slept += sleep_amount
                 sleep_amount *= 2
             else:
+                exceeded = False
                 break
-        assert slept < walltime_exceeded, 'Tool run exceeded reasonable walltime of 24 hours, terminating.'
+
+        if exceeded:
+            message = 'Tool test run exceeded walltime [total %s, max %s], terminating.' % (slept, walltime_exceeded)
+            log.info(message)
+            raise AssertionError(message)
 
     def write_temp_file( self, content, suffix='.html' ):
         fd, fname = tempfile.mkstemp( suffix=suffix, prefix='twilltestcase-' )

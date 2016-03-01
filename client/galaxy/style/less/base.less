@@ -12,9 +12,8 @@
 
 @import "fontawesome/font-awesome.less";
 .fa-icon {
-  font-family: FontAwesome;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    // TODO: remove fa-icon and replace with fa
+    .fa;
 }
 
 @import "select2.less";
@@ -30,7 +29,7 @@
 @import "library.less";
 @import "toastr.less";
 @import "jstree.less";
-
+@import "tour.less";
 
 // Mixins
 .unselectable {
@@ -69,7 +68,6 @@ body  {
         width: 100%;
         height: 100%;
     }
-
 }
 
 // ==== Panel layout styles ====
@@ -103,6 +101,7 @@ body  {
     overflow: hidden;
     border-bottom: solid #999 1px;
     font-size: 90%;
+    display: none;
 }
 
 #inactivebox {
@@ -114,6 +113,7 @@ body  {
     overflow: hidden;
     border-bottom: solid #999 1px;
     font-size: 90%;
+    display: none;
 }
 
 // Panels
@@ -337,6 +337,7 @@ div.unified-panel-body-background {
     left: 0;
     width: 100%;
     height: 100%;
+    display: none;
 }
 
 // Messages for message box, slightly different style
@@ -372,20 +373,17 @@ div.unified-panel-body-background {
 }
 
 // Masthead
-
 #masthead {
-
     position:absolute;
     top:0;
     left:0;
     width:100%;
     min-width:990px;
     padding: 0;
-
+    margin-bottom: 0px;
     .nav {
         z-index: 15001;
     }
-
     .nav > li > a {
         cursor: pointer;
         text-decoration: none;
@@ -393,22 +391,10 @@ div.unified-panel-body-background {
             color: gold;
         }
     }
-
-    //.dropdown-menu {
-      //  z-index: 15002;
-    //}
-
-    li.dropdown > a:hover .caret {
-        border-top-color: gold;
-        border-bottom-color: gold;
-    }
-
     .navbar-brand {
-
         position: absolute;
         left: 0;
         top: 0;
-
         font-family: verdana;
         font-weight: bold;
         font-size: 20px;
@@ -418,52 +404,46 @@ div.unified-panel-body-background {
         padding: 5px 20px 12px;
         margin-left: -15px;
         z-index: 2000;
-
         img {
             display: inline;
             width: 26px;
             vertical-align: top;
+            margin-left: 0.35em;
+            border: none;
         }
         a {
             color: white;
             text-decoration: none;
         }
     }
-
-    .iconbar
-    {
-        position            : absolute;
-        top                 : 7px;
-        right               : 110px;
-        cursor              : pointer;
-        color               : @gray-light;
-        overflow            : hidden;
-
-        .symbol
-        {
-            float           : left;
-            margin          : 0px 10px;
-            font-size       : 11px;
+    .navbar-header {
+        position: relative;
+        right: -50%;
+        float: left;
+        .navbar-tabs {
+            display: block;
+            position: relative;
+            right: 50%;
         }
-
-        .symbol .number
-        {
+    }
+    .navbar-tabs {
+        .toggle {
+            color           : gold;
+        }
+        .dropdown-note {
             font-weight     : bold;
             font-size       : 10px;
-            font-family     : @font-family-sans-serif;
-            position        : relative;
-            left            : 23px;
-            top             : -12px;
-        }
-
-        .toggle
-        {
+            position        : absolute;
+            left            : 35px;
+            top             : 20px;
             color           : gold;
         }
     }
+    li.dropdown > a:hover .caret {
+        border-top-color: gold;
+        border-bottom-color: gold;
+    }
 }
-
-
 
 .quota-meter-container {
     position: absolute;
@@ -592,10 +572,12 @@ div.toolHelpBody {
 
 .toolForm.toolFormInCanvas {
     border: solid @form-border 1px;
+    .border-radius(2px);
     background: @white;
+    margin: 0px;
     &.toolForm-active {
-        border: solid @brand-primary 3px;
-        margin: 4px;
+        box-shadow: 0 0 0 3px @brand-primary;
+        .border-radius(1px);
     }
     .toolFormTitle {
         font-size: @font-size-base;
@@ -744,6 +726,8 @@ input[type="submit"], button {
     display: none;
     right: 6px;
     top: 9px;
+    font-size: 1.4em;
+    color: #888;
 }
 
 #search-clear-btn {
@@ -762,7 +746,7 @@ input[type="submit"], button {
 
 // Messages
 
-.errormessagelarge, .warningmessagelarge, .donemessagelarge, .infomessagelarge, .toolHelpBody .error, .toolHelpBody .warning, .toolHelpBody .note {
+.errormessagelarge, .warningmessagelarge, .donemessagelarge, .infomessagelarge, .ui-form-help .error, .ui-form-help .warning, .ui-form-help .note {
     .alert();
     min-height: 36px;
     padding-left: 52px;
@@ -800,7 +784,7 @@ input[type="submit"], button {
     background-image: none;
 }
 
-.errormessage, .warningmessage, .donemessage, .infomessage, .errormessagesmall, .warningmessagesmall, .donemessagesmall, .infomessagesmall, toolHelpBody .error, .toolHelpBody .warning, .toolHelpBody .note {
+.errormessage, .warningmessage, .donemessage, .infomessage, .errormessagesmall, .warningmessagesmall, .donemessagesmall, .infomessagesmall, .ui-form-help .error, .ui-form-help .warning, .ui-form-help .note {
     .alert();
     padding: 5px;
     padding-left: 25px;
@@ -812,11 +796,11 @@ input[type="submit"], button {
     background-position: 5px 5px;
 }
 
-.errormessage, .errormessagesmall, .toolHelpBody .error {
+.errormessage, .errormessagesmall, .ui-form-help .error {
     .alert-danger();
 }
 
-.warningmessage, .warningmessagesmall, .toolHelpBody .warning {
+.warningmessage, .warningmessagesmall, .ui-form-help .warning {
     .alert-warning();
     background-image: url(warn_small.png);
 }
@@ -826,7 +810,7 @@ input[type="submit"], button {
     background-image: url(ok_small.png);
 }
 
-.infomessage, .infomessagesmall, .toolHelpBody .note {
+.infomessage, .infomessagesmall, .ui-form-help .note {
     .alert-info();
     background-image: url(info_small.png);
 }
@@ -1712,8 +1696,19 @@ div.toolTitleNoSection
     .sprite(@chevron-expand-bw);
 }
 
-// honeypot for registration form
+// noscript overlay - displayed when javascript is disabled
+.noscript-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: white;
+    z-index: 10000;
+    & > div {
+        margin: 64px 0px 0px 64px;
+    }
+}
 
+// honeypot for registration form
 #for_bears {
     display: none;
 }

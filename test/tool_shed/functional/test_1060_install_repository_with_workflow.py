@@ -22,17 +22,14 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
     '''Test installing a repository with repository dependencies.'''
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         galaxy_admin_user = self.test_db_util.get_galaxy_user( common.admin_email )
         assert galaxy_admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
         self.test_db_util.get_galaxy_private_role( galaxy_admin_user )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         self.test_db_util.get_private_role( test_user_1 )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
@@ -41,7 +38,6 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
     def test_0005_ensure_category_exists( self ):
         '''Create the 0060 category.'''
         category = self.create_category( name=category_name, description=category_description )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name=repository_name,
                                                     description=repository_description,
@@ -80,7 +76,6 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
         self.preview_repository_in_tool_shed( repository_name,
                                               common.test_user_1_name,
                                               strings_displayed=[ repository_name, 'Valid tools', 'Workflows' ] )
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         self.install_repository( repository_name,
                                  common.test_user_1_name,
@@ -102,7 +97,6 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
     def test_0020_create_filter_workflow_repository( self ):
         '''Create, if necessary, a filtering repository with only a workflow.'''
         category = self.create_category( name=category_name, description=category_description )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name=workflow_repository_name,
                                                     description=workflow_repository_description,
@@ -138,7 +132,6 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
                                               common.test_user_1_name,
                                               strings_displayed=[ 'filtering_workflow_0060', 'Workflows' ],
                                               strings_not_displayed=[ 'Valid tools', 'Invalid tools' ] )
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         self.install_repository( workflow_repository_name,
                                  common.test_user_1_name,

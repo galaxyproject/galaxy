@@ -4,6 +4,8 @@ define([
     "utils/localization"
 ], function( DATASET_MODEL, BASE_MVC, _l ){
 
+'use strict';
+
 var logNamespace = 'collections';
 //==============================================================================
 /*
@@ -133,14 +135,13 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend( BASE_MVC.mixin( Datase
 
     /** url fn */
     url : function(){
-        var galaxyRoot = (( window.galaxy_config && galaxy_config.root )?( galaxy_config.root ):( '/' ));
         // won't always be an hda
         if( !this.has( 'history_id' ) ){
             console.warn( 'no endpoint for non-hdas within a collection yet' );
             // (a little silly since this api endpoint *also* points at hdas)
-            return galaxyRoot + 'api/datasets';
+            return Galaxy.root + 'api/datasets';
         }
-        return galaxyRoot + 'api/histories/' + this.get( 'history_id' ) + '/contents/' + this.get( 'id' );
+        return Galaxy.root + 'api/histories/' + this.get( 'history_id' ) + '/contents/' + this.get( 'id' );
     },
 
     defaults : _.extend( {},

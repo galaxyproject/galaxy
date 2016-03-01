@@ -55,8 +55,11 @@ class WrappedParameters( object ):
                 values = input_values[ input.name ]
                 self.wrap_values( input.inputs, values, skip_missing_values=skip_missing_values )
             elif isinstance( input, DataToolParameter ) and input.multiple:
+                value = input_values[ input.name ]
+                dataset_instances = DatasetListWrapper.to_dataset_instances( value )
                 input_values[ input.name ] = \
-                    DatasetListWrapper( input_values[ input.name ],
+                    DatasetListWrapper( None,
+                                        dataset_instances,
                                         datatypes_registry=trans.app.datatypes_registry,
                                         tool=tool,
                                         name=input.name )
@@ -70,6 +73,7 @@ class WrappedParameters( object ):
                 input_values[ input.name ] = SelectToolParameterWrapper( input, input_values[ input.name ], tool.app, other_values=incoming )
             elif isinstance( input, DataCollectionToolParameter ):
                 input_values[ input.name ] = DatasetCollectionWrapper(
+                    None,
                     input_values[ input.name ],
                     datatypes_registry=trans.app.datatypes_registry,
                     tool=tool,

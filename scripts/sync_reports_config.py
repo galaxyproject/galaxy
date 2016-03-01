@@ -7,8 +7,8 @@ MAIN_SECTION = "app:main"
 
 def sync():
     # Add or replace the relevant properites from galaxy.ini
-    # into reports_wsgi.ini
-    reports_config_file = "config/reports_wsgi.ini"
+    # into reports.ini
+    reports_config_file = "config/reports.ini"
     if len(argv) > 1:
         reports_config_file = argv[1]
 

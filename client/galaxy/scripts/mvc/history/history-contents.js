@@ -6,6 +6,8 @@ define([
     "utils/localization"
 ], function( HISTORY_CONTENT, HDA_MODEL, HDCA_MODEL, BASE_MVC, _l ){
 
+'use strict';
+
 var logNamespace = 'history';
 //==============================================================================
 /** @class Backbone collection for history content.
@@ -71,7 +73,7 @@ var HistoryContents = Backbone.Collection
     },
 
     /** root api url */
-    urlRoot : galaxy_config.root + 'api/histories',
+    urlRoot : Galaxy.root + 'api/histories',
     /** complete api url */
     url : function(){
         return this.urlRoot + '/' + this.historyId + '/contents';

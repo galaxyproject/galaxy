@@ -2,10 +2,8 @@ import os
 from shutil import rmtree
 from string import Template
 from tempfile import mkdtemp
-try:
-    from galaxy import objectstore
-except ImportError:
-    from lwr import objectstore
+from galaxy import objectstore
+from galaxy.exceptions import ObjectInvalid
 from contextlib import contextmanager
 
 DISK_TEST_CONFIG = """<?xml version="1.0"?>
@@ -26,22 +24,22 @@ def test_disk_store():
         # Write empty dataset 2 in second backend, ensure it is empty and
         # exists.
         empty_dataset = MockDataset(2)
-        directory.write(b"", "files1/000/dataset_2.dat")
+        directory.write("", "files1/000/dataset_2.dat")
         assert object_store.exists(empty_dataset)
         assert object_store.empty(empty_dataset)
 
         # Write non-empty dataset in backend 1, test it is not emtpy & exists.
         hello_world_dataset = MockDataset(3)
-        directory.write(b"Hello World!", "files1/000/dataset_3.dat")
+        directory.write("Hello World!", "files1/000/dataset_3.dat")
         assert object_store.exists(hello_world_dataset)
         assert not object_store.empty(hello_world_dataset)
 
         # Test get_data
         data = object_store.get_data(hello_world_dataset)
-        assert data == b"Hello World!"
+        assert data == "Hello World!"
 
         data = object_store.get_data(hello_world_dataset, start=1, count=6)
-        assert data == b"ello W"
+        assert data == "ello W"
 
         # Test Size
 
@@ -60,17 +58,53 @@ def test_disk_store():
         output_dataset = MockDataset(4)
         output_real_path = os.path.join(directory.temp_directory, "files1", "000", "dataset_4.dat")
         assert not os.path.exists(output_real_path)
-        output_working_path = directory.write(b"NEW CONTENTS", "job_working_directory1/example_output")
+        output_working_path = directory.write("NEW CONTENTS", "job_working_directory1/example_output")
         object_store.update_from_file(output_dataset, file_name=output_working_path, create=True)
         assert os.path.exists(output_real_path)
 
         # Test delete
         to_delete_dataset = MockDataset(5)
-        to_delete_real_path = directory.write(b"content to be deleted!", "files1/000/dataset_5.dat")
+        to_delete_real_path = directory.write("content to be deleted!", "files1/000/dataset_5.dat")
         assert object_store.exists(to_delete_dataset)
         assert object_store.delete(to_delete_dataset)
         assert not object_store.exists(to_delete_dataset)
         assert not os.path.exists(to_delete_real_path)
+
+
+def test_disk_store_alt_name_relpath():
+    """ Test that alt_name cannot be used to access arbitrary paths using a
+    relative path
+    """
+    with TestConfig(DISK_TEST_CONFIG) as (directory, object_store):
+        empty_dataset = MockDataset(1)
+        directory.write(b"", "files1/000/dataset_1.dat")
+        directory.write(b"foo", "foo.txt")
+        try:
+            assert object_store.get_data(
+                empty_dataset,
+                extra_dir='dataset_1_files',
+                alt_name='../../../foo.txt') != 'foo'
+        except ObjectInvalid:
+            pass
+
+
+def test_disk_store_alt_name_abspath():
+    """ Test that alt_name cannot be used to access arbitrary paths using a
+    absolute path
+    """
+    with TestConfig(DISK_TEST_CONFIG) as (directory, object_store):
+        empty_dataset = MockDataset(1)
+        directory.write(b"", "files1/000/dataset_1.dat")
+        absfoo = os.path.abspath(os.path.join(directory.temp_directory, "foo.txt"))
+        with open(absfoo, 'w') as f:
+            f.write(b"foo")
+        try:
+            assert object_store.get_data(
+                empty_dataset,
+                extra_dir='dataset_1_files',
+                alt_name=absfoo) != 'foo'
+        except ObjectInvalid:
+            pass
 
 
 HIERARCHICAL_TEST_CONFIG = """<?xml version="1.0"?>
@@ -178,7 +212,7 @@ class MockConfig(object):
         self.file_path = temp_directory
         self.object_store_config_file = os.path.join(temp_directory, "store.xml")
         self.object_store_check_old_style = False
-        self.job_working_directory = temp_directory
+        self.jobs_directory = temp_directory
         self.new_file_path = temp_directory
         self.umask = 0000
 

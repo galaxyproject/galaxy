@@ -9,6 +9,8 @@
     <head>
         <title>${self.title()}</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        ## relative href for site root
+        <link rel="index" href="${ h.url_for( '/' ) }"/>
         ${self.metas()}
         ${self.stylesheets()}
         ${self.javascripts()}
@@ -28,11 +30,11 @@
 ## Default stylesheets
 <%def name="stylesheets()">
     ${h.css('base')}
+    ${h.css('bootstrap-tour')}
 </%def>
 
 ## Default javascripts
 <%def name="javascripts()">
-    
     ## Send errors to Sntry server if configured
     %if app.config.sentry_dsn:
         ${h.js( "libs/tracekit", "libs/raven" )}
@@ -45,48 +47,38 @@
     %endif
 
     ${h.js(
-        "libs/jquery/jquery",
-        "libs/jquery/jquery.migrate",
-        "libs/jquery/select2",
-        "libs/jquery/jquery.event.hover",
-        "libs/jquery/jquery.form",
-        "libs/jquery/jquery.rating",
-        "libs/jquery.sparklines",
-        "libs/bootstrap",
-        "libs/underscore",
-        "libs/backbone/backbone",
-        "libs/handlebars.runtime",
-        "libs/require",
-        "galaxy.base",
-        "galaxy.panels",
-        "galaxy.autocom_tagging"
+        ## TODO: remove when all libs are required directly in modules
+        'bundled/libs.bundled',
+        'libs/require',
+        "libs/bootstrap-tour",
     )}
 
     <script type="text/javascript">
-        ## global galaxy object
-        window.Galaxy = window.Galaxy || {};
-
         ## global configuration object
+        ## TODO: remove
+        window.Galaxy = window.Galaxy || {};
         window.Galaxy.root = '${h.url_for( "/" )}';
-        window.galaxy_config = { root: window.Galaxy.root };
+        window.Galaxy.config = {};
 
-        ## console protection
-        window.console = window.console || {
-            log     : function(){},
-            debug   : function(){},
-            info    : function(){},
-            warn    : function(){},
-            error   : function(){},
-            assert  : function(){}
-        };
+        // configure require
+        // due to our using both script tags and require, we need to access the same jq in both for plugin retention
+        // source http://www.manuel-strehl.de/dev/load_jquery_before_requirejs.en.html
+        define( 'jquery', [], function(){ return jQuery; })
+        // TODO: use one system
 
-        ## configure require
+        // shims and paths
         require.config({
             baseUrl: "${h.url_for('/static/scripts') }",
             shim: {
-                "libs/underscore": { exports: "_" },
-                "libs/backbone/backbone": { exports: "Backbone" }
+                "libs/underscore": {
+                    exports: "_"
+                },
+                "libs/backbone": {
+                    deps: [ 'jquery', 'libs/underscore' ],
+                    exports: "Backbone"
+                }
             },
+            // cache busting using time server was restarted
             urlArgs: 'v=${app.server_starttime}'
         });
     </script>

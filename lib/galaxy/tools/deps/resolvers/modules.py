@@ -24,6 +24,7 @@ UNKNOWN_FIND_BY_MESSAGE = "ModuleDependencyResolver does not know how to find mo
 
 
 class ModuleDependencyResolver(DependencyResolver):
+    dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['base_path', 'modulepath']
     resolver_type = "modules"
 
     def __init__(self, dependency_manager, **kwds):
@@ -31,11 +32,12 @@ class ModuleDependencyResolver(DependencyResolver):
         find_by = kwds.get('find_by', 'avail')
         prefetch = _string_as_bool(kwds.get('prefetch', DEFAULT_MODULE_PREFETCH))
         self.modulecmd = kwds.get('modulecmd', DEFAULT_MODULECMD_PATH)
+        self.modulepath = kwds.get('modulepath', self.__default_modulespath())
+        self.default_indicator = kwds.get('default_indicator', DEFAULT_INDICATOR)
         if find_by == 'directory':
-            modulepath = kwds.get('modulepath', self.__default_modulespath())
-            self.module_checker = DirectoryModuleChecker(self, modulepath, prefetch)
+            self.module_checker = DirectoryModuleChecker(self, self.modulepath, prefetch)
         elif find_by == 'avail':
-            self.module_checker = AvailModuleChecker(self, prefetch)
+            self.module_checker = AvailModuleChecker(self, self.modulepath, prefetch, self.default_indicator)
         else:
             raise Exception(UNKNOWN_FIND_BY_MESSAGE % (find_by, ["avail", "directory"]))
 
@@ -53,9 +55,9 @@ class ModuleDependencyResolver(DependencyResolver):
             return INDETERMINATE_DEPENDENCY
 
         if self.__has_module(name, version):
-            return ModuleDependency(self, name, version)
+            return ModuleDependency(self, name, version, exact=True)
         elif self.versionless and self.__has_module(name, None):
-            return ModuleDependency(self, name, None)
+            return ModuleDependency(self, name, None, exact=False)
 
         return INDETERMINATE_DEPENDENCY
 
@@ -64,7 +66,10 @@ class ModuleDependencyResolver(DependencyResolver):
 
 
 class DirectoryModuleChecker(object):
+    """Finds module by path.
 
+    Searches the paths listed in modulepath to for a file or directory matching the module name.
+    If the version=True, searches for files named module/version."""
     def __init__(self, module_dependency_resolver, modulepath, prefetch):
         self.module_dependency_resolver = module_dependency_resolver
         self.directories = modulepath.split(pathsep)
@@ -88,9 +93,16 @@ class DirectoryModuleChecker(object):
 
 
 class AvailModuleChecker(object):
+    """Finds modules by searching output of 'module avail'.
 
-    def __init__(self, module_dependency_resolver, prefetch):
+    Parses the Environment Modules 'module avail' output, splitting
+    module names into module and version on '/' and discarding a postfix matching default_indicator
+    (by default '(default)'. Matching is done using the module and
+    (if version=True) the module version."""
+    def __init__(self, module_dependency_resolver, modulepath, prefetch, default_indicator=DEFAULT_INDICATOR):
         self.module_dependency_resolver = module_dependency_resolver
+        self.modulepath = modulepath
+        self.default_indicator = default_indicator
         if prefetch:
             prefetched_modules = []
             for module in self.__modules():
@@ -120,8 +132,8 @@ class AvailModuleChecker(object):
 
             line_modules = line.split()
             for module in line_modules:
-                if module.endswith(DEFAULT_INDICATOR):
-                    module = module[0:-len(DEFAULT_INDICATOR)].strip()
+                if module.endswith(self.default_indicator):
+                    module = module[0:-len(self.default_indicator)].strip()
                 module_parts = module.split('/')
                 module_version = None
                 if len(module_parts) == 2:
@@ -131,21 +143,35 @@ class AvailModuleChecker(object):
 
     def __module_avail_output(self):
         avail_command = [self.module_dependency_resolver.modulecmd, 'sh', 'avail']
-        return Popen(avail_command, stderr=PIPE).communicate()[1]
+        return Popen(avail_command, stderr=PIPE, env={'MODULEPATH': self.modulepath}).communicate()[1]
 
 
 class ModuleDependency(Dependency):
+    """Converts module dependencies into shell expressions using modulecmd.
 
-    def __init__(self, module_dependency_resolver, module_name, module_version=None):
+    Using Environment Modules' 'modulecmd' (specifically 'modulecmd sh load') to
+    convert module specifications into shell expressions for inclusion in
+    the script used to run a tool in Galaxy."""
+    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['module_name', 'module_version']
+    dependency_type = 'module'
+
+    def __init__(self, module_dependency_resolver, module_name, module_version=None, exact=True):
         self.module_dependency_resolver = module_dependency_resolver
         self.module_name = module_name
         self.module_version = module_version
+        self._exact = exact
+
+    @property
+    def exact(self):
+        return self._exact
 
     def shell_commands(self, requirement):
         module_to_load = self.module_name
         if self.module_version:
             module_to_load = '%s/%s' % (self.module_name, self.module_version)
-        command = 'eval `%s sh load %s`' % (self.module_dependency_resolver.modulecmd, module_to_load)
+        command = 'MODULEPATH=%s; export MODULEPATH; eval `%s sh load %s`' % (self.module_dependency_resolver.modulepath,
+                                                                              self.module_dependency_resolver.modulecmd,
+                                                                              module_to_load)
         return command
 
 

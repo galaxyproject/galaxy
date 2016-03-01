@@ -23,17 +23,14 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
 
     def test_0000_create_or_login_admin_user( self ):
         """Create necessary user accounts and login as an admin user."""
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         galaxy_admin_user = self.test_db_util.get_galaxy_user( common.admin_email )
         assert galaxy_admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
         self.test_db_util.get_galaxy_private_role( galaxy_admin_user )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         self.test_db_util.get_private_role( test_user_1 )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
@@ -43,7 +40,6 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
         """Create the category for this test suite, then create and populate column_maker."""
         category = self.create_category( name=category_name, description=category_description )
         global running_standalone
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name=column_repository_name,
                                                     description=column_repository_description,
@@ -66,10 +62,8 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
     def test_0010_create_and_populate_convert_repository( self ):
         '''Create and populate the convert_chars repository.'''
         global running_standalone
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         category = self.create_category( name=category_name, description=category_description )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name=convert_repository_name,
                                                     description=convert_repository_description,
@@ -103,7 +97,6 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
 
     def test_0020_install_convert_repository( self ):
         '''Install convert_chars without repository dependencies into convert_chars tool panel section.'''
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         self.install_repository( convert_repository_name,
                                  common.test_user_1_name,

@@ -8,7 +8,7 @@ require.config({
     paths: {
         // Custom paths for Galaxy dependencies...
         "jquery": "libs/jquery/jquery",
-        "backbone": "libs/backbone/backbone",
+        "backbone": "libs/backbone",
         // Custom paths for qunit testing dependencies...
         "QUnit": qunit_absolute_directory + "test-libs/qunit-1.14.0", // .. because baseUrl is scripts to match Galaxy.
         "sinon": qunit_absolute_directory + "test-libs/sinon-1.9.1",
@@ -35,10 +35,14 @@ require.config({
             deps: [ 'sinon', "QUnit" ],
             exports: "sinon"  // Odd but seems to work
         },
-        "underscore": {
+        "libs/underscore": {
             exports: "_"
         },
         "backbone": {
+            deps: [ 'libs/underscore', 'jquery' ],
+            exports: "Backbone"
+        },
+        "libs/backbone": {
             deps: [ 'libs/underscore', 'jquery' ],
             exports: "Backbone"
         }
@@ -46,7 +50,7 @@ require.config({
 } );
 
 // Mock out Galaxy globals.
-var galaxy_config = {
+var Galaxy = {
     root: '/'
 };
 
@@ -61,7 +65,7 @@ require( [ "jquery", "QUnit" ], function( $, QUnit ) {
 
     // underscore + backbone loaded here because they are assumed globals by
     // much of the Galaxy client code.
-    require( [ "libs/underscore", "backbone" ], function( _, Backbone ) {
+    require( [ "libs/underscore", "libs/backbone" ], function( _, Backbone ) {
         require( [ test_module_path ], function( ) {
             QUnit.load();
             QUnit.start();
@@ -90,7 +94,7 @@ function bridge_phantomjs( QUnit ) {
         var args = [].slice.call(arguments);
         alert(JSON.stringify(args));
       }
-      
+
       // These methods connect QUnit to PhantomJS.
       QUnit.log(function(obj) {
         // What is this I don’t even

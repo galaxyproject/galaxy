@@ -5,6 +5,7 @@ define([
     'mvc/base-mvc',
     'utils/localization'
 ], function( DATASET, DATASET_LIST, MODAL, BASE_MVC, _l ){
+'use strict';
 
 var logNamespace = 'dataset';
 /* ============================================================================
@@ -20,20 +21,6 @@ TODO:
     return modal with promise?
 
     auto showing the modal may not be best
-
-    add hidden inputs
-        // cut1 on single dataset (17 in the list)
-        __switch_default__	select_single
-        input	17
-
-        // cut1 on two datasets
-        __switch_default__	select_single
-        input|__multirun__	13
-        input|__multirun__	15
-
-        // cut1 on a collection
-        __switch_default__	select_collection
-        input|__collection_multirun__	f2db41e1fa331b3e
 
 ============================================================================ */
 /** Filters an array of dataset plain JSON objs.

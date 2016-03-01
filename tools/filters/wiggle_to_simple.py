@@ -9,7 +9,7 @@ import sys
 
 import bx.wiggle
 
-from galaxy.tools.exception_handling import UCSCLimitException, UCSCOutWrapper
+from galaxy.util.ucsc import UCSCLimitException, UCSCOutWrapper
 
 
 def stop_err( msg ):

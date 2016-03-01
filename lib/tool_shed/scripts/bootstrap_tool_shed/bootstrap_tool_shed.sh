@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Activate the virtualenv, if it exists.
+[ -f ./.venv/bin/activate ] && . ./.venv/bin/activate
+
 : ${TOOL_SHED_CONFIG_FILE:=config/tool_shed.ini.sample}
 
 stop_err() {
@@ -43,7 +46,7 @@ admin_user_password=`echo $user_auth | awk 'BEGIN { FS="__SEP__" } ; { print \$3
 
 echo -n "Creating user '$admin_user_name' with email address '$admin_user_email'..."
 
-python lib/tool_shed/scripts/bootstrap_tool_shed/create_user_with_api_key.py ${TOOL_SHED_CONFIG_FILE} >> $log_file
+python ./lib/tool_shed/scripts/bootstrap_tool_shed/create_user_with_api_key.py -c ${TOOL_SHED_CONFIG_FILE} >> $log_file
 
 echo " done."
 
@@ -81,7 +84,7 @@ curl_response=`curl -s --user $admin_user_email:$admin_user_password $local_shed
 # Gets an empty response only on first attempt for some reason?
 sleep 1
 curl_response=`curl -s --user $admin_user_email:$admin_user_password $local_shed_url/api/authenticate/baseauth/`
-api_key=`echo $curl_response | grep api_key | awk -F\" '{print $4}'` 
+api_key=`echo $curl_response | grep api_key | awk -F\" '{print $4}'`
 
 if [[ -z $api_key && ${api_key+x} ]] ; then
 		stop_err "Error getting API key for user $admin_user_email. Response: $curl_response"

@@ -1,2 +1,0 @@
-define(["utils/utils"],function(a){return{center:Backbone.View.extend({initialize:function(){this.setElement(a.iframe(Galaxy.root+"static/welcome.html"))}}),right:Backbone.View.extend({initialize:function(){this.components={header:{title:"Login required"}},this.setElement(a.iframe(Galaxy.root+"user/login"))}})}});
-//# sourceMappingURL=../../../maps/mvc/app/app-login.js.map

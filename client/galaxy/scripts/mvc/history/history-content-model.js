@@ -4,6 +4,8 @@ define([
     "utils/localization"
 ], function( STATES, BASE_MVC, _l ){
 
+'use strict';
+
 var logNamespace = 'history';
 //==============================================================================
 /** How the type_id attribute is built for the history's mixed contents collection */
@@ -94,7 +96,7 @@ var HistoryContentMixin = {
 //TODO: global
 //TODO: these are probably better done on the leaf classes
     /** history content goes through the 'api/histories' API */
-    urlRoot: ( window.Galaxy? Galaxy.options.root : '/' ) + 'api/histories/',
+    urlRoot: Galaxy.root + 'api/histories/',
 
     /** full url spec. for this content */
     url : function(){

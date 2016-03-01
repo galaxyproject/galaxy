@@ -4,6 +4,7 @@ import urllib
 
 from markupsafe import escape
 import paste.httpexceptions
+from six import string_types, text_type
 from sqlalchemy import false, true
 
 from galaxy import datatypes, model, util, web
@@ -58,7 +59,7 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
     columns = [
         grids.TextColumn( "Name", key="name",
                           # Link name to dataset's history.
-                          link=( lambda item: iff( item.history.deleted, None, dict( operation="switch", id=item.id ) ) ), filterable="advanced", attach_popup=True, inbound=True ),
+                          link=( lambda item: iff( item.history.deleted, None, dict( operation="switch", id=item.id ) ) ), filterable="advanced", attach_popup=True ),
         HistoryColumn( "History", key="history", sortable=False, inbound=True,
                        link=( lambda item: iff( item.history.deleted, None, dict( operation="switch_history", id=item.id ) ) ) ),
         grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.HistoryDatasetAssociationTagAssociation, filterable="advanced", grid_name="HistoryDatasetAssocationListGrid" ),
@@ -119,12 +120,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
 
     @web.expose
     def errors( self, trans, id ):
-        try:
-            hda = trans.sa_session.query( model.HistoryDatasetAssociation ).get( id )
-        except:
-            hda = None
-        if not hda:
-            hda = trans.sa_session.query( model.HistoryDatasetAssociation ).get( self.decode_id( id ) )
+        hda = trans.sa_session.query( model.HistoryDatasetAssociation ).get( self.decode_id( id ) )
+
         if not hda or not self._can_access_dataset( trans, hda ):
             return trans.show_error_message( "Either this dataset does not exist or you do not have permission to access it." )
         return trans.fill_template( "dataset/errors.mako", hda=hda )
@@ -223,7 +220,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         """ Primarily used for the S3ObjectStore - get the status of data transfer
         if the file is not in cache """
         data = self._check_dataset(trans, dataset_id)
-        if isinstance( data, basestring ):
+        if isinstance( data, string_types ):
             return data
         log.debug( "Checking transfer status for dataset %s..." % data.dataset.id )
 
@@ -597,7 +594,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
 
             # If data is binary or an image, stream without template; otherwise, use display template.
             # TODO: figure out a way to display images in display template.
-            if isinstance(dataset.datatype, datatypes.binary.Binary) or isinstance(dataset.datatype, datatypes.images.Image) or isinstance(dataset.datatype, datatypes.images.Html):
+            if isinstance(dataset.datatype, datatypes.binary.Binary) or isinstance(dataset.datatype, datatypes.images.Image) or isinstance(dataset.datatype, datatypes.text.Html):
                 trans.response.set_content_type( dataset.get_mime() )
                 return open( dataset.file_name )
             else:
@@ -655,7 +652,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         if not dataset:
             web.httpexceptions.HTTPNotFound()
         annotation = self.get_item_annotation_str( trans.sa_session, trans.user, dataset )
-        if annotation and isinstance( annotation, unicode ):
+        if annotation and isinstance( annotation, text_type ):
             annotation = annotation.encode( 'ascii', 'replace' )  # paste needs ascii here
         return annotation
 

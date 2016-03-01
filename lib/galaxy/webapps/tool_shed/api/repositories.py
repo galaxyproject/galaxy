@@ -11,7 +11,7 @@ from sqlalchemy import and_, false
 
 from galaxy import util
 from galaxy import web
-from galaxy.datatypes import checkers
+from galaxy.util import checkers
 from galaxy.exceptions import ActionInputError
 from galaxy.exceptions import ConfigDoesNotAllowException
 from galaxy.exceptions import InsufficientPermissionsException
@@ -33,6 +33,7 @@ from tool_shed.util import basic_util
 from tool_shed.util import commit_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
+from tool_shed.util import metadata_util
 from tool_shed.util import repository_content_util
 from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
@@ -640,12 +641,15 @@ class RepositoriesController( BaseAPIController ):
                                                                             repository,
                                                                             None,
                                                                             as_html=False )
+                    results[ 'status' ] = 'warning'
                 else:
                     message = "Successfully reset metadata on repository %s owned by %s" % \
                         ( str( repository.name ), str( repository.user.username ) )
+                    results[ 'status' ] = 'ok'
             except Exception, e:
                 message = "Error resetting metadata on repository %s owned by %s: %s" % \
                     ( str( repository.name ), str( repository.user.username ), str( e ) )
+                results[ 'status' ] = 'error'
             status = '%s : %s' % ( str( repository.name ), message )
             results[ 'repository_status' ].append( status )
             return results
@@ -658,7 +662,7 @@ class RepositoriesController( BaseAPIController ):
             results = handle_repository( trans, start_time, repository )
             stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
             results[ 'stop_time' ] = stop_time
-        return json.dumps( results, sort_keys=True, indent=4 )
+        return results
 
     @expose_api_anonymous_and_sessionless
     def show( self, trans, id, **kwd ):
@@ -690,6 +694,44 @@ class RepositoriesController( BaseAPIController ):
         repository_dict[ 'category_ids' ] = \
             [ trans.security.encode_id( x.category.id ) for x in repository.categories ]
         return repository_dict
+
+    @expose_api_anonymous_and_sessionless
+    def metadata( self, trans, id, **kwd ):
+        """
+        GET /api/repositories/{encoded_repository_id}/metadata
+        Returns information about a repository in the Tool Shed.
+
+        Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135/metadata
+
+        :param id: the encoded id of the Repository object
+
+        :returns:   A dictionary containing the specified repository's metadata, by changeset,
+                    recursively including dependencies and their metadata.
+
+        :not found:  Empty dictionary.
+        """
+        try:
+            trans.security.decode_id( id )
+        except Exception:
+            raise MalformedId( 'The given id is invalid.' )
+        all_metadata = {}
+        repository = suc.get_repository_in_tool_shed( self.app, id )
+        for changeset, changehash in repository.installable_revisions( self.app ):
+            metadata = suc.get_current_repository_metadata_for_changeset_revision( self.app, repository, changehash )
+            if metadata is None:
+                continue
+            metadata_dict = metadata.to_dict( value_mapper={ 'id': self.app.security.encode_id, 'repository_id': self.app.security.encode_id } )
+            metadata_dict[ 'repository' ] = repository.to_dict( value_mapper={ 'id': self.app.security.encode_id } )
+            if metadata.has_repository_dependencies:
+                metadata_dict[ 'repository_dependencies' ] = metadata_util.get_all_dependencies( self.app, metadata, processed_dependency_links=[] )
+            else:
+                metadata_dict[ 'repository_dependencies' ] = []
+            if metadata.includes_tool_dependencies:
+                metadata_dict[ 'tool_dependencies' ] = repository.get_tool_dependencies( changehash )
+            else:
+                metadata_dict[ 'tool_dependencies' ] = {}
+            all_metadata[ '%s:%s' % ( changeset, changehash ) ] = metadata_dict
+        return all_metadata
 
     @expose_api
     def update( self, trans, id, **kwd ):
