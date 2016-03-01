@@ -324,6 +324,9 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
     >>> fname = get_test_fname('test.mz5')
     >>> guess_ext(fname, sniff_order)
     'h5'
+    >>> fname = get_test_fname('issue1818.tabular')
+    >>> guess_ext(fname, sniff_order)
+    'tabular'
     """
     for datatype in sniff_order:
         """
