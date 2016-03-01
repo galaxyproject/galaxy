@@ -10,6 +10,7 @@ import tempfile
 import urllib
 import urllib2
 import zipfile
+from json import dumps, loads
 
 from markupsafe import escape
 from sqlalchemy import and_, false
@@ -18,9 +19,7 @@ from sqlalchemy.orm import eagerload_all
 from galaxy import util, web
 from galaxy.security import Action
 from galaxy.tools.actions import upload_common
-from galaxy.util import inflector
-from galaxy.util import unicodify
-from galaxy.util.json import dumps, loads
+from galaxy.util import inflector, unicodify
 from galaxy.util.streamball import StreamBall
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin, UsesLibraryMixinItems
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, build_select_field

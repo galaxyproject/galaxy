@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import string
@@ -16,7 +17,6 @@ import tool_shed.repository_types.util as rt_util
 
 from galaxy import util
 from galaxy import web
-from galaxy.util import json
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import CheckboxField
 from galaxy.web.framework.helpers import grids

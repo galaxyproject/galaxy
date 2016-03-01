@@ -2,10 +2,12 @@
 Classes encapsulating Galaxy tool parameters.
 """
 import re
+from json import dumps, loads
+
 from basic import RuntimeValue
 from grouping import Conditional, Repeat, Section, UploadDataset
-from galaxy.util.json import dumps, json_fix, loads
 from galaxy.util.expressions import ExpressionContext
+from galaxy.util.json import json_fix
 
 REPLACE_ON_TRUTHY = object()
 
