@@ -46,7 +46,8 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
     burst_at = getattr( config, 'tool_submission_burst_at', 10 )
     burst_threads = getattr( config, 'tool_submission_burst_threads', 1 )
 
-    if len(execution_tracker.param_combinations) < burst_at or burst_threads < 2:
+    job_count = len(execution_tracker.param_combinations)
+    if job_count < burst_at or burst_threads < 2:
         for params in execution_tracker.param_combinations:
             execute_single_job(params)
     else:
@@ -68,7 +69,7 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
 
         q.join()
 
-    log.debug("Executed all jobs for tool request: %s" % all_jobs_timer)
+    log.debug("Executed %d job(s) for tool %s request: %s" % (job_count, tool.id, all_jobs_timer))
     if collection_info:
         history = history or tool.get_default_history_by_trans( trans )
         execution_tracker.create_output_collections( trans, history, params )
