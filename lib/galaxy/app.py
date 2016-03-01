@@ -50,6 +50,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         config.configure_logging( self.config )
         self.configure_fluent_log()
 
+        self.config.reload_sanitize_whitelist(explicit='sanitize_whitelist_file' in kwargs)
         self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
         # control_worker *can* be initialized with a queue, but here we don't
         # want to and we'll allow postfork to bind and start it.
