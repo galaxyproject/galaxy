@@ -136,6 +136,16 @@ class JobLike:
             log.info( "stderr for %s %d is greater than %s, only a portion will be logged to database", type(self), self.id, galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY )
         self.stderr = stderr
 
+    def log_str(self):
+        extra = ""
+        safe_id = getattr(self, "id", None)
+        if safe_id is not None:
+            extra += "id=%s" % safe_id
+        else:
+            extra += "unflushed"
+
+        return "%s[%s,tool_id=%s]" % (self.__class__.__name__, extra, self.tool_id)
+
 
 class User( object, Dictifiable ):
     use_pbkdf2 = True
