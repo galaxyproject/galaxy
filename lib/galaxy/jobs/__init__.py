@@ -771,6 +771,7 @@ class JobWrapper( object ):
         if use_persisted_destination:
             self.job_runner_mapper.cached_job_destination = JobDestination( from_job=job )
 
+        self.__commands_in_new_shell = self.app.config.commands_in_new_shell
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
 
@@ -803,13 +804,19 @@ class JobWrapper( object ):
     def shell(self):
         return self.job_destination.shell or getattr(self.app.config, 'default_job_shell', DEFAULT_JOB_SHELL)
 
+    def disable_commands_in_new_shell(self):
+        """Provide an extension point to disable this isolation,
+        Pulsar builds its own job script so this is not needed for
+        remote jobs."""
+        self.__commands_in_new_shell = False
+
     @property
     def strict_shell(self):
         return self.tool.strict_shell
 
     @property
     def commands_in_new_shell(self):
-        return self.app.config.commands_in_new_shell
+        return self.__commands_in_new_shell
 
     @property
     def galaxy_lib_dir(self):
