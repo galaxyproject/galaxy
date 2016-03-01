@@ -116,9 +116,13 @@ window.app = function app( options, bootstrapped ){
         home : function( params ){
             // TODO: to router, remove Globals
             // load a tool by id (tool_id) or rerun a previous tool execution (job_id)
-            if( ( params.tool_id || params.job_id ) && params.tool_id !== 'upload1' ){
-                this._loadToolForm( params );
-
+            if( params.tool_id || params.job_id ) {
+                if ( params.tool_id === 'upload1' ) {
+                    Galaxy.upload.show();
+                    this._loadCenterIframe( 'welcome' );
+                } else {
+                    this._loadToolForm( params );
+                }
             } else {
                 // show the workflow run form
                 if( params.workflow_id ){
