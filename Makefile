@@ -7,35 +7,35 @@ RELEASE_NEXT_BRANCH:=dev
 RELEASE_UPSTREAM:=upstream
 GRUNT_DOCKER_NAME:=galaxy/client-builder:16.01
 
-all:
+all: help
 	@echo "This makefile is primarily used for building Galaxy's JS client. A sensible all target is not yet implemented."
 
 npm-deps:
 	cd client && npm install
 
-grunt: npm-deps
+grunt: npm-deps ## Calls out to Grunt to build client
 	cd client && node_modules/grunt-cli/bin/grunt
 
-style: npm-deps
+style: npm-deps ## Calls the style task of Grunt
 	cd client && node_modules/grunt-cli/bin/grunt style
 
-webpack: npm-deps
+webpack: npm-deps ## Pack javascript
 	cd client && node_modules/webpack/bin/webpack.js -p
 
-client: grunt style webpack
+client: grunt style webpack ## Process all client-side tasks
 
-grunt-docker-image:
+grunt-docker-image: ## Build docker image for running grunt
 	docker build -t ${GRUNT_DOCKER_NAME} client
 
-grunt-docker: grunt-docker-image
+grunt-docker: grunt-docker-image ## Run grunt inside docker
 	docker run -it -v `pwd`:/data ${GRUNT_DOCKER_NAME}
 
-clean-grunt-docker-image:
+clean-grunt-docker-image: ## Remove grunt docker image
 	docker rmi ${GRUNT_DOCKER_NAME}
 
 
 # Release Targets
-create_release_rc:
+create_release_rc: ## Create a release-candidate branch
 	git checkout dev
 	git pull --ff-only ${RELEASE_UPSTREAM} dev
 	git push origin dev
@@ -63,7 +63,7 @@ create_release_rc:
 	git branch -d version-$(RELEASE_CURR)
 	git branch -d version-$(RELEASE_NEXT).dev
 
-create_release:
+create_release: ## Create a release branch
 	git pull --ff-only $(RELEASE_UPSTREAM) master
 	git push origin master
 	git checkout release_$(RELEASE_CURR)
@@ -92,7 +92,7 @@ create_release:
 	#git push origin master:master
 	#git push origin --tags
 
-create_point_release:
+create_point_release: ## Create a point release
 	git pull --ff-only $(RELEASE_UPSTREAM) master
 	git push origin master
 	git checkout release_$(RELEASE_CURR)
@@ -119,3 +119,8 @@ create_point_release:
 	#git push origin master:master
 	#git push origin --tags
 	git checkout release_$(RELEASE_CURR)
+
+.PHONY: help
+
+help:
+	@grep -P '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
