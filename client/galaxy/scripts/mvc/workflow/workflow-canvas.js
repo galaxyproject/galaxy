@@ -42,17 +42,22 @@ define([], function() {
                 self.app.workflow.fit_canvas_to_nodes();
                 self.draw_overview();
             });
-            this.overview.bind( "mouseup", function( e ) {
-                var in_w = self.cc.width(),
-                    in_h = self.cc.height(),
-                    o_w = self.oc.width(),
-                    o_h = self.oc.height(),
-                    new_x_offset = e.offsetX - self.ov.width() / 2,
-                    new_y_offset = e.offsetY - self.ov.height() / 2;
-                move( - ( new_x_offset / o_w * in_w ),
-                      - ( new_y_offset / o_h * in_h ) );
-                self.app.workflow.fit_canvas_to_nodes();
-                self.draw_overview();
+            this.overview.click( function( e ) {
+                if (self.overview.hasClass('blockaclick')){
+                    self.overview.removeClass('blockaclick');
+                }
+                else{
+                    var in_w = self.cc.width(),
+                        in_h = self.cc.height(),
+                        o_w = self.oc.width(),
+                        o_h = self.oc.height(),
+                        new_x_offset = e.offsetX - self.ov.width() / 2,
+                        new_y_offset = e.offsetY - self.ov.height() / 2;
+                    move( - ( new_x_offset / o_w * in_w ),
+                          - ( new_y_offset / o_h * in_h ) );
+                    self.app.workflow.fit_canvas_to_nodes();
+                    self.draw_overview();
+                }
             });
             // Dragging for overview pane
             this.ov.bind( "drag", function( e, d ) {
@@ -65,6 +70,7 @@ define([], function() {
                 move( - ( new_x_offset / o_w * in_w ),
                       - ( new_y_offset / o_h * in_h ) );
             }).bind( "dragend", function() {
+                self.overview.addClass('blockaclick');
                 self.app.workflow.fit_canvas_to_nodes();
                 self.draw_overview();
             });
@@ -155,7 +161,7 @@ define([], function() {
                 if (node.tool_errors){
                     c.fillStyle = "#FFCCCC";
                     c.strokeStyle = "#AA6666";
-                } else if (node.workflow_outputs != undefined && node.workflow_outputs.length > 0){
+                } else if (node.workflow_outputs !== undefined && node.workflow_outputs.length > 0){
                     c.fillStyle = "#E8A92D";
                     c.strokeStyle = "#E8A92D";
                 }
