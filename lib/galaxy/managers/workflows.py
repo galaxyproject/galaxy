@@ -271,7 +271,10 @@ class WorkflowContentsManager(UsesAnnotations):
         return workflow, errors
 
     def _workflow_from_dict(self, trans, data, name):
-        if isinstance(data, string_types):
+        # If coming from the editor it will be a flat a string,
+        # we need parse it and handle tool start differently.
+        from_editor = isinstance(data, string_types)
+        if from_editor:
             # If coming from the editor...
             data = json.loads(data)
 
@@ -294,7 +297,7 @@ class WorkflowContentsManager(UsesAnnotations):
         missing_tool_tups = []
 
         for step_dict in self.__walk_step_dicts( data ):
-            module, step = self.__track_module_from_dict( trans, steps, steps_by_external_id, step_dict, secure=False )
+            module, step = self.__track_module_from_dict( trans, steps, steps_by_external_id, step_dict, secure=from_editor )
             is_tool = is_tool_module_type( module.type )
             if is_tool and module.tool is None:
                 # A required tool is not available in the local Galaxy instance.
