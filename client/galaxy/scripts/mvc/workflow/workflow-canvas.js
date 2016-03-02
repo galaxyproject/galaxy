@@ -45,14 +45,13 @@ define([], function() {
             this.overview.click( function( e ) {
                 if (self.overview.hasClass('blockaclick')){
                     self.overview.removeClass('blockaclick');
-                }
-                else{
+                } else {
                     var in_w = self.cc.width(),
                         in_h = self.cc.height(),
                         o_w = self.oc.width(),
                         o_h = self.oc.height(),
-                        new_x_offset = e.offsetX - self.ov.width() / 2,
-                        new_y_offset = e.offsetY - self.ov.height() / 2;
+                        new_x_offset = e.pageX - self.oc.offset().left - self.ov.width() / 2,
+                        new_y_offset = e.pageY - self.oc.offset().top - self.ov.height() / 2;
                     move( - ( new_x_offset / o_w * in_w ),
                           - ( new_y_offset / o_h * in_h ) );
                     self.app.workflow.fit_canvas_to_nodes();
