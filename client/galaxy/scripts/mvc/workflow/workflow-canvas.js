@@ -3,6 +3,7 @@ define([], function() {
         this.app = app;
         this.cv = canvas_viewport;
         this.cc = this.cv.find( "#canvas-container" );
+        this.overview = overview;
         this.oc = overview.find( "#overview-canvas" );
         this.ov = overview.find( "#overview-viewport" );
         // Make overview box draggable
@@ -41,15 +42,26 @@ define([], function() {
                 self.app.workflow.fit_canvas_to_nodes();
                 self.draw_overview();
             });
+            this.overview.bind( "mouseup", function( e ) {
+                var in_w = self.cc.width(),
+                    in_h = self.cc.height(),
+                    o_w = self.oc.width(),
+                    o_h = self.oc.height(),
+                    new_x_offset = e.offsetX - self.ov.width() / 2,
+                    new_y_offset = e.offsetY - self.ov.height() / 2;
+                move( - ( new_x_offset / o_w * in_w ),
+                      - ( new_y_offset / o_h * in_h ) );
+                self.app.workflow.fit_canvas_to_nodes();
+                self.draw_overview();
+            });
             // Dragging for overview pane
             this.ov.bind( "drag", function( e, d ) {
                 var in_w = self.cc.width(),
                     in_h = self.cc.height(),
                     o_w = self.oc.width(),
                     o_h = self.oc.height(),
-                    p = $(this).offsetParent().offset(),
-                    new_x_offset = d.offsetX - p.left,
-                    new_y_offset = d.offsetY - p.top;
+                    new_x_offset = d.offsetX - self.overview.offset().left,
+                    new_y_offset = d.offsetY - self.overview.offset().top;
                 move( - ( new_x_offset / o_w * in_w ),
                       - ( new_y_offset / o_h * in_h ) );
             }).bind( "dragend", function() {
@@ -68,11 +80,11 @@ define([], function() {
                 });
                 self.draw_overview();
             });
-            
+
             /*  Disable dragging for child element of the panel so that resizing can
                 only be done by dragging the borders */
             $("#overview-border div").bind("drag", function() { });
-            
+
         },
         update_viewport_overlay: function() {
             var cc = this.cc,
@@ -83,7 +95,7 @@ define([], function() {
                 in_h = cc.height(),
                 o_w = oc.width(),
                 o_h = oc.height(),
-                cc_pos = cc.position();        
+                cc_pos = cc.position();
             ov.css( {
                 left: - ( cc_pos.left / in_w * o_w ),
                 top: - ( cc_pos.top / in_h * o_h ),
