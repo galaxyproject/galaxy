@@ -170,17 +170,7 @@ $(document).ready( function() {
     if (et){
         et = TOURS.hooked_tour_from_data(et);
         if (et && et.steps){
-            var in_iframe;
-            try {
-                if (window.self !== window.top){
-                    in_iframe = true;
-                } else {
-                    in_iframe = false;
-                }
-            } catch (e) {
-                in_iframe = false;
-            }
-            if (!in_iframe){
+            if (window && window.self === window.top){
                 // Only kick off a new tour if this is the toplevel window (non-iframe).  This
                 // functionality actually *could* be useful, but we'd need to handle it better and
                 // come up with some design guidelines for tours jumping between windows.
