@@ -156,7 +156,6 @@ function process_dependencies(metadata, selector) {
                     template_values.prior = ' (<b>Prior installation required</b>)';
                 }
                 var dependency_html = repository_dependency_template(template_values);
-                console.log(selector);
                 if (selector === undefined) {
                     $("#repository_deps").append(dependency_html);
                 }
@@ -186,6 +185,7 @@ function process_dependencies(metadata, selector) {
         }
     }
     if (metadata.includes_tools_for_display_in_tool_panel) {
+        $('#tools_toggle').show();
         for (var i = 0; i < metadata.tools.length; i++) {
             var tool = metadata.tools[i];
             valid_tool = {clean_name: clean_tool_name(tool.name), name: tool.name, version: tool.version, description: tool.description, guid: tool.guid};
@@ -193,6 +193,9 @@ function process_dependencies(metadata, selector) {
                 valid_tools.push(valid_tool);
             }
         }
+    }
+    else {
+        $('#tools_toggle').hide();
     }
 }
 function tool_panel_section() {
