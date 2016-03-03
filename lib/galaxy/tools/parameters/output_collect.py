@@ -120,6 +120,13 @@ class JobContext( object ):
                 filename=filename,
                 metadata_source_name=output_collection_def.metadata_source,
             )
+            log.debug(
+                "(%s) Created dynamic collection dataset for path [%s] with element identifier [%s] for output [%s].",
+                self.job.id,
+                filename,
+                designation,
+                output_collection_def.name,
+            )
             current_builder.add_dataset( element_identifiers[-1], dataset )
 
     def create_dataset(
