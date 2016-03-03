@@ -497,7 +497,17 @@ def get_repo_info_tuple_contents( repo_info_tuple ):
 def get_repositories_by_category( app, category_id ):
     sa_session = app.model.context.current
     resultset = sa_session.query( app.model.Category ).get( category_id )
-    return [ repo.repository.to_dict( value_mapper={ 'id': app.security.encode_id, 'user_id': app.security.encode_id } ) for repo in resultset.repositories ]
+    repositories = []
+    default_value_mapper = { 'id': app.security.encode_id, 'user_id': app.security.encode_id }
+    for row in resultset.repositories:
+        repository_dict = row.repository.to_dict( value_mapper=default_value_mapper )
+        repository_dict[ 'metadata' ] = {}
+        for changeset, changehash in row.repository.installable_revisions( app ):
+            encoded_id = app.security.encode_id( row.repository.id )
+            metadata = get_repository_metadata_by_changeset_revision( app, encoded_id, changehash )
+            repository_dict[ 'metadata' ][ '%s:%s' % ( changeset, changehash ) ] = metadata.to_dict( value_mapper=default_value_mapper )
+        repositories.append( repository_dict )
+    return repositories
 
 
 def get_repository_and_repository_dependencies_from_repo_info_dict( app, repo_info_dict ):

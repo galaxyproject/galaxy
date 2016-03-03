@@ -212,7 +212,7 @@ class MockConfig(object):
         self.file_path = temp_directory
         self.object_store_config_file = os.path.join(temp_directory, "store.xml")
         self.object_store_check_old_style = False
-        self.job_working_directory = temp_directory
+        self.jobs_directory = temp_directory
         self.new_file_path = temp_directory
         self.umask = 0000
 

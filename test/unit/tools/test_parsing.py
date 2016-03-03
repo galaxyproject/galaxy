@@ -244,6 +244,12 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         assert len(exit) == 2, exit
         assert len(regexes) == 2, regexes
 
+    def test_sanitize_option(self):
+        assert self._tool_source.parse_sanitize() is True
+
+    def test_refresh_option(self):
+        assert self._tool_source.parse_refresh() is False
+
 
 class YamlLoaderTestCase(BaseLoaderTestCase):
     source_file_name = "bwa.yml"
@@ -363,6 +369,9 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
         assert attributes1["compare"] == "sim_size"
         assert attributes1["lines_diff"] == 4
 
+    def test_sanitize(self):
+        assert self._tool_source.parse_sanitize() is True
+
 
 class DataSourceLoaderTestCase(BaseLoaderTestCase):
     source_file_name = "ds.xml"
@@ -390,6 +399,12 @@ class DataSourceLoaderTestCase(BaseLoaderTestCase):
     <options sanitize="False" refresh="True"/>
 </tool>
 """
+
+    def test_sanitize_option(self):
+        assert self._tool_source.parse_sanitize() is False
+
+    def test_refresh_option(self):
+        assert self._tool_source.parse_refresh() is True
 
     def test_tool_type(self):
         assert self._tool_source.parse_tool_type() == "data_source"

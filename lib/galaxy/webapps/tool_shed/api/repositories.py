@@ -243,13 +243,13 @@ class RepositoriesController( BaseAPIController ):
     @web.expose_api_anonymous
     def get_installable_revisions( self, trans, **kwd ):
         """
-        GET /api/repositories/get_unordered_installable_revisions
+        GET /api/repositories/get_installable_revisions
 
         :param tsr_id: the encoded toolshed ID of the repository
 
         Returns a list of lists of changesets, in the format [ [ 0, fbb391dc803c ], [ 1, 9d9ec4d9c03e ], [ 2, 9b5b20673b89 ], [ 3, e8c99ce51292 ] ].
         """
-        # Example URL: http://localhost:9009/api/repositories/get_unordered_installable_revisions?tsr_id=9d37e53072ff9fa4
+        # Example URL: http://localhost:9009/api/repositories/get_installable_revisions?tsr_id=9d37e53072ff9fa4
         tsr_id = kwd.get( 'tsr_id', None )
         if tsr_id is not None:
             repository = suc.get_repository_in_tool_shed( self.app, tsr_id )

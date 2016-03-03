@@ -136,6 +136,16 @@ class JobLike:
             log.info( "stderr for %s %d is greater than %s, only a portion will be logged to database", type(self), self.id, galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY )
         self.stderr = stderr
 
+    def log_str(self):
+        extra = ""
+        safe_id = getattr(self, "id", None)
+        if safe_id is not None:
+            extra += "id=%s" % safe_id
+        else:
+            extra += "unflushed"
+
+        return "%s[%s,tool_id=%s]" % (self.__class__.__name__, extra, self.tool_id)
+
 
 class User( object, Dictifiable ):
     use_pbkdf2 = True
@@ -685,6 +695,18 @@ class Job( object, JobLike, Dictifiable ):
         self.set_state( final_state )
         if self.workflow_invocation_step:
             self.workflow_invocation_step.update()
+
+    def get_destination_configuration(self, config, key, default=None):
+        """ Get a destination parameter that can be defaulted back
+        in specified config if it needs to be applied globally.
+        """
+        param_unspecified = object()
+        config_value = (self.destination_params or {}).get(key, param_unspecified)
+        if config_value is param_unspecified:
+            config_value = getattr(config, key, param_unspecified)
+        if config_value is param_unspecified:
+            config_value = default
+        return config_value
 
 
 class Task( object, JobLike ):

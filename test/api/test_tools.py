@@ -237,6 +237,20 @@ class ToolsTestCase( api.ApiTestCase ):
         response = self._run( "validation_default", history_id, inputs )
         self._assert_status_code_is( response, 400 )
 
+    @skip_without_tool( "validation_empty_dataset" )
+    def test_validation_empty_dataset( self ):
+        history_id = self.dataset_populator.new_history()
+        inputs = {
+        }
+        outputs = self._run_and_get_outputs( 'empty_output', history_id, inputs )
+        empty_dataset = outputs[0]
+        inputs = {
+            'input1': dataset_to_param(empty_dataset),
+        }
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        response = self._run( "validation_empty_dataset", history_id, inputs )
+        self._assert_status_code_is( response, 400 )
+
     @skip_without_tool( "validation_repeat" )
     def test_validation_in_repeat( self ):
         history_id = self.dataset_populator.new_history()

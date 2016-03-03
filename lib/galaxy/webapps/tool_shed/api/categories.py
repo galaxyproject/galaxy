@@ -81,7 +81,8 @@ class CategoriesController( BaseAPIController ):
         category_dict[ 'url' ] = web.url_for( controller='categories',
                                               action='show',
                                               id=trans.security.encode_id( category.id ) )
-        category_dict[ 'repositories' ] = suc.get_repositories_by_category( self.app, category.id )
+        repositories = suc.get_repositories_by_category( self.app, category.id )
+        category_dict[ 'repositories' ] = repositories
         return category_dict
 
     @expose_api_anonymous_and_sessionless
