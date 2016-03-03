@@ -108,6 +108,8 @@ class UpdateRepositoryManager( object ):
         Tool Shed.  This happens when updating an installed repository to a new changeset revision.
         """
         repository.metadata = updated_metadata_dict
+        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, repository.tool_shed )
+        suc.clean_dependency_relationships(self.app, updated_metadata_dict, repository, tool_shed_url)
         # Update the repository.changeset_revision column in the database.
         repository.changeset_revision = updated_changeset_revision
         repository.ctx_rev = updated_ctx_rev
