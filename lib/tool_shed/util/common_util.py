@@ -341,7 +341,7 @@ def remove_protocol_from_tool_shed_url( tool_shed_url ):
     return util.remove_protocol_from_url( tool_shed_url )
 
 
-def tool_shed_get( app, base_url, pathspec=[], params={} ):
+def tool_shed_get( app, base_url, pathspec=None, params=None ):
     """Make contact with the tool shed via the uri provided."""
     registry = app.tool_shed_registry
     # urllib2 auto-detects system proxies, when passed a Proxyhandler.
