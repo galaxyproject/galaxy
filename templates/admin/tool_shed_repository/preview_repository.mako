@@ -6,16 +6,27 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     ${h.css( "dynatree_skin/ui.dynatree" )}
+<style type="text/css">
+div.expandLink {
+    float: left;
+    padding-left: 2px;
+    background-color: #d8d8d8;
+    width: 100%;
+}
+div.changeset {
+    padding: 5px 10px 5px 10px;
+}
+.container-table {
+    padding-top: 1em;
+}
+ul.jstree-container-ul {
+    margin-top: 1em;
+}
+</style>
 </%def>
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-</%def>
-${javascripts()}
-
-%if message:
-    ${render_msg( message, status )}
-%endif
 <script type="text/javascript">
 <%
 import json
@@ -25,118 +36,101 @@ tool_panel_section_dict = { 'name': tool_panel_section_select_field.name,
 for name, id, _ in tool_panel_section_select_field.options:
     tool_panel_section_dict['sections'].append( '<option value="%s">%s</option>' % ( id, name ) )
 %>
+/*
+ *
+ * Define some global variables, data, and templates
+ *
+ */
 var has_repo_dependencies = false;
 var tool_panel_sections_json = ${json.dumps(tool_panel_section_dict['sections'])};
 var repository_information = ${json.dumps(toolshed_data)};
 var valid_tool_dependencies = Array();
 var valid_tools = Array();
-Array.prototype.containsDict = function(val) {
-    for (var i in this) {
-        needle = this[i];
+var tps_selection_template = _.template([
+    '<div class="form-row" id="select_tps">',
+        '${tool_panel_section_select_field.get_html(extra_attr={'style':'width:30em;'}).replace('\n', '')}',
+        '<input class="menubutton" type="button" id="create_new" value="Create new" />',
+        '<div class="toolParamHelp" style="clear: both;">',
+            'Select an existing tool panel section to contain the installed tools (optional).',
+        '</div>',
+    '</div>'
+].join(''));
+tps_creation_template = _.template([
+    '<div class="form-row" id="new_tps">',
+        '<input id="new_tool_panel_section" name="new_tool_panel_section" type="textfield" value="" size="40"/>',
+        '<input class="menubutton" type="button" id="select_existing" value="Select existing" />',
+        '<div class="toolParamHelp" style="clear: both;">',
+            'Add a new tool panel section to contain the installed tools (optional).',
+        '</div>',
+    '</div>'
+].join(''));
+var tool_row_template = _.template([
+    '<tr id="libraryItem" class="tool_row" style="display: table-row;" style="width: 15%">',
+        '<td style="padding-left: 40px;">',
+            '<div id="tool" class="menubutton split popup" style="float: left;">',
+                '<a class="view-info"><\%- tool_name %></a>',
+            '</div>',
+        '</td>',
+        '<td><\%- tool_description %></td>',
+        '<td style="width: 15%"><\%- tool_version %></td>',
+        '<td style="width: 35%">',
+            '<div class="toolFormBody" id="per_tool_tps_container">',
+                '<span id="show_tps_picker">',
+                    '<input class="menubutton" id="select_tps_button_<\%- clean_name %>" data-toolguid="<\%- tool_guid %>" data-toolname="<\%- clean_name %>" type="button" value="Specify panel section" />',
+                '</span>',
+            '</div>',
+        '</td>',
+    '</tr>'].join(''));
+var tps_picker_template = _.template([
+    '<span id="show_tps_picker">',
+        '<input class="menubutton" id="select_tps_button_<\%- clean_name %>" data-toolguid="<\%- tool_guid %>" data-toolname="<\%- clean_name %>" type="button" value="Specify panel section" />',
+    '</span>',
+    ].join(''));
+var select_tps_template = _.template([
+    '<div id="select_tps_<\%- clean_name %>" class="form-row" style="padding: 0 !important;">',
+        '<select style="width: 30em;" data-toolguid="<\%- tool_guid %>" class="tool_panel_section_picker" name="tool_panel_section_id" id="tool_panel_section_select_<\%- clean_name %>">',
+        tool_panel_sections_json,
+        '</select>',
+        '<input class="menubutton" data-toolguid="<\%- tool_guid %>" data-toolname="<\%- clean_name %>" value="Create new" id="create_new_<\%- clean_name %>" type="button">',
+        '<input class="menubutton" data-toolguid="<\%- tool_guid %>" data-toolname="<\%- clean_name %>" value="Cancel" id="cancel_<\%- clean_name %>" type="button">',
+        '<div style="clear: both;" class="toolParamHelp"></div>',
+    '</div>'].join(''));
+var create_tps_template = _.template([
+        '<div id="new_tps_<\%- clean_name %>" class="form-row">',
+            '<input data-toolguid="<\%- tool_guid %>" class="tool_panel_section_picker" size="40" name="new_tool_panel_section" id="new_tool_panel_section_<\%- clean_name %>" type="text">',
+            '<input class="menubutton" data-toolguid="<\%- tool_guid %>" data-toolname="<\%- clean_name %>" value="Select existing" id="select_existing_<\%- clean_name %>" type="button">',
+            '<input class="menubutton" data-toolguid="<\%- tool_guid %>" data-toolname="<\%- clean_name %>" value="Cancel" id="cancel_<\%- clean_name %>" type="button">',
+        '</div>'
+    ].join(''));
+repository_dependency_template = _.template(['<li id="metadata_<\%- dependency_id %>" class="datasetRow repository_dependency_row" style="display: table-row;">',
+       'Repository <b><\%- name %></b> revision <b><\%- revision %></b> owned by <b><\%- owner %></b><\%- prior %>',
+       '</li>'
+    ].join(''));
+var tool_dependency_template = _.template([
+    '<tr class="datasetRow tool_dependency_row" style="display: table-row;">',
+        '<td style="padding-left: 40px;">',
+        '<\%- name %></td>',
+        '<td><\%- version %></td>',
+        '<td><\%- type %></td>',
+    '</tr>'
+    ].join(''));
+
+
+function array_contains_dict(array, dict) {
+    for (var i in array) {
+        needle = array[i];
         var found = true;
-        for (var key in val) {
-            if (needle[key] != val[key]) {
+        for (var key in dict) {
+            if (needle[key] !== dict[key]) {
                 found = false;
             }
         }
         if (found) { return true; }
     }
     return false;
+
 }
-function global_select_tps_template() {
-    var tps_selection_template = _.template([
-        '<div class="form-row" id="select_tps">',
-            '${tool_panel_section_select_field.get_html(extra_attr={'style':'width:30em;'}).replace('\n', '')}',
-            '<input class="menubutton" type="button" id="create_new" value="Create new" />',
-            '<div class="toolParamHelp" style="clear: both;">',
-                'Select an existing tool panel section to contain the installed tools (optional).',
-            '</div>',
-        '</div>'
-    ].join(''));
-    return tps_selection_template();
-}
-function global_create_tps_template() {
-    tps_creation_template = _.template([
-        '<div class="form-row" id="new_tps">',
-            '<input id="new_tool_panel_section" name="new_tool_panel_section" type="textfield" value="" size="40"/>',
-            '<input class="menubutton" type="button" id="select_existing" value="Select existing" />',
-            '<div class="toolParamHelp" style="clear: both;">',
-                'Add a new tool panel section to contain the installed tools (optional).',
-            '</div>',
-        '</div>'
-    ].join(''));
-    return tps_creation_template();
-}
-function tool_row_template(name, description, version, clean_name, tool_guid) {
-    var tool_row = _.template([
-        '<tr id="libraryItem" class="tool_row" style="display: table-row;" style="width: 15%">',
-            '<td style="padding-left: 40px;">',
-                '<div id="tool" class="menubutton split popup" style="float: left;">',
-                    '<a class="view-info"><\%- tool_name %></a>',
-                '</div>',
-            '</td>',
-            '<td><\%- tool_description %></td>',
-            '<td style="width: 15%"><\%- tool_version %></td>',
-            '<td style="width: 35%">',
-                '<div class="toolFormBody" id="per_tool_tps_container">',
-                    '<span id="show_tps_picker">',
-                        '<input class="menubutton" id="select_tps_button_<\%- clean_name %>" data-toolguid="<\%- tool_guid %>" data-toolname="<\%- clean_name %>" type="button" value="Specify panel section" />',
-                    '</span>',
-                '</div>',
-            '</td>',
-        '</tr>'].join(''));
-    return tool_row({tool_name: name, tool_description: description, tool_version: version, clean_name: clean_name, tool_guid: tool_guid});
-}
-function tps_picker_template(clean_name, tool_guid) {
-    var tps_picker = _.template([
-        '<span id="show_tps_picker">',
-            '<input class="menubutton" id="select_tps_button_<\%- clean_name %>" data-toolguid="<\%- tool_guid %>" data-toolname="<\%- clean_name %>" type="button" value="Specify panel section" />',
-        '</span>',
-        ].join(''));
-    return tps_picker({clean_name: clean_name, tool_guid: tool_guid});
-}
-function select_tps_template(clean_name, tool_guid) {
-    var underscore_template = _.template([
-        '<div id="select_tps_<\%- clean_name %>" class="form-row" style="padding: 0 !important;">',
-            '<select style="width: 30em;" data-toolguid="<\%- tool_guid %>" class="tool_panel_section_picker" name="tool_panel_section_id" id="tool_panel_section_select_<\%- clean_name %>">',
-            tool_panel_sections_json,
-            '</select>',
-            '<input class="menubutton" data-toolguid="<\%- tool_guid %>" data-toolname="<\%- clean_name %>" value="Create new" id="create_new_<\%- clean_name %>" type="button">',
-            '<input class="menubutton" data-toolguid="<\%- tool_guid %>" data-toolname="<\%- clean_name %>" value="Cancel" id="cancel_<\%- clean_name %>" type="button">',
-            '<div style="clear: both;" class="toolParamHelp"></div>',
-        '</div>'].join(''));
-    return underscore_template({clean_name: clean_name, tool_guid: tool_guid});
-}
-function create_tps_template(clean_name, tool_guid) {
-    var underscore_template = _.template([
-            '<div id="new_tps_<\%- clean_name %>" class="form-row">',
-                '<input data-toolguid="<\%- tool_guid %>" class="tool_panel_section_picker" size="40" name="new_tool_panel_section" id="new_tool_panel_section_<\%- clean_name %>" type="text">',
-                '<input class="menubutton" data-toolguid="<\%- tool_guid %>" data-toolname="<\%- clean_name %>" value="Select existing" id="select_existing_<\%- clean_name %>" type="button">',
-                '<input class="menubutton" data-toolguid="<\%- tool_guid %>" data-toolname="<\%- clean_name %>" value="Cancel" id="cancel_<\%- clean_name %>" type="button">',
-            '</div>'
-        ].join(''));
-    return underscore_template({clean_name: clean_name, tool_guid: tool_guid});
-}
-function repository_dependency_row(dependency_id, name, revision, owner, prior) {
-    rd_html = ['<li id="metadata_<\%- id %>" class="datasetRow repository_dependency_row" style="display: table-row;">',
-               'Repository <b><\%- name %></b> revision <b><\%- revision %></b> owned by <b><\%- owner %></b>']
-    if (prior) {
-        rd_html.push(' (<em>prior installation required</em>)');
-    }
-    rd_html.push('</li>');
-    return _.template(rd_html.join(''))({id: dependency_id, name: name, revision: revision, owner: owner});
-}
-function tool_dependency_row(name, version, type) {
-    var td_row = _.template([
-        '<tr class="datasetRow tool_dependency_row" style="display: table-row;">',
-            '<td style="padding-left: 40px;">',
-            '<\%- name %></td>',
-            '<td><\%- version %></td>',
-            '<td><\%- type %></td>',
-        '</tr>'
-        ].join(''));
-    return td_row({name: name, version: version, type: type})
-}
+
 function clean_tool_name(name) {
     return name.replace(/[^a-zA-Z0-9]+/g, "_").toLowerCase();
 }
@@ -152,9 +146,18 @@ function process_dependencies(metadata, selector) {
                 has_repo_dependencies = true;
             }
             var repository = dependency.repository;
-            if (repository != null) {
-                var dependency_html = repository_dependency_row(dependency.id, repository.name, dependency.changeset_revision, repository.owner, dependency.prior_installation_required)
-                if (selector == null) {
+            if (repository !== null) {
+                template_values = {dependency_id: dependency.id,
+                                   name: repository.name,
+                                   revision: dependency.changeset_revision,
+                                   owner: repository.owner,
+                                   prior: ''};
+                if (dependency.prior_installation_required) {
+                    template_values.prior = ' (<b>Prior installation required</b>)';
+                }
+                var dependency_html = repository_dependency_template(template_values);
+                console.log(selector);
+                if (selector === undefined) {
                     $("#repository_deps").append(dependency_html);
                 }
                 else {
@@ -169,7 +172,7 @@ function process_dependencies(metadata, selector) {
     if (metadata.includes_tool_dependencies) {
         for (var item in metadata.tool_dependencies) {
             var dependency = metadata.tool_dependencies[item];
-            if (item == 'set_environment') {
+            if (item === 'set_environment') {
                 for (var i = 0; i < dependency.length; i++) {
                     var tool_dependency = {name: dependency[i].name, version: 'N/A', type: dependency[i].type}
                 }
@@ -177,7 +180,7 @@ function process_dependencies(metadata, selector) {
             else {
                 var tool_dependency = {name: dependency.name, version: dependency.version, type: dependency.type};
             }
-            if (!valid_tool_dependencies.containsDict(tool_dependency)) {
+            if (!array_contains_dict(valid_tool_dependencies, tool_dependency)) {
                 valid_tool_dependencies.push(tool_dependency);
             }
         }
@@ -186,7 +189,7 @@ function process_dependencies(metadata, selector) {
         for (var i = 0; i < metadata.tools.length; i++) {
             var tool = metadata.tools[i];
             valid_tool = {clean_name: clean_tool_name(tool.name), name: tool.name, version: tool.version, description: tool.description, guid: tool.guid};
-            if (!valid_tools.containsDict(valid_tool) && tool.add_to_tool_panel) {
+            if (!array_contains_dict(valid_tools, valid_tool) && tool.add_to_tool_panel) {
                 valid_tools.push(valid_tool);
             }
         }
@@ -194,7 +197,7 @@ function process_dependencies(metadata, selector) {
 }
 function tool_panel_section() {
     var tps_selection = $('#tool_panel_section_select').find("option:selected").text();
-    if (tps_selection == 'Create New') {
+    if (tps_selection === 'Create New') {
         $("#new_tool_panel_section").prop('disabled', false);
         $("#new_tps").show();
     }
@@ -252,8 +255,13 @@ function changeset_metadata() {
     $('.tool_row').remove();
     for (var tool_idx = 0; tool_idx < valid_tools.length; tool_idx++) {
         tool = valid_tools[tool_idx];
-        if (tool.name != 'undefined') {
-            new_html = tool_row_template(tool.name, tool.description, tool.version, tool.clean_name, tool.guid);
+        if (tool.name !== 'undefined') {
+            template_values = {tool_name: tool.name,
+                               tool_description: tool.description,
+                               tool_version: tool.version,
+                               clean_name: tool.clean_name,
+                               tool_guid: tool.guid}
+            new_html = tool_row_template(template_values);
             $("#tools_in_repo").append(new_html);
             $('#select_tps_button_' + tool.clean_name).click(show_select_html);
         }
@@ -261,7 +269,7 @@ function changeset_metadata() {
     if (valid_tool_dependencies.length > 0) {
         for (var td_index = 0; td_index < valid_tool_dependencies.length; td_index++) {
             tool_dependency = valid_tool_dependencies[td_index];
-            dependency_html = tool_dependency_row(tool_dependency.name, tool_dependency.version, tool_dependency.type);
+            dependency_html = tool_dependency_template({name: tool_dependency.name, version: tool_dependency.version, type: tool_dependency.type});
             $("#tool_deps").append(dependency_html);
         }
         $("#tool_dependencies").show();
@@ -289,7 +297,7 @@ function select_tps(params) {
     $('.tool_panel_section_picker').each(function() {
         element_name = $(this).attr('name');
         tool_guid = $(this).attr('data-toolguid');
-        if (element_name == 'tool_panel_section_id') {
+        if (element_name === 'tool_panel_section_id') {
             tool_panel_section[tool_guid] = { tool_panel_section: $(this).find("option:selected").val(), action: 'append' }
         }
         else {
@@ -300,19 +308,16 @@ function select_tps(params) {
 }
 function show_global_tps_select() {
     $('#tool_panel_section').children().each(function(){$(this).remove()});
-    $('#tool_panel_section').append(global_select_tps_template());
+    $('#tool_panel_section').append(tps_selection_template());
     $('#create_new').click(show_global_tps_create);
 }
 function show_global_tps_create() {
     $('#tool_panel_section').children().each(function(){$(this).remove()});
-    $('#tool_panel_section').append(global_create_tps_template());
+    $('#tool_panel_section').append(tps_creation_template());
     $('#select_existing').click(show_global_tps_select);
 }
 $(function() {
     changeset_metadata();
-    require(["libs/jquery/jstree"], function() {
-        $('#repository_dependencies_table').jstree();
-    });
     show_global_tps_select();
     $('#changeset').change(changeset_metadata);
     $("#tool_panel_section_select").change(tool_panel_section);
@@ -335,25 +340,16 @@ $(function() {
             window.location.href = data;
         });
     });
+    require(["libs/jquery/jstree"], function() {
+        $('#repository_dependencies_table').jstree();
+    });
 });
 </script>
-<style type="text/css">
-div.expandLink {
-    float: left;
-    padding-left: 2px;
-    background-color: #d8d8d8;
-    width: 100%;
-}
-div.changeset {
-    padding: 5px 10px 5px 10px;
-}
-.container-table {
-    padding-top: 1em;
-}
-ul.jstree-container-ul {
-    margin-top: 1em;
-}
-</style>
+</%def>
+
+%if message:
+    ${render_msg( message, status )}
+%endif
 <h2 style="font-weight: normal;">Installing repository <strong>${toolshed_data['name']}</strong> from <strong>${toolshed_data['owner']}</strong></h2>
 <form id="repository_installation" method="post" action="${h.url_for(controller='/api/tool_shed_repositories', action='install', async=True)}">
     <input type="hidden" id="tsr_id" name="tsr_id" value="${toolshed_data['id']}" />
