@@ -50,7 +50,7 @@ class DefaultToolAction( object ):
             current_user_roles = trans.get_current_user_roles()
         input_datasets = odict()
 
-        def visitor( prefix, input, value, parent=None ):
+        def visitor( input, value, prefix, parent=None, **kwargs ):
 
             def process_dataset( data, formats=None ):
                 if not data:
@@ -98,12 +98,12 @@ class DefaultToolAction( object ):
                             else:
                                 raise Exception('A path for explicit datatype conversion has not been found: %s --/--> %s' % ( input_datasets[ prefix + input.name + str( i + 1 ) ].extension, conversion_extensions ) )
                         if parent:
-                            parent[input.name][i] = input_datasets[ prefix + input.name + str( i + 1 ) ]
+                            parent[ input.name ][ i ] = input_datasets[ prefix + input.name + str( i + 1 ) ]
                             for conversion_name, conversion_data in conversions:
                                 # allow explicit conversion to be stored in job_parameter table
-                                parent[ conversion_name ][i] = conversion_data.id  # a more robust way to determine JSONable value is desired
+                                parent[ conversion_name ][ i ] = conversion_data.id  # a more robust way to determine JSONable value is desired
                         else:
-                            param_values[input.name][i] = input_datasets[ prefix + input.name + str( i + 1 ) ]
+                            param_values[ input.name ][ i ] = input_datasets[ prefix + input.name + str( i + 1 ) ]
                             for conversion_name, conversion_data in conversions:
                                 # allow explicit conversion to be stored in job_parameter table
                                 param_values[ conversion_name ][i] = conversion_data.id  # a more robust way to determine JSONable value is desired
@@ -143,10 +143,6 @@ class DefaultToolAction( object ):
                     # Skipping implicit conversion stuff for now, revisit at
                     # some point and figure out if implicitly converting a
                     # dataset collection makes senese.
-
-                    # if i == 0:
-                    #    # Allow copying metadata to output, first item will be source.
-                    #    input_datasets[ prefix + input.name ] = data.dataset_instance
                     input_datasets[ prefix + input.name + str( i + 1 ) ] = data
 
         tool.visit_inputs( param_values, visitor )
@@ -160,7 +156,7 @@ class DefaultToolAction( object ):
 
         input_dataset_collections = dict()
 
-        def visitor( prefix, input, value, parent=None ):
+        def visitor( input, value, prefix, parent=None, **kwargs ):
             if isinstance( input, DataToolParameter ):
                 values = value
                 if not isinstance( values, list ):
@@ -224,7 +220,10 @@ class DefaultToolAction( object ):
 
         # Deal with input dataset names, 'dbkey' and types
         input_names = []
-        input_ext = 'data'
+        # format='input" previously would give you a random extension from
+        # the input extensions, now it should just give "input" as the output
+        # format.
+        input_ext = 'data' if tool.profile < 16.04 else "input"
         input_dbkey = incoming.get( "dbkey", "?" )
         for name, data in reversed(inp_data.items()):
             if not data:
@@ -239,7 +238,8 @@ class DefaultToolAction( object ):
             else:  # HDA
                 if data.hid:
                     input_names.append( 'data %s' % data.hid )
-            input_ext = data.ext
+            if tool.profile < 16.04:
+                input_ext = data.ext
 
             if data.dbkey not in [None, '?']:
                 input_dbkey = data.dbkey
@@ -318,7 +318,7 @@ class DefaultToolAction( object ):
             metadata_source = output.metadata_source
             if metadata_source:
                 if isinstance( metadata_source, string_types ):
-                    metadata_source = inp_data[metadata_source]
+                    metadata_source = inp_data.get( metadata_source )
 
             if metadata_source is not None:
                 data.init_meta( copy_from=metadata_source )
@@ -436,7 +436,7 @@ class DefaultToolAction( object ):
                 else:
                     handle_output_timer = ExecutionTimer()
                     handle_output( name, output )
-                    log.info("Handled output %s" % handle_output_timer)
+                    log.info("Handled output named %s for tool %s %s" % (name, tool.id, handle_output_timer))
 
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
         datasets_to_persist = []
@@ -596,7 +596,8 @@ class DefaultToolAction( object ):
                     job.add_input_dataset( name, dataset_id=dataset.id )
             else:
                 job.add_input_dataset( name, None )
-        log.info("Verified access to datasets %s" % access_timer)
+        job_str = job.log_str()
+        log.info("Verified access to datasets for %s %s" % (job_str, access_timer))
 
     def get_output_name( self, output, dataset, tool, on_text, trans, incoming, history, params, job_params ):
         if output.label:

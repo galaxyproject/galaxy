@@ -25,11 +25,6 @@ from sqlalchemy.ext import hybrid
 from sqlalchemy import types
 from sqlalchemy import type_coerce
 
-try:
-    import pexpect
-except ImportError:
-    pexpect = None
-
 import galaxy.model.orm.now
 import galaxy.model.metadata
 import galaxy.security.passwords
@@ -59,9 +54,6 @@ _datatypes_registry = None
 # are going to have different limits so it is likely best to not let
 # this be unlimited - filter in Python if over this limit.
 MAX_IN_FILTER_LENGTH = 100
-
-PEXPECT_IMPORT_MESSAGE = ('The Python pexpect package is required to use this '
-                          'feature, please install it')
 
 
 class NoConverterException(Exception):
@@ -143,6 +135,16 @@ class JobLike:
             stderr = galaxy.util.shrink_string_by_size( stderr, galaxy.util.DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
             log.info( "stderr for %s %d is greater than %s, only a portion will be logged to database", type(self), self.id, galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY )
         self.stderr = stderr
+
+    def log_str(self):
+        extra = ""
+        safe_id = getattr(self, "id", None)
+        if safe_id is not None:
+            extra += "id=%s" % safe_id
+        else:
+            extra += "unflushed"
+
+        return "%s[%s,tool_id=%s]" % (self.__class__.__name__, extra, self.tool_id)
 
 
 class User( object, Dictifiable ):
@@ -702,6 +704,18 @@ class Job( object, JobLike, Dictifiable ):
         self.set_state( final_state )
         if self.workflow_invocation_step:
             self.workflow_invocation_step.update()
+
+    def get_destination_configuration(self, config, key, default=None):
+        """ Get a destination parameter that can be defaulted back
+        in specified config if it needs to be applied globally.
+        """
+        param_unspecified = object()
+        config_value = (self.destination_params or {}).get(key, param_unspecified)
+        if config_value is param_unspecified:
+            config_value = getattr(config, key, param_unspecified)
+        if config_value is param_unspecified:
+            config_value = default
+        return config_value
 
 
 class Task( object, JobLike ):
@@ -4630,30 +4644,6 @@ class Sample( object, Dictifiable ):
             if dataset.status != SampleDataset.transfer_status.COMPLETE:
                 untransferred_datasets.append( dataset )
         return untransferred_datasets
-
-    def get_untransferred_dataset_size( self, filepath, scp_configs ):
-        def print_ticks( d ):
-            pass
-        if pexpect is None:
-            return PEXPECT_IMPORT_MESSAGE
-        error_msg = 'Error encountered in determining the file size of %s on the external_service.' % filepath
-        if not scp_configs['host'] or not scp_configs['user_name'] or not scp_configs['password']:
-            return error_msg
-        login_str = '%s@%s' % ( scp_configs['user_name'], scp_configs['host'] )
-        cmd = 'ssh %s "du -sh \'%s\'"' % ( login_str, filepath )
-        try:
-            output = pexpect.run( cmd,
-                                  events={ '.ssword:*': scp_configs['password'] + '\r\n',
-                                           pexpect.TIMEOUT: print_ticks},
-                                  timeout=10 )
-        except Exception:
-            return error_msg
-        # cleanup the output to get just the file size
-        return output.replace( filepath, '' )\
-                     .replace( 'Password:', '' )\
-                     .replace( "'s password:", '' )\
-                     .replace( login_str, '' )\
-                     .strip()
 
     @property
     def run_details( self ):

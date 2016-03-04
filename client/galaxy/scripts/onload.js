@@ -170,11 +170,17 @@ $(document).ready( function() {
     if (et){
         et = TOURS.hooked_tour_from_data(et);
         if (et && et.steps){
-            var tour = new Tour(_.extend({
-                steps: et.steps,
-            }, TOURS.tour_opts));
-            tour.init();
-            tour.restart();
+            if (window && window.self === window.top){
+                // Only kick off a new tour if this is the toplevel window (non-iframe).  This
+                // functionality actually *could* be useful, but we'd need to handle it better and
+                // come up with some design guidelines for tours jumping between windows.
+                // Disabling for now.
+                var tour = new Tour(_.extend({
+                    steps: et.steps,
+                }, TOURS.tour_opts));
+                tour.init();
+                tour.restart();
+            }
         }
     }
 });

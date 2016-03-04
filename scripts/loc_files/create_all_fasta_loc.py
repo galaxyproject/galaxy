@@ -1,6 +1,3 @@
-import optparse, os, sys
-from xml.etree.ElementTree import parse
-
 """
 Generates a loc file containing names of all the fasta files that match the
 name of the genome subdirectory they're in.
@@ -26,6 +23,10 @@ usage: %prog [options]
    -a, --append=a: Append to existing all_fasta.loc file rather than create new
    -p, --sample-text=p: Copy over text from all_fasta.loc.sample file (false if set to append)
 """
+import optparse
+import os
+import sys
+from xml.etree.ElementTree import parse
 
 DEFAULT_TOOL_DATA_TABLE_CONF = 'tool_data_table_conf.xml'
 DEFAULT_ALL_FASTA_LOC_BASE = 'all_fasta'
@@ -138,14 +139,13 @@ DBKEY_DESCRIPTION_MAP = { 'AaegL1': 'Mosquito (Aedes aegypti): AaegL1',
                           'tetNig2': 'Tetraodon (Tetraodon nigroviridis): tetNig2',
                           'tupBel1': 'Tree Shrew (Tupaia belangeri): tupBel1',
                           'venter1': 'Human (J. Craig Venter): venter1',
-                          'xenTro2': 'Frog (Xenopus tropicalis): xenTro2'
-                        }
+                          'xenTro2': 'Frog (Xenopus tropicalis): xenTro2' }
 
 VARIANT_MAP = { 'canon': 'Canonical',
                'full': 'Full',
                'female': 'Female',
-               'male': 'Male'
-              }
+               'male': 'Male' }
+
 
 # alphabetize ignoring case
 def caseless_compare( a, b ):
@@ -157,6 +157,7 @@ def caseless_compare( a, b ):
         return 0
     elif au < bu:
         return -1
+
 
 def __main__():
     # command line variables
@@ -176,7 +177,7 @@ def __main__():
     (options, args) = parser.parse_args()
 
     exemptions = [ e.strip() for e in options.exemptions.split( ',' ) ]
-    fasta_exts = [ x.strip() for x in  options.fasta_exts.split( ',' ) ]
+    fasta_exts = [ x.strip() for x in options.fasta_exts.split( ',' ) ]
     variants = [ v.strip() for v in options.variants.split( ',' ) ]
     variant_exclusions = {}
     try:
@@ -199,7 +200,7 @@ def __main__():
 
     # say what we're looking in
     print '\nLooking in:\n\t%s' % '\n\t'.join( [ p % '<build_name>' for p in paths_to_look_in ] )
-    poss_names = [ '<build_name>%s' % v for v in variants ]
+    poss_names = [ '<build_name>%s' % _ for _ in variants ]
     print 'for files that are named %s' % ', '.join( poss_names[:-1] ),
     if len( poss_names ) > 1:
         print 'or %s' % poss_names[-1],
@@ -226,7 +227,7 @@ def __main__():
             if cols:
                 col_values = [ col.strip() for col in cols.split( ',' ) ]
     if not col_values or not loc_path:
-        stop_err( 'No columns can be found for this data table (%s) in %s' % ( options.data_table, options.data_table_xml ) )
+        raise Exception( 'No columns can be found for this data table (%s) in %s' % ( options.data_table, options.data_table_xml ) )
 
     # get all fasta paths under genome directory
     fasta_locs = {}
@@ -234,7 +235,7 @@ def __main__():
     genome_subdirs = [ dr for dr in os.listdir( options.genome_dir ) if dr not in exemptions ]
     for genome_subdir in genome_subdirs:
         possible_names = [ genome_subdir ]
-        possible_names.extend( [ '%s%s' % ( genome_subdir, v ) for v in variants ] )
+        possible_names.extend( [ '%s%s' % ( genome_subdir, _ ) for _ in variants ] )
         # get paths to all fasta files
         for path_to_look_in in paths_to_look_in:
             for dirpath, dirnames, filenames in os.walk( path_to_look_in % genome_subdir ):
@@ -257,10 +258,10 @@ def __main__():
         if variant_exclusions.keys():
             for k in variant_exclusions.keys():
                 leave_in = '%s%s' % ( genome_subdir, k )
-                if fasta_locs.has_key( leave_in ):
+                if leave_in in fasta_locs:
                     to_remove = [ '%s%s' % ( genome_subdir, k ) for k in variant_exclusions[ k ] ]
                     for tr in to_remove:
-                        if fasta_locs.has_key( tr ):
+                        if tr in fasta_locs:
                             del fasta_locs[ tr ]
 
     # output results
@@ -291,10 +292,11 @@ def __main__():
             try:
                 out_line.append( fasta_locs[ fb ][ col ] )
             except KeyError:
-                stop_err( 'Unexpected column (%s) encountered' % col )
+                raise Exception( 'Unexpected column (%s) encountered' % col )
         if out_line:
             all_fasta_loc.write( '%s\n' % '\t'.join( out_line ) )
     # close up output loc file
     all_fasta_loc.close()
 
-if __name__=='__main__': __main__()
+if __name__ == '__main__':
+    __main__()

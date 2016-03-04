@@ -229,6 +229,23 @@ class DatasetOkValidator( Validator ):
             raise ValueError( self.message )
 
 
+class DatasetEmptyValidator( Validator ):
+    """Validator that checks if a dataset has a positive file size."""
+    def __init__( self, message=None ):
+        self.message = message
+
+    @classmethod
+    def from_element( cls, param, elem ):
+        return cls( elem.get( 'message', None ) )
+
+    def validate( self, value, trans=None ):
+        if value:
+            if value.get_size() == 0:
+                if self.message is None:
+                    self.message = "The selected dataset is empty, this tool expects non-empty files."
+                raise ValueError( self.message )
+
+
 class MetadataValidator( Validator ):
     """
     Validator that checks for missing metadata
@@ -416,9 +433,10 @@ validator_types = dict( expression=ExpressionValidator,
                         unspecified_build=UnspecifiedBuildValidator,
                         no_options=NoOptionsValidator,
                         empty_field=EmptyTextfieldValidator,
+                        empty_dataset=DatasetEmptyValidator,
                         dataset_metadata_in_file=MetadataInFileColumnValidator,
                         dataset_metadata_in_data_table=MetadataInDataTableColumnValidator,
-                        dataset_ok_validator=DatasetOkValidator )
+                        dataset_ok_validator=DatasetOkValidator, )
 
 
 def get_suite():

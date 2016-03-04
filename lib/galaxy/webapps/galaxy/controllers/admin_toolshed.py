@@ -390,11 +390,11 @@ class AdminToolshed( AdminGalaxy ):
 
     @web.json
     @web.require_admin
-    def get_file_contents( self, trans, file_path ):
+    def get_file_contents( self, trans, file_path, repository_id ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        return suc.get_repository_file_contents( file_path )
+        return suc.get_repository_file_contents( trans.app, file_path, repository_id )
 
     @web.expose
     @web.require_admin
@@ -921,11 +921,11 @@ class AdminToolshed( AdminGalaxy ):
 
     @web.json
     @web.require_admin
-    def open_folder( self, trans, folder_path ):
+    def open_folder( self, trans, folder_path, repository_id ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        return suc.open_repository_files_folder( folder_path )
+        return suc.open_repository_files_folder( trans.app, folder_path, repository_id )
 
     @web.expose
     @web.require_admin

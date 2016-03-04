@@ -16,6 +16,7 @@ import shutil
 import subprocess
 import sys
 import traceback
+from xml.etree import ElementTree
 from galaxy import model, util
 from galaxy.util.xml_macros import load
 from galaxy.datatypes import metadata
@@ -26,6 +27,7 @@ from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import loads
+from galaxy.util import safe_makedirs
 from galaxy.util import unicodify
 from galaxy.datatypes import sniff
 
@@ -44,7 +46,9 @@ log = logging.getLogger( __name__ )
 TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
 
 # Override with config.default_job_shell.
-DEFAULT_JOB_SHELL = '/bin/sh'
+DEFAULT_JOB_SHELL = '/bin/bash'
+
+DEFAULT_CLEANUP_JOB = "always"
 
 
 class JobDestination( Bunch ):
@@ -108,6 +112,15 @@ class JobConfiguration( object ):
     These features are configured in the job configuration, by default, ``job_conf.xml``
     """
     DEFAULT_NWORKERS = 4
+
+    JOB_RESOURCE_CONDITIONAL_XML = """<conditional name="__job_resource">
+        <param name="__job_resource__select" type="select" label="Job Resource Parameters">
+            <option value="no">Use default job resource parameters</option>
+            <option value="yes">Specify job resource parameters</option>
+        </param>
+        <when value="no"/>
+        <when value="yes"/>
+    </conditional>"""
 
     def __init__(self, app):
         """Parse the job configuration XML.
@@ -351,53 +364,44 @@ class JobConfiguration( object ):
 
         log.debug('Done loading job configuration')
 
-    def get_tool_resource_parameters( self, tool_id ):
+    def get_tool_resource_xml( self, tool_id, tool_type ):
         """ Given a tool id, return XML elements describing parameters to
         insert into job resources.
 
         :tool id: A tool ID (a string)
+        :tool type: A tool type (a string)
 
         :returns: List of parameter elements.
         """
-        fields = []
-
-        if not tool_id:
-            return fields
-
-        # TODO: Only works with exact matches, should handle different kinds of ids
-        # the way destination lookup does.
-        resource_group = None
-        if tool_id in self.tools:
-            resource_group = self.tools[ tool_id ][ 0 ].get_resource_group()
-        resource_group = resource_group or self.default_resource_group
-
-        if resource_group and resource_group in self.resource_groups:
-            fields_names = self.resource_groups[ resource_group ]
-            fields = [ self.resource_parameters[ n ] for n in fields_names ]
-
-        return fields
+        if tool_id and tool_type is 'default':
+            # TODO: Only works with exact matches, should handle different kinds of ids
+            # the way destination lookup does.
+            resource_group = None
+            if tool_id in self.tools:
+                resource_group = self.tools[ tool_id ][ 0 ].get_resource_group()
+            resource_group = resource_group or self.default_resource_group
+            if resource_group and resource_group in self.resource_groups:
+                fields_names = self.resource_groups[ resource_group ]
+                fields = [ self.resource_parameters[ n ] for n in fields_names ]
+                if fields:
+                    conditional_element = ElementTree.fromstring( self.JOB_RESOURCE_CONDITIONAL_XML )
+                    when_yes_elem = conditional_element.findall( 'when' )[ 1 ]
+                    for parameter in fields:
+                        when_yes_elem.append( parameter )
+                    return conditional_element
 
     def __parse_resource_parameters( self ):
-        if not os.path.exists( self.app.config.job_resource_params_file ):
-            return
-
-        resource_param_file = self.app.config.job_resource_params_file
-        try:
-            resource_definitions = util.parse_xml( resource_param_file )
-        except Exception as e:
-            raise config_exception(e, resource_param_file)
-
-        resource_definitions_root = resource_definitions.getroot()
-        # TODO: Also handling conditionals would be awesome!
-        for parameter_elem in resource_definitions_root.findall( "param" ):
-            name = parameter_elem.get( "name" )
-            # Considered prepending __job_resource_param__ here and then
-            # stripping it off when making it available to dynamic job
-            # destination. Not needed because resource parameters are wrapped
-            # in a conditional.
-            # # expanded_name = "__job_resource_param__%s" % name
-            # # parameter_elem.set( "name", expanded_name )
-            self.resource_parameters[ name ] = parameter_elem
+        if os.path.exists( self.app.config.job_resource_params_file ):
+            resource_param_file = self.app.config.job_resource_params_file
+            try:
+                resource_definitions = util.parse_xml( resource_param_file )
+            except Exception as e:
+                raise config_exception( e, resource_param_file )
+            resource_definitions_root = resource_definitions.getroot()
+            # TODO: Also handling conditionals would be awesome!
+            for parameter_elem in resource_definitions_root.findall( "param" ):
+                name = parameter_elem.get( "name" )
+                self.resource_parameters[ name ] = parameter_elem
 
     def __get_default(self, parent, names):
         """
@@ -754,7 +758,7 @@ class JobWrapper( object ):
         # directory to be set before prepare is run, or else premature deletion
         # and job recovery fail.
         # Create the working dir if necessary
-        self.create_working_directory()
+        self._create_working_directory()
         self.dataset_path_rewriter = self._job_dataset_path_rewriter( self.working_directory )
         self.output_paths = None
         self.output_hdas_and_paths = None
@@ -768,15 +772,23 @@ class JobWrapper( object ):
         if use_persisted_destination:
             self.job_runner_mapper.cached_job_destination = JobDestination( from_job=job )
 
+        self.__commands_in_new_shell = self.app.config.commands_in_new_shell
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
 
     def _job_dataset_path_rewriter( self, working_directory ):
-        if self.app.config.outputs_to_working_directory:
+        outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
+        if outputs_to_working_directory:
             dataset_path_rewriter = OutputsToWorkingDirectoryPathRewriter( working_directory )
         else:
             dataset_path_rewriter = NullDatasetPathRewriter( )
         return dataset_path_rewriter
+
+    @property
+    def cleanup_job(self):
+        """ Remove the job after it is complete, should return "always", "onsuccess", or "never".
+        """
+        self.get_destination_configuration("cleanup_job", DEFAULT_CLEANUP_JOB)
 
     def can_split( self ):
         # Should the job handler split this job up?
@@ -793,9 +805,19 @@ class JobWrapper( object ):
     def shell(self):
         return self.job_destination.shell or getattr(self.app.config, 'default_job_shell', DEFAULT_JOB_SHELL)
 
+    def disable_commands_in_new_shell(self):
+        """Provide an extension point to disable this isolation,
+        Pulsar builds its own job script so this is not needed for
+        remote jobs."""
+        self.__commands_in_new_shell = False
+
+    @property
+    def strict_shell(self):
+        return self.tool.strict_shell
+
     @property
     def commands_in_new_shell(self):
-        return self.app.config.commands_in_new_shell
+        return self.__commands_in_new_shell
 
     @property
     def galaxy_lib_dir(self):
@@ -886,13 +908,18 @@ class JobWrapper( object ):
             self.write_version_cmd = None
         return self.extra_filenames
 
-    def create_working_directory( self ):
+    def _create_working_directory( self ):
         job = self.get_job()
         try:
             self.app.object_store.create(
                 job, base_dir='job_work', dir_only=True, obj_dir=True )
             self.working_directory = self.app.object_store.get_filename(
                 job, base_dir='job_work', dir_only=True, obj_dir=True )
+
+            # The tool execution is given a working directory beneath the
+            # "job" working directory.
+            self.tool_working_directory = os.path.join(self.working_directory, "working")
+            safe_makedirs(self.tool_working_directory)
             log.debug( '(%s) Working directory for job is: %s',
                        self.job_id, self.working_directory )
         except ObjectInvalid:
@@ -917,7 +944,7 @@ class JobWrapper( object ):
         date_str = datetime.datetime.now().strftime( '%Y%m%d-%H%M%S' )
         arc_dir = os.path.join( base, date_str )
         shutil.move( self.working_directory, arc_dir )
-        self.create_working_directory()
+        self._create_working_directory()
         log.debug( '(%s) Previous working directory moved to %s',
                    self.job_id, arc_dir )
 
@@ -965,7 +992,9 @@ class JobWrapper( object ):
                 # Get the exception and let the tool attempt to generate
                 # a better message
                 etype, evalue, tb = sys.exc_info()
-            if self.app.config.outputs_to_working_directory:
+
+            outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
+            if outputs_to_working_directory:
                 for dataset_path in self.get_output_fnames():
                     try:
                         shutil.move( dataset_path.false_path, dataset_path.real_path )
@@ -1009,7 +1038,8 @@ class JobWrapper( object ):
         # If the job was deleted, call tool specific fail actions (used for e.g. external metadata) and clean up
         if self.tool:
             self.tool.job_failed( self, message, exception )
-        delete_files = self.app.config.cleanup_job == 'always' or (self.app.config.cleanup_job == 'onsuccess' and job.state == job.states.DELETED)
+        cleanup_job = self.cleanup_job
+        delete_files = cleanup_job == 'always' or (cleanup_job == 'onsuccess' and job.state == job.states.DELETED)
         self.cleanup( delete_files=delete_files )
 
     def pause( self, job=None, message=None ):
@@ -1089,6 +1119,14 @@ class JobWrapper( object ):
         if flush:
             self.sa_session.flush()
 
+    def get_destination_configuration(self, key, default=None):
+        """ Get a destination parameter that can be defaulted back
+        in app.config if it needs to be applied globally.
+        """
+        return self.get_job().get_destination_configuration(
+            self.app.config, key, default
+        )
+
     def finish( self, stdout, stderr, tool_exit_code=None, remote_working_directory=None ):
         """
         Called to indicate that the associated command has been run. Updates
@@ -1134,7 +1172,8 @@ class JobWrapper( object ):
                 self.version_string = open(version_filename).read()
                 os.unlink(version_filename)
 
-        if self.app.config.outputs_to_working_directory and not self.__link_file_check():
+        outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
+        if outputs_to_working_directory and not self.__link_file_check():
             for dataset_path in self.get_output_fnames():
                 try:
                     shutil.move( dataset_path.false_path, dataset_path.real_path )
@@ -1200,8 +1239,8 @@ class JobWrapper( object ):
                     # either use the metadata from originating output dataset, or call set_meta on the copies
                     # it would be quicker to just copy the metadata from the originating output dataset,
                     # but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
-                    if ( self.app.config.retry_metadata_internally and
-                            not self.external_output_metadata.external_metadata_set_successfully(dataset, self.sa_session ) ):
+                    retry_internally = util.asbool(self.get_destination_configuration("retry_metadata_internally", True))
+                    if retry_internally and not self.external_output_metadata.external_metadata_set_successfully(dataset, self.sa_session ):
                         # If Galaxy was expected to sniff type and didn't - do so.
                         if dataset.ext == "_sniff_":
                             extension = sniff.handle_uploaded_dataset_file( dataset.dataset.file_name, self.app.datatypes_registry )
@@ -1304,13 +1343,18 @@ class JobWrapper( object ):
         param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         # Create generated output children and primary datasets and add to param_dict
+        tool_working_directory = self.tool_working_directory
+        # LEGACY: Remove in 17.XX
+        if not os.path.exists(tool_working_directory):
+            # Maybe this is a legacy job, use the job working directory instead
+            tool_working_directory = self.working_directory
         collected_datasets = {
-            'children': self.tool.collect_child_datasets(out_data, self.working_directory),
-            'primary': self.tool.collect_primary_datasets(out_data, self.working_directory, input_ext, input_dbkey)
+            'children': self.tool.collect_child_datasets(out_data, tool_working_directory),
+            'primary': self.tool.collect_primary_datasets(out_data, tool_working_directory, input_ext, input_dbkey)
         }
         self.tool.collect_dynamic_collections(
             out_collections,
-            job_working_directory=self.working_directory,
+            job_working_directory=tool_working_directory,
             inp_data=inp_data,
             job=job,
             input_dbkey=input_dbkey,
@@ -1356,7 +1400,8 @@ class JobWrapper( object ):
             self._collect_metrics( job )
         self.sa_session.flush()
         log.debug( 'job %d ended (finish() executed in %s)' % (self.job_id, finish_timer) )
-        delete_files = self.app.config.cleanup_job == 'always' or ( job.state == job.states.OK and self.app.config.cleanup_job == 'onsuccess' )
+        cleanup_job = self.cleanup_job
+        delete_files = cleanup_job == 'always' or ( job.state == job.states.OK and cleanup_job == 'onsuccess' )
         self.cleanup( delete_files=delete_files )
 
     def check_tool_output( self, stdout, stderr, tool_exit_code, job ):
@@ -1524,7 +1569,8 @@ class JobWrapper( object ):
         if self.output_paths is None:
             self.get_output_fnames()
         for dp in self.output_paths:
-            if self.app.config.outputs_to_working_directory and os.path.basename( dp.false_path ) == file:
+            outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
+            if outputs_to_working_directory and os.path.basename( dp.false_path ) == file:
                 return dp.dataset_id
             elif os.path.basename( dp.real_path ) == file:
                 return dp.dataset_id
@@ -1536,7 +1582,12 @@ class JobWrapper( object ):
 
         # Look for JSONified job metadata
         self.tool_provided_job_metadata = []
-        meta_file = os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE )
+        meta_file = os.path.join( self.tool_working_directory, TOOL_PROVIDED_JOB_METADATA_FILE )
+        # LEGACY: Remove in 17.XX
+        if not os.path.exists( meta_file ):
+            # Maybe this is a legacy job, use the job working directory instead
+            meta_file = os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE )
+
         if os.path.exists( meta_file ):
             for line in open( meta_file, 'r' ):
                 try:
@@ -1606,7 +1657,7 @@ class JobWrapper( object ):
                                                                          config_root=config_root,
                                                                          config_file=config_file,
                                                                          datatypes_config=datatypes_config,
-                                                                         job_metadata=os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE ),
+                                                                         job_metadata=os.path.join( self.tool_working_directory, TOOL_PROVIDED_JOB_METADATA_FILE ),
                                                                          max_metadata_value_size=self.app.config.max_metadata_value_size,
                                                                          **kwds )
         if resolve_metadata_dependencies:
@@ -1645,7 +1696,8 @@ class JobWrapper( object ):
     def _change_ownership( self, username, gid ):
         job = self.get_job()
         # FIXME: hardcoded path
-        cmd = [ '/usr/bin/sudo', '-E', self.app.config.external_chown_script, self.working_directory, username, str( gid ) ]
+        external_chown_script = self.get_destination_configuration("external_chown_script", None)
+        cmd = [ '/usr/bin/sudo', '-E', external_chown_script, self.working_directory, username, str( gid ) ]
         log.debug( '(%s) Changing ownership of working directory with: %s' % ( job.id, ' '.join( cmd ) ) )
         p = subprocess.Popen( cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
         # TODO: log stdout/stderr
@@ -1654,7 +1706,8 @@ class JobWrapper( object ):
 
     def change_ownership_for_run( self ):
         job = self.get_job()
-        if self.app.config.external_chown_script and job.user is not None:
+        external_chown_script = self.get_destination_configuration("external_chown_script", None)
+        if external_chown_script and job.user is not None:
             try:
                 self._change_ownership( self.user_system_pwent[0], str( self.user_system_pwent[3] ) )
             except:
@@ -1663,7 +1716,8 @@ class JobWrapper( object ):
 
     def reclaim_ownership( self ):
         job = self.get_job()
-        if self.app.config.external_chown_script and job.user is not None:
+        external_chown_script = self.get_destination_configuration("external_chown_script", None)
+        if external_chown_script and job.user is not None:
             self._change_ownership( self.galaxy_system_pwent[0], str( self.galaxy_system_pwent[3] ) )
 
     @property
@@ -1828,7 +1882,7 @@ class TaskWrapper(JobWrapper):
         # if the job was deleted, don't finish it
         if task.state == task.states.DELETED:
             # Job was deleted by an administrator
-            delete_files = self.app.config.cleanup_job in ( 'always', 'onsuccess' )
+            delete_files = self.cleanup_job in ( 'always', 'onsuccess' )
             self.cleanup( delete_files=delete_files )
             return
         elif task.state == task.states.ERROR:

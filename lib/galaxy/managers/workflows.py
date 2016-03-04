@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+from six import string_types
+
 from collections import namedtuple
 import logging
 import json
@@ -191,50 +193,18 @@ class WorkflowContentsManager(UsesAnnotations):
     ):
         # Put parameters in workflow mode
         trans.workflow_building_mode = True
-        # Create new workflow from incoming dict
-        workflow = model.Workflow()
         # If there's a source, put it in the workflow name.
         if source:
             name = "%s (imported from %s)" % ( data['name'], source )
         else:
             name = data['name']
-        workflow.name = name
+        workflow, missing_tool_tups = self._workflow_from_dict(
+            trans,
+            data,
+            name=name,
+        )
         if 'uuid' in data:
             workflow.uuid = data['uuid']
-        # Assume no errors until we find a step that has some
-        workflow.has_errors = False
-        # Create each step
-        steps = []
-        # The editor will provide ids for each step that we don't need to save,
-        # but do need to use to make connections
-        steps_by_external_id = {}
-        # Keep track of tools required by the workflow that are not available in
-        # the local Galaxy instance.  Each tuple in the list of missing_tool_tups
-        # will be ( tool_id, tool_name, tool_version ).
-        missing_tool_tups = []
-        for step_dict in self.__walk_step_dicts( data ):
-            module, step = self.__track_module_from_dict( trans, steps, steps_by_external_id, step_dict, secure=False )
-            if module.type == 'tool' and module.tool is None:
-                # A required tool is not available in the local Galaxy instance.
-                if 'content_id' in step_dict:
-                    tool_id = step_dict[ 'content_id' ]
-                else:
-                    # Support legacy workflows... (created pre 16.01)
-                    tool_id = step_dict[ 'tool_id' ]
-                missing_tool_tup = ( tool_id, step_dict[ 'name' ], step_dict[ 'tool_version' ])
-                if missing_tool_tup not in missing_tool_tups:
-                    missing_tool_tups.append( missing_tool_tup )
-                # Save the entire step_dict in the unused config field, be parsed later
-                # when we do have the tool
-                step.config = json.dumps(step_dict)
-            if step.tool_errors:
-                workflow.has_errors = True
-
-        # Second pass to deal with connections between steps
-        self.__connect_workflow_steps( steps, steps_by_external_id )
-
-        # Order the steps if possible
-        attach_ordered_steps( workflow, steps )
 
         if create_stored_workflow:
             # Connect up
@@ -271,46 +241,22 @@ class WorkflowContentsManager(UsesAnnotations):
             missing_tools=missing_tool_tups
         )
 
-    def update_workflow_from_dict(self, trans, stored_workflow, workflow_data, from_editor=False):
+    def update_workflow_from_dict(self, trans, stored_workflow, workflow_data):
         # Put parameters in workflow mode
         trans.workflow_building_mode = True
-        # Convert incoming workflow data from json if coming from editor
-        data = json.loads(workflow_data) if from_editor else workflow_data
-        # Create new workflow from incoming data
-        workflow = model.Workflow()
-        # Just keep the last name (user can rename later)
-        workflow.name = stored_workflow.name
-        # Assume no errors until we find a step that has some
-        workflow.has_errors = False
-        # Create each step
-        steps = []
-        # The editor will provide ids for each step that we don't need to save,
-        # but do need to use to make connections
-        steps_by_external_id = {}
-        errors = []
-        for key, step_dict in data['steps'].iteritems():
-            is_tool = is_tool_module_type( step_dict[ 'type' ] )
-            tool_id = step_dict.get('content_id', step_dict.get('tool_id', None))
-            if is_tool and tool_id is None:
-                raise exceptions.RequestParameterInvalidException("No tool_id could be located for for step [%s]" % step_dict)
-            if is_tool and not trans.app.toolbox.has_tool( tool_id, exact=True ):
-                errors.append("Step %s requires tool '%s'." % (step_dict['id'], step_dict['tool_id']))
-        if errors:
+
+        workflow, missing_tool_tups = self._workflow_from_dict(
+            trans,
+            workflow_data,
+            name=stored_workflow.name,
+        )
+
+        if missing_tool_tups:
+            errors = []
+            for missing_tool_tup in missing_tool_tups:
+                errors.append("Step %s requires tool '%s'." % (missing_tool_tup[3], missing_tool_tup[0]))
             raise MissingToolsException(workflow, errors)
 
-        # First pass to build step objects and populate basic values
-        for step_dict in self.__walk_step_dicts( data ):
-            module, step = self.__track_module_from_dict( trans, steps, steps_by_external_id, step_dict, secure=from_editor )
-
-            if step.tool_errors:
-                # DBTODO Check for conditional inputs here.
-                workflow.has_errors = True
-
-        # Second pass to deal with connections between steps
-        self.__connect_workflow_steps( steps, steps_by_external_id )
-
-        # Order the steps if possible
-        attach_ordered_steps( workflow, steps )
         # Connect up
         workflow.stored_workflow = stored_workflow
         stored_workflow.latest_workflow = workflow
@@ -323,6 +269,59 @@ class WorkflowContentsManager(UsesAnnotations):
         if workflow.has_cycles:
             errors.append( "This workflow contains cycles" )
         return workflow, errors
+
+    def _workflow_from_dict(self, trans, data, name):
+        # If coming from the editor it will be a flat a string,
+        # we need parse it and handle tool start differently.
+        from_editor = isinstance(data, string_types)
+        if from_editor:
+            # If coming from the editor...
+            data = json.loads(data)
+
+        # Create new workflow from source data
+        workflow = model.Workflow()
+
+        workflow.name = name
+
+        # Assume no errors until we find a step that has some
+        workflow.has_errors = False
+        # Create each step
+        steps = []
+        # The editor will provide ids for each step that we don't need to save,
+        # but do need to use to make connections
+        steps_by_external_id = {}
+
+        # Keep track of tools required by the workflow that are not available in
+        # the local Galaxy instance.  Each tuple in the list of missing_tool_tups
+        # will be ( tool_id, tool_name, tool_version ).
+        missing_tool_tups = []
+
+        for step_dict in self.__walk_step_dicts( data ):
+            module, step = self.__track_module_from_dict( trans, steps, steps_by_external_id, step_dict, secure=from_editor )
+            is_tool = is_tool_module_type( module.type )
+            if is_tool and module.tool is None:
+                # A required tool is not available in the local Galaxy instance.
+                tool_id = step_dict.get('content_id', step_dict.get('tool_id', None))
+                assert tool_id is not None  # Threw an exception elsewhere if not
+
+                missing_tool_tup = ( tool_id, step_dict[ 'name' ], step_dict[ 'tool_version' ], step_dict[ 'id'] )
+                if missing_tool_tup not in missing_tool_tups:
+                    missing_tool_tups.append( missing_tool_tup )
+
+                # Save the entire step_dict in the unused config field, be parsed later
+                # when we do have the tool
+                step.config = json.dumps(step_dict)
+
+            if step.tool_errors:
+                workflow.has_errors = True
+
+        # Second pass to deal with connections between steps
+        self.__connect_workflow_steps( steps, steps_by_external_id )
+
+        # Order the steps if possible
+        attach_ordered_steps( workflow, steps )
+
+        return workflow, missing_tool_tups
 
     def workflow_to_dict( self, trans, stored, style="export" ):
         """ Export the workflow contents to a dictionary ready for JSON-ification and to be
@@ -874,7 +873,7 @@ class WorkflowContentsManager(UsesAnnotations):
             del step.temp_input_connections
 
 
-class MissingToolsException(object):
+class MissingToolsException(exceptions.MessageException):
 
     def __init__(self, workflow, errors):
         self.workflow = workflow

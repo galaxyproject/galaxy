@@ -7,9 +7,9 @@
     echo "test" > 5;
   </command>
   <inputs>
-    <param name="input_data_1" type="data" format="data" />
-    <param name="input_data_2" type="data" format="data" />
-    <param name="input_text" type="text" value="1" />
+    <param name="input_data_1" type="data" format="data" label="input_data_1" />
+    <param name="input_data_2" type="data" format="data" label="input_data_2" />
+    <param name="input_text" type="text" value="1"  label="input_text" />
   </inputs>
   <outputs>
     <data format="txt" from_work_dir="1" name="direct_output" />

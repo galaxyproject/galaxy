@@ -23,9 +23,9 @@ INPUT_DBKEY_TOKEN = "__input__"
 LEGACY_DEFAULT_DBKEY = None  # don't use __input__ for legacy default collection
 
 
-def dataset_collector_descriptions_from_elem( elem ):
+def dataset_collector_descriptions_from_elem( elem, legacy=True ):
     primary_dataset_elems = elem.findall( "discover_datasets" )
-    if not primary_dataset_elems:
+    if len(primary_dataset_elems) == 0 and legacy:
         return [ DEFAULT_DATASET_COLLECTOR_DESCRIPTION ]
     else:
         return map( lambda elem: DatasetCollectionDescription( **elem.attrib ), primary_dataset_elems )

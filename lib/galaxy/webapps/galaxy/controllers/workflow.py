@@ -514,7 +514,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
     def gen_image( self, trans, id ):
         stored = self.get_stored_workflow( trans, id, check_ownership=True )
         trans.response.set_content_type("image/svg+xml")
-        return self._workflow_to_svg_canvas( trans, stored ).standalone_xml()
+        return self._workflow_to_svg_canvas( trans, stored ).tostring()
 
     @web.expose
     @web.require_login( "use Galaxy workflows" )
@@ -693,7 +693,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 trans,
                 stored,
                 workflow_data,
-                from_editor=True,
             )
         except workflows.MissingToolsException as e:
             return dict(
@@ -750,7 +749,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             workflow_name=workflow_dict['name'],
             workflow_description=workflow_dict['annotation'],
             workflow_content=workflow_content,
-            workflow_svg=self._workflow_to_svg_canvas( trans, stored ).standalone_xml()
+            workflow_svg=self._workflow_to_svg_canvas( trans, stored ).tostring()
         )
         # strip() b/c myExperiment XML parser doesn't allow white space before XML; utf-8 handles unicode characters.
         request = unicodify( request_raw.strip(), 'utf-8' )
@@ -1291,7 +1290,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
     def _workflow_to_svg_canvas( self, trans, stored ):
         workflow = stored.latest_workflow
         workflow_canvas = WorkflowCanvas()
-        canvas = workflow_canvas.canvas
         for step in workflow.steps:
             # Load from database representation
             module = module_factory.from_workflow_step( trans, step )
@@ -1304,10 +1302,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 module_data_inputs,
                 module_data_outputs,
             )
-
-        workflow_canvas.add_steps( )
-        workflow_canvas.finish(  )
-        return canvas
+        workflow_canvas.add_steps()
+        return workflow_canvas.finish()
 
 
 def _build_workflow_on_str(instance_ds_names):

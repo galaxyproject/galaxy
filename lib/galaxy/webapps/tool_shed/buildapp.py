@@ -109,12 +109,18 @@ def app_factory( global_conf, **kwargs ):
                             name_prefix='category_',
                             path_prefix='/api',
                             parent_resources=dict( member_name='category', collection_name='categories' ) )
+    webapp.mapper.connect( 'repositories_in_category',
+                           '/api/categories/{category_id}/repositories',
+                           controller='categories',
+                           action='get_repositories',
+                           conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.resource( 'repository',
                             'repositories',
                             controller='repositories',
                             collection={ 'add_repository_registry_entry': 'POST',
                                          'get_repository_revision_install_info': 'GET',
                                          'get_ordered_installable_revisions': 'GET',
+                                         'get_installable_revisions': 'GET',
                                          'remove_repository_registry_entry': 'POST',
                                          'repository_ids_for_setting_metadata': 'GET',
                                          'reset_metadata_on_repositories': 'POST',
@@ -151,6 +157,11 @@ def app_factory( global_conf, **kwargs ):
                            '/api/repositories/{id}/metadata',
                            controller='repositories',
                            action='metadata',
+                           conditions=dict( method=[ "GET" ] ) )
+    webapp.mapper.connect( 'repository_show_tools',
+                           '/api/repositories/{id}/{changeset}/show_tools',
+                           controller='repositories',
+                           action='show_tools',
                            conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.connect( 'create_repository',
                            '/api/repositories',

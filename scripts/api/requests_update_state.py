@@ -1,8 +1,7 @@
 #!/usr/bin/env python
+import os
+import sys
 
-
-import os, sys, traceback
-sys.path.insert( 0, os.path.dirname( __file__ ) )
 from common import update
 
 try:
@@ -13,4 +12,3 @@ except IndexError:
     sys.exit( 1 )
 
 update( sys.argv[1], sys.argv[2], data, return_formatted=True )
-
