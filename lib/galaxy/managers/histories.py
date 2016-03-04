@@ -5,7 +5,6 @@ Histories are containers for datasets or dataset collections
 created (or copied) by users over the course of an analysis.
 """
 
-from sqlalchemy import sql
 from sqlalchemy import desc
 from sqlalchemy import asc
 
