@@ -127,10 +127,16 @@ def clean_dependency_relationships(trans, metadata_dict, tool_shed_repository, t
         rd = rrda.repository_dependency
         r = rd.repository
         if can_eliminate_repository_dependency(metadata_dict, tool_shed_url, r.name, r.owner):
+            message = "Repository dependency %s by owner %s is not required by repository %s, owner %s, "
+            message += "removing from list of repository dependencies."
+            log.debug(message % (r.name, r.owner, tool_shed_repository.name, tool_shed_repository.owner))
             trans.install_model.context.delete(rrda)
             trans.install_model.context.flush()
     for td in tool_shed_repository.tool_dependencies:
         if can_eliminate_tool_dependency(metadata_dict, td.name, td.type, td.version):
+            message = "Tool dependency %s, version %s is not required by repository %s, owner %s, "
+            message += "removing from list of tool dependencies."
+            log.debug(message % (td.name, td.version, tool_shed_repository.name, tool_shed_repository.owner))
             trans.install_model.context.delete(td)
             trans.install_model.context.flush()
 
