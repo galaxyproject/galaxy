@@ -1819,8 +1819,6 @@ class DataToolParameter( BaseDataToolParameter ):
         return ''
 
     def from_html( self, value, trans, other_values={} ):
-        # Can't look at history in workflow mode, skip validation and such,
-        # although, this should never be called in workflow mode right?
         if trans.workflow_building_mode:
             return None
         if not value and not self.optional:
@@ -2035,12 +2033,14 @@ class DataToolParameter( BaseDataToolParameter ):
             d['max'] = self.max
         d['options'] = {'hda': [], 'hdca': []}
 
+        # return dictionary without options if context is unavailable
+        history = trans.history
+        if history is None or trans.workflow_building_mode:
+            return d
+
         # prepare dataset/collection matching
         dataset_matcher = DatasetMatcher( trans, self, None, other_values )
         multiple = self.multiple
-        history = trans.history
-        if history is None:
-            return d
 
         # build and append a new select option
         def append( list, id, hid, name, src ):
@@ -2216,20 +2216,20 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
     def validate( self, value, trans=None ):
         return True  # TODO
 
-    def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         # create dictionary and fill default parameters
         d = super( DataCollectionToolParameter, self ).to_dict( trans )
         d['extensions'] = self.extensions
         d['multiple'] = self.multiple
         d['options'] = {'hda': [], 'hdca': []}
 
-        # return default content if context is not available
-        if other_values is None:
+        # return dictionary without options if context is unavailable
+        history = trans.history
+        if history is None or trans.workflow_building_mode:
             return d
 
         # prepare dataset/collection matching
         dataset_matcher = DatasetMatcher( trans, self, None, other_values )
-        history = trans.history
 
         # append directly matched collections
         for hdca in self.match_collections( trans, history, dataset_matcher ):
