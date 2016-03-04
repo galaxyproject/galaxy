@@ -2346,6 +2346,8 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         return field
 
     def from_html( self, value, trans, other_values={} ):
+        if trans.workflow_building_mode:
+            return None
         if not value and not self.optional:
             raise ValueError( "History does not include a dataset collection of the correct type or containing the correct types of datasets" )
         if value in [None, "None"]:
