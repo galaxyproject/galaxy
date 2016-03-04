@@ -80,6 +80,7 @@ def paste_app_factory( global_conf, **kwargs ):
     webapp.add_client_route( '/tours' )
     webapp.add_client_route( '/tours/{tour_id}' )
 
+    # STANDARD CONTROLLER ROUTES
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
     # Force /history to go to view of current
     webapp.add_route( '/history', controller='history', action='view' )
