@@ -3,13 +3,13 @@
 Utility functions used systemwide.
 
 """
-
 from __future__ import absolute_import
 
 import binascii
 import collections
 import errno
 import grp
+import json
 import logging
 import os
 import random
@@ -19,25 +19,17 @@ import smtplib
 import stat
 import string
 import sys
-import time
 import tempfile
 import threading
-
-from os.path import relpath, normpath
-from hashlib import md5
-
-from six import binary_type
-from six import iteritems
-from six import PY3
-from six import string_types, text_type
-from six.moves import email_mime_text
-from six.moves.urllib import parse as urlparse
-from six.moves import xrange
-from six.moves import zip
-from xml.etree import ElementTree, ElementInclude
-
-from galaxy.util import json
+import time
 from datetime import datetime
+from hashlib import md5
+from os.path import normpath, relpath
+from xml.etree import ElementInclude, ElementTree
+
+from six import binary_type, iteritems, PY3, string_types, text_type
+from six.moves import email_mime_text, xrange, zip
+from six.moves.urllib import parse as urlparse
 
 try:
     import docutils.core as docutils_core
@@ -46,7 +38,7 @@ except ImportError:
     docutils_core = None
     docutils_html4css1 = None
 
-from .inflection import Inflector, English
+from .inflection import English, Inflector
 inflector = Inflector(English)
 
 if PY3:

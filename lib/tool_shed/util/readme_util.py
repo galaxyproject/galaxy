@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import threading
@@ -6,7 +7,7 @@ from mako.template import Template
 
 import tool_shed.util.shed_util_common as suc
 from galaxy import web
-from galaxy.util import json, rst_to_html, unicodify
+from galaxy.util import rst_to_html, unicodify
 from tool_shed.util import basic_util, common_util, hg_util
 
 log = logging.getLogger( __name__ )

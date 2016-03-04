@@ -1,15 +1,16 @@
 import json
 import re
+from json import dumps
+
 from six import string_types
 
+from galaxy import model
 from galaxy.exceptions import ObjectInvalid
 from galaxy.model import LibraryDatasetDatasetAssociation
-from galaxy import model
 from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter
 from galaxy.tools.parameters.wrapped import WrappedParameters
 from galaxy.tools.parameters import update_param
 from galaxy.util import ExecutionTimer
-from galaxy.util.json import dumps
 from galaxy.util.none_like import NoneDataset
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
@@ -436,7 +437,7 @@ class DefaultToolAction( object ):
                 else:
                     handle_output_timer = ExecutionTimer()
                     handle_output( name, output )
-                    log.info("Handled output %s" % handle_output_timer)
+                    log.info("Handled output named %s for tool %s %s" % (name, tool.id, handle_output_timer))
 
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
         datasets_to_persist = []
@@ -596,7 +597,8 @@ class DefaultToolAction( object ):
                     job.add_input_dataset( name, dataset_id=dataset.id )
             else:
                 job.add_input_dataset( name, None )
-        log.info("Verified access to datasets %s" % access_timer)
+        job_str = job.log_str()
+        log.info("Verified access to datasets for %s %s" % (job_str, access_timer))
 
     def get_output_name( self, output, dataset, tool, on_text, trans, incoming, history, params, job_params ):
         if output.label:

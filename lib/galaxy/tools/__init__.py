@@ -1714,11 +1714,11 @@ class Tool( object, Dictifiable ):
                     try:
                         tool_dict = input.to_dict( request_context, other_values=other_values )
                         tool_dict[ 'value' ] = state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) )
+                        tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ], self.app )
                     except Exception as e:
                         tool_dict = input.to_dict( request_context )
                         log.exception('tools::to_json() - Skipping parameter expansion \'%s\': %s.' % ( input.name, e ) )
                         pass
-                    tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ], self.app )
                     sanitize( tool_dict, 'value' )
                 group_inputs[ input_index ] = tool_dict
 

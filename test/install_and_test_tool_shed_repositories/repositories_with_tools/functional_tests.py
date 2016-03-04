@@ -15,6 +15,10 @@ import sys
 import tempfile
 import threading
 import time
+from json import loads
+
+import nose
+from paste import httpserver
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir, os.path.pardir))
 sys.path[1:1] = [ os.path.join( galaxy_root, "scripts" ),
@@ -22,15 +26,11 @@ sys.path[1:1] = [ os.path.join( galaxy_root, "scripts" ),
                   os.path.join( galaxy_root, 'test' ),
                   os.path.join( galaxy_root, 'scripts', 'api' ) ]
 
-import nose
-from paste import httpserver
-
 import install_and_test_tool_shed_repositories.base.util as install_and_test_base_util
 from base.tool_shed_util import parse_tool_panel_config
 from functional import database_contexts
 from functional_tests import generate_config_file
 from galaxy.app import UniverseApplication
-from galaxy.util.json import loads
 from galaxy.util import asbool
 from galaxy.web import buildapp
 
