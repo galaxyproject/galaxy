@@ -2216,7 +2216,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
     def validate( self, value, trans=None ):
         return True  # TODO
 
-    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
         # create dictionary and fill default parameters
         d = super( DataCollectionToolParameter, self ).to_dict( trans )
         d['extensions'] = self.extensions
@@ -2225,7 +2225,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
         # return dictionary without options if context is unavailable
         history = trans.history
-        if history is None or trans.workflow_building_mode:
+        if history is None or trans.workflow_building_mode or other_values is None:
             return d
 
         # prepare dataset/collection matching
