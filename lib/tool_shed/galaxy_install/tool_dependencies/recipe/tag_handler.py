@@ -2,8 +2,6 @@ import logging
 import os
 import tempfile
 
-from sqlalchemy import and_
-
 from galaxy.tools.deps.resolvers import INDETERMINATE_DEPENDENCY
 from galaxy.util import listify
 from tool_shed.util import basic_util
