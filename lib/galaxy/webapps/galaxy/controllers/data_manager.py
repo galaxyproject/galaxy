@@ -1,14 +1,14 @@
+import logging
+from json import loads
+
+import paste.httpexceptions
 from markupsafe import escape
 from six import string_types
-import paste.httpexceptions
 
 import galaxy.queue_worker
 from galaxy import web
-from galaxy.util.json import loads
 from galaxy.web.base.controller import BaseUIController
 
-# set up logger
-import logging
 log = logging.getLogger( __name__ )
 
 

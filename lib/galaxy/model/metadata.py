@@ -6,28 +6,25 @@ Galaxy Metadata
 import copy
 import cPickle
 import json
+import logging
 import os
 import shutil
 import sys
 import tempfile
 import weakref
-
 from os.path import abspath
 
 from six import string_types
 from sqlalchemy.orm import object_session
 
 import galaxy.model
-from galaxy.util import listify
-from galaxy.util.object_wrapper import sanitize_lists_to_string
-from galaxy.util import stringify_dictionary_keys
-from galaxy.util import string_as_bool
-from galaxy.util import in_directory
+from galaxy.util import (in_directory, listify, string_as_bool,
+                         stringify_dictionary_keys)
 from galaxy.util.json import safe_dumps
+from galaxy.util.object_wrapper import sanitize_lists_to_string
 from galaxy.util.odict import odict
 from galaxy.web import form_builder
 
-import logging
 log = logging.getLogger(__name__)
 
 STATEMENTS = "__galaxy_statements__"  # this is the name of the property in a Datatype class where new metadata spec element Statements are stored

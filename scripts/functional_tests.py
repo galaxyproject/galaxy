@@ -13,6 +13,7 @@ import threading
 import time
 import urllib
 from ConfigParser import SafeConfigParser
+from json import dumps
 
 import nose.core
 import nose.config
@@ -31,7 +32,6 @@ from base.tool_shed_util import parse_tool_panel_config
 from functional import database_contexts
 from galaxy import tools
 from galaxy.app import UniverseApplication
-from galaxy.util.json import dumps
 from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
 

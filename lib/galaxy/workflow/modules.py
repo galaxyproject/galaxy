@@ -1,20 +1,17 @@
 """
 Modules used in building workflows
 """
-
-import logging
 import copy
-
+import logging
+from json import dumps, loads
 from xml.etree.ElementTree import Element
 
 import galaxy.tools
-from galaxy import exceptions
-from galaxy import model
-from galaxy import web
+from galaxy import exceptions, model, web
 from galaxy.dataset_collections import matching
-from galaxy.web.framework import formbuilder
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
+from galaxy.tools.execute import execute
 from galaxy.tools.parameters import check_param, visit_input_values
 from galaxy.tools.parameters.basic import (
     parameter_types,
@@ -23,11 +20,9 @@ from galaxy.tools.parameters.basic import (
     RuntimeValue,
 )
 from galaxy.tools.parameters.wrapped import make_dict_copy
-from galaxy.tools.execute import execute
-from galaxy.util.bunch import Bunch
 from galaxy.util import odict
-from galaxy.util.json import loads
-from galaxy.util.json import dumps
+from galaxy.util.bunch import Bunch
+from galaxy.web.framework import formbuilder
 from tool_shed.util import common_util
 
 log = logging.getLogger( __name__ )

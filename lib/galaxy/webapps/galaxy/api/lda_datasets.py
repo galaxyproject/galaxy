@@ -2,12 +2,16 @@
 API operations on the library datasets.
 """
 import glob
+import logging
 import os
 import os.path
 import string
 import sys
 import tempfile
 import zipfile
+from json import dumps
+
+from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
 
 from galaxy import exceptions
 from galaxy import util
@@ -15,15 +19,11 @@ from galaxy import web
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers import folders, roles
 from galaxy.tools.actions import upload_common
-from galaxy.util.json import dumps
 from galaxy.util.streamball import StreamBall
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
-from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
 
-
-import logging
 log = logging.getLogger( __name__ )
 
 
