@@ -4,7 +4,7 @@ Migration script to support subworkflows and workflow request input parameters
 import datetime
 import logging
 
-from sqlalchemy import Column, Integer, ForeignKey, MetaData, Table
+from sqlalchemy import Column, Integer, ForeignKey, MetaData, Table, Index, ForeignKeyConstraint
 
 from galaxy.model.custom_types import TrimmedString, UUIDType, JSONType
 
@@ -15,22 +15,33 @@ metadata = MetaData()
 WorkflowInvocationToSubworkflowInvocationAssociation_table = Table(
     "workflow_invocation_to_subworkflow_invocation_association", metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "workflow_invocation_id", Integer, ForeignKey( "workflow_invocation.id" ), index=True ),
-    Column( "subworkflow_invocation_id", Integer, ForeignKey( "workflow_invocation.id" ), index=True ),
-    Column( "workflow_step_id", Integer, ForeignKey("workflow_step.id") ),
+    Column( "workflow_invocation_id", Integer ),
+    Column( "subworkflow_invocation_id", Integer ),
+    Column( "workflow_step_id", Integer ),
+    ForeignKeyConstraint(['workflow_invocation_id'], ['workflow_invocation.id'], name='fk_dannontest1'),
+    ForeignKeyConstraint(['subworkflow_invocation_id'], ['workflow_invocation.id'], name='fk_dannontest2'),
+    ForeignKeyConstraint(['workflow_step_id'], ['workflow_step.id'], name='fk_dannontest3')
 )
 
-WorkflowRequestInputStepParmeter_table = Table(
+WorkflowRequestInputStepParameter_table = Table(
     "workflow_request_input_step_parameter", metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "workflow_invocation_id", Integer, ForeignKey( "workflow_invocation.id" ), index=True ),
-    Column( "workflow_step_id", Integer, ForeignKey("workflow_step.id") ),
+    Column( "workflow_invocation_id", Integer ),
+    Column( "workflow_step_id", Integer ),
     Column( "parameter_value", JSONType ),
+    ForeignKeyConstraint(['workflow_invocation_id'], ['workflow_invocation.id'], name='fk_dannontest4'),
+    ForeignKeyConstraint(['workflow_step_id'], ['workflow_step.id'], name='fk_dannontest5')
 )
 
 TABLES = [
     WorkflowInvocationToSubworkflowInvocationAssociation_table,
-    WorkflowRequestInputStepParmeter_table,
+    WorkflowRequestInputStepParameter_table,
+]
+
+INDEXES = [
+    Index( "ix_wfinv_swfinv_wfi", WorkflowInvocationToSubworkflowInvocationAssociation_table.c.workflow_invocation_id),
+    Index( "ix_wfinv_swfinv_swfi", WorkflowInvocationToSubworkflowInvocationAssociation_table.c.subworkflow_invocation_id),
+    Index( "ix_wfreq_inputstep_wfi", WorkflowRequestInputStepParameter_table.c.workflow_invocation_id)
 ]
 
 
@@ -58,6 +69,7 @@ def upgrade(migrate_engine):
     __alter_column("workflow", "stored_workflow_id", metadata, nullable=True)
 
     for table in TABLES:
+        # Indexes are automatically created when the tables are.
         __create(table)
 
 
