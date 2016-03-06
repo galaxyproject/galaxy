@@ -1288,7 +1288,7 @@ class JobWrapper( object ):
                         dataset.extension = 'txt'
                 self.sa_session.add( dataset )
             if job.states.ERROR == final_job_state:
-                log.debug( "setting dataset state to ERROR" )
+                log.debug( "(%s) setting dataset %s state to ERROR", job.id, dataset_assoc.dataset.dataset.id )
                 # TODO: This is where the state is being set to error. Change it!
                 dataset_assoc.dataset.dataset.state = model.Dataset.states.ERROR
                 # Pause any dependent jobs (and those jobs' outputs)

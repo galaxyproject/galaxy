@@ -11,20 +11,7 @@
 
 cd `dirname $0`
 
-# If there is a .venv/ directory, assume it contains a virtualenv that we
-# should run this instance in.
-if [ -d .venv ];
-then
-    . .venv/bin/activate
-fi
-
 ./scripts/common_startup.sh --skip-samples
-
-if [ -d .venv ];
-then
-    printf "Activating virtualenv at %s/.venv\n" $(pwd)
-    . .venv/bin/activate
-fi
 
 if [ -z "$GALAXY_REPORTS_CONFIG" ]; then
     if [ -f reports_wsgi.ini ]; then
