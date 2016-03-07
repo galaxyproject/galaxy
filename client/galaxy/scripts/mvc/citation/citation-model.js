@@ -13,26 +13,37 @@ define([
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var Citation = Backbone.Model.extend( baseMVC.LoggableMixin ).extend( {
-    initialize: function( ) {
+var Citation = Backbone.Model.extend( baseMVC.LoggableMixin ).extend({
+    initialize: function() {
         var bibtex = this.attributes.content;
-        var entry = new BibtexParser(bibtex).entries[0];
-        this.entry = entry;
+        var parsed = BibtexParser( bibtex );
+        // bibtex returns successfully parsed in .entries and any parsing errors in .errors
+        if( parsed.errors.length ){
+            // the gen. form of these errors seems to be [ line, col, char, error message ]
+            var errors = parsed.errors.reduce( function( all, current ){ return all + '; ' + current; });
+            // throw new Error( 'Error parsing bibtex: ' + errors );
+            this.log( 'Error parsing bibtex: ' + errors );
+        }
+
         this._fields = {};
-        var rawFields = entry.Fields;
-        for(key in rawFields) {
-            var value = rawFields[ key ];
-            var lowerKey = key.toLowerCase();
-            this._fields[ lowerKey ] = value;
+        this.entry = _.first( parsed.entries );
+        if( this.entry ){
+            var rawFields = this.entry.Fields;
+            for( var key in rawFields ){
+                var value = rawFields[ key ];
+                var lowerKey = key.toLowerCase();
+                this._fields[ lowerKey ] = value;
+            }
         }
     },
     entryType: function() {
-        return this.entry.EntryType;
+        return this.entry? this.entry.EntryType : undefined;
     },
     fields: function() {
         return this._fields;
     }
-} );
+});
+
 
 //==============================================================================
 /** @class Backbone collection of citations.
