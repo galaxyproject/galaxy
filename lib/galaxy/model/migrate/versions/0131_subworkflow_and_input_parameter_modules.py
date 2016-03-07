@@ -49,16 +49,17 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
-
-    subworkflow_id_column = Column( "subworkflow_id", Integer, ForeignKey("workflow.id"), nullable=True )
+    if migrate_engine.name in ['postgres', 'postgresql']:
+        subworkflow_id_column = Column( "subworkflow_id", Integer, ForeignKey("workflow.id"), nullable=True )
+        input_subworkflow_step_id_column = Column( "input_subworkflow_step_id", Integer, ForeignKey("workflow_step.id"), nullable=True )
+        parent_workflow_id_column = Column( "parent_workflow_id", Integer, ForeignKey("workflow.id"), nullable=True )
+    else:
+        subworkflow_id_column = Column( "subworkflow_id", Integer, nullable=True )
+        input_subworkflow_step_id_column = Column( "input_subworkflow_step_id", Integer, nullable=True )
+        parent_workflow_id_column = Column( "parent_workflow_id", Integer, nullable=True )
     __add_column( subworkflow_id_column, "workflow_step", metadata )
-
-    input_subworkflow_step_id_column = Column( "input_subworkflow_step_id", Integer, ForeignKey("workflow_step.id"), nullable=True )
     __add_column( input_subworkflow_step_id_column, "workflow_step_connection", metadata )
-
-    parent_workflow_id_column = Column( "parent_workflow_id", Integer, ForeignKey("workflow.id"), nullable=True )
     __add_column( parent_workflow_id_column, "workflow", metadata )
-
     workflow_output_label_column = Column( "label", TrimmedString(255) )
     workflow_output_uuid_column = Column( "uuid", UUIDType, nullable=True )
     __add_column( workflow_output_label_column, "workflow_output", metadata )
