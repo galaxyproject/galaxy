@@ -85,8 +85,6 @@ def downgrade(migrate_engine):
     __drop_column( "label", "workflow_output", metadata )
     __drop_column( "uuid", "workflow_output", metadata )
 
-    __alter_column("workflow", "stored_workflow_id", metadata, nullable=False)
-
     for table in TABLES:
         __drop(table)
 
