@@ -16,6 +16,8 @@ import sys
 import tempfile
 import threading
 from datetime import timedelta
+from six import string_types
+
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
 from galaxy.util import string_as_bool
@@ -125,7 +127,7 @@ class Configuration( object ):
         self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
         self.hours_between_check = kwargs.get( 'hours_between_check', 12 )
         self.enable_tool_shed_check = string_as_bool( kwargs.get( 'enable_tool_shed_check', False ) )
-        if isinstance( self.hours_between_check, basestring ):
+        if isinstance( self.hours_between_check, string_types ):
             self.hours_between_check = float( self.hours_between_check )
         try:
             if isinstance( self.hours_between_check, int ):
@@ -169,8 +171,11 @@ class Configuration( object ):
         self.cluster_job_queue_workers = int( kwargs.get( "cluster_job_queue_workers", "3" ) )
         self.job_queue_cleanup_interval = int( kwargs.get("job_queue_cleanup_interval", "5") )
         self.cluster_files_directory = os.path.abspath( kwargs.get( "cluster_files_directory", "database/pbs" ) )
-        self.job_working_directory = resolve_path( kwargs.get( "job_working_directory", "database/job_working_directory" ), self.root )
-        self.default_job_shell = kwargs.get( "default_job_shell", "/bin/sh" )
+
+        # Fall back to to legacy job_working_directory config variable if set.
+        default_jobs_directory = kwargs.get( "job_working_directory", "database/jobs_directory" )
+        self.jobs_directory = resolve_path( kwargs.get( "jobs_directory", default_jobs_directory ), self.root )
+        self.default_job_shell = kwargs.get( "default_job_shell", "/bin/bash" )
         self.cleanup_job = kwargs.get( "cleanup_job", "always" )
         self.container_image_cache_path = self.resolve_path( kwargs.get( "container_image_cache_path", "database/container_images" ) )
         self.outputs_to_working_directory = string_as_bool( kwargs.get( 'outputs_to_working_directory', False ) )
@@ -262,9 +267,6 @@ class Configuration( object ):
         self.log_events = string_as_bool( kwargs.get( 'log_events', 'False' ) )
         self.sanitize_all_html = string_as_bool( kwargs.get( 'sanitize_all_html', True ) )
         self.sanitize_whitelist_file = resolve_path( kwargs.get( 'sanitize_whitelist_file', "config/sanitize_whitelist.txt" ), self.root )
-        self.sanitize_whitelist = []
-        if kwargs.get('sanitize_whitelist_file', None) is not None:
-            self.reload_sanitize_whitelist()
         self.serve_xss_vulnerable_mimetypes = string_as_bool( kwargs.get( 'serve_xss_vulnerable_mimetypes', False ) )
         self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames( kwargs )
         self.trust_ipython_notebook_conversion = string_as_bool( kwargs.get( 'trust_ipython_notebook_conversion', False ) )
@@ -481,7 +483,7 @@ class Configuration( object ):
         else:
             return None
 
-    def reload_sanitize_whitelist( self ):
+    def reload_sanitize_whitelist( self, explicit=True ):
         self.sanitize_whitelist = []
         try:
             with open(self.sanitize_whitelist_file, 'rt') as f:
@@ -489,7 +491,8 @@ class Configuration( object ):
                     if not line.startswith("#"):
                         self.sanitize_whitelist.append(line.strip())
         except IOError:
-            log.warning("Sanitize log file %s does not exist, continuing with no tools whitelisted.", self.sanitize_whitelist_file)
+            if explicit:
+                log.warning("Sanitize log file explicitly specified as '%s' but does not exist, continuing with no tools whitelisted.", self.sanitize_whitelist_file)
 
     def __parse_config_file_options( self, kwargs ):
         """

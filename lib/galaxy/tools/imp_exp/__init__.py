@@ -4,15 +4,15 @@ import logging
 import os
 import shutil
 import tempfile
+from json import dumps, loads
 
 from sqlalchemy.orm import eagerload, eagerload_all
+from sqlalchemy.sql import expression
 
 from galaxy import model
+from galaxy.exceptions import MalformedContents
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.util.json import dumps, loads
 from galaxy.web.framework.helpers import to_unicode
-
-from sqlalchemy.sql import expression
 
 log = logging.getLogger(__name__)
 
@@ -155,9 +155,9 @@ class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
                     if dataset_attrs.get('exported', True) is True:
                         # Do security check and move/copy dataset data.
                         temp_dataset_file_name = \
-                            os.path.abspath( os.path.join( archive_dir, dataset_attrs['file_name'] ) )
+                            os.path.realpath( os.path.abspath( os.path.join( archive_dir, dataset_attrs['file_name'] ) ) )
                         if not file_in_dir( temp_dataset_file_name, os.path.join( archive_dir, "datasets" ) ):
-                            raise Exception( "Invalid dataset path: %s" % temp_dataset_file_name )
+                            raise MalformedContents( "Invalid dataset path: %s" % temp_dataset_file_name )
                         if datasets_usage_counts[ temp_dataset_file_name ] == 1:
                             self.app.object_store.update_from_file( hda.dataset, file_name=temp_dataset_file_name, create=True )
 
@@ -294,6 +294,7 @@ class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
             except Exception, e:
                 jiha.job.stderr += "Error cleaning up history import job: %s" % e
                 self.sa_session.flush()
+                raise
 
 
 class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):

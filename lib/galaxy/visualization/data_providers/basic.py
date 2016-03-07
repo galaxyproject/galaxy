@@ -1,6 +1,7 @@
 import sys
+from json import loads
+
 from galaxy.datatypes.tabular import Tabular
-from galaxy.util.json import loads
 
 
 class BaseDataProvider( object ):

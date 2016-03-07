@@ -14,8 +14,9 @@ import os
 import shutil
 import sys
 import time
-sys.path.insert( 0, os.path.dirname( __file__ ) )
-from common import submit, display
+
+from common import display, submit
+
 
 def main(api_key, api_url, in_folder, out_folder, data_library, workflow):
     # Find/Create data library with the above name.  Assume we're putting datasets in the root folder '/'
@@ -25,14 +26,14 @@ def main(api_key, api_url, in_folder, out_folder, data_library, workflow):
         if library['name'] == data_library:
             library_id = library['id']
     if not library_id:
-        lib_create_data = {'name':data_library}
+        lib_create_data = {'name': data_library}
         library = submit(api_key, api_url + 'libraries', lib_create_data, return_formatted=False)
         library_id = library[0]['id']
-    folders = display(api_key, api_url + "libraries/%s/contents" % library_id, return_formatted = False)
+    folders = display(api_key, api_url + "libraries/%s/contents" % library_id, return_formatted=False)
     for f in folders:
         if f['name'] == "/":
             library_folder_id = f['id']
-    workflow = display(api_key, api_url + 'workflows/%s' % workflow, return_formatted = False)
+    workflow = display(api_key, api_url + 'workflows/%s' % workflow, return_formatted=False)
     if not workflow:
         print "Workflow %s not found, terminating."
         sys.exit(1)
@@ -52,8 +53,8 @@ def main(api_key, api_url, in_folder, out_folder, data_library, workflow):
                 data['upload_option'] = 'upload_paths'
                 data['filesystem_paths'] = fullpath
                 data['create_type'] = 'file'
-                libset = submit(api_key, api_url + "libraries/%s/contents" % library_id, data, return_formatted = False)
-                #TODO Handle this better, but the datatype isn't always
+                libset = submit(api_key, api_url + "libraries/%s/contents" % library_id, data, return_formatted=False)
+                # TODO Handle this better, but the datatype isn't always
                 # set for the followup workflow execution without this
                 # pause.
                 time.sleep(5)
@@ -65,7 +66,7 @@ def main(api_key, api_url, in_folder, out_folder, data_library, workflow):
                         wf_data['history'] = "%s - %s" % (fname, workflow['name'])
                         wf_data['ds_map'] = {}
                         for step_id, ds_in in workflow['inputs'].iteritems():
-                            wf_data['ds_map'][step_id] = {'src':'ld', 'id':ds['id']}
+                            wf_data['ds_map'][step_id] = {'src': 'ld', 'id': ds['id']}
                         res = submit( api_key, api_url + 'workflows', wf_data, return_formatted=False)
                         if res:
                             print res
@@ -85,4 +86,3 @@ if __name__ == '__main__':
         print 'usage: %s key url in_folder out_folder data_library workflow' % os.path.basename( sys.argv[0] )
         sys.exit( 1 )
     main(api_key, api_url, in_folder, out_folder, data_library, workflow )
-

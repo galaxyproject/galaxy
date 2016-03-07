@@ -31,17 +31,14 @@ group_zero = group_one = group_two = None
 class TestDataSecurity( TwillTestCase ):
     def test_000_initiate_users( self ):
         """Ensuring all required user accounts exist"""
-        self.logout()
         self.login( email='test1@bx.psu.edu', username='regular-user1' )
         global regular_user1
         regular_user1 = get_user( 'test1@bx.psu.edu' )
         assert regular_user1 is not None, 'Problem retrieving user with email "test1@bx.psu.edu" from the database'
-        self.logout()
         self.login( email='test2@bx.psu.edu', username='regular-user2' )
         global regular_user2
         regular_user2 = get_user( 'test2@bx.psu.edu' )
         assert regular_user2 is not None, 'Problem retrieving user with email "test2@bx.psu.edu" from the database'
-        self.logout()
         self.login( email='test@bx.psu.edu', username='admin-user' )
         global admin_user
         admin_user = get_user( 'test@bx.psu.edu' )
@@ -110,7 +107,6 @@ class TestDataSecurity( TwillTestCase ):
     def test_015_login_after_password_reset( self ):
         """Testing logging in after an admin reset a password - tests DefaultHistoryPermissions for accounts created by an admin"""
         # logged in as admin_user
-        self.logout()
         self.login( email=regular_user3.email, password='testreset' )
         # Make sure a History and HistoryDefaultPermissions exist for the user
         latest_history = get_latest_history_for_user( regular_user3 )
@@ -135,7 +131,6 @@ class TestDataSecurity( TwillTestCase ):
                                       % ( latest_dataset.id,
                                           latest_dataset.actions.action,
                                           galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action ) )
-        self.logout()
         # Reset the password to the default for later tests
         self.login( email='test@bx.psu.edu' )
         self.reset_password_as_admin( user_id=self.security.encode_id( regular_user3.id ), password='testuser' )

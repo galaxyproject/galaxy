@@ -3,13 +3,13 @@
 Utility functions used systemwide.
 
 """
-
 from __future__ import absolute_import
 
 import binascii
 import collections
 import errno
 import grp
+import json
 import logging
 import os
 import random
@@ -19,23 +19,17 @@ import smtplib
 import stat
 import string
 import sys
-import time
 import tempfile
 import threading
-from six.moves.urllib import parse as urlparse
-from six import iteritems
-
-from galaxy.util import json
+import time
 from datetime import datetime
-
-from six import PY3
-from six import string_types, text_type
-from six.moves import xrange
-from six.moves import email_mime_text
-from six.moves import zip
-
-from os.path import relpath
 from hashlib import md5
+from os.path import normpath, relpath
+from xml.etree import ElementInclude, ElementTree
+
+from six import binary_type, iteritems, PY3, string_types, text_type
+from six.moves import email_mime_text, xrange, zip
+from six.moves.urllib import parse as urlparse
 
 try:
     import docutils.core as docutils_core
@@ -44,9 +38,7 @@ except ImportError:
     docutils_core = None
     docutils_html4css1 = None
 
-from xml.etree import ElementTree, ElementInclude
-
-from .inflection import Inflector, English
+from .inflection import English, Inflector
 inflector = Inflector(English)
 
 if PY3:
@@ -361,7 +353,11 @@ def pretty_print_time_interval( time=False, precise=False ):
     elif isinstance( time, datetime ):
         diff = now - time
     elif isinstance( time, string_types ):
-        time = datetime.strptime( time, "%Y-%m-%dT%H:%M:%S.%f" )
+        try:
+            time = datetime.strptime( time, "%Y-%m-%dT%H:%M:%S.%f" )
+        except ValueError:
+            # MySQL may not support microseconds precision
+            time = datetime.strptime( time, "%Y-%m-%dT%H:%M:%S" )
         diff = now - time
     else:
         diff = now - now
@@ -844,17 +840,25 @@ def roundify(amount, sfs=2):
         return amount[0:sfs] + '0' * (len(amount) - sfs)
 
 
-def unicodify( value, encoding=DEFAULT_ENCODING, error='replace', default=None ):
+def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', default=None):
     """
-    Returns a unicode string or None
+    Returns a unicode string or None.
     """
-
-    if isinstance( value, text_type ):
-        return value
+    if value is None:
+        return None
     try:
-        return text_type( str( value ), encoding, error )
-    except:
+        if not isinstance(value, string_types) and not isinstance(value, binary_type):
+            # In Python 2, value is not an instance of basestring
+            # In Python 3, value is not an instance of bytes or str
+            value = str(value)
+        # Now in Python 2, value is an instance of basestring, but may be not unicode
+        # Now in Python 3, value is an instance of bytes or str
+        if not isinstance(value, text_type):
+            value = text_type(value, encoding, error)
+    except Exception:
+        log.exception("value %s could not be coerced to unicode" % value)
         return default
+    return value
 
 
 def smart_str(s, encoding='utf-8', strings_only=False, errors='strict'):
@@ -1336,6 +1340,22 @@ def parse_int(value, min_val=None, max_val=None, default=None, allow_none=False)
             return default
         else:
             raise
+
+
+def safe_relpath(path):
+    """
+    Given what we expect to be a relative path, determine whether the path
+    would exist inside the current directory.
+
+    :type   path:   string
+    :param  path:   a path to check
+    :rtype:         bool
+    :returns:       ``True`` if path is relative and does not reference a path
+        in a parent directory, ``False`` otherwise.
+    """
+    if path.startswith(os.sep) or normpath(path).startswith(os.pardir):
+        return False
+    return True
 
 
 class ExecutionTimer(object):

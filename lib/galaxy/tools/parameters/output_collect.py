@@ -9,7 +9,11 @@ import json
 from galaxy import jobs
 from galaxy import util
 from galaxy.util import odict
-from galaxy.tools.parser.output_collection_def import DEFAULT_DATASET_COLLECTOR_DESCRIPTION
+from galaxy.tools.parser.output_collection_def import (
+    DEFAULT_DATASET_COLLECTOR_DESCRIPTION,
+    INPUT_DBKEY_TOKEN,
+)
+
 
 DATASET_ID_TOKEN = "DATASET_ID"
 
@@ -24,6 +28,7 @@ def collect_dynamic_collections(
     job_working_directory,
     inp_data={},
     job=None,
+    input_dbkey="?",
 ):
     collections_service = tool.app.dataset_collections_service
     job_context = JobContext(
@@ -31,6 +36,7 @@ def collect_dynamic_collections(
         job,
         job_working_directory,
         inp_data,
+        input_dbkey,
     )
 
     for name, has_collection in output_collections.items():
@@ -64,8 +70,9 @@ def collect_dynamic_collections(
 
 class JobContext( object ):
 
-    def __init__( self, tool, job, job_working_directory, inp_data ):
+    def __init__( self, tool, job, job_working_directory, inp_data, input_dbkey ):
         self.inp_data = inp_data
+        self.input_dbkey = input_dbkey
         self.app = tool.app
         self.sa_session = tool.sa_session
         self.job = job
@@ -109,6 +116,9 @@ class JobContext( object ):
             visible = fields_match.visible
             ext = fields_match.ext
             dbkey = fields_match.dbkey
+            if dbkey == INPUT_DBKEY_TOKEN:
+                dbkey = self.input_dbkey
+
             # Create new primary dataset
             name = fields_match.name or designation
 
@@ -120,6 +130,13 @@ class JobContext( object ):
                 name=name,
                 filename=filename,
                 metadata_source_name=output_collection_def.metadata_source,
+            )
+            log.debug(
+                "(%s) Created dynamic collection dataset for path [%s] with element identifier [%s] for output [%s].",
+                self.job.id,
+                filename,
+                designation,
+                output_collection_def.name,
             )
             current_builder.add_dataset( element_identifiers[-1], dataset )
 
@@ -176,12 +193,17 @@ class JobContext( object ):
         return primary_data
 
 
-def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
+def collect_primary_datasets( tool, output, job_working_directory, input_ext, input_dbkey="?" ):
     app = tool.app
     sa_session = tool.sa_session
     new_primary_datasets = {}
     try:
-        json_file = open( os.path.join( job_working_directory, jobs.TOOL_PROVIDED_JOB_METADATA_FILE ), 'r' )
+        galaxy_json_path = os.path.join( job_working_directory, "working", jobs.TOOL_PROVIDED_JOB_METADATA_FILE )
+        # LEGACY: Remove in 17.XX
+        if not os.path.exists( galaxy_json_path ):
+            # Maybe this is a legacy job, use the job working directory instead
+            galaxy_json_path = os.path.join( job_working_directory, jobs.TOOL_PROVIDED_JOB_METADATA_FILE )
+        json_file = open( galaxy_json_path, 'r' )
         for line in json_file:
             line = json.loads( line )
             if line.get( 'type' ) == 'new_primary_dataset':
@@ -227,6 +249,8 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
             if ext == "input":
                 ext = input_ext
             dbkey = fields_match.dbkey
+            if dbkey == INPUT_DBKEY_TOKEN:
+                dbkey = input_dbkey
             # Create new primary dataset
             primary_data = app.model.HistoryDatasetAssociation( extension=ext,
                                                                 designation=designation,

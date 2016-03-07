@@ -6,12 +6,10 @@ class TestToolMigrationStages( ShedTwillTestCase ):
 
     def test_0000_initiate_users( self ):
         """Create necessary user accounts and login as an admin user."""
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
         self.test_db_util.get_private_role( admin_user )
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email

@@ -1,10 +1,10 @@
 """
 Sample script for Galaxy Search API
 """
-
 import json
 import requests
 import sys
+
 
 class RemoteGalaxy(object):
 
@@ -23,7 +23,7 @@ class RemoteGalaxy(object):
         c_url = self.url + path
         params = {}
         params['key'] = self.api_key
-        req = requests.post(c_url, data=json.dumps(payload), params=params, headers = {'Content-Type': 'application/json'} )
+        req = requests.post(c_url, data=json.dumps(payload), params=params, headers={'Content-Type': 'application/json'} )
         return req.json()
 
 if __name__ == "__main__":

@@ -16,12 +16,10 @@ This example requires a tool panel config file (e.g., tool_conf.xml, shed_tool_c
 Here is a working example of how to use this script to install a repository from the test tool shed.
 ./install_tool_shed_repositories.py --api <api key> --local <galaxy base url> --url http://testtoolshed.g2.bx.psu.edu --name gregs_filter --owner greg --tool-deps
 """
-
-import os
-import sys
 import argparse
-sys.path.insert( 0, os.path.dirname( __file__ ) )
+
 from common import submit
+
 
 def main( options ):
     """Collect all user data and install the tools via the Galaxy API."""

@@ -5,14 +5,15 @@ import logging
 import os
 import re
 import sys
-from optparse import OptionParser
+import optparse
 
 sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir ) )
+sys.path.insert(1, os.path.join( os.path.dirname( __file__ ) ) )
 
 import galaxy.webapps.tool_shed.config as tool_shed_config
 from galaxy.web import security
 from galaxy.webapps.tool_shed.model import mapping
-from .bootstrap_util import admin_user_info
+from bootstrap_util import admin_user_info
 
 log = logging.getLogger( __name__ )
 
@@ -116,13 +117,10 @@ def validate_publicname( username ):
     return ''
 
 if __name__ == "__main__":
-    parser = OptionParser()
-    ( options, args ) = parser.parse_args()
-    try:
-        ini_file = args[ 0 ]
-    except IndexError:
-        print "Usage: python %s <tool shed .ini file> [options]" % sys.argv[ 0 ]
-        sys.exit( 127 )
+    parser = optparse.OptionParser( description='Create a user with API key.' )
+    parser.add_option( '-c', dest='config', action='store', help='.ini file to retried toolshed configuration from' )
+    ( args, options ) = parser.parse_args()
+    ini_file = args.config
     config_parser = ConfigParser.ConfigParser( { 'here': os.getcwd() } )
     print "Reading ini file: ", ini_file
     config_parser.read( ini_file )

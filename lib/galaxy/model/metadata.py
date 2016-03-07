@@ -6,27 +6,25 @@ Galaxy Metadata
 import copy
 import cPickle
 import json
+import logging
 import os
 import shutil
 import sys
 import tempfile
 import weakref
-
 from os.path import abspath
 
+from six import string_types
 from sqlalchemy.orm import object_session
 
 import galaxy.model
-from galaxy.util import listify
-from galaxy.util.object_wrapper import sanitize_lists_to_string
-from galaxy.util import stringify_dictionary_keys
-from galaxy.util import string_as_bool
-from galaxy.util import in_directory
+from galaxy.util import (in_directory, listify, string_as_bool,
+                         stringify_dictionary_keys)
 from galaxy.util.json import safe_dumps
+from galaxy.util.object_wrapper import sanitize_lists_to_string
 from galaxy.util.odict import odict
 from galaxy.web import form_builder
 
-import logging
 log = logging.getLogger(__name__)
 
 STATEMENTS = "__galaxy_statements__"  # this is the name of the property in a Datatype class where new metadata spec element Statements are stored
@@ -151,7 +149,7 @@ class MetadataCollection( object ):
             JSONified_dict = json.load( open( filename ) )
         elif json_dict is not None:
             log.debug( 'loading metadata from dict for: %s %s' % ( dataset.__class__.__name__, dataset.id ) )
-            if isinstance( json_dict, basestring ):
+            if isinstance( json_dict, string_types ):
                 JSONified_dict = json.loads( json_dict )
             elif isinstance( json_dict, dict ):
                 JSONified_dict = json_dict

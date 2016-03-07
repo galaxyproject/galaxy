@@ -12,8 +12,8 @@ import time
 
 from datetime import datetime
 
-from galaxy.exceptions import ObjectNotFound
-from galaxy.util import string_as_bool, umask_fix_perms
+from galaxy.exceptions import ObjectNotFound, ObjectInvalid
+from galaxy.util import string_as_bool, umask_fix_perms, safe_relpath
 from galaxy.util.directory_hash import directory_hash_id
 from galaxy.util.sleeper import Sleeper
 from .s3_multipart_upload import multipart_upload
@@ -208,6 +208,20 @@ class S3ObjectStore(ObjectStore):
                 umask_fix_perms( path, self.config.umask, 0o666, self.config.gid )
 
     def _construct_path(self, obj, base_dir=None, dir_only=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False, **kwargs):
+        # extra_dir should never be constructed from provided data but just
+        # make sure there are no shenannigans afoot
+        if extra_dir and extra_dir != os.path.normpath(extra_dir):
+            log.warning('extra_dir is not normalized: %s', extra_dir)
+            raise ObjectInvalid("The requested object is invalid")
+        # ensure that any parent directory references in alt_name would not
+        # result in a path not contained in the directory path constructed here
+        if alt_name:
+            if not safe_relpath(alt_name):
+                log.warning('alt_name would locate path outside dir: %s', alt_name)
+                raise ObjectInvalid("The requested object is invalid")
+            # alt_name can contain parent directory references, but S3 will not
+            # follow them, so if they are valid we normalize them out
+            alt_name = os.path.normpath(alt_name)
         rel_path = os.path.join(*directory_hash_id(obj.id))
         if extra_dir is not None:
             if extra_dir_at_root:

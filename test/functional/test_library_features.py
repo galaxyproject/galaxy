@@ -32,28 +32,24 @@ class TestLibraryFeatures( TwillTestCase ):
 
     def test_000_initiate_users( self ):
         """Ensuring all required user accounts exist"""
-        self.logout()
         self.login( email='test1@bx.psu.edu', username='regular-user1' )
         global regular_user1
         regular_user1 = get_user( 'test1@bx.psu.edu' )
         assert regular_user1 is not None, 'Problem retrieving user with email "test1@bx.psu.edu" from the database'
         global regular_user1_private_role
         regular_user1_private_role = get_private_role( regular_user1 )
-        self.logout()
         self.login( email='test2@bx.psu.edu', username='regular-user2' )
         global regular_user2
         regular_user2 = get_user( 'test2@bx.psu.edu' )
         assert regular_user2 is not None, 'Problem retrieving user with email "test2@bx.psu.edu" from the database'
         global regular_user2_private_role
         regular_user2_private_role = get_private_role( regular_user2 )
-        self.logout()
         self.login( email='test3@bx.psu.edu', username='regular-user3' )
         global regular_user3
         regular_user3 = get_user( 'test3@bx.psu.edu' )
         assert regular_user3 is not None, 'Problem retrieving user with email "test3@bx.psu.edu" from the database'
         global regular_user3_private_role
         regular_user3_private_role = get_private_role( regular_user3 )
-        self.logout()
         self.login( email='test@bx.psu.edu', username='admin-user' )
         global admin_user
         admin_user = get_user( 'test@bx.psu.edu' )
@@ -279,7 +275,6 @@ class TestLibraryFeatures( TwillTestCase ):
                                   role_ids,
                                   permissions_in,
                                   permissions_out )
-        self.logout()
         # Now that we have permissions set on the library, we can proceed to test uploading files
         self.login( email=regular_user1.email )
         ldda_message = 'Uploaded all files in test-data/users/test1...'
@@ -293,7 +288,6 @@ class TestLibraryFeatures( TwillTestCase ):
                                      server_dir=regular_user1.email,
                                      ldda_message=ldda_message,
                                      strings_displayed=[ "Upload a directory of files" ] )
-        self.logout()
         self.login( regular_user3.email )
         ldda_message = 'Uploaded all files in test-data/users/test3.../run1'
         # Since regular_user2 has a subdirectory contained within her configured user_library_import_dir,
@@ -309,7 +303,6 @@ class TestLibraryFeatures( TwillTestCase ):
     def test_075_download_archive_of_library_files( self ):
         """Testing downloading an archive of files from library1"""
         # logged in as regular_user3
-        self.logout()
         self.login( email=admin_user.email )
         filename = '1.bed'
         self.upload_library_dataset( cntrller='library_admin',
@@ -626,4 +619,3 @@ class TestLibraryFeatures( TwillTestCase ):
             refresh( user )
             if len( user.roles) != 1:
                 raise AssertionError( '%d UserRoleAssociations are associated with %s ( should be 1 )' % ( len( user.roles ), user.email ) )
-        self.logout()

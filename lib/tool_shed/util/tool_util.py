@@ -5,6 +5,7 @@ import shutil
 import galaxy.tools
 from galaxy import util
 from galaxy.util import checkers
+from galaxy.util import unicodify
 from galaxy.util.expressions import ExpressionContext
 from galaxy.web.form_builder import SelectField
 
@@ -33,7 +34,7 @@ def build_tool_panel_section_select_field( app ):
     options = []
     for section_id, section_name in app.toolbox.get_sections():
         options.append( ( section_name, section_id ) )
-    select_field = SelectField( name='tool_panel_section_id', display='radio' )
+    select_field = SelectField( name='tool_panel_section_id', field_id='tool_panel_section_select' )
     for option_tup in options:
         select_field.add_option( option_tup[ 0 ], option_tup[ 1 ] )
     return select_field
@@ -131,7 +132,7 @@ def get_headers( fname, sep, count=60, is_multi_byte=False ):
     for idx, line in enumerate( file( fname ) ):
         line = line.rstrip( '\n\r' )
         if is_multi_byte:
-            line = unicode( line, 'utf-8' )
+            line = unicodify( line, 'utf-8' )
             sep = sep.encode( 'utf-8' )
         headers.append( line.split( sep ) )
         if idx == count:

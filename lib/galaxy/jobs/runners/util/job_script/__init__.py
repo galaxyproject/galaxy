@@ -7,7 +7,7 @@ from pkg_resources import resource_string
 from six import text_type
 from galaxy.util import unicodify
 
-DEFAULT_SHELL = '/bin/sh'
+DEFAULT_SHELL = '/bin/bash'
 
 DEFAULT_JOB_FILE_TEMPLATE = Template(
     resource_string(__name__, 'DEFAULT_JOB_FILE_TEMPLATE.sh').decode('UTF-8')
@@ -96,6 +96,10 @@ def check_script_integrity(config):
 
 
 def write_script(path, contents, config, mode=0o755):
+    dir = os.path.dirname(path)
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
     with open(path, 'w') as f:
         if isinstance(contents, text_type):
             contents = contents.encode("UTF-8")

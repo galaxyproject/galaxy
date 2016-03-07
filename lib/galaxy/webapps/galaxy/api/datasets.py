@@ -1,6 +1,8 @@
 """
 API operations on the contents of a history dataset.
 """
+from six import string_types
+
 from galaxy import model
 from galaxy import exceptions as galaxy_exceptions
 from galaxy import web
@@ -30,7 +32,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
     def _parse_serialization_params( self, kwd, default_view ):
         view = kwd.get( 'view', None )
         keys = kwd.get( 'keys' )
-        if isinstance( keys, basestring ):
+        if isinstance( keys, string_types ):
             keys = keys.split( ',' )
         return dict( view=view, keys=keys, default_view=default_view )
 

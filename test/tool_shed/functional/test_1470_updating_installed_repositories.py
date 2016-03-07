@@ -26,12 +26,10 @@ class TestUpdateInstalledRepository( ShedTwillTestCase ):
 
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         self.test_db_util.get_private_role( test_user_1 )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
@@ -40,7 +38,6 @@ class TestUpdateInstalledRepository( ShedTwillTestCase ):
     def test_0005_create_filtering_repository( self ):
         """Create and populate the filtering_0530 repository."""
         category = self.create_category( name=category_name, description=category_description )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name=repository_name,
                                                     description=repository_description,
@@ -63,7 +60,6 @@ class TestUpdateInstalledRepository( ShedTwillTestCase ):
         '''
         This is step 1 - Install a repository into Galaxy.
         '''
-        self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         self.install_repository( repository_name,
                                  common.test_user_1_name,
@@ -89,6 +85,7 @@ class TestUpdateInstalledRepository( ShedTwillTestCase ):
         Importantly, this update should *not* create a new installable changeset revision, because that would
         eliminate the process we're testing in this script. So, we upload a readme file.
         '''
+        self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository,
                           filename='filtering/readme.txt',
@@ -105,6 +102,7 @@ class TestUpdateInstalledRepository( ShedTwillTestCase ):
         '''
         This is step 3 - In Galaxy, get updates to the repository.
         '''
+        self.galaxy_login( email=common.admin_email, username=common.admin_username )
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner( repository_name,
                                                                                          common.test_user_1_name )
         self.update_installed_repository( installed_repository )

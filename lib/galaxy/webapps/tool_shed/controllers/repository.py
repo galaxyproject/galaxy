@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import string
@@ -16,7 +17,6 @@ import tool_shed.repository_types.util as rt_util
 
 from galaxy import util
 from galaxy import web
-from galaxy.util import json
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import CheckboxField
 from galaxy.web.framework.helpers import grids
@@ -1467,11 +1467,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         return ''
 
     @web.json
-    def get_file_contents( self, trans, file_path ):
+    def get_file_contents( self, trans, file_path, repository_id ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        return suc.get_repository_file_contents( file_path )
+        return suc.get_repository_file_contents( trans.app, file_path, repository_id )
 
     @web.expose
     def get_functional_test_rss( self, trans, **kwd ):
@@ -1618,22 +1618,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         owner = kwd.get( 'owner', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
-        # We aren't concerned with repositories of type tool_dependency_definition here if a
-        # repository_metadata record is not returned because repositories of this type will never
-        # have repository dependencies. However, if a readme file is uploaded, or some other change
-        # is made that does not create a new downloadable changeset revision but updates the existing
-        # one, we still want to be able to get repository dependencies.
-        repository_metadata = suc.get_current_repository_metadata_for_changeset_revision( trans.app,
-                                                                                          repository,
-                                                                                          changeset_revision )
-        if repository_metadata:
-            metadata = repository_metadata.metadata
-            if metadata:
-                toolshed_base_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
-                rb = relation_builder.RelationBuilder( trans.app, repository, repository_metadata, toolshed_base_url )
-                repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
-                if repository_dependencies:
-                    return encoding_util.tool_shed_encode( repository_dependencies )
+        # get_repository_dependencies( self, app, changeset, toolshed_url )
+        dependencies = repository.get_repository_dependencies( trans.app, changeset_revision, web.url_for( '/', qualified=True ) )
+        if dependencies:
+            return encoding_util.tool_shed_encode( dependencies )
         return ''
 
     @web.expose
@@ -1724,13 +1712,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         owner = kwd.get( 'owner', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
-        for downloadable_revision in repository.downloadable_revisions:
-            if downloadable_revision.changeset_revision == changeset_revision:
-                break
-        metadata = downloadable_revision.metadata
-        tool_dependencies = metadata.get( 'tool_dependencies', '' )
-        if tool_dependencies:
-            return encoding_util.tool_shed_encode( tool_dependencies )
+        dependencies = repository.get_tool_dependencies( changeset_revision )
+        if dependencies is not None:
+            return encoding_util.tool_shed_encode( dependencies )
         return ''
 
     @web.expose
@@ -2436,11 +2420,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         return ''
 
     @web.json
-    def open_folder( self, trans, folder_path ):
+    def open_folder( self, trans, folder_path, repository_id ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        return suc.open_repository_files_folder( folder_path )
+        return suc.open_repository_files_folder( trans.app, folder_path, repository_id )
 
     @web.expose
     def preview_tools_in_changeset( self, trans, repository_id, **kwd ):

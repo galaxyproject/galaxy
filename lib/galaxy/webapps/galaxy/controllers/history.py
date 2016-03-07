@@ -2,6 +2,7 @@ import logging
 import urllib
 
 from markupsafe import escape
+from six import string_types
 from sqlalchemy import and_, false, func, null, true
 from sqlalchemy.orm import eagerload_all
 
@@ -1331,7 +1332,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             new_name = name[i]
 
             # skip if name is empty
-            if not isinstance( new_name, basestring ) or not new_name.strip():
+            if not isinstance( new_name, string_types ) or not new_name.strip():
                 change_msgs.append( "You must specify a valid name for History: " + cur_name )
                 continue
 
