@@ -517,7 +517,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         # PRECONDITION: folder_id has already been altered to remove the folder prefix ('F')
         # TODO: allow name and other, editable ldda attrs?
         if ldda_message:
-            ldda_message = util.sanitize_html.sanitize_html(ldda_message, 'utf-8')
+            ldda_message = sanitize_html(ldda_message)
 
         # check permissions on (all three?) resources: hda, library, folder
         # TODO: do we really need the library??
@@ -1121,7 +1121,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         else:
             self.create_item_slug(trans.sa_session, visualization)
         if annotation:
-            annotation = sanitize_html(annotation, 'utf-8', 'text/html')
+            annotation = sanitize_html(annotation)
             # TODO: if this is to stay in the mixin, UsesAnnotations should be added to the superclasses
             #   right now this is depending on the classes that include this mixin to have UsesAnnotations
             self.add_item_annotation(trans.sa_session, trans.user, visualization, annotation)

@@ -176,7 +176,7 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
             if key == 'type':
                 if not isinstance(val, string_types):
                     raise ValidationError('%s must be a string or unicode: %s' % (key, str(type(val))))
-                val = util.sanitize_html.sanitize_html(val, 'utf-8')
+                val = util.sanitize_html.sanitize_html(val)
             elif key == 'config':
                 if not isinstance(val, dict):
                     raise ValidationError('%s must be a dictionary: %s' % (key, str(type(val))))
@@ -184,22 +184,22 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
             elif key == 'annotation':
                 if not isinstance(val, string_types):
                     raise ValidationError('%s must be a string or unicode: %s' % (key, str(type(val))))
-                val = util.sanitize_html.sanitize_html(val, 'utf-8')
+                val = util.sanitize_html.sanitize_html(val)
 
             # these are keys that actually only be *updated* at the revision level and not here
             #   (they are still valid for create, tho)
             elif key == 'title':
                 if not isinstance(val, string_types):
                     raise ValidationError('%s must be a string or unicode: %s' % (key, str(type(val))))
-                val = util.sanitize_html.sanitize_html(val, 'utf-8')
+                val = util.sanitize_html.sanitize_html(val)
             elif key == 'slug':
                 if not isinstance(val, string_types):
                     raise ValidationError('%s must be a string: %s' % (key, str(type(val))))
-                val = util.sanitize_html.sanitize_html(val, 'utf-8')
+                val = util.sanitize_html.sanitize_html(val)
             elif key == 'dbkey':
                 if not isinstance(val, string_types):
                     raise ValidationError('%s must be a string or unicode: %s' % (key, str(type(val))))
-                val = util.sanitize_html.sanitize_html(val, 'utf-8')
+                val = util.sanitize_html.sanitize_html(val)
 
             elif key not in valid_but_uneditable_keys:
                 continue

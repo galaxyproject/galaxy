@@ -1,14 +1,50 @@
 """
-HTML Sanitizer (ripped from feedparser)
+HTML Sanitizer (lists of acceptable_* and _BaseHTMLProcessor ripped from feedparser)
+TODO: remove BaseHTMLProcessor (only used one time for Page processing)
 """
-
 import re
 import sgmllib
 
+import bleach
 from six import unichr
 from six.moves.html_entities import name2codepoint
 
-from galaxy.util import unicodify
+_acceptable_elements = ['a', 'abbr', 'acronym', 'address', 'area', 'article',
+        'aside', 'audio', 'b', 'big', 'blockquote', 'br', 'button', 'canvas',
+        'caption', 'center', 'cite', 'code', 'col', 'colgroup', 'command',
+        'datagrid', 'datalist', 'dd', 'del', 'details', 'dfn', 'dialog', 'dir',
+        'div', 'dl', 'dt', 'em', 'event-source', 'fieldset', 'figure',
+        'footer', 'font', 'form', 'header', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'hr', 'i', 'img', 'input', 'ins', 'keygen', 'kbd', 'label', 'legend',
+        'li', 'm', 'map', 'menu', 'meter', 'multicol', 'nav', 'nextid', 'ol',
+        'output', 'optgroup', 'option', 'p', 'pre', 'progress', 'q', 's',
+        'samp', 'section', 'select', 'small', 'sound', 'source', 'spacer',
+        'span', 'strike', 'strong', 'sub', 'sup', 'table', 'tbody', 'td',
+        'textarea', 'time', 'tfoot', 'th', 'thead', 'tr', 'tt', 'u', 'ul',
+        'var', 'video', 'noscript']
+
+_acceptable_attributes = ['abbr', 'accept', 'accept-charset', 'accesskey',
+        'action', 'align', 'alt', 'autocomplete', 'autofocus', 'axis',
+        'background', 'balance', 'bgcolor', 'bgproperties', 'border',
+        'bordercolor', 'bordercolordark', 'bordercolorlight', 'bottompadding',
+        'cellpadding', 'cellspacing', 'ch', 'challenge', 'char', 'charoff',
+        'choff', 'charset', 'checked', 'cite', 'class', 'clear', 'color',
+        'cols', 'colspan', 'compact', 'contenteditable', 'controls', 'coords',
+        'data', 'datafld', 'datapagesize', 'datasrc', 'datetime', 'default',
+        'delay', 'dir', 'disabled', 'draggable', 'dynsrc', 'enctype', 'end',
+        'face', 'for', 'form', 'frame', 'galleryimg', 'gutter', 'headers',
+        'height', 'hidefocus', 'hidden', 'high', 'href', 'hreflang', 'hspace',
+        'icon', 'id', 'inputmode', 'ismap', 'keytype', 'label', 'leftspacing',
+        'lang', 'list', 'longdesc', 'loop', 'loopcount', 'loopend',
+        'loopstart', 'low', 'lowsrc', 'max', 'maxlength', 'media', 'method',
+        'min', 'multiple', 'name', 'nohref', 'noshade', 'nowrap', 'open',
+        'optimum', 'pattern', 'ping', 'point-size', 'prompt', 'pqg',
+        'radiogroup', 'readonly', 'rel', 'repeat-max', 'repeat-min', 'replace',
+        'required', 'rev', 'rightspacing', 'rows', 'rowspan', 'rules', 'scope',
+        'selected', 'shape', 'size', 'span', 'src', 'start', 'step', 'summary',
+        'suppress', 'tabindex', 'target', 'template', 'title', 'toppadding',
+        'type', 'unselectable', 'usemap', 'urn', 'valign', 'value', 'variable',
+        'volume', 'vspace', 'vrml', 'width', 'wrap', 'xml:lang']
 
 _cp1252 = {
     unichr(128): unichr(8364),  # euro sign
@@ -76,15 +112,6 @@ class _BaseHTMLProcessor(sgmllib.SGMLParser):
         data = data.replace('&#34;', '"')
         sgmllib.SGMLParser.feed(self, data)
         sgmllib.SGMLParser.close(self)
-
-    def normalize_attrs(self, attrs):
-        if not attrs:
-            return attrs
-        # utility method to be called by descendants
-        attrs = dict([(k.lower(), v) for k, v in attrs]).items()
-        attrs = [(k, k in ('rel', 'type') and v.lower() or v) for k, v in attrs]
-        attrs.sort()
-        return attrs
 
     def unknown_starttag(self, tag, attrs):
         # called for each start tag
@@ -183,188 +210,5 @@ class _BaseHTMLProcessor(sgmllib.SGMLParser):
         return ''.join(self.pieces)
 
 
-class _HTMLSanitizer(_BaseHTMLProcessor):
-    acceptable_elements = ['a', 'abbr', 'acronym', 'address', 'area', 'article',
-                           'aside', 'audio', 'b', 'big', 'blockquote', 'br', 'button', 'canvas',
-                           'caption', 'center', 'cite', 'code', 'col', 'colgroup', 'command',
-                           'datagrid', 'datalist', 'dd', 'del', 'details', 'dfn', 'dialog', 'dir',
-                           'div', 'dl', 'dt', 'em', 'event-source', 'fieldset', 'figure', 'footer',
-                           'font', 'form', 'header', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'i',
-                           'img', 'input', 'ins', 'keygen', 'kbd', 'label', 'legend', 'li', 'm', 'map',
-                           'menu', 'meter', 'multicol', 'nav', 'nextid', 'ol', 'output', 'optgroup',
-                           'option', 'p', 'pre', 'progress', 'q', 's', 'samp', 'section', 'select',
-                           'small', 'sound', 'source', 'spacer', 'span', 'strike', 'strong', 'sub',
-                           'sup', 'table', 'tbody', 'td', 'textarea', 'time', 'tfoot', 'th', 'thead',
-                           'tr', 'tt', 'u', 'ul', 'var', 'video', 'noscript']
-
-    acceptable_attributes = ['abbr', 'accept', 'accept-charset', 'accesskey',
-                             'action', 'align', 'alt', 'autocomplete', 'autofocus', 'axis',
-                             'background', 'balance', 'bgcolor', 'bgproperties', 'border',
-                             'bordercolor', 'bordercolordark', 'bordercolorlight', 'bottompadding',
-                             'cellpadding', 'cellspacing', 'ch', 'challenge', 'char', 'charoff',
-                             'choff', 'charset', 'checked', 'cite', 'class', 'clear', 'color', 'cols',
-                             'colspan', 'compact', 'contenteditable', 'controls', 'coords', 'data',
-                             'datafld', 'datapagesize', 'datasrc', 'datetime', 'default', 'delay',
-                             'dir', 'disabled', 'draggable', 'dynsrc', 'enctype', 'end', 'face', 'for',
-                             'form', 'frame', 'galleryimg', 'gutter', 'headers', 'height', 'hidefocus',
-                             'hidden', 'high', 'href', 'hreflang', 'hspace', 'icon', 'id', 'inputmode',
-                             'ismap', 'keytype', 'label', 'leftspacing', 'lang', 'list', 'longdesc',
-                             'loop', 'loopcount', 'loopend', 'loopstart', 'low', 'lowsrc', 'max',
-                             'maxlength', 'media', 'method', 'min', 'multiple', 'name', 'nohref',
-                             'noshade', 'nowrap', 'open', 'optimum', 'pattern', 'ping', 'point-size',
-                             'prompt', 'pqg', 'radiogroup', 'readonly', 'rel', 'repeat-max',
-                             'repeat-min', 'replace', 'required', 'rev', 'rightspacing', 'rows',
-                             'rowspan', 'rules', 'scope', 'selected', 'shape', 'size', 'span', 'src',
-                             'start', 'step', 'summary', 'suppress', 'tabindex', 'target', 'template',
-                             'title', 'toppadding', 'type', 'unselectable', 'usemap', 'urn', 'valign',
-                             'value', 'variable', 'volume', 'vspace', 'vrml', 'width', 'wrap',
-                             'xml:lang']
-
-    unacceptable_elements_with_end_tag = ['script', 'applet', 'style']
-
-    mathml_elements = ['annotation', 'annotation-xml', 'maction', 'math',
-                       'merror', 'mfenced', 'mfrac', 'mi', 'mmultiscripts', 'mn', 'mo', 'mover', 'mpadded',
-                       'mphantom', 'mprescripts', 'mroot', 'mrow', 'mspace', 'msqrt', 'mstyle',
-                       'msub', 'msubsup', 'msup', 'mtable', 'mtd', 'mtext', 'mtr', 'munder',
-                       'munderover', 'none', 'semantics']
-
-    mathml_attributes = ['actiontype', 'align', 'columnalign', 'columnalign',
-                         'columnalign', 'close', 'columnlines', 'columnspacing', 'columnspan', 'depth',
-                         'display', 'displaystyle', 'encoding', 'equalcolumns', 'equalrows',
-                         'fence', 'fontstyle', 'fontweight', 'frame', 'height', 'linethickness',
-                         'lspace', 'mathbackground', 'mathcolor', 'mathvariant', 'mathvariant',
-                         'maxsize', 'minsize', 'open', 'other', 'rowalign', 'rowalign', 'rowalign',
-                         'rowlines', 'rowspacing', 'rowspan', 'rspace', 'scriptlevel', 'selection',
-                         'separator', 'separators', 'stretchy', 'width', 'width', 'xlink:href',
-                         'xlink:show', 'xlink:type', 'xmlns', 'xmlns:xlink']
-
-    # svgtiny - foreignObject + linearGradient + radialGradient + stop
-    svg_elements = ['a', 'animate', 'animateColor', 'animateMotion',
-                    'animateTransform', 'circle', 'defs', 'desc', 'ellipse', 'foreignObject',
-                    'font-face', 'font-face-name', 'font-face-src', 'g', 'glyph', 'hkern',
-                    'linearGradient', 'line', 'marker', 'metadata', 'missing-glyph', 'mpath',
-                    'path', 'polygon', 'polyline', 'radialGradient', 'rect', 'set', 'stop',
-                    'svg', 'switch', 'text', 'title', 'tspan', 'use']
-
-    # svgtiny + class + opacity + offset + xmlns + xmlns:xlink
-    svg_attributes = ['accent-height', 'accumulate', 'additive', 'alphabetic',
-                      'arabic-form', 'ascent', 'attributeName', 'attributeType',
-                      'baseProfile', 'bbox', 'begin', 'by', 'calcMode', 'cap-height',
-                      'class', 'color', 'color-rendering', 'content', 'cx', 'cy', 'd', 'dx',
-                      'dy', 'descent', 'display', 'dur', 'end', 'fill', 'fill-opacity',
-                      'fill-rule', 'font-family', 'font-size', 'font-stretch', 'font-style',
-                      'font-variant', 'font-weight', 'from', 'fx', 'fy', 'g1', 'g2',
-                      'glyph-name', 'gradientUnits', 'hanging', 'height', 'horiz-adv-x',
-                      'horiz-origin-x', 'id', 'ideographic', 'k', 'keyPoints', 'keySplines',
-                      'keyTimes', 'lang', 'mathematical', 'marker-end', 'marker-mid',
-                      'marker-start', 'markerHeight', 'markerUnits', 'markerWidth', 'max',
-                      'min', 'name', 'offset', 'opacity', 'orient', 'origin',
-                      'overline-position', 'overline-thickness', 'panose-1', 'path',
-                      'pathLength', 'points', 'preserveAspectRatio', 'r', 'refX', 'refY',
-                      'repeatCount', 'repeatDur', 'requiredExtensions', 'requiredFeatures',
-                      'restart', 'rotate', 'rx', 'ry', 'slope', 'stemh', 'stemv',
-                      'stop-color', 'stop-opacity', 'strikethrough-position',
-                      'strikethrough-thickness', 'stroke', 'stroke-dasharray',
-                      'stroke-dashoffset', 'stroke-linecap', 'stroke-linejoin',
-                      'stroke-miterlimit', 'stroke-opacity', 'stroke-width', 'systemLanguage',
-                      'target', 'text-anchor', 'to', 'transform', 'type', 'u1', 'u2',
-                      'underline-position', 'underline-thickness', 'unicode', 'unicode-range',
-                      'units-per-em', 'values', 'version', 'viewBox', 'visibility', 'width',
-                      'widths', 'x', 'x-height', 'x1', 'x2', 'xlink:actuate', 'xlink:arcrole',
-                      'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type',
-                      'xml:base', 'xml:lang', 'xml:space', 'xmlns', 'xmlns:xlink', 'y', 'y1',
-                      'y2', 'zoomAndPan']
-
-    svg_attr_map = None
-    svg_elem_map = None
-
-    def reset(self):
-        _BaseHTMLProcessor.reset(self)
-        self.unacceptablestack = 0
-        self.mathmlOK = 0
-        self.svgOK = 0
-
-    def unknown_starttag(self, tag, attrs):
-        acceptable_attributes = self.acceptable_attributes
-        keymap = {}
-        if tag not in self.acceptable_elements or self.svgOK:
-            if tag in self.unacceptable_elements_with_end_tag:
-                self.unacceptablestack += 1
-
-            # not otherwise acceptable, perhaps it is MathML or SVG?
-            if tag == 'math' and ('xmlns', 'http://www.w3.org/1998/Math/MathML') in attrs:
-                self.mathmlOK += 1
-            if tag == 'svg' and ('xmlns', 'http://www.w3.org/2000/svg') in attrs:
-                self.svgOK += 1
-
-            # chose acceptable attributes based on tag class, else bail
-            if self.mathmlOK and tag in self.mathml_elements:
-                acceptable_attributes = self.mathml_attributes
-            elif self.svgOK and tag in self.svg_elements:
-                # for most vocabularies, lowercasing is a good idea.  Many
-                # svg elements, however, are camel case
-                if not self.svg_attr_map:
-                    lower = [attr.lower() for attr in self.svg_attributes]
-                    mix = [a for a in self.svg_attributes if a not in lower]
-                    self.svg_attributes = lower
-                    self.svg_attr_map = dict([(a.lower(), a) for a in mix])
-
-                    lower = [attr.lower() for attr in self.svg_elements]
-                    mix = [a for a in self.svg_elements if a not in lower]
-                    self.svg_elements = lower
-                    self.svg_elem_map = dict([(a.lower(), a) for a in mix])
-                acceptable_attributes = self.svg_attributes
-                tag = self.svg_elem_map.get(tag, tag)
-                keymap = self.svg_attr_map
-            elif tag not in self.acceptable_elements:
-                return
-
-        # declare xlink namespace, if needed
-        if self.mathmlOK or self.svgOK:
-            if any(n_v[0].startswith('xlink:') for n_v in attrs):
-                if not ('xmlns:xlink', 'http://www.w3.org/1999/xlink') in attrs:
-                    attrs.append(('xmlns:xlink', 'http://www.w3.org/1999/xlink'))
-
-        clean_attrs = []
-        for key, value in self.normalize_attrs(attrs):
-            if key == "href" and value.strip().startswith("javascript"):
-                pass
-            elif key in acceptable_attributes:
-                key = keymap.get(key, key)
-                clean_attrs.append((key, value))
-            elif key == 'style':
-                pass
-        _BaseHTMLProcessor.unknown_starttag(self, tag, clean_attrs)
-
-    def unknown_endtag(self, tag):
-        if tag not in self.acceptable_elements:
-            if tag in self.unacceptable_elements_with_end_tag:
-                self.unacceptablestack -= 1
-            if self.mathmlOK and tag in self.mathml_elements:
-                if tag == 'math' and self.mathmlOK:
-                    self.mathmlOK -= 1
-            elif self.svgOK and tag in self.svg_elements:
-                tag = self.svg_elem_map.get(tag, tag)
-                if tag == 'svg' and self.svgOK:
-                    self.svgOK -= 1
-            else:
-                return
-        _BaseHTMLProcessor.unknown_endtag(self, tag)
-
-    def handle_pi(self, text):
-        pass
-
-    def handle_decl(self, text):
-        pass
-
-    def handle_data(self, text):
-        if not self.unacceptablestack:
-            _BaseHTMLProcessor.handle_data(self, text)
-
-
-def sanitize_html(htmlSource, encoding="utf-8", type="text/html"):
-    p = _HTMLSanitizer(encoding, type)
-    p.feed(unicodify(htmlSource, encoding))
-    data = p.output()
-    data = data.strip().replace('\r\n', '\n')
-    return data
+def sanitize_html(htmlSource):
+    return bleach.clean(htmlSource, tags=_acceptable_elements, attributes=_acceptable_attributes, strip=True)
