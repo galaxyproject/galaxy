@@ -100,7 +100,7 @@ window.app = function app( options, bootstrapped ){
             '(/)' : 'home',
             // TODO: remove annoying 'root' from root urls
             '(/)root*' : 'home',
-            '(/)tours(/:tour_id)' : 'show_tours',
+            '(/)tours(/)(:tour_id)' : 'show_tours',
         },
 
         show_tours : function( tour_id ){

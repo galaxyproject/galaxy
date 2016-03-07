@@ -1,18 +1,18 @@
 """ Tool shed helper methods for dealing with workflows - only two methods are
 utilized outside of this modules - generate_workflow_image and import_workflow.
 """
+import json
 import logging
 import os
 
 import galaxy.tools
 import galaxy.tools.parameters
-from galaxy.util import json
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.workflow.render import WorkflowCanvas
-from galaxy.workflow.steps import attach_ordered_steps
 from galaxy.workflow.modules import module_types
 from galaxy.workflow.modules import ToolModule
 from galaxy.workflow.modules import WorkflowModuleFactory
+from galaxy.workflow.render import WorkflowCanvas
+from galaxy.workflow.steps import attach_ordered_steps
 
 from tool_shed.tools import tool_validator
 

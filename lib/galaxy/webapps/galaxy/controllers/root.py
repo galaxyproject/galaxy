@@ -31,7 +31,8 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
 
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
-        """Called on any url that does not match a controller method.
+        """
+        Called on any url that does not match a controller method.
         """
         raise HTTPNotFound( 'This link may not be followed from within Galaxy.' )
 

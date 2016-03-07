@@ -58,7 +58,7 @@ class RegexValidator( Validator ):
         self.expression = expression
 
     def validate( self, value, trans=None ):
-        if re.match( self.expression, value ) is None:
+        if re.match( self.expression, value or '' ) is None:
             raise ValueError( self.message )
 
 

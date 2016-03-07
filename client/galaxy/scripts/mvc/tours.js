@@ -101,14 +101,15 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
                 "<ul>",
                 '<% _.each(tours, function(tour) { %>',
                     '<li>',
-                        '<a href="#/tours/<%- tour.id %>" class="tourItem" data-tour.id=<%- tour.id %>>',
+                        '<a href="/tours/<%- tour.id %>" class="tourItem" data-tour.id=<%- tour.id %>>',
                             '<%- tour.attributes.name || tour.id %>',
                         '</a>',
                         ' - <%- tour.attributes.description || "No description given." %>',
                     '</li>',
                 '<% }); %>',
                 "</ul>"].join(''));
-            this.$el.html(tpl({tours: this.model.models})).on("click", ".tourItem", function(){
+            this.$el.html(tpl({tours: this.model.models})).on("click", ".tourItem", function(e){
+                e.preventDefault();
                 giveTour($(this).data("tour.id"));
             });
         }
