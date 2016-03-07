@@ -18,9 +18,9 @@ WorkflowInvocationToSubworkflowInvocationAssociation_table = Table(
     Column( "workflow_invocation_id", Integer ),
     Column( "subworkflow_invocation_id", Integer ),
     Column( "workflow_step_id", Integer ),
-    ForeignKeyConstraint(['workflow_invocation_id'], ['workflow_invocation.id'], name='fk_dannontest1'),
-    ForeignKeyConstraint(['subworkflow_invocation_id'], ['workflow_invocation.id'], name='fk_dannontest2'),
-    ForeignKeyConstraint(['workflow_step_id'], ['workflow_step.id'], name='fk_dannontest3')
+    ForeignKeyConstraint(['workflow_invocation_id'], ['workflow_invocation.id'], name='fk_wfi_swi_wfi'),
+    ForeignKeyConstraint(['subworkflow_invocation_id'], ['workflow_invocation.id'], name='fk_wfi_swi_swi'),
+    ForeignKeyConstraint(['workflow_step_id'], ['workflow_step.id'], name='fk_wfi_swi_ws')
 )
 
 WorkflowRequestInputStepParameter_table = Table(
@@ -29,8 +29,8 @@ WorkflowRequestInputStepParameter_table = Table(
     Column( "workflow_invocation_id", Integer ),
     Column( "workflow_step_id", Integer ),
     Column( "parameter_value", JSONType ),
-    ForeignKeyConstraint(['workflow_invocation_id'], ['workflow_invocation.id'], name='fk_dannontest4'),
-    ForeignKeyConstraint(['workflow_step_id'], ['workflow_step.id'], name='fk_dannontest5')
+    ForeignKeyConstraint(['workflow_invocation_id'], ['workflow_invocation.id'], name='fk_wfreq_isp_wfi'),
+    ForeignKeyConstraint(['workflow_step_id'], ['workflow_step.id'], name='fk_wfreq_isp_ws')
 )
 
 TABLES = [
