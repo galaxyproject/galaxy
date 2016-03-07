@@ -3,23 +3,18 @@
 import io
 from urlparse import urlparse
 import json
-
-import pkg_resources
-pkg_resources.require( "Paste" )
 from paste import httpexceptions
 
-import pprint
 import logging
 log = logging.getLogger( __name__ )
 
 
-class BatchMiddleware(object):
+class BatchMiddleware( object ):
     """
     """
     DEFAULT_CONFIG = {
         'route' : '/api/batch'
     }
-    # TODO: whitelist or blacklisted urls
 
     def __init__( self, galaxy, application, config=None ):
         #: the original galaxy webapp
@@ -35,41 +30,24 @@ class BatchMiddleware(object):
         return self.application( environ, start_response )
 
     def process_batch_requests( self, batch_environ, start_response ):
-        print '=' * 40, 'BATCH_REQUEST'
-        pprint.pprint( batch_environ )
-        print
-        print 'batch environ body:', batch_environ[ 'wsgi.input' ]
-
         payload = self._read_post_payload( batch_environ )
-        print 'payload:', payload
         requests = payload.get( 'batch', [] )
-        print 'requests:', requests
 
         responses = []
         for request in requests:
             if not self._valid( request ):
                 continue
 
-            print '-' * 40, 'REQUEST BEGIN'
             request_environ = self._build_request_environ( batch_environ, request )
-            pprint.pprint( request_environ )
             response = self._proccess_batch_request( request, request_environ, start_response )
-            print '-' * 40, 'RESPONSE'
-            pprint.pprint( response )
             responses.append( response )
-            print '-' * 40, 'REQUEST END'
 
-        # log.debug( 'batch_response_body: %s', pprint.pformat( responses ) )
         batch_response_body = json.dumps( responses )
         start_response( '200 OK', [
             ( 'Content-Length', len( batch_response_body ) ),
             ( 'Content-Type', 'application/json' ),
         ])
-        print '=' * 40
         return batch_response_body
-
-    def _valid( self, request ):
-        return True
 
     def _read_post_payload( self, environ ):
         request_body_size = int( environ.get( 'CONTENT_LENGTH', 0 ) )
@@ -78,6 +56,9 @@ class BatchMiddleware(object):
         # log.debug( 'request_body: (%s)\n%s', type( request_body ), request_body )
         payload = json.loads( request_body )
         return payload
+
+    def _valid( self, request ):
+        return True
 
     def _build_request_environ( self, original_environ, request ):
         """
@@ -109,8 +90,6 @@ class BatchMiddleware(object):
         return request_environ
 
     def _proccess_batch_request( self, request, environ, start_response ):
-        # log.debug( ( '.' * 40 ) )
-
         # We may need to include middleware to record various reponses, but this way of doing that won't work:
         # status, headers, body = self.application( environ, start_response, body_renderer=self.body_renderer )
 
@@ -124,7 +103,6 @@ class BatchMiddleware(object):
         except httpexceptions.HTTPNotFound:
             response = dict( status=404, headers=self._default_headers(), body={} )
         return response
-        # log.debug( ( '.' * 40 ) )
 
     def body_renderer( self, trans, body, environ, start_response ):
         # this is a dummy renderer that does not call start_response

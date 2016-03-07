@@ -1,4 +1,4 @@
-import simplejson
+import json
 from requests import post
 import pprint
 
@@ -18,7 +18,7 @@ class ApiBatchTestCase( api.ApiTestCase ):
         return url + '?key=' + self._get_api_key( admin=admin )
 
     def _post_batch( self, batch ):
-        data = simplejson.dumps({ "batch" : batch })
+        data = json.dumps({ "batch" : batch })
         return post( "%s/batch" % ( self.galaxy_interactor.api_url ), data=data )
 
     def log_reponse( self, response ):
@@ -28,7 +28,7 @@ class ApiBatchTestCase( api.ApiTestCase ):
         batch = [
             dict( url=self._with_key( '/api/histories' ) ),
             dict( url=self._with_key( '/api/histories' ),
-                  method='POST', body=simplejson.dumps( dict( name='Wat' ) ) ),
+                  method='POST', body=json.dumps( dict( name='Wat' ) ) ),
             dict( url=self._with_key( '/api/histories' ) ),
         ]
         response = self._post_batch( batch )

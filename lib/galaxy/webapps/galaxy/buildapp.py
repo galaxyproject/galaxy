@@ -767,10 +767,10 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     app = RequestIDMiddleware( app )
     log.debug( "Enabling 'Request ID' middleware" )
 
-    # batch call processing middleware
+    # api batch call processing middleware
     from galaxy.web.framework.middleware.batch import BatchMiddleware
     app = BatchMiddleware( webapp, app, {})
-    log.debug( "Enabling 'Batch' middleware" );
+    log.debug( "Enabling 'Batch' middleware" )
 
     return app
 
