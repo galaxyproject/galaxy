@@ -78,7 +78,7 @@ def downgrade(migrate_engine):
     metadata.reflect()
 
     __drop_column( "subworkflow_id", "workflow_step", metadata )
-    __drop_column( "parent_workflow_id", "workflow_step", metadata )
+    __drop_column( "parent_workflow_id", "workflow", metadata )
 
     __drop_column( "input_subworkflow_step_id", "workflow_step_connection", metadata )
 
