@@ -644,7 +644,7 @@ if wf_parms:
          that would cause missing_tools.mako to render instead of this
          template. -->
     <% module = step.module %>
-    <input type="hidden" name="${step.id}|tool_state" value="${module.encode_runtime_state( t, step.state )}">
+    <input type="hidden" name="${step.id}|tool_state" value="${module.get_state( step.state )}">
     %if step.type == 'tool' or step.type is None:
       <%
         tool = trans.app.toolbox.get_tool( step.tool_id )
