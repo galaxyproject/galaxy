@@ -1,14 +1,15 @@
+from json import loads
+
 from markupsafe import escape
 from sqlalchemy import and_, desc, false, true
 
 from galaxy import managers, model, util, web
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.util import unicodify
-from galaxy.util.json import loads
-from galaxy.util.sanitize_html import sanitize_html, _BaseHTMLProcessor
+from galaxy.util.sanitize_html import _BaseHTMLProcessor, sanitize_html
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesVisualizationMixin
-from galaxy.web.framework.helpers import time_ago, grids
+from galaxy.web.framework.helpers import grids, time_ago
 
 
 def format_bool( b ):

@@ -1,13 +1,8 @@
 """
 Support for running a tool in Galaxy via an internal job management system
 """
-from abc import ABCMeta
-from abc import abstractmethod
-
-import time
 import copy
 import datetime
-import galaxy
 import logging
 import os
 import pwd
@@ -15,21 +10,23 @@ import random
 import shutil
 import subprocess
 import sys
+import time
 import traceback
+from abc import ABCMeta, abstractmethod
+from json import loads
 from xml.etree import ElementTree
+
+import galaxy
 from galaxy import model, util
-from galaxy.util.xml_macros import load
-from galaxy.datatypes import metadata
+from galaxy.datatypes import metadata, sniff
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import JobRunnerMapper
 from galaxy.jobs.runners import BaseJobRunner, JobState
+from galaxy.util import safe_makedirs, unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
-from galaxy.util.json import loads
-from galaxy.util import safe_makedirs
-from galaxy.util import unicodify
-from galaxy.datatypes import sniff
+from galaxy.util.xml_macros import load
 
 from .output_checker import check_output
 from .datasets import TaskPathRewriter
@@ -1291,7 +1288,7 @@ class JobWrapper( object ):
                         dataset.extension = 'txt'
                 self.sa_session.add( dataset )
             if job.states.ERROR == final_job_state:
-                log.debug( "setting dataset state to ERROR" )
+                log.debug( "(%s) setting dataset %s state to ERROR", job.id, dataset_assoc.dataset.dataset.id )
                 # TODO: This is where the state is being set to error. Change it!
                 dataset_assoc.dataset.dataset.state = model.Dataset.states.ERROR
                 # Pause any dependent jobs (and those jobs' outputs)

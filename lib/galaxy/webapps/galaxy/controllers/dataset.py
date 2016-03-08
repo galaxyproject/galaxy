@@ -21,8 +21,6 @@ log = logging.getLogger( __name__ )
 
 comptypes = []
 
-# TODO: not used in this file
-from galaxy.util.json import loads  # noqa
 try:
     import zlib  # noqa
     comptypes.append( 'zip' )

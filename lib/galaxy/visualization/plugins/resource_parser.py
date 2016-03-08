@@ -2,6 +2,8 @@
 Deserialize Galaxy resources (hdas, ldas, datasets, genomes, etc.) from
 a dictionary of string data/ids (often from a query string).
 """
+import json
+import logging
 import weakref
 
 import galaxy.exceptions
@@ -10,7 +12,6 @@ from galaxy.util import bunch
 from galaxy.managers import visualizations as visualization_manager
 from galaxy.managers import hdas as hda_manager
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -31,7 +32,7 @@ class ResourceParser( object ):
         'int'   : int,
         'float' : float,
         # 'date'  : lambda param: ,
-        'json'  : ( lambda param: galaxy.util.json.loads(
+        'json'  : ( lambda param: json.loads(
             galaxy.util.sanitize_html.sanitize_html( param ) ) ),
     }
 

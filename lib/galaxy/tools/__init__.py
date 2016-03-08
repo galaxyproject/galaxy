@@ -2,7 +2,6 @@
 Classes encapsulating galaxy tools and tool configuration.
 """
 
-import binascii
 import glob
 import json
 import logging
@@ -48,7 +47,6 @@ from galaxy.util import unicodify
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
-from galaxy.util.hash_util import hmac_new
 from galaxy.util.json import json_fix
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
@@ -194,15 +192,14 @@ class ToolBox( BaseGalaxyToolBox ):
 class DefaultToolState( object ):
     """
     Keeps track of the state of a users interaction with a tool between
-    requests. The default tool state keeps track of the current page (for
-    multipage "wizard" tools) and the values of all
+    requests.
     """
     def __init__( self ):
         self.page = 0
         self.rerun_remap_job_id = None
         self.inputs = None
 
-    def encode( self, tool, app, secure=True ):
+    def encode( self, tool, app ):
         """
         Convert the data to a string
         """
@@ -211,26 +208,12 @@ class DefaultToolState( object ):
         value = params_to_strings( tool.inputs, self.inputs, app )
         value["__page__"] = self.page
         value["__rerun_remap_job_id__"] = self.rerun_remap_job_id
-        value = json.dumps( value )
-        # Make it secure
-        if secure:
-            a = hmac_new( app.config.tool_secret, value )
-            b = binascii.hexlify( value )
-            return "%s:%s" % ( a, b )
-        else:
-            return value
+        return json.dumps( value )
 
-    def decode( self, value, tool, app, secure=True ):
+    def decode( self, value, tool, app ):
         """
         Restore the state from a string
         """
-        if secure:
-            # Extract and verify hash
-            a, b = value.split( ":" )
-            value = binascii.unhexlify( b )
-            test = hmac_new( app.config.tool_secret, value )
-            assert a == test
-        # Restore from string
         values = json_fix( json.loads( value ) )
         self.page = values.pop( "__page__" )
         if '__rerun_remap_job_id__' in values:
@@ -241,13 +224,11 @@ class DefaultToolState( object ):
 
     def copy( self ):
         """
-        WARNING! Makes a shallow copy, *SHOULD* rework to have it make a deep
-        copy.
+        Shallow copy of the state
         """
         new_state = DefaultToolState()
         new_state.page = self.page
         new_state.rerun_remap_job_id = self.rerun_remap_job_id
-        # This need to be copied.
         new_state.inputs = self.inputs
         return new_state
 

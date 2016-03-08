@@ -132,7 +132,6 @@ var DatasetListItemEdit = _super.extend(
         var actions = _super.prototype._renderSecondaryActions.call( this );
         switch( this.model.get( 'state' ) ){
             case STATES.UPLOAD:
-            case STATES.NEW:
             case STATES.NOT_VIEWABLE:
                 return actions;
             case STATES.ERROR:

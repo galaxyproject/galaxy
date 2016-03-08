@@ -1,15 +1,16 @@
 import json
 import re
+from json import dumps
+
 from six import string_types
 
+from galaxy import model
 from galaxy.exceptions import ObjectInvalid
 from galaxy.model import LibraryDatasetDatasetAssociation
-from galaxy import model
 from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter
 from galaxy.tools.parameters.wrapped import WrappedParameters
 from galaxy.tools.parameters import update_param
 from galaxy.util import ExecutionTimer
-from galaxy.util.json import dumps
 from galaxy.util.none_like import NoneDataset
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
