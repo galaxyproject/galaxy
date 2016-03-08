@@ -6,7 +6,6 @@ cd `dirname $0`
 
 if [ -d "$GALAXY_VIRTUAL_ENV" ];
 then
-    printf "Activating virtualenv at $GALAXY_VIRTUAL_ENV\n"
     . "$GALAXY_VIRTUAL_ENV/bin/activate"
 fi
 
