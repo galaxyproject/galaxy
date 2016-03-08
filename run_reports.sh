@@ -11,6 +11,14 @@
 
 cd `dirname $0`
 
+: ${GALAXY_VIRTUAL_ENV:=.venv}
+
+if [ -d "$GALAXY_VIRTUAL_ENV" ];
+then
+    printf "Activating virtualenv at $GALAXY_VIRTUAL_ENV\n"
+    . "$GALAXY_VIRTUAL_ENV/bin/activate"
+fi
+
 ./scripts/common_startup.sh --skip-samples
 
 if [ -z "$GALAXY_REPORTS_CONFIG" ]; then
