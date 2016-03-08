@@ -98,7 +98,7 @@ class ToolParameter( object, Dictifiable ):
         """
         return self.get_html_field( trans, value, other_values ).get_html()
 
-    def from_html( self, value, trans=None, other_values={} ):
+    def from_json( self, value, trans=None, other_values={} ):
         """
         Convert a value from an HTML POST into the parameters preferred value
         format.
@@ -284,9 +284,9 @@ class IntegerToolParameter( TextToolParameter ):
     blah
     >>> print p.get_html()
     <input type="text" name="blah" size="4" value="10">
-    >>> type( p.from_html( "10", trans ) )
+    >>> type( p.from_json( "10", trans ) )
     <type 'int'>
-    >>> type( p.from_html( "bleh", trans ) )
+    >>> type( p.from_json( "bleh", trans ) )
     Traceback (most recent call last):
         ...
     ValueError: An integer or workflow parameter e.g. ${name} is required
@@ -324,7 +324,7 @@ class IntegerToolParameter( TextToolParameter ):
             value = str( value )
         return super( IntegerToolParameter, self ).get_html_field( trans=trans, value=value, other_values=other_values )
 
-    def from_html( self, value, trans, other_values={} ):
+    def from_json( self, value, trans, other_values={} ):
         try:
             return int( value )
         except:
@@ -364,9 +364,9 @@ class FloatToolParameter( TextToolParameter ):
     blah
     >>> print p.get_html()
     <input type="text" name="blah" size="4" value="3.141592">
-    >>> type( p.from_html( "36.1", trans ) )
+    >>> type( p.from_json( "36.1", trans ) )
     <type 'float'>
-    >>> type( p.from_html( "bleh", trans ) )
+    >>> type( p.from_json( "bleh", trans ) )
     Traceback (most recent call last):
         ...
     ValueError: A real number or workflow parameter e.g. ${name} is required
@@ -404,7 +404,7 @@ class FloatToolParameter( TextToolParameter ):
             value = str( value )
         return super( FloatToolParameter, self ).get_html_field( trans=trans, value=value, other_values=other_values )
 
-    def from_html( self, value, trans, other_values={} ):
+    def from_json( self, value, trans, other_values={} ):
         try:
             return float( value )
         except:
@@ -443,11 +443,11 @@ class BooleanToolParameter( ToolParameter ):
     blah
     >>> print p.get_html()
     <input type="checkbox" id="blah" name="blah" value="__CHECKED__" checked="checked"><input type="hidden" name="blah" value="__NOTHING__">
-    >>> print p.from_html( ["__CHECKED__","__NOTHING__"] )
+    >>> print p.from_json( ["__CHECKED__","__NOTHING__"] )
     True
     >>> print p.to_param_dict_string( True )
     bulletproof vests
-    >>> print p.from_html( ["__NOTHING__"] )
+    >>> print p.from_json( ["__NOTHING__"] )
     False
     >>> print p.to_param_dict_string( False )
     cellophane chests
@@ -462,10 +462,10 @@ class BooleanToolParameter( ToolParameter ):
     def get_html_field( self, trans=None, value=None, other_values={} ):
         checked = self.checked
         if value is not None:
-            checked = self.from_html( value )
+            checked = self.from_json( value )
         return form_builder.CheckboxField( self.name, checked, refresh_on_change=self.refresh_on_change )
 
-    def from_html( self, value, trans=None, other_values={} ):
+    def from_json( self, value, trans=None, other_values={} ):
         if form_builder.CheckboxField.is_checked( value ):
             return True
         return self.to_python( value )
@@ -518,7 +518,7 @@ class FileToolParameter( ToolParameter ):
     def get_html_field( self, trans=None, value=None, other_values={}  ):
         return form_builder.FileField( self.name, ajax=self.ajax, value=value )
 
-    def from_html( self, value, trans=None, other_values={} ):
+    def from_json( self, value, trans=None, other_values={} ):
         # Middleware or proxies may encode files in special ways (TODO: this
         # should be pluggable)
         if type( value ) == dict:
@@ -609,7 +609,7 @@ class FTPFileToolParameter( ToolParameter ):
         else:
             return lst[ 0 ]
 
-    def from_html( self, value, trans=None, other_values={} ):
+    def from_json( self, value, trans=None, other_values={} ):
         return self.to_python( value, trans.app, validate=True )
 
     def to_string( self, value, app ):
@@ -706,7 +706,7 @@ class BaseURLToolParameter( HiddenToolParameter ):
     def get_html_field( self, trans=None, value=None, other_values={} ):
         return form_builder.HiddenField( self.name, self._get_value() )
 
-    def from_html( self, value=None, trans=None, other_values={} ):
+    def from_json( self, value=None, trans=None, other_values={} ):
         return self._get_value()
 
     def _get_value( self ):
@@ -886,7 +886,7 @@ class SelectToolParameter( ToolParameter ):
             field.add_option( text, optval, selected )
         return field
 
-    def from_html( self, value, trans, other_values={} ):
+    def from_json( self, value, trans, other_values={} ):
         legal_values = self.get_legal_values( trans, other_values )
         if len(list(legal_values)) == 0 and trans.workflow_building_mode:
             if self.multiple:
@@ -1155,7 +1155,7 @@ class ColumnListParameter( SelectToolParameter ):
         self.is_dynamic = True
         self.usecolnames = input_source.get_bool( "use_header_names", False )
 
-    def from_html( self, value, trans, other_values={} ):
+    def from_json( self, value, trans, other_values={} ):
         """
         Label convention prepends column number with a 'c', but tool uses the integer. This
         removes the 'c' when entered into a workflow.
@@ -1182,7 +1182,7 @@ class ColumnListParameter( SelectToolParameter ):
         if not value and not self.get_legal_values( trans, other_values ) and self.accept_default:
             value = self.default_value or '1'
             return [ value ] if self.multiple else value
-        return super( ColumnListParameter, self ).from_html( value, trans, other_values )
+        return super( ColumnListParameter, self ).from_json( value, trans, other_values )
 
     @staticmethod
     def _strip_c(column):
@@ -1479,7 +1479,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                 return form_builder.TextField( self.name, value=(value or "") )
         return form_builder.DrillDownField( self.name, self.multiple, self.display, self.refresh_on_change, options, value, refresh_on_change_values=self.refresh_on_change_values )
 
-    def from_html( self, value, trans, other_values={} ):
+    def from_json( self, value, trans, other_values={} ):
         legal_values = self.get_legal_values( trans, other_values )
         if len( list( legal_values ) ) == 0 and trans.workflow_building_mode:
             if self.multiple:
@@ -1818,7 +1818,7 @@ class DataToolParameter( BaseDataToolParameter ):
             return most_recent_dataset[0]
         return ''
 
-    def from_html( self, value, trans, other_values={} ):
+    def from_json( self, value, trans, other_values={} ):
         if trans.workflow_building_mode:
             return None
         if not value and not self.optional:
@@ -2135,7 +2135,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         self._ensure_selection( field )
         return field
 
-    def from_html( self, value, trans, other_values={} ):
+    def from_json( self, value, trans, other_values={} ):
         if trans.workflow_building_mode:
             return None
         if not value and not self.optional:
@@ -2294,7 +2294,7 @@ class LibraryDatasetToolParameter( ToolParameter ):
     def get_initial_value( self, trans, other_values ):
         return None
 
-    def from_html( self, value, trans, other_values={} ):
+    def from_json( self, value, trans, other_values={} ):
         return self.to_python( value, trans.app, other_values=other_values, validate=True )
 
     def to_param_dict_string( self, value, other_values={} ):
