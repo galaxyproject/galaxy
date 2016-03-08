@@ -36,6 +36,16 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
         """
         raise HTTPNotFound( 'This link may not be followed from within Galaxy.' )
 
+    @web.expose
+    def client(self, trans, **kwd):
+        """
+        Endpoint for clientside routes.  Currently a passthrough to index
+        (minus kwargs) though we can differentiate it more in the future.
+        Should not be used with url_for -- see
+        (https://github.com/galaxyproject/galaxy/issues/1878) for why.
+        """
+        return self.index(trans)
+
     def _get_extended_config( self, trans ):
         app = trans.app
         configured_for_inactivity_warning = app.config.user_activation_on and app.config.inactivity_box_content is not None
