@@ -11,7 +11,7 @@
 
 cd `dirname $0`
 
-./scripts/common_startup.sh --skip-samples
+. ./scripts/common_startup.sh --skip-samples
 
 if [ -z "$GALAXY_REPORTS_CONFIG" ]; then
     if [ -f reports_wsgi.ini ]; then
