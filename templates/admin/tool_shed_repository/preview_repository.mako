@@ -256,6 +256,16 @@ function changeset_metadata() {
     valid_tools.sort(function(a,b){return a.clean_name.localeCompare(b.clean_name);});
     valid_tool_dependencies.sort(function(a,b){return a.name.toUpperCase().localeCompare(b.name.toUpperCase());});
     $('.tool_row').remove();
+    if (valid_tools.length <= 0) {
+        $('#tool_panel_section').children().each(function(){$(this).remove()});
+        $('#tps_title').hide();
+        $('#tool_panel_section').hide();
+    }
+    else {
+        show_global_tps_select();
+        $('#tool_panel_section').show();
+        $('#tps_title').show();
+    }
     for (var tool_idx = 0; tool_idx < valid_tools.length; tool_idx++) {
         tool = valid_tools[tool_idx];
         if (tool.name !== 'undefined') {
@@ -321,9 +331,7 @@ function show_global_tps_create() {
 }
 $(function() {
     changeset_metadata();
-    show_global_tps_select();
     $('#changeset').change(changeset_metadata);
-    $("#tool_panel_section_select").change(tool_panel_section);
     $('.toggle_folder').click(function() {
         toggle_folder($(this));
     });
@@ -390,7 +398,7 @@ $(function() {
             <div style="clear: both"></div>
             </div>
         %endif
-        <div class="toolFormTitle">Tool panel section:</div>
+        <div class="toolFormTitle" id="tps_title">Tool panel section:</div>
         <div class="toolFormBody" id="tool_panel_section">
         </div>
         <div class="toolFormTitle">Contents of this repository at revision <strong id="current_changeset"></strong></div>
