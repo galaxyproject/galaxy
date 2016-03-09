@@ -349,7 +349,8 @@ class TabixDataProvider( FilterableMixin, GenomeDataProvider ):
                                 index=self.converted_dataset.file_name)
 
     def get_iterator( self, data_file, chrom, start, end, **kwargs ):
-        # chrom must be a string (not unicode), start/end integers.
+        # chrom must be a string, start/end integers.
+        # in previous versions of pysam, unicode was accepted for chrom, but not in 8.4
         chrom = str(chrom)
         start = int(start)
         end = int(end)
