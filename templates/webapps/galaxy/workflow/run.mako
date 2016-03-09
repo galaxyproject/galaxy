@@ -576,8 +576,8 @@ if wf_parms:
 
 %if has_upgrade_messages:
 <div class="warningmessage">
-    Warning: Some tools in this workflow have been updated. The workflow may still work, but any new inputs will have default values.
-    Please review the parameter values below to make a decision about whether the changes will affect your experiment.
+    Warning: Some tools in this workflow have changed since it was last saved. The workflow may still run, but any new options will have default values.
+    Please review the messages below to make a decision about whether the changes will affect your analysis.
 </div>
 %endif
 
