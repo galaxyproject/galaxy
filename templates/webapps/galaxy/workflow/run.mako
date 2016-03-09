@@ -576,15 +576,14 @@ if wf_parms:
 
 %if has_upgrade_messages:
 <div class="warningmessage">
-    Problems were encountered when loading this workflow, likely due to tool
-    version changes. Missing parameter values have been replaced with default.
-    Please review the parameter values below.
+    Warning: Some tools in this workflow have changed since it was last saved. The workflow may still run, but any new options will have default values.
+    Please review the messages below to make a decision about whether the changes will affect your analysis.
 </div>
 %endif
 
 %if step_version_changes:
     <div class="infomessage">
-        The following tools are beinge executed with a different version from
+        The following tools are being executed with a different version from
         what was available when this workflow was last saved because the
         previous version is no longer available for use on this galaxy
         instance.
