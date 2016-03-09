@@ -135,12 +135,12 @@ class ToolParameter( object, Dictifiable ):
         """
         return []
 
-    def to_string( self, value, app ):
+    def to_json( self, value, app ):
         """Convert a value to a string representation suitable for persisting"""
         return unicodify( value )
 
     def to_python( self, value, app ):
-        """Convert a value created with to_string back to an object representation"""
+        """Convert a value created with to_json back to an object representation"""
         return value
 
     def value_to_basic( self, value, app ):
@@ -149,12 +149,14 @@ class ToolParameter( object, Dictifiable ):
         elif isinstance( value, dict ):
             if value.get('__class__') == 'RuntimeValue':
                 return value
-        return self.to_string( value, app )
+        return self.to_json( value, app )
 
     def value_from_basic( self, value, app, ignore_errors=False ):
         # Handle Runtime values (valid for any parameter?)
-        if isinstance( value, dict ) and '__class__' in value and value['__class__'] == "RuntimeValue":
+        if isinstance( value, dict ) and value.get( '__class__' ) == 'RuntimeValue':
             return RuntimeValue()
+        elif isinstance( value, dict ) and value.get( '__class__' ) == 'UnvalidatedValue':
+            return value[ 'value' ]
         # Delegate to the 'to_python' method
         if ignore_errors:
             try:
@@ -251,7 +253,7 @@ class TextToolParameter( ToolParameter ):
         else:
             return form_builder.TextField( self.name, self.size, value )
 
-    def to_string( self, value, app ):
+    def to_json( self, value, app ):
         """Convert a value to a string representation suitable for persisting"""
         if value is None:
             rval = ''
@@ -473,6 +475,12 @@ class BooleanToolParameter( ToolParameter ):
     def to_python( self, value, app=None ):
         return ( value in [ True, 'True', 'true' ] )
 
+    def to_json( self, value, app=None ):
+        if value is True:
+            return 'true'
+        else:
+            return 'false'
+
     def get_initial_value( self, trans, other_values ):
         return self.checked
 
@@ -542,7 +550,7 @@ class FileToolParameter( ToolParameter ):
         """
         return "multipart/form-data"
 
-    def to_string( self, value, app ):
+    def to_json( self, value, app ):
         if value in [ None, '' ]:
             return None
         elif isinstance( value, string_types ):
@@ -612,7 +620,7 @@ class FTPFileToolParameter( ToolParameter ):
     def from_json( self, value, trans=None, other_values={} ):
         return self.to_python( value, trans.app, validate=True )
 
-    def to_string( self, value, app ):
+    def to_json( self, value, app ):
         return self.to_python( value, app )
 
     def to_python( self, value, app, validate=False ):
@@ -644,9 +652,6 @@ class FTPFileToolParameter( ToolParameter ):
 class HiddenToolParameter( ToolParameter ):
     """
     Parameter that takes one of two values.
-
-    FIXME: This seems hacky, parameters should only describe things the user
-           might change. It is used for 'initializing' the UCSC proxy tool
 
     >>> p = HiddenToolParameter( None, XML( '<param name="blah" type="hidden" value="wax so rockin"/>' ) )
     >>> print p.name
@@ -948,19 +953,8 @@ class SelectToolParameter( ToolParameter ):
             value = value_map( value )
         return value
 
-    def value_to_basic( self, value, app ):
-        if isinstance( value, RuntimeValue ):
-            # Need to handle runtime value's ourself since delegating to the
-            # parent method causes the value to be turned into a string, which
-            # breaks multiple selection
-            return { "__class__": "RuntimeValue" }
+    def to_json( self, value, app ):
         return value
-
-    def value_from_basic( self, value, app, ignore_errors=False ):
-        # Backward compatibility for unvalidated values already stored in databases
-        if isinstance( value, dict ) and value.get( "__class__", None ) == "UnvalidatedValue":
-            return value[ "value" ]
-        return super( SelectToolParameter, self ).value_from_basic( value, app, ignore_errors=ignore_errors )
 
     def get_initial_value( self, trans, other_values ):
         options = list( self.get_options( trans, other_values ) )
@@ -1887,44 +1881,51 @@ class DataToolParameter( BaseDataToolParameter ):
             rval = values[ 0 ]
         return rval
 
-    def to_string( self, value, app ):
-        if value is None or isinstance( value, string_types ):
-            return value
-        elif isinstance( value, int ):
-            return str( value )
-        elif isinstance( value, RuntimeValue ):
-            return None
-        elif isinstance( value, list ) and len( value ) > 0 and isinstance( value[ 0 ], RuntimeValue ):
-            return None
-        elif isinstance( value, list ):
-            return ",".join( [ str( self.to_string( val, app ) ) for val in value ] )
-        elif isinstance( value, app.model.HistoryDatasetCollectionAssociation ):
-            return "__collection_reduce__|%d" % value.id
-        try:
-            return value.id
-        except:
-            return str( value )
+    def to_json( self, value, app ):
+
+        def single_to_json( value ):
+            if isinstance( value, app.model.HistoryDatasetAssociation ):
+                return { 'id' : app.security.encode_id( value.id ), 'src' : 'hda' }
+            elif isinstance( value, app.model.HistoryDatasetCollectionAssociation ):
+                return { 'id' : app.security.encode_id( value.id ), 'src' : 'hdca' }
+
+        if value is not None:
+            if isinstance( value, list ) and len( value ) > 0:
+                values = [ single_to_json( v ) for v in value ]
+            else:
+                values = [ single_to_json( value ) ]
+            if None in values:
+                return None
+            else:
+                return { 'values': values }
+
+        return None
 
     def to_python( self, value, app ):
-        # Both of these values indicate that no dataset is selected.  However, 'None'
-        # indicates that the dataset is optional, while '' indicates that it is not.
         none_values = [ None, '', 'None' ]
 
-        def single_to_python(value):
+        def single_to_python( value ):
             if value in none_values:
-                return value
-            elif str( value ).startswith( "__collection_reduce__|" ):
-                decoded_id = str( value )[ len( "__collection_reduce__|" ): ]
-                if not decoded_id.isdigit():
-                    log.info("to_python called encoded data, bad data previously persisted to Galaxy databse - workflow extraction and rerun of this dataset may break if id_secret changed.")
-                    decoded_id = app.security.decode_id(decoded_id)
-                return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
+                return None
+            elif isinstance( value, dict ) and 'src' in value and value[ 'src' ] == 'hda':
+                return app.model.context.query( app.model.HistoryDatasetAssociation ).get( app.security.decode_id( value[ 'id' ] ) )
+            elif isinstance( value, dict ) and 'src' in value and value[ 'src' ] == 'hdca':
+                return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( app.security.decode_id( value[ 'id' ] ) )
             else:
                 return app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( value ) )
 
-        if isinstance(value, string_types) and value.find(",") > -1:
-            values = value.split(",")
-            return [v for v in map( single_to_python, values ) if v not in none_values]
+        if isinstance( value, string_types ) and value.find( ',' ) > -1:
+            return [ single_to_python( v ) for v in value.split( ',' ) if v not in none_values ]
+        elif isinstance( value, dict ) and 'values' in value:
+            if self.multiple:
+                return [ single_to_python( v ) for v in value[ 'values' ] if v not in none_values ]
+            elif len( value[ 'values' ] ) > 0:
+                return single_to_python( value[ 'values' ][ 0 ] )
+        elif str( value ).startswith( "__collection_reduce__|" ):
+            decoded_id = str( value )[ len( "__collection_reduce__|" ): ]
+            if not decoded_id.isdigit():
+                decoded_id = app.security.decode_id( decoded_id )
+            return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( app.security.decode_id( decoded_id ) )
         else:
             return single_to_python( value )
 
@@ -2173,35 +2174,30 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
             # TODO: Handle error states, implement error states ...
         return rval
 
-    def to_string( self, value, app ):
-        if value is None or isinstance( value, string_types ):
-            return value
-        elif isinstance( value, RuntimeValue ):
-            return None
-        try:
-            if isinstance( value, galaxy.model.DatasetCollectionElement ):
-                return "dce:%s" % value.id
-            else:
-                return "hdca:%s" % value.id
-        except Exception:
-            # This is not good...
-            return str( value )
+    def to_json( self, value, app ):
+        value_dict = None
+        if isinstance( value, galaxy.model.DatasetCollectionElement ):
+            value_dict = { 'id' : app.security.encode_id( value.id ), 'src' : 'dce' }
+        elif isinstance( value, app.model.HistoryDatasetCollectionAssociation ):
+            value_dict = { 'id' : app.security.encode_id( value.id ), 'src' : 'hdca' }
+        if value_dict is not None:
+            return { 'values': [ value_dict ] }
+        return None
 
     def to_python( self, value, app ):
-        # Both of these values indicate that no dataset is selected.  However, 'None'
-        # indicates that the dataset is optional, while '' indicates that it is not.
-        if value is None or value == '' or value == 'None':
-            return value
-
-        if not isinstance( value, string_types ):
-            raise ValueError( "Can not convert data collection parameter value to python object - %s" % value )
-
-        if value.startswith( "dce:" ):
-            dce = app.model.context.query( app.model.DatasetCollectionElement ).get( int( value[ len( "dce:" ): ] ) )
-            return dce
+        if value in [ None, '', 'None' ]:
+            return None
+        elif isinstance( value, dict ) and 'values' in value and isinstance( value[ 'values' ], list ) \
+                and len( value[ 'values' ] ) == 1 and isinstance( value[ 'values' ][ 0 ], dict ) and 'src' in value[ 'values' ][ 0 ]:
+            value_dict = value[ 'values' ][ 0 ]
+            if value_dict[ 'src' ] is 'dce':
+                return app.model.context.query( app.model.DatasetCollectionElement ).get( app.security.decode_id( value_dict[ 'id' ] ) )
+            else:
+                return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( app.security.decode_id( value_dict[ 'id' ] ) )
+        elif value.startswith( "dce:" ):
+            return app.model.context.query( app.model.DatasetCollectionElement ).get( int( value[ len( "dce:" ): ] ) )
         elif value.startswith( "hdca:" ):
-            hdca = app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( int( value[ len( "hdca:" ): ] ) )
-            return hdca
+            return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( int( value[ len( "hdca:" ): ] ) )
         else:
             raise ValueError( "Can not convert data collection parameter value to python object - %s" % value )
 
@@ -2307,7 +2303,7 @@ class LibraryDatasetToolParameter( ToolParameter ):
 
     # converts values to json representation:
     #   { id: LibraryDatasetDatasetAssociation.id, name: LibraryDatasetDatasetAssociation.name, src: 'lda' }
-    def to_string( self, value, app ):
+    def to_json( self, value, app ):
         if not isinstance( value, list ):
             value = [value]
         lst = []
