@@ -1139,6 +1139,7 @@ class ToolModule( WorkflowModule ):
                 dict( ( conn.input_name, conn ) for conn in connections )
         else:
             input_connections_by_name = {}
+
         # Any connected input needs to have value RuntimeValue (these
         # are not persisted so we need to do it every time)
         def callback( input, prefixed_name, **kwargs ):
