@@ -1426,7 +1426,7 @@ class Tool( object, Dictifiable ):
         return output_collect.collect_dynamic_collections( self, output, **kwds )
 
     def to_archive(self):
-        tool = self.tool
+        tool = self
         tarball_files = []
         temp_files = []
         tool_xml = open( os.path.abspath( tool.config_file ), 'r' ).read()
