@@ -11,14 +11,14 @@
 
 cd `dirname $0`
 
+./scripts/common_startup.sh --skip-samples
+
 : ${GALAXY_VIRTUAL_ENV:=.venv}
 
 if [ -d "$GALAXY_VIRTUAL_ENV" ];
 then
     . "$GALAXY_VIRTUAL_ENV/bin/activate"
 fi
-
-./scripts/common_startup.sh --skip-samples
 
 if [ -z "$GALAXY_REPORTS_CONFIG" ]; then
     if [ -f reports_wsgi.ini ]; then
