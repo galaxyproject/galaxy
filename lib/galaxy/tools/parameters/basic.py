@@ -1669,6 +1669,61 @@ class BaseDataToolParameter( ToolParameter ):
             self.options_filter_attribute = options_elem.get(  'options_filter_attribute', None )
         self.is_dynamic = self.options is not None
 
+    def to_json( self, value, app ):
+
+        def single_to_json( value ):
+            src = None
+            if isinstance( value, galaxy.model.DatasetCollectionElement ):
+                src = 'dce'
+            elif isinstance( value, app.model.HistoryDatasetCollectionAssociation ):
+                src = 'hdca'
+            else:
+                src = 'hda'
+            return { 'id' : app.security.encode_id( value.id ), 'src' : src }
+
+        if value is not None:
+            if isinstance( value, list ) and len( value ) > 0:
+                values = [ single_to_json( v ) for v in value ]
+            else:
+                values = [ single_to_json( value ) ]
+            return { 'values': values }
+        return None
+
+    def to_python( self, value, app ):
+        def single_to_python( value ):
+            if isinstance( value, dict ) and 'src' in value:
+                id = app.security.decode_id( value[ 'id' ] )
+                if value[ 'src' ] == 'dce':
+                    return app.model.context.query( app.model.DatasetCollectionElement ).get( id )
+                elif value[ 'src' ] == 'hdca':
+                    return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( id )
+                else:
+                    return app.model.context.query( app.model.HistoryDatasetAssociation ).get( id )
+
+        if isinstance( value, dict ) and 'values' in value:
+            if hasattr( self, 'multiple' ) and self.multiple is True:
+                return [ single_to_python( v ) for v in value[ 'values' ] ]
+            elif len( value[ 'values' ] ) > 0:
+                return single_to_python( value[ 'values' ][ 0 ] )
+
+        # Handle legacy string values potentially stored in databases
+        none_values = [ None, '', 'None' ]
+        if value in none_values:
+            return None
+        if isinstance( value, string_types ) and value.find( ',' ) > -1:
+            return [ app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( v ) ) for v in value.split( ',' ) if v not in none_values ]
+        elif str( value ).startswith( "__collection_reduce__|" ):
+            decoded_id = str( value )[ len( "__collection_reduce__|" ): ]
+            if not decoded_id.isdigit():
+                decoded_id = app.security.decode_id( decoded_id )
+            return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( app.security.decode_id( decoded_id ) )
+        elif str( value ).startswith( "dce:" ):
+            return app.model.context.query( app.model.DatasetCollectionElement ).get( int( value[ len( "dce:" ): ] ) )
+        elif str( value ).startswith( "hdca:" ):
+            return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( int( value[ len( "hdca:" ): ] ) )
+        else:
+            return app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( value ) )
+
 
 class DataToolParameter( BaseDataToolParameter ):
     # TODO, Nate: Make sure the following unit tests appropriately test the dataset security
@@ -1880,54 +1935,6 @@ class DataToolParameter( BaseDataToolParameter ):
                 raise ValueError( "More than one dataset supplied to single input dataset parameter.")
             rval = values[ 0 ]
         return rval
-
-    def to_json( self, value, app ):
-
-        def single_to_json( value ):
-            if isinstance( value, app.model.HistoryDatasetAssociation ):
-                return { 'id' : app.security.encode_id( value.id ), 'src' : 'hda' }
-            elif isinstance( value, app.model.HistoryDatasetCollectionAssociation ):
-                return { 'id' : app.security.encode_id( value.id ), 'src' : 'hdca' }
-
-        if value is not None:
-            if isinstance( value, list ) and len( value ) > 0:
-                values = [ single_to_json( v ) for v in value ]
-            else:
-                values = [ single_to_json( value ) ]
-            if None in values:
-                return None
-            else:
-                return { 'values': values }
-
-        return None
-
-    def to_python( self, value, app ):
-        none_values = [ None, '', 'None' ]
-
-        def single_to_python( value ):
-            if value in none_values:
-                return None
-            elif isinstance( value, dict ) and 'src' in value and value[ 'src' ] == 'hda':
-                return app.model.context.query( app.model.HistoryDatasetAssociation ).get( app.security.decode_id( value[ 'id' ] ) )
-            elif isinstance( value, dict ) and 'src' in value and value[ 'src' ] == 'hdca':
-                return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( app.security.decode_id( value[ 'id' ] ) )
-            else:
-                return app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( value ) )
-
-        if isinstance( value, string_types ) and value.find( ',' ) > -1:
-            return [ single_to_python( v ) for v in value.split( ',' ) if v not in none_values ]
-        elif isinstance( value, dict ) and 'values' in value:
-            if self.multiple:
-                return [ single_to_python( v ) for v in value[ 'values' ] if v not in none_values ]
-            elif len( value[ 'values' ] ) > 0:
-                return single_to_python( value[ 'values' ][ 0 ] )
-        elif str( value ).startswith( "__collection_reduce__|" ):
-            decoded_id = str( value )[ len( "__collection_reduce__|" ): ]
-            if not decoded_id.isdigit():
-                decoded_id = app.security.decode_id( decoded_id )
-            return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( app.security.decode_id( decoded_id ) )
-        else:
-            return single_to_python( value )
 
     def to_param_dict_string( self, value, other_values={} ):
         if value is None:
@@ -2173,33 +2180,6 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
                 raise ValueError( "The previously selected dataset collection has been deleted" )
             # TODO: Handle error states, implement error states ...
         return rval
-
-    def to_json( self, value, app ):
-        value_dict = None
-        if isinstance( value, galaxy.model.DatasetCollectionElement ):
-            value_dict = { 'id' : app.security.encode_id( value.id ), 'src' : 'dce' }
-        elif isinstance( value, app.model.HistoryDatasetCollectionAssociation ):
-            value_dict = { 'id' : app.security.encode_id( value.id ), 'src' : 'hdca' }
-        if value_dict is not None:
-            return { 'values': [ value_dict ] }
-        return None
-
-    def to_python( self, value, app ):
-        if value in [ None, '', 'None' ]:
-            return None
-        elif isinstance( value, dict ) and 'values' in value and isinstance( value[ 'values' ], list ) \
-                and len( value[ 'values' ] ) == 1 and isinstance( value[ 'values' ][ 0 ], dict ) and 'src' in value[ 'values' ][ 0 ]:
-            value_dict = value[ 'values' ][ 0 ]
-            if value_dict[ 'src' ] is 'dce':
-                return app.model.context.query( app.model.DatasetCollectionElement ).get( app.security.decode_id( value_dict[ 'id' ] ) )
-            else:
-                return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( app.security.decode_id( value_dict[ 'id' ] ) )
-        elif value.startswith( "dce:" ):
-            return app.model.context.query( app.model.DatasetCollectionElement ).get( int( value[ len( "dce:" ): ] ) )
-        elif value.startswith( "hdca:" ):
-            return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( int( value[ len( "hdca:" ): ] ) )
-        else:
-            raise ValueError( "Can not convert data collection parameter value to python object - %s" % value )
 
     def value_to_display_text( self, value, app ):
         try:
