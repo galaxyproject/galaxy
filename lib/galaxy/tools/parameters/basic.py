@@ -1670,7 +1670,6 @@ class BaseDataToolParameter( ToolParameter ):
         self.is_dynamic = self.options is not None
 
     def to_json( self, value, app ):
-
         def single_to_json( value ):
             src = None
             if isinstance( value, galaxy.model.DatasetCollectionElement ):
@@ -1680,7 +1679,6 @@ class BaseDataToolParameter( ToolParameter ):
             else:
                 src = 'hda'
             return { 'id' : app.security.encode_id( value.id ), 'src' : src }
-
         if value is not None:
             if isinstance( value, list ) and len( value ) > 0:
                 values = [ single_to_json( v ) for v in value ]
