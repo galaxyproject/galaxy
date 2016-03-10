@@ -1751,10 +1751,11 @@ class JobWrapper( object ):
 
     def _report_error_to_sentry( self ):
         job = self.get_job()
+        tool = self.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
         if self.app.sentry_client and job.state == job.states.ERROR:
             self.app.sentry_client.capture(
                 'raven.events.Message',
-                message="Galaxy Job in Error: %s" % job.tool_id,
+                message="Galaxy Job Error: %s  v.%s" % (job.tool_id, job.tool_version),
                 extra={
                     'info' : job.info,
                     'id' : job.id,
@@ -1764,7 +1765,9 @@ class JobWrapper( object ):
                     'exit_code': job.exit_code,
                     'stdout': job.stdout,
                     'handler': job.handler,
-                    'user': self.user
+                    'user': self.user,
+                    'tool_version': job.tool_version,
+                    'tool_xml': tool.config_file if tool else None
                 }
             )
 
