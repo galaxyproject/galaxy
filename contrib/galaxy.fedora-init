@@ -24,11 +24,9 @@ start() {
 	case "$(id -un)" in
 		$RUN_AS)
 			eval "$cmd"
-			touch /var/lock/subsys/galaxy
 			;;
 		root)
 			su - $RUN_AS -c "$cmd"
-			touch /var/lock/subsys/galaxy
 			;;
 		*)
 			echo "*** ERROR *** must be $RUN_AS or root in order to control this service" >&2
@@ -45,11 +43,9 @@ stop() {
 	case "$(id -un)" in
 		$RUN_AS)
 			eval "$cmd"
-			rm -f /var/lock/subsys/galaxy
 			;;
 		root)
 			su - $RUN_AS -c "$cmd"
-			rm -f /var/lock/subsys/galaxy
 			;;
 		*)
 			echo "*** ERROR *** must be $RUN_AS or root in order to control this service" >&2
