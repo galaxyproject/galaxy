@@ -49,7 +49,7 @@ class Registry( object ):
         url_sans_protocol = common_util.remove_protocol_from_tool_shed_url( url )
         for shed_name, shed_url in self.tool_sheds.items():
             shed_url_sans_protocol = common_util.remove_protocol_from_tool_shed_url( shed_url )
-            if shed_url_sans_protocol.find( url_sans_protocol ) >= 0:
+            if url_sans_protocol.startswith( shed_url_sans_protocol ):
                 return self.tool_sheds_auth[ shed_name ]
         log.debug( "Invalid url '%s' received by tool shed registry's password_manager_for_url method." % str( url ) )
         return None
