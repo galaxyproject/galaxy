@@ -46,6 +46,7 @@ stop() {
 			;;
 		root)
 			su - $RUN_AS -c "$cmd"
+			;;
 		*)
 			echo "*** ERROR *** must be $RUN_AS or root in order to control this service" >&2
 			exit 1
