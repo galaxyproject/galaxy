@@ -65,7 +65,9 @@ galaxy_status() {
 		do
 			status -p $RUN_IN/${proc}.pid ${proc}
 		done
-	fi																			}
+	fi
+}
+
 notsupported() {
 	echo "*** ERROR*** $SERVICE_NAME: operation [$1] not supported"
 }
