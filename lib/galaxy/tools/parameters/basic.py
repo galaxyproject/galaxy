@@ -1680,7 +1680,7 @@ class BaseDataToolParameter( ToolParameter ):
                 src = 'hda'
             return { 'id' : app.security.encode_id( value.id ), 'src' : src }
 
-        if value is not None:
+        if value not in [ None, '', 'None' ]:
             if isinstance( value, list ) and len( value ) > 0:
                 values = [ single_to_json( v ) for v in value ]
             else:
