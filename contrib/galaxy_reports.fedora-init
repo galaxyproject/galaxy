@@ -12,7 +12,7 @@
 . /etc/init.d/functions
 #--- config
 
-SERVICE_NAME="galaxy"
+SERVICE_NAME="galaxy-reports"
 RUN_AS="galaxy"
 RUN_IN="/path/to/galaxy-dist"
 
@@ -20,7 +20,7 @@ RUN_IN="/path/to/galaxy-dist"
 
 start() {
 	echo "Starting $SERVICE_NAME... "
-	cmd="cd $RUN_IN && sh run.sh --daemon"
+	cmd="cd $RUN_IN && sh run_reports.sh --daemon"
 	case "$(id -un)" in
 		$RUN_AS)
 			eval "$cmd"
@@ -38,7 +38,7 @@ start() {
 stop() {
 	echo -n "Stopping $SERVICE_NAME... "
 	
-	cmd="cd $RUN_IN && sh run.sh --stop-daemon"
+	cmd="cd $RUN_IN && sh run_reports.sh --stop-daemon"
 
 	case "$(id -un)" in
 		$RUN_AS)
@@ -53,19 +53,6 @@ stop() {
 	esac
 	
 	echo "done."
-}
-
-galaxy_status() {
-	if [[ $(grep '\[server:' $RUN_IN/config/galaxy.ini|awk -F'(:)|(])' '{ print $2 }') == 'main' ]]
-	then
-		echo -n "$SERVICE_NAME status: "
-		status -p $RUN_IN/paster.pid galaxy
-	else
-		for proc in $(grep '\[server:' $RUN_IN/config/galaxy.ini|awk -F'(:)|(])' '{ print $2 }')
-		do
-			status -p $RUN_IN/${proc}.pid ${proc}
-		done
-	fi
 }
 
 notsupported() {
@@ -92,7 +79,8 @@ case "$1" in
 		;;
 	status)
 		set +e
-		galaxy_status
+		echo -n "$SERVICE_NAME status: "
+		status -p $RUN_IN/reports_webapp.pid $SERVICE_NAME
 		exit $?
 		;;
 	'')
