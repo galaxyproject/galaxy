@@ -1139,21 +1139,13 @@ class ToolModule( WorkflowModule ):
                 dict( ( conn.input_name, conn ) for conn in connections )
         else:
             input_connections_by_name = {}
+
         # Any connected input needs to have value RuntimeValue (these
         # are not persisted so we need to do it every time)
-
         def callback( input, prefixed_name, **kwargs ):
-            replacement = None
-            if isinstance( input, DataToolParameter ):
+            if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
                 if connections is None or prefixed_name in input_connections_by_name:
-                    if input.multiple:
-                        replacement = [] if not connections else [RuntimeValue() for conn in connections]
-                    else:
-                        replacement = RuntimeValue()
-            elif isinstance( input, DataCollectionToolParameter ):
-                if connections is None or prefixed_name in input_connections_by_name:
-                    replacement = RuntimeValue()
-            return replacement
+                    return RuntimeValue()
 
         visit_input_values( self.tool.inputs, self.state.inputs, callback )
 

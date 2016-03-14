@@ -568,7 +568,7 @@ class DefaultToolAction( object ):
                     first_reduction = False
                     incoming[ name ] = []
                 if reduced:
-                    incoming[ name ].append( "__collection_reduce__|%s" % dataset_collection.id )
+                    incoming[ name ].append( dataset_collection )
                 # Should verify security? We check security of individual
                 # datasets below?
                 # TODO: verify can have multiple with same name, don't want to loose tracability
