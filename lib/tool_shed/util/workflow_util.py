@@ -1,18 +1,18 @@
 """ Tool shed helper methods for dealing with workflows - only two methods are
 utilized outside of this modules - generate_workflow_image and import_workflow.
 """
+import json
 import logging
 import os
 
 import galaxy.tools
 import galaxy.tools.parameters
-from galaxy.util import json
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.workflow.render import WorkflowCanvas
-from galaxy.workflow.steps import attach_ordered_steps
 from galaxy.workflow.modules import module_types
 from galaxy.workflow.modules import ToolModule
 from galaxy.workflow.modules import WorkflowModuleFactory
+from galaxy.workflow.render import WorkflowCanvas
+from galaxy.workflow.steps import attach_ordered_steps
 
 from tool_shed.tools import tool_validator
 
@@ -59,7 +59,7 @@ class RepoToolModule( ToolModule ):
         module = Class( trans, repository_id, changeset_revision, tools_metadata, tool_id )
         module.state = galaxy.tools.DefaultToolState()
         if module.tool is not None:
-            module.state.decode( step_dict[ "tool_state" ], module.tool, module.trans.app, secure=secure )
+            module.state.decode( step_dict[ "tool_state" ], module.tool, module.trans.app )
         module.errors = step_dict.get( "tool_errors", None )
         return module
 
@@ -77,7 +77,7 @@ class RepoToolModule( ToolModule ):
     def get_data_inputs( self ):
         data_inputs = []
 
-        def callback( input, value, prefixed_name, prefixed_label ):
+        def callback( input, prefixed_name, prefixed_label, **kwargs ):
             if isinstance( input, galaxy.tools.parameters.basic.DataToolParameter ):
                 data_inputs.append( dict( name=prefixed_name,
                                           label=prefixed_label,
@@ -202,7 +202,7 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
     workflow_canvas.add_steps( highlight_errors=True )
     workflow_canvas.finish( )
     trans.response.set_content_type( "image/svg+xml" )
-    return canvas.standalone_xml()
+    return canvas.tostring()
 
 
 def get_workflow_data_inputs( step, module ):
@@ -270,7 +270,7 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
         step.label = step_dict.get('label', None)
         step.name = step_dict[ 'name' ]
         step.position = step_dict[ 'position' ]
-        module = module_factory.from_dict( trans, repository_id, changeset_revision, step_dict, tools_metadata=tools_metadata, secure=False )
+        module = module_factory.from_dict( trans, repository_id, changeset_revision, step_dict, tools_metadata=tools_metadata )
         if module.type == 'tool' and module.tool is None:
             # A required tool is not available in the current repository.
             step.tool_errors = 'unavailable'

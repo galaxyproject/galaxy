@@ -94,7 +94,7 @@ var PageLayoutView = Backbone.View.extend( BaseMVC.LoggableMixin ).extend({
                 page[ panelId ].setElement( '#' + panelId );
                 page[ panelId ].render();
             } else if ( panelId !== 'center' ) {
-                page.center.$el( panelId, 0 );
+                page.center.$el.css( panelId, 0 );
             }
         });
         return this;

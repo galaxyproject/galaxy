@@ -101,11 +101,7 @@ if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
                 python -c "import urllib; urllib.urlretrieve('$vurl', '$vsrc')"
             fi
             echo "Verifying $vsrc checksum is $vsha"
-            if command -v sha256sum >/dev/null; then
-                echo "$vsha $vsrc" | sha256sum -c --strict
-            else
-                python -c "import hashlib; assert hashlib.sha256(open('$vsrc', 'rb').read()).hexdigest() == '$vsha', '$vsrc: invalid checksum'"
-            fi
+            python -c "import hashlib; assert hashlib.sha256(open('$vsrc', 'rb').read()).hexdigest() == '$vsha', '$vsrc: invalid checksum'"
             tar zxf $vsrc -C $vtmp
             python $vtmp/virtualenv-$vvers/virtualenv.py "$GALAXY_VIRTUAL_ENV"
             rm -rf $vtmp

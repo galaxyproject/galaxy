@@ -1,3 +1,4 @@
+import json
 import logging
 
 from markupsafe import escape as escape_html
@@ -6,7 +7,7 @@ from sqlalchemy import and_, false, or_, true
 import tool_shed.grids.util as grids_util
 import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
-from galaxy.util import json, listify
+from galaxy.util import listify
 from galaxy.web.framework.helpers import grids
 from galaxy.webapps.tool_shed import model
 from tool_shed.util import hg_util, metadata_util

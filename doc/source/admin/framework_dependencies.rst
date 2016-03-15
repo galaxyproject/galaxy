@@ -29,10 +29,13 @@ Upon startup (with ``run.sh``), the startup scripts will:
 
 3. Replace that virtualenv's pip with `Galaxy pip`_.
 
-4. Download and install wheels from the Galaxy project wheel server,
+4. If applicable, create a ``binary-compatibility.cfg`` (see the `Galaxy pip
+   and wheel`_ section for an explanation of this file).
+
+5. Download and install wheels from the Galaxy project wheel server,
    `wheels.galaxyproject.org`_, using pip.
 
-5. Start Galaxy using ``.venv/bin/python``.
+6. Start Galaxy using ``.venv/bin/python``.
 
 .. _virtualenv: https://virtualenv.readthedocs.org/
 .. _wheels.galaxyproject.org: https://wheels.galaxyproject.org/
@@ -122,10 +125,10 @@ virtualenv using the ``--no-create-venv`` option:
       repoze.lru, Routes, WebOb, WebHelpers, Mako, pytz, Babel, Beaker,
       Markdown, Cheetah, requests, requests-toolbelt, boto, bioblend, amqp,
       anyjson, kombu, pbr, sqlparse, decorator, Tempita, sqlalchemy-migrate,
-      Parsley, nose, SVGFig, ecdsa, paramiko, Fabric, Whoosh, pysam
+      Parsley, nose, svgwrite, ecdsa, paramiko, Fabric, Whoosh, pysam
     Successfully installed Babel-2.0 Beaker-1.7.0 Cheetah-2.4.4 Fabric-1.10.2
       Mako-1.0.2 Markdown-2.6.3 MarkupSafe-0.23 Parsley-1.3 Paste-2.0.2
-      PasteDeploy-1.5.2 PyYAML-3.11 Routes-2.2 SQLAlchemy-1.0.8 SVGFig-1.1.6
+      PasteDeploy-1.5.2 PyYAML-3.11 Routes-2.2 SQLAlchemy-1.0.8 svgwrite-1.1.6
       Tempita-0.5.3.dev0 WebHelpers-1.3 WebOb-1.4.1 Whoosh-2.4.1+gx1 amqp-1.4.8
       anyjson-0.3.3 bioblend-0.6.1 boto-2.38.0 bx-python-0.7.3 decorator-4.0.2
       docutils-0.12 ecdsa-0.13 kombu-3.0.30 mercurial-3.4.2 nose-1.3.7
@@ -175,10 +178,8 @@ Galaxy to start without attempting to fetch wheels:
     $ sh run.sh --no-create-venv --skip-wheels
 
 Including ``--index-url=https://wheels.galaxyproject.org/simple/`` is important
-- at least one current Galaxy dependency (SVGFig) is not available in PyPI but
-is available (in both source and wheel form) on `wheels.galaxyproject.org`_,
-and two (pysam, Whoosh) include modifications specific to Galaxy which are only
-available on `wheels.galaxyproject.org`_.
+as two dependencies (pysam, Whoosh) include modifications specific to Galaxy
+which are only available on `wheels.galaxyproject.org`_.
 
 .. _unpinned requirements file: https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/dependencies/requirements.txt
 
@@ -194,13 +195,14 @@ dependencies. Because of this, it's necessary to make sure the metadata
 detection step runs in Galaxy's virtualenv. If you run a relatively simple
 Galaxy setup (e.g. single process, or multiple Python Paste processes started
 using ``run.sh``) then this is assured for you automatically. In more
-complicated setups (using a cluster, supervisor, and/or the "headless" Galaxy
-handler) it may be necessary to make sure the handlers know where the
-virtualenv (or a virtualenv containing Galaxy's dependencies) can be found.
+complicated setups (supervisor, the "headless" Galaxy handler, and/or the
+virtualenv used to start Galaxy is not a shared filesystem) it may be necessary
+to make sure the handlers know where the virtualenv (or a virtualenv containing
+Galaxy's dependencies) can be found.
 
 If your jobs are failing due to Python ``ImportError`` exceptions, this is most
-likely the problem. If your jobs run on a cluster, you can use the ``<env>``
-tag in ``job_conf.xml`` to source the virtualenv. For example:
+likely the problem. If so, you can use the ``<env>`` tag in ``job_conf.xml`` to
+source the virtualenv. For example:
 
 .. code-block:: xml
 
@@ -523,7 +525,6 @@ explanation of the problem.
 
 .. _PEP 513: https://www.python.org/dev/peps/pep-0513/
 .. _pip pull request #3075: https://github.com/pypa/pip/pull/3075
-.. _binary-compatibility.cfg: https://mail.python.org/pipermail/distutils-sig/2015-July/026617.html
 
 Galaxy pip and wheel
 --------------------
@@ -551,11 +552,6 @@ Two different types of wheels can be created:
    wheels carry a ``linux_{arch}_{distro}_{version}`` platform tag (e.g.
    ``linux_x86_ubuntu_14_04``) and can be created using `Galaxy wheel`_.
 
-Galaxy pip and Galaxy wheel also include support for the proposed
-`binary-compatibility.cfg`_ file. This file allows distributions that are
-binary compatibile (e.g. Red Hat Enterprise Linux 6 and CentOS 6) to use the
-same wheels.
-
 The `manylinux`_ project implements the "Simple" wheels in a more clearly
 defined way and allows for the inclusion of "non-standard" external
 dependencies directly into the wheel. Galaxy will officially support any
@@ -565,6 +561,37 @@ complete.
 .. _PEP 425: https://www.python.org/dev/peps/pep-0425/
 .. _manylinux: https://github.com/manylinux/manylinux/
 .. _psycopg2: http://initd.org/psycopg/
+
+Wheel platform compatibility
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Galaxy pip and Galaxy wheel also include support for the proposed
+`binary-compatibility.cfg`_ file. This file allows distributions that are
+binary compatibile (e.g. Red Hat Enterprise Linux 6 and CentOS 6) to use the
+same wheels.
+
+This is a JSON format file which can be installed in ``/etc/python`` or the
+root of a virtualenv (`common_startup.sh`_ creates it here) and provides a
+mapping between `PEP 425`_ platform tags. For example, the following
+``binary-compatibility.cfg`` indicates that wheels built on the platform
+``linux_x86_centos_6_7`` will have their platform tag overridden to
+``linux_x86_rhel_6``. In addition, wheels tagged with ``linux_x86_64_rhel_6_7``
+and ``linux_x86_64_rhel_6`` will be installable on a ``linux_x86_centos_6_7``
+system:
+
+.. code-block:: json
+
+    {
+        "linux_x86_64_centos_6_7": {
+            "build": "linux_x86_64_rhel_6",
+            "install": ["linux_x86_64_rhel_6_7", "linux_x86_64_rhel_6"]
+        }
+    }
+
+Currently, Scientific Linux, CentOS, and Red Hat Enterprise Linux will be set
+as binary compatible by `common_startup.sh`_.
+
+.. _binary-compatibility.cfg: https://mail.python.org/pipermail/distutils-sig/2015-July/026617.html
 
 Adding additional wheels as Galaxy dependencies
 -----------------------------------------------

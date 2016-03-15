@@ -33,12 +33,10 @@ class TestRepositoryCircularDependenciesAgain( ShedTwillTestCase ):
 
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         self.test_db_util.get_private_role( test_user_1 )
-        self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
@@ -47,7 +45,6 @@ class TestRepositoryCircularDependenciesAgain( ShedTwillTestCase ):
     def test_0005_create_bwa_base_repository( self ):
         '''Create and populate bwa_base_0090.'''
         category = self.create_category( name=category_name, description=category_description )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name=bwa_base_repository_name,
                                                     description=bwa_base_repository_description,
@@ -68,7 +65,6 @@ class TestRepositoryCircularDependenciesAgain( ShedTwillTestCase ):
     def test_0010_create_bwa_color_repository( self ):
         '''Create and populate bwa_color_0090.'''
         category = self.create_category( name=category_name, description=category_description )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name=bwa_color_repository_name,
                                                     description=bwa_color_repository_description,
@@ -89,7 +85,6 @@ class TestRepositoryCircularDependenciesAgain( ShedTwillTestCase ):
     def test_0015_create_emboss_datatypes_repository( self ):
         '''Create and populate emboss_datatypes_0090.'''
         category = self.create_category( name=category_name, description=category_description )
-        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name=emboss_datatypes_repository_name,
                                                     description=emboss_datatypes_repository_description,

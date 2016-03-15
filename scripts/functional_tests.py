@@ -1,47 +1,39 @@
 #!/usr/bin/env python
-
+import httplib
+import logging
 import os
+import os.path
+import random
 import re
 import shutil
+import socket
 import sys
 import tempfile
-from ConfigParser import SafeConfigParser
-
-# Assume we are run from the galaxy root directory, add lib to the python path
-cwd = os.getcwd()
-new_path = [ os.path.join( cwd, "lib" ), os.path.join( cwd, "test" ) ]
-new_path.extend( sys.path[1:] )
-sys.path = new_path
-
-from base.test_logging import logging_config_file
-from base.tool_shed_util import parse_tool_panel_config
-
-from galaxy.util.properties import load_app_properties
-
-import logging
-import os.path
-import time
 import threading
-import random
-import httplib
-import socket
+import time
 import urllib
-from paste import httpserver
-from galaxy.app import UniverseApplication
-from galaxy.web import buildapp
-from galaxy import tools
-from galaxy.util.json import dumps
-
-from functional import database_contexts
-from base.api_util import get_master_api_key
-from base.api_util import get_user_api_key
-from base.nose_util import run
-from base.instrument import StructuredTestDataPlugin
+from ConfigParser import SafeConfigParser
+from json import dumps
 
 import nose.core
 import nose.config
 import nose.loader
 import nose.plugins.manager
+from paste import httpserver
+
+galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
+sys.path[1:1] = [ os.path.join( galaxy_root, "lib" ), os.path.join( galaxy_root, "test" ) ]
+
+from base.api_util import get_master_api_key, get_user_api_key
+from base.nose_util import run
+from base.instrument import StructuredTestDataPlugin
+from base.test_logging import logging_config_file
+from base.tool_shed_util import parse_tool_panel_config
+from functional import database_contexts
+from galaxy import tools
+from galaxy.app import UniverseApplication
+from galaxy.util.properties import load_app_properties
+from galaxy.web import buildapp
 
 log = logging.getLogger( "functional_tests.py" )
 

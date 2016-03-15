@@ -1,14 +1,15 @@
+import json
 import logging
 import os
 import shutil
 
+from six import string_types
 from sqlalchemy import false, or_
 
 import tool_shed.repository_types.util as rt_util
 from admin import AdminGalaxy
-from galaxy import web
-from galaxy import util
-from galaxy.util import json
+from galaxy import util, web
+from galaxy.tools.deps import views
 from galaxy.web.form_builder import CheckboxField
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.galaxy_install import install_manager
@@ -388,11 +389,11 @@ class AdminToolshed( AdminGalaxy ):
 
     @web.json
     @web.require_admin
-    def get_file_contents( self, trans, file_path ):
+    def get_file_contents( self, trans, file_path, repository_id ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        return suc.get_repository_file_contents( file_path )
+        return suc.get_repository_file_contents( trans.app, file_path, repository_id )
 
     @web.expose
     @web.require_admin
@@ -754,11 +755,14 @@ class AdminToolshed( AdminGalaxy ):
                                                                                 repository=repository,
                                                                                 reinstalling=False,
                                                                                 required_repo_info_dicts=None )
+        view = views.DependencyResolversView(self.app)
+        resolver_dependency_dict = view.manager_dependency(name=name)
         return trans.fill_template( '/admin/tool_shed_repository/manage_repository.mako',
                                     repository=repository,
                                     description=description,
                                     repo_files_dir=repo_files_dir,
                                     containers_dict=containers_dict,
+                                    resolver_dependency_dict=resolver_dependency_dict,
                                     message=message,
                                     status=status )
 
@@ -916,11 +920,11 @@ class AdminToolshed( AdminGalaxy ):
 
     @web.json
     @web.require_admin
-    def open_folder( self, trans, folder_path ):
+    def open_folder( self, trans, folder_path, repository_id ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        return suc.open_repository_files_folder( folder_path )
+        return suc.open_repository_files_folder( trans.app, folder_path, repository_id )
 
     @web.expose
     @web.require_admin
@@ -1330,7 +1334,7 @@ class AdminToolshed( AdminGalaxy ):
         repo_info_dicts = []
         repo_info_dict = kwd.get( 'repo_info_dict', None )
         if repo_info_dict:
-            if isinstance( repo_info_dict, basestring ):
+            if isinstance( repo_info_dict, string_types ):
                 repo_info_dict = encoding_util.tool_shed_decode( repo_info_dict )
         else:
             # Entering this else block occurs only if the tool_shed_repository does not include any valid tools.

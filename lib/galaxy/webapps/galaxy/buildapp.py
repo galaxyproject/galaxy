@@ -72,6 +72,15 @@ def paste_app_factory( global_conf, **kwargs ):
     # Create the universe WSGI application
     webapp = GalaxyWebApplication( app, session_cookie='galaxysession', name='galaxy' )
 
+    # CLIENTSIDE ROUTES
+    # The following are routes that are handled completely on the clientside.
+    # The following routes don't bootstrap any information, simply provide the
+    # base analysis interface at which point the application takes over.
+
+    webapp.add_client_route( '/tours' )
+    webapp.add_client_route( '/tours/{tour_id}' )
+
+    # STANDARD CONTROLLER ROUTES
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
     # Force /history to go to view of current
     webapp.add_route( '/history', controller='history', action='view' )
@@ -310,8 +319,21 @@ def populate_api_routes( webapp, app ):
                            controller="users", action="api_key", user_id=None,
                            conditions=dict( method=["POST"] ) )
 
-    # visualizations registry generic template renderer
+    # ---- visualizations registry ---- generic template renderer
+    # @deprecated: this route should be considered deprecated
     webapp.add_route( '/visualization/show/{visualization_name}', controller='visualization', action='render', visualization_name=None )
+
+    # provide an alternate route to visualization plugins that's closer to their static assets
+    # (/plugins/visualizations/{visualization_name}/static) and allow them to use relative urls to those
+    webapp.mapper.connect( 'visualization_plugin', '/plugins/visualizations/{visualization_name}/show',
+        controller='visualization', action='render' )
+    webapp.mapper.connect( 'saved_visualization', '/plugins/visualizations/{visualization_name}/saved',
+        controller='visualization', action='saved' )
+    # same with IE's
+    webapp.mapper.connect( 'interactive_environment_plugin', '/plugins/interactive_environments/{visualization_name}/show',
+        controller='visualization', action='render' )
+    webapp.mapper.connect( 'saved_interactive_environment', '/plugins/interactive_environments/{visualization_name}/saved',
+        controller='visualization', action='saved' )
 
     # Deprecated in favor of POST /api/workflows with 'workflow' in payload.
     webapp.mapper.connect( 'import_workflow_deprecated',

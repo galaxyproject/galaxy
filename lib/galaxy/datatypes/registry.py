@@ -1,23 +1,26 @@
 """
 Provides mapping between extensions and datatypes, mime-types, etc.
 """
+from __future__ import absolute_import
+
 import os
 import tempfile
 import logging
 import imp
-import data
-import tabular
-import interval
-import images
-import sequence
-import qualityscore
-import xml
-import coverage
-import tracks
-import binary
+from . import data
+from . import tabular
+from . import interval
+from . import images
+from . import sequence
+from . import qualityscore
+from . import xml
+from . import coverage
+from . import tracks
+from . import binary
+from . import text
 import galaxy.util
 from galaxy.util.odict import odict
-from display_applications.application import DisplayApplication
+from .display_applications.application import DisplayApplication
 
 
 class ConfigurationError( Exception ):
@@ -644,81 +647,81 @@ class Registry( object ):
         # Default values.
         if not self.datatypes_by_extension:
             self.datatypes_by_extension = {
-                'ab1'         : binary.Ab1(),
-                'axt'         : sequence.Axt(),
-                'bam'         : binary.Bam(),
-                'bed'         : interval.Bed(),
-                'coverage'    : coverage.LastzCoverage(),
-                'customtrack' : interval.CustomTrack(),
-                'csfasta'     : sequence.csFasta(),
-                'db3'         : binary.SQlite(),
-                'fasta'       : sequence.Fasta(),
-                'eland'       : tabular.Eland(),
-                'fastq'       : sequence.Fastq(),
-                'fastqsanger' : sequence.FastqSanger(),
+                'ab1'           : binary.Ab1(),
+                'axt'           : sequence.Axt(),
+                'bam'           : binary.Bam(),
+                'bed'           : interval.Bed(),
+                'coverage'      : coverage.LastzCoverage(),
+                'customtrack'   : interval.CustomTrack(),
+                'csfasta'       : sequence.csFasta(),
+                'db3'           : binary.SQlite(),
+                'fasta'         : sequence.Fasta(),
+                'eland'         : tabular.Eland(),
+                'fastq'         : sequence.Fastq(),
+                'fastqsanger'   : sequence.FastqSanger(),
                 'gemini.sqlite' : binary.GeminiSQLite(),
-                'gtf'         : interval.Gtf(),
-                'gff'         : interval.Gff(),
-                'gff3'        : interval.Gff3(),
-                'genetrack'   : tracks.GeneTrack(),
-                'h5'          : binary.H5(),
-                'idpdb'       : binary.IdpDB(),
-                'interval'    : interval.Interval(),
-                'laj'         : images.Laj(),
-                'lav'         : sequence.Lav(),
-                'maf'         : sequence.Maf(),
-                'mz.sqlite'   : binary.MzSQlite(),
-                'pileup'      : tabular.Pileup(),
-                'qualsolid'   : qualityscore.QualityScoreSOLiD(),
-                'qualsolexa'  : qualityscore.QualityScoreSolexa(),
-                'qual454'     : qualityscore.QualityScore454(),
-                'sam'         : tabular.Sam(),
-                'scf'         : binary.Scf(),
-                'sff'         : binary.Sff(),
-                'tabular'     : tabular.Tabular(),
-                'csv'         : tabular.CSV(),
-                'taxonomy'    : tabular.Taxonomy(),
-                'txt'         : data.Text(),
-                'wig'         : interval.Wiggle(),
-                'xml'         : xml.GenericXml(),
+                'gtf'           : interval.Gtf(),
+                'gff'           : interval.Gff(),
+                'gff3'          : interval.Gff3(),
+                'genetrack'     : tracks.GeneTrack(),
+                'h5'            : binary.H5(),
+                'idpdb'         : binary.IdpDB(),
+                'interval'      : interval.Interval(),
+                'laj'           : images.Laj(),
+                'lav'           : sequence.Lav(),
+                'maf'           : sequence.Maf(),
+                'mz.sqlite'     : binary.MzSQlite(),
+                'pileup'        : tabular.Pileup(),
+                'qualsolid'     : qualityscore.QualityScoreSOLiD(),
+                'qualsolexa'    : qualityscore.QualityScoreSolexa(),
+                'qual454'       : qualityscore.QualityScore454(),
+                'sam'           : tabular.Sam(),
+                'scf'           : binary.Scf(),
+                'sff'           : binary.Sff(),
+                'tabular'       : tabular.Tabular(),
+                'csv'           : tabular.CSV(),
+                'taxonomy'      : tabular.Taxonomy(),
+                'txt'           : data.Text(),
+                'wig'           : interval.Wiggle(),
+                'xml'           : xml.GenericXml(),
             }
             self.mimetypes_by_extension = {
-                'ab1'         : 'application/octet-stream',
-                'axt'         : 'text/plain',
-                'bam'         : 'application/octet-stream',
-                'bed'         : 'text/plain',
-                'customtrack' : 'text/plain',
-                'csfasta'     : 'text/plain',
-                'db3'         : 'application/octet-stream',
-                'eland'       : 'application/octet-stream',
-                'fasta'       : 'text/plain',
-                'fastq'       : 'text/plain',
-                'fastqsanger' : 'text/plain',
+                'ab1'           : 'application/octet-stream',
+                'axt'           : 'text/plain',
+                'bam'           : 'application/octet-stream',
+                'bed'           : 'text/plain',
+                'customtrack'   : 'text/plain',
+                'csfasta'       : 'text/plain',
+                'db3'           : 'application/octet-stream',
+                'eland'         : 'application/octet-stream',
+                'fasta'         : 'text/plain',
+                'fastq'         : 'text/plain',
+                'fastqsanger'   : 'text/plain',
                 'gemini.sqlite' : 'application/octet-stream',
-                'gtf'         : 'text/plain',
-                'gff'         : 'text/plain',
-                'gff3'        : 'text/plain',
-                'h5'          : 'application/octet-stream',
-                'idpdb'       : 'application/octet-stream',
-                'interval'    : 'text/plain',
-                'laj'         : 'text/plain',
-                'lav'         : 'text/plain',
-                'maf'         : 'text/plain',
-                'memexml'     : 'application/xml',
-                'mz.sqlite'   : 'application/octet-stream',
-                'pileup'      : 'text/plain',
-                'qualsolid'   : 'text/plain',
-                'qualsolexa'  : 'text/plain',
-                'qual454'     : 'text/plain',
-                'sam'         : 'text/plain',
-                'scf'         : 'application/octet-stream',
-                'sff'         : 'application/octet-stream',
-                'tabular'     : 'text/plain',
-                'csv'         : 'text/plain',
-                'taxonomy'    : 'text/plain',
-                'txt'         : 'text/plain',
-                'wig'         : 'text/plain',
-                'xml'         : 'application/xml',
+                'gtf'           : 'text/plain',
+                'gff'           : 'text/plain',
+                'gff3'          : 'text/plain',
+                'h5'            : 'application/octet-stream',
+                'idpdb'         : 'application/octet-stream',
+                'interval'      : 'text/plain',
+                'laj'           : 'text/plain',
+                'lav'           : 'text/plain',
+                'maf'           : 'text/plain',
+                'memexml'       : 'application/xml',
+                'mz.sqlite'     : 'application/octet-stream',
+                'pileup'        : 'text/plain',
+                'qualsolid'     : 'text/plain',
+                'qualsolexa'    : 'text/plain',
+                'qual454'       : 'text/plain',
+                'sam'           : 'text/plain',
+                'scf'           : 'application/octet-stream',
+                'sff'           : 'application/octet-stream',
+                'tabular'       : 'text/plain',
+                'csv'           : 'text/plain',
+                'taxonomy'      : 'text/plain',
+                'txt'           : 'text/plain',
+                'wig'           : 'text/plain',
+                'xml'           : 'application/xml',
             }
         # super supertype fix for input steps in workflows.
         if 'data' not in self.datatypes_by_extension:
@@ -744,7 +747,7 @@ class Registry( object ):
                 sequence.Fasta(),
                 sequence.Fastq(),
                 interval.Wiggle(),
-                images.Html(),
+                text.Html(),
                 sequence.Axt(),
                 interval.Bed(),
                 interval.CustomTrack(),

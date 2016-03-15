@@ -357,7 +357,7 @@ class DataTransfer( object ):
             if step.type == 'tool' or step.type is None:
                 tool = self.app.toolbox.get_tool( step.tool_id )
 
-                def callback( input, value, prefixed_name, prefixed_label ):
+                def callback( input, prefixed_name, **kwargs ):
                     if isinstance( input, DataToolParameter ):
                         if prefixed_name in step.input_connections_by_name:
                             conn = step.input_connections_by_name[ prefixed_name ]

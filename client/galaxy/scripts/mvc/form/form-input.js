@@ -109,9 +109,9 @@ define([], function() {
             tmp +=              '<div class="ui-form-info">';
             if (options.help) {
                 tmp +=              options.help;
-                if (options.argument && options.help.indexOf('(' + options.argument + ')') == -1) {
-                    tmp += ' (' + options.argument + ')';
-                }
+            }
+            if (options.argument && options.help.indexOf('(' + options.argument + ')') == -1) {
+                tmp +=              ' (' + options.argument + ')';
             }
             tmp +=              '</div>' +
                                 '<div class="ui-form-backdrop"/>' +

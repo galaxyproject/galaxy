@@ -19,8 +19,8 @@ var FolderToolbarView = Backbone.View.extend({
     'click #toolbtn_create_folder'        : 'createFolderFromModal',
     'click #toolbtn_bulk_import'          : 'modalBulkImport',
     'click #include_deleted_datasets_chk' : 'checkIncludeDeleted',
-    'click #toolbtn_show_libinfo'         : 'showLibInfo',
     'click #toolbtn_bulk_delete'          : 'deleteSelectedItems',
+    'click .toolbtn-show-locinfo'         : 'showLocInfo',
     'click #page_size_prompt'             : 'showPageSizePrompt'
 
   },
@@ -981,18 +981,17 @@ var FolderToolbarView = Backbone.View.extend({
   },
 
 
-  showLibInfo: function(){
-    var library_id = Galaxy.libraries.folderListView.folderContainer.attributes.metadata.parent_library_id;
+  showLocInfo: function(){
     var library = null;
     var that = this;
     if (Galaxy.libraries.libraryListView !== null){
-      library = Galaxy.libraries.libraryListView.collection.get(library_id);
-      this.showLibInfoModal(library);
+      library = Galaxy.libraries.libraryListView.collection.get(this.options.parent_library_id);
+      this.showLocInfoModal(library);
     } else {
-      library = new mod_library_model.Library({id: library_id});
+      library = new mod_library_model.Library({id: this.options.parent_library_id});
       library.fetch({
         success: function(){
-          that.showLibInfoModal(library);
+          that.showLocInfoModal(library);
         },
         error: function(model, response){
           if (typeof response.responseJSON !== "undefined"){
@@ -1005,13 +1004,14 @@ var FolderToolbarView = Backbone.View.extend({
     }
   },
 
-  showLibInfoModal: function(library){
-    var template = this.templateLibInfoInModal();
+  showLocInfoModal: function(library){
+    var that = this;
+    var template = this.templateLocInfoInModal();
     this.modal = Galaxy.modal;
     this.modal.show({
         closing_events  : true,
-        title           : 'Library Information',
-        body            : template({library:library}),
+        title           : 'Location Information',
+        body            : template({library: library, options: that.options}),
         buttons         : {
             'Close'     : function() {Galaxy.modal.hide();}
         }
@@ -1110,7 +1110,7 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('     </ul>');
     tmpl_array.push('   </div>');
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Mark selected items deleted" id="toolbtn_bulk_delete" class="primary-button logged-dataset-manipulation" style="margin-left: 0.5em; display:none; " type="button"><span class="fa fa-times"></span> Delete</button>');
-    tmpl_array.push('   <button data-id="<%- id %>" data-toggle="tooltip" data-placement="top" title="Show library information" id="toolbtn_show_libinfo" class="primary-button" style="margin-left: 0.5em;" type="button"><span class="fa fa-info-circle"></span> Library Info</button>');
+    tmpl_array.push('   <button data-id="<%- id %>" data-toggle="tooltip" data-placement="top" title="Show location information" class="primary-button toolbtn-show-locinfo" style="margin-left: 0.5em;" type="button"><span class="fa fa-info-circle"></span> Location Info</button>');
     tmpl_array.push('   <span class="help-button" data-toggle="tooltip" data-placement="top" title="Visit Libraries Wiki"><a href="https://wiki.galaxyproject.org/DataLibraries/screen/FolderContents" target="_blank"><button class="primary-button" type="button"><span class="fa fa-question-circle"></span> Help</button></a></span>');
     tmpl_array.push(' </div>');
     tmpl_array.push('</form>');
@@ -1124,21 +1124,67 @@ var FolderToolbarView = Backbone.View.extend({
     return _.template(tmpl_array.join(''));
   },
 
-  templateLibInfoInModal: function(){
-    tmpl_array = [];
-
-    tmpl_array.push('<div id="lif_info_modal">');
-    tmpl_array.push('<h2>Library name:</h2>');
-    tmpl_array.push('<p><%- library.get("name") %></p>');
-    tmpl_array.push('<h3>Library description:</h3>');
-    tmpl_array.push('<p><%- library.get("description") %></p>');
-    tmpl_array.push('<h3>Library synopsis:</h3>');
-    tmpl_array.push('<p><%- library.get("synopsis") %></p>');
-    tmpl_array.push('<p data-toggle="tooltip" data-placement="top" title="<%- library.get("create_time") %>">created <%- library.get("create_time_pretty") %></p>');
-
-    tmpl_array.push('</div>');
-
-    return _.template(tmpl_array.join(''));
+  templateLocInfoInModal: function(){
+    return _.template([
+      '<div>',
+        '<table class="grid table table-condensed">',
+          '<thead>',
+            '<th style="width: 25%;">library</th>',
+            '<th></th>',
+          '</thead>',
+          '<tbody>',
+            '<tr>',
+              '<td>name</td>',
+              '<td><%- library.get("name") %></td>',
+            '</tr>',
+            '<% if(library.get("description") !== "") { %>',
+              '<tr>',
+                '<td>description</td>',
+                '<td><%- library.get("description") %></td>',
+              '</tr>',
+            '<% } %>',
+            '<% if(library.get("synopsis") !== "") { %>',
+              '<tr>',
+                '<td>synopsis</td>',
+                '<td><%- library.get("synopsis") %></td>',
+              '</tr>',
+            '<% } %>',
+            '<% if(library.get("create_time_pretty") !== "") { %>',
+              '<tr>',
+                '<td>created</td>',
+                '<td><span title="<%- library.get("create_time") %>"><%- library.get("create_time_pretty") %></span></td>',
+              '</tr>',
+            '<% } %>',
+            '<tr>',
+              '<td>id</td>',
+              '<td><%- library.get("id") %></td>',
+            '</tr>',
+          '</tbody>',
+        '</table>',
+        '<table class="grid table table-condensed">',
+          '<thead>',
+            '<th style="width: 25%;">folder</th>',
+            '<th></th>',
+          '</thead>',
+          '<tbody>',
+            '<tr>',
+              '<td>name</td>',
+              '<td><%- options.folder_name %></td>',
+            '</tr>',
+            '<% if(options.folder_description !== "") { %>',
+              '<tr>',
+                '<td>description</td>',
+                '<td><%- options.folder_description %></td>',
+              '</tr>',
+            '<% } %>',
+            '<tr>',
+              '<td>id</td>',
+              '<td><%- options.id %></td>',
+            '</tr>',
+            '</tbody>',
+        '</table>',
+    '</div>'
+    ].join(''));
   },
 
   templateNewFolderInModal: function(){

@@ -98,7 +98,7 @@ var FolderView = Backbone.View.extend({
   _serializeRoles : function(role_list){
     var selected_roles = [];
     for (var i = 0; i < role_list.length; i++) {
-      selected_roles.push(role_list[i] + ':' + role_list[i]);
+      selected_roles.push(role_list[i][1] + ':' + role_list[i][0]);
     }
     return selected_roles;
   },
@@ -156,7 +156,7 @@ var FolderView = Backbone.View.extend({
           $(element.val().split(",")).each(function() {
               var item = this.split(':');
               data.push({
-                  id: item[1],
+                  id: item[0],
                   name: item[1]
               });
           });
@@ -181,6 +181,9 @@ var FolderView = Backbone.View.extend({
     window.prompt("Copy to clipboard: Ctrl+C, Enter", href);
   },
 
+  /**
+   * Extract the role ids from Select2 elements's 'data'
+   */
   _extractIds: function(roles_list){
     ids_list = [];
     for (var i = roles_list.length - 1; i >= 0; i--) {
@@ -188,16 +191,17 @@ var FolderView = Backbone.View.extend({
     };
     return ids_list;
   },
+
+  /**
+   * Save the permissions for roles entered in the select boxes.
+   */
   savePermissions: function(event){
     var self = this;
-
     var add_ids = this._extractIds(this.addSelectObject.$el.select2('data'));
     var manage_ids = this._extractIds(this.manageSelectObject.$el.select2('data'));
     var modify_ids = this._extractIds(this.modifySelectObject.$el.select2('data'));
-
     $.post( Galaxy.root + "api/folders/" + self.id + "/permissions?action=set_permissions", { 'add_ids[]': add_ids, 'manage_ids[]': manage_ids, 'modify_ids[]': modify_ids, } )
     .done(function(fetched_permissions){
-      //fetch dataset again
       self.showPermissions({fetched_permissions:fetched_permissions})
       mod_toastr.success('Permissions saved.');
     })
