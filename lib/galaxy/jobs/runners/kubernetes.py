@@ -36,12 +36,20 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
     runner_name = "KubernetesRunner"
 
     def __init__( self, app, nworkers ):
-        """Start the job runner """
+        # Check if pykube was importable, fail if not
+        assert operator is not None, K8S_IMPORT_MESSAGE
+        """Start the job runner parent object """
         super( KubernetesJobRunner, self ).__init__( app, nworkers )
 
-        self.cli_interface = CliInterface()
-        self._init_monitor_thread()
-        self._init_worker_threads()
+        # self.cli_interface = CliInterface()
+
+        # here we need to fetch the default kubeconfig path from the plugin defined in job_conf...
+        self._pykube_api = HTTPClient(KubeConfig.from_file(fromJobConfPluginParams))
+        # TODO how do we read from the config file the plugin parameters
+
+        # TODO do we need these?
+        # self._init_monitor_thread()
+        # self._init_worker_threads()
 
     def get_cli_plugins( self, shell_params, job_params ):
         return self.cli_interface.get_plugins( shell_params, job_params )
