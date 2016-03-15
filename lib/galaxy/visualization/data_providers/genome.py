@@ -888,6 +888,9 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         """
 
         # Fetch and return data.
+        chrom = str(chrom)
+        start = int(start)
+        end = int(end)
         try:
             data = data_file.fetch( start=start, end=end, reference=chrom )
         except ValueError:
