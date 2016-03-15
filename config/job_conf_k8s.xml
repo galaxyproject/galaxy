@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<!-- A sample job config that explicitly configures job running the way it is configured by default (if there is no explicit config). -->
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="4"/>
+        <plugin id="drmaa" type="runner" load="galaxy.jobs.runners.drmaa:DRMAAJobRunner">
+            <!-- Different DRMs handle successfully completed jobs differently,
+                 these options can be changed to handle such differences and
+                 are explained in detail on the Galaxy wiki. Defaults are shown -->
+            <param id="invalidjobexception_state">ok</param>
+            <param id="invalidjobexception_retries">0</param>
+            <param id="internalexception_state">ok</param>
+            <param id="internalexception_retries">0</param>
+        </plugin>
+        <plugin id="k8s" type="runner" load="galaxy.jobs.runners.kubernetes:kubernetes">
+            <param id="k8s_config_path">/path/to/kubeconfig</param>
+        </plugin>
+    </plugins>
+    <handlers>
+        <handler id="main"/>
+    </handlers>
+    <destinations>
+        <destination id="local" runner="local"/>
+        <destination id="blankfilter-container" runner="k8s">
+
+        </destination>
+    </destinations>
+    <tools>
+        <!-- Tools can be configured to use specific destinations or handlers,
+             identified by either the "id" or "tags" attribute.  If assigned to
+             a tag, a handler or destination that matches that tag will be
+             chosen at random.
+         -->
+        <tool id="foo" handler="trackster_handler">
+            <param id="source">trackster</param>
+        </tool>
+        <tool id="bar" destination="dynamic"/>
+        <!-- Next example defines resource group to insert into tool interface
+             and pass to dynamic destination (as resource_params argument). -->
+        <tool id="longbar" destination="dynamic" resources="all" />
+        <tool id="baz" handler="special_handlers" destination="bigmem"/>
+    </tools>
+</job_conf>
