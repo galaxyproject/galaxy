@@ -100,7 +100,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         params = dict(name=name, owner=owner)
         pathspec = ['api', 'repositories', 'get_ordered_installable_revisions']
         try:
-            raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, pathspec, params )
+            raw_text = util.url_get( trans.app, tool_shed_url, pathspec, params )
         except Exception, e:
             message = "Error attempting to retrieve the latest installable revision from tool shed %s for repository %s owned by %s: %s" % \
                 ( str( tool_shed_url ), str( name ), str( owner ), str( e ) )

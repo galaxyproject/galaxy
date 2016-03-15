@@ -160,7 +160,7 @@ def get_repository_dependencies( app, tool_shed_url, repository_name, repository
     params = dict( name=repository_name, owner=repository_owner, changeset_revision=changeset_revision )
     pathspec = [ 'repository', 'get_repository_dependencies' ]
     try:
-        raw_text = tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
+        raw_text = util.url_get( app, tool_shed_url, pathspec=pathspec, params=params )
         tool_shed_accessible = True
     except Exception, e:
         tool_shed_accessible = False
@@ -192,7 +192,7 @@ def get_tool_dependencies( app, tool_shed_url, repository_name, repository_owner
     params = dict( name=repository_name, owner=repository_owner, changeset_revision=changeset_revision )
     pathspec = [ 'repository', 'get_tool_dependencies' ]
     try:
-        text = tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
+        text = util.url_get( app, tool_shed_url, pathspec=pathspec, params=params )
         tool_shed_accessible = True
     except Exception, e:
         tool_shed_accessible = False
@@ -339,25 +339,6 @@ def remove_protocol_and_user_from_clone_url( repository_clone_url ):
 def remove_protocol_from_tool_shed_url( tool_shed_url ):
     """Return a partial Tool Shed URL, eliminating the protocol if it exists."""
     return util.remove_protocol_from_url( tool_shed_url )
-
-
-def tool_shed_get( app, base_url, pathspec=None, params=None ):
-    """Make contact with the tool shed via the uri provided."""
-    registry = app.tool_shed_registry
-    # urllib2 auto-detects system proxies, when passed a Proxyhandler.
-    # Refer: https://docs.python.org/2/howto/urllib2.html#proxies
-    proxy = urllib2.ProxyHandler()
-    urlopener = urllib2.build_opener( proxy )
-    urllib2.install_opener( urlopener )
-    password_mgr = registry.password_manager_for_url( base_url )
-    if password_mgr is not None:
-        auth_handler = urllib2.HTTPBasicAuthHandler( password_mgr )
-        urlopener.add_handler( auth_handler )
-    full_url = url_join( base_url, pathspec=pathspec, params=params )
-    response = urlopener.open( full_url )
-    content = response.read()
-    response.close()
-    return content
 
 
 def url_join( base_url, pathspec=None, params=None ):

@@ -781,7 +781,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                     changeset_revision = elem.get( 'changeset_revision' )
                     params = dict( name=repository_name, owner='devteam', changeset_revision=changeset_revision )
                     pathspec = [ 'repository', 'get_tool_dependencies' ]
-                    text = common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=pathspec, params=params )
+                    text = url_get( trans.app, tool_shed_url, pathspec=pathspec, params=params )
                     if text:
                         tool_dependencies_dict = encoding_util.tool_shed_decode( text )
                         for dependency_key, requirements_dict in tool_dependencies_dict.items():

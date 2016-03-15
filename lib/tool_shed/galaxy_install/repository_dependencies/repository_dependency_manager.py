@@ -8,7 +8,7 @@ import os
 import urllib
 import urllib2
 
-from galaxy.util import asbool
+from galaxy.util import asbool, url_get
 
 from tool_shed.galaxy_install.tools import tool_panel_manager
 
@@ -291,7 +291,7 @@ class RepositoryDependencyInstallManager( object ):
                        changeset_revision=str( repository.changeset_revision ) )
         pathspec = [ 'repository', 'get_repository_dependencies' ]
         try:
-            raw_text = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
+            raw_text = url_get( app, tool_shed_url, pathspec=pathspec, params=params )
         except Exception, e:
             log.error("The URL\n%s\nraised the exception:\n%s\n", common_util.url_join( tool_shed_url, pathspec=pathspec, params=params ), str( e ) )
             return ''
