@@ -10,11 +10,17 @@ from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 from .util.cli import CliInterface, split_params
 
 # pykube imports:
-import operator
+try:
+    import operator
 
-from pykube.config import KubeConfig
-from pykube.http import HTTPClient
-from pykube.objects import Pod
+    from pykube.config import KubeConfig
+    from pykube.http import HTTPClient
+    from pykube.objects import Pod
+except ImportError as exc:
+    operator = None
+    K8S_IMPORT_MESSAGE = ('The Python pbs-python package is required to use '
+                          'this feature, please install it or correct the '
+                          'following error:\nImportError %s' % str(exc))
 
 
 
