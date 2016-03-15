@@ -248,6 +248,7 @@
       <display file="ucsc/vcf.xml" />
       <display file="igv/vcf.xml" />
       <display file="rviewer/vcf.xml" inherit="True"/>
+      <display file="iobio/vcf.xml" />
     </datatype>
     <datatype extension="bcf" type="galaxy.datatypes.binary:Bcf" mimetype="application/octet-stream" display_in_upload="True">
       <converter file="bcf_to_bcf_bgzip_converter.xml" target_datatype="bcf_bgzip"/>
