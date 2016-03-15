@@ -9,6 +9,15 @@ from galaxy.jobs import JobDestination
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 from .util.cli import CliInterface, split_params
 
+# pykube imports:
+import operator
+
+from pykube.config import KubeConfig
+from pykube.http import HTTPClient
+from pykube.objects import Pod
+
+
+
 log = logging.getLogger( __name__ )
 
 __all__ = [ 'KubernetesJobRunner' ]
