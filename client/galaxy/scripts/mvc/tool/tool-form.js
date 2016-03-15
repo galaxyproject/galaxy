@@ -14,7 +14,7 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tool/tool-form-base', 'mvc/tool/to
                             icon     : 'fa-check',
                             tooltip  : 'Execute: ' + options.name + ' (' + options.version + ')',
                             title    : 'Execute',
-                            cls      : 'btn btn-primary',
+                            cls      : 'ui-button btn btn-primary',
                             floating : 'clear',
                             onclick  : function() {
                                 execute_btn.wait();
