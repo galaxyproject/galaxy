@@ -14365,14 +14365,10 @@ webpackJsonp([0,1],[
 	    __webpack_require__(/*! mvc/history/history-content-model */ 67),
 	    __webpack_require__(/*! mvc/history/hda-model */ 69),
 	    __webpack_require__(/*! mvc/history/hdca-model */ 71),
-	    __webpack_require__(/*! mvc/dataset/states */ 68),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
-	], __WEBPACK_AMD_DEFINE_RESULT__ = function( HISTORY_CONTENT, HDA_MODEL, HDCA_MODEL, STATES, BASE_MVC, _l ){
-	
+	    __webpack_require__(/*! mvc/base-mvc */ 5)
+	], __WEBPACK_AMD_DEFINE_RESULT__ = function( HISTORY_CONTENT, HDA_MODEL, HDCA_MODEL, BASE_MVC ){
 	'use strict';
 	
-	var logNamespace = 'history';
 	//==============================================================================
 	/** @class Backbone collection for history content.
 	 *      NOTE: history content seems like a dataset collection, but differs in that it is mixed:
@@ -14385,17 +14381,10 @@ webpackJsonp([0,1],[
 	var HistoryContents = Backbone.Collection
 	        .extend( BASE_MVC.LoggableMixin )
 	        .extend(/** @lends HistoryContents.prototype */{
-	//TODO:?? may want to inherit from some MixedModelCollection
-	//TODO:?? also consider inheriting from a 'DatasetList'
-	//TODO: can we decorate the mixed models using the model fn below (instead of having them build their own type_id)?
-	
-	    _logNamespace : logNamespace,
+	    _logNamespace : 'history',
 	
 	    /** since history content is a mix, override model fn into a factory, creating based on history_content_type */
 	    model : function( attrs, options ) {
-	//TODO: can we move the type_id stuff here?
-	        //attrs.type_id = typeIdStr( attrs );
-	
 	        if( attrs.history_content_type === "dataset" ) {
 	            return new HDA_MODEL.HistoryDatasetAssociation( attrs, options );
 	
@@ -14422,45 +14411,23 @@ webpackJsonp([0,1],[
 	     */
 	    initialize : function( models, options ){
 	        options = options || {};
-	//TODO: could probably use the contents.history_id instead
 	        this.historyId = options.historyId;
-	        //this._setUpListeners();
 	
 	        // backbonejs uses collection.model.prototype.idAttribute to determine if a model is *already* in a collection
 	        //  and either merged or replaced. In this case, our 'model' is a function so we need to add idAttribute
 	        //  manually here - if we don't, contents will not merge but be replaced/swapped.
 	        this.model.prototype.idAttribute = 'type_id';
-	
-	        this.on( 'all', function(){
-	            this.debug( this + '.event:', arguments );
-	        });
 	    },
 	
 	    /** root api url */
 	    urlRoot : Galaxy.root + 'api/histories',
+	
 	    /** complete api url */
 	    url : function(){
 	        return this.urlRoot + '/' + this.historyId + '/contents';
 	    },
 	
 	    // ........................................................................ common queries
-	    /** Get the ids of every item in this collection
-	     *  @returns array of encoded ids
-	     */
-	    ids : function(){
-	//TODO: is this still useful since type_id
-	        return this.map( function( item ){ return item.get('id'); });
-	    },
-	
-	    /** Get contents that are not ready
-	     *  @returns array of content models
-	     */
-	    notReady : function(){
-	        return this.filter( function( content ){
-	            return !content.inReadyState();
-	        });
-	    },
-	
 	    /** Get the id of every model in this collection not in a 'ready' state (running).
 	     *  @returns an array of model ids
 	     *  @see HistoryDatasetAssociation#inReadyState
@@ -14476,29 +14443,6 @@ webpackJsonp([0,1],[
 	     */
 	    getByHid : function( hid ){
 	        return _.first( this.filter( function( content ){ return content.get( 'hid' ) === hid; }) );
-	    },
-	
-	    //TODO:?? this may belong in the containing view
-	    /** Get every 'shown' model in this collection based on show_deleted/hidden
-	     *  @param {Boolean} show_deleted are we showing deleted content?
-	     *  @param {Boolean} show_hidden are we showing hidden content?
-	     *  @returns array of content models
-	     *  @see HistoryDatasetAssociation#isVisible
-	     */
-	    getVisible : function( show_deleted, show_hidden, filters ){
-	        filters = filters || [];
-	        //this.debug( 'filters:', filters );
-	        // always filter by show deleted/hidden first
-	        this.debug( 'checking isVisible' );
-	        var filteredHdas = new HistoryContents( this.filter( function( item ){
-	            return item.isVisible( show_deleted, show_hidden );
-	        }));
-	
-	        _.each( filters, function( filterFn ){
-	            if( !_.isFunction( filterFn ) ){ return; }
-	            filteredHdas = new HistoryContents( filteredHdas.filter( filterFn ) );
-	        });
-	        return filteredHdas;
 	    },
 	
 	    /** return a new contents collection of only hidden items */
@@ -14605,6 +14549,7 @@ webpackJsonp([0,1],[
 	        return deferred;
 	    },
 	
+	    /**  */
 	    isCopyable : function( contentsJSON ){
 	        var copyableModelClasses = [
 	            'HistoryDatasetAssociation',
@@ -14656,15 +14601,16 @@ webpackJsonp([0,1],[
 	
 	    // ........................................................................ misc
 	    /** override to ensure type id is set */
-	    set : function( models, options ){
-	        models = _.isArray( models )? models : [ models ];
-	        _.each( models, function( model ){
-	            if( !model.type_id || !model.get || !model.get( 'type_id' ) ){
-	                model.type_id = HISTORY_CONTENT.typeIdStr( model.history_content_type, model.id );
-	            }
-	        });
-	        Backbone.Collection.prototype.set.call( this, models, options );
-	    },
+	//TODO: needed now?
+	    // set : function( models, options ){
+	    //     models = _.isArray( models )? models : [ models ];
+	    //     _.each( models, function( model ){
+	    //         if( !model.type_id || !model.get || !model.get( 'type_id' ) ){
+	    //             model.type_id = HISTORY_CONTENT.typeIdStr( model.history_content_type, model.id );
+	    //         }
+	    //     });
+	    //     Backbone.Collection.prototype.set.call( this, models, options );
+	    // },
 	
 	    /** */
 	    createHDCA : function( elementIdentifiers, collectionType, name, options ){
@@ -14696,17 +14642,6 @@ webpackJsonp([0,1],[
 	        var clone = Backbone.Collection.prototype.clone.call( this );
 	        clone.historyId = this.historyId;
 	        return clone;
-	    },
-	
-	    /** debugging */
-	    print : function(){
-	        var contents = this;
-	        contents.each( function( c ){
-	            contents.debug( c );
-	            if( c.elements ){
-	                contents.debug( '\t elements:', c.elements );
-	            }
-	        });
 	    },
 	
 	    /** String representation. */
