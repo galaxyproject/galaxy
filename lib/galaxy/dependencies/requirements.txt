@@ -46,7 +46,8 @@ sqlparse
 six
 Parsley
 nose
-SVGFig
+
+svgwrite
 
 # Fabric and dependencies
 Fabric

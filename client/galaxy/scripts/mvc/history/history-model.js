@@ -137,6 +137,18 @@ var History = Backbone.Model
         return _.reduce( _.values( this.get( 'state_details' ) ), function( memo, num ){ return memo + num; }, 0 );
     },
 
+    /** Return the number of running jobs assoc with this history (note: unknown === 0) */
+    numOfUnfinishedJobs : function(){
+        var unfinishedJobIds = this.get( 'non_ready_jobs' );
+        return unfinishedJobIds? unfinishedJobIds.length : 0;
+    },
+
+    /** Return the number of running hda/hdcas in this history (note: unknown === 0) */
+    numOfUnfinishedShownContents : function(){
+        var contents = this.contents.running().visibleAndUndeleted();
+        return contents? contents.length : 0;
+    },
+
     // ........................................................................ search
     /** What model fields to search with */
     searchAttributes : [
@@ -150,39 +162,56 @@ var History = Backbone.Model
     },
 
     // ........................................................................ updates
-    /** does the contents collection indicate they're still running and need to be updated later?
-     *      delay + update if needed
-     *  @param {Function} onReadyCallback   function to run when all contents are in the ready state
-     *  events: ready
-     */
-    checkForUpdates : function( onReadyCallback ){
-        //this.info( 'checkForUpdates' )
-
-        // get overall History state from collection, run updater if History has running/queued contents
-        //  boiling it down on the client to running/not
-        if( this.contents.running().length ){
-            this.setUpdateTimeout();
-
-        } else {
-            this.trigger( 'ready' );
-            if( _.isFunction( onReadyCallback ) ){
-                onReadyCallback.call( this );
-            }
-        }
-        return this;
+    _getSizeAndRunning : function(){
+        return this.fetch({ data : $.param({ keys : 'size,non_ready_jobs' }) });
     },
 
-    /** create a timeout (after UPDATE_DELAY or delay ms) to refetch the contents. Clear any prev. timeout */
-    setUpdateTimeout : function( delay ){
-        delay = delay || History.UPDATE_DELAY;
-        var history = this;
+    /**  */
+    refresh : function( options ){
+        options = options || {};
+        var self = this;
 
-        // prevent buildup of updater timeouts by clearing previous if any, then set new and cache id
-        this.clearUpdateTimeout();
-        this.updateTimeoutId = setTimeout( function(){
-            history.refresh();
-        }, delay );
-        return this.updateTimeoutId;
+        var lastUpdateTime = self.lastUpdateTime;
+        self.lastUpdateTime = new Date();
+        // note if there was no previous update time, all summary contents will be fetched
+        return self.contents.fetchUpdated( lastUpdateTime )
+            .done( _.bind( self.checkForUpdates, self ) );
+    },
+
+    /**  */
+    checkForUpdates : function( options ){
+        options = options || {};
+        var delay = History.UPDATE_DELAY;
+        var self = this;
+
+        function _delayThenUpdate(){
+            // prevent buildup of updater timeouts by clearing previous if any, then set new and cache id
+            self.clearUpdateTimeout();
+            self.updateTimeoutId = setTimeout( function(){
+                self.refresh( options );
+            }, delay );
+        }
+
+        // if there are still datasets in the non-ready state, recurse into this function with the new time
+        if( this.numOfUnfinishedShownContents() > 0 ){
+            _delayThenUpdate();
+
+        } else {
+            // no datasets are running, but currently runnning jobs may still produce new datasets
+            // see if the history has any running jobs and continue to update if so
+            // (also update the size for the user in either case)
+            self._getSizeAndRunning()
+                .done( function( historyData ){
+                    if( self.numOfUnfinishedJobs() > 0 ){
+                        _delayThenUpdate();
+
+                    } else {
+                        // otherwise, let listeners know that all updates have stopped
+                        self.trigger( 'ready' );
+                        // self.lastUpdateTime = null;
+                    }
+                });
+        }
     },
 
     /** clear the timeout and the cached timeout id */
@@ -191,32 +220,6 @@ var History = Backbone.Model
             clearTimeout( this.updateTimeoutId );
             this.updateTimeoutId = null;
         }
-    },
-
-    /* update the contents, getting full detailed model data for any whose id is in detailIds
-     *  set up to run this again in some interval of time
-     *  @param {String[]} detailIds list of content ids to get detailed model data for
-     *  @param {Object} options     std. backbone fetch options map
-     */
-    refresh : function( detailIds, options ){
-        //this.info( 'refresh:', detailIds, this.contents );
-        detailIds = detailIds || [];
-        options = options || {};
-        var history = this;
-
-        // add detailIds to options as CSV string
-        options.data = options.data || {};
-        if( detailIds.length ){
-            options.data.details = detailIds.join( ',' );
-        }
-        var xhr = this.contents.fetch( options );
-        xhr.done( function( models ){
-            history.checkForUpdates( function(){
-                // fetch the history inside onReadyCallback in order to recalc history size
-                this.fetch();
-            });
-        });
-        return xhr;
     },
 
     // ........................................................................ ajax
@@ -330,14 +333,11 @@ History.getHistoryData = function getHistoryData( historyId, options ){
         if( _.isFunction( hdcaDetailIds ) ){
             hdcaDetailIds = hdcaDetailIds( historyData );
         }
-        var data = {};
+        var data = {
+            v : 'dev'
+        };
         if( detailIdsFn.length ) {
-            data.dataset_details = detailIdsFn.join( ',' );
-        }
-        if( hdcaDetailIds.length ) {
-            // for symmetry, not actually used by backend of consumed
-            // by frontend.
-            data.dataset_collection_details = hdcaDetailIds.join( ',' );
+            data.details = detailIdsFn.join( ',' );
         }
         return jQuery.ajax( Galaxy.root + 'api/histories/' + historyData.id + '/contents', { data: data });
     }

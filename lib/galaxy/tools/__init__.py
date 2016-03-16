@@ -1603,68 +1603,6 @@ class Tool( object, Dictifiable ):
         # create parameter object
         params = galaxy.util.Params( kwd, sanitize=False )
 
-        # convert value to jsonifiable value
-        def jsonify(v):
-            # check if value is numeric
-            isnumber = False
-            try:
-                float(v)
-                isnumber = True
-            except Exception:
-                pass
-
-            # fix hda parsing
-            if isinstance(v, self.app.model.HistoryDatasetAssociation):
-                return {
-                    'id'  : trans.security.encode_id(v.id),
-                    'src' : 'hda'
-                }
-            elif isinstance(v, self.app.model.HistoryDatasetCollectionAssociation):
-                return {
-                    'id'  : trans.security.encode_id(v.id),
-                    'src' : 'hdca'
-                }
-            elif isinstance(v, self.app.model.LibraryDatasetDatasetAssociation):
-                return {
-                    'id'  : trans.security.encode_id(v.id),
-                    'name': v.name,
-                    'src' : 'ldda'
-                }
-            elif isinstance(v, bool):
-                if v is True:
-                    return 'true'
-                else:
-                    return 'false'
-            elif isinstance(v, string_types) or isnumber:
-                return v
-            elif isinstance(v, dict) and hasattr(v, '__class__'):
-                return v
-            else:
-                return None
-
-        # ensures that input dictionary is jsonifiable
-        def sanitize( dict, key='value' ):
-            # get current value
-            value = dict[key] if key in dict else None
-
-            # jsonify by type
-            if dict['type'] in ['data']:
-                if isinstance(value, list):
-                    value = [ jsonify(v) for v in value ]
-                else:
-                    value = [ jsonify(value) ]
-                if None in value:
-                    value = None
-                else:
-                    value = { 'values': value }
-            elif isinstance(value, list):
-                value = [ jsonify(v) for v in value ]
-            else:
-                value = jsonify(value)
-
-            # update and return
-            dict[key] = value
-
         # populates model from state
         def populate_model( inputs, state_inputs, group_inputs, other_values=None ):
             other_values = ExpressionContext( state_inputs, other_values )
@@ -1681,7 +1619,7 @@ class Tool( object, Dictifiable ):
                     tool_dict = input.to_dict( request_context )
                     if 'test_param' in tool_dict:
                         test_param = tool_dict[ 'test_param' ]
-                        test_param[ 'value' ] = jsonify( group_state.get( test_param[ 'name' ], input.test_param.get_initial_value( request_context, other_values ) ) )
+                        test_param[ 'value' ] = input.test_param.value_to_basic( group_state.get( test_param[ 'name' ], input.test_param.get_initial_value( request_context, other_values ) ), self.app )
                         test_param[ 'text_value' ] = input.test_param.value_to_display_text( test_param[ 'value' ], self.app )
                         for i in range( len( tool_dict['cases'] ) ):
                             current_state = {}
@@ -1694,28 +1632,13 @@ class Tool( object, Dictifiable ):
                 else:
                     try:
                         tool_dict = input.to_dict( request_context, other_values=other_values )
-                        tool_dict[ 'value' ] = state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) )
+                        tool_dict[ 'value' ] = input.value_to_basic( state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) ), self.app )
                         tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ], self.app )
                     except Exception as e:
                         tool_dict = input.to_dict( request_context )
                         log.exception('tools::to_json() - Skipping parameter expansion \'%s\': %s.' % ( input.name, e ) )
                         pass
-                    sanitize( tool_dict, 'value' )
                 group_inputs[ input_index ] = tool_dict
-
-        # sanatizes tool state
-        def sanitize_state( state ):
-            keys = None
-            if isinstance( state, dict ):
-                keys = state
-            elif isinstance( state, list ):
-                keys = range( len( state ) )
-            if keys:
-                for k in keys:
-                    if isinstance( state[ k ], dict ) or isinstance( state[ k ], list ):
-                        sanitize_state( state[ k ] )
-                    else:
-                        state[ k ] = jsonify( state[ k ] )
 
         # expand incoming parameters (parameters might trigger multiple tool executions,
         # here we select the first execution only in order to resolve dynamic parameters)
@@ -1737,7 +1660,10 @@ class Tool( object, Dictifiable ):
         populate_model( self.inputs, state_inputs, tool_model[ 'inputs' ] )
 
         # sanitize tool state
-        sanitize_state( state_inputs )
+        def value_to_basic( input, value, parent, **kwargs ):
+            parent[ input.name ] = input.value_to_basic( value, self.app )
+
+        visit_input_values( self.inputs, state_inputs, value_to_basic )
 
         # create tool help
         tool_help = ''
