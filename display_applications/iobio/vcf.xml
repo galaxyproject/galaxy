@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<display id="iobio_vcf" version="1.0.0" name="display at vcf.iobio">
+    <dynamic_links from_data_table="vcf_iobio" skip_startswith="#" id="value" name="name">
+        <url>${url}?vcf=${bgzip_file.qp}</url>
+        <param type="data" name="bgzip_file" url="galaxy_${DATASET_HASH}.vcf.gz" format="vcf_bgzip" />
+        <param type="data" name="tabix_file" dataset="bgzip_file" url="galaxy_${DATASET_HASH}.vcf.gz.tbi" format="tabix" />
+    </dynamic_links>
+</display>
