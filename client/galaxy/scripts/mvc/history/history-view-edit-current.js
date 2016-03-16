@@ -96,51 +96,28 @@ var CurrentHistoryView = _super.extend(
     },
 
     // ------------------------------------------------------------------------ loading history/item models
+    // TODO: next three more appropriate moved to the app level
     /** (re-)loads the user's current history & contents w/ details */
-    loadCurrentHistory : function( attributes ){
-        this.debug( this + '.loadCurrentHistory' );
-        // implemented as a 'fresh start' or for when there is no model (intial panel render)
-        var panel = this;
-        return this.loadHistoryWithDetails( 'current', attributes )
-            .then(function( historyData, contentsData ){
-                panel.trigger( 'current-history', panel );
-            });
+    loadCurrentHistory : function(){
+        return this.loadHistory( null, { url : Galaxy.root + 'history/current_history_json' });
     },
 
     /** loads a history & contents w/ details and makes them the current history */
     switchToHistory : function( historyId, attributes ){
-        //this.info( 'switchToHistory:', historyId, attributes );
-        var panel = this,
-            historyFn = function(){
-                // make this current and get history data with one call
-                return jQuery.getJSON( Galaxy.root + 'history/set_as_current?id=' + historyId  );
-                //    method  : 'PUT'
-                //});
-            };
-        return this.loadHistoryWithDetails( historyId, attributes, historyFn )
-            .then( function( historyData, contentsData ){
-                panel.trigger( 'switched-history', panel );
-            });
+        if( Galaxy.user.isAnonymous() ){
+            this.trigger( 'error', _l( 'You must be logged in to switch histories' ) );
+            return $.when();
+        }
+        return this.loadHistory( historyId, { url : Galaxy.root + 'history/set_as_current?id=' + historyId });
     },
 
     /** creates a new history on the server and sets it as the user's current history */
     createNewHistory : function( attributes ){
-        if( !Galaxy || !Galaxy.user || Galaxy.user.isAnonymous() ){
-            this.displayMessage( 'error', _l( 'You must be logged in to create histories' ) );
+        if( Galaxy.user.isAnonymous() ){
+            this.trigger( 'error', _l( 'You must be logged in to create histories' ) );
             return $.when();
         }
-        var panel = this,
-            historyFn = function(){
-                // create a new history and save: the server will return the proper JSON
-                return jQuery.getJSON( Galaxy.root + 'history/create_new_current'  );
-            };
-
-        // id undefined bc there is no historyId yet - the server will provide
-        //  (no need for details - nothing expanded in new history)
-        return this.loadHistory( undefined, attributes, historyFn )
-            .then(function( historyData, contentsData ){
-                panel.trigger( 'new-history', panel );
-            });
+        return this.loadHistory( null, { url : Galaxy.root + 'history/create_new_current' });
     },
 
     /** release/free/shutdown old models and set up panel for new models */
@@ -244,12 +221,7 @@ var CurrentHistoryView = _super.extend(
             });
             $emptyMsg.find( '.get-data-link' ).click( function( ev ){
                 $toolMenu.parent().scrollTop( 0 );
-                $toolMenu.find( 'span:contains("Get Data")' )
-                    .click();
-                    //.fadeTo( 200, 0.1, function(){
-                    //    this.debug( this )
-                    //    $( this ).fadeTo( 200, 1.0 );
-                    //});
+                $toolMenu.find( 'span:contains("Get Data")' ).click();
             });
             return $emptyMsg.show();
         }
@@ -327,21 +299,15 @@ var CurrentHistoryView = _super.extend(
     _setUpItemViewListeners : function( view ){
         var panel = this;
         _super.prototype._setUpItemViewListeners.call( panel, view );
-
         // use pub-sub to: handle drilldown expansion and collapse
-        panel.listenTo( view, 'expanded:drilldown', function( v, drilldown ){
-            this._expandDrilldownPanel( drilldown );
+        return panel.listenTo( view, {
+            'expanded:drilldown' : function( v, drilldown ){
+                this._expandDrilldownPanel( drilldown );
+            },
+            'collapsed:drilldown' : function( v, drilldown ){
+                this._collapseDrilldownPanel( drilldown );
+            },
         });
-        panel.listenTo( view, 'collapsed:drilldown', function( v, drilldown ){
-            this._collapseDrilldownPanel( drilldown );
-        });
-
-        // when content is manipulated, make it the current-content
-        // view.on( 'visualize', function( v, ev ){
-        //     this.setCurrentContent( v );
-        // }, this );
-
-        return this;
     },
 
     /** display 'current content': add a visible highlight and store the id of a content item */

@@ -5,10 +5,8 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( HISTORY_CONTENTS, UTILS, BASE_MVC, _l ){
-
 'use strict';
 
-var logNamespace = 'history';
 //==============================================================================
 /** @class Model for a Galaxy history resource - both a record of user
  *      tool use and a collection of the datasets those tools produced.
@@ -18,7 +16,7 @@ var logNamespace = 'history';
 var History = Backbone.Model
         .extend( BASE_MVC.LoggableMixin )
         .extend( BASE_MVC.mixin( BASE_MVC.SearchableModelMixin, /** @lends History.prototype */{
-    _logNamespace : logNamespace,
+    _logNamespace : 'history',
 
     /** ms between fetches when checking running jobs/datasets for updates */
     UPDATE_DELAY : 4000,
@@ -208,6 +206,22 @@ var History = Backbone.Model
     },
 
     // ........................................................................ ajax
+    /**  */
+    fetchWithContents : function( options, contentsOptions ){
+        // TODO: push down to a base class
+        options = options || {};
+        options.view = 'current';
+
+        var self = this;
+        // fetch history then use history data to fetch (paginated) contents
+        return this.fetch( options ).pipe( function getContents( history ){
+            self.contents.historyId = history.id;
+            // reset the update time
+            self.lastUpdateTime = new Date();
+            return self.contents.fetchFirst( contentsOptions );
+        });
+    },
+
     /** save this history, _Mark_ing it as deleted (just a flag) */
     _delete : function( options ){
         if( this.get( 'deleted' ) ){ return jQuery.when(); }
@@ -280,81 +294,6 @@ var History = Backbone.Model
     }
 }));
 
-//------------------------------------------------------------------------------ CLASS VARS
-/** Get data for a history then its hdas using a sequential ajax call, return a deferred to receive both */
-History.getHistoryData = function getHistoryData( historyId, options ){
-    options = options || {};
-    var detailIdsFn = options.detailIdsFn || [];
-    var hdcaDetailIds = options.hdcaDetailIds || [];
-    //console.debug( 'getHistoryData:', historyId, options );
-
-    var df = jQuery.Deferred(),
-        historyJSON = null;
-
-    function getHistory( id ){
-        // get the history data
-        if( historyId === 'current' ){
-            return jQuery.getJSON( Galaxy.root + 'history/current_history_json' );
-        }
-        return jQuery.ajax( Galaxy.root + 'api/histories/' + historyId );
-    }
-    function isEmpty( historyData ){
-        // get the number of hdas accrd. to the history
-        return historyData && historyData.empty;
-    }
-    function getContents( historyData ){
-        // get the hda data
-        // if no hdas accrd. to history: return empty immed.
-        if( isEmpty( historyData ) ){ return []; }
-        // if there are hdas accrd. to history: get those as well
-        if( _.isFunction( detailIdsFn ) ){
-            detailIdsFn = detailIdsFn( historyData );
-        }
-        if( _.isFunction( hdcaDetailIds ) ){
-            hdcaDetailIds = hdcaDetailIds( historyData );
-        }
-        var data = {
-            v : 'dev'
-        };
-        if( detailIdsFn.length ) {
-            data.details = detailIdsFn.join( ',' );
-        }
-        return jQuery.ajax( Galaxy.root + 'api/histories/' + historyData.id + '/contents', { data: data });
-    }
-
-    // getting these concurrently is 400% slower (sqlite, local, vanilla) - so:
-    //  chain the api calls - getting history first then contents
-
-    var historyFn = options.historyFn || getHistory,
-        contentsFn = options.contentsFn || getContents;
-
-    // chain ajax calls: get history first, then hdas
-    var historyXHR = historyFn( historyId );
-    historyXHR.done( function( json ){
-        // set outer scope var here for use below
-        historyJSON = json;
-        df.notify({ status: 'history data retrieved', historyJSON: historyJSON });
-    });
-    historyXHR.fail( function( xhr, status, message ){
-        // call reject on the outer deferred to allow its fail callback to run
-        df.reject( xhr, 'loading the history' );
-    });
-
-    var contentsXHR = historyXHR.then( contentsFn );
-    contentsXHR.then( function( contentsJSON ){
-        df.notify({ status: 'contents data retrieved', historyJSON: historyJSON, contentsJSON: contentsJSON });
-        // we've got both: resolve the outer scope deferred
-        df.resolve( historyJSON, contentsJSON );
-    });
-    contentsXHR.fail( function( xhr, status, message ){
-        // call reject on the outer deferred to allow its fail callback to run
-        df.reject( xhr, 'loading the contents', { history: historyJSON } );
-    });
-
-    return df;
-};
-
-
 //==============================================================================
 var ControlledFetchMixin = {
 
@@ -425,7 +364,7 @@ var HistoryCollection = Backbone.Collection
         .extend( BASE_MVC.LoggableMixin )
         .extend( ControlledFetchMixin )
         .extend(/** @lends HistoryCollection.prototype */{
-    _logNamespace : logNamespace,
+    _logNamespace : 'history',
 
     model   : History,
 

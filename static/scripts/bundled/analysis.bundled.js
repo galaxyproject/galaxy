@@ -13206,7 +13206,7 @@ webpackJsonp([0,1],[
   \*****************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, jQuery, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! mvc/history/history-model */ 65),
 	    __webpack_require__(/*! mvc/history/history-view-edit */ 73),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
@@ -13304,51 +13304,28 @@ webpackJsonp([0,1],[
 	    },
 	
 	    // ------------------------------------------------------------------------ loading history/item models
+	    // TODO: next three more appropriate moved to the app level
 	    /** (re-)loads the user's current history & contents w/ details */
-	    loadCurrentHistory : function( attributes ){
-	        this.debug( this + '.loadCurrentHistory' );
-	        // implemented as a 'fresh start' or for when there is no model (intial panel render)
-	        var panel = this;
-	        return this.loadHistoryWithDetails( 'current', attributes )
-	            .then(function( historyData, contentsData ){
-	                panel.trigger( 'current-history', panel );
-	            });
+	    loadCurrentHistory : function(){
+	        return this.loadHistory( null, { url : Galaxy.root + 'history/current_history_json' });
 	    },
 	
 	    /** loads a history & contents w/ details and makes them the current history */
 	    switchToHistory : function( historyId, attributes ){
-	        //this.info( 'switchToHistory:', historyId, attributes );
-	        var panel = this,
-	            historyFn = function(){
-	                // make this current and get history data with one call
-	                return jQuery.getJSON( Galaxy.root + 'history/set_as_current?id=' + historyId  );
-	                //    method  : 'PUT'
-	                //});
-	            };
-	        return this.loadHistoryWithDetails( historyId, attributes, historyFn )
-	            .then( function( historyData, contentsData ){
-	                panel.trigger( 'switched-history', panel );
-	            });
+	        if( Galaxy.user.isAnonymous() ){
+	            this.trigger( 'error', _l( 'You must be logged in to switch histories' ) );
+	            return $.when();
+	        }
+	        return this.loadHistory( historyId, { url : Galaxy.root + 'history/set_as_current?id=' + historyId });
 	    },
 	
 	    /** creates a new history on the server and sets it as the user's current history */
 	    createNewHistory : function( attributes ){
-	        if( !Galaxy || !Galaxy.user || Galaxy.user.isAnonymous() ){
-	            this.displayMessage( 'error', _l( 'You must be logged in to create histories' ) );
+	        if( Galaxy.user.isAnonymous() ){
+	            this.trigger( 'error', _l( 'You must be logged in to create histories' ) );
 	            return $.when();
 	        }
-	        var panel = this,
-	            historyFn = function(){
-	                // create a new history and save: the server will return the proper JSON
-	                return jQuery.getJSON( Galaxy.root + 'history/create_new_current'  );
-	            };
-	
-	        // id undefined bc there is no historyId yet - the server will provide
-	        //  (no need for details - nothing expanded in new history)
-	        return this.loadHistory( undefined, attributes, historyFn )
-	            .then(function( historyData, contentsData ){
-	                panel.trigger( 'new-history', panel );
-	            });
+	        return this.loadHistory( null, { url : Galaxy.root + 'history/create_new_current' });
 	    },
 	
 	    /** release/free/shutdown old models and set up panel for new models */
@@ -13452,12 +13429,7 @@ webpackJsonp([0,1],[
 	            });
 	            $emptyMsg.find( '.get-data-link' ).click( function( ev ){
 	                $toolMenu.parent().scrollTop( 0 );
-	                $toolMenu.find( 'span:contains("Get Data")' )
-	                    .click();
-	                    //.fadeTo( 200, 0.1, function(){
-	                    //    this.debug( this )
-	                    //    $( this ).fadeTo( 200, 1.0 );
-	                    //});
+	                $toolMenu.find( 'span:contains("Get Data")' ).click();
 	            });
 	            return $emptyMsg.show();
 	        }
@@ -13535,21 +13507,15 @@ webpackJsonp([0,1],[
 	    _setUpItemViewListeners : function( view ){
 	        var panel = this;
 	        _super.prototype._setUpItemViewListeners.call( panel, view );
-	
 	        // use pub-sub to: handle drilldown expansion and collapse
-	        panel.listenTo( view, 'expanded:drilldown', function( v, drilldown ){
-	            this._expandDrilldownPanel( drilldown );
+	        return panel.listenTo( view, {
+	            'expanded:drilldown' : function( v, drilldown ){
+	                this._expandDrilldownPanel( drilldown );
+	            },
+	            'collapsed:drilldown' : function( v, drilldown ){
+	                this._collapseDrilldownPanel( drilldown );
+	            },
 	        });
-	        panel.listenTo( view, 'collapsed:drilldown', function( v, drilldown ){
-	            this._collapseDrilldownPanel( drilldown );
-	        });
-	
-	        // when content is manipulated, make it the current-content
-	        // view.on( 'visualize', function( v, ev ){
-	        //     this.setCurrentContent( v );
-	        // }, this );
-	
-	        return this;
 	    },
 	
 	    /** display 'current content': add a visible highlight and store the id of a content item */
@@ -13693,7 +13659,7 @@ webpackJsonp([0,1],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! jquery */ 3)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
 /* 65 */
@@ -13709,10 +13675,8 @@ webpackJsonp([0,1],[
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( HISTORY_CONTENTS, UTILS, BASE_MVC, _l ){
-	
 	'use strict';
 	
-	var logNamespace = 'history';
 	//==============================================================================
 	/** @class Model for a Galaxy history resource - both a record of user
 	 *      tool use and a collection of the datasets those tools produced.
@@ -13722,7 +13686,7 @@ webpackJsonp([0,1],[
 	var History = Backbone.Model
 	        .extend( BASE_MVC.LoggableMixin )
 	        .extend( BASE_MVC.mixin( BASE_MVC.SearchableModelMixin, /** @lends History.prototype */{
-	    _logNamespace : logNamespace,
+	    _logNamespace : 'history',
 	
 	    /** ms between fetches when checking running jobs/datasets for updates */
 	    UPDATE_DELAY : 4000,
@@ -13912,6 +13876,22 @@ webpackJsonp([0,1],[
 	    },
 	
 	    // ........................................................................ ajax
+	    /**  */
+	    fetchWithContents : function( options, contentsOptions ){
+	        // TODO: push down to a base class
+	        options = options || {};
+	        options.view = 'current';
+	
+	        var self = this;
+	        // fetch history then use history data to fetch (paginated) contents
+	        return this.fetch( options ).pipe( function getContents( history ){
+	            self.contents.historyId = history.id;
+	            // reset the update time
+	            self.lastUpdateTime = new Date();
+	            return self.contents.fetchFirst( contentsOptions );
+	        });
+	    },
+	
 	    /** save this history, _Mark_ing it as deleted (just a flag) */
 	    _delete : function( options ){
 	        if( this.get( 'deleted' ) ){ return jQuery.when(); }
@@ -13984,81 +13964,6 @@ webpackJsonp([0,1],[
 	    }
 	}));
 	
-	//------------------------------------------------------------------------------ CLASS VARS
-	/** Get data for a history then its hdas using a sequential ajax call, return a deferred to receive both */
-	History.getHistoryData = function getHistoryData( historyId, options ){
-	    options = options || {};
-	    var detailIdsFn = options.detailIdsFn || [];
-	    var hdcaDetailIds = options.hdcaDetailIds || [];
-	    //console.debug( 'getHistoryData:', historyId, options );
-	
-	    var df = jQuery.Deferred(),
-	        historyJSON = null;
-	
-	    function getHistory( id ){
-	        // get the history data
-	        if( historyId === 'current' ){
-	            return jQuery.getJSON( Galaxy.root + 'history/current_history_json' );
-	        }
-	        return jQuery.ajax( Galaxy.root + 'api/histories/' + historyId );
-	    }
-	    function isEmpty( historyData ){
-	        // get the number of hdas accrd. to the history
-	        return historyData && historyData.empty;
-	    }
-	    function getContents( historyData ){
-	        // get the hda data
-	        // if no hdas accrd. to history: return empty immed.
-	        if( isEmpty( historyData ) ){ return []; }
-	        // if there are hdas accrd. to history: get those as well
-	        if( _.isFunction( detailIdsFn ) ){
-	            detailIdsFn = detailIdsFn( historyData );
-	        }
-	        if( _.isFunction( hdcaDetailIds ) ){
-	            hdcaDetailIds = hdcaDetailIds( historyData );
-	        }
-	        var data = {
-	            v : 'dev'
-	        };
-	        if( detailIdsFn.length ) {
-	            data.details = detailIdsFn.join( ',' );
-	        }
-	        return jQuery.ajax( Galaxy.root + 'api/histories/' + historyData.id + '/contents', { data: data });
-	    }
-	
-	    // getting these concurrently is 400% slower (sqlite, local, vanilla) - so:
-	    //  chain the api calls - getting history first then contents
-	
-	    var historyFn = options.historyFn || getHistory,
-	        contentsFn = options.contentsFn || getContents;
-	
-	    // chain ajax calls: get history first, then hdas
-	    var historyXHR = historyFn( historyId );
-	    historyXHR.done( function( json ){
-	        // set outer scope var here for use below
-	        historyJSON = json;
-	        df.notify({ status: 'history data retrieved', historyJSON: historyJSON });
-	    });
-	    historyXHR.fail( function( xhr, status, message ){
-	        // call reject on the outer deferred to allow its fail callback to run
-	        df.reject( xhr, 'loading the history' );
-	    });
-	
-	    var contentsXHR = historyXHR.then( contentsFn );
-	    contentsXHR.then( function( contentsJSON ){
-	        df.notify({ status: 'contents data retrieved', historyJSON: historyJSON, contentsJSON: contentsJSON });
-	        // we've got both: resolve the outer scope deferred
-	        df.resolve( historyJSON, contentsJSON );
-	    });
-	    contentsXHR.fail( function( xhr, status, message ){
-	        // call reject on the outer deferred to allow its fail callback to run
-	        df.reject( xhr, 'loading the contents', { history: historyJSON } );
-	    });
-	
-	    return df;
-	};
-	
-	
 	//==============================================================================
 	var ControlledFetchMixin = {
 	
@@ -14129,7 +14034,7 @@ webpackJsonp([0,1],[
 	        .extend( BASE_MVC.LoggableMixin )
 	        .extend( ControlledFetchMixin )
 	        .extend(/** @lends HistoryCollection.prototype */{
-	    _logNamespace : logNamespace,
+	    _logNamespace : 'history',
 	
 	    model   : History,
 	
@@ -17670,7 +17575,7 @@ webpackJsonp([0,1],[
   \****************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function($, _) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! mvc/list/list-view */ 78),
 	    __webpack_require__(/*! mvc/history/history-model */ 65),
 	    __webpack_require__(/*! mvc/history/history-contents */ 66),
@@ -17679,7 +17584,6 @@ webpackJsonp([0,1],[
 	    __webpack_require__(/*! mvc/history/hdca-li */ 86),
 	    __webpack_require__(/*! mvc/user/user-model */ 9),
 	    __webpack_require__(/*! ui/fa-icon-button */ 85),
-	    __webpack_require__(/*! mvc/ui/popup-menu */ 62),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7),
 	    __webpack_require__(/*! ui/search-input */ 81)
@@ -17692,14 +17596,10 @@ webpackJsonp([0,1],[
 	    HDCA_LI,
 	    USER,
 	    faIconButton,
-	    PopupMenu,
 	    BASE_MVC,
 	    _l
 	){
-	
 	'use strict';
-	
-	var logNamespace = 'history';
 	
 	/* =============================================================================
 	TODO:
@@ -17716,7 +17616,7 @@ webpackJsonp([0,1],[
 	var _super = LIST_VIEW.ModelListPanel;
 	var HistoryView = _super.extend(
 	/** @lends HistoryView.prototype */{
-	    _logNamespace : logNamespace,
+	    _logNamespace : 'history',
 	
 	    /** class to use for constructing the HDA views */
 	    HDAViewClass        : HDA_LI.HDAListItemView,
@@ -17783,62 +17683,18 @@ webpackJsonp([0,1],[
 	    },
 	
 	    // ------------------------------------------------------------------------ loading history/hda models
-	    //NOTE: all the following fns replace the existing history model with a new model
-	    // (in the following 'details' refers to the full set of contents api data (urls, display_apps, misc_info, etc.)
-	    //  - contents w/o details will have summary data only (name, hid, deleted, visible, state, etc.))
-	//TODO: too tangled...
-	
-	    /** loads a history & contents, getting details of any contents whose ids are stored in sessionStorage
-	     *      (but does not make them the current history)
-	     */
-	    loadHistoryWithDetails : function( historyId, attributes, historyFn, contentsFn ){
-	        this.info( 'loadHistoryWithDetails:', historyId, attributes, historyFn, contentsFn );
-	        var detailIdsFn = function( historyData ){
-	                // will be called to get content ids that need details from the api
-	//TODO:! non-visible contents are getting details loaded... either stop loading them at all or filter ids thru isVisible
-	                return _.values( HISTORY_PREFS.HistoryPrefs.get( historyData.id ).get( 'expandedIds' ) );
-	            };
-	        return this.loadHistory( historyId, attributes, historyFn, contentsFn, detailIdsFn );
-	    },
-	
-	    /** loads a history & contents (but does not make them the current history) */
-	    loadHistory : function( historyId, attributes, historyFn, contentsFn, detailIdsFn ){
+	    /**  */
+	    loadHistory : function( historyId, options, contentsOptions ){
 	        this.info( 'loadHistory:', historyId, attributes, historyFn, contentsFn, detailIdsFn );
-	        var panel = this;
-	        attributes = attributes || {};
+	        var self = this;
+	        self.setModel( new HISTORY_MODEL.History({ id : historyId }) );
 	
-	        panel.trigger( 'loading', panel );
-	        //this.info( 'loadHistory:', historyId, attributes, historyFn, contentsFn, detailIdsFn );
-	        var xhr = HISTORY_MODEL.History.getHistoryData( historyId, {
-	                historyFn       : historyFn,
-	                contentsFn      : contentsFn,
-	                detailIdsFn     : attributes.initiallyExpanded || detailIdsFn
-	            });
-	
-	        return panel._loadHistoryFromXHR( xhr, attributes )
-	            .fail( function( xhr, where, history ){
-	                // throw an error up for the error handler
-	                panel.trigger( 'error', panel, xhr, attributes, _l( 'An error was encountered while ' + where ),
-	                    { historyId: historyId, history: history || {} });
-	            })
+	        self.trigger( 'loading' );
+	        return self.model
+	            .fetchWithContents( options, contentsOptions )
 	            .always( function(){
-	                // bc _hideLoadingIndicator relies on this firing
-	                panel.trigger( 'loading-done', panel );
+	                self.trigger( 'loading-done' );
 	            });
-	    },
-	
-	    /** given an xhr that will provide both history and contents data, pass data to set model or handle xhr errors */
-	    _loadHistoryFromXHR : function( xhr, attributes ){
-	        var panel = this;
-	        xhr.then( function( historyJSON, contentsJSON ){
-	            panel.JSONToModel( historyJSON, contentsJSON, attributes );
-	            panel.render();
-	        });
-	        xhr.fail( function( xhr, where ){
-	            // render anyways - whether we get a model or not
-	            panel.render();
-	        });
-	        return xhr;
 	    },
 	
 	    /** convenience alias to the model. Updates the item list only (not the history) */
@@ -17848,20 +17704,6 @@ webpackJsonp([0,1],[
 	        }
 	        // may have callbacks - so return an empty promise
 	        return $.when();
-	    },
-	
-	//TODO:?? seems unneccesary
-	//TODO: Maybe better in History?
-	    /** create a new history model from JSON and call setModel on it */
-	    JSONToModel : function( newHistoryJSON, newHdaJSON, attributes ){
-	        this.log( 'JSONToModel:', newHistoryJSON, newHdaJSON, attributes );
-	        attributes = attributes || {};
-	        //this.log( 'JSONToModel:', newHistoryJSON, newHdaJSON.length, attributes );
-	
-	        var model = new HISTORY_MODEL.History( newHistoryJSON, newHdaJSON, attributes );
-	//TODO:?? here?
-	        this.setModel( model );
-	        return model;
 	    },
 	
 	    /** release/free/shutdown old models and set up panel for new models
@@ -17997,10 +17839,9 @@ webpackJsonp([0,1],[
 	    _setUpItemViewListeners : function( view ){
 	        var panel = this;
 	        _super.prototype._setUpItemViewListeners.call( panel, view );
-	
 	        //TODO:?? could use 'view:expanded' here?
 	        // maintain a list of items whose bodies are expanded
-	        panel.listenTo( view, {
+	        return panel.listenTo( view, {
 	            'expanded': function( v ){
 	                panel.storage.addExpanded( v.model );
 	            },
@@ -18008,7 +17849,6 @@ webpackJsonp([0,1],[
 	                panel.storage.removeExpanded( v.model );
 	            }
 	        });
-	        return this;
 	    },
 	
 	    // ------------------------------------------------------------------------ selection
@@ -18316,7 +18156,7 @@ webpackJsonp([0,1],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
 /* 78 */

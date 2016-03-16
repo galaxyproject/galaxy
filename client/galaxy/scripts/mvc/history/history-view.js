@@ -7,7 +7,6 @@ define([
     "mvc/history/hdca-li",
     "mvc/user/user-model",
     "ui/fa-icon-button",
-    "mvc/ui/popup-menu",
     "mvc/base-mvc",
     "utils/localization",
     "ui/search-input"
@@ -20,14 +19,10 @@ define([
     HDCA_LI,
     USER,
     faIconButton,
-    PopupMenu,
     BASE_MVC,
     _l
 ){
-
 'use strict';
-
-var logNamespace = 'history';
 
 /* =============================================================================
 TODO:
@@ -44,7 +39,7 @@ TODO:
 var _super = LIST_VIEW.ModelListPanel;
 var HistoryView = _super.extend(
 /** @lends HistoryView.prototype */{
-    _logNamespace : logNamespace,
+    _logNamespace : 'history',
 
     /** class to use for constructing the HDA views */
     HDAViewClass        : HDA_LI.HDAListItemView,
@@ -111,62 +106,18 @@ var HistoryView = _super.extend(
     },
 
     // ------------------------------------------------------------------------ loading history/hda models
-    //NOTE: all the following fns replace the existing history model with a new model
-    // (in the following 'details' refers to the full set of contents api data (urls, display_apps, misc_info, etc.)
-    //  - contents w/o details will have summary data only (name, hid, deleted, visible, state, etc.))
-//TODO: too tangled...
-
-    /** loads a history & contents, getting details of any contents whose ids are stored in sessionStorage
-     *      (but does not make them the current history)
-     */
-    loadHistoryWithDetails : function( historyId, attributes, historyFn, contentsFn ){
-        this.info( 'loadHistoryWithDetails:', historyId, attributes, historyFn, contentsFn );
-        var detailIdsFn = function( historyData ){
-                // will be called to get content ids that need details from the api
-//TODO:! non-visible contents are getting details loaded... either stop loading them at all or filter ids thru isVisible
-                return _.values( HISTORY_PREFS.HistoryPrefs.get( historyData.id ).get( 'expandedIds' ) );
-            };
-        return this.loadHistory( historyId, attributes, historyFn, contentsFn, detailIdsFn );
-    },
-
-    /** loads a history & contents (but does not make them the current history) */
-    loadHistory : function( historyId, attributes, historyFn, contentsFn, detailIdsFn ){
+    /**  */
+    loadHistory : function( historyId, options, contentsOptions ){
         this.info( 'loadHistory:', historyId, attributes, historyFn, contentsFn, detailIdsFn );
-        var panel = this;
-        attributes = attributes || {};
+        var self = this;
+        self.setModel( new HISTORY_MODEL.History({ id : historyId }) );
 
-        panel.trigger( 'loading', panel );
-        //this.info( 'loadHistory:', historyId, attributes, historyFn, contentsFn, detailIdsFn );
-        var xhr = HISTORY_MODEL.History.getHistoryData( historyId, {
-                historyFn       : historyFn,
-                contentsFn      : contentsFn,
-                detailIdsFn     : attributes.initiallyExpanded || detailIdsFn
-            });
-
-        return panel._loadHistoryFromXHR( xhr, attributes )
-            .fail( function( xhr, where, history ){
-                // throw an error up for the error handler
-                panel.trigger( 'error', panel, xhr, attributes, _l( 'An error was encountered while ' + where ),
-                    { historyId: historyId, history: history || {} });
-            })
+        self.trigger( 'loading' );
+        return self.model
+            .fetchWithContents( options, contentsOptions )
             .always( function(){
-                // bc _hideLoadingIndicator relies on this firing
-                panel.trigger( 'loading-done', panel );
+                self.trigger( 'loading-done' );
             });
-    },
-
-    /** given an xhr that will provide both history and contents data, pass data to set model or handle xhr errors */
-    _loadHistoryFromXHR : function( xhr, attributes ){
-        var panel = this;
-        xhr.then( function( historyJSON, contentsJSON ){
-            panel.JSONToModel( historyJSON, contentsJSON, attributes );
-            panel.render();
-        });
-        xhr.fail( function( xhr, where ){
-            // render anyways - whether we get a model or not
-            panel.render();
-        });
-        return xhr;
     },
 
     /** convenience alias to the model. Updates the item list only (not the history) */
@@ -176,20 +127,6 @@ var HistoryView = _super.extend(
         }
         // may have callbacks - so return an empty promise
         return $.when();
-    },
-
-//TODO:?? seems unneccesary
-//TODO: Maybe better in History?
-    /** create a new history model from JSON and call setModel on it */
-    JSONToModel : function( newHistoryJSON, newHdaJSON, attributes ){
-        this.log( 'JSONToModel:', newHistoryJSON, newHdaJSON, attributes );
-        attributes = attributes || {};
-        //this.log( 'JSONToModel:', newHistoryJSON, newHdaJSON.length, attributes );
-
-        var model = new HISTORY_MODEL.History( newHistoryJSON, newHdaJSON, attributes );
-//TODO:?? here?
-        this.setModel( model );
-        return model;
     },
 
     /** release/free/shutdown old models and set up panel for new models
@@ -325,10 +262,9 @@ var HistoryView = _super.extend(
     _setUpItemViewListeners : function( view ){
         var panel = this;
         _super.prototype._setUpItemViewListeners.call( panel, view );
-
         //TODO:?? could use 'view:expanded' here?
         // maintain a list of items whose bodies are expanded
-        panel.listenTo( view, {
+        return panel.listenTo( view, {
             'expanded': function( v ){
                 panel.storage.addExpanded( v.model );
             },
@@ -336,7 +272,6 @@ var HistoryView = _super.extend(
                 panel.storage.removeExpanded( v.model );
             }
         });
-        return this;
     },
 
     // ------------------------------------------------------------------------ selection
