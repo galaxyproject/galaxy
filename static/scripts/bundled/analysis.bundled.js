@@ -13724,6 +13724,9 @@ webpackJsonp([0,1],[
 	        .extend( BASE_MVC.mixin( BASE_MVC.SearchableModelMixin, /** @lends History.prototype */{
 	    _logNamespace : logNamespace,
 	
+	    /** ms between fetches when checking running jobs/datasets for updates */
+	    UPDATE_DELAY : 4000,
+	
 	    // values from api (may need more)
 	    defaults : {
 	        model_class     : 'History',
@@ -13731,10 +13734,10 @@ webpackJsonp([0,1],[
 	        name            : 'Unnamed History',
 	        state           : 'new',
 	
-	        deleted         : false
+	        deleted         : false,
+	        contents_shown  : {},
 	    },
 	
-	    // ........................................................................ urls
 	    urlRoot: Galaxy.root + 'api/histories',
 	
 	    // ........................................................................ set up/tear down
@@ -13751,55 +13754,42 @@ webpackJsonp([0,1],[
 	        /** HistoryContents collection of the HDAs contained in this history. */
 	        this.log( 'creating history contents:', contentsJSON );
 	        this.contents = new HISTORY_CONTENTS.HistoryContents( contentsJSON || [], { historyId: this.get( 'id' )});
-	        //// if we've got hdas passed in the constructor, load them
-	        //if( contentsJSON && _.isArray( contentsJSON ) ){
-	        //    this.log( 'resetting history contents:', contentsJSON );
-	        //    this.contents.reset( contentsJSON );
-	        //}
 	
 	        this._setUpListeners();
 	
 	        /** cached timeout id for the dataset updater */
 	        this.updateTimeoutId = null;
-	        // set up update timeout if needed
-	        //this.checkForUpdates();
 	    },
 	
 	    /** set up any event listeners for this history including those to the contained HDAs
 	     *  events: error:contents  if an error occurred with the contents collection
 	     */
 	    _setUpListeners : function(){
-	        this.on( 'error', function( model, xhr, options, msg, details ){
-	            this.errorHandler( model, xhr, options, msg, details );
-	        });
-	
-	        // hda collection listening
-	        if( this.contents ){
-	            this.listenTo( this.contents, 'error', function(){
-	                this.trigger.apply( this, [ 'error:contents' ].concat( jQuery.makeArray( arguments ) ) );
-	            });
-	        }
 	        // if the model's id changes ('current' or null -> an actual id), update the contents history_id
-	        this.on( 'change:id', function( model, newId ){
-	            if( this.contents ){
-	                this.contents.historyId = newId;
-	            }
+	        return this.on({
+	            'error' : function( model, xhr, options, msg, details ){
+	                this.clearUpdateTimeout();
+	            },
+	            'change:id' : function( model, newId ){
+	                if( this.contents ){
+	                    this.contents.historyId = newId;
+	                }
+	            },
 	        });
 	    },
 	
-	    //TODO: see base-mvc
-	    //onFree : function(){
-	    //    if( this.contents ){
-	    //        this.contents.free();
-	    //    }
-	    //},
-	
-	    /** event listener for errors. Generally errors are handled outside this model */
-	    errorHandler : function( model, xhr, options, msg, details ){
-	        // clear update timeout on model err
-	        this.clearUpdateTimeout();
+	    /**  */
+	    _setUpCollectionListeners : function(){
+	        if( !this.contents ){ return this; }
+	        // bubble up errors
+	        return this.listenTo( this.contents, {
+	            'error' : function(){
+	                this.trigger.apply( this, jQuery.makeArray( arguments ) );
+	            },
+	        });
 	    },
 	
+	    // ........................................................................ derived attributes
 	    /** convert size in bytes to a more human readable version */
 	    nice_size : function(){
 	        return UTILS.bytesToString( this.get( 'size' ), true, 2 );
@@ -13834,11 +13824,6 @@ webpackJsonp([0,1],[
 	            return false;
 	        }
 	        return true;
-	    },
-	
-	    /**  */
-	    contentsCount : function(){
-	        return _.reduce( _.values( this.get( 'state_details' ) ), function( memo, num ){ return memo + num; }, 0 );
 	    },
 	
 	    /** Return the number of running jobs assoc with this history (note: unknown === 0) */
@@ -13885,7 +13870,7 @@ webpackJsonp([0,1],[
 	    /**  */
 	    checkForUpdates : function( options ){
 	        options = options || {};
-	        var delay = History.UPDATE_DELAY;
+	        var delay = this.UPDATE_DELAY;
 	        var self = this;
 	
 	        function _delayThenUpdate(){
@@ -14000,11 +13985,6 @@ webpackJsonp([0,1],[
 	}));
 	
 	//------------------------------------------------------------------------------ CLASS VARS
-	/** When the history has running hdas,
-	 *  this is the amount of time between update checks from the server
-	 */
-	History.UPDATE_DELAY = 4000;
-	
 	/** Get data for a history then its hdas using a sequential ajax call, return a deferred to receive both */
 	History.getHistoryData = function getHistoryData( historyId, options ){
 	    options = options || {};
