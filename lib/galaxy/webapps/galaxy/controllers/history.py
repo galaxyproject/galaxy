@@ -1374,7 +1374,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
     def history_data( self, trans, history ):
         """Return the given history in a serialized, dictionary form."""
-        return self.history_serializer.serialize_to_view( history, view='detailed', user=trans.user, trans=trans )
+        return self.history_serializer.serialize_to_view( history, view='current', user=trans.user, trans=trans )
 
     # TODO: combine these next two - poss. with a redirect flag
     # @web.require_login( "switch to a history" )
@@ -1386,7 +1386,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         try:
             history = self.history_manager.get_owned( self.decode_id( id ), trans.user, current_history=trans.history )
             trans.set_history( history )
-            return self.history_serializer.serialize_to_view( history, view='detailed', user=trans.user, trans=trans )
+            return self.history_data( trans, history )
         except exceptions.MessageException, msg_exc:
             trans.response.status = msg_exc.err_code.code
             return { 'err_msg': msg_exc.err_msg, 'err_code': msg_exc.err_code.code }
@@ -1397,11 +1397,11 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # Prevent IE11 from caching this
         trans.response.headers[ 'Cache-Control' ] = ["max-age=0", "no-cache", "no-store"]
         history = trans.get_history( create=True )
-        return self.history_serializer.serialize_to_view( history, view='detailed', user=trans.user, trans=trans )
+        return self.history_data( trans, history )
 
     @web.json
     def create_new_current( self, trans, name=None ):
         """Create a new, current history for the current user"""
         new_history = trans.new_history( name )
-        return self.history_serializer.serialize_to_view( new_history, view='detailed', user=trans.user, trans=trans )
+        return self.history_data( trans, new_history )
     # TODO: /history/current to do all of the above: if ajax, return json; if post, read id and set to current
