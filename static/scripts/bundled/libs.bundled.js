@@ -101,23 +101,23 @@
   \******************/
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(/*! polyfills */122);
+	__webpack_require__(/*! polyfills */123);
 	__webpack_require__(/*! jquery */3);
-	__webpack_require__(/*! libs/jquery/jquery.migrate */123);
-	__webpack_require__(/*! libs/jquery/select2 */117);
-	__webpack_require__(/*! libs/jquery/jquery.event.hover */114);
-	__webpack_require__(/*! libs/jquery/jquery.form */119);
-	__webpack_require__(/*! libs/jquery/jquery.rating */120);
-	__webpack_require__(/*! libs/jquery.sparklines */124);
-	__webpack_require__(/*! libs/jquery/jquery-ui */116);
-	__webpack_require__(/*! libs/bootstrap */125);
-	__webpack_require__(/*! libs/bootstrap-tour */103);
+	__webpack_require__(/*! libs/jquery/jquery.migrate */124);
+	__webpack_require__(/*! libs/jquery/select2 */118);
+	__webpack_require__(/*! libs/jquery/jquery.event.hover */115);
+	__webpack_require__(/*! libs/jquery/jquery.form */120);
+	__webpack_require__(/*! libs/jquery/jquery.rating */121);
+	__webpack_require__(/*! libs/jquery.sparklines */125);
+	__webpack_require__(/*! libs/jquery/jquery-ui */117);
+	__webpack_require__(/*! libs/bootstrap */126);
+	__webpack_require__(/*! libs/bootstrap-tour */104);
 	__webpack_require__(/*! libs/underscore */1);
 	__webpack_require__(/*! libs/backbone */2);
-	__webpack_require__(/*! ui/autocom_tagging */126);
-	__webpack_require__(/*! layout/modal */127);
+	__webpack_require__(/*! ui/autocom_tagging */127);
+	__webpack_require__(/*! layout/modal */128);
 	__webpack_require__(/*! layout/panel */12);
-	module.exports = __webpack_require__(/*! onload */128);
+	module.exports = __webpack_require__(/*! onload */129);
 
 
 /***/ },
@@ -16624,14 +16624,15 @@
 /* 96 */,
 /* 97 */,
 /* 98 */,
-/* 99 */
+/* 99 */,
+/* 100 */
 /*!***************************************!*\
   !*** ./galaxy/scripts/layout/page.js ***!
   \***************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! layout/masthead */ 100),
+	    __webpack_require__(/*! layout/masthead */ 101),
 	    __webpack_require__(/*! layout/panel */ 12),
 	    __webpack_require__(/*! mvc/ui/ui-modal */ 17),
 	    __webpack_require__(/*! mvc/base-mvc */ 5)
@@ -16770,7 +16771,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 100 */
+/* 101 */
 /*!*******************************************!*\
   !*** ./galaxy/scripts/layout/masthead.js ***!
   \*******************************************/
@@ -16778,9 +16779,9 @@
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! utils/utils */ 21),
-	    __webpack_require__(/*! layout/menu */ 101),
-	    __webpack_require__(/*! layout/scratchbook */ 104),
-	    __webpack_require__(/*! mvc/user/user-quotameter */ 121),
+	    __webpack_require__(/*! layout/menu */ 102),
+	    __webpack_require__(/*! layout/scratchbook */ 105),
+	    __webpack_require__(/*! mvc/user/user-quotameter */ 122),
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( Utils, Menu, Scratchbook, QuotaMeter ) {
 	
 	/** Masthead **/
@@ -16872,14 +16873,14 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 101 */
+/* 102 */
 /*!***************************************!*\
   !*** ./galaxy/scripts/layout/menu.js ***!
   \***************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, jQuery, $, _) {/** Masthead Collection **/
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! mvc/tours */ 102)], __WEBPACK_AMD_DEFINE_RESULT__ = function( Tours ) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! mvc/tours */ 103)], __WEBPACK_AMD_DEFINE_RESULT__ = function( Tours ) {
 	var Collection = Backbone.Collection.extend({
 	    model: Backbone.Model.extend({
 	        defaults: {
@@ -17268,7 +17269,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 102 */
+/* 103 */
 /*!*************************************!*\
   !*** ./galaxy/scripts/mvc/tours.js ***!
   \*************************************/
@@ -17284,7 +17285,7 @@
 	 *  DBTODO - This is downright backbone abuse, rewrite it.
 	 */
 	
-	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! libs/bootstrap-tour */ 103)], __WEBPACK_AMD_DEFINE_RESULT__ = function(BootstrapTour) {
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! libs/bootstrap-tour */ 104)], __WEBPACK_AMD_DEFINE_RESULT__ = function(BootstrapTour) {
 	
 	    var gxy_root = typeof Galaxy === "undefined" ? '/' : Galaxy.root;
 	
@@ -17400,7 +17401,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! libs/backbone */ 2)))
 
 /***/ },
-/* 103 */
+/* 104 */
 /*!***********************************************!*\
   !*** ./galaxy/scripts/libs/bootstrap-tour.js ***!
   \***********************************************/
@@ -18212,7 +18213,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 104 */
+/* 105 */
 /*!**********************************************!*\
   !*** ./galaxy/scripts/layout/scratchbook.js ***!
   \**********************************************/
@@ -18308,7 +18309,7 @@
 	    /** Add a trackster visualization to the frames. */
 	    addTrackster: function(viz_id) {
 	        var self = this;
-	        __webpack_require__.e/* require */(2, function(__webpack_require__) { /* WEBPACK VAR INJECTION */(function($, _) {var __WEBPACK_AMD_REQUIRE_ARRAY__ = [__webpack_require__(/*! viz/visualization */ 105), __webpack_require__(/*! viz/trackster */ 107)]; (function(visualization, trackster) {
+	        __webpack_require__.e/* require */(2, function(__webpack_require__) { /* WEBPACK VAR INJECTION */(function($, _) {var __WEBPACK_AMD_REQUIRE_ARRAY__ = [__webpack_require__(/*! viz/visualization */ 106), __webpack_require__(/*! viz/trackster */ 108)]; (function(visualization, trackster) {
 	            var viz = new visualization.Visualization({id: viz_id});
 	            $.when( viz.fetch() ).then( function() {
 	                var ui = new trackster.TracksterUI(Galaxy.root);
@@ -18382,7 +18383,6 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 105 */,
 /* 106 */,
 /* 107 */,
 /* 108 */,
@@ -18391,7 +18391,8 @@
 /* 111 */,
 /* 112 */,
 /* 113 */,
-/* 114 */
+/* 114 */,
+/* 115 */
 /*!**********************************************************!*\
   !*** ./galaxy/scripts/libs/jquery/jquery.event.hover.js ***!
   \**********************************************************/
@@ -18484,8 +18485,8 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 115 */,
-/* 116 */
+/* 116 */,
+/* 117 */
 /*!*************************************************!*\
   !*** ./galaxy/scripts/libs/jquery/jquery-ui.js ***!
   \*************************************************/
@@ -18500,7 +18501,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 117 */
+/* 118 */
 /*!***********************************************!*\
   !*** ./galaxy/scripts/libs/jquery/select2.js ***!
   \***********************************************/
@@ -22017,8 +22018,8 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 118 */,
-/* 119 */
+/* 119 */,
+/* 120 */
 /*!***************************************************!*\
   !*** ./galaxy/scripts/libs/jquery/jquery.form.js ***!
   \***************************************************/
@@ -23232,7 +23233,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 120 */
+/* 121 */
 /*!*****************************************************!*\
   !*** ./galaxy/scripts/libs/jquery/jquery.rating.js ***!
   \*****************************************************/
@@ -23618,7 +23619,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 121 */
+/* 122 */
 /*!****************************************************!*\
   !*** ./galaxy/scripts/mvc/user/user-quotameter.js ***!
   \****************************************************/
@@ -23786,7 +23787,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 122 */
+/* 123 */
 /*!*************************************!*\
   !*** ./galaxy/scripts/polyfills.js ***!
   \*************************************/
@@ -23873,7 +23874,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 123 */
+/* 124 */
 /*!******************************************************!*\
   !*** ./galaxy/scripts/libs/jquery/jquery.migrate.js ***!
   \******************************************************/
@@ -24404,7 +24405,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 124 */
+/* 125 */
 /*!**************************************************!*\
   !*** ./galaxy/scripts/libs/jquery.sparklines.js ***!
   \**************************************************/
@@ -27466,7 +27467,7 @@
 	}))}(document, Math));
 
 /***/ },
-/* 125 */
+/* 126 */
 /*!******************************************!*\
   !*** ./galaxy/scripts/libs/bootstrap.js ***!
   \******************************************/
@@ -28326,7 +28327,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 126 */
+/* 127 */
 /*!**********************************************!*\
   !*** ./galaxy/scripts/ui/autocom_tagging.js ***!
   \**********************************************/
@@ -28727,7 +28728,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 127 */
+/* 128 */
 /*!****************************************!*\
   !*** ./galaxy/scripts/layout/modal.js ***!
   \****************************************/
@@ -28886,7 +28887,7 @@
 
 
 /***/ },
-/* 128 */
+/* 129 */
 /*!**********************************!*\
   !*** ./galaxy/scripts/onload.js ***!
   \**********************************/
@@ -28907,13 +28908,13 @@
 	// these are galaxy globals not defined in the provider (although they could be - but why encourage that?)
 	window.panels = __webpack_require__( /*! layout/panel */ 12 );
 	// using extend bc there are multiple fns/objs to decorate the window with
-	_.extend( window, __webpack_require__( /*! layout/modal */ 127 ) );
-	window.async_save_text = __webpack_require__( /*! utils/async-save-text */ 129 );
-	var POPUPMENU = __webpack_require__( /*! ui/popupmenu */ 130 );
+	_.extend( window, __webpack_require__( /*! layout/modal */ 128 ) );
+	window.async_save_text = __webpack_require__( /*! utils/async-save-text */ 130 );
+	var POPUPMENU = __webpack_require__( /*! ui/popupmenu */ 131 );
 	window.make_popupmenu = POPUPMENU.make_popupmenu;
 	window.make_popup_menus = POPUPMENU.make_popup_menus;
-	window.init_tag_click_function = __webpack_require__( /*! ui/autocom_tagging */ 126 );
-	var TOURS = __webpack_require__( /*! mvc/tours */ 102 );
+	window.init_tag_click_function = __webpack_require__( /*! ui/autocom_tagging */ 127 );
+	var TOURS = __webpack_require__( /*! mvc/tours */ 103 );
 	var QUERY_STRING = __webpack_require__( /*! utils/query-string-parsing */ 11 );
 	// console.debug( 'galaxy globals loaded' );
 	
@@ -29082,7 +29083,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 129 */
+/* 130 */
 /*!*************************************************!*\
   !*** ./galaxy/scripts/utils/async-save-text.js ***!
   \*************************************************/
@@ -29180,7 +29181,7 @@
 
 
 /***/ },
-/* 130 */
+/* 131 */
 /*!****************************************!*\
   !*** ./galaxy/scripts/ui/popupmenu.js ***!
   \****************************************/

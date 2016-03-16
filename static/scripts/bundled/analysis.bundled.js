@@ -13,9 +13,9 @@ webpackJsonp([0,1],[
 	    PANEL = __webpack_require__( /*! layout/panel */ 12 ),
 	    ToolPanel = __webpack_require__( /*! ./tool-panel */ 13 ),
 	    HistoryPanel = __webpack_require__( /*! ./history-panel */ 60 ),
-	    PAGE = __webpack_require__( /*! layout/page */ 99 ),
+	    PAGE = __webpack_require__( /*! layout/page */ 100 ),
 	    ToolForm = __webpack_require__( /*! mvc/tool/tool-form */ 20 ),
-	    Tours = __webpack_require__( /*! mvc/tours */ 102 );
+	    Tours = __webpack_require__( /*! mvc/tours */ 103 );
 	
 	/** define the 'Analyze Data'/analysis/main/home page for Galaxy
 	 *  * has a masthead
@@ -16048,17 +16048,17 @@ webpackJsonp([0,1],[
 	    __webpack_require__(/*! mvc/history/history-contents */ 66),
 	    __webpack_require__(/*! mvc/dataset/states */ 68),
 	    __webpack_require__(/*! mvc/history/hda-model */ 69),
-	    __webpack_require__(/*! mvc/history/hda-li-edit */ 88),
-	    __webpack_require__(/*! mvc/history/hdca-li-edit */ 93),
-	    __webpack_require__(/*! mvc/tag */ 90),
-	    __webpack_require__(/*! mvc/annotation */ 91),
+	    __webpack_require__(/*! mvc/history/hda-li-edit */ 89),
+	    __webpack_require__(/*! mvc/history/hdca-li-edit */ 94),
+	    __webpack_require__(/*! mvc/tag */ 91),
+	    __webpack_require__(/*! mvc/annotation */ 92),
 	    __webpack_require__(/*! mvc/collection/list-collection-creator */ 74),
-	    __webpack_require__(/*! mvc/collection/pair-collection-creator */ 96),
-	    __webpack_require__(/*! mvc/collection/list-of-pairs-collection-creator */ 97),
-	    __webpack_require__(/*! ui/fa-icon-button */ 78),
+	    __webpack_require__(/*! mvc/collection/pair-collection-creator */ 97),
+	    __webpack_require__(/*! mvc/collection/list-of-pairs-collection-creator */ 98),
+	    __webpack_require__(/*! ui/fa-icon-button */ 85),
 	    __webpack_require__(/*! mvc/ui/popup-menu */ 62),
 	    __webpack_require__(/*! utils/localization */ 7),
-	    __webpack_require__(/*! ui/editable-text */ 92),
+	    __webpack_require__(/*! ui/editable-text */ 93),
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function(
 	    HISTORY_VIEW,
 	    HISTORY_CONTENTS,
@@ -17756,21 +17756,23 @@ webpackJsonp([0,1],[
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/list/list-view */ 79),
+	    __webpack_require__(/*! mvc/list/list-view */ 78),
 	    __webpack_require__(/*! mvc/history/history-model */ 65),
 	    __webpack_require__(/*! mvc/history/history-contents */ 66),
+	    __webpack_require__(/*! mvc/history/history-preferences */ 82),
 	    __webpack_require__(/*! mvc/history/hda-li */ 83),
-	    __webpack_require__(/*! mvc/history/hdca-li */ 85),
+	    __webpack_require__(/*! mvc/history/hdca-li */ 86),
 	    __webpack_require__(/*! mvc/user/user-model */ 9),
-	    __webpack_require__(/*! ui/fa-icon-button */ 78),
+	    __webpack_require__(/*! ui/fa-icon-button */ 85),
 	    __webpack_require__(/*! mvc/ui/popup-menu */ 62),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7),
-	    __webpack_require__(/*! ui/search-input */ 82)
+	    __webpack_require__(/*! ui/search-input */ 81)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function(
 	    LIST_VIEW,
 	    HISTORY_MODEL,
 	    HISTORY_CONTENTS,
+	    HISTORY_PREFS,
 	    HDA_LI,
 	    HDCA_LI,
 	    USER,
@@ -17783,59 +17785,6 @@ webpackJsonp([0,1],[
 	'use strict';
 	
 	var logNamespace = 'history';
-	
-	// ============================================================================
-	/** session storage for individual history preferences */
-	var HistoryPrefs = BASE_MVC.SessionStorageModel.extend(
-	/** @lends HistoryPrefs.prototype */{
-	//TODO:?? possibly mark as current T/F - have History.currId() (a class method) return that value
-	    defaults : {
-	//TODO:?? expandedIds to array?
-	        expandedIds : {},
-	        //TODO:?? move to user?
-	        show_deleted : false,
-	        show_hidden  : false
-	        //TODO: add scroll position?
-	    },
-	    /** add an hda id to the hash of expanded hdas */
-	    addExpanded : function( model ){
-	        var key = 'expandedIds';
-	//TODO:?? is this right anymore?
-	        this.save( key, _.extend( this.get( key ), _.object([ model.id ], [ model.get( 'id' ) ]) ) );
-	    },
-	    /** remove an hda id from the hash of expanded hdas */
-	    removeExpanded : function( model ){
-	        var key = 'expandedIds';
-	        this.save( key, _.omit( this.get( key ), model.id ) );
-	    },
-	    toString : function(){
-	        return 'HistoryPrefs(' + this.id + ')';
-	    }
-	});
-	// class lvl for access w/o instantiation
-	HistoryPrefs.storageKeyPrefix = 'history:';
-	
-	/** key string to store each histories settings under */
-	HistoryPrefs.historyStorageKey = function historyStorageKey( historyId ){
-	    if( !historyId ){
-	        throw new Error( 'HistoryPrefs.historyStorageKey needs valid id: ' + historyId );
-	    }
-	    // single point of change
-	    return ( HistoryPrefs.storageKeyPrefix + historyId );
-	};
-	/** return the existing storage for the history with the given id (or create one if it doesn't exist) */
-	HistoryPrefs.get = function get( historyId ){
-	    return new HistoryPrefs({ id: HistoryPrefs.historyStorageKey( historyId ) });
-	};
-	/** clear all history related items in sessionStorage */
-	HistoryPrefs.clearAll = function clearAll( historyId ){
-	    for( var key in sessionStorage ){
-	        if( key.indexOf( HistoryPrefs.storageKeyPrefix ) === 0 ){
-	            sessionStorage.removeItem( key );
-	        }
-	    }
-	};
-	
 	
 	/* =============================================================================
 	TODO:
@@ -17932,7 +17881,7 @@ webpackJsonp([0,1],[
 	        var detailIdsFn = function( historyData ){
 	                // will be called to get content ids that need details from the api
 	//TODO:! non-visible contents are getting details loaded... either stop loading them at all or filter ids thru isVisible
-	                return _.values( HistoryPrefs.get( historyData.id ).get( 'expandedIds' ) );
+	                return _.values( HISTORY_PREFS.HistoryPrefs.get( historyData.id ).get( 'expandedIds' ) );
 	            };
 	        return this.loadHistory( historyId, attributes, historyFn, contentsFn, detailIdsFn );
 	    },
@@ -18025,8 +17974,8 @@ webpackJsonp([0,1],[
 	            this.stopListening( this.storage );
 	        }
 	
-	        this.storage = new HistoryPrefs({
-	            id: HistoryPrefs.historyStorageKey( this.model.get( 'id' ) )
+	        this.storage = new HISTORY_PREFS.HistoryPrefs({
+	            id: HISTORY_PREFS.HistoryPrefs.historyStorageKey( this.model.get( 'id' ) )
 	        });
 	
 	        // expandedIds is a map of content.ids -> a boolean repr'ing whether that item's body is already expanded
@@ -18456,75 +18405,17 @@ webpackJsonp([0,1],[
 
 /***/ },
 /* 78 */
-/*!*********************************************!*\
-  !*** ./galaxy/scripts/ui/fa-icon-button.js ***!
-  \*********************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function($, _) {(function (root, factory) {
-	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-	    } else {
-	        root.faIconButton = factory();
-	    }
-	
-	}(this, function () {
-	//============================================================================
-	    /** Returns a jQuery object containing a clickable font-awesome button.
-	     *      options:
-	     *          tooltipConfig   : option map for bootstrap tool tip
-	     *          classes         : array of class names (will always be classed as icon-btn)
-	     *          disabled        : T/F - add the 'disabled' class?
-	     *          title           : tooltip/title string
-	     *          target          : optional href target
-	     *          href            : optional href
-	     *          faIcon          : which font awesome icon to use
-	     *          onclick         : function to call when the button is clicked
-	     */
-	    var faIconButton = function( options ){
-	        options = options || {};
-	        options.tooltipConfig = options.tooltipConfig || { placement: 'bottom' };
-	
-	        options.classes = [ 'icon-btn' ].concat( options.classes || [] );
-	        if( options.disabled ){
-	            options.classes.push( 'disabled' );
-	        }
-	
-	        var html = [
-	            '<a class="', options.classes.join( ' ' ), '"',
-	                    (( options.title )?( ' title="' + options.title + '"' ):( '' )),
-	                    (( !options.disabled && options.target )?  ( ' target="' + options.target + '"' ):( '' )),
-	                    ' href="', (( !options.disabled && options.href )?( options.href ):( 'javascript:void(0);' )), '">',
-	                // could go with something less specific here - like 'html'
-	                '<span class="fa ', options.faIcon, '"></span>',
-	            '</a>'
-	        ].join( '' );
-	        var $button = $( html ).tooltip( options.tooltipConfig );
-	        if( _.isFunction( options.onclick ) ){
-	            $button.click( options.onclick );
-	        }
-	        return $button;
-	    };
-	
-	//============================================================================
-	    return faIconButton;
-	}));
-	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1)))
-
-/***/ },
-/* 79 */
 /*!**********************************************!*\
   !*** ./galaxy/scripts/mvc/list/list-view.js ***!
   \**********************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/list/list-item */ 80),
-	    __webpack_require__(/*! ui/loading-indicator */ 81),
+	    __webpack_require__(/*! mvc/list/list-item */ 79),
+	    __webpack_require__(/*! ui/loading-indicator */ 80),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7),
-	    __webpack_require__(/*! ui/search-input */ 82)
+	    __webpack_require__(/*! ui/search-input */ 81)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( LIST_ITEM, LoadingIndicator, BASE_MVC, _l ){
 	
 	'use strict';
@@ -19513,7 +19404,7 @@ webpackJsonp([0,1],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 80 */
+/* 79 */
 /*!**********************************************!*\
   !*** ./galaxy/scripts/mvc/list/list-item.js ***!
   \**********************************************/
@@ -20035,7 +19926,7 @@ webpackJsonp([0,1],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 81 */
+/* 80 */
 /*!************************************************!*\
   !*** ./galaxy/scripts/ui/loading-indicator.js ***!
   \************************************************/
@@ -20143,7 +20034,7 @@ webpackJsonp([0,1],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 82 */
+/* 81 */
 /*!*******************************************!*\
   !*** ./galaxy/scripts/ui/search-input.js ***!
   \*******************************************/
@@ -20312,6 +20203,89 @@ webpackJsonp([0,1],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
+/* 82 */
+/*!***********************************************************!*\
+  !*** ./galaxy/scripts/mvc/history/history-preferences.js ***!
+  \***********************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
+	    __webpack_require__(/*! mvc/base-mvc */ 5)
+	], __WEBPACK_AMD_DEFINE_RESULT__ = function( BASE_MVC ){
+	
+	'use strict';
+	
+	var logNamespace = 'history';
+	
+	// ============================================================================
+	/** session storage for individual history preferences */
+	var HistoryPrefs = BASE_MVC.SessionStorageModel.extend(
+	/** @lends HistoryPrefs.prototype */{
+	//TODO:?? possibly mark as current T/F - have History.currId() (a class method) return that value
+	    defaults : {
+	//TODO:?? expandedIds to array?
+	        expandedIds : {},
+	        //TODO:?? move to user?
+	        show_deleted : false,
+	        show_hidden  : false
+	        //TODO: add scroll position?
+	    },
+	
+	    /** add an hda id to the hash of expanded hdas */
+	    addExpanded : function( model ){
+	        var key = 'expandedIds';
+	//TODO:?? is this right anymore?
+	        this.save( key, _.extend( this.get( key ), _.object([ model.id ], [ model.get( 'id' ) ]) ) );
+	    },
+	
+	    /** remove an hda id from the hash of expanded hdas */
+	    removeExpanded : function( model ){
+	        var key = 'expandedIds';
+	        this.save( key, _.omit( this.get( key ), model.id ) );
+	    },
+	
+	    toString : function(){
+	        return 'HistoryPrefs(' + this.id + ')';
+	    }
+	
+	}, {
+	    // ........................................................................ class vars
+	    // class lvl for access w/o instantiation
+	    storageKeyPrefix : 'history:',
+	
+	    /** key string to store each histories settings under */
+	    historyStorageKey : function historyStorageKey( historyId ){
+	        if( !historyId ){
+	            throw new Error( 'HistoryPrefs.historyStorageKey needs valid id: ' + historyId );
+	        }
+	        // single point of change
+	        return ( HistoryPrefs.storageKeyPrefix + historyId );
+	    },
+	
+	    /** return the existing storage for the history with the given id (or create one if it doesn't exist) */
+	    get : function get( historyId ){
+	        return new HistoryPrefs({ id: HistoryPrefs.historyStorageKey( historyId ) });
+	    },
+	
+	    /** clear all history related items in sessionStorage */
+	    clearAll : function clearAll( historyId ){
+	        for( var key in sessionStorage ){
+	            if( key.indexOf( HistoryPrefs.storageKeyPrefix ) === 0 ){
+	                sessionStorage.removeItem( key );
+	            }
+	        }
+	    }
+	});
+	
+	//==============================================================================
+	    return {
+	        HistoryPrefs: HistoryPrefs
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1)))
+
+/***/ },
 /* 83 */
 /*!**********************************************!*\
   !*** ./galaxy/scripts/mvc/history/hda-li.js ***!
@@ -20405,9 +20379,9 @@ webpackJsonp([0,1],[
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(jQuery, Backbone, $, _) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/list/list-item */ 80),
+	    __webpack_require__(/*! mvc/list/list-item */ 79),
 	    __webpack_require__(/*! mvc/dataset/states */ 68),
-	    __webpack_require__(/*! ui/fa-icon-button */ 78),
+	    __webpack_require__(/*! ui/fa-icon-button */ 85),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( LIST_ITEM, STATES, faIconButton, BASE_MVC, _l ){
@@ -20907,6 +20881,64 @@ webpackJsonp([0,1],[
 
 /***/ },
 /* 85 */
+/*!*********************************************!*\
+  !*** ./galaxy/scripts/ui/fa-icon-button.js ***!
+  \*********************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function($, _) {(function (root, factory) {
+	    if (true) {
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	    } else {
+	        root.faIconButton = factory();
+	    }
+	
+	}(this, function () {
+	//============================================================================
+	    /** Returns a jQuery object containing a clickable font-awesome button.
+	     *      options:
+	     *          tooltipConfig   : option map for bootstrap tool tip
+	     *          classes         : array of class names (will always be classed as icon-btn)
+	     *          disabled        : T/F - add the 'disabled' class?
+	     *          title           : tooltip/title string
+	     *          target          : optional href target
+	     *          href            : optional href
+	     *          faIcon          : which font awesome icon to use
+	     *          onclick         : function to call when the button is clicked
+	     */
+	    var faIconButton = function( options ){
+	        options = options || {};
+	        options.tooltipConfig = options.tooltipConfig || { placement: 'bottom' };
+	
+	        options.classes = [ 'icon-btn' ].concat( options.classes || [] );
+	        if( options.disabled ){
+	            options.classes.push( 'disabled' );
+	        }
+	
+	        var html = [
+	            '<a class="', options.classes.join( ' ' ), '"',
+	                    (( options.title )?( ' title="' + options.title + '"' ):( '' )),
+	                    (( !options.disabled && options.target )?  ( ' target="' + options.target + '"' ):( '' )),
+	                    ' href="', (( !options.disabled && options.href )?( options.href ):( 'javascript:void(0);' )), '">',
+	                // could go with something less specific here - like 'html'
+	                '<span class="fa ', options.faIcon, '"></span>',
+	            '</a>'
+	        ].join( '' );
+	        var $button = $( html ).tooltip( options.tooltipConfig );
+	        if( _.isFunction( options.onclick ) ){
+	            $button.click( options.onclick );
+	        }
+	        return $button;
+	    };
+	
+	//============================================================================
+	    return faIconButton;
+	}));
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1)))
+
+/***/ },
+/* 86 */
 /*!***********************************************!*\
   !*** ./galaxy/scripts/mvc/history/hdca-li.js ***!
   \***********************************************/
@@ -20914,8 +20946,8 @@ webpackJsonp([0,1],[
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! mvc/dataset/states */ 68),
-	    __webpack_require__(/*! mvc/collection/collection-li */ 86),
-	    __webpack_require__(/*! mvc/collection/collection-view */ 87),
+	    __webpack_require__(/*! mvc/collection/collection-li */ 87),
+	    __webpack_require__(/*! mvc/collection/collection-view */ 88),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( STATES, DC_LI, DC_VIEW, BASE_MVC, _l ){
@@ -21019,14 +21051,14 @@ webpackJsonp([0,1],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 86 */
+/* 87 */
 /*!********************************************************!*\
   !*** ./galaxy/scripts/mvc/collection/collection-li.js ***!
   \********************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, $, jQuery) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/list/list-item */ 80),
+	    __webpack_require__(/*! mvc/list/list-item */ 79),
 	    __webpack_require__(/*! mvc/dataset/dataset-li */ 84),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7)
@@ -21308,16 +21340,16 @@ webpackJsonp([0,1],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 87 */
+/* 88 */
 /*!**********************************************************!*\
   !*** ./galaxy/scripts/mvc/collection/collection-view.js ***!
   \**********************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/list/list-view */ 79),
+	    __webpack_require__(/*! mvc/list/list-view */ 78),
 	    __webpack_require__(/*! mvc/collection/collection-model */ 72),
-	    __webpack_require__(/*! mvc/collection/collection-li */ 86),
+	    __webpack_require__(/*! mvc/collection/collection-li */ 87),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( LIST_VIEW, DC_MODEL, DC_LI, BASE_MVC, _l ){
@@ -21543,14 +21575,14 @@ webpackJsonp([0,1],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 88 */
+/* 89 */
 /*!***************************************************!*\
   !*** ./galaxy/scripts/mvc/history/hda-li-edit.js ***!
   \***************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(jQuery, _) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/dataset/dataset-li-edit */ 89),
+	    __webpack_require__(/*! mvc/dataset/dataset-li-edit */ 90),
 	    __webpack_require__(/*! mvc/history/hda-li */ 83),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7)
@@ -21636,7 +21668,7 @@ webpackJsonp([0,1],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 89 */
+/* 90 */
 /*!*******************************************************!*\
   !*** ./galaxy/scripts/mvc/dataset/dataset-li-edit.js ***!
   \*******************************************************/
@@ -21645,9 +21677,9 @@ webpackJsonp([0,1],[
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! mvc/dataset/states */ 68),
 	    __webpack_require__(/*! mvc/dataset/dataset-li */ 84),
-	    __webpack_require__(/*! mvc/tag */ 90),
-	    __webpack_require__(/*! mvc/annotation */ 91),
-	    __webpack_require__(/*! ui/fa-icon-button */ 78),
+	    __webpack_require__(/*! mvc/tag */ 91),
+	    __webpack_require__(/*! mvc/annotation */ 92),
+	    __webpack_require__(/*! ui/fa-icon-button */ 85),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( STATES, DATASET_LI, TAGS, ANNOTATIONS, faIconButton, BASE_MVC, _l ){
@@ -22029,7 +22061,7 @@ webpackJsonp([0,1],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 90 */
+/* 91 */
 /*!***********************************!*\
   !*** ./galaxy/scripts/mvc/tag.js ***!
   \***********************************/
@@ -22159,7 +22191,7 @@ webpackJsonp([0,1],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 91 */
+/* 92 */
 /*!******************************************!*\
   !*** ./galaxy/scripts/mvc/annotation.js ***!
   \******************************************/
@@ -22168,7 +22200,7 @@ webpackJsonp([0,1],[
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7),
-	    __webpack_require__(/*! ui/editable-text */ 92),
+	    __webpack_require__(/*! ui/editable-text */ 93),
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( baseMVC, _l ){
 	// =============================================================================
 	/** A view on any model that has a 'annotation' attribute
@@ -22253,7 +22285,7 @@ webpackJsonp([0,1],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 92 */
+/* 93 */
 /*!********************************************!*\
   !*** ./galaxy/scripts/ui/editable-text.js ***!
   \********************************************/
@@ -22381,16 +22413,16 @@ webpackJsonp([0,1],[
 
 
 /***/ },
-/* 93 */
+/* 94 */
 /*!****************************************************!*\
   !*** ./galaxy/scripts/mvc/history/hdca-li-edit.js ***!
   \****************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/history/hdca-li */ 85),
-	    __webpack_require__(/*! mvc/collection/collection-view-edit */ 94),
-	    __webpack_require__(/*! ui/fa-icon-button */ 78),
+	    __webpack_require__(/*! mvc/history/hdca-li */ 86),
+	    __webpack_require__(/*! mvc/collection/collection-view-edit */ 95),
+	    __webpack_require__(/*! ui/fa-icon-button */ 85),
 	    __webpack_require__(/*! utils/localization */ 7)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( HDCA_LI, DC_VIEW_EDIT, faIconButton, _l ){
 	
@@ -22463,19 +22495,19 @@ webpackJsonp([0,1],[
 
 
 /***/ },
-/* 94 */
+/* 95 */
 /*!***************************************************************!*\
   !*** ./galaxy/scripts/mvc/collection/collection-view-edit.js ***!
   \***************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/collection/collection-view */ 87),
+	    __webpack_require__(/*! mvc/collection/collection-view */ 88),
 	    __webpack_require__(/*! mvc/collection/collection-model */ 72),
-	    __webpack_require__(/*! mvc/collection/collection-li-edit */ 95),
+	    __webpack_require__(/*! mvc/collection/collection-li-edit */ 96),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7),
-	    __webpack_require__(/*! ui/editable-text */ 92),
+	    __webpack_require__(/*! ui/editable-text */ 93),
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( DC_VIEW, DC_MODEL, DC_EDIT, BASE_MVC, _l ){
 	
 	'use strict';
@@ -22628,15 +22660,15 @@ webpackJsonp([0,1],[
 
 
 /***/ },
-/* 95 */
+/* 96 */
 /*!*************************************************************!*\
   !*** ./galaxy/scripts/mvc/collection/collection-li-edit.js ***!
   \*************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(jQuery, _) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/collection/collection-li */ 86),
-	    __webpack_require__(/*! mvc/dataset/dataset-li-edit */ 89),
+	    __webpack_require__(/*! mvc/collection/collection-li */ 87),
+	    __webpack_require__(/*! mvc/dataset/dataset-li-edit */ 90),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( DC_LI, DATASET_LI_EDIT, BASE_MVC, _l ){
@@ -22777,7 +22809,7 @@ webpackJsonp([0,1],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 96 */
+/* 97 */
 /*!******************************************************************!*\
   !*** ./galaxy/scripts/mvc/collection/pair-collection-creator.js ***!
   \******************************************************************/
@@ -23040,14 +23072,14 @@ webpackJsonp([0,1],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 97 */
+/* 98 */
 /*!***************************************************************************!*\
   !*** ./galaxy/scripts/mvc/collection/list-of-pairs-collection-creator.js ***!
   \***************************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _, jQuery, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! utils/levenshtein */ 98),
+	    __webpack_require__(/*! utils/levenshtein */ 99),
 	    __webpack_require__(/*! utils/natural-sort */ 75),
 	    __webpack_require__(/*! mvc/collection/list-collection-creator */ 74),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
@@ -24776,7 +24808,7 @@ webpackJsonp([0,1],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 98 */
+/* 99 */
 /*!*********************************************!*\
   !*** ./galaxy/scripts/utils/levenshtein.js ***!
   \*********************************************/

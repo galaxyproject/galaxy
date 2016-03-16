@@ -2,6 +2,7 @@ define([
     "mvc/list/list-view",
     "mvc/history/history-model",
     "mvc/history/history-contents",
+    "mvc/history/history-preferences",
     "mvc/history/hda-li",
     "mvc/history/hdca-li",
     "mvc/user/user-model",
@@ -14,6 +15,7 @@ define([
     LIST_VIEW,
     HISTORY_MODEL,
     HISTORY_CONTENTS,
+    HISTORY_PREFS,
     HDA_LI,
     HDCA_LI,
     USER,
@@ -26,59 +28,6 @@ define([
 'use strict';
 
 var logNamespace = 'history';
-
-// ============================================================================
-/** session storage for individual history preferences */
-var HistoryPrefs = BASE_MVC.SessionStorageModel.extend(
-/** @lends HistoryPrefs.prototype */{
-//TODO:?? possibly mark as current T/F - have History.currId() (a class method) return that value
-    defaults : {
-//TODO:?? expandedIds to array?
-        expandedIds : {},
-        //TODO:?? move to user?
-        show_deleted : false,
-        show_hidden  : false
-        //TODO: add scroll position?
-    },
-    /** add an hda id to the hash of expanded hdas */
-    addExpanded : function( model ){
-        var key = 'expandedIds';
-//TODO:?? is this right anymore?
-        this.save( key, _.extend( this.get( key ), _.object([ model.id ], [ model.get( 'id' ) ]) ) );
-    },
-    /** remove an hda id from the hash of expanded hdas */
-    removeExpanded : function( model ){
-        var key = 'expandedIds';
-        this.save( key, _.omit( this.get( key ), model.id ) );
-    },
-    toString : function(){
-        return 'HistoryPrefs(' + this.id + ')';
-    }
-});
-// class lvl for access w/o instantiation
-HistoryPrefs.storageKeyPrefix = 'history:';
-
-/** key string to store each histories settings under */
-HistoryPrefs.historyStorageKey = function historyStorageKey( historyId ){
-    if( !historyId ){
-        throw new Error( 'HistoryPrefs.historyStorageKey needs valid id: ' + historyId );
-    }
-    // single point of change
-    return ( HistoryPrefs.storageKeyPrefix + historyId );
-};
-/** return the existing storage for the history with the given id (or create one if it doesn't exist) */
-HistoryPrefs.get = function get( historyId ){
-    return new HistoryPrefs({ id: HistoryPrefs.historyStorageKey( historyId ) });
-};
-/** clear all history related items in sessionStorage */
-HistoryPrefs.clearAll = function clearAll( historyId ){
-    for( var key in sessionStorage ){
-        if( key.indexOf( HistoryPrefs.storageKeyPrefix ) === 0 ){
-            sessionStorage.removeItem( key );
-        }
-    }
-};
-
 
 /* =============================================================================
 TODO:
@@ -175,7 +124,7 @@ var HistoryView = _super.extend(
         var detailIdsFn = function( historyData ){
                 // will be called to get content ids that need details from the api
 //TODO:! non-visible contents are getting details loaded... either stop loading them at all or filter ids thru isVisible
-                return _.values( HistoryPrefs.get( historyData.id ).get( 'expandedIds' ) );
+                return _.values( HISTORY_PREFS.HistoryPrefs.get( historyData.id ).get( 'expandedIds' ) );
             };
         return this.loadHistory( historyId, attributes, historyFn, contentsFn, detailIdsFn );
     },
@@ -268,8 +217,8 @@ var HistoryView = _super.extend(
             this.stopListening( this.storage );
         }
 
-        this.storage = new HistoryPrefs({
-            id: HistoryPrefs.historyStorageKey( this.model.get( 'id' ) )
+        this.storage = new HISTORY_PREFS.HistoryPrefs({
+            id: HISTORY_PREFS.HistoryPrefs.historyStorageKey( this.model.get( 'id' ) )
         });
 
         // expandedIds is a map of content.ids -> a boolean repr'ing whether that item's body is already expanded

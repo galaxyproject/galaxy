@@ -11,7 +11,7 @@ webpackJsonp([5],[
 	    GalaxyApp = __webpack_require__( /*! galaxy */ 4 ).GalaxyApp,
 	    PANEL = __webpack_require__( /*! layout/panel */ 12 ),
 	    _l = __webpack_require__( /*! utils/localization */ 7 ),
-	    PAGE = __webpack_require__( /*! layout/page */ 99 );
+	    PAGE = __webpack_require__( /*! layout/page */ 100 );
 	
 	window.app = function app( options, bootstrapped ){
 	    window.Galaxy = new GalaxyApp( options, bootstrapped );
