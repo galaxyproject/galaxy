@@ -14296,7 +14296,7 @@ webpackJsonp([0,1],[
 	     */
 	    initialize : function( models, options ){
 	        options = options || {};
-	        this.historyId = options.historyId;
+	        this.historyId = options.historyId || null;
 	
 	        // backbonejs uses collection.model.prototype.idAttribute to determine if a model is *already* in a collection
 	        //  and either merged or replaced. In this case, our 'model' is a function so we need to add idAttribute
@@ -17670,7 +17670,7 @@ webpackJsonp([0,1],[
 	                this.errorHandler( model, xhr, options, msg, details );
 	            },
 	            'loading-done' : function(){
-	                //TODO:?? if( this.collection.length ){
+	                this.render();
 	                if( !this.views.length ){
 	                    this.trigger( 'empty-history', this );
 	                }
@@ -17685,9 +17685,10 @@ webpackJsonp([0,1],[
 	    // ------------------------------------------------------------------------ loading history/hda models
 	    /**  */
 	    loadHistory : function( historyId, options, contentsOptions ){
-	        this.info( 'loadHistory:', historyId, attributes, historyFn, contentsFn, detailIdsFn );
+	        this.info( 'loadHistory:', historyId, options, contentsOptions );
 	        var self = this;
 	        self.setModel( new HISTORY_MODEL.History({ id : historyId }) );
+	        //TODO:?? cache histories?
 	
 	        self.trigger( 'loading' );
 	        return self.model
@@ -17713,19 +17714,24 @@ webpackJsonp([0,1],[
 	        attributes = attributes || {};
 	        _super.prototype.setModel.call( this, model, attributes );
 	        if( this.model ){
-	            this._setUpWebStorage( attributes.initiallyExpanded, attributes.show_deleted, attributes.show_hidden );
+	            this._setUpWebStorage();
 	        }
+	    },
+	
+	    /** Override to reset web storage when the id changes (since it needs the id) */
+	    _setUpModelListeners : function(){
+	        _super.prototype._setUpModelListeners.call( this );
+	        return this.listenTo( this.model, {
+	            'change:id' : this._setUpWebStorage,
+	        });
 	    },
 	
 	    // ------------------------------------------------------------------------ browser stored prefs
 	    /** Set up client side storage. Currently PersistanStorage keyed under 'history:<id>'
-	     *  @param {Object} initiallyExpanded
-	     *  @param {Boolean} show_deleted whether to show deleted contents (overrides stored)
-	     *  @param {Boolean} show_hidden
 	     *  @see PersistentStorage
 	     */
-	    _setUpWebStorage : function( initiallyExpanded, show_deleted, show_hidden ){
-	        //if( !this.model ){ return this; }
+	    _setUpWebStorage : function(){
+	        if( !this.model || !this.model.id ){ return this; }
 	        //this.log( '_setUpWebStorage', initiallyExpanded, show_deleted, show_hidden );
 	        if( this.storage ){
 	            this.stopListening( this.storage );
@@ -17734,26 +17740,10 @@ webpackJsonp([0,1],[
 	        this.storage = new HISTORY_PREFS.HistoryPrefs({
 	            id: HISTORY_PREFS.HistoryPrefs.historyStorageKey( this.model.get( 'id' ) )
 	        });
-	
-	        // expandedIds is a map of content.ids -> a boolean repr'ing whether that item's body is already expanded
-	        // store any pre-expanded ids passed in
-	        if( _.isObject( initiallyExpanded ) ){
-	            this.storage.set( 'expandedIds', initiallyExpanded );
-	        }
-	
-	        // get the show_deleted/hidden settings giving priority to values passed in, using web storage otherwise
-	        // if the page has specifically requested show_deleted/hidden, these will be either true or false
-	        //  (as opposed to undefined, null) - and we give priority to that setting
-	        if( _.isBoolean( show_deleted ) ){
-	            this.storage.set( 'show_deleted', show_deleted );
-	        }
-	        if( _.isBoolean( show_hidden ) ){
-	            this.storage.set( 'show_hidden', show_hidden );
-	        }
-	
 	        this.trigger( 'new-storage', this.storage, this );
 	        this.log( this + ' (init\'d) storage:', this.storage.get() );
 	
+	// TODO: reverse this - have storage reflect what's used in the view and not visversa
 	        this.listenTo( this.storage, {
 	            'change:show_deleted' : function( view, newVal ){
 	                this.showDeleted = newVal;
@@ -17762,8 +17752,8 @@ webpackJsonp([0,1],[
 	                this.showHidden = newVal;
 	            }
 	        }, this );
-	        this.showDeleted = ( show_deleted !== undefined )? show_deleted : this.storage.get( 'show_deleted' );
-	        this.showHidden  = ( show_hidden  !== undefined )? show_hidden  : this.storage.get( 'show_hidden' );
+	        this.showDeleted = this.storage.get( 'show_deleted' ) || false;
+	        this.showHidden  = this.storage.get( 'show_hidden' ) || false;
 	
 	        return this;
 	    },

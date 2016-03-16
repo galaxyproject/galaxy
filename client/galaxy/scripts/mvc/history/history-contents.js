@@ -48,7 +48,7 @@ var HistoryContents = Backbone.Collection
      */
     initialize : function( models, options ){
         options = options || {};
-        this.historyId = options.historyId;
+        this.historyId = options.historyId || null;
 
         // backbonejs uses collection.model.prototype.idAttribute to determine if a model is *already* in a collection
         //  and either merged or replaced. In this case, our 'model' is a function so we need to add idAttribute
