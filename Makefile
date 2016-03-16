@@ -5,10 +5,54 @@ RELEASE_NEXT:=16.04
 #RELEASE_NEXT_BRANCH:=release_$(RELEASE_NEXT)
 RELEASE_NEXT_BRANCH:=dev
 RELEASE_UPSTREAM:=upstream
+# Location of virtualenv used for development.
+VENV?=.venv
+# Source virtualenv to execute command (flake8, sphinx, twine, etc...)
+IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
+PROJECT_URL?=https://github.com/galaxyproject/galaxy
 GRUNT_DOCKER_NAME:=galaxy/client-builder:16.01
 
 all: help
 	@echo "This makefile is primarily used for building Galaxy's JS client. A sensible all target is not yet implemented."
+
+help:
+	@echo "client - rebuild all client artifacts"
+	@echo "docs - generate Sphinx HTML documentation, including API docs"
+	@echo "open-docs - generate Sphinx HTML documentation and open in browser"
+	@echo "open-project - open project on github"
+	@echo "lint - check style using tox and flake8 for Python 2 and Python 3"
+	@echo "release-check-metadata - check github PR metadata for target release"
+	@echo "release-bootstrap-history - bootstrap history for a new release"
+
+docs:
+	$(IN_VENV) $(MAKE) -C docs clean
+	$(IN_VENV) $(MAKE) -C docs html
+
+_open-docs:
+	open docs/_build/html/index.html || xdg-open docs/_build/html/index.html
+
+open-docs: docs _open-docs
+
+open-project:
+	open $(PROJECT_URL) || xdg-open $(PROJECT_URL)
+
+lint:
+	$(IN_VENV) tox -e py27-lint && tox -e py34-lint
+
+release-issue:
+	$(IN_VENV) python scripts/bootstrap_history.py --create-release-issue $(RELEASE_CURR)
+
+release-check-metadata:
+	$(IN_VENV) python scripts/bootstrap_history.py --check-release $(RELEASE_CURR)
+
+release-check-blocking-issues:
+	$(IN_VENV) python scripts/bootstrap_history.py --check-blocking-issues $(RELEASE_CURR)
+
+release-check-blocking-prs:
+	$(IN_VENV) python scripts/bootstrap_history.py --check-blocking-prs $(RELEASE_CURR)
+
+release-bootstrap-history:
+	$(IN_VENV) python scripts/bootstrap_history.py --release $(RELEASE_CURR)
 
 npm-deps:
 	cd client && npm install
@@ -35,7 +79,7 @@ clean-grunt-docker-image: ## Remove grunt docker image
 
 
 # Release Targets
-create_release_rc: ## Create a release-candidate branch
+release-create-rc: ## Create a release-candidate branch 
 	git checkout dev
 	git pull --ff-only ${RELEASE_UPSTREAM} dev
 	git push origin dev
