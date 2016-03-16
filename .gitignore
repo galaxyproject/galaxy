@@ -15,6 +15,7 @@ database/community_files
 database/compiled_templates
 database/files
 database/job_working_directory
+database/jobs_directory
 database/pbs
 database/tmp
 database/*.sqlite
