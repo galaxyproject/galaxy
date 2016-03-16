@@ -90,10 +90,15 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         """
         Returns a count of both/all types of contents, based on the given filters.
         """
-        # TODO?: we could branch here based on 'if limit is None and offset is None' - to a simpler (non-union) query
-        # for now, I'm just using this (even for non-limited/offset queries) to reduce code paths
-        return self._union_of_contents_query( container,
+        return self.contents_query( container,
             filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs ).count()
+
+    def contents_query( self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs ):
+        """
+        Returns the contents union query for subqueries, etc.
+        """
+        return self._union_of_contents_query( container,
+            filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs )
 
     # order_by parsing - similar to FilterParser but not enough yet to warrant a class?
     def parse_order_by( self, order_by_string, default=None ):
@@ -261,6 +266,52 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
             return []
         query = self._session().query( component_class ).filter( component_class.id.in_( id_list ) )
         return dict( ( row.id, row ) for row in query.all() )
+
+
+class HistoryContentsSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
+    """
+    Interface/service object for serializing histories into dictionaries.
+    """
+    model_manager_class = HistoryContentsManager
+
+    def __init__( self, app, **kwargs ):
+        super( HistoryContentsSerializer, self ).__init__( app, **kwargs )
+
+        self.default_view = 'summary'
+        self.add_view( 'summary', [
+            "id",
+            "type_id",
+            "history_id",
+            "hid",
+            "history_content_type",
+            "visible",
+            "dataset_id",
+            "collection_id",
+            "name",
+            "state",
+            "deleted",
+            "purged",
+            "create_time",
+            "update_time",
+        ])
+
+    # assumes: outgoing to json.dumps and sanitized
+    def add_serializers( self ):
+        super( HistoryContentsSerializer, self ).add_serializers()
+        deletable.PurgableSerializerMixin.add_serializers( self )
+
+        self.serializers.update({
+            'type_id'       : self.serialize_type_id,
+            'history_id'    : self.serialize_id,
+            'dataset_id'    : self.serialize_id_or_none,
+            'collection_id' : self.serialize_id_or_none,
+        })
+
+    def serialize_id_or_none( self, content, key, **context ):
+        """Allow None while serializing an id."""
+        if not hasattr( content, key ):
+            raise base.SkipAttribute( 'no such attribute' )
+        return self.serialize_id( content, key, **context )
 
 
 class HistoryContentsFilters( base.ModelFilterParser, deletable.PurgableFiltersMixin ):
