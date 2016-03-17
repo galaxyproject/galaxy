@@ -3,7 +3,7 @@ Provides a `TraceLogger` implementation that logs to a fluentd collector
 """
 
 import threading
-from time import time as now
+import time
 
 try:
     from fluent.sender import FluentSender
@@ -35,10 +35,10 @@ class FluentTraceLogger( object ):
         del self.thread_local.context[key]
         self.lock.release()
 
-    def log( self, label, time=None, **kwargs ):
+    def log( self, label, event_time=None, **kwargs ):
         self.lock.acquire()
         if hasattr( self.thread_local, 'context' ):
             kwargs.update( self.thread_local.context )
         self.lock.release()
-        time = time or now()
-        self.sender.emit_with_time( label, int(time), kwargs )
+        event_time = event_time or time.time()
+        self.sender.emit_with_time( label, int(event_time), kwargs )
