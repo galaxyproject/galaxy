@@ -13720,6 +13720,7 @@ webpackJsonp([0,1],[
 	        this.contents = new HISTORY_CONTENTS.HistoryContents( contentsJSON || [], { historyId: this.get( 'id' )});
 	
 	        this._setUpListeners();
+	        this._setUpCollectionListeners();
 	
 	        /** cached timeout id for the dataset updater */
 	        this.updateTimeoutId = null;
@@ -13824,9 +13825,12 @@ webpackJsonp([0,1],[
 	        options = options || {};
 	        var self = this;
 	
+	        // note if there was no previous update time, all summary contents will be fetched
 	        var lastUpdateTime = self.lastUpdateTime;
 	        self.lastUpdateTime = new Date();
-	        // note if there was no previous update time, all summary contents will be fetched
+	
+	        // if we don't flip this, then a fully-fetched list will not be re-checked via fetch
+	        this.contents.allFetched = false;
 	        return self.contents.fetchUpdated( lastUpdateTime )
 	            .done( _.bind( self.checkForUpdates, self ) );
 	    },
@@ -13964,75 +13968,13 @@ webpackJsonp([0,1],[
 	    }
 	}));
 	
-	//==============================================================================
-	var ControlledFetchMixin = {
-	
-	    /** Override to convert certain options keys into API index parameters */
-	    fetch : function( options ){
-	        options = options || {};
-	        options.data = options.data || this._buildFetchData( options );
-	        // use repeated params for arrays, e.g. q=1&qv=1&q=2&qv=2
-	        options.traditional = true;
-	        return Backbone.Collection.prototype.fetch.call( this, options );
-	    },
-	
-	    /** These attribute keys are valid params to fetch/API-index */
-	    _fetchOptions : [
-	        /** model dependent string to control the order of models returned */
-	        'order',
-	        /** limit the number of models returned from a fetch */
-	        'limit',
-	        /** skip this number of models when fetching */
-	        'offset',
-	        /** what series of attributes to return (model dependent) */
-	        'view',
-	        /** individual keys to return for the models (see api/histories.index) */
-	        'keys'
-	    ],
-	
-	    /** Build the data dictionary to send to fetch's XHR as data */
-	    _buildFetchData : function( options ){
-	        var data = {},
-	            fetchDefaults = this._fetchDefaults();
-	        options = _.defaults( options || {}, fetchDefaults );
-	        data = _.pick( options, this._fetchOptions );
-	
-	        var filters = _.has( options, 'filters' )? options.filters : ( fetchDefaults.filters || {} );
-	        if( !_.isEmpty( filters ) ){
-	            _.extend( data, this._buildFetchFilters( filters ) );
-	        }
-	        return data;
-	    },
-	
-	    /** Override to have defaults for fetch options and filters */
-	    _fetchDefaults : function(){
-	        // to be overridden
-	        return {};
-	    },
-	
-	    /** Convert dictionary filters to qqv style arrays */
-	    _buildFetchFilters : function( filters ){
-	        var filterMap = {
-	            q  : [],
-	            qv : []
-	        };
-	        _.each( filters, function( v, k ){
-	            if( v === true ){ v = 'True'; }
-	            if( v === false ){ v = 'False'; }
-	            filterMap.q.push( k );
-	            filterMap.qv.push( v );
-	        });
-	        return filterMap;
-	    },
-	};
 	
 	//==============================================================================
 	/** @class A collection of histories (per user).
 	 *      (stub) currently unused.
 	 */
-	var HistoryCollection = Backbone.Collection
+	var HistoryCollection = BASE_MVC.ControlledFetchCollection
 	        .extend( BASE_MVC.LoggableMixin )
-	        .extend( ControlledFetchMixin )
 	        .extend(/** @lends HistoryCollection.prototype */{
 	    _logNamespace : 'history',
 	
@@ -14166,35 +14108,6 @@ webpackJsonp([0,1],[
 	        return collection;
 	    },
 	
-	    /** override to provide order and offsets based on instance vars, set limit if passed,
-	     *  and set allFetched/fire 'all-fetched' when xhr returns
-	     */
-	    fetch : function( options ){
-	        options = options || {};
-	        if( this.allFetched ){ return jQuery.when({}); }
-	        var collection = this,
-	            fetchOptions = _.defaults( options, {
-	                remove : false,
-	                offset : collection.length >= 1? ( collection.length - 1 ) : 0,
-	                order  : collection.order
-	            }),
-	            limit = options.limit;
-	        if( !_.isUndefined( limit ) ){
-	            fetchOptions.limit = limit;
-	        }
-	
-	        return ControlledFetchMixin.fetch.call( this, fetchOptions )
-	            .done( function _postFetchMore( fetchData ){
-	                var numFetched = _.isArray( fetchData )? fetchData.length : 0;
-	                // anything less than a full page means we got all there is to get
-	                if( !limit || numFetched < limit ){
-	                    collection.allFetched = true;
-	                    collection.trigger( 'all-fetched', collection );
-	                }
-	            }
-	        );
-	    },
-	
 	    /** create a new history and by default set it to be the current history */
 	    create : function create( data, hdas, historyOptions, xhrOptions ){
 	        //TODO: .create is actually a collection function that's overridden here
@@ -14246,15 +14159,17 @@ webpackJsonp([0,1],[
   \********************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _, jQuery) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, jQuery, Backbone) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! mvc/history/history-content-model */ 67),
 	    __webpack_require__(/*! mvc/history/hda-model */ 69),
 	    __webpack_require__(/*! mvc/history/hdca-model */ 71),
+	    __webpack_require__(/*! mvc/history/history-preferences */ 82),
 	    __webpack_require__(/*! mvc/base-mvc */ 5)
-	], __WEBPACK_AMD_DEFINE_RESULT__ = function( HISTORY_CONTENT, HDA_MODEL, HDCA_MODEL, BASE_MVC ){
+	], __WEBPACK_AMD_DEFINE_RESULT__ = function( HISTORY_CONTENT, HDA_MODEL, HDCA_MODEL, HISTORY_PREFS, BASE_MVC ){
 	'use strict';
 	
 	//==============================================================================
+	var _super = BASE_MVC.ControlledFetchCollection;
 	/** @class Backbone collection for history content.
 	 *      NOTE: history content seems like a dataset collection, but differs in that it is mixed:
 	 *          each element can be either an HDA (dataset) or a DatasetCollection and co-exist on
@@ -14263,9 +14178,7 @@ webpackJsonp([0,1],[
 	 *          HDAs or child dataset collections on one level.
 	 *      This is why this does not inherit from any of the DatasetCollections (currently).
 	 */
-	var HistoryContents = Backbone.Collection
-	        .extend( BASE_MVC.LoggableMixin )
-	        .extend(/** @lends HistoryContents.prototype */{
+	var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
 	    _logNamespace : 'history',
 	
 	    /** since history content is a mix, override model fn into a factory, creating based on history_content_type */
@@ -14312,6 +14225,18 @@ webpackJsonp([0,1],[
 	        return this.urlRoot + '/' + this.historyId + '/contents';
 	    },
 	
+	    // ........................................................................ order
+	    order : 'create_time',
+	
+	    comparator : function _create_timeAsc( a, b ){
+	        var createTimeA = a.get( 'create_time' );
+	        var createTimeB = b.get( 'create_time' );
+	        // console.log( 'comparator', createTimeA, createTimeB );
+	        if( createTimeA > createTimeB ){ return  -1; }
+	        if( createTimeA < createTimeB ){ return  1; }
+	        return 0;
+	    },
+	
 	    // ........................................................................ common queries
 	    /** Get the id of every model in this collection not in a 'ready' state (running).
 	     *  @returns an array of model ids
@@ -14354,46 +14279,68 @@ webpackJsonp([0,1],[
 	    },
 	
 	    // ........................................................................ ajax
-	    /** override to use newest (versioned) api */
+	    /** override to get expanded ids from sessionStorage and pass to API as details */
 	    fetch : function( options ){
 	        options = options || {};
 	        options.data = _.defaults( options.data || {}, {
 	            v : 'dev'
 	        });
-	        return Backbone.Collection.prototype.fetch.call( this, options );
+	        if( this.historyId && !options.details ){
+	// TODO: here?
+	            var expandedIds = HISTORY_PREFS.HistoryPrefs.get( this.historyId ).get( 'expandedIds' );
+	            options.details = _.values( expandedIds ).join( ',' );
+	        }
+	        return _super.prototype.fetch.call( this, options );
 	    },
 	
-	    /** override to use newest (versioned) api */
+	    /** override to filter requested contents to those updated after the Date 'since' */
 	    fetchUpdated : function( since, options ){
-	        options = options || {};
-	        options.traditional = true;
-	        // TODO: this is painful - simplify here or move q/qv to named/mappable params
-	        options.data = [{ name: 'v', value: 'dev' }];
 	        if( since ){
-	            options.data = options.data.concat( this._filtersFromMap({
-	                'update_time-ge' : since.toISOString(),
-	            }));
+	            options = options || { filters: {} };
+	            options.filters = {
+	                'update_time-ge' : since.toISOString()
+	            };
 	        }
-	        options.merge = true;
-	        options.remove = false;
+	        console.log( 'fetching updated:', this.historyId );
 	        return this.fetch( options );
 	    },
 	
-	    _filtersFromMap : function( filterMap ){
-	        var filters = [];
-	        // TODO: this seems unnecessary
-	        _.each( filterMap, function( val, key ){
-	            filters.push({ name: 'q',  value: key });
-	            filters.push({ name: 'qv', value: val });
+	    /**  */
+	    _buildFetchData : function( options ){
+	        return _.extend( _super.prototype._buildFetchData.call( this, options ), {
+	            v : 'dev'
 	        });
-	        return filters;
 	    },
+	
+	    /**  */
+	    _fetchDefaults : function(){
+	        var defaults = {};
+	        var filters = defaults.filters = {};
+	        if( !this.includeDeleted ){
+	            filters.deleted = false;
+	            filters.purged = false;
+	        }
+	
+	        if( !this.includeHidden ){
+	            filters.visible = true;
+	        }
+	        return defaults;
+	    },
+	
+	    /** Extend to include details and version */
+	    _fetchOptions : _super.prototype._fetchOptions.concat([
+	        // TODO: remove (the need for) both
+	        /** version */
+	        'v',
+	        /** dataset ids to get full details of */
+	        'details',
+	    ]),
 	
 	    /** fetch detailed model data for all contents in this collection */
 	    fetchAllDetails : function( options ){
 	        options = options || {};
 	        var detailsFlag = { details: 'all' };
-	        options.data = ( options.data )?( _.extend( options.data, detailsFlag ) ):( detailsFlag );
+	        options.data = _.extend( options.data || {}, detailsFlag );
 	        return this.fetch( options );
 	    },
 	
@@ -14487,15 +14434,15 @@ webpackJsonp([0,1],[
 	    // ........................................................................ misc
 	    /** override to ensure type id is set */
 	//TODO: needed now?
-	    // set : function( models, options ){
-	    //     models = _.isArray( models )? models : [ models ];
-	    //     _.each( models, function( model ){
-	    //         if( !model.type_id || !model.get || !model.get( 'type_id' ) ){
-	    //             model.type_id = HISTORY_CONTENT.typeIdStr( model.history_content_type, model.id );
-	    //         }
-	    //     });
-	    //     Backbone.Collection.prototype.set.call( this, models, options );
-	    // },
+	    set : function( models, options ){
+	        models = _.isArray( models )? models : [ models ];
+	        _.each( models, function( model ){
+	            if( !model.type_id || !model.get || !model.get( 'type_id' ) ){
+	                model.type_id = HISTORY_CONTENT.typeIdStr( model.history_content_type, model.id );
+	            }
+	        });
+	        Backbone.Collection.prototype.set.call( this, models, options );
+	    },
 	
 	    /** */
 	    createHDCA : function( elementIdentifiers, collectionType, name, options ){
@@ -14542,7 +14489,7 @@ webpackJsonp([0,1],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! libs/backbone */ 2)))
 
 /***/ },
 /* 67 */
@@ -14993,6 +14940,18 @@ webpackJsonp([0,1],[
 	            .always( function(){
 	                dataset._generateUrls();
 	            });
+	    },
+	
+	    /** override to use actual Dates objects for create/update times */
+	    parse : function( response, options ){
+	        var parsed = Backbone.Model.prototype.parse.call( this, response, options );
+	        if( parsed.create_time ){
+	            parsed.create_time = new Date( parsed.create_time );
+	        }
+	        if( parsed.update_time ){
+	            parsed.update_time = new Date( parsed.update_time );
+	        }
+	        return parsed;
 	    },
 	
 	    //NOTE: subclasses of DA's will need to implement url and urlRoot in order to have these work properly
@@ -15631,6 +15590,18 @@ webpackJsonp([0,1],[
 	    },
 	
 	    // ........................................................................ ajax
+	    /** override to use actual Dates objects for create/update times */
+	    parse : function( response, options ){
+	        var parsed = Backbone.Model.prototype.parse.call( this, response, options );
+	        if( parsed.create_time ){
+	            parsed.create_time = new Date( parsed.create_time );
+	        }
+	        if( parsed.update_time ){
+	            parsed.update_time = new Date( parsed.update_time );
+	        }
+	        return parsed;
+	    },
+	
 	    /** save this dataset, _Mark_ing it as deleted (just a flag) */
 	    'delete' : function( options ){
 	        if( this.get( 'deleted' ) ){ return jQuery.when(); }

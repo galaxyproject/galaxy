@@ -2,11 +2,13 @@ define([
     "mvc/history/history-content-model",
     "mvc/history/hda-model",
     "mvc/history/hdca-model",
+    "mvc/history/history-preferences",
     "mvc/base-mvc"
-], function( HISTORY_CONTENT, HDA_MODEL, HDCA_MODEL, BASE_MVC ){
+], function( HISTORY_CONTENT, HDA_MODEL, HDCA_MODEL, HISTORY_PREFS, BASE_MVC ){
 'use strict';
 
 //==============================================================================
+var _super = BASE_MVC.ControlledFetchCollection;
 /** @class Backbone collection for history content.
  *      NOTE: history content seems like a dataset collection, but differs in that it is mixed:
  *          each element can be either an HDA (dataset) or a DatasetCollection and co-exist on
@@ -15,9 +17,7 @@ define([
  *          HDAs or child dataset collections on one level.
  *      This is why this does not inherit from any of the DatasetCollections (currently).
  */
-var HistoryContents = Backbone.Collection
-        .extend( BASE_MVC.LoggableMixin )
-        .extend(/** @lends HistoryContents.prototype */{
+var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     _logNamespace : 'history',
 
     /** since history content is a mix, override model fn into a factory, creating based on history_content_type */
@@ -64,6 +64,18 @@ var HistoryContents = Backbone.Collection
         return this.urlRoot + '/' + this.historyId + '/contents';
     },
 
+    // ........................................................................ order
+    order : 'create_time',
+
+    comparator : function _create_timeAsc( a, b ){
+        var createTimeA = a.get( 'create_time' );
+        var createTimeB = b.get( 'create_time' );
+        // console.log( 'comparator', createTimeA, createTimeB );
+        if( createTimeA > createTimeB ){ return  -1; }
+        if( createTimeA < createTimeB ){ return  1; }
+        return 0;
+    },
+
     // ........................................................................ common queries
     /** Get the id of every model in this collection not in a 'ready' state (running).
      *  @returns an array of model ids
@@ -106,46 +118,68 @@ var HistoryContents = Backbone.Collection
     },
 
     // ........................................................................ ajax
-    /** override to use newest (versioned) api */
+    /** override to get expanded ids from sessionStorage and pass to API as details */
     fetch : function( options ){
         options = options || {};
         options.data = _.defaults( options.data || {}, {
             v : 'dev'
         });
-        return Backbone.Collection.prototype.fetch.call( this, options );
+        if( this.historyId && !options.details ){
+// TODO: here?
+            var expandedIds = HISTORY_PREFS.HistoryPrefs.get( this.historyId ).get( 'expandedIds' );
+            options.details = _.values( expandedIds ).join( ',' );
+        }
+        return _super.prototype.fetch.call( this, options );
     },
 
-    /** override to use newest (versioned) api */
+    /** override to filter requested contents to those updated after the Date 'since' */
     fetchUpdated : function( since, options ){
-        options = options || {};
-        options.traditional = true;
-        // TODO: this is painful - simplify here or move q/qv to named/mappable params
-        options.data = [{ name: 'v', value: 'dev' }];
         if( since ){
-            options.data = options.data.concat( this._filtersFromMap({
-                'update_time-ge' : since.toISOString(),
-            }));
+            options = options || { filters: {} };
+            options.filters = {
+                'update_time-ge' : since.toISOString()
+            };
         }
-        options.merge = true;
-        options.remove = false;
+        console.log( 'fetching updated:', this.historyId );
         return this.fetch( options );
     },
 
-    _filtersFromMap : function( filterMap ){
-        var filters = [];
-        // TODO: this seems unnecessary
-        _.each( filterMap, function( val, key ){
-            filters.push({ name: 'q',  value: key });
-            filters.push({ name: 'qv', value: val });
+    /**  */
+    _buildFetchData : function( options ){
+        return _.extend( _super.prototype._buildFetchData.call( this, options ), {
+            v : 'dev'
         });
-        return filters;
     },
+
+    /**  */
+    _fetchDefaults : function(){
+        var defaults = {};
+        var filters = defaults.filters = {};
+        if( !this.includeDeleted ){
+            filters.deleted = false;
+            filters.purged = false;
+        }
+
+        if( !this.includeHidden ){
+            filters.visible = true;
+        }
+        return defaults;
+    },
+
+    /** Extend to include details and version */
+    _fetchOptions : _super.prototype._fetchOptions.concat([
+        // TODO: remove (the need for) both
+        /** version */
+        'v',
+        /** dataset ids to get full details of */
+        'details',
+    ]),
 
     /** fetch detailed model data for all contents in this collection */
     fetchAllDetails : function( options ){
         options = options || {};
         var detailsFlag = { details: 'all' };
-        options.data = ( options.data )?( _.extend( options.data, detailsFlag ) ):( detailsFlag );
+        options.data = _.extend( options.data || {}, detailsFlag );
         return this.fetch( options );
     },
 
@@ -239,15 +273,15 @@ var HistoryContents = Backbone.Collection
     // ........................................................................ misc
     /** override to ensure type id is set */
 //TODO: needed now?
-    // set : function( models, options ){
-    //     models = _.isArray( models )? models : [ models ];
-    //     _.each( models, function( model ){
-    //         if( !model.type_id || !model.get || !model.get( 'type_id' ) ){
-    //             model.type_id = HISTORY_CONTENT.typeIdStr( model.history_content_type, model.id );
-    //         }
-    //     });
-    //     Backbone.Collection.prototype.set.call( this, models, options );
-    // },
+    set : function( models, options ){
+        models = _.isArray( models )? models : [ models ];
+        _.each( models, function( model ){
+            if( !model.type_id || !model.get || !model.get( 'type_id' ) ){
+                model.type_id = HISTORY_CONTENT.typeIdStr( model.history_content_type, model.id );
+            }
+        });
+        Backbone.Collection.prototype.set.call( this, models, options );
+    },
 
     /** */
     createHDCA : function( elementIdentifiers, collectionType, name, options ){

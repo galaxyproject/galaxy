@@ -263,6 +263,163 @@ var SearchableModelMixin = {
 };
 
 
+//=============================================================================
+/**
+ * A Collection that can be limited/offset/re-ordered/filtered.
+ * @type {Backbone.Collection}
+ */
+var ControlledFetchCollection = Backbone.Collection.extend({
+
+    /** @type {Number} limit used for the first fetch (or a reset) */
+    limitOnFirstFetch   : 10,
+    /** @type {Number} limit used for each subsequent fetch */
+    limitPerFetch       : 4,
+
+    /** override to provide order and offsets based on instance vars, set limit if passed,
+     *  and set allFetched/fire 'all-fetched' when xhr returns
+     */
+    fetch : function( options ){
+        options = options || {};
+        // console.log( 'ControlledFetchCollection.fetch:', options );
+        if( options.reset ){ this.allFetched = false; }
+        options = this._buildFetchOptions( options );
+        return Backbone.Collection.prototype.fetch.call( this, options );
+    },
+
+// TODO: the defaults and options merging here adds a lot of complexity - simplify and remove
+    _buildFetchOptions : function( options ){
+        options = options || {};
+        var collection = this,
+            data = options.data || {};
+        options = _.defaults( options, {
+            remove : false,
+            order  : collection.order,
+        });
+        // console.log( '-----------------------------------------' );
+        // console.log( 'limit:', options.limit );
+        console.log( 'offset:', options.offset );
+        // console.log( 'order:', options.order );
+        // console.log( 'filters:', options.filters );
+        options.traditional = true;
+        // we keep limit, offset, etc. in options because:
+        // - it makes calling convenient to add it to the options map
+        // - it allows the std. event handlers (for fetch, etc.) to have access
+        //   to the pagination options too
+        // however, when we send to xhr/jquery we copy them to data also
+        // so that they become API query params
+        console.log( 'data:', options.data );
+        options.data = _.defaults( data, this._buildFetchData( options ) );
+        // console.log( '-----------------------------------------' );
+        // console.log( 'limit:', options.limit );
+        console.log( 'offset:', options.data.offset );
+        // console.log( 'order:', options.order );
+        // console.log( 'filters:', options.filters );
+        // console.log( '-----------------------------------------' );
+
+        // console.log( 'options', options );
+        // console.log( 'options.data', options.data );
+        return options;
+    },
+
+    /** Build the data dictionary to send to fetch's XHR as data */
+    _buildFetchData : function( options ){
+        var data = {},
+            fetchDefaults = this._fetchDefaults();
+        options = _.defaults( options || {}, fetchDefaults );
+        data = _.pick( options, this._fetchOptions );
+        console.log( JSON.stringify( data ) );
+
+        var filters = options.filters || fetchDefaults.filters;
+        // var filters = _.defaults( options.filters || {}, fetchDefaults.filters );
+        if( !_.isEmpty( filters ) ){
+            _.extend( data, this._buildFetchFilters( filters ) );
+        }
+        return data;
+    },
+
+    /** Override to have defaults for fetch options and filters */
+    _fetchDefaults : function(){
+        // to be overridden
+        return {
+        };
+    },
+
+    /** These attribute keys are valid params to fetch/API-index */
+    _fetchOptions : [
+        /** model dependent string to control the order of models returned */
+        'order',
+        /** limit the number of models returned from a fetch */
+        'limit',
+        /** skip this number of models when fetching */
+        'offset',
+        /** what series of attributes to return (model dependent) */
+        'view',
+        /** individual keys to return for the models (see api/histories.index) */
+        'keys'
+    ],
+
+    /** Convert dictionary filters to qqv style arrays */
+    _buildFetchFilters : function( filters ){
+        var filterMap = {
+            q  : [],
+            qv : []
+        };
+        _.each( filters, function( v, k ){
+            if( v === true ){ v = 'True'; }
+            if( v === false ){ v = 'False'; }
+            filterMap.q.push( k );
+            filterMap.qv.push( v );
+        });
+        return filterMap;
+    },
+
+    fetchFirst : function( options ){
+        options = options? _.clone( options ) : {};
+        this.allFetched = false;
+        this.lastFetched = 0;
+        return this.fetchMore( _.extend( options, {
+            reset : true,
+            limit : this.limitOnFirstFetch,
+        }));
+    },
+
+    fetchMore : function( options ){
+        console.log( 'ControlledFetchCollection.fetchMore:', options );
+        options = _.clone( options || {} );
+        var collection = this;
+
+        console.log( 'fetchMore, options.reset:', options.reset );
+        if( ( !options.reset && collection.allFetched ) ){
+            console.warn( 'allFetched' ); return jQuery.when();
+        }
+
+        // TODO: this fails in the edge case where
+        //  the first fetch offset === limit (limit 4, offset 4, collection.length 4)
+        options.offset = options.reset? 0 : collection.lastFetched;
+        var limit = options.limit = options.limit || collection.limitPerFetch || null;
+        console.log( 'fetchMore, limit:', limit, 'offset:', options.offset );
+
+        collection.trigger( 'fetching-more' );
+        return collection.fetch( options )
+            .always( function(){
+                collection.trigger( 'fetching-more-done' );
+            })
+            // maintain allFetched flag and trigger if all were fetched this time
+            .done( function _postFetchMore( fetchedData ){
+                var numFetched = _.isArray( fetchedData )? fetchedData.length : 0;
+                collection.lastFetched += numFetched;
+                console.log( 'fetchMore, lastFetched:', collection.lastFetched );
+                // anything less than a full page means we got all there is to get
+                if( !limit || numFetched < limit ){
+                    collection.allFetched = true;
+                    collection.trigger( 'all-fetched', collection );
+                }
+            }
+        );
+    },
+});
+
+
 //==============================================================================
 /** A view that renders hidden and shows when some activator is clicked.
  *      options:
@@ -570,6 +727,7 @@ function wrapTemplate( template, jsonNamespace ){
         SessionStorageModel             : SessionStorageModel,
         mixin                           : mixin,
         SearchableModelMixin            : SearchableModelMixin,
+        ControlledFetchCollection       : ControlledFetchCollection,
         HiddenUntilActivatedViewMixin   : HiddenUntilActivatedViewMixin,
         DraggableViewMixin              : DraggableViewMixin,
         SelectableViewMixin             : SelectableViewMixin,

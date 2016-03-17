@@ -50,6 +50,7 @@ var History = Backbone.Model
         this.contents = new HISTORY_CONTENTS.HistoryContents( contentsJSON || [], { historyId: this.get( 'id' )});
 
         this._setUpListeners();
+        this._setUpCollectionListeners();
 
         /** cached timeout id for the dataset updater */
         this.updateTimeoutId = null;
@@ -154,9 +155,12 @@ var History = Backbone.Model
         options = options || {};
         var self = this;
 
+        // note if there was no previous update time, all summary contents will be fetched
         var lastUpdateTime = self.lastUpdateTime;
         self.lastUpdateTime = new Date();
-        // note if there was no previous update time, all summary contents will be fetched
+
+        // if we don't flip this, then a fully-fetched list will not be re-checked via fetch
+        this.contents.allFetched = false;
         return self.contents.fetchUpdated( lastUpdateTime )
             .done( _.bind( self.checkForUpdates, self ) );
     },
@@ -294,75 +298,13 @@ var History = Backbone.Model
     }
 }));
 
-//==============================================================================
-var ControlledFetchMixin = {
-
-    /** Override to convert certain options keys into API index parameters */
-    fetch : function( options ){
-        options = options || {};
-        options.data = options.data || this._buildFetchData( options );
-        // use repeated params for arrays, e.g. q=1&qv=1&q=2&qv=2
-        options.traditional = true;
-        return Backbone.Collection.prototype.fetch.call( this, options );
-    },
-
-    /** These attribute keys are valid params to fetch/API-index */
-    _fetchOptions : [
-        /** model dependent string to control the order of models returned */
-        'order',
-        /** limit the number of models returned from a fetch */
-        'limit',
-        /** skip this number of models when fetching */
-        'offset',
-        /** what series of attributes to return (model dependent) */
-        'view',
-        /** individual keys to return for the models (see api/histories.index) */
-        'keys'
-    ],
-
-    /** Build the data dictionary to send to fetch's XHR as data */
-    _buildFetchData : function( options ){
-        var data = {},
-            fetchDefaults = this._fetchDefaults();
-        options = _.defaults( options || {}, fetchDefaults );
-        data = _.pick( options, this._fetchOptions );
-
-        var filters = _.has( options, 'filters' )? options.filters : ( fetchDefaults.filters || {} );
-        if( !_.isEmpty( filters ) ){
-            _.extend( data, this._buildFetchFilters( filters ) );
-        }
-        return data;
-    },
-
-    /** Override to have defaults for fetch options and filters */
-    _fetchDefaults : function(){
-        // to be overridden
-        return {};
-    },
-
-    /** Convert dictionary filters to qqv style arrays */
-    _buildFetchFilters : function( filters ){
-        var filterMap = {
-            q  : [],
-            qv : []
-        };
-        _.each( filters, function( v, k ){
-            if( v === true ){ v = 'True'; }
-            if( v === false ){ v = 'False'; }
-            filterMap.q.push( k );
-            filterMap.qv.push( v );
-        });
-        return filterMap;
-    },
-};
 
 //==============================================================================
 /** @class A collection of histories (per user).
  *      (stub) currently unused.
  */
-var HistoryCollection = Backbone.Collection
+var HistoryCollection = BASE_MVC.ControlledFetchCollection
         .extend( BASE_MVC.LoggableMixin )
-        .extend( ControlledFetchMixin )
         .extend(/** @lends HistoryCollection.prototype */{
     _logNamespace : 'history',
 
@@ -494,35 +436,6 @@ var HistoryCollection = Backbone.Collection
         };
         collection.trigger( 'changed-order', collection.order, collection );
         return collection;
-    },
-
-    /** override to provide order and offsets based on instance vars, set limit if passed,
-     *  and set allFetched/fire 'all-fetched' when xhr returns
-     */
-    fetch : function( options ){
-        options = options || {};
-        if( this.allFetched ){ return jQuery.when({}); }
-        var collection = this,
-            fetchOptions = _.defaults( options, {
-                remove : false,
-                offset : collection.length >= 1? ( collection.length - 1 ) : 0,
-                order  : collection.order
-            }),
-            limit = options.limit;
-        if( !_.isUndefined( limit ) ){
-            fetchOptions.limit = limit;
-        }
-
-        return ControlledFetchMixin.fetch.call( this, fetchOptions )
-            .done( function _postFetchMore( fetchData ){
-                var numFetched = _.isArray( fetchData )? fetchData.length : 0;
-                // anything less than a full page means we got all there is to get
-                if( !limit || numFetched < limit ){
-                    collection.allFetched = true;
-                    collection.trigger( 'all-fetched', collection );
-                }
-            }
-        );
     },
 
     /** create a new history and by default set it to be the current history */

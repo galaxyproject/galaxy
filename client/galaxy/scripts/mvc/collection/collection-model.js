@@ -289,6 +289,18 @@ var DatasetCollection = Backbone.Model
     },
 
     // ........................................................................ ajax
+    /** override to use actual Dates objects for create/update times */
+    parse : function( response, options ){
+        var parsed = Backbone.Model.prototype.parse.call( this, response, options );
+        if( parsed.create_time ){
+            parsed.create_time = new Date( parsed.create_time );
+        }
+        if( parsed.update_time ){
+            parsed.update_time = new Date( parsed.update_time );
+        }
+        return parsed;
+    },
+
     /** save this dataset, _Mark_ing it as deleted (just a flag) */
     'delete' : function( options ){
         if( this.get( 'deleted' ) ){ return jQuery.when(); }
