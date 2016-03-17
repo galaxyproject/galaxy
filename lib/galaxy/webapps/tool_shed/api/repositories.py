@@ -88,7 +88,7 @@ class RepositoriesController( BaseAPIController ):
         return response_dict
 
     @web.expose_api_anonymous
-    def get_ordered_installable_revisions( self, trans, name, owner, **kwd ):
+    def get_ordered_installable_revisions( self, trans, name=None, owner=None, **kwd ):
         """
         GET /api/repositories/get_ordered_installable_revisions
 
