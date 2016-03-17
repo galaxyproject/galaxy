@@ -1,10 +1,10 @@
 import logging
+from json import dumps
 
 from __init__ import ToolAction
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
-from galaxy.util.odict import odict
-from galaxy.util.json import dumps
 from galaxy.jobs.datasets import DatasetPath
+from galaxy.util.odict import odict
 
 log = logging.getLogger( __name__ )
 

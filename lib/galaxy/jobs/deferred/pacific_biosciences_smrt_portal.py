@@ -2,10 +2,10 @@
 Module for managing jobs in Pacific Bioscience's SMRT Portal and automatically transferring files
 produced by SMRT Portal.
 """
+import json
 import logging
 import urllib2
 from string import Template
-from galaxy.util import json
 
 from data_transfer import DataTransfer
 

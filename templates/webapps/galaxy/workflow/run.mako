@@ -388,16 +388,23 @@ from galaxy.jobs.actions.post import ActionBox
 import re
 import colorsys
 import random
+from six import string_types
+
+def get_wf_parms(v, wf_parms):
+    if isinstance(v, dict):
+        [ get_wf_parms(value, wf_parms) for value in v.values()  ]
+    elif isinstance(v, string_types):
+        for rematch in re.findall('\$\{.+?\}', v):
+            if rematch[2:-1] not in wf_parms:
+                wf_parms[rematch[2:-1]] = ""
 
 used_accumulator = []
-
 wf_parms = {}
+
 for step in steps:
     for v in [ActionBox.get_short_str(pja) for pja in step.post_job_actions] + step.state.inputs.values():
-        if isinstance(v, basestring):
-            for rematch in re.findall('\$\{.+?\}', v):
-                if rematch[2:-1] not in wf_parms:
-                    wf_parms[rematch[2:-1]] = ""
+        get_wf_parms(v, wf_parms)
+
 if wf_parms:
     hue_offset = 1.0 / len(wf_parms)
     hue = 0.0
@@ -432,7 +439,7 @@ if wf_parms:
           ## <div class="form-row"><input type="submit" name="${step.id}|${prefix}${input.name}_add" value="Add new ${input.title}" /></div>
       </div>
     %elif input.type == "conditional":
-      %if input.is_job_resource_conditional:
+      %if input.name == '__job_resource':
         <% continue %>
       %endif
       <% group_values = values[input.name] %>
@@ -569,15 +576,14 @@ if wf_parms:
 
 %if has_upgrade_messages:
 <div class="warningmessage">
-    Problems were encountered when loading this workflow, likely due to tool
-    version changes. Missing parameter values have been replaced with default.
-    Please review the parameter values below.
+    Warning: Some tools in this workflow have changed since it was last saved. The workflow may still run, but any new options will have default values.
+    Please review the messages below to make a decision about whether the changes will affect your analysis.
 </div>
 %endif
 
 %if step_version_changes:
     <div class="infomessage">
-        The following tools are beinge executed with a different version from
+        The following tools are being executed with a different version from
         what was available when this workflow was last saved because the
         previous version is no longer available for use on this galaxy
         instance.
@@ -637,7 +643,7 @@ if wf_parms:
          that would cause missing_tools.mako to render instead of this
          template. -->
     <% module = step.module %>
-    <input type="hidden" name="${step.id}|tool_state" value="${module.encode_runtime_state( t, step.state )}">
+    <input type="hidden" name="${step.id}|tool_state" value="${module.get_state( step.state )}">
     %if step.type == 'tool' or step.type is None:
       <%
         tool = trans.app.toolbox.get_tool( step.tool_id )

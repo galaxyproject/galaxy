@@ -1,20 +1,16 @@
 """
 Modules used in building workflows
 """
-
-import logging
 import copy
-
+import logging
+from json import dumps, loads
 from xml.etree.ElementTree import Element
 
-import galaxy.tools
-from galaxy import exceptions
-from galaxy import model
-from galaxy import web
+from galaxy import exceptions, model, web
 from galaxy.dataset_collections import matching
-from galaxy.web.framework import formbuilder
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
+from galaxy.tools.execute import execute
 from galaxy.tools.parameters import check_param, visit_input_values
 from galaxy.tools.parameters.basic import (
     parameter_types,
@@ -23,11 +19,10 @@ from galaxy.tools.parameters.basic import (
     RuntimeValue,
 )
 from galaxy.tools.parameters.wrapped import make_dict_copy
-from galaxy.tools.execute import execute
-from galaxy.util.bunch import Bunch
+from galaxy.tools import DefaultToolState
 from galaxy.util import odict
-from galaxy.util.json import loads
-from galaxy.util.json import dumps
+from galaxy.util.bunch import Bunch
+from galaxy.web.framework import formbuilder
 from tool_shed.util import common_util
 
 log = logging.getLogger( __name__ )
@@ -91,7 +86,7 @@ class WorkflowModule( object ):
 
     # ---- Configuration time -----------------------------------------------
 
-    def get_state( self, secure=True ):
+    def get_state( self, state=None ):
         """ Return a serializable representation of the persistable state of
         the step - for tools it DefaultToolState.encode returns a string and
         for simpler module types a json description is dumped out.
@@ -152,16 +147,6 @@ class WorkflowModule( object ):
         """
         raise TypeError( "Abstract method" )
 
-    def encode_runtime_state( self, trans, state ):
-        """ Encode the default runtime state at return as a simple `str` for
-        use in a hidden parameter on the workflow run submission form.
-
-        This default runtime state will be combined with user supplied
-        parameters in `compute_runtime_state` below at workflow invocation time to
-        actually describe how each step will be executed.
-        """
-        raise TypeError( "Abstract method" )
-
     def compute_runtime_state( self, trans, step_updates=None ):
         """ Determine the runtime state (potentially different from self.state
         which describes configuration state). This (again unlike self.state) is
@@ -172,9 +157,7 @@ class WorkflowModule( object ):
         solely determined by the default runtime state described by the step.
 
         If `step_updates` are available they describe the runtime properties
-        supplied by the workflow runner (potentially including a `tool_state`
-        parameter which is the serialized default encoding state created with
-        encode_runtime_state above).
+        supplied by the workflow runner.
         """
         raise TypeError( "Abstract method" )
 
@@ -211,7 +194,7 @@ class SimpleWorkflowModule( WorkflowModule ):
         return module
 
     @classmethod
-    def from_dict( Class, trans, d, secure=True ):
+    def from_dict( Class, trans, d ):
         module = Class( trans )
         state = loads( d["tool_state"] )
         module.recover_state( state )
@@ -238,54 +221,33 @@ class SimpleWorkflowModule( WorkflowModule ):
         step.tool_version = None
         step.tool_inputs = self.state
 
-    def get_state( self, secure=True ):
+    def get_state( self, state=None ):
+        if isinstance( state, DefaultToolState ):
+            fake_tool = Bunch( inputs=self.get_runtime_inputs() )
+            return state.encode( fake_tool, self.trans.app )
         return dumps( self.state )
 
     def update_state( self, incoming ):
         self.recover_state( incoming )
 
     def recover_runtime_state( self, runtime_state ):
-        """ Take secure runtime state from persisted invocation and convert it
+        """ Take runtime state from persisted invocation and convert it
         into a DefaultToolState object for use during workflow invocation.
         """
         fake_tool = Bunch( inputs=self.get_runtime_inputs() )
-        state = galaxy.tools.DefaultToolState()
-        state.decode( runtime_state, fake_tool, self.trans.app, secure=False )
+        state = DefaultToolState()
+        state.decode( runtime_state, fake_tool, self.trans.app )
         return state
-
-    def normalize_runtime_state( self, runtime_state ):
-        fake_tool = Bunch( inputs=self.get_runtime_inputs() )
-        return runtime_state.encode( fake_tool, self.trans.app, secure=False )
-
-    def encode_runtime_state( self, trans, state ):
-        fake_tool = Bunch( inputs=self.get_runtime_inputs() )
-        return state.encode( fake_tool, trans.app )
-
-    def decode_runtime_state( self, trans, string ):
-        fake_tool = Bunch( inputs=self.get_runtime_inputs() )
-        state = galaxy.tools.DefaultToolState()
-        if string:
-            state.decode( string, fake_tool, trans.app )
-        return state
-
-    def update_runtime_state( self, trans, state, values ):
-        errors = {}
-        for name, param in self.get_runtime_inputs().iteritems():
-            value, error = check_param( trans, param, values.get( name, None ), values )
-            state.inputs[ name ] = value
-            if error:
-                errors[ name ] = error
-        return errors
 
     def compute_runtime_state( self, trans, step_updates=None ):
-        if step_updates and "tool_state" in step_updates:
-            # Fix this for multiple inputs
-            state = self.decode_runtime_state( trans, step_updates.pop( "tool_state" ) )
-            step_errors = self.update_runtime_state( trans, state, step_updates )
-        else:
-            state = self.get_runtime_state()
-            step_errors = {}
-
+        state = self.get_runtime_state()
+        step_errors = {}
+        if step_updates:
+            for name, param in self.get_runtime_inputs().iteritems():
+                value, error = check_param( trans, param, step_updates.get( name ), step_updates )
+                state.inputs[ name ] = value
+                if error:
+                    step_errors[ name ] = error
         return state, step_errors
 
     def recover_state( self, state, **kwds ):
@@ -320,7 +282,7 @@ class SubWorkflowModule( WorkflowModule ):
         return module
 
     @classmethod
-    def from_dict( Class, trans, d, secure=True ):
+    def from_dict( Class, trans, d ):
         module = Class( trans )
         if "subworkflow" in d:
             module.subworkflow = d["subworkflow"]
@@ -408,37 +370,18 @@ class SubWorkflowModule( WorkflowModule ):
         return self.trans.security.encode_id(self.subworkflow.id)
 
     def recover_runtime_state( self, runtime_state ):
-        """ Take secure runtime state from persisted invocation and convert it
+        """ Take runtime state from persisted invocation and convert it
         into a DefaultToolState object for use during workflow invocation.
         """
         fake_tool = Bunch( inputs=self.get_runtime_inputs() )
-        state = galaxy.tools.DefaultToolState()
-        state.decode( runtime_state, fake_tool, self.trans.app, secure=False )
+        state = DefaultToolState()
+        state.decode( runtime_state, fake_tool, self.trans.app )
         return state
 
-    def normalize_runtime_state( self, runtime_state ):
-        fake_tool = Bunch( inputs=self.get_runtime_inputs() )
-        return runtime_state.encode( fake_tool, self.trans.app, secure=False )
-
-    def encode_runtime_state( self, trans, state ):
-        fake_tool = Bunch( inputs=self.get_runtime_inputs() )
-        return state.encode( fake_tool, trans.app )
-
-    def decode_runtime_state( self, trans, string ):
-        fake_tool = Bunch( inputs=self.get_runtime_inputs() )
-        state = galaxy.tools.DefaultToolState()
-        if string:
-            state.decode( string, fake_tool, trans.app )
-        return state
-
-    def update_runtime_state( self, trans, state, values ):
-        errors = {}
-        for name, param in self.get_runtime_inputs().iteritems():
-            value, error = check_param( trans, param, values.get( name, None ), values )
-            state.inputs[ name ] = value
-            if error:
-                errors[ name ] = error
-        return errors
+    def get_state( self, state=None ):
+        if isinstance( state, DefaultToolState ):
+            fake_tool = Bunch( inputs=self.get_runtime_inputs() )
+            return state.encode( fake_tool, self.trans.app )
 
     def compute_runtime_state( self, trans, step_updates=None ):
         state = self.get_runtime_state()
@@ -508,7 +451,7 @@ class SubWorkflowModule( WorkflowModule ):
         raise TypeError( "Abstract method" )
 
     def get_runtime_state( self ):
-        state = galaxy.tools.DefaultToolState()
+        state = DefaultToolState()
         state.inputs = dict( )
         return state
 
@@ -523,7 +466,7 @@ class SubWorkflowModule( WorkflowModule ):
 class InputModule( SimpleWorkflowModule ):
 
     def get_runtime_state( self ):
-        state = galaxy.tools.DefaultToolState()
+        state = DefaultToolState()
         state.inputs = dict( input=None )
         return state
 
@@ -698,7 +641,7 @@ class InputParameterModule( SimpleWorkflowModule ):
         return dict( input=input )
 
     def get_runtime_state( self ):
-        state = galaxy.tools.DefaultToolState()
+        state = DefaultToolState()
         state.inputs = dict( input=None )
         return state
 
@@ -754,7 +697,7 @@ class PauseModule( SimpleWorkflowModule ):
         return []
 
     def get_runtime_state( self ):
-        state = galaxy.tools.DefaultToolState()
+        state = DefaultToolState()
         state.inputs = dict( )
         return state
 
@@ -815,13 +758,15 @@ class ToolModule( WorkflowModule ):
         return module
 
     @classmethod
-    def from_dict( Class, trans, d, secure=True ):
+    def from_dict( Class, trans, d ):
         tool_id = d.get( 'content_id', None )
         if tool_id is None:
             tool_id = d.get( 'tool_id', None )  # Older workflows will have exported this as tool_id.
+        if tool_id is None:
+            raise exceptions.RequestParameterInvalidException("No content id could be located for for step [%s]" % d)
         tool_version = str( d.get( 'tool_version', None ) )
         module = Class( trans, tool_id, tool_version=tool_version )
-        module.state = galaxy.tools.DefaultToolState()
+        module.state = DefaultToolState()
         module.label = d.get("label", None) or None
         if module.tool is not None:
             message = ""
@@ -833,7 +778,7 @@ class ToolModule( WorkflowModule ):
                 log.debug(message)
                 module.version_changes.append(message)
             if d[ "tool_state" ]:
-                module.state.decode( d[ "tool_state" ], module.tool, module.trans.app, secure=secure )
+                module.state.decode( d[ "tool_state" ], module.tool, module.trans.app )
         module.errors = d.get( "tool_errors", None )
         module.post_job_actions = d.get( "post_job_actions", {} )
         module.workflow_outputs = d.get( "workflow_outputs", [] )
@@ -853,7 +798,7 @@ class ToolModule( WorkflowModule ):
             if step.config:
                 # This step has its state saved in the config field due to the
                 # tool being previously unavailable.
-                return module_factory.from_dict(trans, loads(step.config), secure=False)
+                return module_factory.from_dict(trans, loads(step.config))
             tool_version = step.tool_version
             module = Class( trans, tool_id, tool_version=tool_version )
             message = ""
@@ -889,26 +834,23 @@ class ToolModule( WorkflowModule ):
         object) using the tool's `params_from_strings` method.
         """
         app = self.trans.app
-        self.state = galaxy.tools.DefaultToolState()
+        self.state = DefaultToolState()
         params_from_kwds = dict(
             ignore_errors=kwds.get( "ignore_errors", True )
         )
         self.state.inputs = self.tool.params_from_strings( state, app, **params_from_kwds )
 
     def recover_runtime_state( self, runtime_state ):
-        """ Take secure runtime state from persisted invocation and convert it
+        """ Take runtime state from persisted invocation and convert it
         into a DefaultToolState object for use during workflow invocation.
         """
-        state = galaxy.tools.DefaultToolState()
+        state = DefaultToolState()
         app = self.trans.app
-        state.decode( runtime_state, self.tool, app, secure=False )
+        state.decode( runtime_state, self.tool, app )
         state_dict = loads( runtime_state )
         if RUNTIME_STEP_META_STATE_KEY in state_dict:
             self.__restore_step_meta_runtime_state( loads( state_dict[ RUNTIME_STEP_META_STATE_KEY ] ) )
         return state
-
-    def normalize_runtime_state( self, runtime_state ):
-        return runtime_state.encode( self.tool, self.trans.app, secure=False )
 
     def save_to_step( self, step ):
         step.type = self.type
@@ -946,8 +888,9 @@ class ToolModule( WorkflowModule ):
     def get_tool_version( self ):
         return self.tool.version
 
-    def get_state( self, secure=True ):
-        return self.state.encode( self.tool, self.trans.app, secure=secure )
+    def get_state( self, state=None ):
+        state = state or self.state
+        return state.encode( self.tool, self.trans.app )
 
     def get_errors( self ):
         return self.errors
@@ -1032,10 +975,6 @@ class ToolModule( WorkflowModule ):
         self.add_dummy_datasets()
         return self.trans.fill_template( "workflow/editor_tool_form.mako", module=self,
                                          tool=self.tool, values=self.state.inputs, errors=( self.errors or {} ) )
-
-    def encode_runtime_state( self, trans, state ):
-        encoded = state.encode( self.tool, self.trans.app )
-        return encoded
 
     def update_state( self, incoming ):
         self.label = incoming.get( 'label' )
@@ -1361,18 +1300,14 @@ class WorkflowModuleInjector(object):
         If step_args is provided from a web form this is applied to generate
         'state' else it is just obtained from the database.
         """
-        trans = self.trans
-
         step_errors = None
-
         step.upgrade_messages = {}
 
         # Make connection information available on each step by input name.
         step.setup_input_connections_by_name()
 
         # Populate module.
-        module = step.module = module_factory.from_workflow_step( trans, step )
-
+        module = step.module = module_factory.from_workflow_step( self.trans, step )
         if not module:
             step.module = None
             step.state = None
@@ -1384,15 +1319,11 @@ class WorkflowModuleInjector(object):
         # Any connected input needs to have value DummyDataset (these
         # are not persisted so we need to do it every time)
         module.add_dummy_datasets( connections=step.input_connections )
-
-        state, step_errors = module.compute_runtime_state( trans, step_args )
-
+        state, step_errors = module.compute_runtime_state( self.trans, step_args )
         step.state = state
-
         if step.type == "subworkflow":
             subworkflow = step.subworkflow
             populate_module_and_state( self.trans, subworkflow, param_map={}, )
-
         return step_errors
 
 

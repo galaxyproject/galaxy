@@ -1,24 +1,22 @@
 from __future__ import absolute_import
 
 import logging
+from json import loads
 
 from markupsafe import escape
 from paste.httpexceptions import HTTPNotFound, HTTPBadRequest
 from six import string_types
 from sqlalchemy import and_, desc, false, or_, true
 
-from galaxy import managers
-from galaxy import model, web
-from galaxy import util
+from galaxy import managers, model, util, web
 from galaxy.datatypes.interval import Bed
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
-from galaxy.util.json import loads
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.visualization.plugins import registry
-from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 from galaxy.visualization.data_providers.genome import RawBedDataProvider
+from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 from galaxy.visualization.genomes import decode_dbkey
 from galaxy.visualization.genomes import GenomeRegion
+from galaxy.visualization.plugins import registry
 from galaxy.web import error
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisualizationMixin
 from galaxy.web.framework.helpers import grids, time_ago

@@ -38,8 +38,10 @@ class XmlToolSource(ToolSource):
     """ Responsible for parsing a tool from classic Galaxy representation.
     """
 
-    def __init__(self, root):
+    def __init__(self, root, source_path=None):
         self.root = root
+        self._source_path = source_path
+        self.legacy_defaults = self.parse_profile() == "16.01"
 
     def parse_version(self):
         return self.root.get("version", None)
@@ -112,7 +114,12 @@ class XmlToolSource(ToolSource):
 
     def parse_interpreter(self):
         command_el = self._command_el
-        return (command_el is not None) and command_el.get("interpreter", None)
+        interpreter = (command_el is not None) and command_el.get("interpreter", None)
+        if not self.legacy_defaults:
+            log.warn("Deprecated interpeter attribute on command element is now ignored.")
+            interpreter = None
+
+        return interpreter
 
     def parse_version_command(self):
         version_cmd = self.root.find("version_command")
@@ -145,6 +152,20 @@ class XmlToolSource(ToolSource):
 
     def parse_redirect_url_params_elem(self):
         return self.root.find("redirect_url_params")
+
+    def parse_sanitize(self):
+        return self._get_option_value("sanitize", True)
+
+    def parse_refresh(self):
+        return self._get_option_value("refresh", False)
+
+    def _get_option_value(self, key, default):
+        root = self.root
+        for option_elem in root.findall("options"):
+            if key in option_elem.attrib:
+                return string_as_bool(option_elem.get(key))
+
+        return default
 
     @property
     def _command_el(self):
@@ -195,7 +216,7 @@ class XmlToolSource(ToolSource):
 
             dataset_collector_descriptions = None
             if collection_elem.find( "discover_datasets" ) is not None:
-                dataset_collector_descriptions = dataset_collector_descriptions_from_elem( collection_elem )
+                dataset_collector_descriptions = dataset_collector_descriptions_from_elem( collection_elem, legacy=False )
             structure = ToolOutputCollectionStructure(
                 collection_type=collection_type,
                 collection_type_source=collection_type_source,
@@ -262,7 +283,7 @@ class XmlToolSource(ToolSource):
         output.from_work_dir = data_elem.get("from_work_dir", None)
         output.hidden = string_as_bool( data_elem.get("hidden", "") )
         output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
-        output.dataset_collector_descriptions = dataset_collector_descriptions_from_elem( data_elem )
+        output.dataset_collector_descriptions = dataset_collector_descriptions_from_elem( data_elem, legacy=self.legacy_defaults )
         return output
 
     def parse_stdio(self):
@@ -277,9 +298,20 @@ class XmlToolSource(ToolSource):
                 return aggressive_error_checks()
             else:
                 raise ValueError("Unknown detect_errors value encountered [%s]" % detect_errors)
+        elif len(self.root.findall('stdio')) == 0 and not self.legacy_defaults:
+            return error_on_exit_code()
         else:
             parser = StdioParser(self.root)
             return parser.stdio_exit_codes, parser.stdio_regexes
+
+    def parse_strict_shell(self):
+        command_el = self._command_el
+        if command_el is not None:
+            return string_as_bool(command_el.get("strict", "False"))
+        elif self.legacy_defaults:
+            return False
+        else:
+            return True
 
     def parse_help(self):
         help_elem = self.root.find( 'help' )
@@ -299,6 +331,15 @@ class XmlToolSource(ToolSource):
             _copy_to_dict_if_present(tests_elem, rval, ["interactor"])
 
         return rval
+
+    def parse_profile(self):
+        # Pre-16.04 or default XML defaults
+        # - Use standard error for error detection.
+        # - Don't run shells with -e
+        # - Auto-check for implicit multiple outputs.
+        # - Auto-check for $param_file.
+        # - Enable buggy interpreter attribute.
+        return self.root.get("profile", "16.01")
 
 
 def _test_elem_to_dict(test_elem, i):

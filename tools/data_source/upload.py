@@ -12,13 +12,13 @@ import sys
 import tempfile
 import urllib
 import zipfile
+from json import dumps, loads
 
 from galaxy import util
 from galaxy.datatypes import sniff
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.registry import Registry
 from galaxy.datatypes.util.image_util import get_image_ext
-from galaxy.util.json import dumps, loads
 from galaxy.util import multi_byte
 from galaxy.util.checkers import check_binary, check_bz2, check_gzip, check_html, check_image, check_zip
 

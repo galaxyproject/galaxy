@@ -31,9 +31,20 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
 
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
-        """Called on any url that does not match a controller method.
+        """
+        Called on any url that does not match a controller method.
         """
         raise HTTPNotFound( 'This link may not be followed from within Galaxy.' )
+
+    @web.expose
+    def client(self, trans, **kwd):
+        """
+        Endpoint for clientside routes.  Currently a passthrough to index
+        (minus kwargs) though we can differentiate it more in the future.
+        Should not be used with url_for -- see
+        (https://github.com/galaxyproject/galaxy/issues/1878) for why.
+        """
+        return self.index(trans)
 
     def _get_extended_config( self, trans ):
         app = trans.app

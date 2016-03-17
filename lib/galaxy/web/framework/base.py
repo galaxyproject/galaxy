@@ -7,6 +7,7 @@ import logging
 import os.path
 import socket
 import tarfile
+import tempfile
 import types
 
 import routes
@@ -92,6 +93,9 @@ class WebApplication( object ):
         method as keyword args.
         """
         self.mapper.connect( route, **kwargs )
+
+    def add_client_route( self, route ):
+        self.add_route(route, controller='root', action='client')
 
     def set_transaction_factory( self, transaction_factory ):
         """
@@ -285,15 +289,13 @@ class DefaultWebTransaction( object ):
         else:
             return None
 
-# For request.params, override cgi.FieldStorage.make_file to create persistent
-# tempfiles.  Necessary for externalizing the upload tool.  It's a little hacky
-# but for performance reasons it's way better to use Paste's tempfile than to
-# create a new one and copy.
-import tempfile
-
 
 class FieldStorage( cgi.FieldStorage ):
     def make_file(self, binary=None):
+        # For request.params, override cgi.FieldStorage.make_file to create persistent
+        # tempfiles.  Necessary for externalizing the upload tool.  It's a little hacky
+        # but for performance reasons it's way better to use Paste's tempfile than to
+        # create a new one and copy.
         return tempfile.NamedTemporaryFile()
 
     def read_lines(self):

@@ -308,12 +308,11 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 
 # Set the default shell used by jobs Galaxy-wide. This defaults to
-# sh and can be overidden at the destination level for
+# bash and can be overidden at the destination level for
 # heterogenous clusters. conda job resolution requires bash or zsh
-# so if this is not switched to /bin/bash for instance - conda resolution
-# should be disabled. (16.01 will likely be the last release with a
-# default of /bin/sh instead of /bin/bash).
-#default_job_shell = /bin/sh
+# so if this is switched to /bin/sh for instance - conda resolution
+# should be disabled.
+#default_job_shell = /bin/bash
 
 # Citation related caching.  Tool citations information maybe fetched from
 # external sources such as http://dx.doi.org/ by Galaxy - the following

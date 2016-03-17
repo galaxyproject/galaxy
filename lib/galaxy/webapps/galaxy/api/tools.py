@@ -1,21 +1,17 @@
+import logging
 import urllib
-
-from galaxy import exceptions
-from galaxy import web, util
-from galaxy import managers
-from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesVisualizationMixin
-from galaxy.visualization.genomes import GenomeRegion
-from galaxy.util.json import dumps
-from galaxy.managers.collections_util import dictify_dataset_collection_instance
+from json import dumps
 
 import galaxy.queue_worker
+from galaxy import exceptions, managers, util, web
+from galaxy.managers.collections_util import dictify_dataset_collection_instance
+from galaxy.visualization.genomes import GenomeRegion
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
+from galaxy.web.base.controller import BaseAPIController
+from galaxy.web.base.controller import UsesVisualizationMixin
 
-
-import logging
 log = logging.getLogger( __name__ )
 
 

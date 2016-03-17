@@ -58,6 +58,7 @@ class ToolParameter( object, Dictifiable ):
         self.name = ToolParameter.parse_name( input_source )
         self.type = input_source.get("type")
         self.hidden = input_source.get("hidden", False)
+        self.optional = input_source.parse_optional()
         self.is_dynamic = False
         self.label = input_source.parse_label()
         self.help = input_source.parse_help()
@@ -66,7 +67,6 @@ class ToolParameter( object, Dictifiable ):
             self.sanitizer = ToolParameterSanitizer.from_element( sanitizer_elem )
         else:
             self.sanitizer = None
-        self.html = "no html set"
         try:
             # These don't do anything right? These we should
             # delete these two lines and eliminate checks for
@@ -75,9 +75,6 @@ class ToolParameter( object, Dictifiable ):
             self.condition = input_source.elem().get( "condition", None )
         except Exception:
             self.repeat = None
-
-        # Optional DataToolParameters are used in tools like GMAJ and LAJ
-        self.optional = input_source.parse_optional()
         self.validators = []
         for elem in input_source.parse_validator_elems():
             self.validators.append( validation.Validator.from_element( self, elem ) )
@@ -89,10 +86,7 @@ class ToolParameter( object, Dictifiable ):
 
     def get_label( self ):
         """Return user friendly name for the parameter"""
-        if self.label:
-            return self.label
-        else:
-            return self.name
+        return self.label if self.label else self.name
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
         raise TypeError( "Abstract Method" )
@@ -191,10 +185,9 @@ class ToolParameter( object, Dictifiable ):
         return value
 
     def validate( self, value, trans=None ):
-        if value == "" and self.optional:
-            return
-        for validator in self.validators:
-            validator.validate( value, trans )
+        if value is not '' or not self.optional:
+            for validator in self.validators:
+                validator.validate( value, trans )
 
     def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         """ to_dict tool parameter. This can be overridden by subclasses. """
@@ -211,23 +204,23 @@ class ToolParameter( object, Dictifiable ):
     def build( cls, tool, param ):
         """Factory method to create parameter of correct type"""
         param_name = cls.parse_name( param )
-        param_type = param.get("type")
+        param_type = param.get( 'type' )
         if not param_type:
             raise ValueError( "Tool parameter '%s' requires a 'type'" % ( param_name ) )
         elif param_type not in parameter_types:
             raise ValueError( "Tool parameter '%s' uses an unknown type '%s'" % ( param_name, param_type ) )
         else:
-            return parameter_types[param_type]( tool, param )
+            return parameter_types[ param_type ]( tool, param )
 
     @classmethod
     def parse_name(cls, input_source):
-        name = input_source.get("name", None)
+        name = input_source.get( 'name' )
         if name is None:
-            argument = input_source.get("argument")
+            argument = input_source.get( 'argument' )
             if argument:
-                name = argument.lstrip("-")
+                name = argument.lstrip( '-' )
             else:
-                raise ValueError("Tool parameter must specify a name.")
+                raise ValueError( "Tool parameter must specify a name." )
         return name
 
 
@@ -1826,8 +1819,6 @@ class DataToolParameter( BaseDataToolParameter ):
         return ''
 
     def from_html( self, value, trans, other_values={} ):
-        # Can't look at history in workflow mode, skip validation and such,
-        # although, this should never be called in workflow mode right?
         if trans.workflow_building_mode:
             return None
         if not value and not self.optional:
@@ -2042,12 +2033,14 @@ class DataToolParameter( BaseDataToolParameter ):
             d['max'] = self.max
         d['options'] = {'hda': [], 'hdca': []}
 
+        # return dictionary without options if context is unavailable
+        history = trans.history
+        if history is None or trans.workflow_building_mode:
+            return d
+
         # prepare dataset/collection matching
         dataset_matcher = DatasetMatcher( trans, self, None, other_values )
         multiple = self.multiple
-        history = trans.history
-        if history is None:
-            return d
 
         # build and append a new select option
         def append( list, id, hid, name, src ):
@@ -2143,6 +2136,8 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         return field
 
     def from_html( self, value, trans, other_values={} ):
+        if trans.workflow_building_mode:
+            return None
         if not value and not self.optional:
             raise ValueError( "History does not include a dataset collection of the correct type or containing the correct types of datasets" )
         if value in [None, "None"]:
@@ -2230,13 +2225,13 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         d['multiple'] = self.multiple
         d['options'] = {'hda': [], 'hdca': []}
 
-        # return default content if context is not available
-        if other_values is None:
+        # return dictionary without options if context is unavailable
+        history = trans.history
+        if history is None or trans.workflow_building_mode or other_values is None:
             return d
 
         # prepare dataset/collection matching
         dataset_matcher = DatasetMatcher( trans, self, None, other_values )
-        history = trans.history
 
         # append directly matched collections
         for hdca in self.match_collections( trans, history, dataset_matcher ):

@@ -2,9 +2,11 @@ import logging
 import os
 import re
 import sys
+from json import loads
+
 from bx.seq.twobit import TwoBitFile
+
 from galaxy.util.bunch import Bunch
-from galaxy.util.json import loads
 
 log = logging.getLogger( __name__ )
 

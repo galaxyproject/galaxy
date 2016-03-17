@@ -149,15 +149,15 @@ var Collection = Backbone.Collection.extend({
                     target  : '_blank'
                 },{
                     title   : 'Interactive Tours',
+                    url     : 'tours',
                     onclick : function(){
                         if (Galaxy.app){
                             Galaxy.app.display(new Tours.ToursView());
                         } else {
                             // Redirect and use clientside routing to go to tour index
-                            window.location = Galaxy.root + "#/tours";
+                            window.location = Galaxy.root + "tours";
                         }
-                    },
-                    target  : 'galaxy_main'
+                    }
             }]
         };
         options.terms_url && helpTab.menu.push({
