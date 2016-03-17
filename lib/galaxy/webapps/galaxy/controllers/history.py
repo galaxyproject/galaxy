@@ -47,8 +47,8 @@ class HistoryListGrid( grids.Grid ):
                                       .join( model.HistoryDatasetAssociation )
                                       .group_by( model.Dataset.state )
                                       .filter( model.HistoryDatasetAssociation.history_id == history.id,
-                                               model.HistoryDatasetAssociation.visible == true,
-                                               model.HistoryDatasetAssociation.deleted == false,
+                                               model.HistoryDatasetAssociation.visible == true(),
+                                               model.HistoryDatasetAssociation.deleted == false(),
                                                model.Dataset.state.in_(states_to_show) )
                                  )
 
