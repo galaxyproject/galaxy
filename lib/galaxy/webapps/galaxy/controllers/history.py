@@ -43,14 +43,14 @@ class HistoryListGrid( grids.Grid ):
 
             # Get dataset counts for each state in a state-count dictionary.
             state_counts = dict( ( state, count ) for state, count in
-                                    trans.sa_session.query( model.Dataset.state, func.count(model.Dataset.state) )
-                                         .join( model.HistoryDatasetAssociation )
-                                         .group_by( model.Dataset.state )
-                                         .filter( model.HistoryDatasetAssociation.history_id == history.id,
-                                                  model.HistoryDatasetAssociation.visible == True,
-                                                  model.HistoryDatasetAssociation.deleted == False,
-                                                  model.Dataset.state.in_(states_to_show) )
-                                )
+                                 trans.sa_session.query( model.Dataset.state, func.count(model.Dataset.state) )
+                                      .join( model.HistoryDatasetAssociation )
+                                      .group_by( model.Dataset.state )
+                                      .filter( model.HistoryDatasetAssociation.history_id == history.id,
+                                               model.HistoryDatasetAssociation.visible == true,
+                                               model.HistoryDatasetAssociation.deleted == false,
+                                               model.Dataset.state.in_(states_to_show) )
+                                 )
 
             # Create HTML.
             rval = ''
