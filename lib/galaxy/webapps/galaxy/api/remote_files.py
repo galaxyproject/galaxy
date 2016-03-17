@@ -37,7 +37,7 @@ class RemoteFilesAPIController( BaseAPIController ):
         format = kwd.get( 'format', None )
 
         if target == 'userdir':
-            user_login = trans.user.email
+            user_login = trans.user.email.encode('utf-8')
             user_base_dir = trans.app.config.user_library_import_dir
             if user_base_dir is None:
                 raise exceptions.ConfigDoesNotAllowException( 'The configuration of this Galaxy instance does not allow upload from user directories.' )
