@@ -107,6 +107,9 @@ class RepositoriesController( BaseAPIController ):
         if None not in [ name, owner ]:
             # Get the repository information.
             repository = suc.get_repository_by_name_and_owner( self.app, name, owner )
+            if repository is None:
+                trans.response.status = 404
+                return { 'status': 'error', 'message': 'No repository named %s found with owner %s' % ( name, owner ) }
         elif tsr_id is not None:
             repository = suc.get_repository_in_tool_shed( self.app, tsr_id )
         else:
