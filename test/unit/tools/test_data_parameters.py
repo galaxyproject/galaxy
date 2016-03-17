@@ -7,9 +7,9 @@ from .test_parameter_parsing import BaseParameterTestCase
 class DataToolParameterTestCase( BaseParameterTestCase ):
 
     def test_to_python_none_values( self ):
-        assert None is self.param.to_python( None, self.app )
-        assert 'None' == self.param.to_python( 'None', self.app )
-        assert '' == self.param.to_python( '', self.app )
+        assert self.param.to_python( None, self.app ) is None
+        assert self.param.to_python( 'None', self.app ) is None
+        assert self.param.to_python( '', self.app ) is None
 
     def test_to_python_hda( self ):
         hda = self._new_hda()

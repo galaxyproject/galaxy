@@ -120,7 +120,7 @@ def check_param( trans, param, incoming_value, param_values ):
             if isinstance( value, dict ):
                 if value.get( '__class__' ) == 'RuntimeValue':
                     return [ value, None ]
-        value = param.from_html( value, trans, param_values )
+        value = param.from_json( value, trans, param_values )
         param.validate( value, trans )
     except ValueError, e:
         error = str( e )

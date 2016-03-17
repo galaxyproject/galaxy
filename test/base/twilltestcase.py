@@ -453,7 +453,7 @@ class TwillTestCase( unittest.TestCase ):
         page = self.last_page()
         if page.find( patt ) == -1:
             fname = self.write_temp_file( page )
-            errmsg = "no match to '%s'\npage content written to '%s'" % ( patt, fname )
+            errmsg = "no match to '%s'\npage content written to '%s'\npage: [[%s]]" % ( patt, fname, page )
             raise AssertionError( errmsg )
 
     def check_request_grid( self, cntrller, state, deleted=False, strings_displayed=[] ):

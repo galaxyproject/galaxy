@@ -96,10 +96,11 @@ class RemoteFilesAPIController( BaseAPIController ):
                 if user_ftp_dir is not None:
                     response = self.__load_all_filenames( user_ftp_dir )
                 else:
-                    raise exceptions.ConfigDoesNotAllowException( 'You do not have an FTP directory named as your login at this Galaxy instance.' )
+                    log.warning( 'You do not have an FTP directory named as your login at this Galaxy instance.' )
+                    return None
             except Exception, exception:
-                log.error( 'Could not get ftp files: %s', str( exception ), exc_info=True )
-                raise exceptions.InternalServerError( 'Could not get the files from your FTP folder.' )
+                log.warning( 'Could not get ftp files: %s', str( exception ), exc_info=True )
+                return None
         return response
 
     def __load_all_filenames( self, directory ):
@@ -117,7 +118,8 @@ class RemoteFilesAPIController( BaseAPIController ):
                                            size=statinfo.st_size,
                                            ctime=time.strftime( "%m/%d/%Y %I:%M:%S %p", time.localtime( statinfo.st_ctime ) ) ) )
         else:
-            raise exceptions.ConfigDoesNotAllowException( 'The given directory does not exist.' )
+            log.warning( "The directory \"%s\" does not exist." % directory )
+            return response
         # sort by path
         response = sorted(response, key=itemgetter("path"))
         return response

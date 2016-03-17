@@ -58,7 +58,7 @@ class ToolEvaluator( object ):
         request_context = WorkRequestContext( app=self.app, user=job.history and job.history.user, history=job.history )
 
         def validate_inputs( input, value, context, **kwargs ):
-            value = input.from_html( value, request_context, context )
+            value = input.from_json( value, request_context, context )
             input.validate( value, request_context )
         visit_input_values( self.tool.inputs, incoming, validate_inputs )
 

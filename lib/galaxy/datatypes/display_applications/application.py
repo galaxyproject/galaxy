@@ -142,7 +142,7 @@ class DynamicDisplayApplicationBuilder( object ):
         max_col = max( id_col, name_col )
         dynamic_params = {}
         if data_table is not None:
-            max_col = max(  [ max_col ] + data_table.columns.values() )
+            max_col = max( [ max_col ] + data_table.columns.values() )
             for key, value in data_table.columns.items():
                 dynamic_params[key] = { 'column': value, 'split': False, 'separator': ',' }
         for dynamic_param in elem.findall( 'dynamic_param' ):
