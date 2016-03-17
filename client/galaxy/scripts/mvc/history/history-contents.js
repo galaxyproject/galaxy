@@ -52,6 +52,11 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         //  and either merged or replaced. In this case, our 'model' is a function so we need to add idAttribute
         //  manually here - if we don't, contents will not merge but be replaced/swapped.
         this.model.prototype.idAttribute = 'type_id';
+
+        /** @type {Boolean} does this collection contain and fetch deleted elements */
+        this.includeDeleted = options.includeDeleted || false;
+        /** @type {Boolean} does this collection contain and fetch non-visible elements */
+        this.includeHidden = options.includeHidden || false;
     },
 
     /** root api url */
@@ -71,7 +76,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     comparator : function _create_timeDsc( a, b ){
         var createTimeA = a.get( 'create_time' );
         var createTimeB = b.get( 'create_time' );
-        console.log( 'comparator', createTimeA, createTimeB );
+        // console.log( 'comparator', createTimeA, createTimeB );
         if( createTimeA > createTimeB ){ return  1; }
         if( createTimeA < createTimeB ){ return  -1; }
         return 0;
@@ -95,6 +100,12 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return _.first( this.filter( function( content ){ return content.get( 'hid' ) === hid; }) );
     },
 
+    /** return true if any contents don't have details */
+    haveDetails : function(){
+        return this.all( function( content ){ return content.hasDetails(); });
+    },
+
+    // .................... hidden / deleted
     /** return a new contents collection of only hidden items */
     hidden : function(){
         function filterFn( c ){ return c.hidden(); }
@@ -113,18 +124,27 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return new HistoryContents( this.filter( filterFn ) );
     },
 
-    /** return true if any contents don't have details */
-    haveDetails : function(){
-        return this.all( function( content ){ return content.hasDetails(); });
+//TODO: revisit includeDeleted/Hidden naming and toggle fn
+    /** create a setter in order to publish the change */
+    setIncludeDeleted : function( setting ){
+        if( _.isBoolean( setting ) && setting !== this.includeDeleted ){
+            this.includeDeleted = setting;
+            this.trigger( 'change:include-deleted', setting, this );
+        }
+    },
+
+    /** create a setter in order to publish the change */
+    setIncludeHidden : function( setting ){
+        if( _.isBoolean( setting ) && setting !== this.includeHidden ){
+            this.includeHidden = setting;
+            this.trigger( 'change:include-hidden', setting, this );
+        }
     },
 
     // ........................................................................ ajax
     /** override to get expanded ids from sessionStorage and pass to API as details */
     fetch : function( options ){
         options = options || {};
-        options.data = _.defaults( options.data || {}, {
-            v : 'dev'
-        });
         if( this.historyId && !options.details ){
 // TODO: here?
             var expandedIds = HISTORY_PREFS.HistoryPrefs.get( this.historyId ).get( 'expandedIds' );
@@ -133,6 +153,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return _super.prototype.fetch.call( this, options );
     },
 
+    // ............. ControlledFetch stuff
     /** override to filter requested contents to those updated after the Date 'since' */
     fetchUpdated : function( since, options ){
         if( since ){
@@ -152,29 +173,27 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         });
     },
 
-    /**  */
-    _fetchDefaults : function(){
-        var defaults = {};
-        var filters = defaults.filters = {};
-        if( !this.includeDeleted ){
-            filters.deleted = false;
-            filters.purged = false;
-        }
-
-        if( !this.includeHidden ){
-            filters.visible = true;
-        }
-        return defaults;
-    },
-
     /** Extend to include details and version */
-    _fetchOptions : _super.prototype._fetchOptions.concat([
+    _fetchParams : _super.prototype._fetchParams.concat([
         // TODO: remove (the need for) both
         /** version */
         'v',
         /** dataset ids to get full details of */
         'details',
     ]),
+
+    /**  */
+    _buildFetchFilters : function( options ){
+        var filters = {};
+        if( !this.includeDeleted ){
+            filters.deleted = false;
+            filters.purged = false;
+        }
+        if( !this.includeHidden ){
+            filters.visible = true;
+        }
+        return _.defaults( _super.prototype._buildFetchFilters( this, options ), filters );
+    },
 
     /** fetch detailed model data for all contents in this collection */
     fetchAllDetails : function( options ){
@@ -184,6 +203,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return this.fetch( options );
     },
 
+    // ............. quasi-batch ops
     /** using a queue, perform ajaxFn on each of the models in this collection */
     ajaxQueue : function( ajaxFn, options ){
         var deferred = jQuery.Deferred(),
@@ -263,28 +283,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return xhr;
     },
 
-    // ........................................................................ sorting/filtering
-    /** return a new collection of contents whose attributes contain the substring matchesWhat */
-    matches : function( matchesWhat ){
-        return this.filter( function( content ){
-            return content.matches( matchesWhat );
-        });
-    },
-
-    // ........................................................................ misc
-    /** override to ensure type id is set */
-//TODO: needed now?
-    set : function( models, options ){
-        models = _.isArray( models )? models : [ models ];
-        _.each( models, function( model ){
-            if( !model.type_id || !model.get || !model.get( 'type_id' ) ){
-                model.type_id = HISTORY_CONTENT.typeIdStr( model.history_content_type, model.id );
-            }
-        });
-        Backbone.Collection.prototype.set.call( this, models, options );
-    },
-
-    /** */
+    /**  */
     createHDCA : function( elementIdentifiers, collectionType, name, options ){
         //precondition: elementIdentifiers is an array of plain js objects
         //  in the proper form to create the collectionType
@@ -309,6 +308,27 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
             });
     },
 
+    // ........................................................................ searching
+    /** return a new collection of contents whose attributes contain the substring matchesWhat */
+    matches : function( matchesWhat ){
+        return this.filter( function( content ){
+            return content.matches( matchesWhat );
+        });
+    },
+
+    // ........................................................................ misc
+    /** override to ensure type id is set */
+//TODO: needed now?
+    set : function( models, options ){
+        models = _.isArray( models )? models : [ models ];
+        _.each( models, function( model ){
+            if( !model.type_id || !model.get || !model.get( 'type_id' ) ){
+                model.type_id = HISTORY_CONTENT.typeIdStr( model.history_content_type, model.id );
+            }
+        });
+        Backbone.Collection.prototype.set.call( this, models, options );
+    },
+
     /** In this override, copy the historyId to the clone */
     clone : function(){
         var clone = Backbone.Collection.prototype.clone.call( this );
@@ -321,7 +341,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
          return ([ 'HistoryContents(', [ this.historyId, this.length ].join(), ')' ].join( '' ));
     }
 });
-
+window.HistoryContents = HistoryContents;
 
 //==============================================================================
     return {
