@@ -324,6 +324,24 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
     >>> fname = get_test_fname('test.mz5')
     >>> guess_ext(fname, sniff_order)
     'h5'
+    >>> fname = get_test_fname('drugbank_drugs.cml')
+    >>> guess_ext(fname, sniff_order)
+    'cml'
+    >>> fname = get_test_fname('q.fps')
+    >>> guess_ext(fname, sniff_order)
+    'fps'
+    >>> fname = get_test_fname('drugbank_drugs.inchi')
+    >>> guess_ext(fname, sniff_order)
+    'inchi'
+    >>> fname = get_test_fname('drugbank_drugs.mol2')
+    >>> guess_ext(fname, sniff_order)
+    'mol2'
+    >>> fname = get_test_fname('drugbank_drugs.sdf')
+    >>> guess_ext(fname, sniff_order)
+    'sdf'
+    >>> fname = get_test_fname('5e5z.pdb')
+    >>> guess_ext(fname, sniff_order)
+    'pdb'
     """
     for datatype in sniff_order:
         """

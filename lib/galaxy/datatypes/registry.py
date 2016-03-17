@@ -11,6 +11,7 @@ from . import data
 from . import tabular
 from . import interval
 from . import images
+from . import molecules
 from . import sequence
 from . import qualityscore
 from . import xml
@@ -738,6 +739,7 @@ class Registry( object ):
                 binary.MzSQlite(),
                 binary.IdpDB(),
                 binary.SQlite(),
+                molecules.CML(),
                 xml.GenericXml(),
                 sequence.Maf(),
                 sequence.Lav(),
@@ -758,6 +760,11 @@ class Registry( object ):
                 interval.Interval(),
                 tabular.Sam(),
                 tabular.Eland(),
+                molecules.SDF(),
+                molecules.FPS(),
+                molecules.InChI(),
+                molecules.MOL2(),
+                molecules.PDB(),
                 tabular.CSV()
             ]
 
