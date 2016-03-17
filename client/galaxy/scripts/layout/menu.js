@@ -98,7 +98,7 @@ var Collection = Backbone.Collection.extend({
                     url     : 'visualization/list',
                     target  : '_frame'
                 },{
-                    title   : 'Galaxy Interactive Environments (GIEs)',
+                    title   : 'Interactive Environments',
                     url     : 'visualization/gie_list',
                     target  : 'galaxy_main'
                 }
