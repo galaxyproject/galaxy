@@ -6,7 +6,7 @@ import time
 import hashlib
 from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
-from galaxy.util import jstree
+from galaxy.util import jstree, unicodify
 from galaxy.web.base.controller import BaseAPIController
 from operator import itemgetter
 
@@ -37,7 +37,7 @@ class RemoteFilesAPIController( BaseAPIController ):
         format = kwd.get( 'format', None )
 
         if target == 'userdir':
-            user_login = trans.user.email.encode('utf-8')
+            user_login = trans.user.email
             user_base_dir = trans.app.config.user_library_import_dir
             if user_base_dir is None:
                 raise exceptions.ConfigDoesNotAllowException( 'The configuration of this Galaxy instance does not allow upload from user directories.' )
@@ -134,13 +134,13 @@ class RemoteFilesAPIController( BaseAPIController ):
             for ( dirpath, dirnames, filenames ) in os.walk( directory ):
                 for dirname in dirnames:
                     dir_path = os.path.relpath( os.path.join( dirpath, dirname ), directory )
-                    dir_path_hash = hashlib.sha1(dir_path).hexdigest()
+                    dir_path_hash = hashlib.sha1(unicodify(dir_path).encode('utf-8')).hexdigest()
                     disabled = True if disable == 'folders' else False
                     jstree_paths.append( jstree.Path( dir_path, dir_path_hash, { 'type': 'folder', 'state': { 'disabled': disabled }, 'li_attr': { 'full_path': dir_path } } ) )
 
                 for filename in filenames:
                     file_path = os.path.relpath( os.path.join( dirpath, filename ), directory )
-                    file_path_hash = hashlib.sha1(file_path).hexdigest()
+                    file_path_hash = hashlib.sha1(unicodify(file_path).encode('utf-8')).hexdigest()
                     disabled = True if disable == 'files' else False
                     jstree_paths.append( jstree.Path( file_path, file_path_hash, { 'type': 'file', 'state': { 'disabled': disabled }, 'li_attr': { 'full_path': file_path } } ) )
         else:
