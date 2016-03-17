@@ -14204,9 +14204,7 @@ webpackJsonp([0,1],[
 	        return { validationError : 'Unknown history_content_type: ' + attrs.history_content_type };
 	    },
 	
-	    /** Set up.
-	     *  @see Backbone.Collection#initialize
-	     */
+	    /** Set up */
 	    initialize : function( models, options ){
 	        options = options || {};
 	        this.historyId = options.historyId || null;
@@ -14226,14 +14224,17 @@ webpackJsonp([0,1],[
 	    },
 	
 	    // ........................................................................ order
+	    /** @type {String} order used here and when fetching from server */
 	    order : 'create_time',
 	
-	    comparator : function _create_timeAsc( a, b ){
+	//TODO: generalize
+	    /** local comparator */
+	    comparator : function _create_timeDsc( a, b ){
 	        var createTimeA = a.get( 'create_time' );
 	        var createTimeB = b.get( 'create_time' );
-	        // console.log( 'comparator', createTimeA, createTimeB );
-	        if( createTimeA > createTimeB ){ return  -1; }
-	        if( createTimeA < createTimeB ){ return  1; }
+	        console.log( 'comparator', createTimeA, createTimeB );
+	        if( createTimeA > createTimeB ){ return  1; }
+	        if( createTimeA < createTimeB ){ return  -1; }
 	        return 0;
 	    },
 	
