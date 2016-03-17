@@ -1,14 +1,15 @@
 define([
     "mvc/history/history-content-model",
+    "mvc/base/controlled-fetch-collection",
     "mvc/history/hda-model",
     "mvc/history/hdca-model",
     "mvc/history/history-preferences",
     "mvc/base-mvc"
-], function( HISTORY_CONTENT, HDA_MODEL, HDCA_MODEL, HISTORY_PREFS, BASE_MVC ){
+], function( HISTORY_CONTENT, CONTROLLED_FETCH_COLLECTION, HDA_MODEL, HDCA_MODEL, HISTORY_PREFS, BASE_MVC ){
 'use strict';
 
 //==============================================================================
-var _super = BASE_MVC.ControlledFetchCollection;
+var _super = CONTROLLED_FETCH_COLLECTION.ControlledFetchCollection;
 /** @class Backbone collection for history content.
  *      NOTE: history content seems like a dataset collection, but differs in that it is mixed:
  *          each element can be either an HDA (dataset) or a DatasetCollection and co-exist on

@@ -4,7 +4,6 @@ define([
     'utils/add-logging',
     'utils/localization'
 ], function( _, Backbone, addLogging, _l ){
-
 'use strict';
 
 //==============================================================================
@@ -261,157 +260,6 @@ var SearchableModelMixin = {
         });
     }
 };
-
-
-//=============================================================================
-/**
- * A Collection that can be limited/offset/re-ordered/filtered.
- * @type {Backbone.Collection}
- */
-var ControlledFetchCollection = Backbone.Collection.extend({
-
-    /** override to provide order and offsets based on instance vars, set limit if passed,
-     *  and set allFetched/fire 'all-fetched' when xhr returns
-     */
-    fetch : function( options ){
-        // options = options || {};
-        // // console.log( 'ControlledFetchCollection.fetch:', options );
-        // if( options.reset ){ this.allFetched = false; }
-        options = this._buildFetchOptions( options );
-        return Backbone.Collection.prototype.fetch.call( this, options );
-    },
-
-    /**  */
-    _buildFetchOptions : function( options ){
-        // note: we normally want options passed in to override the defaults built here
-        // so most of these fns will generate defaults
-        options = _.clone( options ) || {};
-        var self = this;
-
-        // options (options for backbone.fetch and jquery.ajax generally)
-        // backbone option; false here to make fetching an addititive process
-        options.remove = options.remove || false;
-        // jquery ajax option; allows multiple q/qv for filters (instead of 'q[]')
-        options.traditional = true;
-
-        // options.data
-        // we keep limit, offset, etc. in options *as well as move it into data* because:
-        // - it makes fetch calling convenient to add it to a single options map (instead of as mult. args)
-        // - it allows the std. event handlers (for fetch, etc.) to have access
-        //   to the pagination options too
-        //      (i.e. this.on( 'sync', function( options ){ if( options.limit ){ ... } }))
-        // however, when we send to xhr/jquery we copy them to data also so that they become API query params
-        options.data = options.data || self._buildFetchData( options );
-        console.log( 'data:', options.data );
-
-        // options.data.filters --> options.data.q, options.data.qv
-        var filters = this._buildFetchFilters( options );
-        if( !_.isEmpty( filters ) ){
-            _.extend( options.data, this._fetchFiltersToAjaxData( filters ) );
-        }
-        console.log( 'data:', options.data );
-        return options;
-    },
-
-    /** Build the dictionary to send to fetch's XHR as data */
-    _buildFetchData : function( options ){
-        var defaults = {};
-        if( this.order ){ defaults.order = this.order; }
-        return _.defaults( _.pick( options, this._fetchParams ), defaults );
-    },
-
-    /** These attribute keys are valid params to fetch/API-index */
-    _fetchParams : [
-        /** model dependent string to control the order of models returned */
-        'order',
-        /** limit the number of models returned from a fetch */
-        'limit',
-        /** skip this number of models when fetching */
-        'offset',
-        /** what series of attributes to return (model dependent) */
-        'view',
-        /** individual keys to return for the models (see api/histories.index) */
-        'keys'
-    ],
-
-    /**  */
-    _buildFetchFilters : function( options ){
-        // override
-        return _.clone( options.filters );
-    },
-
-    /** Convert dictionary filters to qqv style arrays */
-    _fetchFiltersToAjaxData : function( filters ){
-        // return as a map so ajax.data can extend from it
-        var filterMap = {
-            q  : [],
-            qv : []
-        };
-        _.each( filters, function( v, k ){
-            // json to python
-            if( v === true ){ v = 'True'; }
-            if( v === false ){ v = 'False'; }
-            if( v === null ){ v = 'None'; }
-            // map to k/v arrays (q/qv)
-            filterMap.q.push( k );
-            filterMap.qv.push( v );
-        });
-        return filterMap;
-    },
-
-    // ............. paginated fetch / inf. scroll
-    /** @type {Number} limit used for the first fetch (or a reset) */
-    limitOnFirstFetch   : 10,
-    /** @type {Number} limit used for each subsequent fetch */
-    limitPerFetch       : 4,
-
-    /**  */
-    fetchFirst : function( options ){
-        options = options? _.clone( options ) : {};
-        this.allFetched = false;
-        this.lastFetched = 0;
-        return this.fetchMore( _.extend( options, {
-            reset : true,
-            limit : this.limitOnFirstFetch,
-        }));
-    },
-
-    /**  */
-    fetchMore : function( options ){
-        console.log( 'ControlledFetchCollection.fetchMore:', options );
-        options = _.clone( options || {} );
-        var collection = this;
-
-        console.log( 'fetchMore, options.reset:', options.reset );
-        if( ( !options.reset && collection.allFetched ) ){
-            console.warn( 'allFetched' ); return jQuery.when();
-        }
-
-        // TODO: this fails in the edge case where
-        //  the first fetch offset === limit (limit 4, offset 4, collection.length 4)
-        options.offset = options.reset? 0 : collection.lastFetched;
-        var limit = options.limit = options.limit || collection.limitPerFetch || null;
-        console.log( 'fetchMore, limit:', limit, 'offset:', options.offset );
-
-        collection.trigger( 'fetching-more' );
-        return collection.fetch( options )
-            .always( function(){
-                collection.trigger( 'fetching-more-done' );
-            })
-            // maintain allFetched flag and trigger if all were fetched this time
-            .done( function _postFetchMore( fetchedData ){
-                var numFetched = _.isArray( fetchedData )? fetchedData.length : 0;
-                collection.lastFetched += numFetched;
-                console.log( 'fetchMore, lastFetched:', collection.lastFetched );
-                // anything less than a full page means we got all there is to get
-                if( !limit || numFetched < limit ){
-                    collection.allFetched = true;
-                    collection.trigger( 'all-fetched', collection );
-                }
-            }
-        );
-    },
-});
 
 
 //==============================================================================
@@ -721,7 +569,6 @@ function wrapTemplate( template, jsonNamespace ){
         SessionStorageModel             : SessionStorageModel,
         mixin                           : mixin,
         SearchableModelMixin            : SearchableModelMixin,
-        ControlledFetchCollection       : ControlledFetchCollection,
         HiddenUntilActivatedViewMixin   : HiddenUntilActivatedViewMixin,
         DraggableViewMixin              : DraggableViewMixin,
         SelectableViewMixin             : SelectableViewMixin,

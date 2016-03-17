@@ -1,10 +1,11 @@
 
 define([
     "mvc/history/history-contents",
+    "mvc/base/controlled-fetch-collection",
     "utils/utils",
     "mvc/base-mvc",
     "utils/localization"
-], function( HISTORY_CONTENTS, UTILS, BASE_MVC, _l ){
+], function( HISTORY_CONTENTS, CONTROLLED_FETCH_COLLECTION, UTILS, BASE_MVC, _l ){
 'use strict';
 
 //==============================================================================
@@ -222,7 +223,7 @@ var History = Backbone.Model
             self.contents.historyId = history.id;
             // reset the update time
             self.lastUpdateTime = new Date();
-            return self.contents.fetchFirst( contentsOptions );
+            return self.contents.fetch( contentsOptions );
         });
     },
 
@@ -303,7 +304,7 @@ var History = Backbone.Model
 /** @class A collection of histories (per user).
  *      (stub) currently unused.
  */
-var HistoryCollection = BASE_MVC.ControlledFetchCollection
+var HistoryCollection = CONTROLLED_FETCH_COLLECTION.ControlledFetchCollection
         .extend( BASE_MVC.LoggableMixin )
         .extend(/** @lends HistoryCollection.prototype */{
     _logNamespace : 'history',
