@@ -213,6 +213,14 @@ class ToolTestCase( TwillTestCase ):
                         message = template % (name, expected_collection_type, collection_type)
                         raise AssertionError(message)
 
+                expected_element_count = output_collection_def.count
+                if expected_element_count:
+                    actual_element_count = len(data_collection[ "elements" ])
+                    if expected_element_count != actual_element_count:
+                        template = "Expected output collection [%s] to have %s elements, but it had %s."
+                        message = template % (name, expected_element_count, actual_element_count)
+                        raise AssertionError(message)
+
                 def verify_elements( element_objects, element_tests ):
                     for element_identifier, ( element_outfile, element_attrib ) in element_tests.items():
                         element = get_element( element_objects, element_identifier )
