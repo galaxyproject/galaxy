@@ -67,7 +67,7 @@ var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
             },
             function( next ){ this.$el.fadeIn( speed, next ); },
             function( next ){
-                this.trigger( 'rendered', view );
+                view.trigger( 'rendered', view );
                 next();
             }
         ]);
