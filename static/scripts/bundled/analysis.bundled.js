@@ -13881,6 +13881,18 @@ webpackJsonp([0,1],[
 	    },
 	
 	    // ........................................................................ ajax
+	    /** override to use actual Dates objects for create/update times */
+	    parse : function( response, options ){
+	        var parsed = Backbone.Model.prototype.parse.call( this, response, options );
+	        if( parsed.create_time ){
+	            parsed.create_time = new Date( parsed.create_time );
+	        }
+	        if( parsed.update_time ){
+	            parsed.update_time = new Date( parsed.update_time );
+	        }
+	        return parsed;
+	    },
+	
 	    /**  */
 	    fetchWithContents : function( options, contentsOptions ){
 	        // TODO: push down to a base class
@@ -13971,87 +13983,40 @@ webpackJsonp([0,1],[
 	
 	
 	//==============================================================================
-	/** @class A collection of histories (per user).
-	 *      (stub) currently unused.
+	var _collectionSuper = CONTROLLED_FETCH_COLLECTION.ControlledFetchCollection;
+	/** @class A collection of histories (per user)
+	 *      that maintains the current history as the first in the collection.
+	 *  New or copied histories become the current history.
 	 */
-	var HistoryCollection = CONTROLLED_FETCH_COLLECTION.ControlledFetchCollection
-	        .extend( BASE_MVC.LoggableMixin )
-	        .extend(/** @lends HistoryCollection.prototype */{
+	var HistoryCollection = _collectionSuper.extend( BASE_MVC.LoggableMixin ).extend({
 	    _logNamespace : 'history',
 	
 	    model   : History,
-	
-	    /** @type {String} the default sortOrders key for sorting */
-	    DEFAULT_ORDER : 'update_time',
-	
-	    /** @type {Object} map of collection sorting orders generally containing a getter to return the attribute
-	     *      sorted by and asc T/F if it is an ascending sort.
-	     */
-	    sortOrders : {
-	        'update_time' : {
-	            getter : function( h ){ return new Date( h.get( 'update_time' ) ); },
-	            asc : false
-	        },
-	        'update_time-asc' : {
-	            getter : function( h ){ return new Date( h.get( 'update_time' ) ); },
-	            asc : true
-	        },
-	        'name' : {
-	            getter : function( h ){ return h.get( 'name' ); },
-	            asc : true
-	        },
-	        'name-dsc' : {
-	            getter : function( h ){ return h.get( 'name' ); },
-	            asc : false
-	        },
-	        'size' : {
-	            getter : function( h ){ return h.get( 'size' ); },
-	            asc : false
-	        },
-	        'size-asc' : {
-	            getter : function( h ){ return h.get( 'size' ); },
-	            asc : true
-	        }
-	    },
+	    order   : 'update_time',
 	
 	    initialize : function( models, options ){
 	        options = options || {};
-	        this.log( 'HistoryCollection.initialize', arguments );
+	        this.log( 'HistoryCollection.initialize', models, options );
 	
-	        // instance vars
 	        /** @type {boolean} should deleted histories be included */
 	        this.includeDeleted = options.includeDeleted || false;
 	        // set the sort order
-	        this.setOrder( options.order || this.DEFAULT_ORDER );
+	        this.setOrder( _.has( this.comparators, options.order )? options.order : this.order );
+	
 	        /** @type {String} encoded id of the history that's current */
 	        this.currentHistoryId = options.currentHistoryId;
-	        /** @type {boolean} have all histories been fetched and in the collection? */
-	        this.allFetched = options.allFetched || false;
 	
-	        // this.on( 'all', function(){
-	        //    console.info( 'event:', arguments );
-	        // });
+	        this.on( 'all', function(){
+	           this.info( this + ', event:', arguments );
+	        });
 	        this.setUpListeners();
+	        // note: models are sent to reset *after* this fn ends; up to this point
+	        // the collection *is empty*
 	    },
 	
 	    urlRoot : Galaxy.root + 'api/histories',
-	    url     : function(){ return this.urlRoot; },
 	
-	    /** returns map of default filters and settings for fetching from the API */
-	    _fetchDefaults : function(){
-	        // to be overridden
-	        var defaults = {
-	            order   : this.order,
-	            view    : 'detailed'
-	        };
-	        if( !this.includeDeleted ){
-	            defaults.filters = {
-	                deleted : false,
-	                purged  : false,
-	            };
-	        }
-	        return defaults;
-	    },
+	    url     : function(){ return this.urlRoot; },
 	
 	    /** set up reflexive event handlers */
 	    setUpListeners : function setUpListeners(){
@@ -14073,40 +14038,40 @@ webpackJsonp([0,1],[
 	                var oldCurrentId = this.currentHistoryId;
 	                this.trigger( 'no-longer-current', oldCurrentId );
 	                this.currentHistoryId = history.id;
+	//TODO:? sort?
 	            }
 	        });
 	    },
 	
-	    /** override to allow passing options.order and setting the sort order to one of sortOrders */
-	    sort : function( options ){
-	        options = options || {};
-	        this.setOrder( options.order );
-	        return Backbone.Collection.prototype.sort.call( this, options );
+	    /** override to filter out deleted and purged and return a detailed json view */
+	    _buildFetchData : function( options ){
+	        var defaults = {
+	            view    : 'detailed'
+	        };
+	        if( !this.includeDeleted ){
+	            defaults.filters = {
+	                deleted : false,
+	                purged  : false,
+	            };
+	        }
+	        var data = _collectionSuper.prototype._buildFetchData.call( this, options );
+	        return _.defaults( data, defaults );
 	    },
 	
-	    /** build the comparator used to sort this collection using the sortOrder map and the given order key
-	     *  @event 'changed-order' passed the new order and the collection
-	     */
-	    setOrder : function( order ){
-	        var collection = this,
-	            sortOrder = this.sortOrders[ order ];
-	        if( _.isUndefined( sortOrder ) ){ return; }
+	    /** @type {Object} map of collection available sorting orders containing comparator fns */
+	    comparators : _.extend( _.clone( _collectionSuper.prototype.comparators ), {
+	        'name'       : BASE_MVC.buildComparator( 'name', true ),
+	        'name-dsc'   : BASE_MVC.buildComparator( 'name', false ),
+	        'size'       : BASE_MVC.buildComparator( 'size', false ),
+	        'size-asc'   : BASE_MVC.buildComparator( 'size', true ),
+	    }),
 	
-	        collection.order = order;
-	        collection.comparator = function comparator( a, b ){
-	            var currentHistoryId = collection.currentHistoryId;
-	            // current always first
-	            if( a.id === currentHistoryId ){ return -1; }
-	            if( b.id === currentHistoryId ){ return 1; }
-	            // then compare by an attribute
-	            a = sortOrder.getter( a );
-	            b = sortOrder.getter( b );
-	            return sortOrder.asc?
-	                ( ( a === b )?( 0 ):( a > b ?  1 : -1 ) ):
-	                ( ( a === b )?( 0 ):( a > b ? -1 :  1 ) );
-	        };
-	        collection.trigger( 'changed-order', collection.order, collection );
-	        return collection;
+	    /** override to always have the current history first */
+	    sort : function( options ){
+	        var currentHistory = this.remove( this.get( this.currentHistoryId ) );
+	        _collectionSuper.prototype.sort.call( this, options );
+	        this.unshift( currentHistory, { silent: true });
+	        return this;
 	    },
 	
 	    /** create a new history and by default set it to be the current history */
@@ -14137,11 +14102,11 @@ webpackJsonp([0,1],[
 	    /** override to reset allFetched flag to false */
 	    reset : function( models, options ){
 	        this.allFetched = false;
-	        return Backbone.Collection.prototype.reset.call( this, models, options );
+	        return _collectionSuper.prototype.reset.call( this, models, options );
 	    },
 	
 	    toString: function toString(){
-	        return 'HistoryCollection(' + this.length + ')';
+	        return 'HistoryCollection(' + this.length + ',current:' + this.currentHistoryId + ')';
 	    }
 	});
 	
@@ -24657,8 +24622,8 @@ webpackJsonp([0,1],[
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(jQuery) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! libs/underscore */ 1),
 	    __webpack_require__(/*! libs/backbone */ 2),
-	    __webpack_require__(/*! utils/add-logging */ 6),
-	], __WEBPACK_AMD_DEFINE_RESULT__ = function( _, Backbone, addLogging ){
+	    __webpack_require__(/*! mvc/base-mvc */ 5),
+	], __WEBPACK_AMD_DEFINE_RESULT__ = function( _, Backbone, BASE_MVC ){
 	'use strict';
 	
 	//=============================================================================
@@ -24757,7 +24722,44 @@ webpackJsonp([0,1],[
 	        return filterMap;
 	    },
 	
-	    // ............. paginated fetch / inf. scroll
+	    // ........................................................................ order
+	    order : null,
+	
+	    /** @type {Object} map of collection available sorting orders containing comparator fns */
+	    comparators : {
+	        'update_time'       : BASE_MVC.buildComparator( 'update_time', false ),
+	        'update_time-asc'   : BASE_MVC.buildComparator( 'update_time', true ),
+	        'create_time'       : BASE_MVC.buildComparator( 'create_time', false ),
+	        'create_time-asc'   : BASE_MVC.buildComparator( 'create_time', true ),
+	    },
+	
+	    /** set the order and comparator for this collection then sort with the new order
+	     *  @event 'changed-order' passed the new order and the collection
+	     */
+	    setOrder : function( order, options ){
+	        options = options || {};
+	        var collection = this;
+	        var comparator = collection.comparators[ order ];
+	        if( _.isUndefined( comparator ) ){ return; }
+	        if( comparator === collection.comparator ){ return; }
+	
+	        var oldOrder = collection.order;
+	        collection.order = order;
+	        collection.comparator = comparator;
+	        collection.trigger( 'changed-order', collection.order, oldOrder, collection );
+	        collection.sort( options );
+	        return collection;
+	    },
+	
+	});
+	
+	
+	//=============================================================================
+	/**
+	 * A Collection that is paginated when fetching.
+	 */
+	var PaginatedCollection = ControlledFetchCollection.extend({
+	
 	    /** @type {Number} limit used for the first fetch (or a reset) */
 	    limitOnFirstFetch   : 10,
 	    /** @type {Number} limit used for each subsequent fetch */
@@ -24809,6 +24811,7 @@ webpackJsonp([0,1],[
 	            }
 	        );
 	    },
+	
 	});
 	
 	

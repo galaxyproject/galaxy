@@ -376,7 +376,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         this.collection = collection || new HISTORY_MODEL.HistoryCollection();
         this.setUpCollectionListeners();
 
-        this.collection.sort({ silent : true });
+        // this.collection.sort({ silent : true });
         this.createColumns();
         this.hdaQueue.clear();
 

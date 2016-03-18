@@ -564,6 +564,18 @@ function wrapTemplate( template, jsonNamespace ){
 
 
 //==============================================================================
+/** Return a comparator function for sorted Collections */
+function buildComparator( attribute_name, isAsc ){
+    isAsc = isAsc? 1 : -1;
+    return function __comparator( a, b ){
+        a = a.get( attribute_name );
+        b = b.get( attribute_name );
+        return ( a < b? -1 : ( a > b? 1 : 0 ) ) * isAsc;
+    };
+}
+
+
+//==============================================================================
     return {
         LoggableMixin                   : LoggableMixin,
         SessionStorageModel             : SessionStorageModel,
@@ -572,6 +584,7 @@ function wrapTemplate( template, jsonNamespace ){
         HiddenUntilActivatedViewMixin   : HiddenUntilActivatedViewMixin,
         DraggableViewMixin              : DraggableViewMixin,
         SelectableViewMixin             : SelectableViewMixin,
-        wrapTemplate                    : wrapTemplate
+        wrapTemplate                    : wrapTemplate,
+        buildComparator                 : buildComparator,
     };
 });

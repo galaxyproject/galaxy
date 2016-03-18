@@ -30,6 +30,7 @@ define( 'app', function(){
         'mvc/history/multi-panel'
     ], function( HISTORY_MODEL, MULTI_HISTORY ){
         $(function(){
+            console.log( bootstrapped.order );
             histories = new HISTORY_MODEL.HistoryCollection( bootstrapped.histories, {
                 includeDeleted  : bootstrapped.includingDeleted,
                 order           : bootstrapped.order,
