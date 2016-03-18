@@ -17939,7 +17939,7 @@ webpackJsonp([0,1],[
 	    /** On the first search, if there are no details - load them, then search */
 	    _firstSearch : function( searchFor ){
 	        var panel = this,
-	            inputSelector = '.history-search-input';
+	            inputSelector = '> .controls .search-input';
 	        this.log( 'onFirstSearch', searchFor );
 	
 	        if( panel.model.contents.haveDetails() ){
