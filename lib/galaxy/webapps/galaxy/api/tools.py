@@ -299,8 +299,10 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
     def _get_tool( self, id, tool_version=None, user=None ):
         id = urllib.unquote_plus( id )
         tool = self.app.toolbox.get_tool( id, tool_version )
-        if not tool or not tool.allow_user_access( user ):
-            raise exceptions.ObjectNotFound("Could not find tool with id '%s'" % id)
+        if not tool:
+            raise exceptions.ObjectNotFound( "Could not find tool with id '%s'." % id )
+        if not tool.allow_user_access( user ):
+            raise exceptions.AuthenticationFailed( "Access denied, please login for tool with id '%s'." % id )
         return tool
 
     def _rerun_tool( self, trans, payload, **kwargs ):

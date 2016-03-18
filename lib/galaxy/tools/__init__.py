@@ -451,6 +451,8 @@ class Tool( object, Dictifiable ):
         """
         :returns: bool -- Whether the user is allowed to access the tool.
         """
+        if self.require_login and user is None:
+            return False
         return True
 
     def parse( self, tool_source, guid=None ):
@@ -2438,7 +2440,8 @@ class Tool( object, Dictifiable ):
             'state_inputs'  : state_inputs,
             'job_id'        : trans.security.encode_id( job.id ) if job else None,
             'job_remap'     : self._get_job_remap( job ),
-            'history_id'    : trans.security.encode_id( history.id )
+            'history_id'    : trans.security.encode_id( history.id ),
+            'display'       : self.display_interface
         })
 
         # return enriched tool model

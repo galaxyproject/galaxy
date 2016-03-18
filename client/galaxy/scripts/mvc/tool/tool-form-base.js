@@ -79,7 +79,12 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 url     : build_url,
                 data    : build_data,
                 success : function(new_model) {
-                    self._buildForm(new_model['tool_model'] || new_model);
+                    new_model = new_model.tool_model || new_model;
+                    if( !new_model.display ) {
+                        window.location = Galaxy.root;
+                        return;
+                    }
+                    self._buildForm(new_model);
                     !hide_message && self.message.update({
                         status      : 'success',
                         message     : 'Now you are using \'' + self.options.name + '\' version ' + self.options.version + ', id \'' + self.options.id + '\'.',
@@ -87,11 +92,12 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     });
                     Galaxy.emit.debug('tool-form-base::initialize()', 'Initial tool model ready.', new_model);
                     process.resolve();
-
                 },
-                error   : function(response) {
+                error   : function(response, xhr) {
                     var error_message = ( response && response.err_msg ) || 'Uncaught error.';
-                    if ( self.$el.is(':empty') ) {
+                    if ( xhr.status == 401 ) {
+                        window.location = Galaxy.root + 'user/login?' + $.param({ redirect : Galaxy.root + '?tool_id=' + self.options.id });
+                    } else if ( self.$el.is(':empty') ) {
                         self.$el.prepend((new Ui.Message({
                             message     : error_message,
                             status      : 'danger',
