@@ -39,7 +39,7 @@ class HistoryListGrid( grids.Grid ):
     class DatasetsByStateColumn( grids.GridColumn ):
         def get_value( self, trans, grid, history ):
             # States to show in column.
-            states_to_show = ( 'ok', 'running', 'queued', 'error' )
+            states_to_show = ( 'ok', 'running', 'queued', 'new', 'error' )
 
             # Get dataset counts for each state in a state-count dictionary.
             state_counts = dict( ( state, count ) for state, count in
