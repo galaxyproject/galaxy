@@ -57,9 +57,12 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             results = []
             if hits:
                 for hit in hits:
-                    tool = self._get_tool( hit )
-                    if tool:
-                        results.append( tool.id )
+                    try:
+                        tool = self._get_tool( hit, user=trans.user )
+                        if tool:
+                            results.append( tool.id )
+                    except exceptions.AuthenticationFailed:
+                        pass
             return results
 
         # Find whether to detect.
