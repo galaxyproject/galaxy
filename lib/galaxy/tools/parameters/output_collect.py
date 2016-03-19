@@ -9,11 +9,11 @@ import json
 from galaxy import jobs
 from galaxy import util
 from galaxy.util import odict
+from galaxy.util import ExecutionTimer
 from galaxy.tools.parser.output_collection_def import (
     DEFAULT_DATASET_COLLECTOR_DESCRIPTION,
     INPUT_DBKEY_TOKEN,
 )
-
 
 DATASET_ID_TOKEN = "DATASET_ID"
 
@@ -105,6 +105,7 @@ class JobContext( object ):
         filenames = self.find_files( collection, dataset_collectors )
 
         for filename, extra_file_collector in filenames.iteritems():
+            create_dataset_timer = ExecutionTimer()
             fields_match = extra_file_collector.match( collection, os.path.basename( filename ) )
             if not fields_match:
                 raise Exception( "Problem parsing metadata fields for file %s" % filename )
@@ -132,11 +133,12 @@ class JobContext( object ):
                 metadata_source_name=output_collection_def.metadata_source,
             )
             log.debug(
-                "(%s) Created dynamic collection dataset for path [%s] with element identifier [%s] for output [%s].",
+                "(%s) Created dynamic collection dataset for path [%s] with element identifier [%s] for output [%s] %s",
                 self.job.id,
                 filename,
                 designation,
                 output_collection_def.name,
+                create_dataset_timer,
             )
             current_builder.add_dataset( element_identifiers[-1], dataset )
 
