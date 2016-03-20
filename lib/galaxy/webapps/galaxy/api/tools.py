@@ -224,10 +224,9 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             raise exceptions.MessageException( 'Tool not found or not accessible.' )
         if trans.app.config.user_activation_on:
             if not trans.user:
-                log.warning("Anonymous user attempts to execute tool, but account activation is turned on")
+                log.warning( "Anonymous user attempts to execute tool, but account activation is turned on." )
             elif not trans.user.active:
-                log.warning("User \"%s\" attempts to execute tool, but account activation is turned on and user account is not active" % trans.user.email )
-
+                log.warning( "User \"%s\" attempts to execute tool, but account activation is turned on and user account is not active." % trans.user.email )
 
         # Set running history from payload parameters.
         # History not set correctly as part of this API call for
