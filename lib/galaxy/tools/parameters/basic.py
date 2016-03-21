@@ -187,7 +187,7 @@ class ToolParameter( object, Dictifiable ):
         return value
 
     def validate( self, value, trans=None ):
-        if value is not '' or not self.optional:
+        if value != '' or not self.optional:
             for validator in self.validators:
                 validator.validate( value, trans )
 
