@@ -154,7 +154,9 @@ var CurrentHistoryView = _super.extend(
             'change:nice_size change:size' : function(){
                 this.trigger( 'history-size-change', this, this.model, arguments );
             },
-            'change:id' : function(){ this.model.checkForUpdates(); }
+            'change:id' : function(){
+                this.once( 'loading-done', function(){ this.model.checkForUpdates(); });
+            }
         });
     },
 

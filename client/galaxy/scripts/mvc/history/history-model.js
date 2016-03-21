@@ -169,7 +169,7 @@ var History = Backbone.Model
 
     /**  */
     checkForUpdates : function( options ){
-        // console.log( this + '.checkForUpdates' );
+        console.log( this + '.checkForUpdates' );
         options = options || {};
         var delay = this.UPDATE_DELAY;
         var self = this;
@@ -243,6 +243,7 @@ var History = Backbone.Model
 
             contentsOptions.reset = true;
             contentsOptions.silent = true;
+            console.log( 'fetching contents' );
             return self.contents.fetch( contentsOptions );
 
             // return self.contents.fetchFirst( contentsOptions );

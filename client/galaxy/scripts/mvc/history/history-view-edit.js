@@ -12,6 +12,7 @@ define([
     "mvc/collection/list-of-pairs-collection-creator",
     "ui/fa-icon-button",
     "mvc/ui/popup-menu",
+    "mvc/base-mvc",
     "utils/localization",
     "ui/editable-text",
 ], function(
@@ -28,6 +29,7 @@ define([
     LIST_OF_PAIRS_COLLECTION_CREATOR,
     faIconButton,
     PopupMenu,
+    BASE_MVC,
     _l
 ){
 
@@ -142,31 +144,9 @@ var HistoryViewEdit = _super.extend(
 
     /** override to show counts, what's deleted/hidden, and links to toggle those */
     _renderCounts : function( $whereTo ){
-//TODO: too complicated
-        function toggleLink( _class, text ){
-            return [ '<a class="', _class, '" href="javascript:void(0);">', text, '</a>' ].join( '' );
-        }
-        $whereTo = $whereTo || this.$el;
-        var deleted  = this.collection.where({ deleted: true }),
-            hidden   = this.collection.where({ visible: false }),
-            msgs = [];
-
-        if( this.views.length ){
-            msgs.push( [ this.views.length, _l( 'shown' ) ].join( ' ' ) );
-        }
-        if( deleted.length ){
-            msgs.push( ( !this.showDeleted )?
-                 ([ deleted.length, toggleLink( 'toggle-deleted-link', _l( 'deleted' ) ) ].join( ' ' ))
-                :( toggleLink( 'toggle-deleted-link', _l( 'hide deleted' ) ) )
-            );
-        }
-        if( hidden.length ){
-            msgs.push( ( !this.showHidden )?
-                 ([ hidden.length, toggleLink( 'toggle-hidden-link', _l( 'hidden' ) ) ].join( ' ' ))
-                :( toggleLink( 'toggle-hidden-link', _l( 'hide hidden' ) ) )
-            );
-        }
-        return $whereTo.find( '> .controls .subtitle' ).html( msgs.join( ', ' ) );
+        $whereTo = $whereTo instanceof jQuery? $whereTo : this.$el;
+        var html = this.templates.counts( this.model.toJSON(), this );
+        return $whereTo.find( '> .controls .subtitle' ).html( html );
     },
 
     /** render the tags sub-view controller */
@@ -515,6 +495,45 @@ var HistoryViewEdit = _super.extend(
         return 'HistoryViewEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });
+
+//------------------------------------------------------------------------------ TEMPLATES
+HistoryViewEdit.prototype.templates = (function(){
+
+    var countsTemplate = BASE_MVC.wrapTemplate([
+        '<%- history.contents_shown.shown %> ', _l( 'shown' ),
+        '<% if( history.contents_shown.deleted ){ %>',
+            '<% if( view.showDeleted ){ %>',
+                ', <a class="toggle-deleted-link" href="javascript:void(0);">',
+                    _l( 'hide deleted' ),
+                '</a>',
+            '<% } else { %>',
+                ', <%- history.contents_shown.deleted %> <a class="toggle-deleted-link" href="javascript:void(0);">',
+                    _l( 'deleted' ),
+                '</a>',
+            '<% } %>',
+        '<% } else { %>',
+            '<span class="toggle-deleted-link"></span>',
+        '<% } %>',
+        '<% if( history.contents_shown.hidden ){ %>',
+            '<% if( view.showHidden ){ %>',
+                ', <a class="toggle-hidden-link" href="javascript:void(0);">',
+                    _l( 'hide hidden' ),
+                '</a>',
+            '<% } else { %>',
+                ', <%- history.contents_shown.hidden %> <a class="toggle-hidden-link" href="javascript:void(0);">',
+                    _l( 'hidden' ),
+                '</a>',
+            '<% } %>',
+        '<% } else { %>',
+            '<span class="toggle-hidden-link"></span>',
+        '<% } %>',
+    ], 'history' );
+
+    return _.extend( _.clone( _super.prototype.templates ), {
+        counts : countsTemplate
+    });
+}());
+
 
 //==============================================================================
     return {

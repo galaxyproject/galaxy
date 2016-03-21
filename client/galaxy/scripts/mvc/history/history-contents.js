@@ -157,8 +157,9 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
                 'update_time-ge' : since.toISOString()
             };
         }
-        console.log( 'fetching updated:', this.historyId );
-        return this.fetch( options );
+        console.log( 'fetching updated:', this.historyId, since );
+        return this.fetch( options )
+            .done( function( r ){ console.log( 'updated:\n', JSON.stringify( r ) ); });
     },
 
     /**  */
@@ -179,6 +180,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
 
     /**  */
     _buildFetchFilters : function( options ){
+        var superFilters = _super.prototype._buildFetchFilters( this, options ) || {};
         var filters = {};
         if( !this.includeDeleted ){
             filters.deleted = false;
@@ -187,7 +189,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         if( !this.includeHidden ){
             filters.visible = true;
         }
-        return _.defaults( _super.prototype._buildFetchFilters( this, options ), filters );
+        return _.defaults( superFilters, filters );
     },
 
     /** fetch detailed model data for all contents in this collection */
