@@ -64,7 +64,7 @@ class TestExportImportRepository( ShedTwillTestCase ):
         '''
         global capsule_filepath
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        capsule_filepath = self.export_capsule( repository, includes_dependencies=False )
+        capsule_filepath = self.export_capsule( repository, aggressive=True, includes_dependencies=False )
         assert os.path.exists( capsule_filepath ), 'Exported repository capsule file path %s not found.' % capsule_filepath
 
     def test_0015_verify_exported_capsule( self ):
