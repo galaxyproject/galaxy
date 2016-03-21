@@ -210,7 +210,7 @@ class ToolParameter( object, Dictifiable ):
         return value
 
     def validate( self, value, history=None, workflow_building_mode=False ):
-        if value == "" and self.optional:
+        if value in ["", None] and self.optional:
             return
         for validator in self.validators:
             validator.validate( value, history )
