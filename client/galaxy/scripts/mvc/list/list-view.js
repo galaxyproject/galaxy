@@ -513,17 +513,24 @@ console.log( '------------------------------------------------- renderItems' );
         var modelIndex = panel._filterCollection().indexOf( model );
         if( modelIndex === -1 ){ return undefined; }
         var view = panel._createItemView( model );
+        // console.log( 'adding and rendering:', modelIndex, view.toString() );
 
-        if( panel.$emptyMessage().is( ':visible' ) && panel.views.length === 1 ){
-            // hide the empty message if only view
-            $( view ).queue( 'fx', [
-                function( next ){ panel.$emptyMessage().fadeOut( panel.fxSpeed, next ); },
-                function( next ){
-                    panel._attachView( view, modelIndex );
+        $( view ).queue( 'fx', [
+            function( next ){
+                // hide the empty message first if only view
+                console.log( 'empty msg:', panel.$emptyMessage() );
+                console.log( 'empty msg:', panel.$emptyMessage().is( ':visible' ) );
+                if( panel.$emptyMessage().is( ':visible' ) ){
+                    panel.$emptyMessage().fadeOut( panel.fxSpeed, next );
+                } else {
                     next();
                 }
-            ]);
-        }
+            },
+            function( next ){
+                panel._attachView( view, modelIndex );
+                next();
+            }
+        ]);
         return view;
     },
 

@@ -184,7 +184,9 @@ var History = Backbone.Model
         }
 
         // if there are still datasets in the non-ready state, recurse into this function with the new time
-        if( this.numOfUnfinishedShownContents() > 0 ){
+        var nonReadyContentCount = this.numOfUnfinishedShownContents();
+        console.log( 'nonReadyContentCount:', nonReadyContentCount );
+        if( nonReadyContentCount > 0 ){
             _delayThenUpdate();
 
         } else {
@@ -193,6 +195,7 @@ var History = Backbone.Model
             // (also update the size for the user in either case)
             self._getSizeAndRunning()
                 .done( function( historyData ){
+                    console.log( 'non_ready_jobs:', historyData.non_ready_jobs );
                     if( self.numOfUnfinishedJobs() > 0 ){
                         _delayThenUpdate();
 

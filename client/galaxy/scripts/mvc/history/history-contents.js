@@ -159,7 +159,9 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         }
         console.log( 'fetching updated:', this.historyId, since );
         return this.fetch( options )
-            .done( function( r ){ console.log( 'updated:\n', JSON.stringify( r ) ); });
+            // .done( function( r ){ console.log( 'updated:\n', JSON.stringify( r ) ); })
+            .done( function( r ){ console.log( 'updated:', r.length, r ); })
+        ;
     },
 
     /**  */

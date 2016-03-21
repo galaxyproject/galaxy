@@ -13858,7 +13858,9 @@ webpackJsonp([0,1],[
 	        }
 	
 	        // if there are still datasets in the non-ready state, recurse into this function with the new time
-	        if( this.numOfUnfinishedShownContents() > 0 ){
+	        var nonReadyContentCount = this.numOfUnfinishedShownContents();
+	        console.log( 'nonReadyContentCount:', nonReadyContentCount );
+	        if( nonReadyContentCount > 0 ){
 	            _delayThenUpdate();
 	
 	        } else {
@@ -13867,6 +13869,7 @@ webpackJsonp([0,1],[
 	            // (also update the size for the user in either case)
 	            self._getSizeAndRunning()
 	                .done( function( historyData ){
+	                    console.log( 'non_ready_jobs:', historyData.non_ready_jobs );
 	                    if( self.numOfUnfinishedJobs() > 0 ){
 	                        _delayThenUpdate();
 	
@@ -14301,7 +14304,9 @@ webpackJsonp([0,1],[
 	        }
 	        console.log( 'fetching updated:', this.historyId, since );
 	        return this.fetch( options )
-	            .done( function( r ){ console.log( 'updated:\n', JSON.stringify( r ) ); });
+	            // .done( function( r ){ console.log( 'updated:\n', JSON.stringify( r ) ); })
+	            .done( function( r ){ console.log( 'updated:', r.length, r ); })
+	        ;
 	    },
 	
 	    /**  */
@@ -18933,17 +18938,24 @@ webpackJsonp([0,1],[
 	        var modelIndex = panel._filterCollection().indexOf( model );
 	        if( modelIndex === -1 ){ return undefined; }
 	        var view = panel._createItemView( model );
+	        // console.log( 'adding and rendering:', modelIndex, view.toString() );
 	
-	        if( panel.$emptyMessage().is( ':visible' ) && panel.views.length === 1 ){
-	            // hide the empty message if only view
-	            $( view ).queue( 'fx', [
-	                function( next ){ panel.$emptyMessage().fadeOut( panel.fxSpeed, next ); },
-	                function( next ){
-	                    panel._attachView( view, modelIndex );
+	        $( view ).queue( 'fx', [
+	            function( next ){
+	                // hide the empty message first if only view
+	                console.log( 'empty msg:', panel.$emptyMessage() );
+	                console.log( 'empty msg:', panel.$emptyMessage().is( ':visible' ) );
+	                if( panel.$emptyMessage().is( ':visible' ) ){
+	                    panel.$emptyMessage().fadeOut( panel.fxSpeed, next );
+	                } else {
 	                    next();
 	                }
-	            ]);
-	        }
+	            },
+	            function( next ){
+	                panel._attachView( view, modelIndex );
+	                next();
+	            }
+	        ]);
 	        return view;
 	    },
 	
