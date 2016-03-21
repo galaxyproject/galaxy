@@ -6,8 +6,8 @@
     </command>
     <inputs>
         <param name="input" type="data" label="Input" />
-        <param name="inttest" value="1" type="integer" optional="True" />
-        <param name="floattest" value="1.0" type="float" optional="True" />
+        <param name="inttest" type="integer" optional="True" />
+        <param name="floattest" min="0" max="1" type="float" optional="True" />
     </inputs>
     <outputs>
         <data name="out_file1" format="txt" />
