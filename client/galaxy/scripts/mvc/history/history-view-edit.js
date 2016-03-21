@@ -294,45 +294,24 @@ var HistoryViewEdit = _super.extend(
         return [
             {   html: _l( 'Build Dataset List' ), func: function() {
                     LIST_COLLECTION_CREATOR.createListCollection( panel.getSelectedModels() )
-                        .done( function(){ panel.model.refresh() });
+                        .done( function(){ panel.model.refresh(); });
                 }
             },
             // TODO: Only show quick pair if two things selected.
             {   html: _l( 'Build Dataset Pair' ), func: function() {
                     PAIR_COLLECTION_CREATOR.createPairCollection( panel.getSelectedModels() )
-                        .done( function(){ panel.model.refresh() });
+                        .done( function(){ panel.model.refresh(); });
                 }
             },
             {   html: _l( 'Build List of Dataset Pairs' ), func: function() {
                     LIST_OF_PAIRS_COLLECTION_CREATOR.createListOfPairsCollection( panel.getSelectedModels() )
-                        .done( function(){ panel.model.refresh() });
+                        .done( function(){ panel.model.refresh(); });
                 }
             },
         ];
     },
 
     // ------------------------------------------------------------------------ sub-views
-    // reverse HID order
-    /** Override to reverse order of views - newest contents on top */
-    _attachItems : function( $whereTo ){
-        this.$list( $whereTo ).append( this.views.reverse().map( function( view ){
-            return view.$el;
-        }));
-        return this;
-    },
-
-    /** Override to add new contents at the top */
-    _attachView : function( view ){
-        var panel = this;
-        // override to control where the view is added, how/whether it's rendered
-        panel.views.unshift( view );
-        panel.$list().prepend( view.render( 0 ).$el.hide() );
-        panel.trigger( 'view:attached', view );
-        view.$el.slideDown( panel.fxSpeed, function(){
-            panel.trigger( 'view:attached:rendered' );
-        });
-    },
-
     /** In this override, add purgeAllowed and whether tags/annotation editors should be shown */
     _getItemViewOptions : function( model ){
         var options = _super.prototype._getItemViewOptions.call( this, model );
@@ -403,7 +382,7 @@ var HistoryViewEdit = _super.extend(
     /** Update the history size display (curr. upper right of panel).
      */
     updateHistoryDiskSize : function(){
-        this.$el.find( '.history-size' ).text( this.model.get( 'nice_size' ) );
+        this.$( '.history-size' ).text( this.model.get( 'nice_size' ) );
     },
 
     // ------------------------------------------------------------------------ as drop target

@@ -153,6 +153,7 @@ var History = Backbone.Model
 
     /**  */
     refresh : function( options ){
+        // console.log( this + '.refresh' );
         options = options || {};
         var self = this;
 
@@ -168,9 +169,11 @@ var History = Backbone.Model
 
     /**  */
     checkForUpdates : function( options ){
+        // console.log( this + '.checkForUpdates' );
         options = options || {};
         var delay = this.UPDATE_DELAY;
         var self = this;
+        if( !self.id ){ return; }
 
         function _delayThenUpdate(){
             // prevent buildup of updater timeouts by clearing previous if any, then set new and cache id
@@ -225,8 +228,10 @@ var History = Backbone.Model
 
     /**  */
     fetchWithContents : function( options, contentsOptions ){
+        console.log( this + '.fetchWithContents' );
         // TODO: push down to a base class
         options = options || {};
+        contentsOptions = contentsOptions || {};
         options.view = 'current';
 
         var self = this;
@@ -235,7 +240,12 @@ var History = Backbone.Model
             self.contents.historyId = history.id;
             // reset the update time
             self.lastUpdateTime = new Date();
+
+            contentsOptions.reset = true;
+            contentsOptions.silent = true;
             return self.contents.fetch( contentsOptions );
+
+            // return self.contents.fetchFirst( contentsOptions );
         });
     },
 
@@ -390,10 +400,10 @@ var HistoryCollection = _collectionSuper.extend( BASE_MVC.LoggableMixin ).extend
 
     /** @type {Object} map of collection available sorting orders containing comparator fns */
     comparators : _.extend( _.clone( _collectionSuper.prototype.comparators ), {
-        'name'       : BASE_MVC.buildComparator( 'name', true ),
-        'name-dsc'   : BASE_MVC.buildComparator( 'name', false ),
-        'size'       : BASE_MVC.buildComparator( 'size', false ),
-        'size-asc'   : BASE_MVC.buildComparator( 'size', true ),
+        'name'       : BASE_MVC.buildComparator( 'name', { ascending: true }),
+        'name-dsc'   : BASE_MVC.buildComparator( 'name', { ascending: false }),
+        'size'       : BASE_MVC.buildComparator( 'size', { ascending: false }),
+        'size-asc'   : BASE_MVC.buildComparator( 'size', { ascending: true }),
     }),
 
     /** override to always have the current history first */

@@ -123,7 +123,7 @@ var CurrentHistoryView = _super.extend(
     /** release/free/shutdown old models and set up panel for new models */
     setModel : function( model, attributes, render ){
         _super.prototype.setModel.call( this, model, attributes, render );
-        if( this.model ){
+        if( this.model && this.model.id ){
             this.log( 'checking for updates' );
             this.model.checkForUpdates();
         }
@@ -149,11 +149,13 @@ var CurrentHistoryView = _super.extend(
     /** listening for history events */
     _setUpModelListeners : function(){
         _super.prototype._setUpModelListeners.call( this );
-        // ---- history
         // re-broadcast any model change events so that listeners don't have to re-bind to each history
-        this.listenTo( this.model, 'change:nice_size change:size', function(){
-            this.trigger( 'history-size-change', this, this.model, arguments );
-        }, this );
+        return this.listenTo( this.model, {
+            'change:nice_size change:size' : function(){
+                this.trigger( 'history-size-change', this, this.model, arguments );
+            },
+            'change:id' : function(){ this.model.checkForUpdates(); }
+        });
     },
 
     // ------------------------------------------------------------------------ panel rendering

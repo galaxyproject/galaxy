@@ -58,6 +58,8 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         this.includeDeleted = options.includeDeleted || false;
         /** @type {Boolean} does this collection contain and fetch non-visible elements */
         this.includeHidden = options.includeHidden || false;
+
+        this.on( 'all', function(){ console.debug( arguments ); });
     },
 
     /** root api url */
@@ -72,16 +74,8 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     /** @type {String} order used here and when fetching from server */
     order : 'create_time',
 
-//TODO: generalize
     /** local comparator */
-    comparator : function _create_timeDsc( a, b ){
-        var createTimeA = a.get( 'create_time' );
-        var createTimeB = b.get( 'create_time' );
-        // console.log( 'comparator', createTimeA, createTimeB );
-        if( createTimeA > createTimeB ){ return  1; }
-        if( createTimeA < createTimeB ){ return  -1; }
-        return 0;
-    },
+    comparator : BASE_MVC.buildComparator( 'create_time', { ascending: false }),
 
     // ........................................................................ common queries
     /** Get the id of every model in this collection not in a 'ready' state (running).

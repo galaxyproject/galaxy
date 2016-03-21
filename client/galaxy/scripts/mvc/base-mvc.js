@@ -565,12 +565,13 @@ function wrapTemplate( template, jsonNamespace ){
 
 //==============================================================================
 /** Return a comparator function for sorted Collections */
-function buildComparator( attribute_name, isAsc ){
-    isAsc = isAsc? 1 : -1;
+function buildComparator( attribute_name, options ){
+    options = options || {};
+    var ascending = options.ascending? 1 : -1;
     return function __comparator( a, b ){
         a = a.get( attribute_name );
         b = b.get( attribute_name );
-        return ( a < b? -1 : ( a > b? 1 : 0 ) ) * isAsc;
+        return ( a < b? -1 : ( a > b? 1 : 0 ) ) * ascending;
     };
 }
 
