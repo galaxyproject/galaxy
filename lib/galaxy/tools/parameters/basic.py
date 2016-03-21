@@ -187,9 +187,10 @@ class ToolParameter( object, Dictifiable ):
         return value
 
     def validate( self, value, trans=None ):
-        if value != '' or not self.optional:
-            for validator in self.validators:
-                validator.validate( value, trans )
+        if value in ["", None] and self.optional:
+            return
+        for validator in self.validators:
+            validator.validate( value, trans )
 
     def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         """ to_dict tool parameter. This can be overridden by subclasses. """
