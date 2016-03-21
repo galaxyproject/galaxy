@@ -5,8 +5,6 @@
   </command>
   <configfiles>
     <configfile name="script">
-import os
-
 for i in range($collection_size):
     template = "File number %s\n"
     contents = template % i
@@ -25,7 +23,7 @@ for i in range($collection_size):
   <tests>
     <test>
       <param name="collection_size" value="2" />
-      <output_collection name="output" type="list">
+      <output_collection name="output" type="list" count="2">
         <element name="0">
           <assert_contents>
             <has_line line="File number 0" />
