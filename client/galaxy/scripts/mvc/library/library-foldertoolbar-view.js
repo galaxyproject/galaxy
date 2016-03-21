@@ -99,7 +99,7 @@ var FolderToolbarView = Backbone.View.extend({
   renderPaginator: function( options ){
       this.options = _.extend( this.options, options );
       var paginator_template = this.templatePaginator();
-      this.$el.find( '#folder_paginator' ).html( paginator_template({
+      $("body").find( '.folder-paginator' ).html( paginator_template({
           id: this.options.id,
           show_page: parseInt( this.options.show_page ),
           page_count: parseInt( this.options.page_count ),
@@ -1059,7 +1059,7 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push(' <div id="library_toolbar">');
     tmpl_array.push('<form class="form-inline" role="form">');
     tmpl_array.push('   <span><strong>DATA LIBRARIES</strong></span>');
-    tmpl_array.push('          <span id="folder_paginator" class="library-paginator">');
+    tmpl_array.push('          <span class="library-paginator folder-paginator">');
     // paginator will append here
     tmpl_array.push('          </span>');
     tmpl_array.push('<div class="checkbox toolbar-item logged-dataset-manipulation" style="height: 20px; display:none;">');
@@ -1119,6 +1119,8 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push(' <div id="folder_items_element">');
     tmpl_array.push(' </div>');
     tmpl_array.push('</div>');
+
+    tmpl_array.push('<div class="folder-paginator paginator-bottom"></div>');
     // CONTAINER END
 
     return _.template(tmpl_array.join(''));

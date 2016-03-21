@@ -75,4 +75,14 @@
         <columns>dbkey, name, value</columns>
         <file path="tool-data/liftOver.loc" />
     </table>
+    <!-- iobio bam servers -->
+    <table name="bam_iobio" comment_char="#">
+        <columns>value, name, url</columns>
+        <file path="tool-data/bam_iobio.loc" />
+    </table>
+    <!-- iobio vcf servers -->
+    <table name="vcf_iobio" comment_char="#">
+        <columns>value, name, url</columns>
+        <file path="tool-data/vcf_iobio.loc" />
+    </table>
 </tables>

@@ -33,8 +33,14 @@ do
             stop_daemon_arg_set=1
             shift
             ;;
-        --daemon|restart)
-            paster_args="$paster_args $1"
+        --daemon|--restart|restart)
+            if [ "$1"=="--restart" ]
+            then
+                paster_args="$paster_args restart"
+            else
+                paster_args="$paster_args $1"
+            fi
+
             daemon_or_restart_arg_set=1
             shift
             ;;

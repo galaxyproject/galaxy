@@ -1,15 +1,15 @@
+import json
 import logging
 import os
 import shutil
 
-from sqlalchemy import false, or_
 from six import string_types
+from sqlalchemy import false, or_
 
 import tool_shed.repository_types.util as rt_util
 from admin import AdminGalaxy
-from galaxy import web
-from galaxy import util
-from galaxy.util import json
+from galaxy import util, web
+from galaxy.tools.deps import views
 from galaxy.web.form_builder import CheckboxField
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.galaxy_install import install_manager
@@ -31,7 +31,6 @@ from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import workflow_util
 from tool_shed.util.web_util import escape
-from galaxy.tools.deps import views
 
 log = logging.getLogger( __name__ )
 

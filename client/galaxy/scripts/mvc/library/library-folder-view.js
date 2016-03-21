@@ -220,29 +220,22 @@ var FolderView = Backbone.View.extend({
     tmpl_array.push('   <a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>/permissions"><button data-toggle="tooltip" data-placement="top" title="Manage permissions" class="btn btn-default toolbtn_change_permissions primary-button" type="button"><span class="fa fa-group"></span> Permissions</span></button></a>');
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Share dataset" class="btn btn-default toolbtn-share-dataset primary-button" type="button"><span class="fa fa-share"></span> Share</span></button>');
     tmpl_array.push('  </div>');
-
-    // tmpl_array.push('<% if (item.get("is_unrestricted")) { %>');
     tmpl_array.push('  <p>');
     tmpl_array.push('  This dataset is unrestricted so everybody can access it. Just share the URL of this page. ');
     tmpl_array.push('  <button data-toggle="tooltip" data-placement="top" title="Copy to clipboard" class="btn btn-default btn-copy-link-to-clipboard primary-button" type="button"><span class="fa fa-clipboard"></span> To Clipboard</span></button> ');
     tmpl_array.push('  </p>');
-    // tmpl_array.push('<% } %>');
-
     tmpl_array.push('<div class="dataset_table">');
-
     tmpl_array.push('   <table class="grid table table-striped table-condensed">');
     tmpl_array.push('       <tr>');
     tmpl_array.push('           <th scope="row" id="id_row" data-id="<%= _.escape(item.get("ldda_id")) %>">Name</th>');
     tmpl_array.push('           <td><%= _.escape(item.get("name")) %></td>');
     tmpl_array.push('       </tr>');
-
     tmpl_array.push('   <% if (item.get("file_ext")) { %>');
     tmpl_array.push('       <tr>');
     tmpl_array.push('           <th scope="row">Data type</th>');
     tmpl_array.push('           <td><%= _.escape(item.get("file_ext")) %></td>');
     tmpl_array.push('       </tr>');
     tmpl_array.push('   <% } %>');
-
     tmpl_array.push('    </table>');
     tmpl_array.push('</div>');
 

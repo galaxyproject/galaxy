@@ -108,7 +108,7 @@ class TestInstallingCircularDependencies( ShedTwillTestCase ):
         self.display_installed_repository_manage_page( installed_filtering_repository )
         self.deactivate_repository( installed_filtering_repository )
         self.test_db_util.ga_refresh( installed_filtering_repository )
-        self.check_galaxy_repository_tool_panel_section( installed_filtering_repository, '' )
+        self.check_galaxy_repository_tool_panel_section( installed_filtering_repository, 'Get Data' )
         strings_displayed = [ 'Missing repository', 'filtering', 'freebayes_0040', 'user1', "Galaxy's freebayes tool for test 0040" ]
         self.display_installed_repository_manage_page( installed_freebayes_repository, strings_displayed=strings_displayed )
         self.check_galaxy_repository_db_status( filtering_repository_name,
@@ -133,7 +133,7 @@ class TestInstallingCircularDependencies( ShedTwillTestCase ):
         self.display_installed_repository_manage_page( installed_filtering_repository )
         self.deactivate_repository( installed_freebayes_repository )
         self.test_db_util.ga_refresh( installed_freebayes_repository )
-        self.check_galaxy_repository_tool_panel_section( installed_freebayes_repository, '' )
+        self.check_galaxy_repository_tool_panel_section( installed_freebayes_repository, 'Get Data' )
         strings_displayed = [ 'Missing repository', 'freebayes', 'filtering_0040', 'user1', "Galaxy's filtering tool for test 0040" ]
         self.display_installed_repository_manage_page( installed_filtering_repository, strings_displayed=strings_displayed )
         self.check_galaxy_repository_db_status( 'freebayes_0040',
@@ -148,7 +148,7 @@ class TestInstallingCircularDependencies( ShedTwillTestCase ):
         self.display_installed_repository_manage_page( installed_filtering_repository )
         self.deactivate_repository( installed_filtering_repository )
         self.test_db_util.ga_refresh( installed_filtering_repository )
-        self.check_galaxy_repository_tool_panel_section( installed_filtering_repository, '' )
+        self.check_galaxy_repository_tool_panel_section( installed_filtering_repository, 'Get Data' )
         strings_displayed = [ 'Missing repository', 'filtering', 'freebayes_0040', 'user1', "Galaxy's freebayes tool for test 0040" ]
         self.display_installed_repository_manage_page( installed_freebayes_repository, strings_displayed=strings_displayed )
         self.check_galaxy_repository_db_status( filtering_repository_name,

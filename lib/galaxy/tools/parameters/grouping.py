@@ -9,8 +9,6 @@ import os
 import StringIO
 import unicodedata
 from six import text_type
-
-from basic import ToolParameter
 from galaxy.datatypes import sniff
 from galaxy.util import inflector
 from galaxy.util import relpath
@@ -113,15 +111,6 @@ class Repeat( Group ):
                 raise e
         return rval
 
-    def visit_inputs( self, prefix, value, callback ):
-        for i, d in enumerate( value ):
-            for input in self.inputs.itervalues():
-                new_prefix = prefix + "%s_%d|" % ( self.name, i )
-                if isinstance( input, ToolParameter ):
-                    callback( new_prefix, input, d[input.name], parent=d )
-                else:
-                    input.visit_inputs( new_prefix, d[input.name], callback )
-
     def get_initial_value( self, trans, context ):
         rval = []
         for i in range( self.default ):
@@ -176,13 +165,6 @@ class Section( Group ):
             if not ignore_errors:
                 raise e
         return rval
-
-    def visit_inputs( self, prefix, value, callback ):
-        for input in self.inputs.itervalues():
-            if isinstance( input, ToolParameter ):
-                callback( prefix, input, value[input.name], parent=value )
-            else:
-                input.visit_inputs( prefix, value[input.name], callback )
 
     def get_initial_value( self, trans, context ):
         rval = {}
@@ -288,15 +270,6 @@ class UploadDataset( Group ):
                     rval_dict[ input.name ] = input.value_from_basic( d[input.name], app, ignore_errors )
             rval.append( rval_dict )
         return rval
-
-    def visit_inputs( self, prefix, value, callback ):
-        for i, d in enumerate( value ):
-            for input in self.inputs.itervalues():
-                new_prefix = prefix + "%s_%d|" % ( self.name, i )
-                if isinstance( input, ToolParameter ):
-                    callback( new_prefix, input, d[input.name], parent=d )
-                else:
-                    input.visit_inputs( new_prefix, d[input.name], callback )
 
     def get_initial_value( self, trans, context ):
         d_type = self.get_datatype( trans, context )
@@ -565,9 +538,9 @@ class Conditional( Group ):
 
     def value_to_basic( self, value, app ):
         rval = dict()
-        current_case = rval['__current_case__'] = value['__current_case__']
         rval[ self.test_param.name ] = self.test_param.value_to_basic( value[ self.test_param.name ], app )
-        for input in self.cases[current_case].inputs.itervalues():
+        current_case = rval[ '__current_case__' ] = self.get_current_case( value[ self.test_param.name ] )
+        for input in self.cases[ current_case ].inputs.itervalues():
             if input.name in value:  # parameter might be absent in unverified workflow
                 rval[ input.name ] = input.value_to_basic( value[ input.name ], app )
         return rval
@@ -575,36 +548,19 @@ class Conditional( Group ):
     def value_from_basic( self, value, app, ignore_errors=False ):
         rval = dict()
         try:
-            current_case = rval['__current_case__'] = value['__current_case__']
-            # Test param
-            if ignore_errors and self.test_param.name not in value:
-                # If ignoring errors, do nothing. However this is potentially very
-                # problematic since if we are missing the value of test param,
-                # the entire conditional is wrong.
-                pass
-            else:
-                rval[ self.test_param.name ] = self.test_param.value_from_basic( value[ self.test_param.name ], app, ignore_errors )
+            rval[ self.test_param.name ] = self.test_param.value_from_basic( value.get( self.test_param.name ), app, ignore_errors )
+            current_case = rval[ '__current_case__' ] = self.get_current_case( rval[ self.test_param.name ] )
             # Inputs associated with current case
-            for input in self.cases[current_case].inputs.itervalues():
-                if ignore_errors and input.name not in value:
-                    # If we do not have a value, and are ignoring errors, we simply
-                    # do nothing. There will be no value for the parameter in the
-                    # conditional's values dictionary.
-                    pass
-                else:
+            for input in self.cases[ current_case ].inputs.itervalues():
+                # If we do not have a value, and are ignoring errors, we simply
+                # do nothing. There will be no value for the parameter in the
+                # conditional's values dictionary.
+                if not ignore_errors or input.name in value:
                     rval[ input.name ] = input.value_from_basic( value[ input.name ], app, ignore_errors )
         except Exception, e:
             if not ignore_errors:
                 raise e
         return rval
-
-    def visit_inputs( self, prefix, value, callback ):
-        current_case = value['__current_case__']
-        for input in self.cases[current_case].inputs.itervalues():
-            if isinstance( input, ToolParameter ):
-                callback( prefix, input, value[input.name], parent=value )
-            else:
-                input.visit_inputs( prefix, value[input.name], callback )
 
     def get_initial_value( self, trans, context ):
         # State for a conditional is a plain dictionary.
@@ -632,10 +588,6 @@ class Conditional( Group ):
         cond_dict[ "cases" ] = map( nested_to_dict, self.cases )
         cond_dict[ "test_param" ] = nested_to_dict( self.test_param )
         return cond_dict
-
-    @property
-    def is_job_resource_conditional(self):
-        return self.name == "__job_resource"
 
 
 class ConditionalWhen( object, Dictifiable ):

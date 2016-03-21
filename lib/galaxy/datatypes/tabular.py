@@ -8,17 +8,16 @@ import gzip
 import logging
 import os
 import re
-import tempfile
 import subprocess
-
+import tempfile
 from cgi import escape
+from json import dumps
 
 from galaxy import util
 from galaxy.datatypes import data, metadata
-from galaxy.util.checkers import is_gzip
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers
-from galaxy.util.json import dumps
+from galaxy.util.checkers import is_gzip
 
 from . import dataproviders
 

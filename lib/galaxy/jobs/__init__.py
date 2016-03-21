@@ -1,13 +1,8 @@
 """
 Support for running a tool in Galaxy via an internal job management system
 """
-from abc import ABCMeta
-from abc import abstractmethod
-
-import time
 import copy
 import datetime
-import galaxy
 import logging
 import os
 import pwd
@@ -15,20 +10,23 @@ import random
 import shutil
 import subprocess
 import sys
+import time
 import traceback
+from abc import ABCMeta, abstractmethod
+from json import loads
+from xml.etree import ElementTree
+
+import galaxy
 from galaxy import model, util
-from galaxy.util.xml_macros import load
-from galaxy.datatypes import metadata
+from galaxy.datatypes import metadata, sniff
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import JobRunnerMapper
 from galaxy.jobs.runners import BaseJobRunner, JobState
+from galaxy.util import safe_makedirs, unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
-from galaxy.util.json import loads
-from galaxy.util import safe_makedirs
-from galaxy.util import unicodify
-from galaxy.datatypes import sniff
+from galaxy.util.xml_macros import load
 
 from .output_checker import check_output
 from .datasets import TaskPathRewriter
@@ -111,6 +109,15 @@ class JobConfiguration( object ):
     These features are configured in the job configuration, by default, ``job_conf.xml``
     """
     DEFAULT_NWORKERS = 4
+
+    JOB_RESOURCE_CONDITIONAL_XML = """<conditional name="__job_resource">
+        <param name="__job_resource__select" type="select" label="Job Resource Parameters">
+            <option value="no">Use default job resource parameters</option>
+            <option value="yes">Specify job resource parameters</option>
+        </param>
+        <when value="no"/>
+        <when value="yes"/>
+    </conditional>"""
 
     def __init__(self, app):
         """Parse the job configuration XML.
@@ -354,53 +361,44 @@ class JobConfiguration( object ):
 
         log.debug('Done loading job configuration')
 
-    def get_tool_resource_parameters( self, tool_id ):
+    def get_tool_resource_xml( self, tool_id, tool_type ):
         """ Given a tool id, return XML elements describing parameters to
         insert into job resources.
 
         :tool id: A tool ID (a string)
+        :tool type: A tool type (a string)
 
         :returns: List of parameter elements.
         """
-        fields = []
-
-        if not tool_id:
-            return fields
-
-        # TODO: Only works with exact matches, should handle different kinds of ids
-        # the way destination lookup does.
-        resource_group = None
-        if tool_id in self.tools:
-            resource_group = self.tools[ tool_id ][ 0 ].get_resource_group()
-        resource_group = resource_group or self.default_resource_group
-
-        if resource_group and resource_group in self.resource_groups:
-            fields_names = self.resource_groups[ resource_group ]
-            fields = [ self.resource_parameters[ n ] for n in fields_names ]
-
-        return fields
+        if tool_id and tool_type is 'default':
+            # TODO: Only works with exact matches, should handle different kinds of ids
+            # the way destination lookup does.
+            resource_group = None
+            if tool_id in self.tools:
+                resource_group = self.tools[ tool_id ][ 0 ].get_resource_group()
+            resource_group = resource_group or self.default_resource_group
+            if resource_group and resource_group in self.resource_groups:
+                fields_names = self.resource_groups[ resource_group ]
+                fields = [ self.resource_parameters[ n ] for n in fields_names ]
+                if fields:
+                    conditional_element = ElementTree.fromstring( self.JOB_RESOURCE_CONDITIONAL_XML )
+                    when_yes_elem = conditional_element.findall( 'when' )[ 1 ]
+                    for parameter in fields:
+                        when_yes_elem.append( parameter )
+                    return conditional_element
 
     def __parse_resource_parameters( self ):
-        if not os.path.exists( self.app.config.job_resource_params_file ):
-            return
-
-        resource_param_file = self.app.config.job_resource_params_file
-        try:
-            resource_definitions = util.parse_xml( resource_param_file )
-        except Exception as e:
-            raise config_exception(e, resource_param_file)
-
-        resource_definitions_root = resource_definitions.getroot()
-        # TODO: Also handling conditionals would be awesome!
-        for parameter_elem in resource_definitions_root.findall( "param" ):
-            name = parameter_elem.get( "name" )
-            # Considered prepending __job_resource_param__ here and then
-            # stripping it off when making it available to dynamic job
-            # destination. Not needed because resource parameters are wrapped
-            # in a conditional.
-            # # expanded_name = "__job_resource_param__%s" % name
-            # # parameter_elem.set( "name", expanded_name )
-            self.resource_parameters[ name ] = parameter_elem
+        if os.path.exists( self.app.config.job_resource_params_file ):
+            resource_param_file = self.app.config.job_resource_params_file
+            try:
+                resource_definitions = util.parse_xml( resource_param_file )
+            except Exception as e:
+                raise config_exception( e, resource_param_file )
+            resource_definitions_root = resource_definitions.getroot()
+            # TODO: Also handling conditionals would be awesome!
+            for parameter_elem in resource_definitions_root.findall( "param" ):
+                name = parameter_elem.get( "name" )
+                self.resource_parameters[ name ] = parameter_elem
 
     def __get_default(self, parent, names):
         """
@@ -771,6 +769,7 @@ class JobWrapper( object ):
         if use_persisted_destination:
             self.job_runner_mapper.cached_job_destination = JobDestination( from_job=job )
 
+        self.__commands_in_new_shell = self.app.config.commands_in_new_shell
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
 
@@ -803,13 +802,19 @@ class JobWrapper( object ):
     def shell(self):
         return self.job_destination.shell or getattr(self.app.config, 'default_job_shell', DEFAULT_JOB_SHELL)
 
+    def disable_commands_in_new_shell(self):
+        """Provide an extension point to disable this isolation,
+        Pulsar builds its own job script so this is not needed for
+        remote jobs."""
+        self.__commands_in_new_shell = False
+
     @property
     def strict_shell(self):
         return self.tool.strict_shell
 
     @property
     def commands_in_new_shell(self):
-        return self.app.config.commands_in_new_shell
+        return self.__commands_in_new_shell
 
     @property
     def galaxy_lib_dir(self):
@@ -1024,6 +1029,7 @@ class JobWrapper( object ):
 
             self.sa_session.add( job )
             self.sa_session.flush()
+        self._report_error_to_sentry()
         # Perform email action even on failure.
         for pja in [pjaa.post_job_action for pjaa in job.post_job_actions if pjaa.post_job_action.action_type == "EmailAction"]:
             ActionBox.execute(self.app, self.sa_session, pja, job)
@@ -1283,7 +1289,7 @@ class JobWrapper( object ):
                         dataset.extension = 'txt'
                 self.sa_session.add( dataset )
             if job.states.ERROR == final_job_state:
-                log.debug( "setting dataset state to ERROR" )
+                log.debug( "(%s) setting dataset %s state to ERROR", job.id, dataset_assoc.dataset.dataset.id )
                 # TODO: This is where the state is being set to error. Change it!
                 dataset_assoc.dataset.dataset.state = model.Dataset.states.ERROR
                 # Pause any dependent jobs (and those jobs' outputs)
@@ -1392,6 +1398,8 @@ class JobWrapper( object ):
             self._collect_metrics( job )
         self.sa_session.flush()
         log.debug( 'job %d ended (finish() executed in %s)' % (self.job_id, finish_timer) )
+        if job.state == job.states.ERROR:
+            self._report_error_to_sentry()
         cleanup_job = self.cleanup_job
         delete_files = cleanup_job == 'always' or ( job.state == job.states.OK and cleanup_job == 'onsuccess' )
         self.cleanup( delete_files=delete_files )
@@ -1740,6 +1748,28 @@ class JobWrapper( object ):
         if self.tool:
             return self.tool.requires_setting_metadata
         return False
+
+    def _report_error_to_sentry( self ):
+        job = self.get_job()
+        tool = self.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
+        if self.app.sentry_client and job.state == job.states.ERROR:
+            self.app.sentry_client.capture(
+                'raven.events.Message',
+                message="Galaxy Job Error: %s  v.%s" % (job.tool_id, job.tool_version),
+                extra={
+                    'info' : job.info,
+                    'id' : job.id,
+                    'command_line' : job.command_line,
+                    'stderr' : job.stderr,
+                    'traceback': job.traceback,
+                    'exit_code': job.exit_code,
+                    'stdout': job.stdout,
+                    'handler': job.handler,
+                    'user': self.user,
+                    'tool_version': job.tool_version,
+                    'tool_xml': tool.config_file if tool else None
+                }
+            )
 
 
 class TaskWrapper(JobWrapper):

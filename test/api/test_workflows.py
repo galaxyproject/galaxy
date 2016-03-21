@@ -46,7 +46,6 @@ steps:
             seed_source:
               seed_source_selector: set_seed
               seed: asdf
-              __current_case__: 1
     label: nested_workflow
     connect:
       inner_input: first_cat#out_file1
@@ -165,7 +164,7 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
         invocation_details = invocation_details_response.json()
         return invocation_details
 
-    def _run_jobs( self, has_workflow, history_id=None, wait=True, source_type=None, jobs_descriptions=None ):
+    def _run_jobs( self, has_workflow, history_id=None, wait=True, source_type=None, jobs_descriptions=None, expected_response=200, assert_ok=True ):
         def read_test_data(test_dict):
             test_data_resolver = TestDataResolver()
             filename = test_data_resolver.get_filename(test_dict["value"])
@@ -238,32 +237,25 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
             self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         url = "workflows/%s/usage" % ( workflow_id )
         invocation_response = self._post( url, data=workflow_request )
-        self._assert_status_code_is( invocation_response, 200 )
+        self._assert_status_code_is( invocation_response, expected_response )
         invocation = invocation_response.json()
-        invocation_id = invocation[ "id" ]
-        # Wait for workflow to become fully scheduled and then for all jobs
-        # complete.
-        if wait:
-            self._wait_for_workflow( workflow_id, invocation_id, history_id )
-        jobs = self._history_jobs( history_id )
-        return RunJobsSummary(
-            history_id=history_id,
-            workflow_id=workflow_id,
-            invocation_id=invocation_id,
-            inputs=inputs,
-            jobs=jobs,
-        )
-
-    def wait_for_invocation( self, workflow_id, invocation_id ):
-        self.workflow_populator.wait_for_invocation( workflow_id, invocation_id )
+        invocation_id = invocation.get( 'id' )
+        if invocation_id:
+            # Wait for workflow to become fully scheduled and then for all jobs
+            # complete.
+            if wait:
+                self.workflow_populator.wait_for_workflow( workflow_id, invocation_id, history_id, assert_ok=assert_ok )
+            jobs = self._history_jobs( history_id )
+            return RunJobsSummary(
+                history_id=history_id,
+                workflow_id=workflow_id,
+                invocation_id=invocation_id,
+                inputs=inputs,
+                jobs=jobs,
+            )
 
     def _history_jobs( self, history_id ):
         return self._get("jobs", { "history_id": history_id, "order_by": "create_time" } ).json()
-
-    def _wait_for_workflow( self, workflow_id, invocation_id, history_id, assert_ok=True ):
-        """ Wait for a workflow invocation to completely schedule and then history
-        to be complete. """
-        self.workflow_populator.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=assert_ok)
 
 
 # Workflow API TODO:
@@ -971,7 +963,6 @@ steps:
     seed_source:
       seed_source_selector: set_seed
       seed: asdf
-      __current_case__: 1
 test_data:
   test_input: "hello world"
 """, history_id=history_id, wait=False)
@@ -1009,13 +1000,13 @@ test_data:
     type: raw
 """, history_id=history_id, wait=True)
         time.sleep(10)
-        self.wait_for_invocation( run_summary.workflow_id, run_summary.invocation_id )
+        self.workflow_populator.wait_for_invocation( run_summary.workflow_id, run_summary.invocation_id )
         jobs = self._history_jobs( history_id )
         assert len(jobs) == 1
 
     def test_run_with_validated_parameter_connection_invalid( self ):
         history_id = self.dataset_populator.new_history()
-        run_summary = self._run_jobs("""
+        self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
   - label: text_input
@@ -1030,10 +1021,7 @@ test_data:
   text_input:
     value: ""
     type: raw
-""", history_id=history_id, wait=False)
-        self.wait_for_invocation( run_summary.workflow_id, run_summary.invocation_id )
-        jobs = self._history_jobs( history_id )
-        assert len(jobs) == 0
+""", history_id=history_id, wait=True, assert_ok=False )
 
     def test_run_with_text_connection( self ):
         history_id = self.dataset_populator.new_history()
@@ -1055,7 +1043,6 @@ steps:
       seed_source_selector: set_seed
       seed:
         $link: text_input
-      __current_case__: 1
 test_data:
   data_input:
     value: 1.bed
@@ -1070,9 +1057,9 @@ test_data:
         self.assertEquals("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
 
     def wait_for_invocation_and_jobs( self, history_id, workflow_id, invocation_id, assert_ok=True ):
-        self.wait_for_invocation( workflow_id, invocation_id )
+        self.workflow_populator.wait_for_invocation( workflow_id, invocation_id )
         time.sleep(.5)
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=assert_ok )
         time.sleep(.5)
 
     def test_cannot_run_inaccessible_workflow( self ):
@@ -1251,7 +1238,7 @@ steps:
         self.dataset_populator.wait_for_history( history_id )
         self.__review_paused_steps( workflow_id, invocation_id, order_index=2, action=True )
 
-        self._wait_for_workflow( workflow_id, invocation_id, history_id )
+        self.workflow_populator.wait_for_workflow( workflow_id, invocation_id, history_id )
         time.sleep( 1 )
         content = self.dataset_populator.get_history_dataset_details( history_id )
         assert content[ "name" ] == "foo was replaced", content[ "name" ]
@@ -1363,17 +1350,14 @@ steps:
     @skip_without_tool( "validation_repeat" )
     def test_workflow_import_state_validation_1( self ):
         history_id = self.dataset_populator.new_history()
-        run_summary = self._run_jobs("""
+        self._run_jobs("""
 class: GalaxyWorkflow
 steps:
  - tool_id: validation_repeat
    state:
      r2:
      - text: ""
-""", history_id=history_id, wait=False)
-        self.wait_for_invocation( run_summary.workflow_id, run_summary.invocation_id )
-        jobs = self._history_jobs( history_id )
-        assert len(jobs) == 0
+""", history_id=history_id, wait=False, expected_response=400 )
 
     def _run_validation_workflow_with_substitions( self, substitions ):
         workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_validation_1" )

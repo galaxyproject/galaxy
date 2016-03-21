@@ -656,6 +656,13 @@ nglims_config_file = tool-data/nglims.yaml
 # log_events and log_actions functionality will eventually be merged.
 #log_actions = True
 
+
+# Fluentd configuration.  Various events can be logged to the fluentd instance
+# configured below by enabling fluent_log.
+#fluent_log = False
+#fluent_host = localhost
+#fluent_port = 24224
+
 # Sanitize all HTML tool output.  By default, all tool output served as
 # 'text/html' will be sanitized thoroughly.  This can be disabled if you have
 # special tools that require unaltered output.  WARNING: disabling this does

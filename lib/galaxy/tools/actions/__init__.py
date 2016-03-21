@@ -1,15 +1,16 @@
 import json
 import re
+from json import dumps
+
 from six import string_types
 
+from galaxy import model
 from galaxy.exceptions import ObjectInvalid
 from galaxy.model import LibraryDatasetDatasetAssociation
-from galaxy import model
 from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter
 from galaxy.tools.parameters.wrapped import WrappedParameters
 from galaxy.tools.parameters import update_param
 from galaxy.util import ExecutionTimer
-from galaxy.util.json import dumps
 from galaxy.util.none_like import NoneDataset
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
@@ -50,7 +51,7 @@ class DefaultToolAction( object ):
             current_user_roles = trans.get_current_user_roles()
         input_datasets = odict()
 
-        def visitor( prefix, input, value, parent=None ):
+        def visitor( input, value, prefix, parent=None, **kwargs ):
 
             def process_dataset( data, formats=None ):
                 if not data:
@@ -98,12 +99,12 @@ class DefaultToolAction( object ):
                             else:
                                 raise Exception('A path for explicit datatype conversion has not been found: %s --/--> %s' % ( input_datasets[ prefix + input.name + str( i + 1 ) ].extension, conversion_extensions ) )
                         if parent:
-                            parent[input.name][i] = input_datasets[ prefix + input.name + str( i + 1 ) ]
+                            parent[ input.name ][ i ] = input_datasets[ prefix + input.name + str( i + 1 ) ]
                             for conversion_name, conversion_data in conversions:
                                 # allow explicit conversion to be stored in job_parameter table
-                                parent[ conversion_name ][i] = conversion_data.id  # a more robust way to determine JSONable value is desired
+                                parent[ conversion_name ][ i ] = conversion_data.id  # a more robust way to determine JSONable value is desired
                         else:
-                            param_values[input.name][i] = input_datasets[ prefix + input.name + str( i + 1 ) ]
+                            param_values[ input.name ][ i ] = input_datasets[ prefix + input.name + str( i + 1 ) ]
                             for conversion_name, conversion_data in conversions:
                                 # allow explicit conversion to be stored in job_parameter table
                                 param_values[ conversion_name ][i] = conversion_data.id  # a more robust way to determine JSONable value is desired
@@ -143,10 +144,6 @@ class DefaultToolAction( object ):
                     # Skipping implicit conversion stuff for now, revisit at
                     # some point and figure out if implicitly converting a
                     # dataset collection makes senese.
-
-                    # if i == 0:
-                    #    # Allow copying metadata to output, first item will be source.
-                    #    input_datasets[ prefix + input.name ] = data.dataset_instance
                     input_datasets[ prefix + input.name + str( i + 1 ) ] = data
 
         tool.visit_inputs( param_values, visitor )
@@ -160,7 +157,7 @@ class DefaultToolAction( object ):
 
         input_dataset_collections = dict()
 
-        def visitor( prefix, input, value, parent=None ):
+        def visitor( input, value, prefix, parent=None, **kwargs ):
             if isinstance( input, DataToolParameter ):
                 values = value
                 if not isinstance( values, list ):
@@ -322,7 +319,7 @@ class DefaultToolAction( object ):
             metadata_source = output.metadata_source
             if metadata_source:
                 if isinstance( metadata_source, string_types ):
-                    metadata_source = inp_data[metadata_source]
+                    metadata_source = inp_data.get( metadata_source )
 
             if metadata_source is not None:
                 data.init_meta( copy_from=metadata_source )
@@ -440,8 +437,9 @@ class DefaultToolAction( object ):
                 else:
                     handle_output_timer = ExecutionTimer()
                     handle_output( name, output )
-                    log.info("Handled output %s" % handle_output_timer)
+                    log.info("Handled output named %s for tool %s %s" % (name, tool.id, handle_output_timer))
 
+        add_datasets_timer = ExecutionTimer()
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
         datasets_to_persist = []
         for name in out_data.keys():
@@ -464,6 +462,8 @@ class DefaultToolAction( object ):
             child_dataset = out_data[ child_name ]
             parent_dataset.children.append( child_dataset )
 
+        log.info("Added output datasets to history %s" % add_datasets_timer)
+        job_setup_timer = ExecutionTimer()
         # Create the job object
         job, galaxy_session = self._new_job_for_session( trans, tool, history )
         self._record_inputs( trans, tool, job, incoming, inp_data, inp_dataset_collections, current_user_roles )
@@ -512,7 +512,12 @@ class DefaultToolAction( object ):
                     trans.sa_session.add(jtod)
             except Exception:
                 log.exception('Cannot remap rerun dependencies.')
+
+        log.info("Setup for job %s complete, ready to flush %s" % (job.log_str(), job_setup_timer))
+
+        job_flush_timer = ExecutionTimer()
         trans.sa_session.flush()
+        log.info("Flushed transaction for job %s %s" % (job.log_str(), job_flush_timer))
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
         # Examples include tools that redirect to other applications ( epigraph ).  These special tools must
         # include something that can be retrieved from the params ( e.g., REDIRECT_URL ) to keep the job
@@ -571,7 +576,7 @@ class DefaultToolAction( object ):
                     first_reduction = False
                     incoming[ name ] = []
                 if reduced:
-                    incoming[ name ].append( "__collection_reduce__|%s" % dataset_collection.id )
+                    incoming[ name ].append( dataset_collection )
                 # Should verify security? We check security of individual
                 # datasets below?
                 # TODO: verify can have multiple with same name, don't want to loose tracability
@@ -600,7 +605,8 @@ class DefaultToolAction( object ):
                     job.add_input_dataset( name, dataset_id=dataset.id )
             else:
                 job.add_input_dataset( name, None )
-        log.info("Verified access to datasets %s" % access_timer)
+        job_str = job.log_str()
+        log.info("Verified access to datasets for %s %s" % (job_str, access_timer))
 
     def get_output_name( self, output, dataset, tool, on_text, trans, incoming, history, params, job_params ):
         if output.label:

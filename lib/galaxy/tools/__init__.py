@@ -2,7 +2,6 @@
 Classes encapsulating galaxy tools and tool configuration.
 """
 
-import binascii
 import glob
 import json
 import logging
@@ -33,8 +32,7 @@ from galaxy.tools.parameters import params_to_incoming, check_param, params_from
 from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
                                            DataToolParameter, DataCollectionToolParameter, HiddenToolParameter,
-                                           SelectToolParameter, ToolParameter,
-                                           contains_workflow_parameter)
+                                           SelectToolParameter, ToolParameter)
 from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, Section, UploadDataset
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.test import parse_tests
@@ -49,7 +47,6 @@ from galaxy.util import unicodify
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
-from galaxy.util.hash_util import hmac_new
 from galaxy.util.json import json_fix
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
@@ -65,17 +62,6 @@ from .execute import execute as execute_job
 import galaxy.jobs
 
 log = logging.getLogger( __name__ )
-
-
-JOB_RESOURCE_CONDITIONAL_XML = """<conditional name="__job_resource">
-    <param name="__job_resource__select" type="select" label="Job Resource Parameters">
-        <option value="no">Use default job resource parameters</option>
-        <option value="yes">Specify job resource parameters</option>
-    </param>
-    <when value="no"></when>
-    <when value="yes">
-    </when>
-</conditional>"""
 
 HELP_UNINITIALIZED = threading.Lock()
 
@@ -137,27 +123,8 @@ class ToolBox( BaseGalaxyToolBox ):
             tool_type = tool_source.parse_tool_type()
             ToolClass = tool_types.get( tool_type )
         else:
-            # Normal tool - only insert dynamic resource parameters for these
-            # tools.
-            root = getattr( tool_source, "root", None )
-            # TODO: mucking with the XML directly like this is terrible,
-            # modify inputs directly post load if possible.
-            if root is not None and hasattr( self.app, "job_config" ):  # toolshed may not have job_config?
-                tool_id = root.get( 'id' )
-                parameters = self.app.job_config.get_tool_resource_parameters( tool_id )
-                if parameters:
-                    inputs = root.find('inputs')
-                    # If tool has not inputs, create some so we can insert conditional
-                    if inputs is None:
-                        inputs = ElementTree.fromstring( "<inputs></inputs>")
-                        root.append( inputs )
-                    # Insert a conditional allowing user to specify resource parameters.
-                    conditional_element = ElementTree.fromstring( JOB_RESOURCE_CONDITIONAL_XML )
-                    when_yes_elem = conditional_element.findall( "when" )[ 1 ]
-                    for parameter in parameters:
-                        when_yes_elem.append( parameter )
-                    inputs.append( conditional_element )
-
+            # Normal tool
+            root = getattr( tool_source, 'root', None )
             ToolClass = Tool
         tool = ToolClass( config_file, tool_source, self.app, guid=guid, repository_id=repository_id, **kwds )
         return tool
@@ -225,15 +192,14 @@ class ToolBox( BaseGalaxyToolBox ):
 class DefaultToolState( object ):
     """
     Keeps track of the state of a users interaction with a tool between
-    requests. The default tool state keeps track of the current page (for
-    multipage "wizard" tools) and the values of all
+    requests.
     """
     def __init__( self ):
         self.page = 0
         self.rerun_remap_job_id = None
         self.inputs = None
 
-    def encode( self, tool, app, secure=True ):
+    def encode( self, tool, app ):
         """
         Convert the data to a string
         """
@@ -242,26 +208,12 @@ class DefaultToolState( object ):
         value = params_to_strings( tool.inputs, self.inputs, app )
         value["__page__"] = self.page
         value["__rerun_remap_job_id__"] = self.rerun_remap_job_id
-        value = json.dumps( value )
-        # Make it secure
-        if secure:
-            a = hmac_new( app.config.tool_secret, value )
-            b = binascii.hexlify( value )
-            return "%s:%s" % ( a, b )
-        else:
-            return value
+        return json.dumps( value )
 
-    def decode( self, value, tool, app, secure=True ):
+    def decode( self, value, tool, app ):
         """
         Restore the state from a string
         """
-        if secure:
-            # Extract and verify hash
-            a, b = value.split( ":" )
-            value = binascii.unhexlify( b )
-            test = hmac_new( app.config.tool_secret, value )
-            assert a == test
-        # Restore from string
         values = json_fix( json.loads( value ) )
         self.page = values.pop( "__page__" )
         if '__rerun_remap_job_id__' in values:
@@ -272,13 +224,11 @@ class DefaultToolState( object ):
 
     def copy( self ):
         """
-        WARNING! Makes a shallow copy, *SHOULD* rework to have it make a deep
-        copy.
+        Shallow copy of the state
         """
         new_state = DefaultToolState()
         new_state.page = self.page
         new_state.rerun_remap_job_id = self.rerun_remap_job_id
-        # This need to be copied.
         new_state.inputs = self.inputs
         return new_state
 
@@ -339,6 +289,8 @@ class Tool( object, Dictifiable ):
         self.lineage_ids = []
         # populate toolshed repository info, if available
         self.populate_tool_shed_info()
+        # add tool resource parameters
+        self.populate_resource_parameters( tool_source )
         # Parse XML element containing configuration
         try:
             self.parse( tool_source, guid=guid )
@@ -547,8 +499,9 @@ class Tool( object, Dictifiable ):
             # Handle toolshed guids
             self_ids = [ self.id.lower(), self.id.lower().rsplit('/', 1)[0], self.old_id.lower() ]
         self.all_ids = self_ids
+
         # In the toolshed context, there is no job config.
-        if 'job_config' in dir(self.app):
+        if hasattr( self.app, 'job_config' ):
             self.job_tool_configurations = self.app.job_config.get_job_tool_configurations(self_ids)
 
         # Is this a 'hidden' tool (hidden in tool menu)
@@ -728,7 +681,8 @@ class Tool( object, Dictifiable ):
                 # Parse the actual parameters
                 # Handle multiple page case
             for page_source in pages.page_sources:
-                display, inputs = self.parse_input_page( page_source, enctypes )
+                inputs = self.parse_input_elem( page_source, enctypes )
+                display = page_source.parse_display()
                 self.inputs_by_page.append( inputs )
                 self.inputs.update( inputs )
                 self.display_by_page.append( display )
@@ -806,17 +760,6 @@ class Tool( object, Dictifiable ):
             if citation:
                 citations.append( citation )
         return citations
-
-    def parse_input_page( self, page_source, enctypes ):
-        """
-        Parse a page of inputs. This basically just calls 'parse_input_elem',
-        but it also deals with possible 'display' elements which are supported
-        only at the top/page level (not in groups).
-        """
-        inputs = self.parse_input_elem( page_source, enctypes )
-        # Display
-        display = page_source.parse_display()
-        return display, inputs
 
     def parse_input_elem( self, page_source, enctypes, context=None ):
         """
@@ -945,6 +888,17 @@ class Tool( object, Dictifiable ):
                 log.error("Could not find dependency '%s' of parameter '%s' in tool %s" % (name, param.name, self.name) )
             context[ name ].refresh_on_change = True
         return param
+
+    def populate_resource_parameters( self, tool_source ):
+        root = getattr( tool_source, 'root', None )
+        if root is not None and hasattr( self.app, 'job_config' ) and hasattr( self.app.job_config, 'get_tool_resource_xml' ):
+            resource_xml = self.app.job_config.get_tool_resource_xml( root.get( 'id' ), self.tool_type )
+            if resource_xml is not None:
+                inputs = root.find( 'inputs' )
+                if inputs is None:
+                    inputs = ElementTree.fromstring( '<inputs/>' )
+                    root.append( inputs )
+                inputs.append( resource_xml )
 
     def populate_tool_shed_info( self ):
         if self.repository_id is not None and self.app.name == 'galaxy':
@@ -1097,7 +1051,7 @@ class Tool( object, Dictifiable ):
                 return self.code_namespace[name]
         return None
 
-    def visit_inputs( self, value, callback ):
+    def visit_inputs( self, values, callback ):
         """
         Call the function `callback` on each parameter of this tool. Visits
         grouping parameters recursively and constructs unique prefixes for
@@ -1106,13 +1060,8 @@ class Tool( object, Dictifiable ):
         `callback( level_prefix, parameter, parameter_value )`
         """
         # HACK: Yet another hack around check_values -- WHY HERE?
-        if not self.check_values:
-            return
-        for input in self.inputs.itervalues():
-            if isinstance( input, ToolParameter ):
-                callback( "", input, value[input.name] )
-            else:
-                input.visit_inputs( "", value[input.name], callback )
+        if self.check_values:
+            visit_input_values( self.inputs, values, callback )
 
     def handle_input( self, trans, incoming, history=None ):
         """
@@ -1280,87 +1229,24 @@ class Tool( object, Dictifiable ):
         """
         messages = {}
         request_context = WorkRequestContext( app=trans.app, user=trans.user, history=trans.history, workflow_building_mode=workflow_building_mode )
-        self.check_and_update_param_values_helper( self.inputs, values, request_context, messages, update_values=update_values )
-        return messages
 
-    def check_and_update_param_values_helper( self, inputs, values, trans, messages, context=None, prefix="", update_values=True ):
-        """
-        Recursive helper for `check_and_update_param_values_helper`
-        """
-        context = ExpressionContext( values, context )
-        for input in inputs.itervalues():
-            # No value, insert the default
-            if input.name not in values:
-                if isinstance( input, Conditional ):
-                    cond_messages = {}
-                    if not input.is_job_resource_conditional:
-                        cond_messages = { input.test_param.name: "No value found for '%s%s', using default" % ( prefix, input.test_param.label ) }
-                        messages[ input.name ] = cond_messages
-                    test_value = input.test_param.get_initial_value( trans, context )
-                    current_case = input.get_current_case( test_value )
-                    self.check_and_update_param_values_helper( input.cases[ current_case ].inputs, {}, trans, cond_messages, context, prefix, update_values=update_values )
-                elif isinstance( input, Repeat ):
-                    if input.min:
-                        messages[ input.name ] = []
-                        for i in range( input.min ):
-                            rep_prefix = prefix + '%s %d > ' % ( input.title, i + 1 )
-                            rep_dict = dict()
-                            messages[ input.name ].append( rep_dict )
-                            self.check_and_update_param_values_helper( input.inputs, {}, trans, rep_dict, context, rep_prefix, update_values=update_values )
-                elif isinstance( input, Section ):
-                    messages[ input.name ] = {}
-                    self.check_and_update_param_values_helper( input.inputs, {}, trans, messages[ input.name ], context, prefix, update_values=update_values )
-                else:
-                    messages[ input.name ] = "No value found for '%s%s', using default" % ( prefix, input.label )
-                values[ input.name ] = input.get_initial_value( trans, context )
-            # Value, visit recursively as usual
-            else:
-                if isinstance( input, Repeat ):
-                    for i, d in enumerate( values[ input.name ] ):
-                        rep_prefix = prefix + '%s %d > ' % ( input.title, i + 1 )
-                        self.check_and_update_param_values_helper( input.inputs, d, trans, messages, context, rep_prefix, update_values=update_values )
-                elif isinstance( input, Conditional ):
-                    group_values = values[ input.name ]
-                    use_initial_value = False
-                    if '__current_case__' in group_values:
-                        if int( group_values[ '__current_case__' ] ) >= len( input.cases ):
-                            use_initial_value = True
-                    else:
-                        use_initial_value = True
-                    if input.test_param.name not in group_values or use_initial_value:
-                        # No test param invalidates the whole conditional
-                        values[ input.name ] = group_values = input.get_initial_value( trans, context )
-                        messages[ input.test_param.name ] = "No value found for '%s%s', using default" % ( prefix, input.test_param.label )
-                        current_case = group_values[ '__current_case__' ]
-                        for child_input in input.cases[current_case].inputs.itervalues():
-                            messages[ child_input.name ] = "Value no longer valid for '%s%s', replacing with default" % ( prefix, child_input.label )
-                    else:
-                        current = group_values[ '__current_case__' ]
-                        self.check_and_update_param_values_helper( input.cases[current].inputs, group_values, trans, messages, context, prefix, update_values=update_values )
-                elif isinstance( input, Section ):
-                    messages[ input.name ] = {}
-                    self.check_and_update_param_values_helper( input.inputs, values[ input.name ], trans, messages[ input.name ], context, prefix, update_values=update_values )
-                else:
-                    # Regular tool parameter, no recursion needed
+        def validate_inputs( input, value, error, parent, context, prefixed_name, prefixed_label, **kwargs ):
+            if not error:
+                value, error = check_param( request_context, input, value, context )
+            if error:
+                if update_values:
                     try:
-                        value = values[ input.name ]
-                        if not trans.workflow_building_mode:
-                            input.value_from_basic( input.value_to_basic( value, trans.app ), trans.app, ignore_errors=False )
-                            input.validate( value, trans )
-                        else:
-                            # skip check if is workflow parameters
-                            ck_param = True
-                            search = input.type in [ 'text' ]
-                            if trans.workflow_building_mode and contains_workflow_parameter( values[ input.name ], search=search ):
-                                ck_param = False
-                            # this will fail when a parameter's type has changed to a non-compatible one: e.g. conditional group changed to dataset input
-                            if ck_param:
-                                input.value_from_basic( input.value_to_basic( value, self.app ), self.app, ignore_errors=False )
+                        value = input.get_initial_value( request_context, context )
+                        if not prefixed_name.startswith( '__' ):
+                            messages[ prefixed_name ] = '%s Using default: \'%s\'.' % ( error, value )
+                        parent[ input.name ] = value
                     except:
-                        log.info( "Parameter validation failed.", exc_info=True )
-                        messages[ input.name ] = "Value no longer valid for '%s%s', replacing with default" % ( prefix, input.label )
-                        if update_values:
-                            values[ input.name ] = input.get_initial_value( trans, context )
+                        messages[ prefixed_name ] = 'Attempt to replace invalid value for \'%s\' failed.' % ( prefixed_label )
+                else:
+                    messages[ prefixed_name ] = error
+
+        visit_input_values( self.inputs, values, validate_inputs )
+        return messages
 
     def build_dependency_shell_commands( self, job_directory=None ):
         """Return a list of commands to be run to populate the current environment to include this tools requirements."""
@@ -1540,7 +1426,7 @@ class Tool( object, Dictifiable ):
         return output_collect.collect_dynamic_collections( self, output, **kwds )
 
     def to_archive(self):
-        tool = self.tool
+        tool = self
         tarball_files = []
         temp_files = []
         tool_xml = open( os.path.abspath( tool.config_file ), 'r' ).read()
@@ -1703,10 +1589,11 @@ class Tool( object, Dictifiable ):
 
         # load job parameters into incoming
         tool_message = ''
+        tool_warnings = ''
         if job:
             try:
                 job_params = job.get_param_values( self.app, ignore_errors=True )
-                self.check_and_update_param_values( job_params, request_context, update_values=False )
+                tool_warnings = self.check_and_update_param_values( job_params, request_context, update_values=False )
                 self._map_source_to_history( request_context, self.inputs, job_params )
                 tool_message = self._compare_tool_version( job )
                 params_to_incoming( kwd, self.inputs, job_params, self.app )
@@ -1715,68 +1602,6 @@ class Tool( object, Dictifiable ):
 
         # create parameter object
         params = galaxy.util.Params( kwd, sanitize=False )
-
-        # convert value to jsonifiable value
-        def jsonify(v):
-            # check if value is numeric
-            isnumber = False
-            try:
-                float(v)
-                isnumber = True
-            except Exception:
-                pass
-
-            # fix hda parsing
-            if isinstance(v, self.app.model.HistoryDatasetAssociation):
-                return {
-                    'id'  : trans.security.encode_id(v.id),
-                    'src' : 'hda'
-                }
-            elif isinstance(v, self.app.model.HistoryDatasetCollectionAssociation):
-                return {
-                    'id'  : trans.security.encode_id(v.id),
-                    'src' : 'hdca'
-                }
-            elif isinstance(v, self.app.model.LibraryDatasetDatasetAssociation):
-                return {
-                    'id'  : trans.security.encode_id(v.id),
-                    'name': v.name,
-                    'src' : 'ldda'
-                }
-            elif isinstance(v, bool):
-                if v is True:
-                    return 'true'
-                else:
-                    return 'false'
-            elif isinstance(v, string_types) or isnumber:
-                return v
-            elif isinstance(v, dict) and hasattr(v, '__class__'):
-                return v
-            else:
-                return None
-
-        # ensures that input dictionary is jsonifiable
-        def sanitize( dict, key='value' ):
-            # get current value
-            value = dict[key] if key in dict else None
-
-            # jsonify by type
-            if dict['type'] in ['data']:
-                if isinstance(value, list):
-                    value = [ jsonify(v) for v in value ]
-                else:
-                    value = [ jsonify(value) ]
-                if None in value:
-                    value = None
-                else:
-                    value = { 'values': value }
-            elif isinstance(value, list):
-                value = [ jsonify(v) for v in value ]
-            else:
-                value = jsonify(value)
-
-            # update and return
-            dict[key] = value
 
         # populates model from state
         def populate_model( inputs, state_inputs, group_inputs, other_values=None ):
@@ -1794,7 +1619,7 @@ class Tool( object, Dictifiable ):
                     tool_dict = input.to_dict( request_context )
                     if 'test_param' in tool_dict:
                         test_param = tool_dict[ 'test_param' ]
-                        test_param[ 'value' ] = jsonify( group_state.get( test_param[ 'name' ], input.test_param.get_initial_value( request_context, other_values ) ) )
+                        test_param[ 'value' ] = input.test_param.value_to_basic( group_state.get( test_param[ 'name' ], input.test_param.get_initial_value( request_context, other_values ) ), self.app )
                         test_param[ 'text_value' ] = input.test_param.value_to_display_text( test_param[ 'value' ], self.app )
                         for i in range( len( tool_dict['cases'] ) ):
                             current_state = {}
@@ -1807,28 +1632,13 @@ class Tool( object, Dictifiable ):
                 else:
                     try:
                         tool_dict = input.to_dict( request_context, other_values=other_values )
-                        tool_dict[ 'value' ] = state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) )
+                        tool_dict[ 'value' ] = input.value_to_basic( state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) ), self.app )
+                        tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ], self.app )
                     except Exception as e:
                         tool_dict = input.to_dict( request_context )
                         log.exception('tools::to_json() - Skipping parameter expansion \'%s\': %s.' % ( input.name, e ) )
                         pass
-                    tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ], self.app )
-                    sanitize( tool_dict, 'value' )
                 group_inputs[ input_index ] = tool_dict
-
-        # sanatizes tool state
-        def sanitize_state( state ):
-            keys = None
-            if isinstance( state, dict ):
-                keys = state
-            elif isinstance( state, list ):
-                keys = range( len( state ) )
-            if keys:
-                for k in keys:
-                    if isinstance( state[ k ], dict ) or isinstance( state[ k ], list ):
-                        sanitize_state( state[ k ] )
-                    else:
-                        state[ k ] = jsonify( state[ k ] )
 
         # expand incoming parameters (parameters might trigger multiple tool executions,
         # here we select the first execution only in order to resolve dynamic parameters)
@@ -1850,7 +1660,10 @@ class Tool( object, Dictifiable ):
         populate_model( self.inputs, state_inputs, tool_model[ 'inputs' ] )
 
         # sanitize tool state
-        sanitize_state( state_inputs )
+        def value_to_basic( input, value, parent, **kwargs ):
+            parent[ input.name ] = input.value_to_basic( value, self.app )
+
+        visit_input_values( self.inputs, state_inputs, value_to_basic )
 
         # create tool help
         tool_help = ''
@@ -1873,6 +1686,7 @@ class Tool( object, Dictifiable ):
             'biostar_url'   : self.app.config.biostar_url,
             'sharable_url'  : self.tool_shed_repository.get_sharable_url( self.app ) if self.tool_shed_repository else None,
             'message'       : tool_message,
+            'warnings'      : tool_warnings,
             'versions'      : tool_versions,
             'requirements'  : [ { 'name' : r.name, 'version' : r.version } for r in self.requirements ],
             'errors'        : state_errors,

@@ -7,6 +7,7 @@ import tarfile
 import tempfile
 import time
 import urllib
+from json import loads
 
 import twill.commands as tc
 from mercurial import commands, hg, ui
@@ -17,7 +18,6 @@ import galaxy.util
 import galaxy.webapps.tool_shed.util.hgweb_config
 from base.tool_shed_util import repository_installation_timeout
 from base.twilltestcase import TwillTestCase
-from galaxy.util.json import loads
 from galaxy.web import security
 from tool_shed.util import hg_util, xml_util
 from tool_shed.util.encoding_util import tool_shed_encode
@@ -540,10 +540,40 @@ class ShedTwillTestCase( TwillTestCase ):
             'Repository <b>%s</b> has been created' % name,
         ]
 
-    def export_capsule( self, repository ):
+    def export_capsule( self, repository, aggressive=False, includes_dependencies=None ):
+        # TODO: Remove this method and restore _exort_capsule as export_capsule
+        # after transient problem is fixed.
+        if not aggressive:
+            return self._export_capsule(repository, includes_dependencies=includes_dependencies)
+        else:
+            try:
+                return self._export_capsule(repository, includes_dependencies=includes_dependencies)
+            except Exception as original_error:
+                time.sleep(1)
+                capsule_filename = None
+                try:
+                    capsule_filename = self._export_capsule( repository )
+                except Exception:
+                    pass
+                if capsule_filename is None:
+                    log.info("Tried and retried to export capsule - this is a known issue with the test case - the test will fail.")
+                    raise original_error
+                else:
+                    raise Exception("Transient problem with export capsule test would be fixed with a sleep and retry")
+
+    def _export_capsule( self, repository, includes_dependencies=None ):
         url = '/repository/export?repository_id=%s&changeset_revision=%s' % \
             ( self.security.encode_id( repository.id ), self.get_repository_tip( repository ) )
         self.visit_url( url )
+        log.info( "Visited url %s looking for export capsule button" % url )
+        self.check_page_for_string( "Repository '" )
+        self.check_page_for_string( "Export" )
+        # Explicit check for True/False since None means we don't know if this
+        # includes dependencies and so we skip both checks...
+        if includes_dependencies is True:
+            self.check_page_for_string( "Export repository dependencies?" )
+        elif includes_dependencies is False:
+            self.check_page_for_string( "No repository dependencies are defined for revision" )
         self.submit_form( 'export_repository', 'export_repository_button' )
         fd, capsule_filename = tempfile.mkstemp()
         os.close( fd )

@@ -1,17 +1,15 @@
 import logging
 import math
+from json import dumps, loads
 
 from markupsafe import escape
-from six import text_type
-from six import string_types
-from sqlalchemy.sql.expression import and_, func, or_, null, false, true
+from six import string_types, text_type
+from sqlalchemy.sql.expression import and_, false, func, null, or_, true
 
 from galaxy.model.item_attrs import RuntimeException, UsesAnnotations, UsesItemRatings
 from galaxy.util import sanitize_text
-from galaxy.util.json import loads, dumps
 from galaxy.util.odict import odict
-from galaxy.web.framework import decorators
-from galaxy.web.framework import url_for
+from galaxy.web.framework import decorators, url_for
 from galaxy.web.framework.helpers import iff
 
 

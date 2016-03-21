@@ -5,6 +5,7 @@ Manager (galaxy.jobs.transfer_manager) and should not normally be invoked by
 hand.
 """
 import ConfigParser
+import json
 import logging
 import optparse
 import os
@@ -16,9 +17,6 @@ import threading
 import time
 import urllib2
 
-galaxy_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir ) )
-sys.path.insert( 1, os.path.join( galaxy_root, 'lib' ) )
-
 try:
     import pexpect
 except ImportError:
@@ -28,9 +26,12 @@ from daemon import DaemonContext
 from sqlalchemy import create_engine, MetaData, Table
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-import galaxy.model
-from galaxy.util import json, bunch
+galaxy_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir ) )
+sys.path.insert( 1, os.path.join( galaxy_root, 'lib' ) )
 
+import galaxy.model
+from galaxy.util import bunch
+from galaxy.util.json import jsonrpc_response, validate_jsonrpc_request
 
 PEXPECT_IMPORT_MESSAGE = ('The Python pexpect package is required to use this '
                           'feature, please install it')
@@ -134,9 +135,9 @@ class ListenerRequestHandler( SocketServer.BaseRequestHandler ):
     def handle( self ):
         request = self.request.recv( 8192 )
         response = {}
-        valid, request, response = json.validate_jsonrpc_request( request, ( 'get_state', ), () )
+        valid, request, response = validate_jsonrpc_request( request, ( 'get_state', ), () )
         if valid:
-            self.request.send( json.dumps( json.jsonrpc_response( request=request, result=self.server.state_result.result ) ) )
+            self.request.send( json.dumps( jsonrpc_response( request=request, result=self.server.state_result.result ) ) )
         else:
             error_msg = 'Unable to serve request: %s' % response['error']['message']
             if 'data' in response['error']:

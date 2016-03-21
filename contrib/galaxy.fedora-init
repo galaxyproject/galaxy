@@ -8,6 +8,8 @@
 # chkconfig: 2345 98 20
 # description: Galaxy http://galaxyproject.org/
 
+#--- loading functions
+. /etc/init.d/functions
 #--- config
 
 SERVICE_NAME="galaxy"
@@ -53,17 +55,17 @@ stop() {
 	echo "done."
 }
 
-status() {
-	echo -n "$SERVICE_NAME status: "
-	
-	while read pid; do
-		if [ "$(readlink -m /proc/$pid/cwd)" = "$(readlink -m $RUN_IN)" ]; then
-			echo "started"
-			return 0
-		fi
-	done < <(ps ax -o 'pid cmd' | grep -P '^\s*\d+ python ./scripts/paster.py serve' | awk '{print $1}')
-	echo "stopped"
-	return 3
+galaxy_status() {
+	if [[ $(grep '\[server:' $RUN_IN/config/galaxy.ini|awk -F'(:)|(])' '{ print $2 }') == 'main' ]]
+	then
+		echo -n "$SERVICE_NAME status: "
+		status -p $RUN_IN/paster.pid galaxy
+	else
+		for proc in $(grep '\[server:' $RUN_IN/config/galaxy.ini|awk -F'(:)|(])' '{ print $2 }')
+		do
+			status -p $RUN_IN/${proc}.pid ${proc}
+		done
+	fi
 }
 
 notsupported() {
@@ -90,7 +92,7 @@ case "$1" in
 		;;
 	status)
 		set +e
-		status
+		galaxy_status
 		exit $?
 		;;
 	'')
