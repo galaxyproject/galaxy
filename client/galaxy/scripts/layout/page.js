@@ -72,11 +72,11 @@ var PageLayoutView = Backbone.View.extend( BaseMVC.LoggableMixin ).extend({
     renderInactivityBox : function() {
         if( this.options.show_inactivity_warning ){
             var content = this.options.inactivity_box_content || '';
-            var verificationLink = $( '<a/>' ).attr( 'href', Galaxy.root + 'user/resend_verification' ).html( 'Resend verification.' );
+            var verificationLink = $( '<a/>' ).attr( 'href', Galaxy.root + 'user/resend_verification' ).text( 'Resend verification' );
             this.$el.addClass( 'has-inactivity-box' );
             this.$inactivebox
-                .html( content )
-                .append( ' ' + verificationLink )
+                .html( content + ' ' )
+                .append( verificationLink )
                 .toggle( !!content )
                 .show();
         } else {
