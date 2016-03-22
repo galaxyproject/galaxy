@@ -4,7 +4,7 @@ Migration script to support subworkflows and workflow request input parameters
 import datetime
 import logging
 
-from sqlalchemy import Column, Integer, ForeignKey, MetaData, Table
+from sqlalchemy import Column, Integer, ForeignKey, MetaData, Table, Index, ForeignKeyConstraint
 
 from galaxy.model.custom_types import TrimmedString, UUIDType, JSONType
 
@@ -15,22 +15,33 @@ metadata = MetaData()
 WorkflowInvocationToSubworkflowInvocationAssociation_table = Table(
     "workflow_invocation_to_subworkflow_invocation_association", metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "workflow_invocation_id", Integer, ForeignKey( "workflow_invocation.id" ), index=True ),
-    Column( "subworkflow_invocation_id", Integer, ForeignKey( "workflow_invocation.id" ), index=True ),
-    Column( "workflow_step_id", Integer, ForeignKey("workflow_step.id") ),
+    Column( "workflow_invocation_id", Integer ),
+    Column( "subworkflow_invocation_id", Integer ),
+    Column( "workflow_step_id", Integer ),
+    ForeignKeyConstraint(['workflow_invocation_id'], ['workflow_invocation.id'], name='fk_wfi_swi_wfi'),
+    ForeignKeyConstraint(['subworkflow_invocation_id'], ['workflow_invocation.id'], name='fk_wfi_swi_swi'),
+    ForeignKeyConstraint(['workflow_step_id'], ['workflow_step.id'], name='fk_wfi_swi_ws')
 )
 
-WorkflowRequestInputStepParmeter_table = Table(
+WorkflowRequestInputStepParameter_table = Table(
     "workflow_request_input_step_parameter", metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "workflow_invocation_id", Integer, ForeignKey( "workflow_invocation.id" ), index=True ),
-    Column( "workflow_step_id", Integer, ForeignKey("workflow_step.id") ),
+    Column( "workflow_invocation_id", Integer ),
+    Column( "workflow_step_id", Integer ),
     Column( "parameter_value", JSONType ),
+    ForeignKeyConstraint(['workflow_invocation_id'], ['workflow_invocation.id'], name='fk_wfreq_isp_wfi'),
+    ForeignKeyConstraint(['workflow_step_id'], ['workflow_step.id'], name='fk_wfreq_isp_ws')
 )
 
 TABLES = [
     WorkflowInvocationToSubworkflowInvocationAssociation_table,
-    WorkflowRequestInputStepParmeter_table,
+    WorkflowRequestInputStepParameter_table,
+]
+
+INDEXES = [
+    Index( "ix_wfinv_swfinv_wfi", WorkflowInvocationToSubworkflowInvocationAssociation_table.c.workflow_invocation_id),
+    Index( "ix_wfinv_swfinv_swfi", WorkflowInvocationToSubworkflowInvocationAssociation_table.c.subworkflow_invocation_id),
+    Index( "ix_wfreq_inputstep_wfi", WorkflowRequestInputStepParameter_table.c.workflow_invocation_id)
 ]
 
 
@@ -38,16 +49,17 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
-
-    subworkflow_id_column = Column( "subworkflow_id", Integer, ForeignKey("workflow.id"), nullable=True )
+    if migrate_engine.name in ['postgres', 'postgresql']:
+        subworkflow_id_column = Column( "subworkflow_id", Integer, ForeignKey("workflow.id"), nullable=True )
+        input_subworkflow_step_id_column = Column( "input_subworkflow_step_id", Integer, ForeignKey("workflow_step.id"), nullable=True )
+        parent_workflow_id_column = Column( "parent_workflow_id", Integer, ForeignKey("workflow.id"), nullable=True )
+    else:
+        subworkflow_id_column = Column( "subworkflow_id", Integer, nullable=True )
+        input_subworkflow_step_id_column = Column( "input_subworkflow_step_id", Integer, nullable=True )
+        parent_workflow_id_column = Column( "parent_workflow_id", Integer, nullable=True )
     __add_column( subworkflow_id_column, "workflow_step", metadata )
-
-    input_subworkflow_step_id_column = Column( "input_subworkflow_step_id", Integer, ForeignKey("workflow_step.id"), nullable=True )
     __add_column( input_subworkflow_step_id_column, "workflow_step_connection", metadata )
-
-    parent_workflow_id_column = Column( "parent_workflow_id", Integer, ForeignKey("workflow.id"), nullable=True )
     __add_column( parent_workflow_id_column, "workflow", metadata )
-
     workflow_output_label_column = Column( "label", TrimmedString(255) )
     workflow_output_uuid_column = Column( "uuid", UUIDType, nullable=True )
     __add_column( workflow_output_label_column, "workflow_output", metadata )
@@ -58,6 +70,7 @@ def upgrade(migrate_engine):
     __alter_column("workflow", "stored_workflow_id", metadata, nullable=True)
 
     for table in TABLES:
+        # Indexes are automatically created when the tables are.
         __create(table)
 
 
@@ -66,14 +79,12 @@ def downgrade(migrate_engine):
     metadata.reflect()
 
     __drop_column( "subworkflow_id", "workflow_step", metadata )
-    __drop_column( "parent_workflow_id", "workflow_step", metadata )
+    __drop_column( "parent_workflow_id", "workflow", metadata )
 
     __drop_column( "input_subworkflow_step_id", "workflow_step_connection", metadata )
 
     __drop_column( "label", "workflow_output", metadata )
     __drop_column( "uuid", "workflow_output", metadata )
-
-    __alter_column("workflow", "stored_workflow_id", metadata, nullable=False)
 
     for table in TABLES:
         __drop(table)
