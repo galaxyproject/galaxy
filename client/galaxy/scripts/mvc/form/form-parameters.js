@@ -3,7 +3,7 @@
 */
 define(['utils/utils',
         'mvc/ui/ui-misc',
-        'mvc/form/form-select-content',
+        'mvc/ui/ui-select-content',
         'mvc/ui/ui-select-library',
         'mvc/ui/ui-select-ftp',
         'mvc/ui/ui-color-picker'],
@@ -54,7 +54,7 @@ define(['utils/utils',
         */
         _fieldData: function( input_def ) {
             var self = this;
-            return new SelectContent.View( this.app, {
+            return new SelectContent.View({
                 id          : 'field-' + input_def.id,
                 extensions  : input_def.extensions,
                 optional    : input_def.optional,
