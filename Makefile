@@ -16,11 +16,11 @@ all: help
 	@echo "This makefile is primarily used for building Galaxy's JS client. A sensible all target is not yet implemented."
 
 docs: ## generate Sphinx HTML documentation, including API docs
-	$(IN_VENV) $(MAKE) -C docs clean
-	$(IN_VENV) $(MAKE) -C docs html
+	$(IN_VENV) $(MAKE) -C doc clean
+	$(IN_VENV) $(MAKE) -C doc html
 
 _open-docs:
-	open docs/_build/html/index.html || xdg-open docs/_build/html/index.html
+	open doc/_build/html/index.html || xdg-open doc/_build/html/index.html
 
 open-docs: docs _open-docs ## generate Sphinx HTML documentation and open in browser
 
