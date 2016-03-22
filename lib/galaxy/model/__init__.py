@@ -1173,7 +1173,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         dataset.history = self
         if genome_build not in [None, '?']:
             self.genome_build = genome_build
-        self.datasets.append( dataset )
+        dataset.history_id = self.id
         return dataset
 
     def add_datasets( self, sa_session, datasets, parent_id=None, genome_build=None, set_hid=True, quota=True, flush=False ):
@@ -1208,7 +1208,8 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             dataset.history = self
             if set_genome:
                 self.genome_build = genome_build
-        self.datasets.extend( datasets )
+        for dataset in datasets:
+            dataset.history_id = self.id
         return datasets
 
     def add_dataset_collection( self, history_dataset_collection, set_hid=True ):
