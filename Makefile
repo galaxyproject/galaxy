@@ -30,22 +30,22 @@ open-project: ## open project on github
 lint: ## check style using tox and flake8 for Python 2 and Python 3
 	$(IN_VENV) tox -e py27-lint && tox -e py34-lint
 
-release-issue:
+release-issue: ## Create release issue on github
 	$(IN_VENV) python scripts/bootstrap_history.py --create-release-issue $(RELEASE_CURR)
 
 release-check-metadata: ## check github PR metadata for target release
 	$(IN_VENV) python scripts/bootstrap_history.py --check-release $(RELEASE_CURR)
 
-release-check-blocking-issues:
+release-check-blocking-issues: ## Check github for release blocking issues
 	$(IN_VENV) python scripts/bootstrap_history.py --check-blocking-issues $(RELEASE_CURR)
 
-release-check-blocking-prs:
+release-check-blocking-prs: ## Check github for release blocking PRs
 	$(IN_VENV) python scripts/bootstrap_history.py --check-blocking-prs $(RELEASE_CURR)
 
 release-bootstrap-history: ## bootstrap history for a new release
 	$(IN_VENV) python scripts/bootstrap_history.py --release $(RELEASE_CURR)
 
-npm-deps:
+npm-deps: ## Install NodeJS dependencies.
 	cd client && npm install
 
 grunt: npm-deps ## Calls out to Grunt to build client
