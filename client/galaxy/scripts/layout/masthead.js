@@ -29,7 +29,6 @@ var View = Backbone.View.extend({
 
         // scratchbook
         Galaxy.frame = this.frame = new Scratchbook( { collection: this.collection } );
-        $( 'body' ).append( this.frame.$el );
 
         // set up the quota meter (And fetch the current user data from trans)
         // add quota meter to masthead
