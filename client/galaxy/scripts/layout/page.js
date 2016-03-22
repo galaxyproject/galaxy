@@ -32,7 +32,7 @@ var PageLayoutView = Backbone.View.extend( BaseMVC.LoggableMixin ).extend({
         Galaxy.modal = this.modal = new Modal.View();
         this.masthead = new Masthead.View( this.options.config );
         this.$el.attr( 'scroll', 'no' );
-        this.$el.append( this._template() );
+        this.$el.html( this._template() );
         this.$el.append( this.masthead.$el );
         this.$el.append( this.modal.$el );
         this.$messagebox = this.$( '#messagebox' );
