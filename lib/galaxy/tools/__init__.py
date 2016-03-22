@@ -1753,11 +1753,25 @@ class Tool( object, Dictifiable ):
                     rep_prefix = '%s_%d|' % ( key, rep_index )
                     self.populate_state( request_context, input.inputs, incoming, rep_state, errors, prefix=rep_prefix, context=context )
             else:
-                param_value = incoming.get( key, state.get( input.name ) )
+                param_value = self._get_incoming_value( incoming, key, state.get( input.name ) )
                 value, error = check_param( request_context, input, param_value, context )
                 if error:
                     errors[ key ] = error
                 state[ input.name ] = value
+
+    def _get_incoming_value( self, incoming, key, default ):
+        """
+        Fetch value from incoming dict directly or check special nginx upload
+        created variants of this key.
+        """
+        if '__' + key + '__is_composite' in incoming:
+            composite_keys = incoming[ '__' + key + '__keys' ].split()
+            value = dict()
+            for composite_key in composite_keys:
+                value[ composite_key ] = incoming[ key + '_' + composite_key ]
+            return value
+        else:
+            return incoming.get( key, default )
 
     def _get_job_remap( self, job):
         if job:
