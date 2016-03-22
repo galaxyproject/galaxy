@@ -17,21 +17,21 @@ all: help
 
 help:
 	@echo "client - rebuild all client artifacts"
-	@echo "docs - generate Sphinx HTML documentation, including API docs"
-	@echo "open-docs - generate Sphinx HTML documentation and open in browser"
+	@echo "doc - generate Sphinx HTML documentation, including API docs"
+	@echo "open-doc - generate Sphinx HTML documentation and open in browser"
 	@echo "open-project - open project on github"
 	@echo "lint - check style using tox and flake8 for Python 2 and Python 3"
 	@echo "release-check-metadata - check github PR metadata for target release"
 	@echo "release-bootstrap-history - bootstrap history for a new release"
 
-docs:
-	$(IN_VENV) $(MAKE) -C docs clean
-	$(IN_VENV) $(MAKE) -C docs html
+doc:
+	$(IN_VENV) $(MAKE) -C doc clean
+	$(IN_VENV) $(MAKE) -C doc html
 
-_open-docs:
-	open docs/_build/html/index.html || xdg-open docs/_build/html/index.html
+_open-doc:
+	open doc/_build/html/index.html || xdg-open doc/_build/html/index.html
 
-open-docs: docs _open-docs
+open-doc: doc _open-doc
 
 open-project:
 	open $(PROJECT_URL) || xdg-open $(PROJECT_URL)
