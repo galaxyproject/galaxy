@@ -15,46 +15,37 @@ GRUNT_DOCKER_NAME:=galaxy/client-builder:16.01
 all: help
 	@echo "This makefile is primarily used for building Galaxy's JS client. A sensible all target is not yet implemented."
 
-help:
-	@echo "client - rebuild all client artifacts"
-	@echo "docs - generate Sphinx HTML documentation, including API docs"
-	@echo "open-docs - generate Sphinx HTML documentation and open in browser"
-	@echo "open-project - open project on github"
-	@echo "lint - check style using tox and flake8 for Python 2 and Python 3"
-	@echo "release-check-metadata - check github PR metadata for target release"
-	@echo "release-bootstrap-history - bootstrap history for a new release"
-
-docs:
-	$(IN_VENV) $(MAKE) -C docs clean
-	$(IN_VENV) $(MAKE) -C docs html
+docs: ## generate Sphinx HTML documentation, including API docs
+	$(IN_VENV) $(MAKE) -C doc clean
+	$(IN_VENV) $(MAKE) -C doc html
 
 _open-docs:
-	open docs/_build/html/index.html || xdg-open docs/_build/html/index.html
+	open doc/_build/html/index.html || xdg-open doc/_build/html/index.html
 
-open-docs: docs _open-docs
+open-docs: docs _open-docs ## generate Sphinx HTML documentation and open in browser
 
-open-project:
+open-project: ## open project on github
 	open $(PROJECT_URL) || xdg-open $(PROJECT_URL)
 
-lint:
+lint: ## check style using tox and flake8 for Python 2 and Python 3
 	$(IN_VENV) tox -e py27-lint && tox -e py34-lint
 
-release-issue:
+release-issue: ## Create release issue on github
 	$(IN_VENV) python scripts/bootstrap_history.py --create-release-issue $(RELEASE_CURR)
 
-release-check-metadata:
+release-check-metadata: ## check github PR metadata for target release
 	$(IN_VENV) python scripts/bootstrap_history.py --check-release $(RELEASE_CURR)
 
-release-check-blocking-issues:
+release-check-blocking-issues: ## Check github for release blocking issues
 	$(IN_VENV) python scripts/bootstrap_history.py --check-blocking-issues $(RELEASE_CURR)
 
-release-check-blocking-prs:
+release-check-blocking-prs: ## Check github for release blocking PRs
 	$(IN_VENV) python scripts/bootstrap_history.py --check-blocking-prs $(RELEASE_CURR)
 
-release-bootstrap-history:
+release-bootstrap-history: ## bootstrap history for a new release
 	$(IN_VENV) python scripts/bootstrap_history.py --release $(RELEASE_CURR)
 
-npm-deps:
+npm-deps: ## Install NodeJS dependencies.
 	cd client && npm install
 
 grunt: npm-deps ## Calls out to Grunt to build client
@@ -66,7 +57,7 @@ style: npm-deps ## Calls the style task of Grunt
 webpack: npm-deps ## Pack javascript
 	cd client && node_modules/webpack/bin/webpack.js -p
 
-client: grunt style webpack ## Process all client-side tasks
+client: grunt style webpack ## Rebuild all client-side artifacts
 
 grunt-docker-image: ## Build docker image for running grunt
 	docker build -t ${GRUNT_DOCKER_NAME} client
