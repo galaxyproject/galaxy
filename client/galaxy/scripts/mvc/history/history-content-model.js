@@ -3,21 +3,12 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( STATES, BASE_MVC, _l ){
-
 'use strict';
-
-var logNamespace = 'history';
-//==============================================================================
-/** How the type_id attribute is built for the history's mixed contents collection */
-var typeIdStr = function _typeIdStr( type, id ){
-    return [ type, id ].join( '-' );
-};
 
 //==============================================================================
 /** @class Mixin for HistoryContents content (HDAs, HDCAs).
  */
 var HistoryContentMixin = {
-//TODO:?? into true Backbone.Model?
 
     /** default attributes for a model */
     defaults : {
@@ -32,40 +23,17 @@ var HistoryContentMixin = {
     },
 
     // ........................................................................ mixed content element
-//TODO: there's got to be a way to move this into HistoryContents - if we can do that, this class might not be needed
     // In order to be part of a MIXED bbone collection, we can't rely on the id
     //  (which may collide btwn models of different classes)
-    // Build a new id (type_id) that prefixes the history_content_type so the bbone collection can differentiate
+    // Instead, use type_id which prefixes the history_content_type so the bbone collection can differentiate
     idAttribute : 'type_id',
-
-    /** override constructor to build type_id and insert into original attributes */
-    constructor : function( attrs, options ){
-        attrs.type_id = typeIdStr( attrs.history_content_type, attrs.id );
-        this.debug( 'HistoryContentMixin.constructor:', attrs.type_id );
-        Backbone.Model.apply( this, arguments );
-    },
-
-    /** object level fn for building the type_id string */
-    _typeIdStr : function(){
-        return typeIdStr( this.get( 'history_content_type' ), this.get( 'id' ) );
-    },
-
-    /** add listener to re-create type_id when the id changes */
-    initialize : function( attrs, options ){
-        this.on( 'change:id', this._createTypeId );
-    },
-
-    /** set the type_id in the model attributes */
-    _createTypeId : function(){
-        this.set( 'type_id', this._typeIdStr() );
-    },
 
     /** override because backbone tests boolean( idAttribute ), but it's not an empty string even for new models
      *  due to our use of type_id.
      */
-    isNew : function(){
-        return !this.get( 'id' );
-    },
+    // isNew : function(){
+    //     return !this.get( 'id' );
+    // },
 
     // ........................................................................ common queries
     /** the more common alias of visible */
@@ -79,7 +47,6 @@ var HistoryContentMixin = {
      *  @param {Boolean} show_hidden are we showing hidden hdas?
      */
     isVisible : function( show_deleted, show_hidden ){
-//TODO:?? Another unfortunate name collision
         var isVisible = true;
         if( ( !show_deleted )
         &&  ( this.get( 'deleted' ) || this.get( 'purged' ) ) ){
@@ -93,8 +60,7 @@ var HistoryContentMixin = {
     },
 
     // ........................................................................ ajax
-//TODO: global
-//TODO: these are probably better done on the leaf classes
+    //TODO?: these are probably better done on the leaf classes
     /** history content goes through the 'api/histories' API */
     urlRoot: Galaxy.root + 'api/histories/',
 
@@ -117,31 +83,14 @@ var HistoryContentMixin = {
     },
 
     // ........................................................................ misc
-    /** String representation */
     toString : function(){
-        var nameAndId = this.get( 'id' ) || '';
-        if( this.get( 'name' ) ){
-            nameAndId = this.get( 'hid' ) + ' :"' + this.get( 'name' ) + '",' + nameAndId;
-        }
-        return 'HistoryContent(' + nameAndId + ')';
+        return ([ this.get( 'type_id' ), this.get( 'hid' ), this.get( 'name' ) ].join(':'));
     }
 };
 
 
 //==============================================================================
-//TODO: needed?
-/** @class (Concrete/non-mixin) base model for content items.
- */
-var HistoryContent = Backbone.Model
-        .extend( BASE_MVC.LoggableMixin )
-        .extend( HistoryContentMixin )
-        .extend({ _logNamespace : logNamespace });
-
-
-//==============================================================================
     return {
-        typeIdStr           : typeIdStr,
-        HistoryContentMixin : HistoryContentMixin,
-        HistoryContent      : HistoryContent
+        HistoryContentMixin : HistoryContentMixin
     };
 });

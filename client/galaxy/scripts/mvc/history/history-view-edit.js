@@ -99,25 +99,34 @@ var HistoryViewEdit = _super.extend(
     },
 
     // ------------------------------------------------------------------------ listeners
+    /** listening for history and HDA events */
+    _setUpModelListeners : function(){
+        _super.prototype._setUpModelListeners.call( this );
+        this.listenTo( this.model, 'change:size', this.updateHistoryDiskSize );
+        return this;
+    },
+
     /** listening for collection events */
     _setUpCollectionListeners : function(){
         _super.prototype._setUpCollectionListeners.call( this );
-
         this.listenTo( this.collection, {
             'change:deleted': this._handleHdaDeletionChange,
             'change:visible': this._handleHdaVisibleChange,
             'change:purged' : function( model ){
                 // hafta get the new nice-size w/o the purged model
                 this.model.fetch();
-            }
+            },
+            // loading indicators for deleted/hidden
+            'fetching-deleted'      : function( collection ){
+                this.$( '> .controls .toggle-deleted-link' ).parent()
+                    .html( '<i>' + _l( 'loading deleted...' ) + '</i>' );
+            },
+            'fetching-hidden'       : function( collection ){
+                this.$( '> .controls .toggle-hidden-link' ).parent()
+                    .html( '<i>' + _l( 'loading hidden...' ) + '</i>' );
+            },
+            'fetching-deleted-done fetching-hidden-done'  : this._renderCounts,
         });
-        return this;
-    },
-
-    /** listening for history and HDA events */
-    _setUpModelListeners : function(){
-        _super.prototype._setUpModelListeners.call( this );
-        this.listenTo( this.model, 'change:size', this.updateHistoryDiskSize );
         return this;
     },
 
@@ -315,9 +324,16 @@ var HistoryViewEdit = _super.extend(
      *  @param {Model} the item model to check
      */
     _handleHdaDeletionChange : function( itemModel ){
+        var contentsShown = this.model.get( 'contents_shown' );
         if( itemModel.get( 'deleted' ) && !this.showDeleted ){
             this.removeItemView( itemModel );
+            contentsShown.shown -= 1;
+            contentsShown.deleted += 1;
+        } else {
+            contentsShown.shown += 1;
+            contentsShown.deleted -= 1;
         }
+        this.model.set( 'contents_shown', contentsShown );
         this._renderCounts();
     },
 
@@ -325,9 +341,16 @@ var HistoryViewEdit = _super.extend(
      *  @param {Model} the item model to check
      */
     _handleHdaVisibleChange : function( itemModel ){
+        var contentsShown = this.model.get( 'contents_shown' );
         if( itemModel.hidden() && !this.showHidden ){
             this.removeItemView( itemModel );
+            contentsShown.shown -= 1;
+            contentsShown.hidden += 1;
+        } else {
+            contentsShown.shown += 1;
+            contentsShown.hidden -= 1;
         }
+        this.model.set( 'contents_shown', contentsShown );
         this._renderCounts();
     },
 
@@ -500,7 +523,7 @@ var HistoryViewEdit = _super.extend(
 HistoryViewEdit.prototype.templates = (function(){
 
     var countsTemplate = BASE_MVC.wrapTemplate([
-        '<%- history.contents_shown.shown %> ', _l( 'shown' ),
+        '<%- view.views.length %> ', _l( 'shown' ),
         '<% if( history.contents_shown.deleted ){ %>',
             '<% if( view.showDeleted ){ %>',
                 ', <a class="toggle-deleted-link" href="javascript:void(0);">',

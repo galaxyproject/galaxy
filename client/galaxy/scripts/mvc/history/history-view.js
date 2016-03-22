@@ -149,6 +149,14 @@ var HistoryView = _super.extend(
         });
     },
 
+    /** Override to reset web storage when the id changes (since it needs the id) */
+    _setUpCollectionListeners : function(){
+        _super.prototype._setUpCollectionListeners.call( this );
+        return this.listenTo( this.collection, {
+            // 'all' : function(){ console.log( this.collection + ':', arguments ); },
+        });
+    },
+
     // ------------------------------------------------------------------------ browser stored prefs
     /** Set up client side storage. Currently PersistanStorage keyed under 'history:<id>'
      *  @see PersistentStorage
@@ -281,40 +289,40 @@ var HistoryView = _super.extend(
         'click .messages [class$=message]'  : 'clearMessages'
     }),
 
-    /** Handle the user toggling the deleted visibility by:
-     *      (1) storing the new value in the persistent storage
-     *      (2) re-rendering the history
+    /** Toggle and store the deleted visibility and re-render items
      * @returns {Boolean} new show_deleted setting
      */
     toggleShowDeleted : function( show, store ){
         show = ( show !== undefined )?( show ):( !this.showDeleted );
         store = ( store !== undefined )?( store ):( true );
-        this.showDeleted = show;
+        var self = this;
+
+        self.showDeleted = show;
+        self.trigger( 'show-deleted', show );
+        var whenFetched = show? self.model.contents.fetchDeleted({ silent: true }) : jQuery.when();
+        whenFetched.done( function(){ self.renderItems(); });
         if( store ){
-            this.storage.set( 'show_deleted', show );
+            self.storage.set( 'show_deleted', show );
         }
-        //TODO:?? to events on storage('change:show_deleted')
-        this.renderItems();
-        this.trigger( 'show-deleted', show );
-        return this.showDeleted;
+        return self.showDeleted;
     },
 
-    /** Handle the user toggling the hidden visibility by:
-     *      (1) storing the new value in the persistent storage
-     *      (2) re-rendering the history
+    /** Toggle and store whether to render explicity hidden contents
      * @returns {Boolean} new show_hidden setting
      */
     toggleShowHidden : function( show, store ){
         show = ( show !== undefined )?( show ):( !this.showHidden );
         store = ( store !== undefined )?( store ):( true );
-        this.showHidden = show;
+
+        var self = this;
+        self.showHidden = show;
+        self.trigger( 'show-hidden', show );
+        var whenFetched = show? self.model.contents.fetchHidden({ silent: true }) : jQuery.when();
+        whenFetched.done( function(){ self.renderItems(); });
         if( store ){
-            this.storage.set( 'show_hidden', show );
+            self.storage.set( 'show_hidden', show );
         }
-        //TODO:?? to events on storage('change:show_deleted')
-        this.renderItems();
-        this.trigger( 'show-hidden', show );
-        return this.showHidden;
+        return self.showHidden;
     },
 
     /** On the first search, if there are no details - load them, then search */

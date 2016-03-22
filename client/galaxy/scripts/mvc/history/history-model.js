@@ -1,11 +1,12 @@
 
 define([
     "mvc/history/history-contents",
+    "mvc/history/history-preferences",
     "mvc/base/controlled-fetch-collection",
     "utils/utils",
     "mvc/base-mvc",
     "utils/localization"
-], function( HISTORY_CONTENTS, CONTROLLED_FETCH_COLLECTION, UTILS, BASE_MVC, _l ){
+], function( HISTORY_CONTENTS, HISTORY_PREFS, CONTROLLED_FETCH_COLLECTION, UTILS, BASE_MVC, _l ){
 'use strict';
 
 //==============================================================================
@@ -241,7 +242,13 @@ var History = Backbone.Model
         // fetch history then use history data to fetch (paginated) contents
         return this.fetch( options ).pipe( function getContents( history ){
             self.contents.historyId = history.id;
-            // reset the update time
+            // now that we have a history id, we can read the prefs
+            // and make the contents fetch based on those
+            var prefs = HISTORY_PREFS.HistoryPrefs.get( history.id ).toJSON();
+            self.contents.includeDeleted = prefs.show_deleted;
+            self.contents.includeHidden = prefs.show_hidden;
+
+            // we're updating, reset the update time
             self.lastUpdateTime = new Date();
 
             contentsOptions.reset = true;

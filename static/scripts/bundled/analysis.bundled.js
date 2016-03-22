@@ -13339,21 +13339,6 @@ webpackJsonp([0,1],[
 	    },
 	
 	    // ------------------------------------------------------------------------ history/content event listening
-	    /** listening for collection events */
-	    _setUpCollectionListeners : function(){
-	        _super.prototype._setUpCollectionListeners.call( this );
-	
-	        //TODO:?? may not be needed? see history-view-edit, 369
-	        // if a hidden item is created (gen. by a workflow), moves thru the updater to the ready state,
-	        //  then: remove it from the collection if the panel is set to NOT show hidden datasets
-	        this.listenTo( this.collection, 'state:ready', function( model, newState, oldState ){
-	            if( ( !model.get( 'visible' ) )
-	            &&  ( !this.storage.get( 'show_hidden' ) ) ){
-	                this.removeItemView( model );
-	            }
-	        });
-	    },
-	
 	    /** listening for history events */
 	    _setUpModelListeners : function(){
 	        _super.prototype._setUpModelListeners.call( this );
@@ -13364,6 +13349,20 @@ webpackJsonp([0,1],[
 	            },
 	            'change:id' : function(){
 	                this.once( 'loading-done', function(){ this.model.checkForUpdates(); });
+	            }
+	        });
+	    },
+	
+	    /** listening for collection events */
+	    _setUpCollectionListeners : function(){
+	        _super.prototype._setUpCollectionListeners.call( this );
+	        //TODO:?? may not be needed? see history-view-edit, 369
+	        // if a hidden item is created (gen. by a workflow), moves thru the updater to the ready state,
+	        //  then: remove it from the collection if the panel is set to NOT show hidden datasets
+	        this.listenTo( this.collection, 'state:ready', function( model, newState, oldState ){
+	            if( ( !model.get( 'visible' ) )
+	            &&  ( !this.storage.get( 'show_hidden' ) ) ){
+	                this.removeItemView( model );
 	            }
 	        });
 	    },
@@ -13675,11 +13674,12 @@ webpackJsonp([0,1],[
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, jQuery, _, $) {
 	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! mvc/history/history-contents */ 66),
-	    __webpack_require__(/*! mvc/base/controlled-fetch-collection */ 69),
+	    __webpack_require__(/*! mvc/history/history-preferences */ 74),
+	    __webpack_require__(/*! mvc/base/controlled-fetch-collection */ 67),
 	    __webpack_require__(/*! utils/utils */ 21),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7)
-	], __WEBPACK_AMD_DEFINE_RESULT__ = function( HISTORY_CONTENTS, CONTROLLED_FETCH_COLLECTION, UTILS, BASE_MVC, _l ){
+	], __WEBPACK_AMD_DEFINE_RESULT__ = function( HISTORY_CONTENTS, HISTORY_PREFS, CONTROLLED_FETCH_COLLECTION, UTILS, BASE_MVC, _l ){
 	'use strict';
 	
 	//==============================================================================
@@ -13915,7 +13915,13 @@ webpackJsonp([0,1],[
 	        // fetch history then use history data to fetch (paginated) contents
 	        return this.fetch( options ).pipe( function getContents( history ){
 	            self.contents.historyId = history.id;
-	            // reset the update time
+	            // now that we have a history id, we can read the prefs
+	            // and make the contents fetch based on those
+	            var prefs = HISTORY_PREFS.HistoryPrefs.get( history.id ).toJSON();
+	            self.contents.includeDeleted = prefs.show_deleted;
+	            self.contents.includeHidden = prefs.show_hidden;
+	
+	            // we're updating, reset the update time
 	            self.lastUpdateTime = new Date();
 	
 	            contentsOptions.reset = true;
@@ -14144,13 +14150,12 @@ webpackJsonp([0,1],[
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, jQuery, Backbone) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/history/history-content-model */ 67),
-	    __webpack_require__(/*! mvc/base/controlled-fetch-collection */ 69),
-	    __webpack_require__(/*! mvc/history/hda-model */ 70),
+	    __webpack_require__(/*! mvc/base/controlled-fetch-collection */ 67),
+	    __webpack_require__(/*! mvc/history/hda-model */ 68),
 	    __webpack_require__(/*! mvc/history/hdca-model */ 72),
 	    __webpack_require__(/*! mvc/history/history-preferences */ 74),
 	    __webpack_require__(/*! mvc/base-mvc */ 5)
-	], __WEBPACK_AMD_DEFINE_RESULT__ = function( HISTORY_CONTENT, CONTROLLED_FETCH_COLLECTION, HDA_MODEL, HDCA_MODEL, HISTORY_PREFS, BASE_MVC ){
+	], __WEBPACK_AMD_DEFINE_RESULT__ = function( CONTROLLED_FETCH_COLLECTION, HDA_MODEL, HDCA_MODEL, HISTORY_PREFS, BASE_MVC ){
 	'use strict';
 	
 	//==============================================================================
@@ -14204,7 +14209,7 @@ webpackJsonp([0,1],[
 	        /** @type {Boolean} does this collection contain and fetch non-visible elements */
 	        this.includeHidden = options.includeHidden || false;
 	
-	        this.on( 'all', function(){ console.debug( arguments ); });
+	        this.on( 'all', function(){ console.debug( this + ', event:', arguments ); });
 	    },
 	
 	    /** root api url */
@@ -14286,29 +14291,13 @@ webpackJsonp([0,1],[
 	    fetch : function( options ){
 	        options = options || {};
 	        if( this.historyId && !options.details ){
-	// TODO: here?
-	            var expandedIds = HISTORY_PREFS.HistoryPrefs.get( this.historyId ).get( 'expandedIds' );
-	            options.details = _.values( expandedIds ).join( ',' );
+	            var prefs = HISTORY_PREFS.HistoryPrefs.get( this.historyId ).toJSON();
+	            options.details = _.values( prefs.expandedIds ).join( ',' );
 	        }
 	        return _super.prototype.fetch.call( this, options );
 	    },
 	
 	    // ............. ControlledFetch stuff
-	    /** override to filter requested contents to those updated after the Date 'since' */
-	    fetchUpdated : function( since, options ){
-	        if( since ){
-	            options = options || { filters: {} };
-	            options.filters = {
-	                'update_time-ge' : since.toISOString()
-	            };
-	        }
-	        console.log( 'fetching updated:', this.historyId, since );
-	        return this.fetch( options )
-	            // .done( function( r ){ console.log( 'updated:\n', JSON.stringify( r ) ); })
-	            .done( function( r ){ console.log( 'updated:', r.length, r ); })
-	        ;
-	    },
-	
 	    /**  */
 	    _buildFetchData : function( options ){
 	        return _.extend( _super.prototype._buildFetchData.call( this, options ), {
@@ -14327,7 +14316,7 @@ webpackJsonp([0,1],[
 	
 	    /**  */
 	    _buildFetchFilters : function( options ){
-	        var superFilters = _super.prototype._buildFetchFilters( this, options ) || {};
+	        var superFilters = _super.prototype._buildFetchFilters.call( this, options ) || {};
 	        var filters = {};
 	        if( !this.includeDeleted ){
 	            filters.deleted = false;
@@ -14337,6 +14326,47 @@ webpackJsonp([0,1],[
 	            filters.visible = true;
 	        }
 	        return _.defaults( superFilters, filters );
+	    },
+	
+	    /** override to filter requested contents to those updated after the Date 'since' */
+	    fetchUpdated : function( since, options ){
+	        if( since ){
+	            options = options || { filters: {} };
+	            options.filters = {
+	                'update_time-ge' : since.toISOString(),
+	                // workflows will produce hidden datasets (non-output datasets) that still
+	                // need to be updated in the collection or they'll update forever
+	                // we can remove the default visible filter by using an 'empty' value
+	                visible          : ''
+	            };
+	        }
+	        console.log( 'fetching updated:', this.historyId, since );
+	        return this.fetch( options )
+	            // .done( function( r ){ console.log( 'updated:\n', JSON.stringify( r ) ); })
+	            .done( function( r ){ console.log( 'updated:', r.length, r ); })
+	        ;
+	    },
+	
+	    /**  */
+	    fetchDeleted : function( options ){
+	        var self = this;
+	        self.trigger( 'fetching-deleted', self );
+	        return self.fetch( _.extend( options || {}, { filters : {
+	            // all deleted, purged or not
+	            deleted : true,
+	            purged  : undefined
+	
+	        }})).always( function(){ self.trigger( 'fetching-deleted-done', self ); });
+	    },
+	
+	    /**  */
+	    fetchHidden : function( options ){
+	        var self = this;
+	        self.trigger( 'fetching-hidden', self );
+	        return self.fetch( _.extend( options || {}, { filters : {
+	            visible : false
+	
+	        }})).always( function(){ self.trigger( 'fetching-hidden-done', self ); });
 	    },
 	
 	    /** fetch detailed model data for all contents in this collection */
@@ -14461,18 +14491,6 @@ webpackJsonp([0,1],[
 	    },
 	
 	    // ........................................................................ misc
-	    /** override to ensure type id is set */
-	//TODO: needed now?
-	    set : function( models, options ){
-	        models = _.isArray( models )? models : [ models ];
-	        _.each( models, function( model ){
-	            if( !model.type_id || !model.get || !model.get( 'type_id' ) ){
-	                model.type_id = HISTORY_CONTENT.typeIdStr( model.history_content_type, model.id );
-	            }
-	        });
-	        Backbone.Collection.prototype.set.call( this, models, options );
-	    },
-	
 	    /** In this override, copy the historyId to the clone */
 	    clone : function(){
 	        var clone = Backbone.Collection.prototype.clone.call( this );
@@ -14485,7 +14503,7 @@ webpackJsonp([0,1],[
 	         return ([ 'HistoryContents(', [ this.historyId, this.length ].join(), ')' ].join( '' ));
 	    }
 	});
-	window.HistoryContents = HistoryContents;
+	
 	
 	//==============================================================================
 	    return {
@@ -14497,234 +14515,6 @@ webpackJsonp([0,1],[
 
 /***/ },
 /* 67 */
-/*!*************************************************************!*\
-  !*** ./galaxy/scripts/mvc/history/history-content-model.js ***!
-  \*************************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, jQuery) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/dataset/states */ 68),
-	    __webpack_require__(/*! mvc/base-mvc */ 5),
-	    __webpack_require__(/*! utils/localization */ 7)
-	], __WEBPACK_AMD_DEFINE_RESULT__ = function( STATES, BASE_MVC, _l ){
-	
-	'use strict';
-	
-	var logNamespace = 'history';
-	//==============================================================================
-	/** How the type_id attribute is built for the history's mixed contents collection */
-	var typeIdStr = function _typeIdStr( type, id ){
-	    return [ type, id ].join( '-' );
-	};
-	
-	//==============================================================================
-	/** @class Mixin for HistoryContents content (HDAs, HDCAs).
-	 */
-	var HistoryContentMixin = {
-	//TODO:?? into true Backbone.Model?
-	
-	    /** default attributes for a model */
-	    defaults : {
-	        /** parent (containing) history */
-	        history_id          : null,
-	        /** some content_type (HistoryContents can contain mixed model classes) */
-	        history_content_type: null,
-	        /** indicating when/what order the content was generated in the context of the history */
-	        hid                 : null,
-	        /** whether the user wants the content shown (visible) */
-	        visible             : true
-	    },
-	
-	    // ........................................................................ mixed content element
-	//TODO: there's got to be a way to move this into HistoryContents - if we can do that, this class might not be needed
-	    // In order to be part of a MIXED bbone collection, we can't rely on the id
-	    //  (which may collide btwn models of different classes)
-	    // Build a new id (type_id) that prefixes the history_content_type so the bbone collection can differentiate
-	    idAttribute : 'type_id',
-	
-	    /** override constructor to build type_id and insert into original attributes */
-	    constructor : function( attrs, options ){
-	        attrs.type_id = typeIdStr( attrs.history_content_type, attrs.id );
-	        this.debug( 'HistoryContentMixin.constructor:', attrs.type_id );
-	        Backbone.Model.apply( this, arguments );
-	    },
-	
-	    /** object level fn for building the type_id string */
-	    _typeIdStr : function(){
-	        return typeIdStr( this.get( 'history_content_type' ), this.get( 'id' ) );
-	    },
-	
-	    /** add listener to re-create type_id when the id changes */
-	    initialize : function( attrs, options ){
-	        this.on( 'change:id', this._createTypeId );
-	    },
-	
-	    /** set the type_id in the model attributes */
-	    _createTypeId : function(){
-	        this.set( 'type_id', this._typeIdStr() );
-	    },
-	
-	    /** override because backbone tests boolean( idAttribute ), but it's not an empty string even for new models
-	     *  due to our use of type_id.
-	     */
-	    isNew : function(){
-	        return !this.get( 'id' );
-	    },
-	
-	    // ........................................................................ common queries
-	    /** the more common alias of visible */
-	    hidden : function(){
-	        return !this.get( 'visible' );
-	    },
-	
-	    /** based on show_deleted, show_hidden (gen. from the container control),
-	     *      would this ds show in the list of ds's?
-	     *  @param {Boolean} show_deleted are we showing deleted hdas?
-	     *  @param {Boolean} show_hidden are we showing hidden hdas?
-	     */
-	    isVisible : function( show_deleted, show_hidden ){
-	//TODO:?? Another unfortunate name collision
-	        var isVisible = true;
-	        if( ( !show_deleted )
-	        &&  ( this.get( 'deleted' ) || this.get( 'purged' ) ) ){
-	            isVisible = false;
-	        }
-	        if( ( !show_hidden )
-	        &&  ( !this.get( 'visible' ) ) ){
-	            isVisible = false;
-	        }
-	        return isVisible;
-	    },
-	
-	    // ........................................................................ ajax
-	//TODO: global
-	//TODO: these are probably better done on the leaf classes
-	    /** history content goes through the 'api/histories' API */
-	    urlRoot: Galaxy.root + 'api/histories/',
-	
-	    /** full url spec. for this content */
-	    url : function(){
-	        var url = this.urlRoot + this.get( 'history_id' ) + '/contents/'
-	             + this.get('history_content_type') + 's/' + this.get( 'id' );
-	        return url;
-	    },
-	
-	    /** save this content as not visible */
-	    hide : function( options ){
-	        if( !this.get( 'visible' ) ){ return jQuery.when(); }
-	        return this.save( { visible: false }, options );
-	    },
-	    /** save this content as visible */
-	    unhide : function( options ){
-	        if( this.get( 'visible' ) ){ return jQuery.when(); }
-	        return this.save( { visible: true }, options );
-	    },
-	
-	    // ........................................................................ misc
-	    /** String representation */
-	    toString : function(){
-	        var nameAndId = this.get( 'id' ) || '';
-	        if( this.get( 'name' ) ){
-	            nameAndId = this.get( 'hid' ) + ' :"' + this.get( 'name' ) + '",' + nameAndId;
-	        }
-	        return 'HistoryContent(' + nameAndId + ')';
-	    }
-	};
-	
-	
-	//==============================================================================
-	//TODO: needed?
-	/** @class (Concrete/non-mixin) base model for content items.
-	 */
-	var HistoryContent = Backbone.Model
-	        .extend( BASE_MVC.LoggableMixin )
-	        .extend( HistoryContentMixin )
-	        .extend({ _logNamespace : logNamespace });
-	
-	
-	//==============================================================================
-	    return {
-	        typeIdStr           : typeIdStr,
-	        HistoryContentMixin : HistoryContentMixin,
-	        HistoryContent      : HistoryContent
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
-
-/***/ },
-/* 68 */
-/*!**********************************************!*\
-  !*** ./galaxy/scripts/mvc/dataset/states.js ***!
-  \**********************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	], __WEBPACK_AMD_DEFINE_RESULT__ = function(){
-	
-	'use strict';
-	//==============================================================================
-	/** Map of possible HDA/collection/job states to their string equivalents.
-	 *      A port of galaxy.model.Dataset.states.
-	 */
-	var STATES = {
-	    // NOT ready states
-	    /** is uploading and not ready */
-	    UPLOAD              : 'upload',
-	    /** the job that will produce the dataset queued in the runner */
-	    QUEUED              : 'queued',
-	    /** the job that will produce the dataset is running */
-	    RUNNING             : 'running',
-	    /** metadata for the dataset is being discovered/set */
-	    SETTING_METADATA    : 'setting_metadata',
-	
-	    // ready states
-	    /** was created without a tool */
-	    NEW                 : 'new',
-	    /** has no data */
-	    EMPTY               : 'empty',
-	    /** has successfully completed running */
-	    OK                  : 'ok',
-	
-	    /** the job that will produce the dataset paused */
-	    PAUSED              : 'paused',
-	    /** metadata discovery/setting failed or errored (but otherwise ok) */
-	    FAILED_METADATA     : 'failed_metadata',
-	//TODO: not in trans.app.model.Dataset.states - is in database
-	    /** not accessible to the current user (i.e. due to permissions) */
-	    NOT_VIEWABLE        : 'noPermission',
-	    /** deleted while uploading */
-	    DISCARDED           : 'discarded',
-	    /** the tool producing this dataset failed */
-	    ERROR               : 'error'
-	};
-	
-	STATES.READY_STATES = [
-	    STATES.OK,
-	    STATES.EMPTY,
-	    STATES.PAUSED,
-	    STATES.FAILED_METADATA,
-	    STATES.NOT_VIEWABLE,
-	    STATES.DISCARDED,
-	    STATES.ERROR
-	];
-	
-	STATES.NOT_READY_STATES = [
-	    STATES.UPLOAD,
-	    STATES.QUEUED,
-	    STATES.RUNNING,
-	    STATES.SETTING_METADATA,
-	    STATES.NEW
-	];
-	
-	
-	//==============================================================================
-	    return STATES;
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 69 */
 /*!****************************************************************!*\
   !*** ./galaxy/scripts/mvc/base/controlled-fetch-collection.js ***!
   \****************************************************************/
@@ -14823,6 +14613,8 @@ webpackJsonp([0,1],[
 	            qv : []
 	        };
 	        _.each( filters, function( v, k ){
+	            // don't send if filter value is empty
+	            if( v === undefined || v === '' ){ return; }
 	            // json to python
 	            if( v === true ){ v = 'True'; }
 	            if( v === false ){ v = 'False'; }
@@ -14936,19 +14728,18 @@ webpackJsonp([0,1],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
-/* 70 */
+/* 68 */
 /*!*************************************************!*\
   !*** ./galaxy/scripts/mvc/history/hda-model.js ***!
   \*************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/dataset/dataset-model */ 71),
-	    __webpack_require__(/*! mvc/history/history-content-model */ 67),
+	    __webpack_require__(/*! mvc/dataset/dataset-model */ 69),
+	    __webpack_require__(/*! mvc/history/history-content-model */ 71),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( DATASET, HISTORY_CONTENT, BASE_MVC, _l ){
-	
 	'use strict';
 	
 	//==============================================================================
@@ -14959,38 +14750,10 @@ webpackJsonp([0,1],[
 	var HistoryDatasetAssociation = _super.extend( BASE_MVC.mixin( hcontentMixin,
 	/** @lends HistoryDatasetAssociation.prototype */{
 	
-	    /** logger used to record this.log messages, commonly set to console */
-	    //logger              : console,
-	
-	    // because all objects have constructors (as this hashmap would even if this next line wasn't present)
-	    //  the constructor in hcontentMixin won't be attached by BASE_MVC.mixin to this model
-	    //  - re-apply manually it now
-	    /** call the mixin constructor */
-	    constructor : function( attrs, options ){
-	        hcontentMixin.constructor.call( this, attrs, options );
-	    },
-	
 	    /** default attributes for a model */
 	    defaults : _.extend( {}, _super.prototype.defaults, hcontentMixin.defaults, {
 	        model_class         : 'HistoryDatasetAssociation'
 	    }),
-	
-	    /** Set up the model, determine if accessible, bind listeners
-	     */
-	    initialize : function( attributes, options ){
-	        _super.prototype.initialize.call( this, attributes, options );
-	        hcontentMixin.initialize.call( this, attributes, options );
-	    },
-	
-	    // ........................................................................ misc
-	    /** String representation */
-	    toString : function(){
-	        var nameAndId = this.get( 'id' ) || '';
-	        if( this.get( 'name' ) ){
-	            nameAndId = this.get( 'hid' ) + ' :"' + this.get( 'name' ) + '",' + nameAndId;
-	        }
-	        return 'HDA(' + nameAndId + ')';
-	    }
 	}));
 	
 	//==============================================================================
@@ -15002,14 +14765,14 @@ webpackJsonp([0,1],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1)))
 
 /***/ },
-/* 71 */
+/* 69 */
 /*!*****************************************************!*\
   !*** ./galaxy/scripts/mvc/dataset/dataset-model.js ***!
   \*****************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _, jQuery) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/dataset/states */ 68),
+	    __webpack_require__(/*! mvc/dataset/states */ 70),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( STATES, BASE_MVC, _l ){
@@ -15372,6 +15135,183 @@ webpackJsonp([0,1],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
+/* 70 */
+/*!**********************************************!*\
+  !*** ./galaxy/scripts/mvc/dataset/states.js ***!
+  \**********************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
+	], __WEBPACK_AMD_DEFINE_RESULT__ = function(){
+	
+	'use strict';
+	//==============================================================================
+	/** Map of possible HDA/collection/job states to their string equivalents.
+	 *      A port of galaxy.model.Dataset.states.
+	 */
+	var STATES = {
+	    // NOT ready states
+	    /** is uploading and not ready */
+	    UPLOAD              : 'upload',
+	    /** the job that will produce the dataset queued in the runner */
+	    QUEUED              : 'queued',
+	    /** the job that will produce the dataset is running */
+	    RUNNING             : 'running',
+	    /** metadata for the dataset is being discovered/set */
+	    SETTING_METADATA    : 'setting_metadata',
+	
+	    // ready states
+	    /** was created without a tool */
+	    NEW                 : 'new',
+	    /** has no data */
+	    EMPTY               : 'empty',
+	    /** has successfully completed running */
+	    OK                  : 'ok',
+	
+	    /** the job that will produce the dataset paused */
+	    PAUSED              : 'paused',
+	    /** metadata discovery/setting failed or errored (but otherwise ok) */
+	    FAILED_METADATA     : 'failed_metadata',
+	//TODO: not in trans.app.model.Dataset.states - is in database
+	    /** not accessible to the current user (i.e. due to permissions) */
+	    NOT_VIEWABLE        : 'noPermission',
+	    /** deleted while uploading */
+	    DISCARDED           : 'discarded',
+	    /** the tool producing this dataset failed */
+	    ERROR               : 'error'
+	};
+	
+	STATES.READY_STATES = [
+	    STATES.OK,
+	    STATES.EMPTY,
+	    STATES.PAUSED,
+	    STATES.FAILED_METADATA,
+	    STATES.NOT_VIEWABLE,
+	    STATES.DISCARDED,
+	    STATES.ERROR
+	];
+	
+	STATES.NOT_READY_STATES = [
+	    STATES.UPLOAD,
+	    STATES.QUEUED,
+	    STATES.RUNNING,
+	    STATES.SETTING_METADATA,
+	    STATES.NEW
+	];
+	
+	
+	//==============================================================================
+	    return STATES;
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 71 */
+/*!*************************************************************!*\
+  !*** ./galaxy/scripts/mvc/history/history-content-model.js ***!
+  \*************************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(jQuery) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
+	    __webpack_require__(/*! mvc/dataset/states */ 70),
+	    __webpack_require__(/*! mvc/base-mvc */ 5),
+	    __webpack_require__(/*! utils/localization */ 7)
+	], __WEBPACK_AMD_DEFINE_RESULT__ = function( STATES, BASE_MVC, _l ){
+	'use strict';
+	
+	//==============================================================================
+	/** @class Mixin for HistoryContents content (HDAs, HDCAs).
+	 */
+	var HistoryContentMixin = {
+	
+	    /** default attributes for a model */
+	    defaults : {
+	        /** parent (containing) history */
+	        history_id          : null,
+	        /** some content_type (HistoryContents can contain mixed model classes) */
+	        history_content_type: null,
+	        /** indicating when/what order the content was generated in the context of the history */
+	        hid                 : null,
+	        /** whether the user wants the content shown (visible) */
+	        visible             : true
+	    },
+	
+	    // ........................................................................ mixed content element
+	    // In order to be part of a MIXED bbone collection, we can't rely on the id
+	    //  (which may collide btwn models of different classes)
+	    // Instead, use type_id which prefixes the history_content_type so the bbone collection can differentiate
+	    idAttribute : 'type_id',
+	
+	    /** override because backbone tests boolean( idAttribute ), but it's not an empty string even for new models
+	     *  due to our use of type_id.
+	     */
+	    // isNew : function(){
+	    //     return !this.get( 'id' );
+	    // },
+	
+	    // ........................................................................ common queries
+	    /** the more common alias of visible */
+	    hidden : function(){
+	        return !this.get( 'visible' );
+	    },
+	
+	    /** based on show_deleted, show_hidden (gen. from the container control),
+	     *      would this ds show in the list of ds's?
+	     *  @param {Boolean} show_deleted are we showing deleted hdas?
+	     *  @param {Boolean} show_hidden are we showing hidden hdas?
+	     */
+	    isVisible : function( show_deleted, show_hidden ){
+	        var isVisible = true;
+	        if( ( !show_deleted )
+	        &&  ( this.get( 'deleted' ) || this.get( 'purged' ) ) ){
+	            isVisible = false;
+	        }
+	        if( ( !show_hidden )
+	        &&  ( !this.get( 'visible' ) ) ){
+	            isVisible = false;
+	        }
+	        return isVisible;
+	    },
+	
+	    // ........................................................................ ajax
+	    //TODO?: these are probably better done on the leaf classes
+	    /** history content goes through the 'api/histories' API */
+	    urlRoot: Galaxy.root + 'api/histories/',
+	
+	    /** full url spec. for this content */
+	    url : function(){
+	        var url = this.urlRoot + this.get( 'history_id' ) + '/contents/'
+	             + this.get('history_content_type') + 's/' + this.get( 'id' );
+	        return url;
+	    },
+	
+	    /** save this content as not visible */
+	    hide : function( options ){
+	        if( !this.get( 'visible' ) ){ return jQuery.when(); }
+	        return this.save( { visible: false }, options );
+	    },
+	    /** save this content as visible */
+	    unhide : function( options ){
+	        if( this.get( 'visible' ) ){ return jQuery.when(); }
+	        return this.save( { visible: true }, options );
+	    },
+	
+	    // ........................................................................ misc
+	    toString : function(){
+	        return ([ this.get( 'type_id' ), this.get( 'hid' ), this.get( 'name' ) ].join(':'));
+	    }
+	};
+	
+	
+	//==============================================================================
+	    return {
+	        HistoryContentMixin : HistoryContentMixin
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3)))
+
+/***/ },
 /* 72 */
 /*!**************************************************!*\
   !*** ./galaxy/scripts/mvc/history/hdca-model.js ***!
@@ -15380,7 +15320,7 @@ webpackJsonp([0,1],[
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! mvc/collection/collection-model */ 73),
-	    __webpack_require__(/*! mvc/history/history-content-model */ 67),
+	    __webpack_require__(/*! mvc/history/history-content-model */ 71),
 	    __webpack_require__(/*! utils/localization */ 7)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( DC_MODEL, HISTORY_CONTENT, _l ){
 	
@@ -15427,17 +15367,12 @@ webpackJsonp([0,1],[
 	        model_class         : 'HistoryDatasetCollectionAssociation'
 	    }),
 	
-	    initialize : function( model, options ){
-	        ListDC.prototype.initialize.call( this, model, options );
-	        hcontentMixin.initialize.call( this, model, options );
-	    },
-	
 	    /** Override to post to contents route w/o id. */
 	    save : buildHDCASave( ListDC.prototype.save ),
 	
 	    /** String representation. */
 	    toString : function(){
-	         return ([ 'HistoryListDatasetCollection(', this.get( 'name' ), ')' ].join( '' ));
+	        return ListDC.prototype.toString.call( this ) + ':List';
 	    }
 	});
 	
@@ -15455,17 +15390,12 @@ webpackJsonp([0,1],[
 	        model_class         : 'HistoryDatasetCollectionAssociation'
 	    }),
 	
-	    initialize : function( model, options ){
-	        PairDC.prototype.initialize.call( this, model, options );
-	        hcontentMixin.initialize.call( this, model, options );
-	    },
-	
 	    /** Override to post to contents route w/o id. */
 	    save : buildHDCASave( PairDC.prototype.save ),
 	
 	    /** String representation. */
 	    toString : function(){
-	         return ([ 'HistoryPairDatasetCollection(', this.get( 'name' ), ')' ].join( '' ));
+	        return ListDC.prototype.toString.call( this ) + ':Pair';
 	    }
 	});
 	
@@ -15483,17 +15413,12 @@ webpackJsonp([0,1],[
 	        model_class         : 'HistoryDatasetCollectionAssociation'
 	    }),
 	
-	    initialize : function( model, options ){
-	        ListPairedDC.prototype.initialize.call( this, model, options );
-	        hcontentMixin.initialize.call( this, model, options );
-	    },
-	
 	    /** Override to post to contents route w/o id. */
 	    save : buildHDCASave( ListPairedDC.prototype.save ),
 	
 	    /** String representation. */
 	    toString : function(){
-	         return ([ 'HistoryListPairedDatasetCollection(', this.get( 'name' ), ')' ].join( '' ));
+	        return ListPairedDC.prototype.toString.call( this ) + ':Pair';
 	    }
 	});
 	
@@ -15516,14 +15441,12 @@ webpackJsonp([0,1],[
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, Backbone, jQuery) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/dataset/dataset-model */ 71),
+	    __webpack_require__(/*! mvc/dataset/dataset-model */ 69),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function( DATASET_MODEL, BASE_MVC, _l ){
-	
 	'use strict';
 	
-	var logNamespace = 'collections';
 	//==============================================================================
 	/*
 	Notes:
@@ -15605,34 +15528,20 @@ webpackJsonp([0,1],[
 	    }
 	};
 	
-	//TODO: unused?
 	/** @class Concrete class of Generic DatasetCollectionElement */
 	var DatasetCollectionElement = Backbone.Model
 	    .extend( BASE_MVC.LoggableMixin )
 	    .extend( DatasetCollectionElementMixin )
-	    .extend({ _logNamespace : logNamespace });
+	    .extend({ _logNamespace : 'collections' });
 	
 	
 	//==============================================================================
 	/** @class Base/Abstract Backbone collection for Generic DCEs. */
 	var DCECollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend(
 	/** @lends DCECollection.prototype */{
-	    _logNamespace : logNamespace,
+	    _logNamespace : 'collections',
 	
 	    model: DatasetCollectionElement,
-	
-	    /** logger used to record this.log messages, commonly set to console */
-	    //logger              : console,
-	
-	//TODO: unused?
-	    /** Set up.
-	     *  @see Backbone.Collection#initialize
-	     */
-	    initialize : function( attributes, options ){
-	        this.debug( this + '(DCECollection).initialize:', attributes, options );
-	        options = options || {};
-	        //this._setUpListeners();
-	    },
 	
 	    /** String representation. */
 	    toString : function(){
@@ -15646,9 +15555,6 @@ webpackJsonp([0,1],[
 	 */
 	var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend( BASE_MVC.mixin( DatasetCollectionElementMixin,
 	/** @lends DatasetDCE.prototype */{
-	
-	    /** logger used to record this.log messages, commonly set to console */
-	    //logger              : console,
 	
 	    /** url fn */
 	    url : function(){
@@ -15676,13 +15582,6 @@ webpackJsonp([0,1],[
 	        DatasetCollectionElementMixin.constructor.call( this, attributes, options );
 	    },
 	
-	//TODO: unused?
-	    /** set up */
-	    initialize : function( attributes, options ){
-	        this.debug( this + '(DatasetDCE).initialize:', attributes, options );
-	        DATASET_MODEL.DatasetAssociation.prototype.initialize.call( this, attributes, options );
-	    },
-	
 	    /** Does this model already contain detailed data (as opposed to just summary level data)? */
 	    hasDetails : function(){
 	        // dataset collection api does return genome_build but doesn't return annotation
@@ -15704,16 +15603,6 @@ webpackJsonp([0,1],[
 	/** @lends DatasetDCECollection.prototype */{
 	    model: DatasetDCE,
 	
-	    /** logger used to record this.log messages, commonly set to console */
-	    //logger              : console,
-	
-	//TODO: unused?
-	    /** set up */
-	    initialize : function( attributes, options ){
-	        this.debug( this + '(DatasetDCECollection).initialize:', attributes, options );
-	        DCECollection.prototype.initialize.call( this, attributes, options );
-	    },
-	
 	    /** String representation. */
 	    toString : function(){
 	         return ([ 'DatasetDCECollection(', this.length, ')' ].join( '' ));
@@ -15734,7 +15623,7 @@ webpackJsonp([0,1],[
 	        .extend( BASE_MVC.LoggableMixin )
 	        .extend( BASE_MVC.SearchableModelMixin )
 	        .extend(/** @lends DatasetCollection.prototype */{
-	    _logNamespace : logNamespace,
+	    _logNamespace : 'collections',
 	
 	    /** logger used to record this.log messages, commonly set to console */
 	    //logger              : console,
@@ -15753,11 +15642,10 @@ webpackJsonp([0,1],[
 	    /** set up: create elements instance var and (on changes to elements) update them  */
 	    initialize : function( model, options ){
 	        this.debug( this + '(DatasetCollection).initialize:', model, options, this );
-	        //historyContent.HistoryContent.prototype.initialize.call( this, attrs, options );
 	        this.elements = this._createElementsModel();
 	        this.on( 'change:elements', function(){
 	            this.log( 'change:elements' );
-	//TODO: prob. better to update the collection instead of re-creating it
+	            //TODO: prob. better to update the collection instead of re-creating it
 	            this.elements = this._createElementsModel();
 	        });
 	    },
@@ -15765,7 +15653,7 @@ webpackJsonp([0,1],[
 	    /** move elements model attribute to full collection */
 	    _createElementsModel : function(){
 	        this.debug( this + '._createElementsModel', this.collectionClass, this.get( 'elements' ), this.elements );
-	//TODO: same patterns as DatasetCollectionElement _createObjectModel - refactor to BASE_MVC.hasSubModel?
+	        //TODO: same patterns as DatasetCollectionElement _createObjectModel - refactor to BASE_MVC.hasSubModel?
 	        var elements = this.get( 'elements' ) || [];
 	        this.unset( 'elements', { silent: true });
 	        this.elements = new this.collectionClass( elements );
@@ -15794,7 +15682,7 @@ webpackJsonp([0,1],[
 	    //TODO:?? the following are the same interface as DatasetAssociation - can we combine?
 	    /** Does the DC contain any elements yet? Is a fetch() required? */
 	    hasDetails : function(){
-	//TODO: this is incorrect for (accidentally) empty collections
+	        //TODO: this is incorrect for (accidentally) empty collections
 	        this.debug( 'hasDetails:', this.elements.length );
 	        return this.elements.length !== 0;
 	    },
@@ -15855,22 +15743,11 @@ webpackJsonp([0,1],[
 	var ListDatasetCollection = DatasetCollection.extend(
 	/** @lends ListDatasetCollection.prototype */{
 	
-	    /** logger used to record this.log messages, commonly set to console */
-	    //logger              : console,
-	
 	    /** override since we know the collection will only contain datasets */
 	    collectionClass : DatasetDCECollection,
 	
-	//TODO: unused?
-	    initialize : function( attrs, options ){
-	        this.debug( this + '(ListDatasetCollection).initialize:', attrs, options );
-	        DatasetCollection.prototype.initialize.call( this, attrs, options );
-	    },
-	
 	    /** String representation. */
-	    toString : function(){
-	         return ([ 'ListDatasetCollection(', this.get( 'name' ), ')' ].join( '' ));
-	    }
+	    toString : function(){ return 'List' + DatasetCollection.prototype.toString.call( this ); }
 	});
 	
 	
@@ -15880,20 +15757,8 @@ webpackJsonp([0,1],[
 	var PairDatasetCollection = ListDatasetCollection.extend(
 	/** @lends PairDatasetCollection.prototype */{
 	
-	    /** logger used to record this.log messages, commonly set to console */
-	    //logger              : console,
-	
-	//TODO: unused?
-	    /**  */
-	    initialize : function( attrs, options ){
-	        this.debug( this + '(PairDatasetCollection).initialize:', attrs, options );
-	        ListDatasetCollection.prototype.initialize.call( this, attrs, options );
-	    },
-	
 	    /** String representation. */
-	    toString : function(){
-	         return ([ 'PairDatasetCollection(', this.get( 'name' ), ')' ].join( '' ));
-	    }
+	    toString : function(){ return 'Pair' + DatasetCollection.prototype.toString.call( this ); }
 	});
 	
 	
@@ -15906,9 +15771,6 @@ webpackJsonp([0,1],[
 	 */
 	var NestedDCDCE = DatasetCollection.extend( BASE_MVC.mixin( DatasetCollectionElementMixin,
 	/** @lends NestedDCDCE.prototype */{
-	
-	    /** logger used to record this.log messages, commonly set to console */
-	    //logger              : console,
 	
 	    // because all objects have constructors (as this hashmap would even if this next line wasn't present)
 	    //  the constructor in hcontentMixin won't be attached by BASE_MVC.mixin to this model
@@ -15933,18 +15795,8 @@ webpackJsonp([0,1],[
 	var NestedDCDCECollection = DCECollection.extend(
 	/** @lends NestedDCDCECollection.prototype */{
 	
-	    /** logger used to record this.log messages, commonly set to console */
-	    //logger              : console,
-	
 	    /** This is a collection of nested collections */
 	    model: NestedDCDCE,
-	
-	//TODO: unused?
-	    /** set up */
-	    initialize : function( attrs, options ){
-	        this.debug( this + '(NestedDCDCECollection).initialize:', attrs, options );
-	        DCECollection.prototype.initialize.call( this, attrs, options );
-	    },
 	
 	    /** String representation. */
 	    toString : function(){
@@ -15959,9 +15811,6 @@ webpackJsonp([0,1],[
 	var NestedPairDCDCE = PairDatasetCollection.extend( BASE_MVC.mixin( DatasetCollectionElementMixin,
 	/** @lends NestedPairDCDCE.prototype */{
 	//TODO:?? possibly rename to NestedDatasetCollection?
-	
-	    /** logger used to record this.log messages, commonly set to console */
-	    //logger              : console,
 	
 	    // because all objects have constructors (as this hashmap would even if this next line wasn't present)
 	    //  the constructor in hcontentMixin won't be attached by BASE_MVC.mixin to this model
@@ -15987,18 +15836,8 @@ webpackJsonp([0,1],[
 	var NestedPairDCDCECollection = NestedDCDCECollection.extend(
 	/** @lends PairDCDCECollection.prototype */{
 	
-	    /** logger used to record this.log messages, commonly set to console */
-	    //logger              : console,
-	
 	    /** We know this collection is composed of only nested pair collections */
 	    model: NestedPairDCDCE,
-	
-	//TODO: unused?
-	    /** set up */
-	    initialize : function( attrs, options ){
-	        this.debug( this + '(NestedPairDCDCECollection).initialize:', attrs, options );
-	        NestedDCDCECollection.prototype.initialize.call( this, attrs, options );
-	    },
 	
 	    /** String representation. */
 	    toString : function(){
@@ -16013,18 +15852,8 @@ webpackJsonp([0,1],[
 	var ListPairedDatasetCollection = DatasetCollection.extend(
 	/** @lends ListPairedDatasetCollection.prototype */{
 	
-	    /** logger used to record this.log messages, commonly set to console */
-	    //logger              : console,
-	
 	    /** list:paired is the only collection that itself contains collections */
 	    collectionClass : NestedPairDCDCECollection,
-	
-	//TODO: unused?
-	    /** set up */
-	    initialize : function( attributes, options ){
-	        this.debug( this + '(ListPairedDatasetCollection).initialize:', attributes, options );
-	        DatasetCollection.prototype.initialize.call( this, attributes, options );
-	    },
 	
 	    /** String representation. */
 	    toString : function(){
@@ -16136,8 +15965,8 @@ webpackJsonp([0,1],[
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(jQuery, _, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! mvc/history/history-view */ 79),
 	    __webpack_require__(/*! mvc/history/history-contents */ 66),
-	    __webpack_require__(/*! mvc/dataset/states */ 68),
-	    __webpack_require__(/*! mvc/history/hda-model */ 70),
+	    __webpack_require__(/*! mvc/dataset/states */ 70),
+	    __webpack_require__(/*! mvc/history/hda-model */ 68),
 	    __webpack_require__(/*! mvc/history/hda-li-edit */ 90),
 	    __webpack_require__(/*! mvc/history/hdca-li-edit */ 95),
 	    __webpack_require__(/*! mvc/tag */ 92),
@@ -16234,25 +16063,34 @@ webpackJsonp([0,1],[
 	    },
 	
 	    // ------------------------------------------------------------------------ listeners
+	    /** listening for history and HDA events */
+	    _setUpModelListeners : function(){
+	        _super.prototype._setUpModelListeners.call( this );
+	        this.listenTo( this.model, 'change:size', this.updateHistoryDiskSize );
+	        return this;
+	    },
+	
 	    /** listening for collection events */
 	    _setUpCollectionListeners : function(){
 	        _super.prototype._setUpCollectionListeners.call( this );
-	
 	        this.listenTo( this.collection, {
 	            'change:deleted': this._handleHdaDeletionChange,
 	            'change:visible': this._handleHdaVisibleChange,
 	            'change:purged' : function( model ){
 	                // hafta get the new nice-size w/o the purged model
 	                this.model.fetch();
-	            }
+	            },
+	            // loading indicators for deleted/hidden
+	            'fetching-deleted'      : function( collection ){
+	                this.$( '> .controls .toggle-deleted-link' ).parent()
+	                    .html( '<i>' + _l( 'loading deleted...' ) + '</i>' );
+	            },
+	            'fetching-hidden'       : function( collection ){
+	                this.$( '> .controls .toggle-hidden-link' ).parent()
+	                    .html( '<i>' + _l( 'loading hidden...' ) + '</i>' );
+	            },
+	            'fetching-deleted-done fetching-hidden-done'  : this._renderCounts,
 	        });
-	        return this;
-	    },
-	
-	    /** listening for history and HDA events */
-	    _setUpModelListeners : function(){
-	        _super.prototype._setUpModelListeners.call( this );
-	        this.listenTo( this.model, 'change:size', this.updateHistoryDiskSize );
 	        return this;
 	    },
 	
@@ -16450,9 +16288,16 @@ webpackJsonp([0,1],[
 	     *  @param {Model} the item model to check
 	     */
 	    _handleHdaDeletionChange : function( itemModel ){
+	        var contentsShown = this.model.get( 'contents_shown' );
 	        if( itemModel.get( 'deleted' ) && !this.showDeleted ){
 	            this.removeItemView( itemModel );
+	            contentsShown.shown -= 1;
+	            contentsShown.deleted += 1;
+	        } else {
+	            contentsShown.shown += 1;
+	            contentsShown.deleted -= 1;
 	        }
+	        this.model.set( 'contents_shown', contentsShown );
 	        this._renderCounts();
 	    },
 	
@@ -16460,9 +16305,16 @@ webpackJsonp([0,1],[
 	     *  @param {Model} the item model to check
 	     */
 	    _handleHdaVisibleChange : function( itemModel ){
+	        var contentsShown = this.model.get( 'contents_shown' );
 	        if( itemModel.hidden() && !this.showHidden ){
 	            this.removeItemView( itemModel );
+	            contentsShown.shown -= 1;
+	            contentsShown.hidden += 1;
+	        } else {
+	            contentsShown.shown += 1;
+	            contentsShown.hidden -= 1;
 	        }
+	        this.model.set( 'contents_shown', contentsShown );
 	        this._renderCounts();
 	    },
 	
@@ -16635,7 +16487,7 @@ webpackJsonp([0,1],[
 	HistoryViewEdit.prototype.templates = (function(){
 	
 	    var countsTemplate = BASE_MVC.wrapTemplate([
-	        '<%- history.contents_shown.shown %> ', _l( 'shown' ),
+	        '<%- view.views.length %> ', _l( 'shown' ),
 	        '<% if( history.contents_shown.deleted ){ %>',
 	            '<% if( view.showDeleted ){ %>',
 	                ', <a class="toggle-deleted-link" href="javascript:void(0);">',
@@ -16688,7 +16540,7 @@ webpackJsonp([0,1],[
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(Backbone, _, $, jQuery) {
 	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! mvc/history/hdca-model */ 72),
-	    __webpack_require__(/*! mvc/dataset/states */ 68),
+	    __webpack_require__(/*! mvc/dataset/states */ 70),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! mvc/ui/ui-modal */ 17),
 	    __webpack_require__(/*! utils/natural-sort */ 77),
@@ -17843,7 +17695,7 @@ webpackJsonp([0,1],[
   \****************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function($, _) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function($, _, jQuery) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! mvc/list/list-view */ 80),
 	    __webpack_require__(/*! mvc/history/history-model */ 65),
 	    __webpack_require__(/*! mvc/history/history-contents */ 66),
@@ -17994,6 +17846,14 @@ webpackJsonp([0,1],[
 	        });
 	    },
 	
+	    /** Override to reset web storage when the id changes (since it needs the id) */
+	    _setUpCollectionListeners : function(){
+	        _super.prototype._setUpCollectionListeners.call( this );
+	        return this.listenTo( this.collection, {
+	            // 'all' : function(){ console.log( this.collection + ':', arguments ); },
+	        });
+	    },
+	
 	    // ------------------------------------------------------------------------ browser stored prefs
 	    /** Set up client side storage. Currently PersistanStorage keyed under 'history:<id>'
 	     *  @see PersistentStorage
@@ -18126,40 +17986,40 @@ webpackJsonp([0,1],[
 	        'click .messages [class$=message]'  : 'clearMessages'
 	    }),
 	
-	    /** Handle the user toggling the deleted visibility by:
-	     *      (1) storing the new value in the persistent storage
-	     *      (2) re-rendering the history
+	    /** Toggle and store the deleted visibility and re-render items
 	     * @returns {Boolean} new show_deleted setting
 	     */
 	    toggleShowDeleted : function( show, store ){
 	        show = ( show !== undefined )?( show ):( !this.showDeleted );
 	        store = ( store !== undefined )?( store ):( true );
-	        this.showDeleted = show;
+	        var self = this;
+	
+	        self.showDeleted = show;
+	        self.trigger( 'show-deleted', show );
+	        var whenFetched = show? self.model.contents.fetchDeleted({ silent: true }) : jQuery.when();
+	        whenFetched.done( function(){ self.renderItems(); });
 	        if( store ){
-	            this.storage.set( 'show_deleted', show );
+	            self.storage.set( 'show_deleted', show );
 	        }
-	        //TODO:?? to events on storage('change:show_deleted')
-	        this.renderItems();
-	        this.trigger( 'show-deleted', show );
-	        return this.showDeleted;
+	        return self.showDeleted;
 	    },
 	
-	    /** Handle the user toggling the hidden visibility by:
-	     *      (1) storing the new value in the persistent storage
-	     *      (2) re-rendering the history
+	    /** Toggle and store whether to render explicity hidden contents
 	     * @returns {Boolean} new show_hidden setting
 	     */
 	    toggleShowHidden : function( show, store ){
 	        show = ( show !== undefined )?( show ):( !this.showHidden );
 	        store = ( store !== undefined )?( store ):( true );
-	        this.showHidden = show;
+	
+	        var self = this;
+	        self.showHidden = show;
+	        self.trigger( 'show-hidden', show );
+	        var whenFetched = show? self.model.contents.fetchHidden({ silent: true }) : jQuery.when();
+	        whenFetched.done( function(){ self.renderItems(); });
 	        if( store ){
-	            this.storage.set( 'show_hidden', show );
+	            self.storage.set( 'show_hidden', show );
 	        }
-	        //TODO:?? to events on storage('change:show_deleted')
-	        this.renderItems();
-	        this.trigger( 'show-hidden', show );
-	        return this.showHidden;
+	        return self.showHidden;
 	    },
 	
 	    /** On the first search, if there are no details - load them, then search */
@@ -18414,7 +18274,7 @@ webpackJsonp([0,1],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
 /* 80 */
@@ -18943,8 +18803,6 @@ webpackJsonp([0,1],[
 	        $( view ).queue( 'fx', [
 	            function( next ){
 	                // hide the empty message first if only view
-	                console.log( 'empty msg:', panel.$emptyMessage() );
-	                console.log( 'empty msg:', panel.$emptyMessage().is( ':visible' ) );
 	                if( panel.$emptyMessage().is( ':visible' ) ){
 	                    panel.$emptyMessage().fadeOut( panel.fxSpeed, next );
 	                } else {
@@ -20330,7 +20188,7 @@ webpackJsonp([0,1],[
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(jQuery, Backbone, $, _) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! mvc/list/list-item */ 81),
-	    __webpack_require__(/*! mvc/dataset/states */ 68),
+	    __webpack_require__(/*! mvc/dataset/states */ 70),
 	    __webpack_require__(/*! ui/fa-icon-button */ 86),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
 	    __webpack_require__(/*! utils/localization */ 7)
@@ -20895,7 +20753,7 @@ webpackJsonp([0,1],[
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/dataset/states */ 68),
+	    __webpack_require__(/*! mvc/dataset/states */ 70),
 	    __webpack_require__(/*! mvc/collection/collection-li */ 88),
 	    __webpack_require__(/*! mvc/collection/collection-view */ 89),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
@@ -21625,7 +21483,7 @@ webpackJsonp([0,1],[
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, $) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(/*! mvc/dataset/states */ 68),
+	    __webpack_require__(/*! mvc/dataset/states */ 70),
 	    __webpack_require__(/*! mvc/dataset/dataset-li */ 85),
 	    __webpack_require__(/*! mvc/tag */ 92),
 	    __webpack_require__(/*! mvc/annotation */ 93),

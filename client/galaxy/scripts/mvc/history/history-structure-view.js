@@ -2,12 +2,11 @@ define([
     'mvc/history/job-dag',
     'mvc/job/job-model',
     'mvc/job/job-li',
-    'mvc/history/history-content-model',
     'mvc/dataset/dataset-li',
     'mvc/base-mvc',
     'utils/localization',
     'libs/d3'
-], function( JobDAG, JOB, JOB_LI, HISTORY_CONTENT, DATASET_LI, BASE_MVC, _l ){
+], function( JobDAG, JOB, JOB_LI, DATASET_LI, BASE_MVC, _l ){
 
 'use strict';
 
@@ -148,9 +147,7 @@ var HistoryStructureComponent = Backbone.View.extend( BASE_MVC.LoggableMixin ).e
         var outputModels = _.map( job.get( 'outputs' ), function( output ){
             //note: output is { src: 'hda/dataset_collection', id: <some id> }
             // job output doesn't *quite* match up to normal typeId
-            var type = output.src === 'hda'? 'dataset' : 'dataset_collection',
-                typeId = HISTORY_CONTENT.typeIdStr( type, output.id );
-            return view.model.contents.get( typeId );
+            return view.model.contents.get( output.type_id );
         });
         // set the collection (HistoryContents) for the job to that json (setting historyId for proper ajax urls)
         job.outputCollection.reset( outputModels );
@@ -166,10 +163,9 @@ var HistoryStructureComponent = Backbone.View.extend( BASE_MVC.LoggableMixin ).e
 
     _createContentListItem : function( vertex ){
         this.debug( '_createContentListItem:', vertex );
-        var view = this,
-            content = vertex.data,
-            typeId = HISTORY_CONTENT.typeIdStr( content.history_content_type, content.id );
-            content = view.model.contents.get( typeId );
+        var view = this;
+        var content = vertex.data;
+        content = view.model.contents.get( content.type_id );
         var li = new view.ContentItemClass({ model: content });
         view.listenTo( li, 'expanding expanded collapsing collapsed', view.renderGraph );
         return li;

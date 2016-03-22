@@ -1,11 +1,10 @@
 define([
-    "mvc/history/history-content-model",
     "mvc/base/controlled-fetch-collection",
     "mvc/history/hda-model",
     "mvc/history/hdca-model",
     "mvc/history/history-preferences",
     "mvc/base-mvc"
-], function( HISTORY_CONTENT, CONTROLLED_FETCH_COLLECTION, HDA_MODEL, HDCA_MODEL, HISTORY_PREFS, BASE_MVC ){
+], function( CONTROLLED_FETCH_COLLECTION, HDA_MODEL, HDCA_MODEL, HISTORY_PREFS, BASE_MVC ){
 'use strict';
 
 //==============================================================================
@@ -59,7 +58,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         /** @type {Boolean} does this collection contain and fetch non-visible elements */
         this.includeHidden = options.includeHidden || false;
 
-        this.on( 'all', function(){ console.debug( arguments ); });
+        this.on( 'all', function(){ console.debug( this + ', event:', arguments ); });
     },
 
     /** root api url */
@@ -141,29 +140,13 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     fetch : function( options ){
         options = options || {};
         if( this.historyId && !options.details ){
-// TODO: here?
-            var expandedIds = HISTORY_PREFS.HistoryPrefs.get( this.historyId ).get( 'expandedIds' );
-            options.details = _.values( expandedIds ).join( ',' );
+            var prefs = HISTORY_PREFS.HistoryPrefs.get( this.historyId ).toJSON();
+            options.details = _.values( prefs.expandedIds ).join( ',' );
         }
         return _super.prototype.fetch.call( this, options );
     },
 
     // ............. ControlledFetch stuff
-    /** override to filter requested contents to those updated after the Date 'since' */
-    fetchUpdated : function( since, options ){
-        if( since ){
-            options = options || { filters: {} };
-            options.filters = {
-                'update_time-ge' : since.toISOString()
-            };
-        }
-        console.log( 'fetching updated:', this.historyId, since );
-        return this.fetch( options )
-            // .done( function( r ){ console.log( 'updated:\n', JSON.stringify( r ) ); })
-            .done( function( r ){ console.log( 'updated:', r.length, r ); })
-        ;
-    },
-
     /**  */
     _buildFetchData : function( options ){
         return _.extend( _super.prototype._buildFetchData.call( this, options ), {
@@ -182,7 +165,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
 
     /**  */
     _buildFetchFilters : function( options ){
-        var superFilters = _super.prototype._buildFetchFilters( this, options ) || {};
+        var superFilters = _super.prototype._buildFetchFilters.call( this, options ) || {};
         var filters = {};
         if( !this.includeDeleted ){
             filters.deleted = false;
@@ -192,6 +175,47 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
             filters.visible = true;
         }
         return _.defaults( superFilters, filters );
+    },
+
+    /** override to filter requested contents to those updated after the Date 'since' */
+    fetchUpdated : function( since, options ){
+        if( since ){
+            options = options || { filters: {} };
+            options.filters = {
+                'update_time-ge' : since.toISOString(),
+                // workflows will produce hidden datasets (non-output datasets) that still
+                // need to be updated in the collection or they'll update forever
+                // we can remove the default visible filter by using an 'empty' value
+                visible          : ''
+            };
+        }
+        console.log( 'fetching updated:', this.historyId, since );
+        return this.fetch( options )
+            // .done( function( r ){ console.log( 'updated:\n', JSON.stringify( r ) ); })
+            .done( function( r ){ console.log( 'updated:', r.length, r ); })
+        ;
+    },
+
+    /**  */
+    fetchDeleted : function( options ){
+        var self = this;
+        self.trigger( 'fetching-deleted', self );
+        return self.fetch( _.extend( options || {}, { filters : {
+            // all deleted, purged or not
+            deleted : true,
+            purged  : undefined
+
+        }})).always( function(){ self.trigger( 'fetching-deleted-done', self ); });
+    },
+
+    /**  */
+    fetchHidden : function( options ){
+        var self = this;
+        self.trigger( 'fetching-hidden', self );
+        return self.fetch( _.extend( options || {}, { filters : {
+            visible : false
+
+        }})).always( function(){ self.trigger( 'fetching-hidden-done', self ); });
     },
 
     /** fetch detailed model data for all contents in this collection */
@@ -316,18 +340,6 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     },
 
     // ........................................................................ misc
-    /** override to ensure type id is set */
-//TODO: needed now?
-    set : function( models, options ){
-        models = _.isArray( models )? models : [ models ];
-        _.each( models, function( model ){
-            if( !model.type_id || !model.get || !model.get( 'type_id' ) ){
-                model.type_id = HISTORY_CONTENT.typeIdStr( model.history_content_type, model.id );
-            }
-        });
-        Backbone.Collection.prototype.set.call( this, models, options );
-    },
-
     /** In this override, copy the historyId to the clone */
     clone : function(){
         var clone = Backbone.Collection.prototype.clone.call( this );
@@ -340,7 +352,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
          return ([ 'HistoryContents(', [ this.historyId, this.length ].join(), ')' ].join( '' ));
     }
 });
-window.HistoryContents = HistoryContents;
+
 
 //==============================================================================
     return {

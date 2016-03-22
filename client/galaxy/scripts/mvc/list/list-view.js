@@ -518,8 +518,6 @@ console.log( '------------------------------------------------- renderItems' );
         $( view ).queue( 'fx', [
             function( next ){
                 // hide the empty message first if only view
-                console.log( 'empty msg:', panel.$emptyMessage() );
-                console.log( 'empty msg:', panel.$emptyMessage().is( ':visible' ) );
                 if( panel.$emptyMessage().is( ':visible' ) ){
                     panel.$emptyMessage().fadeOut( panel.fxSpeed, next );
                 } else {
