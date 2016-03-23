@@ -407,6 +407,8 @@ class Tool( object, Dictifiable ):
         """
         :returns: bool -- Whether the user is allowed to access the tool.
         """
+        if self.require_login and user is None:
+            return False
         return True
 
     def parse( self, tool_source, guid=None ):
@@ -1426,7 +1428,7 @@ class Tool( object, Dictifiable ):
         return output_collect.collect_dynamic_collections( self, output, **kwds )
 
     def to_archive(self):
-        tool = self.tool
+        tool = self
         tarball_files = []
         temp_files = []
         tool_xml = open( os.path.abspath( tool.config_file ), 'r' ).read()
@@ -1693,7 +1695,8 @@ class Tool( object, Dictifiable ):
             'state_inputs'  : state_inputs,
             'job_id'        : trans.security.encode_id( job.id ) if job else None,
             'job_remap'     : self._get_job_remap( job ),
-            'history_id'    : trans.security.encode_id( history.id )
+            'history_id'    : trans.security.encode_id( history.id ),
+            'display'       : self.display_interface
         })
         return tool_model
 
@@ -1753,11 +1756,25 @@ class Tool( object, Dictifiable ):
                     rep_prefix = '%s_%d|' % ( key, rep_index )
                     self.populate_state( request_context, input.inputs, incoming, rep_state, errors, prefix=rep_prefix, context=context )
             else:
-                param_value = incoming.get( key, state.get( input.name ) )
+                param_value = self._get_incoming_value( incoming, key, state.get( input.name ) )
                 value, error = check_param( request_context, input, param_value, context )
                 if error:
                     errors[ key ] = error
                 state[ input.name ] = value
+
+    def _get_incoming_value( self, incoming, key, default ):
+        """
+        Fetch value from incoming dict directly or check special nginx upload
+        created variants of this key.
+        """
+        if '__' + key + '__is_composite' in incoming:
+            composite_keys = incoming[ '__' + key + '__keys' ].split()
+            value = dict()
+            for composite_key in composite_keys:
+                value[ composite_key ] = incoming[ key + '_' + composite_key ]
+            return value
+        else:
+            return incoming.get( key, default )
 
     def _get_job_remap( self, job):
         if job:

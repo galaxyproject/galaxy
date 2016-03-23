@@ -274,7 +274,7 @@ var Tab = Backbone.View.extend({
         this.$toggle.html( this.model.get( 'title' ) || '' )
                     .removeClass().addClass( 'dropdown-toggle' )
                     .addClass( this.model.get( 'cls' ) )
-                    .addClass( this.model.get( 'icon' ) && 'fa fa-2x ' + this.model.get( 'icon' ) )
+                    .addClass( this.model.get( 'icon' ) && 'dropdown-icon fa ' + this.model.get( 'icon' ) )
                     .addClass( this.model.get( 'toggle' ) && 'toggle' )
                     .attr( 'target', this.model.get( 'target' ) )
                     .attr( 'href', this.model.get( 'url' ) )

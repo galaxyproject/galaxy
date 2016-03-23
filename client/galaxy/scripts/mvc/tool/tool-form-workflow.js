@@ -98,7 +98,7 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
                     type        : 'boolean',
                     value       : String(Boolean(this.post_job_actions['EmailAction' + output_id])),
                     ignore      : 'false',
-                    help        : 'An email notification will be send when the job has completed.',
+                    help        : 'An email notification will be sent when the job has completed.',
                     payload     : {
                         'host'  : window.location.host
                     }

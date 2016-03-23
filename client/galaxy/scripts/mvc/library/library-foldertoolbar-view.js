@@ -99,7 +99,7 @@ var FolderToolbarView = Backbone.View.extend({
   renderPaginator: function( options ){
       this.options = _.extend( this.options, options );
       var paginator_template = this.templatePaginator();
-      this.$el.find( '#folder_paginator' ).html( paginator_template({
+      $("body").find( '.folder-paginator' ).html( paginator_template({
           id: this.options.id,
           show_page: parseInt( this.options.show_page ),
           page_count: parseInt( this.options.page_count ),
@@ -482,6 +482,13 @@ var FolderToolbarView = Backbone.View.extend({
       }
     });
 
+    $('.libimport-select-all').bind("click", function(){
+      $('#jstree_browser').jstree("check_all");
+    });
+    $('.libimport-select-none').bind("click", function(){
+      $('#jstree_browser').jstree("uncheck_all");
+    });
+
     this.renderSelectBoxes();
     options.disabled_jstree_element = 'folders';
     this.renderJstree( options );
@@ -637,7 +644,9 @@ var FolderToolbarView = Backbone.View.extend({
    * @see renderJstree
    */
   importFromJstreePath: function ( that, options ){
-    var selected_nodes = $( '#jstree_browser' ).jstree().get_selected( true );
+    var all_nodes = $( '#jstree_browser' ).jstree().get_selected( true );
+    // remove the disabled elements that could have been trigerred with the 'select all'
+    selected_nodes = _.filter(all_nodes, function(node){ return node.state.disabled == false; })
     var preserve_dirs = this.modal.$el.find( '.preserve-checkbox' ).is( ':checked' );
     var link_data = this.modal.$el.find( '.link-checkbox' ).is( ':checked' );
     var file_type = this.select_extension.value();
@@ -868,8 +877,6 @@ var FolderToolbarView = Backbone.View.extend({
    * @param  {array} lddas_set array of lddas to delete
    */
   chainCallDeletingItems: function( items_to_delete ){
-  console.log('chaincall');
-  console.log(items_to_delete);
   var self = this;
   this.deleted_items = new mod_library_model.Folder();
   var popped_item = items_to_delete.pop();
@@ -900,8 +907,6 @@ var FolderToolbarView = Backbone.View.extend({
                 console.error('Unknown library item type found.');
                 console.error(item.type || item.model_class);
               }
-              console.log('updated item')
-              console.log(updated_item);
               Galaxy.libraries.folderListView.collection.add( updated_item );
             }
             self.chainCallDeletingItems( items_to_delete );
@@ -949,7 +954,7 @@ var FolderToolbarView = Backbone.View.extend({
       var dataset_ids = [];
       var folder_ids = [];
       checkedValues.each(function(){
-          if ($(this.parentElement.parentElement).data('id') !== '') {
+          if ($(this.parentElement.parentElement).data('id') !== undefined) {
               if ($(this.parentElement.parentElement).data('id').substring(0,1) == 'F'){
                 folder_ids.push($(this.parentElement.parentElement).data('id'));
               } else {
@@ -972,7 +977,6 @@ var FolderToolbarView = Backbone.View.extend({
           var folder = new mod_library_model.FolderAsModel({id:folder_ids[i]});
           items_to_delete.push(folder);
       }
-      console.log(items_to_delete);
 
       this.options.chain_call_control.total_number = items_total.length;
       // call the recursive function to call ajax one after each other (request FIFO queue)
@@ -1059,7 +1063,7 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push(' <div id="library_toolbar">');
     tmpl_array.push('<form class="form-inline" role="form">');
     tmpl_array.push('   <span><strong>DATA LIBRARIES</strong></span>');
-    tmpl_array.push('          <span id="folder_paginator" class="library-paginator">');
+    tmpl_array.push('          <span class="library-paginator folder-paginator">');
     // paginator will append here
     tmpl_array.push('          </span>');
     tmpl_array.push('<div class="checkbox toolbar-item logged-dataset-manipulation" style="height: 20px; display:none;">');
@@ -1119,6 +1123,8 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push(' <div id="folder_items_element">');
     tmpl_array.push(' </div>');
     tmpl_array.push('</div>');
+
+    tmpl_array.push('<div class="folder-paginator paginator-bottom"></div>');
     // CONTAINER END
 
     return _.template(tmpl_array.join(''));
@@ -1192,7 +1198,7 @@ var FolderToolbarView = Backbone.View.extend({
 
     tmpl_array.push('<div id="new_folder_modal">');
     tmpl_array.push('<form>');
-    tmpl_array.push('<input type="text" name="Name" value="" placeholder="Name">');
+    tmpl_array.push('<input type="text" name="Name" value="" placeholder="Name" autofocus>');
     tmpl_array.push('<input type="text" name="Description" value="" placeholder="Description">');
     tmpl_array.push('</form>');
     tmpl_array.push('</div>');
@@ -1267,16 +1273,15 @@ var FolderToolbarView = Backbone.View.extend({
     var tmpl_array = [];
 
     tmpl_array.push('<div id="file_browser_modal">');
-    tmpl_array.push('<div class="alert alert-info jstree-files-message">All files you select will be imported into the current folder.</div>');
+    tmpl_array.push('<div class="alert alert-info jstree-files-message">All files you select will be imported into the current folder ignoring their folder structure.</div>');
     tmpl_array.push('<div class="alert alert-info jstree-folders-message" style="display:none;">All files within the selected folders and their subfolders will be imported into the current folder.</div>');
 
-
     tmpl_array.push('<div style="margin-bottom:1em;">');
-    tmpl_array.push('<label class="radio-inline">');
-    tmpl_array.push('  <input title="Switch to selecting files" type="radio" name="jstree-radio" value="jstree-disable-folders" checked="checked"> Files');
+    tmpl_array.push('<label title="Switch to selecting files" class="radio-inline import-type-switch">');
+    tmpl_array.push('  <input type="radio" name="jstree-radio" value="jstree-disable-folders" checked="checked"> Choose Files');
     tmpl_array.push('</label>');
-    tmpl_array.push('<label class="radio-inline">');
-    tmpl_array.push('  <input title="Switch to selecting folders" type="radio" name="jstree-radio" value="jstree-disable-files"> Folders');
+    tmpl_array.push('<label title="Switch to selecting folders" class="radio-inline import-type-switch">');
+    tmpl_array.push('  <input type="radio" name="jstree-radio" value="jstree-disable-files"> Choose Folders');
     tmpl_array.push('</label>');
     tmpl_array.push('</div>');
     tmpl_array.push('<div style="margin-bottom:1em;">');
@@ -1289,9 +1294,16 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('Link files instead of copying');
     tmpl_array.push(' </label>');
     tmpl_array.push('</div>');
+    tmpl_array.push('<button title="Select all files" type="button" class="button primary-button libimport-select-all">');
+    tmpl_array.push('Select all');
+    tmpl_array.push('</button>');
+    tmpl_array.push('<button title="Select no files" type="button" class="button primary-button libimport-select-none">');
+    tmpl_array.push('Select none');
+    tmpl_array.push('</button>');
+    tmpl_array.push('<hr />');
+    // append jstree object here
     tmpl_array.push('<div id="jstree_browser">');
     tmpl_array.push('</div>');
-
     tmpl_array.push('<hr />');
     tmpl_array.push('<p>You can set extension type and genome for all imported datasets at once:</p>');
     tmpl_array.push('<div>');
@@ -1320,7 +1332,7 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push(' </label>');
     tmpl_array.push('</div>');
 
-    tmpl_array.push('<textarea id="import_paths" class="form-control" rows="5" placeholder="Absolute paths (or paths relative to Galaxy root) separated by newline"></textarea>');
+    tmpl_array.push('<textarea id="import_paths" class="form-control" rows="5" placeholder="Absolute paths (or paths relative to Galaxy root) separated by newline" autofocus></textarea>');
 
     tmpl_array.push('<hr />');
     tmpl_array.push('<p>You can set extension type and genome for all imported datasets at once:</p>');
