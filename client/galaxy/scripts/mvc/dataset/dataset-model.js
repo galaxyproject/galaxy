@@ -130,8 +130,7 @@ var DatasetAssociation = Backbone.Model
 
     /** Does this model already contain detailed data (as opposed to just summary level data)? */
     hasDetails : function(){
-        //?? this may not be reliable
-        return _.has( this.attributes, 'genome_build' );
+        return this.has( 'peek' );
     },
 
     /** Convenience function to match dataset.has_data. */

@@ -142,8 +142,7 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend( BASE_MVC.mixin( Datase
 
     /** Does this model already contain detailed data (as opposed to just summary level data)? */
     hasDetails : function(){
-        // dataset collection api does return genome_build but doesn't return annotation
-        return _.has( this.attributes, 'annotation' );
+        return this.elements && this.elements.length;
     },
 
     /** String representation. */

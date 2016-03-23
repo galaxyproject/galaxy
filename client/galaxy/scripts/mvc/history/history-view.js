@@ -337,7 +337,12 @@ var HistoryView = _super.extend(
         }
 
         panel.$el.find( inputSelector ).searchInput( 'toggle-loading' );
-        panel.model.contents.fetchAllDetails({ silent: true })
+        // panel.model.contents.fetchAllDetails({ silent: true })
+        panel.model.contents.progressivelyFetchDetails({ silent: true })
+            .progress( function( response, limit, offset ){
+                // console.log( 'progress:', offset, offset + response.length );
+                panel.renderItems();
+            })
             .always( function(){
                 panel.$el.find( inputSelector ).searchInput( 'toggle-loading' );
             })

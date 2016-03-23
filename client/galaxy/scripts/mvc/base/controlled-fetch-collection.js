@@ -44,15 +44,15 @@ var ControlledFetchCollection = Backbone.Collection.extend({
         //      (i.e. this.on( 'sync', function( options ){ if( options.limit ){ ... } }))
         // however, when we send to xhr/jquery we copy them to data also so that they become API query params
         options.data = options.data || self._buildFetchData( options );
-        console.log( 'data:', options.data );
+        // console.log( 'data:', options.data );
 
         // options.data.filters --> options.data.q, options.data.qv
         var filters = this._buildFetchFilters( options );
-        console.log( 'filters:', filters );
+        // console.log( 'filters:', filters );
         if( !_.isEmpty( filters ) ){
             _.extend( options.data, this._fetchFiltersToAjaxData( filters ) );
         }
-        console.log( 'data:', options.data );
+        // console.log( 'data:', options.data );
         return options;
     },
 

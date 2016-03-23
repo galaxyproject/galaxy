@@ -371,7 +371,6 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
      *  @returns the visible item views
      */
     renderItems : function( $whereTo ){
-console.log( '------------------------------------------------- renderItems' );
         $whereTo = $whereTo || this.$el;
         var panel = this;
         panel.log( this + '.renderItems', $whereTo );

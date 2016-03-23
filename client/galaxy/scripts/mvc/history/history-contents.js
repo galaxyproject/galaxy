@@ -264,6 +264,55 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return deferred;
     },
 
+    progressivelyFetchDetails : function( options ){
+        options = options || {};
+        var deferred = jQuery.Deferred();
+        var self = this;
+        var limit = options.limitPerCall || 50;
+        // TODO: only fetch tags and annotations if specifically requested
+        var searchAttributes = HDA_MODEL.HistoryDatasetAssociation.prototype.searchAttributes;
+        var detailKeys = searchAttributes.join( ',' );
+        // console.log( 'progressivelyFetchDetails:', limit, options );
+
+        function _notifyAndContinue( response, offset ){
+            // console.log( 'rcvd:', response.length );
+            deferred.notify( response, limit, offset );
+            if( !response.length || response.length < limit ){
+                deferred.resolve( response, limit, offset );
+                return;
+            }
+            _recursivelyFetch( offset + limit );
+        }
+
+        function _recursivelyFetch( offset ){
+            offset = offset || 0;
+            // console.log( '_recursivelyFetch:', offset );
+            var _options = _.extend( _.clone( options ), {
+                view    : 'summary',
+                keys    : detailKeys,
+                limit   : limit,
+                offset  : offset,
+            });
+
+            // console.log( 'fetching:', _options.limit, _options.offset );
+            _.defer( function(){
+                self.fetch( _options )
+                    .fail( deferred.reject )
+                    .done( function( r ){ _notifyAndContinue( r, offset ); });
+            });
+        }
+        _recursivelyFetch();
+        return deferred;
+    },
+
+    _test_progressivelyFetchDetails : function( options ){
+        var self = this;
+        var xhr = self.progressivelyFetchDetails( options );
+        xhr.progress( function(){
+
+        });
+    },
+
     /**  */
     isCopyable : function( contentsJSON ){
         var copyableModelClasses = [

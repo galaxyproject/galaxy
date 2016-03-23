@@ -170,7 +170,7 @@ var History = Backbone.Model
 
     /**  */
     checkForUpdates : function( options ){
-        console.log( this + '.checkForUpdates' );
+        // console.log( this + '.checkForUpdates' );
         options = options || {};
         var delay = this.UPDATE_DELAY;
         var self = this;
@@ -186,7 +186,7 @@ var History = Backbone.Model
 
         // if there are still datasets in the non-ready state, recurse into this function with the new time
         var nonReadyContentCount = this.numOfUnfinishedShownContents();
-        console.log( 'nonReadyContentCount:', nonReadyContentCount );
+        // console.log( 'nonReadyContentCount:', nonReadyContentCount );
         if( nonReadyContentCount > 0 ){
             _delayThenUpdate();
 
@@ -196,7 +196,7 @@ var History = Backbone.Model
             // (also update the size for the user in either case)
             self._getSizeAndRunning()
                 .done( function( historyData ){
-                    console.log( 'non_ready_jobs:', historyData.non_ready_jobs );
+                    // console.log( 'non_ready_jobs:', historyData.non_ready_jobs );
                     if( self.numOfUnfinishedJobs() > 0 ){
                         _delayThenUpdate();
 
@@ -232,7 +232,7 @@ var History = Backbone.Model
 
     /**  */
     fetchWithContents : function( options, contentsOptions ){
-        console.log( this + '.fetchWithContents' );
+        // console.log( this + '.fetchWithContents' );
         // TODO: push down to a base class
         options = options || {};
         contentsOptions = contentsOptions || {};
@@ -253,7 +253,7 @@ var History = Backbone.Model
 
             contentsOptions.reset = true;
             contentsOptions.silent = true;
-            console.log( 'fetching contents' );
+            // console.log( 'fetching contents' );
             return self.contents.fetch( contentsOptions );
 
             // return self.contents.fetchFirst( contentsOptions );
