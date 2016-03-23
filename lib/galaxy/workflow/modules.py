@@ -1,7 +1,6 @@
 """
 Modules used in building workflows
 """
-import copy
 import logging
 from json import dumps, loads
 from xml.etree.ElementTree import Element
@@ -965,11 +964,8 @@ class ToolModule( WorkflowModule ):
                         input_dicts.append( { "name": name, "description": "runtime parameter for tool %s" % self.get_name() } )
         return input_dicts
 
-    def get_post_job_actions( self, incoming=None):
-        if incoming is None:
-            return self.post_job_actions
-        else:
-            return ActionBox.handle_incoming(incoming)
+    def get_post_job_actions( self, incoming ):
+        return ActionBox.handle_incoming( incoming )
 
     def get_config_form( self ):
         self.add_dummy_datasets()
@@ -977,8 +973,7 @@ class ToolModule( WorkflowModule ):
                                          tool=self.tool, values=self.state.inputs, errors=( self.errors or {} ) )
 
     def update_state( self, incoming ):
-        self.label = incoming.get( 'label' )
-        self.state.inputs = copy.deepcopy( incoming )
+        self.recover_state( incoming )
 
     def check_and_update_state( self ):
         inputs = self.state.inputs

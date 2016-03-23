@@ -1661,12 +1661,6 @@ class Tool( object, Dictifiable ):
         tool_model[ 'inputs' ] = {}
         populate_model( self.inputs, state_inputs, tool_model[ 'inputs' ] )
 
-        # sanitize tool state
-        def value_to_basic( input, value, parent, **kwargs ):
-            parent[ input.name ] = input.value_to_basic( value, self.app )
-
-        visit_input_values( self.inputs, state_inputs, value_to_basic )
-
         # create tool help
         tool_help = ''
         if self.help:
@@ -1692,7 +1686,7 @@ class Tool( object, Dictifiable ):
             'versions'      : tool_versions,
             'requirements'  : [ { 'name' : r.name, 'version' : r.version } for r in self.requirements ],
             'errors'        : state_errors,
-            'state_inputs'  : state_inputs,
+            'state_inputs'  : params_to_strings( self.inputs, state_inputs, self.app ),
             'job_id'        : trans.security.encode_id( job.id ) if job else None,
             'job_remap'     : self._get_job_remap( job ),
             'history_id'    : trans.security.encode_id( history.id ),
