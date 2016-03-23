@@ -50,8 +50,10 @@ class ShellJobRunner( AsynchronousJobRunner ):
     def queue_job( self, job_wrapper ):
         """Create job script and submit it to the DRM"""
         # prepare the job
-        if not self.prepare_job( job_wrapper, include_metadata=True ):
-            return
+        #hack https://github.com/dpryan79/galaxy/commit/3536ff923cf736b2dbefab3e04b7fcd79b909d22
+        include_metadata = asbool( job_wrapper.job_destination.params.get( "embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB ) )
+        if not self.prepare_job( job_wrapper, include_metadata=include_metadata):
+             return
 
         # Get shell and job execution interface
         job_destination = job_wrapper.job_destination
@@ -131,6 +133,11 @@ class ShellJobRunner( AsynchronousJobRunner ):
             if state is None:
                 if ajs.job_wrapper.get_state() == model.Job.states.DELETED:
                     continue
+
+                external_metadata = not asbool( job_wrapper.job_destination.params.get( "embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB ) )
+                if external_metadata:
+                    self._handle_metadata_externally( ajs.job_wrapper, resolve_requirements=True )
+
                 log.debug("(%s/%s) job not found in batch state check" % ( id_tag, external_job_id ) )
                 shell_params, job_params = self.parse_destination_params(ajs.job_destination.params)
                 shell, job_interface = self.get_cli_plugins(shell_params, job_params)
