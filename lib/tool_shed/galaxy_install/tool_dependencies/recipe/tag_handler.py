@@ -249,7 +249,7 @@ class Repository( RecipeTag, SyncDatabase ):
                        owner=owner,
                        changeset_revision=changeset_revision )
         pathspec = [ 'repository', 'get_tool_dependencies_config_contents' ]
-        text = url_get( self.app, tool_shed_url, pathspec=pathspec, params=params )
+        text = url_get( tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
         if text:
             # Write the contents to a temporary file on disk so it can be reloaded and parsed.
             fh = tempfile.NamedTemporaryFile( 'wb', prefix="tmp-toolshed-cttdc"  )

@@ -30,6 +30,7 @@ from xml.etree import ElementInclude, ElementTree
 from six import binary_type, iteritems, PY3, string_types, text_type
 from six.moves import email_mime_text, xrange, zip
 from six.moves.urllib import parse as urlparse
+from six.moves.urllib import request as urlrequest
 
 try:
     import docutils.core as docutils_core
@@ -1342,20 +1343,40 @@ def parse_int(value, min_val=None, max_val=None, default=None, allow_none=False)
             raise
 
 
-def url_get( app, base_url, toolshed=True, pathspec=None, params=None ):
+def build_url( base_url, port=80, scheme='http', pathspec=None, params=None, doseq=False ):
+    if params is None:
+        params = dict()
+    if pathspec is None:
+        pathspec = []
+    parsed_url = urlparse.urlparse( base_url )
+    if scheme != 'http':
+        parsed_url.scheme = scheme
+    if port != 80:
+        url = '%s://%s:%d/%s' % ( parsed_url.scheme, parsed_url.netloc.rstrip( '/' ), int( port ), parsed_url.path )
+    else:
+        url = '%s://%s/%s' % ( parsed_url.scheme, parsed_url.netloc.rstrip( '/' ), parsed_url.path.lstrip( '/' ) )
+    if len( pathspec ) > 0:
+        url = '%s/%s' % ( url.rstrip( '/' ), '/'.join( pathspec ) )
+    if parsed_url.query:
+        for query_parameter in parsed_url.query.split( '&' ):
+            key, value = query_parameter.split( '=' )
+            params[ key ] = value
+    if params:
+        url += '?%s' % urlparse.urlencode( params, doseq=doseq )
+    return url
+
+
+def url_get( base_url, password_mgr=None, pathspec=None, params=None ):
     """Make contact with the uri provided and return any contents."""
-    # urllib2 auto-detects system proxies, when passed a Proxyhandler.
-    # Refer: https://docs.python.org/2/howto/urllib2.html#proxies
-    proxy = urllib2.ProxyHandler()
-    urlopener = urllib2.build_opener( proxy )
-    urllib2.install_opener( urlopener )
-    if toolshed:
-        registry = app.tool_shed_registry
-        password_mgr = registry.password_manager_for_url( base_url )
-        if password_mgr is not None:
-            auth_handler = urllib2.HTTPBasicAuthHandler( password_mgr )
-            urlopener.add_handler( auth_handler )
-    full_url = url_join( base_url, pathspec=pathspec, params=params )
+    # Uses system proxy settings if they exist.
+    proxy = urlrequest.ProxyHandler()
+    if password_mgr is not None:
+        auth = urlrequest.HTTPDigestAuthHandler( password_mgr )
+        urlopener = urlrequest.build_opener( proxy, auth )
+    else:
+        urlopener = urlrequest.build_opener( proxy )
+    urlrequest.install_opener( urlopener )
+    full_url = build_url( base_url, pathspec=pathspec, params=params )
     response = urlopener.open( full_url )
     content = response.read()
     response.close()

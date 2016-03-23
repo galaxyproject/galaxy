@@ -862,7 +862,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                            workflow_name=encoding_util.tool_shed_encode( workflow_name ),
                            open_for_url=True )
             pathspec = [ 'workflow', 'import_workflow' ]
-            workflow_text = util.url_get( trans.app, tool_shed_url, pathspec=pathspec, params=params )
+            workflow_text = util.url_get( tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
             import_button = True
         if import_button:
             workflow_data = None

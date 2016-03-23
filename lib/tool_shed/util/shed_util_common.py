@@ -254,7 +254,7 @@ def generate_tool_shed_repository_install_dir( repository_clone_url, changeset_r
     tool_shed_url = items[ 0 ]
     repo_path = items[ 1 ]
     tool_shed_url = common_util.remove_port_from_tool_shed_url( tool_shed_url )
-    return common_util.url_join( tool_shed_url, pathspec=[ 'repos', repo_path, changeset_revision ] )
+    return '/'.join( [ tool_shed_url, 'repos', repo_path, changeset_revision ] )
 
 
 def get_absolute_path_to_file_in_repository( repo_files_dir, file_name ):
@@ -301,7 +301,7 @@ def get_ctx_rev( app, tool_shed_url, name, owner, changeset_revision ):
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
     params = dict( name=name, owner=owner, changeset_revision=changeset_revision )
     pathspec = [ 'repository', 'get_ctx_rev' ]
-    ctx_rev = util.url_get( app, tool_shed_url, pathspec=pathspec, params=params )
+    ctx_rev = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
     return ctx_rev
 
 
@@ -369,7 +369,7 @@ def get_tool_dependency_definition_metadata_from_tool_shed( app, tool_shed_url, 
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
     params = dict( name=name, owner=owner )
     pathspec = [ 'repository', 'get_tool_dependency_definition_metadata' ]
-    metadata = util.url_get( app, tool_shed_url, pathspec=pathspec, params=params )
+    metadata = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
     return metadata
 
 
@@ -626,7 +626,7 @@ def get_repository_for_dependency_relationship( app, tool_shed, name, owner, cha
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed )
         params = dict( name=name, owner=owner, changeset_revision=changeset_revision )
         pathspec = [ 'repository', 'next_installable_changeset_revision' ]
-        text = util.url_get( app, tool_shed_url, pathspec=pathspec, params=params )
+        text = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
         if text:
             repository = get_installed_repository( app=app,
                                                    tool_shed=tool_shed,
@@ -828,7 +828,7 @@ def get_repository_type_from_tool_shed( app, tool_shed_url, name, owner ):
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
     params = dict( name=name, owner=owner )
     pathspec = [ 'repository', 'get_repository_type' ]
-    repository_type = util.url_get( app, tool_shed_url, pathspec=pathspec, params=params )
+    repository_type = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
     return repository_type
 
 
@@ -914,7 +914,7 @@ def get_tool_shed_status_for_installed_repository( app, repository ):
     params = dict( name=repository.name, owner=repository.owner, changeset_revision=repository.changeset_revision )
     pathspec = [ 'repository', 'status_for_installed_repository' ]
     try:
-        encoded_tool_shed_status_dict = util.url_get( app, tool_shed_url, pathspec=pathspec, params=params )
+        encoded_tool_shed_status_dict = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
         tool_shed_status_dict = encoding_util.tool_shed_decode( encoded_tool_shed_status_dict )
         return tool_shed_status_dict
     except HTTPError, e:
@@ -926,7 +926,7 @@ def get_tool_shed_status_for_installed_repository( app, repository ):
         params[ 'from_update_manager' ] = True
         try:
             # The value of text will be 'true' or 'false', depending upon whether there is an update available for the installed revision.
-            text = util.url_get( app, tool_shed_url, pathspec=pathspec, params=params )
+            text = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
             return dict( revision_update=text )
         except Exception, e:
             # The required tool shed may be unavailable, so default the revision_update value to 'false'.
@@ -1021,7 +1021,7 @@ def get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url, name, ow
         raise Exception( message )
     params = dict( name=name, owner=owner, changeset_revision=changeset_revision )
     pathspec = [ 'repository', 'updated_changeset_revisions' ]
-    text = util.url_get( app, tool_shed_url, pathspec=pathspec, params=params )
+    text = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
     return text
 
 
@@ -1227,7 +1227,7 @@ def repository_was_previously_installed( app, tool_shed_url, repository_name, re
                    changeset_revision=changeset_revision,
                    from_tip=str( from_tip ) )
     pathspec = [ 'repository', 'previous_changeset_revisions' ]
-    text = util.url_get( app, tool_shed_url, pathspec=pathspec, params=params )
+    text = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
     if text:
         changeset_revisions = util.listify( text )
         for previous_changeset_revision in changeset_revisions:
