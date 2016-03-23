@@ -477,7 +477,7 @@ class BooleanToolParameter( ToolParameter ):
         return ( value in [ True, 'True', 'true' ] )
 
     def to_json( self, value, app=None ):
-        if value is True:
+        if self.to_python( value, app ):
             return 'true'
         else:
             return 'false'
