@@ -6,8 +6,9 @@ import urllib2
 
 sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir ) )
 
-from tool_shed.util import common_util, hg_util
+from tool_shed.util import hg_util
 from galaxy import util
+
 
 class HTTPRedirectWithDataHandler( urllib2.HTTPRedirectHandler ):
 

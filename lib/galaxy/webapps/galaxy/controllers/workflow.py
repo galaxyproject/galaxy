@@ -10,7 +10,6 @@ from sqlalchemy import and_
 from sqlalchemy.sql import expression
 from markupsafe import escape
 
-from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 
 from galaxy import model

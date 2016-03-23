@@ -1,9 +1,6 @@
 import json
 import logging
 import os
-import urllib
-import urllib2
-from six import string_types
 
 from galaxy import util
 from galaxy.util.odict import odict
