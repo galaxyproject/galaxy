@@ -50,7 +50,6 @@ class ShellJobRunner( AsynchronousJobRunner ):
     def queue_job( self, job_wrapper ):
         """Create job script and submit it to the DRM"""
         # prepare the job
-        #hack https://github.com/dpryan79/galaxy/commit/3536ff923cf736b2dbefab3e04b7fcd79b909d22
         include_metadata = asbool( job_wrapper.job_destination.params.get( "embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB ) )
         if not self.prepare_job( job_wrapper, include_metadata=include_metadata):
              return
