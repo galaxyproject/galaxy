@@ -81,6 +81,7 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
     log.debug("Executed all jobs for tool request: %s" % all_jobs_timer)
     if collection_info:
         history = history or tool.get_default_history_by_trans( trans )
+        params = param_combinations[0]
         execution_tracker.create_output_collections( trans, history, params )
 
     return execution_tracker
