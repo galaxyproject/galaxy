@@ -1874,6 +1874,8 @@ class DataToolParameter( BaseDataToolParameter ):
             raise ValueError( "History does not include a dataset of the required format / build" )
         if value in [ None, "None", '' ]:
             return None
+        if isinstance( value, dict ) and 'values' in value:
+            value = self.to_python( value, trans.app )
         if isinstance( value, string_types ) and value.find( "," ) > 0:
             value = [ int( value_part ) for value_part in value.split( "," ) ]
         if isinstance( value, list ):
@@ -1955,7 +1957,7 @@ class DataToolParameter( BaseDataToolParameter ):
         dataset_count = 0
         for validator in self.validators:
             def do_validate( v ):
-                if validator.requires_dataset_metadata and v and v.dataset.state != galaxy.model.Dataset.states.OK:
+                if validator.requires_dataset_metadata and v and hasattr( v, 'dataset' ) and v.dataset.state != galaxy.model.Dataset.states.OK:
                     return
                 else:
                     validator.validate( v, trans )
