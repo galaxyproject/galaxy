@@ -3,21 +3,29 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-default' ], function
 /** List of available content selectors options */
 var Configurations = {
     'data': [
-        { name: 'single',       src: 'hda',  icon: 'fa-file-o',   tooltip: 'Single dataset',     batchmode: false, multiple: false },
-        { name: 'multiple',     src: 'hda',  icon: 'fa-files-o',  tooltip: 'Multiple datasets',  batchmode: true,  multiple: true  },
-        { name: 'collection',   src: 'hdca', icon: 'fa-folder-o', tooltip: 'Dataset collection', batchmode: true,  multiple: false } ],
-    'data_collection': [
-        { name: 'collection',   src: 'hdca', icon: 'fa-folder-o', tooltip: 'Dataset collection', batchmode: false, multiple: false } ],
+        { src: 'hda',  icon: 'fa-file-o',   tooltip: 'Single dataset',       batchmode: false, multiple: false },
+        { src: 'hda',  icon: 'fa-files-o',  tooltip: 'Multiple datasets',    batchmode: true,  multiple: true  },
+        { src: 'hdca', icon: 'fa-folder-o', tooltip: 'Dataset collection',   batchmode: true,  multiple: false } ],
     'data_multiple': [
-        { name: 'multiple',     src: 'hda',  icon: 'fa-files-o',  tooltip: 'Multiple datasets',  batchmode: false, multiple: true  },
-        { name: 'collection',   src: 'hdca', icon: 'fa-folder-o', tooltip: 'Dataset collection', batchmode: false, multiple: false } ]
+        { src: 'hda',  icon: 'fa-files-o',  tooltip: 'Multiple datasets',    batchmode: false, multiple: true  },
+        { src: 'hdca', icon: 'fa-folder-o', tooltip: 'Dataset collection',   batchmode: false, multiple: false } ],
+    'data_collection': [
+        { src: 'hdca', icon: 'fa-folder-o', tooltip: 'Dataset collection',   batchmode: false, multiple: false } ],
+    'workflow_data': [
+        { src: 'hda',  icon: 'fa-file-o',   tooltip: 'Single dataset',       batchmode: false, multiple: false },
+        { src: 'hda',  icon: 'fa-files-o',  tooltip: 'Multiple datasets',    batchmode: true,  multiple: true  } ],
+    'workflow_collection': [
+        { src: 'hdca', icon: 'fa-folder-o', tooltip: 'Dataset collection',   batchmode: false, multiple: false },
+        { src: 'hdca', icon: 'fa-folder',   tooltip: 'Multiple collections', batchmode: true,  multiple: true } ]
 };
 
 /** View for hda and hdca content selector ui elements */
 var View = Backbone.View.extend({
     initialize : function( options ) {
         var self = this;
-        this.model = options && options.model || new Backbone.Model( options );
+        this.model = options && options.model || new Backbone.Model({
+            src_labels: { 'hda' : 'dataset', 'hdca': 'dataset collection' }
+        }).set( options );
         this.setElement( $( '<div/>' ).addClass( 'ui-select-content' ) );
         this.$batch = $( '<div/>' ).addClass( 'ui-form-info' )
                         .append( $( '<i/>' ).addClass( 'fa fa-sitemap' ) )
@@ -27,33 +35,21 @@ var View = Backbone.View.extend({
         this.history = {};
 
         // add listeners
-        this.listenTo( this.model, 'change', this.render, this );
-        this.listenTo( this.model, 'change:type change:multiple', this._changeType, this );
-        this.listenTo( this.model, 'change:value', this._changeValue, this );
         this.listenTo( this.model, 'change:data', this._changeData, this );
         this.listenTo( this.model, 'change:wait', this._changeWait, this );
+        this.listenTo( this.model, 'change:current', this._changeCurrent, this );
+        this.listenTo( this.model, 'change:value', this._changeValue, this );
+        this.listenTo( this.model, 'change:type change:optional change:multiple change:extensions', this._changeType, this );
         this.render();
 
-        // update selectable data and initial value
-        this.model.get( 'value' ) !== undefined && this.model.trigger( 'change:value' );
-        this.model.trigger( 'change:type' );
-        this.model.trigger( 'change:value' );
-
-        // add change event. fires on trigger
+        // add change event
         this.on( 'change', function() { options.onchange && options.onchange( self.value() ) } );
     },
 
     render: function() {
-        var self = this;
-        _.each( this.fields, function( field, i ) {
-            if ( self.model.get( 'current' ) == i ) {
-                field.$el.show();
-                self.$batch[ self.config[ i ].batchmode && 'show' || 'hide' ]();
-                self.button_type.value( i );
-            } else {
-                field.$el.hide();
-            }
-        });
+        this._changeType();
+        this._changeValue();
+        this._changeWait();
     },
 
     /** Indicate that select fields are being updated */
@@ -86,7 +82,7 @@ var View = Backbone.View.extend({
                         if ( details ) {
                             result.values.push( details );
                         } else {
-                            Galaxy.emit.debug( 'tools-select-content::_changeValue()', 'Requested details not found for \'' + id_list[ i ] + '\'.'  );
+                            Galaxy.emit.debug( 'tools-select-content::value()', 'Requested details not found for \'' + id_list[ i ] + '\'.'  );
                             return null;
                         }
                     }
@@ -95,15 +91,28 @@ var View = Backbone.View.extend({
                 }
             }
         } else {
-            Galaxy.emit.debug( 'tools-select-content::_changeValue()', 'Invalid value/source \'' + new_value + '\'.'  );
+            Galaxy.emit.debug( 'tools-select-content::value()', 'Invalid value/source \'' + new_value + '\'.'  );
         }
         return null;
+    },
+
+    /** Change of current select field */
+    _changeCurrent: function() {
+        var self = this;
+        _.each( this.fields, function( field, i ) {
+            if ( self.model.get( 'current' ) == i ) {
+                field.$el.show();
+                self.$batch[ self.config[ i ].batchmode && 'show' || 'hide' ]();
+                self.button_type.value( i );
+            } else {
+                field.$el.hide();
+            }
+        });
     },
 
     /** Change of type */
     _changeType: function() {
         var self = this;
-        this.model.set( 'current', 0 );
 
         // identify selector type
         var config_id = String( this.model.get( 'type' ) ) + ( this.model.get( 'multiple' ) ? '_multiple' : '' );
@@ -114,10 +123,9 @@ var View = Backbone.View.extend({
             Galaxy.emit.debug( 'tools-select-content::_changeType()', 'Invalid configuration/type id \'' + config_id + '\'.'  );
         }
 
-        // prepare error messages
+        // prepare extension component of error message
         var extensions = Utils.textify( this.model.get( 'extensions' ) );
-        var hda_error  = extensions ? 'No ' + extensions + ' dataset available.'            : 'No dataset available.';
-        var hdca_error = extensions ? 'No ' + extensions + ' dataset collection available.' : 'No dataset collection available.';
+        var src_labels = this.model.get( 'src_labels' );
 
         // build views
         this.fields = [];
@@ -126,14 +134,14 @@ var View = Backbone.View.extend({
             self.button_data.push({
                 value   : i,
                 icon    : c.icon,
-                tooltip : c.label
+                tooltip : c.tooltip
             });
             self.fields.push(
                 new Select.View({
                     optional    : self.model.get( 'optional' ),
                     multiple    : c.multiple,
                     searchable  : !c.multiple,
-                    error_text  : c.type === 'hda' ? hda_error : hdca_error,
+                    error_text  : 'No ' + ( extensions ? extensions + ' ' : '' ) + ( src_labels[ c.src ] || 'content' ) + ' available.',
                     onchange    : function() {
                         self.trigger( 'change' );
                     }
@@ -145,7 +153,7 @@ var View = Backbone.View.extend({
             data    : this.button_data,
             onchange: function( value ) {
                 self.model.set( 'current', value );
-                self.trigger('change');
+                self.trigger( 'change' );
             }
         });
 
@@ -160,7 +168,9 @@ var View = Backbone.View.extend({
             self.$el.append( field.$el.css( { 'margin-left': button_width } ) );
         });
         this.$el.append( this.$batch.css( { 'margin-left': button_width } ) );
-        this.model.trigger( 'change:data' );
+        this.model.set( 'current', 0 );
+        this._changeCurrent();
+        this._changeData();
     },
 
     /** Change of wait flag */
@@ -186,7 +196,7 @@ var View = Backbone.View.extend({
             });
         });
         _.each( this.config, function( c, i ) {
-            self.fields[ i ].add( select_options[  c.src ], function( a, b ) { return b.hid - a.hid } );
+            select_options[ c.src ] && self.fields[ i ].add( select_options[ c.src ], function( a, b ) { return b.hid - a.hid } );
         });
     },
 
@@ -202,13 +212,13 @@ var View = Backbone.View.extend({
             // sniff first suitable field type from config list
             var src = new_value.values[ 0 ].src;
             var multiple = new_value.values.length > 1;
-            var current = -1;
             for( var i = 0; i < this.config.length; i++ ) {
                 var field = this.fields[ i ];
                 var c = this.config[ i ];
-                if ( current === -1 && c.src == src && [ multiple, true ].indexOf( c.multiple ) !== -1 ) {
-                    this.model.set( 'current', current = i );
+                if ( c.src == src && [ multiple, true ].indexOf( c.multiple ) !== -1 ) {
+                    this.model.set( 'current', i );
                     field.value( list );
+                    break;
                 }
             }
         } else {

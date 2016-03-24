@@ -3,7 +3,7 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content',
 ], function( testApp, Ui, SelectContent ){
     'use strict';
     module( 'Ui test', {
-    setup: function() {
+        setup: function() {
             testApp.create();
         },
         teardown: function() {
@@ -87,55 +87,112 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content',
     test( 'select-content', function() {
         var select = new SelectContent.View({});
         $( 'body' ).prepend( select.$el );
+        var checkSelect = function( tag, options ) {
+            var $select = select.$( '.ui-select:' + tag );
+            var $option = $select.find( 'option:first' );
+            var $button = select.$( '.ui-radiobutton' ).find( 'label:' + tag );
+            ok ( $select.find( 'option' ).length == options[ tag + 'length' ], tag + ' one has ' + options[ tag + 'length' ] + ' options' );
+            ok ( $option.prop( 'value' ) == options[ tag + 'value' ], tag + ' option has correct value' );
+            ok ( $option.text() == options[ tag + 'label' ], tag + ' option has correct label' );
+            ok ( $select.hasClass( 'ui-select-multiple' ) == options[ tag + 'multiple' ], 'Check multiple option' );
+            $button.trigger( 'mouseover' );
+            var tooltip = $( '.tooltip-inner:last' ).text();
+            $button.trigger( 'mouseleave' );
+            ok( tooltip.indexOf( 'dataset' ) != -1 || tooltip.indexOf( 'collection' ) != -1, 'Basic tooltip check' );
+        };
+        var check = function( options ) {
+            ok ( select.button_type.$( '.ui-option:first' ).hasClass( 'active' ), 'First one is toggled' );
+            ok ( select.$( '.ui-select' ).length == options.selectfields, 'Found ' + options.selectfields + ' select fields' );
+            ok ( select.button_type.$( '.ui-option' ).length == options.selectfields, 'Found ' + options.selectfields + ' radio button options' );
+            ok ( select.$( '.ui-select-multiple' ).length == options.totalmultiple, 'Contains ' + options.totalmultiple + ' multiselect fields' );
+            ok ( select.button_type.$el.css( 'display' ) == ( options.selectfields > 1 ? 'block' : '' ), 'Radio button visibility' );
+            ok ( select.$( '.ui-select:first' ).css( 'display' ) == 'block', 'Check select visibility' );
+            ok ( select.$( '.ui-select:last' ).css( 'display' ) == ( options.selectfields == 1 ? 'block' : 'none' ), 'Last select visibility' );
+            checkSelect( 'first', options );
+            checkSelect( 'last', options );
+        };
+
         ok ( select.button_type.value() == 0, 'Initial mode selected by default.' );
         select.model.set( 'data', { 'hda':  [{ id: 'id0', name: 'name0', hid: 'hid0' },
                                              { id: 'id1', name: 'name1', hid: 'hid1' }],
                                     'hdca': [{ id: 'id2', name: 'name2', hid: 'hid2' },
                                              { id: 'id3', name: 'name3', hid: 'hid3' },
                                              { id: 'id4', name: 'name4', hid: 'hid4' }] } );
-        ok ( select.button_type.$( '.ui-option' ).length == 3, 'Found 3 radio button options' );
-        ok ( select.button_type.$( '.ui-option:first' ).hasClass( 'active' ), 'First one is toggled' );
-        ok ( select.$( '.ui-select' ).length == 3, 'Found 3 select fields' );
-        ok ( select.$( '.ui-select:first' ).find( 'option' ).length == 2, 'First one has 2 options' );
-        ok ( select.$( 'option:first' ).prop( 'value' ) == 'id0', 'First option has correct value' );
-        ok ( select.$( 'option:first' ).text() == 'hid0: name0', 'First option has correct label' );
-        ok ( select.$( '.ui-select-multiple' ).length == 1, 'Contains one multiselect field' );
-        ok ( select.$( '.ui-select-multiple' ).find( 'option' ).length == 2, 'Multiselect has two options' );
-        ok ( select.$( '.ui-select-multiple' ).find( 'option:first' ).prop( 'value' ) == 'id0', 'First option has correct value' );
-        ok ( select.$( '.ui-select-multiple' ).find( 'option:first' ).text() == 'hid0: name0', 'First option has correct label' );
-        ok ( select.$( '.ui-select:last' ).find( 'option' ).length == 3, 'Last one has 3 options' );
-        ok ( select.$( '.ui-select:last' ).find( 'option:first' ).prop( 'value' ) == 'id2', 'First option has correct value' );
-        ok ( select.$( '.ui-select:last' ).find( 'option:first' ).text() == 'hid2: name2', 'First option has correct label' );
-        ok ( select.button_type.$el.css( 'display' ) == 'block', 'Radio button visible' );
+
+        var initial = { selectfields    : 3,
+                        firstlength     : 2,
+                        firstvalue      : 'id0',
+                        firstlabel      : 'hid0: name0',
+                        firstmultiple   : false,
+                        totalmultiple   : 1,
+                        lastvalue       : 'id2',
+                        lastlabel       : 'hid2: name2',
+                        lastlength      : 3,
+                        lastmultiple    : false };
+        check( initial );
+
+        select.model.set( 'multiple', true );
+        select.model.set( 'type', 'data' );
+        check({ selectfields    : 2,
+                firstlength     : 2,
+                firstvalue      : 'id0',
+                firstlabel      : 'hid0: name0',
+                firstmultiple   : true,
+                totalmultiple   : 1,
+                lastvalue       : 'id2',
+                lastlabel       : 'hid2: name2',
+                lastlength      : 3,
+                lastmultiple    : false });
+
+        select.model.set( 'multiple', false );
+        select.model.set( 'type', 'data_collection' );
+        check({ selectfields    : 1,
+                firstlength     : 3,
+                firstvalue      : 'id2',
+                firstlabel      : 'hid2: name2',
+                firstmultiple   : false,
+                totalmultiple   : 0,
+                lastvalue       : 'id2',
+                lastlabel       : 'hid2: name2',
+                lastlength      : 3,
+                lastmultiple    : false });
+
+        select.model.set( 'type', 'workflow_collection' );
+        check({ selectfields    : 2,
+                firstlength     : 3,
+                firstvalue      : 'id2',
+                firstlabel      : 'hid2: name2',
+                firstmultiple   : false,
+                totalmultiple   : 1,
+                lastvalue       : 'id2',
+                lastlabel       : 'hid2: name2',
+                lastlength      : 3,
+                lastmultiple    : true });
+
+        select.model.set( 'type', 'workflow_data' );
+        check({ selectfields    : 2,
+                firstlength     : 2,
+                firstvalue      : 'id0',
+                firstlabel      : 'hid0: name0',
+                firstmultiple   : false,
+                totalmultiple   : 1,
+                lastvalue       : 'id0',
+                lastlabel       : 'hid0: name0',
+                lastlength      : 2,
+                lastmultiple    : true });
+
+        select.model.set( 'type', 'data' );
+        check( initial );
+
         select.model.set( 'wait', true );
         ok ( select.$( '.icon-dropdown' ).hasClass( 'fa-spinner' ), 'Shows spinner' );
         select.model.set( 'wait', false );
         ok ( select.$( '.icon-dropdown' ).hasClass( 'fa-caret-down' ), 'Shows caret' );
-        select.model.set( 'multiple', true );
-        select.model.set( 'type', 'data' );
-        ok ( select.button_type.$( '.ui-option' ).length == 2, 'Found 2 radio button options' );
-        ok ( select.button_type.$( '.ui-option:first' ).hasClass( 'active' ), 'First one is toggled' );
-        ok ( select.$( '.ui-select' ).length == 2, 'Found two select fields' );
-        ok ( select.$( '.ui-select:first' ).find( 'option' ).length == 2, 'First one has 2 options' );
-        ok ( select.$( 'option:first' ).prop( 'value' ) == 'id0', 'First option has correct value' );
-        ok ( select.$( 'option:first' ).text() == 'hid0: name0', 'First option has correct label' );
-        ok ( select.$( '.ui-select' ).hasClass( 'ui-select-multiple' ), 'First one allows multiple selections' );
-        ok ( select.$( '.ui-select-multiple' ).length == 1, 'Contains one multiselect field' );
-        ok ( select.$( '.ui-select:last' ).find( 'option' ).length == 3, 'Last one has 3 options' );
-        ok ( select.$( '.ui-select:last' ).find( 'option:first' ).prop( 'value' ) == 'id2', 'First option has correct value' );
-        ok ( select.$( '.ui-select:last' ).find( 'option:first' ).text() == 'hid2: name2', 'First option has correct label' );
-        ok ( select.button_type.$el.css( 'display' ) == 'block', 'Radio button visible' );
-        select.model.set( 'multiple', false );
-        select.model.set( 'type', 'data_collection' );
-        ok ( select.$( '.ui-select' ).length == 1, 'Found one select fields' );
-        ok ( select.$( '.ui-select:first' ).find( 'option' ).length == 3, 'First one has 3 options' );
-        ok ( select.$( 'option:first' ).prop( 'value' ) == 'id2', 'First option has correct value' );
-        ok ( select.$( 'option:first' ).text() == 'hid2: name2', 'First option has correct label' );
-        ok ( !select.$( '.ui-select' ).hasClass( 'ui-select-multiple' ), 'First does not allow multiple selections' );
-        ok ( select.$( '.ui-select-multiple' ).length == 0, 'Does not contain any multiselect field' );
-        ok ( select.button_type.$el.css( 'display' ) == '', 'Radio button not visible' );
-        select.model.set( 'type', 'data' );
-        ok ( select.button_type.$el.css( 'display' ) == 'block', 'Radio button visible, again' );
+        select.model.set( 'optional', true );
+        ok ( select.$( 'option:first' ).prop( 'value' ) == '__null__', 'First option is optional value' );
+        select.model.set( 'optional', false );
+        ok ( select.$( 'option:first' ).prop( 'value' ) != '__null__', 'First option is not optional value' );
+
         select.model.set( 'value', { values: [ { id: 'id1', src: 'hda' } ] } );
         ok( JSON.stringify( select.value() ) == '{"batch":false,"values":[{"id":"id1","name":"name1","hid":"hid1"}]}', 'Checking single value' );
         ok( select.config[ select.model.get( 'current' ) ].src == 'hda', 'Matched dataset field' );
@@ -146,5 +203,24 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content',
         select.model.set( 'value', { values: [ { id: 'id2', src: 'hdca' } ] } );
         ok( select.config[ select.model.get( 'current' ) ].src == 'hdca', 'Matched collection field' );
         ok( JSON.stringify( select.value() ) == '{"batch":true,"values":[{"id":"id2","name":"name2","hid":"hid2"}]}', 'Checking collection value' );
+
+        select = new SelectContent.View({});
+        $( 'body' ).prepend( select.$el );
+        var checkEmptySelect = function( tag, txt_extension, txt_label ) {
+            var $select = select.$( '.ui-select:' + tag );
+            var $option = $select.find( 'option:first' );
+            ok ( $option.prop( 'value' ) == '__null__', tag + ' option has correct empty value.' );
+            ok ( $option.text() == 'No ' + txt_extension + txt_label + ' available.', tag + ' option has correct empty label.' );
+        };
+
+        var labels = select.model.get( 'src_labels' );
+        checkEmptySelect( 'first', '', labels.hda );
+        checkEmptySelect( 'last', '', labels.hdca );
+        select.model.set( 'extensions', [ 'txt', 'bam' ] );
+        checkEmptySelect( 'first', 'txt or bam ', labels.hda );
+        checkEmptySelect( 'last', 'txt or bam ', labels.hdca );
+        select.model.set( 'extensions', [ 'txt' ] );
+        checkEmptySelect( 'first', 'txt ', labels.hda );
+        checkEmptySelect( 'last', 'txt ', labels.hdca );
     } );
 });

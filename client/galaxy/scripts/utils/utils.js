@@ -69,7 +69,7 @@ function textify( lst ) {
         var lst = lst.toString().replace( /,/g, ', ' );
         var pos = lst.lastIndexOf( ', ' );
         if ( pos != -1 ) {
-            lst = lst.substr( 0, pos ) + ' or ' + lst.substr( pos + 1 );
+            lst = lst.substr( 0, pos ) + ' or ' + lst.substr( pos + 2 );
         }
         return lst;
     }
