@@ -491,44 +491,44 @@
     <datatype extension="phar" type="galaxy.datatypes.molecules:PHAR" display_in_upload="False" />
     <datatype extension="pdb" type="galaxy.datatypes.molecules:PDB" display_in_upload="True" />
     <!-- mothur formats -->
-    <datatype extension="otu" type="galaxy.datatypes.mothur:Otu" display_in_upload="true"/>
-    <datatype extension="list" type="galaxy.datatypes.mothur:Otu" subclass="True" display_in_upload="true"/>
-    <datatype extension="sabund" type="galaxy.datatypes.mothur:Sabund" display_in_upload="true"/>
-    <datatype extension="rabund" type="galaxy.datatypes.mothur:Sabund" subclass="True" display_in_upload="true"/>
-    <datatype extension="shared" type="galaxy.datatypes.mothur:GroupAbund" subclass="True" display_in_upload="true"/>
-    <datatype extension="relabund" type="galaxy.datatypes.mothur:GroupAbund" subclass="True" display_in_upload="true"/>
-    <datatype extension="names" type="galaxy.datatypes.mothur:Names" display_in_upload="true"/>
-    <datatype extension="design" type="galaxy.datatypes.mothur:Group" subclass="True" display_in_upload="true"/>
-    <datatype extension="summary" type="galaxy.datatypes.mothur:Summary" display_in_upload="true"/>
-    <datatype extension="groups" type="galaxy.datatypes.mothur:Group" display_in_upload="true"/>
-    <datatype extension="oligos" type="galaxy.datatypes.mothur:Oligos" display_in_upload="true"/>
-    <datatype extension="align" type="galaxy.datatypes.mothur:SequenceAlignment" display_in_upload="true"/>
-    <datatype extension="accnos" type="galaxy.datatypes.mothur:AccNos" display_in_upload="true"/>
-    <datatype extension="otulabels" type="galaxy.datatypes.mothur:AccNos" display_in_upload="true"/>
-    <datatype extension="otu.corr" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="true"/>
-    <datatype extension="map" type="galaxy.datatypes.mothur:SecondaryStructureMap" display_in_upload="true"/>
-    <datatype extension="align.check" type="galaxy.datatypes.mothur:AlignCheck" display_in_upload="true"/>
-    <datatype extension="align.report" type="galaxy.datatypes.mothur:AlignReport" display_in_upload="true"/>
-    <datatype extension="filter" type="galaxy.datatypes.mothur:LaneMask" display_in_upload="true"/>
-    <datatype extension="dist" type="galaxy.datatypes.mothur:DistanceMatrix" display_in_upload="true"/>
-    <datatype extension="pair.dist" type="galaxy.datatypes.mothur:PairwiseDistanceMatrix" display_in_upload="true"/>
-    <datatype extension="square.dist" type="galaxy.datatypes.mothur:SquareDistanceMatrix" display_in_upload="true"/>
-    <datatype extension="lower.dist" type="galaxy.datatypes.mothur:LowerTriangleDistanceMatrix" display_in_upload="true"/>
-    <datatype extension="ref.taxonomy" type="galaxy.datatypes.mothur:RefTaxonomy" display_in_upload="true">
-      <converter file="ref_to_seq_taxonomy_converter.xml" target_datatype="seq.taxonomy"/>
+    <datatype extension="mothur.otu" type="galaxy.datatypes.mothur:Otu" display_in_upload="true"/>
+    <datatype extension="mothur.list" type="galaxy.datatypes.mothur:Otu" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.sabund" type="galaxy.datatypes.mothur:Sabund" display_in_upload="true"/>
+    <datatype extension="mothur.rabund" type="galaxy.datatypes.mothur:Sabund" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.shared" type="galaxy.datatypes.mothur:GroupAbund" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.relabund" type="galaxy.datatypes.mothur:GroupAbund" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.names" type="galaxy.datatypes.mothur:Names" display_in_upload="true"/>
+    <datatype extension="mothur.design" type="galaxy.datatypes.mothur:Group" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.summary" type="galaxy.datatypes.mothur:Summary" display_in_upload="true"/>
+    <datatype extension="mothur.groups" type="galaxy.datatypes.mothur:Group" display_in_upload="true"/>
+    <datatype extension="mothur.oligos" type="galaxy.datatypes.mothur:Oligos" display_in_upload="true"/>
+    <datatype extension="mothur.align" type="galaxy.datatypes.mothur:SequenceAlignment" display_in_upload="true"/>
+    <datatype extension="mothur.accnos" type="galaxy.datatypes.mothur:AccNos" display_in_upload="true"/>
+    <datatype extension="mothur.otulabels" type="galaxy.datatypes.mothur:AccNos" display_in_upload="true"/>
+    <datatype extension="mothur.otu.corr" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.map" type="galaxy.datatypes.mothur:SecondaryStructureMap" display_in_upload="true"/>
+    <datatype extension="mothur.align.check" type="galaxy.datatypes.mothur:AlignCheck" display_in_upload="true"/>
+    <datatype extension="mothur.align.report" type="galaxy.datatypes.mothur:AlignReport" display_in_upload="true"/>
+    <datatype extension="mothur.filter" type="galaxy.datatypes.mothur:LaneMask" display_in_upload="true"/>
+    <datatype extension="mothur.dist" type="galaxy.datatypes.mothur:DistanceMatrix" display_in_upload="true"/>
+    <datatype extension="mothur.pair.dist" type="galaxy.datatypes.mothur:PairwiseDistanceMatrix" display_in_upload="true"/>
+    <datatype extension="mothur.square.dist" type="galaxy.datatypes.mothur:SquareDistanceMatrix" display_in_upload="true"/>
+    <datatype extension="mothur.lower.dist" type="galaxy.datatypes.mothur:LowerTriangleDistanceMatrix" display_in_upload="true"/>
+    <datatype extension="mothur.ref.taxonomy" type="galaxy.datatypes.mothur:RefTaxonomy" display_in_upload="true">
+      <converter file="ref_to_seq_taxonomy_converter.xml" target_datatype="mothur.seq.taxonomy"/>
     </datatype>
-    <datatype extension="seq.taxonomy" type="galaxy.datatypes.mothur:SequenceTaxonomy" display_in_upload="true"/>
-    <datatype extension="rdp.taxonomy" type="galaxy.datatypes.mothur:RDPSequenceTaxonomy" display_in_upload="true"/>
-    <datatype extension="cons.taxonomy" type="galaxy.datatypes.mothur:ConsensusTaxonomy" display_in_upload="true"/>
-    <datatype extension="tax.summary" type="galaxy.datatypes.mothur:TaxonomySummary" display_in_upload="true"/>
-    <datatype extension="freq" type="galaxy.datatypes.mothur:Frequency" display_in_upload="true"/>
-    <datatype extension="quan" type="galaxy.datatypes.mothur:Quantile" display_in_upload="true"/>
-    <datatype extension="filtered.quan" type="galaxy.datatypes.mothur:Quantile" subclass="True" display_in_upload="true"/>
-    <datatype extension="masked.quan" type="galaxy.datatypes.mothur:Quantile" subclass="True" display_in_upload="true"/>
-    <datatype extension="filtered.masked.quan" type="galaxy.datatypes.mothur:Quantile" subclass="True" display_in_upload="true"/>
-    <datatype extension="axes" type="galaxy.datatypes.mothur:Axes" display_in_upload="true"/>
-    <datatype extension="sff.flow" type="galaxy.datatypes.mothur:SffFlow" display_in_upload="true"/>
-    <datatype extension="count_table" type="galaxy.datatypes.mothur:CountTable" display_in_upload="true"/>
+    <datatype extension="mothur.seq.taxonomy" type="galaxy.datatypes.mothur:SequenceTaxonomy" display_in_upload="true"/>
+    <datatype extension="mothur.rdp.taxonomy" type="galaxy.datatypes.mothur:RDPSequenceTaxonomy" display_in_upload="true"/>
+    <datatype extension="mothur.cons.taxonomy" type="galaxy.datatypes.mothur:ConsensusTaxonomy" display_in_upload="true"/>
+    <datatype extension="mothur.tax.summary" type="galaxy.datatypes.mothur:TaxonomySummary" display_in_upload="true"/>
+    <datatype extension="mothur.freq" type="galaxy.datatypes.mothur:Frequency" display_in_upload="true"/>
+    <datatype extension="mothur.quan" type="galaxy.datatypes.mothur:Quantile" display_in_upload="true"/>
+    <datatype extension="mothur.filtered.quan" type="galaxy.datatypes.mothur:Quantile" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.masked.quan" type="galaxy.datatypes.mothur:Quantile" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.filtered.masked.quan" type="galaxy.datatypes.mothur:Quantile" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.axes" type="galaxy.datatypes.mothur:Axes" display_in_upload="true"/>
+    <datatype extension="mothur.sff.flow" type="galaxy.datatypes.mothur:SffFlow" display_in_upload="true"/>
+    <datatype extension="mothur.count_table" type="galaxy.datatypes.mothur:CountTable" display_in_upload="true"/>
   </registration>
   <sniffers>
     <!--
