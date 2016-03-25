@@ -2,7 +2,6 @@
 from __future__ import absolute_import
 
 import httplib
-import logging
 import os
 import random
 import shutil
@@ -15,13 +14,6 @@ import time
 import urllib
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
-tool_shed_home_directory = os.path.join( galaxy_root, 'test', 'tool_shed' )
-default_tool_shed_test_file_dir = os.path.join( tool_shed_home_directory, 'test_data' )
-# Here's the directory where everything happens.  Temporary directories are created within this directory to contain
-# the hgweb.config file, the database, new repositories, etc.  Since the tool shed browses repository contents via HTTP,
-# the full path to the temporary directroy wher eht repositories are located cannot contain invalid url characters.
-tool_shed_test_tmp_dir = os.path.join( tool_shed_home_directory, 'tmp' )
-os.environ[ 'TOOL_SHED_TEST_TMP_DIR' ] = tool_shed_test_tmp_dir
 # Need to remove this directory from sys.path
 sys.path[0:1] = [ os.path.join( galaxy_root, "lib" ), os.path.join( galaxy_root, "test" ) ]
 
@@ -30,6 +22,11 @@ import nose.config
 import nose.core
 import nose.loader
 import nose.plugins.manager
+
+from base import driver_util
+driver_util.configure_environment()
+log = driver_util.build_logger()
+tool_shed_test_tmp_dir = driver_util.setup_tool_shed_tmp_dir()
 
 # This is for the tool shed application.
 from galaxy.webapps.tool_shed import buildapp as toolshedbuildapp
@@ -41,8 +38,6 @@ from galaxy.web import buildapp as galaxybuildapp
 
 from base import nose_util
 from functional import database_contexts
-
-log = logging.getLogger( "tool_shed_functional_tests.py" )
 
 default_tool_shed_test_host = "localhost"
 default_tool_shed_test_port_min = 8000

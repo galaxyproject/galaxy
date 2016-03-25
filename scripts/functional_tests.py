@@ -1,6 +1,6 @@
 #!/usr/bin/env python
+
 import httplib
-import logging
 import os
 import os.path
 import random
@@ -24,6 +24,10 @@ from paste import httpserver
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 sys.path[1:1] = [ os.path.join( galaxy_root, "lib" ), os.path.join( galaxy_root, "test" ) ]
 
+from base import driver_util
+driver_util.configure_environment()
+log = driver_util.build_logger()
+
 from base.api_util import get_master_api_key, get_user_api_key
 from base.nose_util import run
 from base.instrument import StructuredTestDataPlugin
@@ -34,8 +38,6 @@ from galaxy import tools
 from galaxy.app import UniverseApplication
 from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
-
-log = logging.getLogger( "functional_tests.py" )
 
 default_galaxy_test_host = "localhost"
 default_galaxy_test_port_min = 8000
