@@ -2,7 +2,6 @@
 
 import os
 import os.path
-import re
 import shutil
 import sys
 import tempfile
@@ -114,8 +113,6 @@ def main():
         galaxy_test_file_dir = None
         library_import_dir = None
         user_library_import_dir = None
-        # Exclude all files except test_toolbox.py.
-        ignore_files = ( re.compile( r'^test_[adghlmsu]*' ), re.compile( r'^test_ta*' ) )
     else:
         framework_tool_dir = os.path.join('test', 'functional', 'tools')
         framework_test = __check_arg( '-framework' )  # Run through suite of tests testing framework.
@@ -139,7 +136,6 @@ def main():
             user_library_import_dir = import_dir
         else:
             user_library_import_dir = None
-        ignore_files = ()
 
     start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ
     tool_data_table_config_path = None
@@ -347,9 +343,7 @@ def main():
                     master_api_key=master_api_key,
                     user_api_key=get_user_api_key(),
                 )
-            return driver_util.nose_config_and_run(
-                ignore_files=ignore_files,
-            )
+            return driver_util.nose_config_and_run()
 
         if testing_migrated_tools or testing_installed_tools:
             shed_tools_dict = {}
