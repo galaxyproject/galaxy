@@ -245,12 +245,11 @@ var FolderToolbarView = Backbone.View.extend({
    */
   importAllIntoHistory : function (){
     this.modal.disableButton('Import');
-    var new_history_name = $('input[name=history_name]').val();
+    var new_history_name = this.modal.$('input[name=history_name]').val();
     var that = this;
     if (new_history_name !== ''){
       $.post( Galaxy.root + 'api/histories', {name: new_history_name})
         .done(function( new_history ) {
-          console.log(new_history.name);
           that.options.last_used_history_id = new_history.id;
           that.processImportToHistory(new_history.id, new_history.name);
         })
@@ -644,7 +643,7 @@ var FolderToolbarView = Backbone.View.extend({
         this.modal.$el.find( '.modal-body' ).html( template( { history_name : options.history_name } ) );
         break;
       default:
-        console.error( 'Wrong action specified.')
+        Galaxy.emit.error( 'Wrong action specified.', 'datalibs');
         break;
     }
 
@@ -925,8 +924,8 @@ var FolderToolbarView = Backbone.View.extend({
               } else if (item.type === 'file' || item.model_class === 'LibraryDataset'){
                 updated_item = new mod_library_model.Item( item );
               } else {
-                console.error('Unknown library item type found.');
-                console.error(item.type || item.model_class);
+                Galaxy.emit.error('Unknown library item type found.', 'datalibs');
+                Galaxy.emit.error(item.type || item.model_class, 'datalibs');
               }
               Galaxy.libraries.folderListView.collection.add( updated_item );
             }
