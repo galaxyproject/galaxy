@@ -43,9 +43,6 @@ installed_tool_panel_configs = [
 ]
 
 
-# should this serve static resources (scripts, images, styles, etc.)
-STATIC_ENABLED = True
-
 # Set up a job_conf.xml that explicitly limits jobs to 10 minutes.
 job_conf_xml = '''<?xml version="1.0"?>
 <!-- A test job config that explicitly configures job running the way it is configured by default (if there is no explicit config). -->
@@ -77,7 +74,6 @@ def get_static_settings():
     static_dir = os.path.join( cwd, 'static' )
     # TODO: these should be copied from config/galaxy.ini
     return dict(
-        # TODO: static_enabled needed here?
         static_enabled=True,
         static_cache_time=360,
         static_dir=static_dir,
@@ -94,8 +90,7 @@ def get_webapp_global_conf():
     """
     # (was originally sent 'dict()') - nothing here for now except static settings
     global_conf = dict()
-    if STATIC_ENABLED:
-        global_conf.update( get_static_settings() )
+    global_conf.update( get_static_settings() )
     return global_conf
 
 
@@ -338,7 +333,7 @@ def main():
 
     if start_server:
         webapp = buildapp.app_factory( kwargs[ 'global_conf' ], app=app,
-            use_translogger=False, static_enabled=STATIC_ENABLED )
+            use_translogger=False, static_enabled=True )
         if galaxy_test_port is not None:
             server = httpserver.serve( webapp, host=galaxy_test_host, port=galaxy_test_port, start_loop=False )
         else:

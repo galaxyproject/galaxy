@@ -46,9 +46,6 @@ default_galaxy_test_host = 'localhost'
 # behavior.
 default_install_db_merged = False
 
-# should this serve static resources (scripts, images, styles, etc.)
-STATIC_ENABLED = True
-
 
 def get_static_settings():
     """Returns dictionary of the settings necessary for a galaxy App
@@ -60,7 +57,6 @@ def get_static_settings():
     static_dir = os.path.join( galaxy_root, 'static' )
     # TODO: these should be copied from galaxy.ini
     return dict(
-        # TODO: static_enabled needed here?
         static_enabled=True,
         static_cache_time=360,
         static_dir=static_dir,
@@ -77,8 +73,7 @@ def get_webapp_global_conf():
     """
     # (was originally sent 'dict()') - nothing here for now except static settings
     global_conf = dict()
-    if STATIC_ENABLED:
-        global_conf.update( get_static_settings() )
+    global_conf.update( get_static_settings() )
     return global_conf
 
 tool_sheds_conf_xml_template = '''<?xml version="1.0"?>
