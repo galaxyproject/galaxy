@@ -2,17 +2,12 @@
 
 import os
 import os.path
-import random
 import re
 import shutil
-import socket
 import sys
 import tempfile
-import threading
 from ConfigParser import SafeConfigParser
 from json import dumps
-
-from paste import httpserver
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 sys.path[1:1] = [ os.path.join( galaxy_root, "lib" ), os.path.join( galaxy_root, "test" ) ]
@@ -31,8 +26,6 @@ from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
 
 default_galaxy_test_host = "localhost"
-default_galaxy_test_port_min = 8000
-default_galaxy_test_port_max = 9999
 default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
 migrated_tool_panel_config = 'config/migrated_tools_conf.xml'
@@ -301,29 +294,11 @@ def main():
     if start_server:
         webapp = buildapp.app_factory( kwargs[ 'global_conf' ], app=app,
             use_translogger=False, static_enabled=True )
-        if galaxy_test_port is not None:
-            server = httpserver.serve( webapp, host=galaxy_test_host, port=galaxy_test_port, start_loop=False )
-        else:
-            random.seed()
-            for i in range( 0, 9 ):
-                try:
-                    galaxy_test_port = str( random.randint( default_galaxy_test_port_min, default_galaxy_test_port_max ) )
-                    log.debug( "Attempting to serve app on randomly chosen port: %s" % galaxy_test_port )
-                    server = httpserver.serve( webapp, host=galaxy_test_host, port=galaxy_test_port, start_loop=False )
-                    break
-                except socket.error, e:
-                    if e[0] == 98:
-                        continue
-                    raise
-            else:
-                raise Exception( "Unable to open a port between %s and %s to start Galaxy server" % ( default_galaxy_test_port_min, default_galaxy_test_port_max ) )
+        server, galaxy_test_port = driver_util.serve_webapp( webapp, host=galaxy_test_host, port=galaxy_test_port )
         if galaxy_test_proxy_port:
             os.environ['GALAXY_TEST_PORT'] = galaxy_test_proxy_port
         else:
             os.environ['GALAXY_TEST_PORT'] = galaxy_test_port
-
-        t = threading.Thread( target=server.serve_forever )
-        t.start()
         driver_util.wait_for_http_server(galaxy_test_host, galaxy_test_port)
         log.info( "Embedded web server started" )
 

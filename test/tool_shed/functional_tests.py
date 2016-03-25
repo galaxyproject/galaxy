@@ -2,19 +2,14 @@
 from __future__ import absolute_import
 
 import os
-import random
 import shutil
-import socket
 import string
 import sys
 import tempfile
-import threading
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 # Need to remove this directory from sys.path
 sys.path[0:1] = [ os.path.join( galaxy_root, "lib" ), os.path.join( galaxy_root, "test" ) ]
-
-from paste import httpserver
 
 from base import driver_util
 driver_util.configure_environment()
@@ -32,11 +27,7 @@ from galaxy.web import buildapp as galaxybuildapp
 from functional import database_contexts
 
 default_tool_shed_test_host = "localhost"
-default_tool_shed_test_port_min = 8000
-default_tool_shed_test_port_max = 8999
 default_tool_shed_locales = 'en'
-default_galaxy_test_port_min = 9000
-default_galaxy_test_port_max = 9999
 default_galaxy_test_host = 'localhost'
 
 # Use separate databases for Galaxy and tool shed install info by default,
@@ -213,34 +204,19 @@ def main():
     log.info( "Embedded Toolshed application started" )
 
     # ---- Run tool shed webserver ------------------------------------------------------
-    tool_shed_server = None
     tool_shed_global_conf[ 'database_connection' ] = toolshed_database_connection
     toolshedwebapp = toolshedbuildapp.app_factory( tool_shed_global_conf,
                                                    use_translogger=False,
                                                    static_enabled=True,
                                                    app=toolshedapp )
-    if tool_shed_test_port is not None:
-        tool_shed_server = httpserver.serve( toolshedwebapp, host=tool_shed_test_host, port=tool_shed_test_port, start_loop=False )
-    else:
-        random.seed()
-        for i in range( 0, 9 ):
-            try:
-                tool_shed_test_port = str( random.randint( default_tool_shed_test_port_min, default_tool_shed_test_port_max ) )
-                log.debug( "Attempting to serve app on randomly chosen port: %s" % tool_shed_test_port )
-                tool_shed_server = httpserver.serve( toolshedwebapp, host=tool_shed_test_host, port=tool_shed_test_port, start_loop=False )
-                break
-            except socket.error, e:
-                if e[0] == 98:
-                    continue
-                raise
-        else:
-            raise Exception( "Unable to open a port between %s and %s to start Galaxy server" % ( default_tool_shed_test_port_min, default_tool_shed_test_port_max ) )
+
+    tool_shed_server, tool_shed_test_port = driver_util.serve_webapp(
+        toolshedwebapp, host=tool_shed_test_host, port=tool_shed_test_port
+    )
     if tool_shed_test_proxy_port:
         os.environ[ 'TOOL_SHED_TEST_PORT' ] = tool_shed_test_proxy_port
     else:
         os.environ[ 'TOOL_SHED_TEST_PORT' ] = tool_shed_test_port
-    t = threading.Thread( target=tool_shed_server.serve_forever )
-    t.start()
     driver_util.wait_for_http_server(tool_shed_test_host, tool_shed_test_port)
     log.info( "Embedded web server started" )
 
@@ -316,29 +292,13 @@ def main():
                                                    app=galaxyapp )
         database_contexts.galaxy_context = galaxyapp.model.context
         database_contexts.install_context = galaxyapp.install_model.context
-        if galaxy_test_port is not None:
-            galaxy_server = httpserver.serve( galaxywebapp, host=galaxy_test_host, port=galaxy_test_port, start_loop=False )
-        else:
-            random.seed()
-            for i in range( 0, 9 ):
-                try:
-                    galaxy_test_port = str( random.randint( default_galaxy_test_port_min, default_galaxy_test_port_max ) )
-                    log.debug( "Attempting to serve app on randomly chosen port: %s" % galaxy_test_port )
-                    galaxy_server = httpserver.serve( galaxywebapp, host=galaxy_test_host, port=galaxy_test_port, start_loop=False )
-                    break
-                except socket.error, e:
-                    if e[0] == 98:
-                        continue
-                    raise
-            else:
-                raise Exception( "Unable to open a port between %s and %s to start Galaxy server" %
-                                 ( default_galaxy_test_port_min, default_galaxy_test_port_max ) )
+        galaxy_server, galaxy_test_port = driver_util.serve_webapp(
+            galaxywebapp, host=galaxy_test_host, port=galaxy_test_port
+        )
         if galaxy_test_proxy_port:
             os.environ[ 'GALAXY_TEST_PORT' ] = galaxy_test_proxy_port
         else:
             os.environ[ 'GALAXY_TEST_PORT' ] = galaxy_test_port
-        t = threading.Thread( target=galaxy_server.serve_forever )
-        t.start()
         driver_util.wait_for_http_server(galaxy_test_host, galaxy_test_port)
         log.info( "Embedded galaxy web server started" )
     # ---- Find tests ---------------------------------------------------------

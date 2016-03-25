@@ -3,9 +3,12 @@
 import httplib
 import logging
 import os
+import random
 import shutil
+import socket
 import sys
 import tempfile
+import threading
 import time
 
 from six.moves.urllib.request import urlretrieve
@@ -14,6 +17,8 @@ import nose.config
 import nose.core
 import nose.loader
 import nose.plugins.manager
+
+from paste import httpserver
 
 from .nose_util import run
 from .instrument import StructuredTestDataPlugin
@@ -134,6 +139,33 @@ def wait_for_http_server(host, port):
         message = template % (host, port)
         raise Exception(message)
 
+
+def serve_webapp(webapp, port=None, host=None):
+    """Serve the webapp on a recommend port or a free one.
+
+    Return the port the webapp is running one.
+    """
+    server = None
+    if port is not None:
+        server = httpserver.serve( webapp, host=host, port=port, start_loop=False )
+    else:
+        random.seed()
+        for i in range( 0, 9 ):
+            try:
+                port = str( random.randint( 8000, 10000 ) )
+                server = httpserver.serve( webapp, host=host, port=port, start_loop=False )
+                break
+            except socket.error, e:
+                if e[0] == 98:
+                    continue
+                raise
+        else:
+            raise Exception( "Unable to open a port between %s and %s to start Galaxy server" % ( 8000, 1000 ) )
+
+    t = threading.Thread( target=server.serve_forever )
+    t.start()
+
+    return server, port
 
 __all__ = [
     "configure_environment",
