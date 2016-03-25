@@ -103,6 +103,7 @@ class ManagesIntegratedToolPanelMixin:
         os.close( fd )
 
         old_default = 'integrated_tool_panel.xml'
+        # TODO: Get the new_default via a variable into config, and do not repeat it
         new_default = 'config/integrated_tool_panel.xml'
 
         full_path_old_default = os.path.abspath( resolve_path( old_default, self.root ) )
@@ -124,6 +125,7 @@ class ManagesIntegratedToolPanelMixin:
             except OSError:
                 log.warn( "You have two integrated_tool_conf.xml files. "
                           "Please remove the one at root location (be careful to not lose your data!)" )
+        # We are in 16.04 configuration or integrated_tool_panel_config is configured
         else:
             shutil.move( filename, destination )
         os.chmod( os.path.realpath( self._integrated_tool_panel_config ), 0o644 )
