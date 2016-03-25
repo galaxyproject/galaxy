@@ -1039,7 +1039,7 @@ var LibraryDatasetView = Backbone.View.extend({
 
   templateBulkImportInModal: function(){
     return _.template([
-    '<span id="history_modal_combo_bulk" style="width:90%; margin-left: 1em; margin-right: 1em; ">',
+    '<span class="library-modal-item">',
       'Select history: ',
       '<select id="dataset_import_single" name="dataset_import_single" style="width:50%; margin-bottom: 1em; "> ',
         '<% _.each(histories, function(history) { %>', //history select btn
