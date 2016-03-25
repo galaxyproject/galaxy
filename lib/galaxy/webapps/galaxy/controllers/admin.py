@@ -11,7 +11,7 @@ from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import MessageException
 from galaxy.model import tool_shed_install as install_model
 from galaxy.model.util import pgcalc
-from galaxy.util import nice_size, sanitize_text
+from galaxy.util import nice_size, sanitize_text, url_get
 from galaxy.util.odict import odict
 from galaxy.web import url_for
 from galaxy.web.base.controller import BaseUIController, UsesQuotaMixin
@@ -770,9 +770,9 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         tree = galaxy.util.parse_xml( tools_xml_file_path )
         root = tree.getroot()
         tool_shed = root.get( 'name' )
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed )
+        shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed )
         repo_name_dependency_tups = []
-        if tool_shed_url:
+        if shed_url:
             for elem in root:
                 if elem.tag == 'repository':
                     tool_dependencies = []
@@ -781,7 +781,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                     changeset_revision = elem.get( 'changeset_revision' )
                     params = dict( name=repository_name, owner='devteam', changeset_revision=changeset_revision )
                     pathspec = [ 'repository', 'get_tool_dependencies' ]
-                    text = common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=pathspec, params=params )
+                    text = url_get( shed_url, password_mgr=self.app.tool_shed_registry.url_auth( shed_url ), pathspec=pathspec, params=params )
                     if text:
                         tool_dependencies_dict = encoding_util.tool_shed_decode( text )
                         for dependency_key, requirements_dict in tool_dependencies_dict.items():
