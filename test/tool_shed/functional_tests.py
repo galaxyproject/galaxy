@@ -27,7 +27,6 @@ from galaxy.web import buildapp as galaxybuildapp
 from functional import database_contexts
 
 default_tool_shed_test_host = "localhost"
-default_tool_shed_locales = 'en'
 default_galaxy_test_host = 'localhost'
 
 # Use separate databases for Galaxy and tool shed install info by default,
@@ -75,8 +74,6 @@ def main():
     galaxy_test_host = os.environ.get( 'GALAXY_TEST_HOST', default_galaxy_test_host )
     galaxy_test_port = os.environ.get( 'GALAXY_TEST_PORT', None )
     tool_path = os.environ.get( 'TOOL_SHED_TEST_TOOL_PATH', 'tools' )
-    if 'HTTP_ACCEPT_LANGUAGE' not in os.environ:
-        os.environ[ 'HTTP_ACCEPT_LANGUAGE' ] = default_tool_shed_locales
     tool_shed_test_file_dir = os.environ.get( 'TOOL_SHED_TEST_FILE_DIR', default_tool_shed_test_file_dir )
     if not os.path.isabs( tool_shed_test_file_dir ):
         tool_shed_test_file_dir = tool_shed_test_file_dir

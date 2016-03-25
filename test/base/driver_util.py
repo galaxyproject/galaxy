@@ -25,6 +25,8 @@ from .instrument import StructuredTestDataPlugin
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 
+DEFAULT_LOCALES = "en"
+
 
 def setup_tool_shed_tmp_dir():
     tool_shed_test_tmp_dir = os.environ.get('TOOL_SHED_TEST_TMP_DIR', None)
@@ -40,6 +42,8 @@ def setup_tool_shed_tmp_dir():
 def configure_environment():
     """Hack up environment for test cases."""
     # no op remove if unused
+    if 'HTTP_ACCEPT_LANGUAGE' not in os.environ:
+        os.environ[ 'HTTP_ACCEPT_LANGUAGE' ] = DEFAULT_LOCALES
 
 
 def build_logger():

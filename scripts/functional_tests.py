@@ -25,7 +25,6 @@ from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
 
 default_galaxy_test_host = "localhost"
-default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
 migrated_tool_panel_config = 'config/migrated_tools_conf.xml'
 installed_tool_panel_configs = [
@@ -93,14 +92,11 @@ def main():
     galaxy_test_port = os.environ.get( 'GALAXY_TEST_PORT', None )
     galaxy_test_save = os.environ.get( 'GALAXY_TEST_SAVE', None)
     tool_path = os.environ.get( 'GALAXY_TEST_TOOL_PATH', 'tools' )
-    if 'HTTP_ACCEPT_LANGUAGE' not in os.environ:
-        os.environ[ 'HTTP_ACCEPT_LANGUAGE' ] = default_galaxy_locales
     testing_migrated_tools = __check_arg( '-migrated' )
     testing_installed_tools = __check_arg( '-installed' )
     datatypes_conf_override = None
 
     framework_tool_dir = os.path.join('test', 'functional', 'tools')
-
     if testing_migrated_tools or testing_installed_tools:
         # Store a jsonified dictionary of tool_id : GALAXY_TEST_FILE_DIR pairs.
         galaxy_tool_shed_test_file = 'shed_tools_dict'
