@@ -63,37 +63,6 @@ job_conf_xml = '''<?xml version="1.0"?>
 '''
 
 
-def get_static_settings():
-    """Returns dictionary of the settings necessary for a galaxy App
-    to be wrapped in the static middleware.
-
-    This mainly consists of the filesystem locations of url-mapped
-    static resources.
-    """
-    cwd = os.getcwd()
-    static_dir = os.path.join( cwd, 'static' )
-    # TODO: these should be copied from config/galaxy.ini
-    return dict(
-        static_enabled=True,
-        static_cache_time=360,
-        static_dir=static_dir,
-        static_images_dir=os.path.join( static_dir, 'images', '' ),
-        static_favicon_dir=os.path.join( static_dir, 'favicon.ico' ),
-        static_scripts_dir=os.path.join( static_dir, 'scripts', '' ),
-        static_style_dir=os.path.join( static_dir, 'june_2007_style', 'blue' ),
-        static_robots_txt=os.path.join( static_dir, 'robots.txt' ),
-    )
-
-
-def get_webapp_global_conf():
-    """Get the global_conf dictionary sent as the first argument to app_factory.
-    """
-    # (was originally sent 'dict()') - nothing here for now except static settings
-    global_conf = dict()
-    global_conf.update( get_static_settings() )
-    return global_conf
-
-
 def generate_config_file( input_filename, output_filename, config_items ):
     '''
     Generate a config file with the configuration that has been defined for the embedded web application.
@@ -317,7 +286,7 @@ def main():
             # Write a temporary file, based on config/galaxy.ini.sample, using the configuration options defined above.
             generate_config_file( 'config/galaxy.ini.sample', galaxy_config_file, config_items )
         # Set the global_conf[ '__file__' ] option to the location of the temporary .ini file, which gets passed to set_metadata.sh.
-        kwargs[ 'global_conf' ] = get_webapp_global_conf()
+        kwargs[ 'global_conf' ] = driver_util.get_webapp_global_conf()
         kwargs[ 'global_conf' ][ '__file__' ] = galaxy_config_file
         kwargs[ 'config_file' ] = galaxy_config_file
         kwargs = load_app_properties(

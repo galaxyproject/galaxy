@@ -47,35 +47,6 @@ default_galaxy_test_host = 'localhost'
 default_install_db_merged = False
 
 
-def get_static_settings():
-    """Returns dictionary of the settings necessary for a galaxy App
-    to be wrapped in the static middleware.
-
-    This mainly consists of the filesystem locations of url-mapped
-    static resources.
-    """
-    static_dir = os.path.join( galaxy_root, 'static' )
-    # TODO: these should be copied from galaxy.ini
-    return dict(
-        static_enabled=True,
-        static_cache_time=360,
-        static_dir=static_dir,
-        static_images_dir=os.path.join( static_dir, 'images', '' ),
-        static_favicon_dir=os.path.join( static_dir, 'favicon.ico' ),
-        static_scripts_dir=os.path.join( static_dir, 'scripts', '' ),
-        static_style_dir=os.path.join( static_dir, 'june_2007_style', 'blue' ),
-        static_robots_txt=os.path.join( static_dir, 'robots.txt' ),
-    )
-
-
-def get_webapp_global_conf():
-    """Get the global_conf dictionary sent as the first argument to app_factory.
-    """
-    # (was originally sent 'dict()') - nothing here for now except static settings
-    global_conf = dict()
-    global_conf.update( get_static_settings() )
-    return global_conf
-
 tool_sheds_conf_xml_template = '''<?xml version="1.0"?>
 <tool_sheds>
     <tool_shed name="Galaxy main tool shed" url="http://toolshed.g2.bx.psu.edu/"/>
@@ -187,7 +158,7 @@ def main():
     else:
         install_galaxy_db_path = os.path.join( galaxy_db_path, 'install.sqlite' )
         install_galaxy_database_connection = 'sqlite:///%s' % install_galaxy_db_path
-    tool_shed_global_conf = get_webapp_global_conf()
+    tool_shed_global_conf = driver_util.get_webapp_global_conf()
     tool_shed_global_conf[ '__file__' ] = 'tool_shed_wsgi.ini.sample'
     kwargs = dict( admin_users='test@bx.psu.edu',
                    allow_user_creation=True,
@@ -303,7 +274,7 @@ def main():
         # Generate shed_data_manager_conf.xml
         if not os.environ.get( 'GALAXY_SHED_DATA_MANAGER_CONF' ):
             open( galaxy_shed_data_manager_conf_file, 'wb' ).write( shed_data_manager_conf_xml_template )
-        galaxy_global_conf = get_webapp_global_conf()
+        galaxy_global_conf = driver_util.get_webapp_global_conf()
         galaxy_global_conf[ '__file__' ] = 'config/galaxy.ini.sample'
 
         kwargs = dict( allow_user_creation=True,

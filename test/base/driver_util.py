@@ -16,6 +16,8 @@ import nose.plugins.manager
 from .nose_util import run
 from .instrument import StructuredTestDataPlugin
 
+galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
+
 
 def setup_tool_shed_tmp_dir():
     tool_shed_test_tmp_dir = os.environ.get('TOOL_SHED_TEST_TMP_DIR', None)
@@ -83,9 +85,42 @@ def copy_database_template( source, db_path ):
         raise Exception( "Failed to copy database template from source %s" % source )
 
 
+def _get_static_settings():
+    """Configuration required for Galaxy static middleware.
+
+    Returns dictionary of the settings necessary for a galaxy App
+    to be wrapped in the static middleware.
+
+    This mainly consists of the filesystem locations of url-mapped
+    static resources.
+    """
+    static_dir = os.path.join(galaxy_root, "static")
+
+    # TODO: these should be copied from config/galaxy.ini
+    return dict(
+        static_enabled=True,
+        static_cache_time=360,
+        static_dir=static_dir,
+        static_images_dir=os.path.join(static_dir, 'images', ''),
+        static_favicon_dir=os.path.join(static_dir, 'favicon.ico'),
+        static_scripts_dir=os.path.join(static_dir, 'scripts', ''),
+        static_style_dir=os.path.join(static_dir, 'june_2007_style', 'blue'),
+        static_robots_txt=os.path.join(static_dir, 'robots.txt'),
+    )
+
+
+def get_webapp_global_conf():
+    """Get the global_conf dictionary sent to ``app_factory``."""
+    # (was originally sent 'dict()') - nothing here for now except static settings
+    global_conf = dict()
+    global_conf.update( _get_static_settings() )
+    return global_conf
+
+
 __all__ = [
     "configure_environment",
     "copy_database_template",
     "build_logger",
+    "get_webapp_global_conf",
     "nose_config_and_run",
 ]
