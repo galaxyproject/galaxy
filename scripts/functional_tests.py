@@ -11,7 +11,6 @@ import sys
 import tempfile
 import threading
 import time
-import urllib
 from ConfigParser import SafeConfigParser
 from json import dumps
 
@@ -134,21 +133,6 @@ def generate_config_file( input_filename, output_filename, config_items ):
     fh.close()
 
 
-def __copy_database_template( source, db_path ):
-    """
-    Copy a 'clean' sqlite template database (from file or URL) to specified
-    database path.
-    """
-    os.makedirs( os.path.dirname( db_path ) )
-    if os.path.exists( source ):
-        shutil.copy( source, db_path )
-        assert os.path.exists( db_path )
-    elif source.lower().startswith( ( "http://", "https://", "ftp://" ) ):
-        urllib.urlretrieve( source, db_path )
-    else:
-        raise Exception( "Failed to copy database template from source %s" % source )
-
-
 def main():
     # ---- Configuration ------------------------------------------------------
     galaxy_test_host = os.environ.get( 'GALAXY_TEST_HOST', default_galaxy_test_host )
@@ -260,7 +244,7 @@ def main():
                 # time, the latter results in test failures in certain
                 # cases (namely tool shed tests expecting clean database).
                 log.debug( "Copying database template from %s.", os.environ['GALAXY_TEST_DB_TEMPLATE'] )
-                __copy_database_template(os.environ['GALAXY_TEST_DB_TEMPLATE'], db_path)
+                driver_util.copy_database_template(os.environ['GALAXY_TEST_DB_TEMPLATE'], db_path)
                 database_auto_migrate = True
             database_connection = 'sqlite:///%s' % db_path
         kwargs = {}

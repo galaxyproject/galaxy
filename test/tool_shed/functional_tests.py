@@ -11,7 +11,6 @@ import sys
 import tempfile
 import threading
 import time
-import urllib
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 # Need to remove this directory from sys.path
@@ -181,7 +180,7 @@ def main():
             # GALAXY_TEST_DBURI. The former requires a lot of setup
             # time, the latter results in test failures in certain
             # cases (namely tool shed tests expecting clean database).
-            __copy_database_template(os.environ['GALAXY_TEST_DB_TEMPLATE'], db_path)
+            driver_util.copy_database_template(os.environ['GALAXY_TEST_DB_TEMPLATE'], db_path)
             galaxy_database_auto_migrate = True
         if not os.path.exists(galaxy_db_path):
             os.makedirs(galaxy_db_path)
@@ -451,21 +450,6 @@ def main():
         return 0
     else:
         return 1
-
-
-def __copy_database_template( source, db_path ):
-    """
-    Copy a 'clean' sqlite template database (from file or URL) to specified
-    database path.
-    """
-    os.makedirs( os.path.dirname( db_path ) )
-    if os.path.exists( source ):
-        shutil.copy( source, db_path )
-        assert os.path.exists( db_path )
-    elif source.startswith("http"):
-        urllib.urlretrieve( source, db_path )
-    else:
-        raise Exception( "Failed to copy database template from source %s" % source )
 
 
 if __name__ == "__main__":

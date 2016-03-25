@@ -2,8 +2,11 @@
 
 import logging
 import os
+import shutil
 import sys
 import tempfile
+
+from six.moves.urllib.request import urlretrieve
 
 import nose.config
 import nose.core
@@ -63,8 +66,26 @@ def nose_config_and_run( argv=None, env=None, ignore_files=[], plugins=None ):
     return success
 
 
+def copy_database_template( source, db_path ):
+    """Copy a 'clean' sqlite template database.
+
+    From file or URL to specified path for sqlite database.
+    """
+    db_path_dir = os.path.dirname(db_path)
+    if not os.path.exists(db_path_dir):
+        os.makedirs(db_path_dir)
+    if os.path.exists(source):
+        shutil.copy(source, db_path)
+        assert os.path.exists(db_path)
+    elif source.lower().startswith(("http://", "https://", "ftp://")):
+        urlretrieve(source, db_path)
+    else:
+        raise Exception( "Failed to copy database template from source %s" % source )
+
+
 __all__ = [
     "configure_environment",
+    "copy_database_template",
     "build_logger",
     "nose_config_and_run",
 ]
