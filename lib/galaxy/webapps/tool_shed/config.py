@@ -8,17 +8,11 @@ import logging
 import logging.config
 import ConfigParser
 from galaxy.util import string_as_bool, listify
+from galaxy.util.path_util import resolve_path
 from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.version import VERSION, VERSION_MAJOR
 
 log = logging.getLogger( __name__ )
-
-
-def resolve_path( path, root ):
-    """If 'path' is relative make absolute by prepending 'root'"""
-    if not( os.path.isabs( path ) ):
-        path = os.path.join( root, path )
-    return path
 
 
 class ConfigurationError( Exception ):
