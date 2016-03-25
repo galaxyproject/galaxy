@@ -483,8 +483,4 @@ def __copy_database_template( source, db_path ):
 
 
 if __name__ == "__main__":
-    try:
-        sys.exit( main() )
-    except Exception, e:
-        log.exception( str( e ) )
-        exit(1)
+    sys.exit( main() )
