@@ -104,10 +104,7 @@ class ManagesIntegratedToolPanelMixin:
 
         old_default = 'integrated_tool_panel.xml'
         # TODO: Get the new_default via a variable into config, and do not repeat it
-        new_default = 'config/integrated_tool_panel.xml'
-
         full_path_old_default = os.path.abspath( resolve_path( old_default, self.root ) )
-        full_path_new_default = os.path.abspath( resolve_path( new_default, self.root ) )
 
         destination = os.path.abspath( self._integrated_tool_panel_config )
 
