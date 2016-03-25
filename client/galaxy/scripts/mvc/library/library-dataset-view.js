@@ -215,7 +215,7 @@ var LibraryDatasetView = Backbone.View.extend({
       historyItem.save({ content : this.id, source : 'library' }, {
         success : function(){
             Galaxy.modal.hide();
-          mod_toastr.success('Dataset imported. Click this to start analysing it.', '', {onclick: function() {window.location='/';}});
+          mod_toastr.success('Dataset imported. Click this to start analyzing it.', '', {onclick: function() {window.location='/';}});
         },
         error : function(model, response){
           if (typeof response.responseJSON !== "undefined"){
