@@ -1,8 +1,17 @@
 """Scripts for drivers of Galaxy functional tests."""
 
-import tempfile
-import os
 import logging
+import os
+import sys
+import tempfile
+
+import nose.config
+import nose.core
+import nose.loader
+import nose.plugins.manager
+
+from .nose_util import run
+from .instrument import StructuredTestDataPlugin
 
 
 def setup_tool_shed_tmp_dir():
@@ -26,7 +35,36 @@ def build_logger():
     return logging.getLogger("test_driver")
 
 
+def nose_config_and_run( argv=None, env=None, ignore_files=[], plugins=None ):
+    """Setup a nose context and run tests.
+
+    Tests are specified by argv (defaulting to sys.argv).
+    """
+    if env is None:
+        env = os.environ
+    if plugins is None:
+        plugins = nose.plugins.manager.DefaultPluginManager()
+    if argv is None:
+        argv = sys.argv
+
+    test_config = nose.config.Config(
+        env=os.environ,
+        ignoreFiles=ignore_files,
+        plugins=plugins,
+    )
+
+    # Add custom plugin to produce JSON data used by planemo.
+    test_config.plugins.addPlugin( StructuredTestDataPlugin() )
+    test_config.configure( argv )
+
+    result = run( test_config )
+
+    success = result.wasSuccessful()
+    return success
+
+
 __all__ = [
     "configure_environment",
-    "build_logger"
+    "build_logger",
+    "nose_config_and_run",
 ]

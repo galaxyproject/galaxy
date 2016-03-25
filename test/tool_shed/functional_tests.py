@@ -18,10 +18,6 @@ galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pa
 sys.path[0:1] = [ os.path.join( galaxy_root, "lib" ), os.path.join( galaxy_root, "test" ) ]
 
 from paste import httpserver
-import nose.config
-import nose.core
-import nose.loader
-import nose.plugins.manager
 
 from base import driver_util
 driver_util.configure_environment()
@@ -36,7 +32,6 @@ from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.util import asbool
 from galaxy.web import buildapp as galaxybuildapp
 
-from base import nose_util
 from functional import database_contexts
 
 default_tool_shed_test_host = "localhost"
@@ -119,10 +114,6 @@ shed_data_manager_conf_xml_template = '''<?xml version="1.0"?>
 '''
 
 
-def run_tests( test_config ):
-    return nose_util.run( test_config )
-
-
 def main():
     # ---- Configuration ------------------------------------------------------
     tool_shed_test_host = os.environ.get( 'TOOL_SHED_TEST_HOST', default_tool_shed_test_host )
@@ -135,7 +126,6 @@ def main():
     tool_shed_test_file_dir = os.environ.get( 'TOOL_SHED_TEST_FILE_DIR', default_tool_shed_test_file_dir )
     if not os.path.isabs( tool_shed_test_file_dir ):
         tool_shed_test_file_dir = tool_shed_test_file_dir
-    ignore_files = ()
     tool_dependency_dir = os.environ.get( 'TOOL_SHED_TOOL_DEPENDENCY_DIR', None )
     use_distributed_object_store = os.environ.get( 'TOOL_SHED_USE_DISTRIBUTED_OBJECT_STORE', False )
     if not os.path.isdir( tool_shed_test_tmp_dir ):
@@ -422,11 +412,7 @@ def main():
         os.environ[ 'GALAXY_TEST_HOST' ] = galaxy_test_host
         if tool_shed_test_file_dir:
             os.environ[ 'TOOL_SHED_TEST_FILE_DIR' ] = tool_shed_test_file_dir
-        test_config = nose.config.Config( env=os.environ, ignoreFiles=ignore_files, plugins=nose.plugins.manager.DefaultPluginManager() )
-        test_config.configure( sys.argv )
-        # Run the tests.
-        result = run_tests( test_config )
-        success = result.wasSuccessful()
+        success = driver_util.nose_config_and_run()
     except:
         log.exception( "Failure running tests" )
 

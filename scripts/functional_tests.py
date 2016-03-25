@@ -15,10 +15,6 @@ import urllib
 from ConfigParser import SafeConfigParser
 from json import dumps
 
-import nose.core
-import nose.config
-import nose.loader
-import nose.plugins.manager
 from paste import httpserver
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
@@ -29,8 +25,6 @@ driver_util.configure_environment()
 log = driver_util.build_logger()
 
 from base.api_util import get_master_api_key, get_user_api_key
-from base.nose_util import run
-from base.instrument import StructuredTestDataPlugin
 from base.test_logging import logging_config_file
 from base.tool_shed_util import parse_tool_panel_config
 from functional import database_contexts
@@ -138,10 +132,6 @@ def generate_config_file( input_filename, output_filename, config_items ):
     fh = open( output_filename, 'w' )
     cp.write( fh )
     fh.close()
-
-
-def run_tests( test_config ):
-    return run( test_config )
 
 
 def __copy_database_template( source, db_path ):
@@ -444,12 +434,9 @@ def main():
                     master_api_key=master_api_key,
                     user_api_key=get_user_api_key(),
                 )
-            test_config = nose.config.Config( env=os.environ, ignoreFiles=ignore_files, plugins=nose.plugins.manager.DefaultPluginManager() )
-            test_config.plugins.addPlugin( StructuredTestDataPlugin() )
-            test_config.configure( sys.argv )
-            result = run_tests( test_config )
-            success = result.wasSuccessful()
-            return success
+            return driver_util.nose_config_and_run(
+                ignore_files=ignore_files,
+            )
 
         if testing_migrated_tools or testing_installed_tools:
             shed_tools_dict = {}
