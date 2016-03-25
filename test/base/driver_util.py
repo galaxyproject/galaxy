@@ -1,10 +1,12 @@
 """Scripts for drivers of Galaxy functional tests."""
 
+import httplib
 import logging
 import os
 import shutil
 import sys
 import tempfile
+import time
 
 from six.moves.urllib.request import urlretrieve
 
@@ -117,10 +119,27 @@ def get_webapp_global_conf():
     return global_conf
 
 
+def wait_for_http_server(host, port):
+    """Wait for an HTTP server to boot up."""
+    # Test if the server is up
+    for i in range( 10 ):
+        # directly test the app, not the proxy
+        conn = httplib.HTTPConnection(host, port)
+        conn.request( "GET", "/" )
+        if conn.getresponse().status == 200:
+            break
+        time.sleep( 0.1 )
+    else:
+        template = "Test HTTP server on host %s and port %s did not return '200 OK' after 10 tries"
+        message = template % (host, port)
+        raise Exception(message)
+
+
 __all__ = [
     "configure_environment",
     "copy_database_template",
     "build_logger",
     "get_webapp_global_conf",
     "nose_config_and_run",
+    "wait_for_http_server",
 ]

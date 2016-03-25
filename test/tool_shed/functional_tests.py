@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 from __future__ import absolute_import
 
-import httplib
 import os
 import random
 import shutil
@@ -10,7 +9,6 @@ import string
 import sys
 import tempfile
 import threading
-import time
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 # Need to remove this directory from sys.path
@@ -243,16 +241,7 @@ def main():
         os.environ[ 'TOOL_SHED_TEST_PORT' ] = tool_shed_test_port
     t = threading.Thread( target=tool_shed_server.serve_forever )
     t.start()
-    # Test if the server is up
-    for i in range( 10 ):
-        # Directly test the app, not the proxy.
-        conn = httplib.HTTPConnection( tool_shed_test_host, tool_shed_test_port )
-        conn.request( "GET", "/" )
-        if conn.getresponse().status == 200:
-            break
-        time.sleep( 0.1 )
-    else:
-        raise Exception( "Test HTTP server did not return '200 OK' after 10 tries" )
+    driver_util.wait_for_http_server(tool_shed_test_host, tool_shed_test_port)
     log.info( "Embedded web server started" )
 
     # ---- Optionally start up a Galaxy instance ------------------------------------------------------
@@ -350,16 +339,7 @@ def main():
             os.environ[ 'GALAXY_TEST_PORT' ] = galaxy_test_port
         t = threading.Thread( target=galaxy_server.serve_forever )
         t.start()
-        # Test if the server is up
-        for i in range( 10 ):
-            # Directly test the app, not the proxy.
-            conn = httplib.HTTPConnection( galaxy_test_host, galaxy_test_port )
-            conn.request( "GET", "/" )
-            if conn.getresponse().status == 200:
-                break
-            time.sleep( 0.1 )
-        else:
-            raise Exception( "Test HTTP server did not return '200 OK' after 10 tries" )
+        driver_util.wait_for_http_server(galaxy_test_host, galaxy_test_port)
         log.info( "Embedded galaxy web server started" )
     # ---- Find tests ---------------------------------------------------------
     if tool_shed_test_proxy_port:

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import httplib
 import os
 import os.path
 import random
@@ -10,7 +9,6 @@ import socket
 import sys
 import tempfile
 import threading
-import time
 from ConfigParser import SafeConfigParser
 from json import dumps
 
@@ -326,15 +324,7 @@ def main():
 
         t = threading.Thread( target=server.serve_forever )
         t.start()
-        # Test if the server is up
-        for i in range( 10 ):
-            conn = httplib.HTTPConnection( galaxy_test_host, galaxy_test_port )  # directly test the app, not the proxy
-            conn.request( "GET", "/" )
-            if conn.getresponse().status == 200:
-                break
-            time.sleep( 0.1 )
-        else:
-            raise Exception( "Test HTTP server did not return '200 OK' after 10 tries" )
+        driver_util.wait_for_http_server(galaxy_test_host, galaxy_test_port)
         log.info( "Embedded web server started" )
 
     # ---- Find tests ---------------------------------------------------------
