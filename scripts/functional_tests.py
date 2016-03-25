@@ -175,20 +175,7 @@ def main():
         new_file_path = tempfile.mkdtemp( prefix='new_files_path_', dir=tempdir )
         job_working_directory = tempfile.mkdtemp( prefix='job_working_directory_', dir=tempdir )
         install_database_connection = os.environ.get( 'GALAXY_TEST_INSTALL_DBURI', None )
-        if 'GALAXY_TEST_DBURI' in os.environ:
-            database_connection = os.environ['GALAXY_TEST_DBURI']
-        else:
-            db_path = os.path.join( galaxy_db_path, 'universe.sqlite' )
-            if 'GALAXY_TEST_DB_TEMPLATE' in os.environ:
-                # Middle ground between recreating a completely new
-                # database and pointing at existing database with
-                # GALAXY_TEST_DBURI. The former requires a lot of setup
-                # time, the latter results in test failures in certain
-                # cases (namely tool shed tests expecting clean database).
-                log.debug( "Copying database template from %s.", os.environ['GALAXY_TEST_DB_TEMPLATE'] )
-                driver_util.copy_database_template(os.environ['GALAXY_TEST_DB_TEMPLATE'], db_path)
-                database_auto_migrate = True
-            database_connection = 'sqlite:///%s' % db_path
+        database_connection, database_auto_migrate = driver_util.galaxy_database_conf(galaxy_db_path)
         kwargs = {}
         for dir in file_path, new_file_path, template_cache_path:
             try:

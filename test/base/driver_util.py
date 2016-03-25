@@ -96,6 +96,25 @@ def copy_database_template( source, db_path ):
         raise Exception( "Failed to copy database template from source %s" % source )
 
 
+def galaxy_database_conf(db_path):
+    """Find (and populate if needed) Galaxy database connection."""
+    database_auto_migrate = False
+    if 'GALAXY_TEST_DBURI' in os.environ:
+        database_connection = os.environ['GALAXY_TEST_DBURI']
+    else:
+        db_path = os.path.join(db_path, 'universe.sqlite')
+        if 'GALAXY_TEST_DB_TEMPLATE' in os.environ:
+            # Middle ground between recreating a completely new
+            # database and pointing at existing database with
+            # GALAXY_TEST_DBURI. The former requires a lot of setup
+            # time, the latter results in test failures in certain
+            # cases (namely tool shed tests expecting clean database).
+            copy_database_template(os.environ['GALAXY_TEST_DB_TEMPLATE'], db_path)
+            database_auto_migrate = True
+        database_connection = 'sqlite:///%s' % db_path
+    return database_connection, database_auto_migrate
+
+
 def _get_static_settings():
     """Configuration required for Galaxy static middleware.
 
@@ -175,6 +194,7 @@ __all__ = [
     "configure_environment",
     "copy_database_template",
     "build_logger",
+    "galaxy_database_conf",
     "get_webapp_global_conf",
     "nose_config_and_run",
     "wait_for_http_server",
