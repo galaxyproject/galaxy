@@ -99,22 +99,17 @@ def main():
     testing_installed_tools = __check_arg( '-installed' )
     datatypes_conf_override = None
 
+    framework_tool_dir = os.path.join('test', 'functional', 'tools')
+
     if testing_migrated_tools or testing_installed_tools:
         # Store a jsonified dictionary of tool_id : GALAXY_TEST_FILE_DIR pairs.
         galaxy_tool_shed_test_file = 'shed_tools_dict'
         # We need the upload tool for functional tests, so we'll create a temporary tool panel config that defines it.
-        fd, tmp_tool_panel_conf = tempfile.mkstemp()
-        os.write( fd, '<?xml version="1.0"?>\n' )
-        os.write( fd, '<toolbox>\n' )
-        os.write( fd, '<tool file="data_source/upload.xml"/>\n' )
-        os.write( fd, '</toolbox>\n' )
-        os.close( fd )
-        tool_config_file = tmp_tool_panel_conf
+        tool_config_file = os.path.join( framework_tool_dir, 'upload_tool_conf.xml' )
         galaxy_test_file_dir = None
         library_import_dir = None
         user_library_import_dir = None
     else:
-        framework_tool_dir = os.path.join('test', 'functional', 'tools')
         framework_test = __check_arg( '-framework' )  # Run through suite of tests testing framework.
         if framework_test:
             tool_conf = os.path.join( framework_tool_dir, 'samples_tool_conf.xml' )
@@ -369,10 +364,6 @@ def main():
                     tool_configs.append( installed_tool_panel_config )
                 app.toolbox = tools.ToolBox( tool_configs, app.config.tool_path, app )
             success = _run_functional_test( testing_shed_tools=True )
-            try:
-                os.unlink( tmp_tool_panel_conf )
-            except:
-                log.info( "Unable to remove temporary file: %s" % tmp_tool_panel_conf )
             try:
                 os.unlink( galaxy_tool_shed_test_file )
             except:
