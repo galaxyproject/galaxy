@@ -930,8 +930,13 @@ class PostJobAction( object ):
 
 
 class PostJobActionAssociation( object ):
-    def __init__(self, pja, job):
-        self.job = job
+    def __init__(self, pja, job=None, job_id=None ):
+        if job is not None:
+            self.job = job
+        elif job_id is not None:
+            self.job_id = job_id
+        else:
+            raise Exception("PostJobActionAssociation must be created with a job or a job_id.")
         self.post_job_action = pja
 
 
