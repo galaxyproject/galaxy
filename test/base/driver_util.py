@@ -23,6 +23,8 @@ from paste import httpserver
 from .nose_util import run
 from .instrument import StructuredTestDataPlugin
 
+from galaxy.util import asbool
+
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 GALAXY_TEST_DIRECTORY = os.path.join(galaxy_root, "test")
 TOOL_SHED_TEST_DATA = os.path.join(GALAXY_TEST_DIRECTORY, "tool_shed", "test_data")
@@ -125,6 +127,20 @@ def galaxy_database_conf(db_path):
             database_auto_migrate = True
         database_connection = 'sqlite:///%s' % db_path
     return database_connection, database_auto_migrate
+
+
+def install_database_conf(db_path, default_merged=False):
+    if 'GALAXY_TEST_INSTALL_DBURI' in os.environ:
+        install_galaxy_database_connection = os.environ['GALAXY_TEST_INSTALL_DBURI']
+    elif asbool(os.environ.get('GALAXY_TEST_INSTALL_DB_MERGED', default_merged)):
+        install_galaxy_database_connection = None
+    else:
+        install_galaxy_db_path = os.path.join(db_path, 'install.sqlite')
+        install_galaxy_database_connection = 'sqlite:///%s' % install_galaxy_db_path
+    conf = {}
+    if install_galaxy_database_connection is not None:
+        conf["install_database_connection"] = install_galaxy_database_connection
+    return conf
 
 
 def _get_static_settings():

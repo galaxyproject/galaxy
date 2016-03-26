@@ -20,7 +20,6 @@ from galaxy.webapps.tool_shed import buildapp as toolshedbuildapp
 from galaxy.webapps.tool_shed.app import UniverseApplication as ToolshedUniverseApplication
 # This is for the galaxy application.
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
-from galaxy.util import asbool
 from galaxy.web import buildapp as galaxybuildapp
 
 from functional import database_contexts
@@ -107,13 +106,7 @@ def main():
     else:
         toolshed_database_connection = 'sqlite:///' + os.path.join( shed_db_path, 'community_test.sqlite' )
     galaxy_database_connection, galaxy_database_auto_migrate = driver_util.galaxy_database_conf(galaxy_db_path)
-    if 'GALAXY_TEST_INSTALL_DBURI' in os.environ:
-        install_galaxy_database_connection = os.environ[ 'GALAXY_TEST_INSTALL_DBURI' ]
-    elif asbool( os.environ.get( 'GALAXY_TEST_INSTALL_DB_MERGED', default_install_db_merged ) ):
-        install_galaxy_database_connection = galaxy_database_connection
-    else:
-        install_galaxy_db_path = os.path.join( galaxy_db_path, 'install.sqlite' )
-        install_galaxy_database_connection = 'sqlite:///%s' % install_galaxy_db_path
+    install_database_conf = driver_util.install_database_conf(galaxy_db_path, default_merged=False)
     tool_shed_global_conf = driver_util.get_webapp_global_conf()
     tool_shed_global_conf[ '__file__' ] = 'tool_shed_wsgi.ini.sample'
     kwargs = dict( admin_users='test@bx.psu.edu',
@@ -205,7 +198,6 @@ def main():
                        allow_user_deletion=True,
                        admin_users='test@bx.psu.edu',
                        allow_library_path_paste=True,
-                       install_database_connection=install_galaxy_database_connection,
                        database_connection=galaxy_database_connection,
                        database_auto_migrate=galaxy_database_auto_migrate,
                        datatype_converters_config_file="datatype_converters_conf.xml.sample",
@@ -234,8 +226,9 @@ def main():
                        update_integrated_tool_panel=False,
                        use_heartbeat=False )
 
+        kwargs.update(install_database_conf)
         # ---- Build Galaxy Application --------------------------------------------------
-        if not galaxy_database_connection.startswith( 'sqlite://' ) and not install_galaxy_database_connection.startswith( 'sqlite://' ):
+        if not galaxy_database_connection.startswith( 'sqlite://' ):
             kwargs[ 'database_engine_option_pool_size' ] = '10'
             kwargs[ 'database_engine_option_max_overflow' ] = '20'
         galaxyapp = GalaxyUniverseApplication( **kwargs )

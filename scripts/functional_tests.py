@@ -170,8 +170,8 @@ def main():
         template_cache_path = os.path.join( galaxy_db_path, 'compiled_templates' )
         new_file_path = tempfile.mkdtemp( prefix='new_files_path_', dir=tempdir )
         job_working_directory = tempfile.mkdtemp( prefix='job_working_directory_', dir=tempdir )
-        install_database_connection = os.environ.get( 'GALAXY_TEST_INSTALL_DBURI', None )
         database_connection, database_auto_migrate = driver_util.galaxy_database_conf(galaxy_db_path)
+        install_database_conf = driver_util.install_database_conf(galaxy_db_path, default_merged=True)
         kwargs = {}
         for dir in file_path, new_file_path, template_cache_path:
             try:
@@ -224,8 +224,7 @@ def main():
                        enable_beta_tool_formats=True,
                        auto_configure_logging=logging_config_file is None,
                        data_manager_config_file=data_manager_config_file )
-        if install_database_connection is not None:
-            kwargs[ 'install_database_connection' ] = install_database_connection
+        kwargs.update(install_database_conf)
         if not database_connection.startswith( 'sqlite://' ):
             kwargs[ 'database_engine_option_max_overflow' ] = '20'
             kwargs[ 'database_engine_option_pool_size' ] = '10'
