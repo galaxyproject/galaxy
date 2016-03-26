@@ -24,6 +24,7 @@ from .nose_util import run
 from .instrument import StructuredTestDataPlugin
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
+TOOL_SHED_TEST_DATA = os.path.join(galaxy_root, "test", "tool_shed", "test_data")
 
 DEFAULT_LOCALES = "en"
 
@@ -46,6 +47,10 @@ def configure_environment():
     # no op remove if unused
     if 'HTTP_ACCEPT_LANGUAGE' not in os.environ:
         os.environ[ 'HTTP_ACCEPT_LANGUAGE' ] = DEFAULT_LOCALES
+
+    # Used by get_filename in tool shed's twilltestcase.
+    if "TOOL_SHED_TEST_FILE_DIR" not in os.environ:
+        os.environ["TOOL_SHED_TEST_FILE_DIR"] = TOOL_SHED_TEST_DATA
 
 
 def build_logger():

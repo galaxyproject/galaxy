@@ -275,8 +275,6 @@ def main():
         # Pass in through script set env, will leave a copy of ALL test validate files.
         os.environ[ 'TOOL_SHED_TEST_HOST' ] = tool_shed_test_host
         os.environ[ 'GALAXY_TEST_HOST' ] = galaxy_test_host
-        if tool_shed_test_file_dir:
-            os.environ[ 'TOOL_SHED_TEST_FILE_DIR' ] = tool_shed_test_file_dir
         success = driver_util.nose_config_and_run()
     except:
         log.exception( "Failure running tests" )
