@@ -44,8 +44,7 @@ class Otu( Text ):
                     # Set the discovered metadata values for the dataset
                     dataset.metadata.data_lines = data_lines
                     dataset.metadata.columns = ncols
-                    dataset.metadata.labels = []
-                    dataset.metadata.labels += label_names
+                    dataset.metadata.labels = list( label_names )
                     dataset.metadata.labels.sort()
             except:
                 pass
@@ -171,11 +170,9 @@ class GroupAbund( Otu ):
                     # Set the discovered metadata values for the dataset
                     dataset.metadata.data_lines = data_lines
                     dataset.metadata.columns = ncols
-                    dataset.metadata.labels = []
-                    dataset.metadata.labels += label_names
+                    dataset.metadata.labels = list( label_names )
                     dataset.metadata.labels.sort()
-                    dataset.metadata.groups = []
-                    dataset.metadata.groups += group_names
+                    dataset.metadata.groups = list( group_names )
                     dataset.metadata.groups.sort()
                     dataset.metadata.skip = skip
             except:
