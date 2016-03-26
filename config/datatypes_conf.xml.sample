@@ -541,8 +541,6 @@
     <sniffer type="galaxy.datatypes.mothur:Otu"/>
     <sniffer type="galaxy.datatypes.mothur:Sabund"/>
     <sniffer type="galaxy.datatypes.mothur:GroupAbund"/>
-    <sniffer type="galaxy.datatypes.mothur:SharedRabund"/>
-    <sniffer type="galaxy.datatypes.mothur:RelAbund"/>
     <sniffer type="galaxy.datatypes.mothur:SecondaryStructureMap"/>
     <sniffer type="galaxy.datatypes.mothur:SequenceAlignment"/>
     <sniffer type="galaxy.datatypes.mothur:LowerTriangleDistanceMatrix"/>
