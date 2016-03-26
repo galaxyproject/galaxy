@@ -159,7 +159,6 @@ def main():
 
     database_auto_migrate = False
 
-    galaxy_test_proxy_port = None
     if start_server:
         tempdir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
         # Configure the database path.
@@ -264,18 +263,12 @@ def main():
         webapp = buildapp.app_factory( kwargs[ 'global_conf' ], app=app,
             use_translogger=False, static_enabled=True )
         server, galaxy_test_port = driver_util.serve_webapp( webapp, host=galaxy_test_host, port=galaxy_test_port )
-        if galaxy_test_proxy_port:
-            os.environ['GALAXY_TEST_PORT'] = galaxy_test_proxy_port
-        else:
-            os.environ['GALAXY_TEST_PORT'] = galaxy_test_port
+        os.environ['GALAXY_TEST_PORT'] = galaxy_test_port
         driver_util.wait_for_http_server(galaxy_test_host, galaxy_test_port)
         log.info( "Embedded web server started" )
 
     # ---- Find tests ---------------------------------------------------------
-    if galaxy_test_proxy_port:
-        log.info( "Functional tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_proxy_port ) )
-    else:
-        log.info( "Functional tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
+    log.info( "Functional tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
     success = False
     try:
         tool_configs = app.config.tool_configs

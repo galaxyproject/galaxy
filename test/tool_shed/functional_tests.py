@@ -79,8 +79,6 @@ def main():
     tool_dependency_dir = os.environ.get( 'TOOL_SHED_TOOL_DEPENDENCY_DIR', None )
     if not os.path.isdir( tool_shed_test_tmp_dir ):
         os.mkdir( tool_shed_test_tmp_dir )
-    tool_shed_test_proxy_port = None
-    galaxy_test_proxy_port = None
     if 'TOOL_SHED_TEST_DBPATH' in os.environ:
         shed_db_path = os.environ[ 'TOOL_SHED_TEST_DBPATH' ]
     else:
@@ -190,10 +188,7 @@ def main():
     tool_shed_server, tool_shed_test_port = driver_util.serve_webapp(
         toolshedwebapp, host=tool_shed_test_host, port=tool_shed_test_port
     )
-    if tool_shed_test_proxy_port:
-        os.environ[ 'TOOL_SHED_TEST_PORT' ] = tool_shed_test_proxy_port
-    else:
-        os.environ[ 'TOOL_SHED_TEST_PORT' ] = tool_shed_test_port
+    os.environ[ 'TOOL_SHED_TEST_PORT' ] = tool_shed_test_port
     driver_util.wait_for_http_server(tool_shed_test_host, tool_shed_test_port)
     log.info( "Embedded web server started" )
 
@@ -272,21 +267,12 @@ def main():
         galaxy_server, galaxy_test_port = driver_util.serve_webapp(
             galaxywebapp, host=galaxy_test_host, port=galaxy_test_port
         )
-        if galaxy_test_proxy_port:
-            os.environ[ 'GALAXY_TEST_PORT' ] = galaxy_test_proxy_port
-        else:
-            os.environ[ 'GALAXY_TEST_PORT' ] = galaxy_test_port
+        os.environ[ 'GALAXY_TEST_PORT' ] = galaxy_test_port
         driver_util.wait_for_http_server(galaxy_test_host, galaxy_test_port)
         log.info( "Embedded galaxy web server started" )
     # ---- Find tests ---------------------------------------------------------
-    if tool_shed_test_proxy_port:
-        log.info( "Functional tests will be run against %s:%s" % ( tool_shed_test_host, tool_shed_test_proxy_port ) )
-    else:
-        log.info( "Functional tests will be run against %s:%s" % ( tool_shed_test_host, tool_shed_test_port ) )
-    if galaxy_test_proxy_port:
-        log.info( "Galaxy tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_proxy_port ) )
-    else:
-        log.info( "Galaxy tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
+    log.info( "Functional tests will be run against %s:%s" % ( tool_shed_test_host, tool_shed_test_port ) )
+    log.info( "Galaxy tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
     success = False
     try:
         # Pass in through script set env, will leave a copy of ALL test validate files.
