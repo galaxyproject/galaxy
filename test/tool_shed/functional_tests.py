@@ -78,7 +78,6 @@ def main():
     if not os.path.isabs( tool_shed_test_file_dir ):
         tool_shed_test_file_dir = tool_shed_test_file_dir
     tool_dependency_dir = os.environ.get( 'TOOL_SHED_TOOL_DEPENDENCY_DIR', None )
-    use_distributed_object_store = os.environ.get( 'TOOL_SHED_USE_DISTRIBUTED_OBJECT_STORE', False )
     if not os.path.isdir( tool_shed_test_tmp_dir ):
         os.mkdir( tool_shed_test_tmp_dir )
     tool_shed_test_proxy_port = None
@@ -172,9 +171,6 @@ def main():
 #        kwargs[ 'database_engine_option_max_overflow' ] = '20'
     if tool_dependency_dir is not None:
         kwargs[ 'tool_dependency_dir' ] = tool_dependency_dir
-    if use_distributed_object_store:
-        kwargs[ 'object_store' ] = 'distributed'
-        kwargs[ 'distributed_object_store_config_file' ] = 'distributed_object_store_conf.xml.sample'
 
     kwargs[ 'global_conf' ] = tool_shed_global_conf
 

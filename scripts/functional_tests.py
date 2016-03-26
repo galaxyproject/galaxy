@@ -149,7 +149,6 @@ def main():
     data_manager_config_file = "%s,test/functional/tools/sample_data_manager_conf.xml" % default_data_manager_config
     shed_tool_data_table_config = 'config/shed_tool_data_table_conf.xml'
     tool_dependency_dir = os.environ.get( 'GALAXY_TOOL_DEPENDENCY_DIR', None )
-    use_distributed_object_store = os.environ.get( 'GALAXY_USE_DISTRIBUTED_OBJECT_STORE', False )
     galaxy_test_tmp_dir = os.environ.get( 'GALAXY_TEST_TMP_DIR', None )
     if galaxy_test_tmp_dir is None:
         galaxy_test_tmp_dir = tempfile.mkdtemp()
@@ -235,9 +234,6 @@ def main():
             kwargs[ 'database_engine_option_pool_size' ] = '10'
         if tool_dependency_dir is not None:
             kwargs[ 'tool_dependency_dir' ] = tool_dependency_dir
-        if use_distributed_object_store:
-            kwargs[ 'object_store' ] = 'distributed'
-            kwargs[ 'distributed_object_store_config_file' ] = 'distributed_object_store_conf.xml.sample'
         if datatypes_conf_override:
             kwargs[ 'datatypes_config_file' ] = datatypes_conf_override
         # If the user has passed in a path for the .ini file, do not overwrite it.
