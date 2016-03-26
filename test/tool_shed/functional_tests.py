@@ -2,7 +2,6 @@
 from __future__ import absolute_import
 
 import os
-import shutil
 import string
 import sys
 import tempfile
@@ -322,14 +321,7 @@ def main():
             galaxyapp.shutdown()
             galaxyapp = None
             log.info( "Embedded galaxy application stopped" )
-    if 'TOOL_SHED_TEST_NO_CLEANUP' not in os.environ:
-        try:
-            for dir in [ tool_shed_test_tmp_dir ]:
-                if os.path.exists( dir ):
-                    log.info( "Cleaning up temporary files in %s" % dir )
-                    shutil.rmtree( dir )
-        except:
-            pass
+    driver_util.cleanup_directory(tool_shed_test_tmp_dir)
     if success:
         return 0
     else:

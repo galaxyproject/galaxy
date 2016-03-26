@@ -2,7 +2,6 @@
 
 import os
 import os.path
-import shutil
 import sys
 import tempfile
 from ConfigParser import SafeConfigParser
@@ -366,14 +365,7 @@ def main():
         app.shutdown()
         app = None
         log.info( "Embedded Universe application stopped" )
-    try:
-        if os.path.exists( tempdir ) and 'GALAXY_TEST_NO_CLEANUP' not in os.environ:
-            log.info( "Cleaning up temporary files in %s" % tempdir )
-            shutil.rmtree( tempdir )
-        else:
-            log.info( "GALAXY_TEST_NO_CLEANUP is on. Temporary files in %s" % tempdir )
-    except:
-        pass
+    driver_util.cleanup_directory(tempdir)
     if success:
         return 0
     else:

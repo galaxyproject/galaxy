@@ -192,7 +192,25 @@ def serve_webapp(webapp, port=None, host=None):
 
     return server, port
 
+
+def cleanup_directory(tempdir):
+    """Clean up temporary files used by test unless GALAXY_TEST_NO_CLEANUP is set.
+
+    Also respect TOOL_SHED_TEST_NO_CLEANUP for legacy reasons.
+    """
+    skip_cleanup = "GALAXY_TEST_NO_CLEANUP" in os.environ or "TOOL_SHED_TEST_NO_CLEANUP" in os.environ
+    if skip_cleanup:
+        log.info( "GALAXY_TEST_NO_CLEANUP is on. Temporary files in %s" % tempdir )
+        return
+    try:
+        if os.path.exists(tempdir) and skip_cleanup:
+            shutil.rmtree(tempdir)
+    except Exception:
+        pass
+
+
 __all__ = [
+    "cleanup_directory",
     "configure_environment",
     "copy_database_template",
     "build_logger",
