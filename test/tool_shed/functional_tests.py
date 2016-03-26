@@ -73,9 +73,6 @@ def main():
     galaxy_test_host = os.environ.get( 'GALAXY_TEST_HOST', default_galaxy_test_host )
     galaxy_test_port = os.environ.get( 'GALAXY_TEST_PORT', None )
     tool_path = os.environ.get( 'TOOL_SHED_TEST_TOOL_PATH', 'tools' )
-    tool_shed_test_file_dir = os.environ.get( 'TOOL_SHED_TEST_FILE_DIR', default_tool_shed_test_file_dir )
-    if not os.path.isabs( tool_shed_test_file_dir ):
-        tool_shed_test_file_dir = tool_shed_test_file_dir
     tool_dependency_dir = os.environ.get( 'TOOL_SHED_TOOL_DEPENDENCY_DIR', None )
     if not os.path.isdir( tool_shed_test_tmp_dir ):
         os.mkdir( tool_shed_test_tmp_dir )
