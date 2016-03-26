@@ -89,7 +89,6 @@ def main():
     # ---- Configuration ------------------------------------------------------
     galaxy_test_host = os.environ.get( 'GALAXY_TEST_HOST', default_galaxy_test_host )
     galaxy_test_port = os.environ.get( 'GALAXY_TEST_PORT', None )
-    galaxy_test_save = os.environ.get( 'GALAXY_TEST_SAVE', None)
     tool_path = os.environ.get( 'GALAXY_TEST_TOOL_PATH', 'tools' )
     testing_migrated_tools = __check_arg( '-migrated' )
     testing_installed_tools = __check_arg( '-installed' )
@@ -271,8 +270,6 @@ def main():
     try:
         tool_configs = app.config.tool_configs
         # What requires these? Handy for (eg) functional tests to save outputs?
-        if galaxy_test_save:
-            os.environ[ 'GALAXY_TEST_SAVE' ] = galaxy_test_save
         # Pass in through script setenv, will leave a copy of ALL test validate files
         os.environ[ 'GALAXY_TEST_HOST' ] = galaxy_test_host
 
