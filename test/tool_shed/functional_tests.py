@@ -66,11 +66,7 @@ def main():
     tool_dependency_dir = os.environ.get( 'TOOL_SHED_TOOL_DEPENDENCY_DIR', None )
     if not os.path.isdir( tool_shed_test_tmp_dir ):
         os.mkdir( tool_shed_test_tmp_dir )
-    if 'TOOL_SHED_TEST_DBPATH' in os.environ:
-        shed_db_path = os.environ[ 'TOOL_SHED_TEST_DBPATH' ]
-    else:
-        tempdir = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
-        shed_db_path = os.path.join( tempdir, 'database' )
+    shed_db_path = driver_util.database_files_path(tool_shed_test_tmp_dir, prefix="TOOL_SHED")
     shed_tool_data_table_conf_file = os.environ.get( 'TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF', os.path.join( tool_shed_test_tmp_dir, 'shed_tool_data_table_conf.xml' ) )
     galaxy_shed_data_manager_conf_file = os.environ.get( 'GALAXY_SHED_DATA_MANAGER_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_shed_data_manager_conf.xml' ) )
     galaxy_tool_data_table_conf_file = os.environ.get( 'GALAXY_TEST_TOOL_DATA_TABLE_CONF', os.path.join( tool_shed_test_tmp_dir, 'tool_data_table_conf.xml' ) )
@@ -83,11 +79,7 @@ def main():
     else:
         tool_data_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
         os.environ[ 'GALAXY_TEST_TOOL_DATA_PATH' ] = tool_data_path
-    if 'GALAXY_TEST_DBPATH' in os.environ:
-        galaxy_db_path = os.environ[ 'GALAXY_TEST_DBPATH' ]
-    else:
-        tempdir = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
-        galaxy_db_path = os.path.join( tempdir, 'database' )
+    galaxy_db_path = driver_util.database_files_path(tool_shed_test_tmp_dir)
     shed_file_path = os.path.join( shed_db_path, 'files' )
     galaxy_file_path = os.path.join( galaxy_db_path, 'files' )
     hgweb_config_file_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )

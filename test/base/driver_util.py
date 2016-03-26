@@ -143,6 +143,21 @@ def install_database_conf(db_path, default_merged=False):
     return conf
 
 
+def database_files_path(test_tmpdir, prefix="GALAXY"):
+    """Create a mock database/ directory like in GALAXY_ROOT.
+
+    Use prefix to default this if TOOL_SHED_TEST_DBPATH or
+    GALAXY_TEST_DBPATH is set in the environment.
+    """
+    environ_var = "%s_TEST_DBPATH" % prefix
+    if environ_var in os.environ:
+        db_path = os.environ[environ_var]
+    else:
+        tempdir = tempfile.mkdtemp(dir=test_tmpdir)
+        db_path = os.path.join(tempdir, 'database')
+    return db_path
+
+
 def _get_static_settings():
     """Configuration required for Galaxy static middleware.
 

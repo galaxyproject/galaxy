@@ -160,10 +160,8 @@ def main():
     if start_server:
         tempdir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
         # Configure the database path.
-        if 'GALAXY_TEST_DBPATH' in os.environ:
-            galaxy_db_path = os.environ[ 'GALAXY_TEST_DBPATH' ]
-        else:
-            galaxy_db_path = os.path.join( tempdir, 'database' )
+        galaxy_db_path = driver_util.database_files_path(tempdir)
+
         # Configure the paths Galaxy needs to  test tools.
         file_path = os.path.join( galaxy_db_path, 'files' )
         template_cache_path = os.path.join( galaxy_db_path, 'compiled_templates' )
