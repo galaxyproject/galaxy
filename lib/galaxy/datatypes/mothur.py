@@ -32,57 +32,54 @@ class Otu( Text ):
             data_lines = 0
             comment_lines = 0
             try:
-                fh = open( dataset.file_name )
-                for line in fh:
-                    fields = line.strip().split('\t')
-                    if len(fields) >= 2: 
-                        data_lines += 1
-                        ncols = max(ncols,len(fields))
-                        label_names.add(fields[0])
-                    else:
-                        comment_lines += 1
-                # Set the discovered metadata values for the dataset
-                dataset.metadata.data_lines = data_lines
-                dataset.metadata.columns = ncols
-                dataset.metadata.labels = []
-                dataset.metadata.labels += label_names
-                dataset.metadata.labels.sort()
-            finally:
-                fh.close()
+                with open( dataset.file_name ) as fh:
+                    for line in fh:
+                        fields = line.strip().split('\t')
+                        if len(fields) >= 2: 
+                            data_lines += 1
+                            ncols = max(ncols,len(fields))
+                            label_names.add(fields[0])
+                        else:
+                            comment_lines += 1
+                    # Set the discovered metadata values for the dataset
+                    dataset.metadata.data_lines = data_lines
+                    dataset.metadata.columns = ncols
+                    dataset.metadata.labels = []
+                    dataset.metadata.labels += label_names
+                    dataset.metadata.labels.sort()
+            except:
+                pass
 
     def sniff( self, filename ):
         """
         Determines whether the file is a otu (operational taxonomic unit) format
         """
         try:
-            fh = open( filename )
-            count = 0
-            while True:
-                line = fh.readline()
-                line = line.strip()
-                if not line:
-                    break #EOF
-                if line:
-                    if line[0] != '@':
-                        linePieces = line.split('\t')
-                        if len(linePieces) < 2:
-                            return False
-                        try:
-                            check = int(linePieces[1])
-                            if check + 2 != len(linePieces):
+            with open( filename ) as fh:
+                count = 0
+                while True:
+                    line = fh.readline()
+                    line = line.strip()
+                    if not line:
+                        break #EOF
+                    if line:
+                        if line[0] != '@':
+                            linePieces = line.split('\t')
+                            if len(linePieces) < 2:
                                 return False
-                        except ValueError:
-                            return False
-                        count += 1
-                        if count == 5:
-                            return True
-            fh.close()
+                            try:
+                                check = int(linePieces[1])
+                                if check + 2 != len(linePieces):
+                                    return False
+                            except ValueError:
+                                return False
+                            count += 1
+                            if count == 5:
+                                return True
             if count < 5 and count > 0:
                 return True
         except:
             pass
-        finally:
-            fh.close()
         return False
 
 class Sabund( Otu ):
@@ -101,36 +98,33 @@ class Sabund( Otu ):
         
         """
         try:
-            fh = open( filename )
-            count = 0
-            while True:
-                line = fh.readline()
-                line = line.strip()
-                if not line:
-                    break #EOF
-                if line:
-                    if line[0] != '@':
-                        linePieces = line.split('\t')
-                        if len(linePieces) < 2:
-                            return False
-                        try:
-                            check = int(linePieces[1])
-                            if check + 2 != len(linePieces):
+            with open( filename ) as fh:
+                count = 0
+                while True:
+                    line = fh.readline()
+                    line = line.strip()
+                    if not line:
+                        break #EOF
+                    if line:
+                        if line[0] != '@':
+                            linePieces = line.split('\t')
+                            if len(linePieces) < 2:
                                 return False
-                            for i in range( 2, len(linePieces)):
-                                ival = int(linePieces[i])
-                        except ValueError:
-                            return False
-                        count += 1
-                        if count >= 5:
-                            return True
-            fh.close()
+                            try:
+                                check = int(linePieces[1])
+                                if check + 2 != len(linePieces):
+                                    return False
+                                for i in range( 2, len(linePieces)):
+                                    ival = int(linePieces[i])
+                            except ValueError:
+                                return False
+                            count += 1
+                            if count >= 5:
+                                return True
             if count < 5 and count > 0:
                 return True
         except:
             pass
-        finally:
-            fh.close()
         return False
 
 class GroupAbund( Otu ):
@@ -156,36 +150,36 @@ class GroupAbund( Otu ):
             comment_lines = 0
             ncols = 0
             try:
-                fh = open( dataset.file_name )
-                line = fh.readline()
-                fields = line.strip().split('\t')
-                ncols = max(ncols,len(fields))
-                if fields[0] == 'label' and fields[1] == 'Group':
-                    skip=1
-                    comment_lines += 1
-                else:
-                    skip=0
-                    data_lines += 1
-                    label_names.add(fields[0])
-                    group_names.add(fields[1])
-                for line in fh:
-                    data_lines += 1
+                with open( dataset.file_name ) as fh:
+                    line = fh.readline()
                     fields = line.strip().split('\t')
                     ncols = max(ncols,len(fields))
-                    label_names.add(fields[0])
-                    group_names.add(fields[1])
-                # Set the discovered metadata values for the dataset
-                dataset.metadata.data_lines = data_lines
-                dataset.metadata.columns = ncols
-                dataset.metadata.labels = []
-                dataset.metadata.labels += label_names
-                dataset.metadata.labels.sort()
-                dataset.metadata.groups = []
-                dataset.metadata.groups += group_names
-                dataset.metadata.groups.sort()
-                dataset.metadata.skip = skip
-            finally:
-                fh.close()
+                    if fields[0] == 'label' and fields[1] == 'Group':
+                        skip=1
+                        comment_lines += 1
+                    else:
+                        skip=0
+                        data_lines += 1
+                        label_names.add(fields[0])
+                        group_names.add(fields[1])
+                    for line in fh:
+                        data_lines += 1
+                        fields = line.strip().split('\t')
+                        ncols = max(ncols,len(fields))
+                        label_names.add(fields[0])
+                        group_names.add(fields[1])
+                    # Set the discovered metadata values for the dataset
+                    dataset.metadata.data_lines = data_lines
+                    dataset.metadata.columns = ncols
+                    dataset.metadata.labels = []
+                    dataset.metadata.labels += label_names
+                    dataset.metadata.labels.sort()
+                    dataset.metadata.groups = []
+                    dataset.metadata.groups += group_names
+                    dataset.metadata.groups.sort()
+                    dataset.metadata.skip = skip
+            except:
+                pass
 
     def sniff( self, filename, vals_are_int=False):
         """
@@ -194,40 +188,37 @@ class GroupAbund( Otu ):
         The first line is column headings as of Mothur v 1.20
         """
         try:
-            fh = open( filename )
-            count = 0
-            while True:
-                line = fh.readline()
-                line = line.strip()
-                if not line:
-                    break #EOF
-                if line:
-                    if line[0] != '@':
-                        linePieces = line.split('\t')
-                        if len(linePieces) < 3:
-                            return False
-                        if count > 0 or linePieces[0] != 'label':
-                            try:
-                                check = int(linePieces[2])
-                                if check + 3 != len(linePieces):
-                                    return False
-                                for i in range( 3, len(linePieces)):
-                                    if vals_are_int:
-                                        ival = int(linePieces[i])
-                                    else:
-                                        fval = float(linePieces[i])
-                            except ValueError:
+            with open( filename ) as fh:
+                count = 0
+                while True:
+                    line = fh.readline()
+                    line = line.strip()
+                    if not line:
+                        break #EOF
+                    if line:
+                        if line[0] != '@':
+                            linePieces = line.split('\t')
+                            if len(linePieces) < 3:
                                 return False
-                        count += 1
-                        if count >= 5:
-                            return True
-            fh.close()
+                            if count > 0 or linePieces[0] != 'label':
+                                try:
+                                    check = int(linePieces[2])
+                                    if check + 3 != len(linePieces):
+                                        return False
+                                    for i in range( 3, len(linePieces)):
+                                        if vals_are_int:
+                                            ival = int(linePieces[i])
+                                        else:
+                                            fval = float(linePieces[i])
+                                except ValueError:
+                                    return False
+                            count += 1
+                            if count >= 5:
+                                return True
             if count < 5 and count > 0:
                 return True
         except:
             pass
-        finally:
-            fh.close()
         return False
 
 class SecondaryStructureMap(Tabular):
@@ -244,32 +235,29 @@ class SecondaryStructureMap(Tabular):
         check you make sure is structMap[10] = 380 then structMap[380] = 10.
         """
         try:
-            fh = open( filename )
-            line_num = 0
-            rowidxmap = {}
-            while True:
-                line = fh.readline()
-                line_num += 1
-                line = line.strip()
-                if not line:
-                    break #EOF
-                if line:
-                    try:
-                        pointer = int(line)
-                        if pointer > 0:
-                            if pointer > line_num:
-                                rowidxmap[line_num] = pointer 
-                            elif pointer < line_num & rowidxmap[pointer] != line_num:
-                                return False
-                    except ValueError:
-                        return False
-            fh.close()
+            with open( filename ) as fh:
+                line_num = 0
+                rowidxmap = {}
+                while True:
+                    line = fh.readline()
+                    line_num += 1
+                    line = line.strip()
+                    if not line:
+                        break #EOF
+                    if line:
+                        try:
+                            pointer = int(line)
+                            if pointer > 0:
+                                if pointer > line_num:
+                                    rowidxmap[line_num] = pointer 
+                                elif pointer < line_num & rowidxmap[pointer] != line_num:
+                                    return False
+                        except ValueError:
+                            return False
             if count < 5 and count > 0:
                 return True
         except:
             pass
-        finally:
-            fh.close()
         return False
 
 class SequenceAlignment( Fasta ):
@@ -285,31 +273,29 @@ class SequenceAlignment( Fasta ):
         """
         
         try:
-            fh = open( filename )
-            len = -1
-            while True:
-                line = fh.readline()
-                if not line:
-                    break #EOF
-                line = line.strip()
-                if line: #first non-empty line
-                    if line.startswith( '>' ):
-                        #The next line.strip() must not be '', nor startwith '>'
-                        line = fh.readline().strip()
-                        if line == '' or line.startswith( '>' ):
-                            break
-                        if len < 0:
-                            len = len(line)
-                        elif len != len(line):
-                            return False
-                    else:
-                        break #we found a non-empty line, but its not a fasta header
-            if len > 0:
-                return True
+            with open( filename ) as fh:
+                len = -1
+                while True:
+                    line = fh.readline()
+                    if not line:
+                        break #EOF
+                    line = line.strip()
+                    if line: #first non-empty line
+                        if line.startswith( '>' ):
+                            #The next line.strip() must not be '', nor startwith '>'
+                            line = fh.readline().strip()
+                            if line == '' or line.startswith( '>' ):
+                                break
+                            if len < 0:
+                                len = len(line)
+                            elif len != len(line):
+                                return False
+                        else:
+                            break #we found a non-empty line, but its not a fasta header
+                if len > 0:
+                    return True
         except:
             pass
-        finally:
-            fh.close()
         return False
 
 class AlignCheck( Tabular ):
@@ -382,13 +368,11 @@ class DistanceMatrix( Text ):
     def set_meta( self, dataset, overwrite = True, skip = 0, **kwd ):
         Text.set_meta(self, dataset,overwrite = overwrite, skip = skip, **kwd )
         try:
-            fh = open( dataset.file_name )
-            line = fh.readline().strip().strip()
-            dataset.metadata.sequence_count = int(line) 
+            with open( dataset.file_name ) as fh:
+                line = fh.readline().strip().strip()
+                dataset.metadata.sequence_count = int(line) 
         except Exception, e:
             log.warn("DistanceMatrix set_meta %s" % e)
-        finally:
-            fh.close()
 
 class LowerTriangleDistanceMatrix(DistanceMatrix):
     file_ext = 'lower.dist'
@@ -412,41 +396,38 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
                 U68593	0.2872	0.1690	0.3361	0.2842
         """
         try:
-            fh = open( filename )
-            count = 0
-            line = fh.readline()
-            sequence_count = int(line.strip())
-            while True:
+            with open( filename ) as fh:
+                count = 0
                 line = fh.readline()
-                line = line.strip()
-                if not line:
-                    break #EOF
-                if line:
-                    # Split into fields
-                    linePieces = line.split('\t')
-                    # Each line should have the same number of
-                    # fields as the Python line index
-                    linePieces = line.split('\t')
-                    if len(linePieces) != (count + 1):
-                        return False
-                    # Distances should be floats
-                    try:
-                        for linePiece in linePieces[2:]:
-                            check = float(linePiece)
-                    except ValueError:
-                        return False
-                    # Increment line counter
-                    count += 1
-                    # Only check first 5 lines
-                    if count == 5:
-                        return True
-            fh.close()
+                sequence_count = int(line.strip())
+                while True:
+                    line = fh.readline()
+                    line = line.strip()
+                    if not line:
+                        break #EOF
+                    if line:
+                        # Split into fields
+                        linePieces = line.split('\t')
+                        # Each line should have the same number of
+                        # fields as the Python line index
+                        linePieces = line.split('\t')
+                        if len(linePieces) != (count + 1):
+                            return False
+                        # Distances should be floats
+                        try:
+                            for linePiece in linePieces[2:]:
+                                check = float(linePiece)
+                        except ValueError:
+                            return False
+                        # Increment line counter
+                        count += 1
+                        # Only check first 5 lines
+                        if count == 5:
+                            return True
             if count < 5 and count > 0:
                 return True
         except:
             pass
-        finally:
-            fh.close()
         return False
 
 class SquareDistanceMatrix(DistanceMatrix):
@@ -469,37 +450,34 @@ class SquareDistanceMatrix(DistanceMatrix):
                U68590  0.3371  0.0000  0.3783
         """
         try:
-            fh = open( filename )
-            count = 0
-            line = fh.readline()
-            line = line.strip()
-            sequence_count = int(line)
-            col_cnt = seq_cnt + 1
-            while True:
+            with open( filename ) as fh:
+                count = 0
                 line = fh.readline()
                 line = line.strip()
-                if not line:
-                    break #EOF
-                if line:
-                    if line[0] != '@':
-                        linePieces = line.split('\t')
-                        if len(linePieces) != col_cnt :
-                            return False
-                        try:
-                            for i in range(1, col_cnt):
-                                check = float(linePieces[i])
-                        except ValueError:
-                            return False
-                        count += 1
-                        if count == 5:
-                            return True
-            fh.close()
+                seq_cnt = int(line)
+                col_cnt = seq_cnt + 1
+                while True:
+                    line = fh.readline()
+                    line = line.strip()
+                    if not line:
+                        break #EOF
+                    if line:
+                        if line[0] != '@':
+                            linePieces = line.split('\t')
+                            if len(linePieces) != col_cnt :
+                                return False
+                            try:
+                                for i in range(1, col_cnt):
+                                    check = float(linePieces[i])
+                            except ValueError:
+                                return False
+                            count += 1
+                            if count == 5:
+                                return True
             if count < 5 and count > 0:
                 return True
         except:
             pass
-        finally:
-            fh.close()
         return False
 
 class PairwiseDistanceMatrix(DistanceMatrix,Tabular):
@@ -518,37 +496,36 @@ class PairwiseDistanceMatrix(DistanceMatrix,Tabular):
         The first and second columns have the sequence names and the third column is the distance between those sequences.
         """
         try:
-            fh = open( filename )
-            count = 0
-            all_ints = True
-            while True:
-                line = fh.readline()
-                line = line.strip()
-                if not line:
-                    break #EOF
-                if line:
-                    if line[0] != '@':
-                        linePieces = line.split('\t')
-                        if len(linePieces) != 3:
-                            return False
-                        try:
-                            check = float(linePieces[2])
-                            try:
-                                # See if it's also an integer
-                                check_int = int(linePieces[2])
-                            except ValueError:
-                                # At least one value is not an
-                                # integer
-                                all_ints = False
-                        except ValueError:
-                            return False
-                        count += 1
-                        if count == 5:
-                            if not all_ints:
-                                return True
-                            else:
+            with open( filename ) as fh:
+                count = 0
+                all_ints = True
+                while True:
+                    line = fh.readline()
+                    line = line.strip()
+                    if not line:
+                        break #EOF
+                    if line:
+                        if line[0] != '@':
+                            linePieces = line.split('\t')
+                            if len(linePieces) != 3:
                                 return False
-            fh.close()
+                            try:
+                                check = float(linePieces[2])
+                                try:
+                                    # See if it's also an integer
+                                    check_int = int(linePieces[2])
+                                except ValueError:
+                                    # At least one value is not an
+                                    # integer
+                                    all_ints = False
+                            except ValueError:
+                                return False
+                            count += 1
+                            if count == 5:
+                                if not all_ints:
+                                    return True
+                                else:
+                                    return False
             if count < 5 and count > 0:
                 if not all_ints:
                     return True
@@ -556,8 +533,6 @@ class PairwiseDistanceMatrix(DistanceMatrix,Tabular):
                     return False
         except:
             pass
-        finally:
-            fh.close()
         return False
 
 class AlignCheck(Tabular):
@@ -602,18 +577,18 @@ class Group(Tabular):
         Tabular.set_meta(self, dataset, overwrite, skip, max_data_lines)
         group_names = set() 
         try:
-            fh = open( dataset.file_name )
-            for line in fh:
-                fields = line.strip().split('\t')
-                try:
-                    group_names.add(fields[1])
-                except IndexError:
-                    # Ignore missing 2nd column
-                    pass
-            dataset.metadata.groups = []
-            dataset.metadata.groups += group_names
-        finally:
-            fh.close()
+            with open( dataset.file_name ) as fh:
+                for line in fh:
+                    fields = line.strip().split('\t')
+                    try:
+                        group_names.add(fields[1])
+                    except IndexError:
+                        # Ignore missing 2nd column
+                        pass
+                dataset.metadata.groups = []
+                dataset.metadata.groups += group_names
+        except:
+            pass
 
 class AccNos(Tabular):
     file_ext = 'accnos'
@@ -632,32 +607,30 @@ class Oligos( Text ):
         Determines whether the file is a otu (operational taxonomic unit) format
         """
         try:
-            fh = open( filename )
-            count = 0
-            while True:
-                line = fh.readline()
-                line = line.strip()
-                if not line:
-                    break #EOF
-                else:
-                    if line[0] != '#':
-                        linePieces = line.split('\t')
-                        if len(linePieces) == 2 and re.match('forward|reverse',linePieces[0]):
-                            count += 1
-                            continue
-                        elif len(linePieces) == 3 and re.match('barcode',linePieces[0]):
-                            count += 1
-                            continue
-                        else:
-                            return False
-                        if count > 20:
-                            return True
-            if count > 0:
-                return True
+            with open( filename ) as fh:
+                count = 0
+                while True:
+                    line = fh.readline()
+                    line = line.strip()
+                    if not line:
+                        break #EOF
+                    else:
+                        if line[0] != '#':
+                            linePieces = line.split('\t')
+                            if len(linePieces) == 2 and re.match('forward|reverse',linePieces[0]):
+                                count += 1
+                                continue
+                            elif len(linePieces) == 3 and re.match('barcode',linePieces[0]):
+                                count += 1
+                                continue
+                            else:
+                                return False
+                            if count > 20:
+                                return True
+                if count > 0:
+                    return True
         except:
             pass
-        finally:
-            fh.close()
         return False
 
 class Frequency(Tabular):
@@ -678,31 +651,29 @@ class Frequency(Tabular):
         155	0.975
         """
         try:
-            fh = open( filename )
-            count = 0
-            while True:
-                line = fh.readline()
-                line = line.strip()
-                if not line:
-                    break #EOF
-                else:
-                    if line[0] != '#':
-                        try:
-                            linePieces = line.split('\t')
-                            i = int(linePieces[0])
-                            f = float(linePieces[1])
-                            count += 1
-                            continue
-                        except:
-                            return False
-                        if count > 20:
-                            return True
-            if count > 0:
-                return True
+            with open( filename ) as fh:
+                count = 0
+                while True:
+                    line = fh.readline()
+                    line = line.strip()
+                    if not line:
+                        break #EOF
+                    else:
+                        if line[0] != '#':
+                            try:
+                                linePieces = line.split('\t')
+                                i = int(linePieces[0])
+                                f = float(linePieces[1])
+                                count += 1
+                                continue
+                            except:
+                                return False
+                            if count > 20:
+                                return True
+                if count > 0:
+                    return True
         except:
             pass
-        finally:
-            fh.close()
         return False
 
 class Quantile(Tabular):
@@ -723,36 +694,34 @@ class Quantile(Tabular):
         ...
         """
         try:
-            fh = open( filename )
-            count = 0
-            while True:
-                line = fh.readline()
-                line = line.strip()
-                if not line:
-                    break #EOF
-                else:
-                    if line[0] != '#':
-                        try:
-                            linePieces = line.split('\t')
-                            i = int(linePieces[0])
-                            f = float(linePieces[1])
-                            f = float(linePieces[2])
-                            f = float(linePieces[3])
-                            f = float(linePieces[4])
-                            f = float(linePieces[5])
-                            f = float(linePieces[6])
-                            count += 1
-                            continue
-                        except:
-                            return False
-                        if count > 10:
-                            return True
-            if count > 0:
-                return True
+            with open( filename ) as fh:
+                count = 0
+                while True:
+                    line = fh.readline()
+                    line = line.strip()
+                    if not line:
+                        break #EOF
+                    else:
+                        if line[0] != '#':
+                            try:
+                                linePieces = line.split('\t')
+                                i = int(linePieces[0])
+                                f = float(linePieces[1])
+                                f = float(linePieces[2])
+                                f = float(linePieces[3])
+                                f = float(linePieces[4])
+                                f = float(linePieces[5])
+                                f = float(linePieces[6])
+                                count += 1
+                                continue
+                            except:
+                                return False
+                            if count > 10:
+                                return True
+                if count > 0:
+                    return True
         except:
             pass
-        finally:
-            fh.close()
         return False
 
 class LaneMask(Text):
@@ -763,19 +732,17 @@ class LaneMask(Text):
         Determines whether the file is a lane mask filter:  1 line consisting of zeros and ones.
         """
         try:
-            fh = open( filename )
-            while True:
-                buff = fh.read(1000)
-                if not buff:
-                    break #EOF
-                else:
-                    if not re.match('^[01]+$',line):
-                        return False
-            return True
+            with open( filename ) as fh:
+                while True:
+                    buff = fh.read(1000)
+                    if not buff:
+                        break #EOF
+                    else:
+                        if not re.match('^[01]+$',line):
+                            return False
+                return True
         except:
             pass
-        finally:
-            close(fh)
         return False
 
 class CountTable(Tabular):
@@ -805,27 +772,27 @@ class CountTable(Tabular):
     def set_meta( self, dataset, overwrite = True, skip = 1, max_data_lines = None, **kwd ):
         try:
             data_lines = 0;
-            fh = open( dataset.file_name )
-            line = fh.readline()
-            if line:
-                line = line.strip()
-                colnames = line.split() 
-                if len(colnames) > 1:
-                    dataset.metadata.columns = len( colnames )
-                    if len(colnames) > 2:
-                        dataset.metadata.groups = colnames[2:]
-                    column_types = ['str']
-                    for i in range(1,len(colnames)):
-                        column_types.append('int')
-                    dataset.metadata.column_types = column_types
-                    dataset.metadata.comment_lines = 1
-            while line:
+            with open( dataset.file_name ) as fh:
                 line = fh.readline()
-                if not line: break
-                data_lines += 1
-            dataset.metadata.data_lines = data_lines
-        finally:
-            close(fh)
+                if line:
+                    line = line.strip()
+                    colnames = line.split() 
+                    if len(colnames) > 1:
+                        dataset.metadata.columns = len( colnames )
+                        if len(colnames) > 2:
+                            dataset.metadata.groups = colnames[2:]
+                        column_types = ['str']
+                        for i in range(1,len(colnames)):
+                            column_types.append('int')
+                        dataset.metadata.column_types = column_types
+                        dataset.metadata.comment_lines = 1
+                while line:
+                    line = fh.readline()
+                    if not line: break
+                    data_lines += 1
+                dataset.metadata.data_lines = data_lines
+        except:
+            pass
 
 class RefTaxonomy(Tabular):
     file_ext = 'ref.taxonomy'
@@ -854,37 +821,35 @@ class RefTaxonomy(Tabular):
         """
         try:
             pat = '^([^ \t\n\r\x0c\x0b;]+([(]\\d+[)])?(;[^ \t\n\r\x0c\x0b;]+([(]\\d+[)])?)*(;)?)$'
-            fh = open( filename )
-            count = 0
-            # VAMPS  taxonomy files do not require a semicolon after the last taxonomy category
-            # but assume assume the file will have some multi-level taxonomy assignments
-            found_semicolons = False
-            while True:
-                line = fh.readline()
-                if not line:
-                    break #EOF
-                line = line.strip()
-                if line:
-                    fields = line.split('\t')
-                    if not (2 <= len(fields) <= 3):
-                        return False
-                    if not re.match(pat,fields[1]):
-                        return False
-                    if not found_semicolons and str(fields[1]).count(';') > 0:
-                        found_semicolons = True
-                    if len(fields) == 3:
-                        check = int(fields[2])
-                    count += 1
-                    if count > 100:
-                        break
-            if count > 0:
-                # This will be true if at least one entry
-                # has semicolons in the 2nd column
-                return found_semicolons
+            with open( filename ) as fh:
+                count = 0
+                # VAMPS  taxonomy files do not require a semicolon after the last taxonomy category
+                # but assume assume the file will have some multi-level taxonomy assignments
+                found_semicolons = False
+                while True:
+                    line = fh.readline()
+                    if not line:
+                        break #EOF
+                    line = line.strip()
+                    if line:
+                        fields = line.split('\t')
+                        if not (2 <= len(fields) <= 3):
+                            return False
+                        if not re.match(pat,fields[1]):
+                            return False
+                        if not found_semicolons and str(fields[1]).count(';') > 0:
+                            found_semicolons = True
+                        if len(fields) == 3:
+                            check = int(fields[2])
+                        count += 1
+                        if count > 100:
+                            break
+                if count > 0:
+                    # This will be true if at least one entry
+                    # has semicolons in the 2nd column
+                    return found_semicolons
         except:
             pass
-        finally:
-            fh.close()
         return False
 
 class SequenceTaxonomy(RefTaxonomy):
@@ -909,28 +874,26 @@ class SequenceTaxonomy(RefTaxonomy):
         """
         try:
             pat = '^([^ \t\n\r\f\v;]+([(]\d+[)])?[;])+$'
-            fh = open( filename )
-            count = 0
-            while True:
-                line = fh.readline()
-                if not line:
-                    break #EOF
-                line = line.strip()
-                if line:
-                    fields = line.split('\t')
-                    if len(fields) != 2:
-                        return False
-                    if not re.match(pat,fields[1]):
-                        return False
-                    count += 1
-                    if count > 10:
-                        break
-            if count > 0:
-                return True
+            with open( filename ) as fh:
+                count = 0
+                while True:
+                    line = fh.readline()
+                    if not line:
+                        break #EOF
+                    line = line.strip()
+                    if line:
+                        fields = line.split('\t')
+                        if len(fields) != 2:
+                            return False
+                        if not re.match(pat,fields[1]):
+                            return False
+                        count += 1
+                        if count > 10:
+                            break
+                if count > 0:
+                    return True
         except:
             pass
-        finally:
-            fh.close()
         return False
 
 class RDPSequenceTaxonomy(SequenceTaxonomy):
@@ -950,28 +913,26 @@ class RDPSequenceTaxonomy(SequenceTaxonomy):
         """
         try:
             pat = '^([^ \t\n\r\f\v;]+([(]\d+[)])?[;]){6}$'
-            fh = open( filename )
-            count = 0
-            while True:
-                line = fh.readline()
-                if not line:
-                    break #EOF
-                line = line.strip()
-                if line:
-                    fields = line.split('\t')
-                    if len(fields) != 2:
-                        return False
-                    if not re.match(pat,fields[1]):
-                        return False
-                    count += 1
-                    if count > 10:
-                        break
-            if count > 0:
-                return True
+            with open( filename ) as fh:
+                count = 0
+                while True:
+                    line = fh.readline()
+                    if not line:
+                        break #EOF
+                    line = line.strip()
+                    if line:
+                        fields = line.split('\t')
+                        if len(fields) != 2:
+                            return False
+                        if not re.match(pat,fields[1]):
+                            return False
+                        count += 1
+                        if count > 10:
+                            break
+                if count > 0:
+                    return True
         except:
             pass
-        finally:
-            fh.close()
         return False
 
 class ConsensusTaxonomy(Tabular):
@@ -1017,29 +978,27 @@ class Phylip(Text):
         AATCACGGCA GCCAATCAC
         """
         try:
-            fh = open( filename )
-            # counts line
-            line = fh.readline().strip()
-            linePieces = line.split()
-            count = int(linePieces[0])
-            seq_len = int(linePieces[1])
-            # data lines
-            """
-            TODO check data lines
-            while True:
-                line = fh.readline()
-                # name is the first 10 characters
-                name = line[0:10]
-                seq = line[10:].strip()
-                # nucleic base or amino acid 1-char designators (spaces allowed)
-                bases = ''.join(seq.split())
-                # float per base (each separated by space)
-            """
-            return True
+            with open( filename ) as fh:
+                # counts line
+                line = fh.readline().strip()
+                linePieces = line.split()
+                count = int(linePieces[0])
+                seq_len = int(linePieces[1])
+                # data lines
+                """
+                TODO check data lines
+                while True:
+                    line = fh.readline()
+                    # name is the first 10 characters
+                    name = line[0:10]
+                    seq = line[10:].strip()
+                    # nucleic base or amino acid 1-char designators (spaces allowed)
+                    bases = ''.join(seq.split())
+                    # float per base (each separated by space)
+                """
+                return True
         except:
             pass
-        finally:
-            close(fh)
         return False
 
 
@@ -1066,53 +1025,51 @@ class Axes(Tabular):
 		U68591  0.329854        0.014395        
         """
         try:
-            fh = open( filename )
-            count = 0
-            line = fh.readline()
-            line = line.strip()
-            col_cnt = None
-            all_integers = True
-            while True:
+            with open( filename ) as fh:
+                count = 0
                 line = fh.readline()
                 line = line.strip()
-                if not line:
-                    break #EOF
-                if line:
-                    fields = line.split('\t')
-                    if col_cnt == None:  # ignore values in first line as they may be column headings
-                        col_cnt = len(fields)
-                        # There should be at least 2 columns
-                        if col_cnt < 2:
-                            return False
-                    else:  
-                        if len(fields) != col_cnt :
-                            return False
-                        try:
-                            for i in range(1, col_cnt):
-                                check = float(fields[i])
-                                # Check abs value is <= 1.0
-                                if abs(check) > 1.0:
-                                    return False
-                                # Also test for whether value is an integer
-                                try:
-                                    check = int(fields[i])
-                                except ValueError:
-                                    all_integers = False
-                        except ValueError:
-                            return False
-                        count += 1
-                    if count > 10:
-                        break
-            if count > 0:
-                if not all_integers:
-                    # At least one value was a float
-                    return True
-                else:
-                    return False
+                col_cnt = None
+                all_integers = True
+                while True:
+                    line = fh.readline()
+                    line = line.strip()
+                    if not line:
+                        break #EOF
+                    if line:
+                        fields = line.split('\t')
+                        if col_cnt == None:  # ignore values in first line as they may be column headings
+                            col_cnt = len(fields)
+                            # There should be at least 2 columns
+                            if col_cnt < 2:
+                                return False
+                        else:  
+                            if len(fields) != col_cnt :
+                                return False
+                            try:
+                                for i in range(1, col_cnt):
+                                    check = float(fields[i])
+                                    # Check abs value is <= 1.0
+                                    if abs(check) > 1.0:
+                                        return False
+                                    # Also test for whether value is an integer
+                                    try:
+                                        check = int(fields[i])
+                                    except ValueError:
+                                        all_integers = False
+                            except ValueError:
+                                return False
+                            count += 1
+                        if count > 10:
+                            break
+                if count > 0:
+                    if not all_integers:
+                        # At least one value was a float
+                        return True
+                    else:
+                        return False
         except:
             pass
-        finally:
-            fh.close()
         return False
 
 class SffFlow(Tabular):
@@ -1138,13 +1095,13 @@ class SffFlow(Tabular):
     def set_meta( self, dataset, overwrite = True, skip = 1, max_data_lines = None, **kwd ):
         Tabular.set_meta(self, dataset, overwrite, 1, max_data_lines)
         try:
-            fh = open( dataset.file_name )
-            line = fh.readline()
-            line = line.strip()
-            flow_values = int(line)
-            dataset.metadata.flow_values = flow_values
-        finally:
-            fh.close()
+            with open( dataset.file_name ) as fh:
+                line = fh.readline()
+                line = line.strip()
+                flow_values = int(line)
+                dataset.metadata.flow_values = flow_values
+        except:
+            pass
 
     def make_html_table( self, dataset, skipchars=[] ):
         """Create HTML table, used for displaying peek"""
