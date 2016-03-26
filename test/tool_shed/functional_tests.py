@@ -63,7 +63,6 @@ def main():
     tool_shed_test_port = os.environ.get( 'TOOL_SHED_TEST_PORT', None )
     galaxy_test_host = os.environ.get( 'GALAXY_TEST_HOST', default_galaxy_test_host )
     galaxy_test_port = os.environ.get( 'GALAXY_TEST_PORT', None )
-    tool_path = os.environ.get( 'TOOL_SHED_TEST_TOOL_PATH', 'tools' )
     tool_dependency_dir = os.environ.get( 'TOOL_SHED_TOOL_DEPENDENCY_DIR', None )
     if not os.path.isdir( tool_shed_test_tmp_dir ):
         os.mkdir( tool_shed_test_tmp_dir )
@@ -126,7 +125,6 @@ def main():
                    smtp_server='smtp.dummy.string.tld',
                    email_from='functional@localhost',
                    template_path='templates',
-                   tool_path=tool_path,
                    tool_parse_help=False,
                    tool_data_table_config_path=galaxy_tool_data_table_conf_file,
                    use_heartbeat=False )
@@ -218,7 +216,6 @@ def main():
                        template_path="templates",
                        tool_data_path=tool_data_path,
                        tool_dependency_dir=galaxy_tool_dependency_dir,
-                       tool_path=tool_path,
                        tool_config_file=[ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ],
                        tool_sheds_config_file=galaxy_tool_sheds_conf_file,
                        tool_parse_help=False,
