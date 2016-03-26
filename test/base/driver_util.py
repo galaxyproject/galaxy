@@ -27,6 +27,8 @@ galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pa
 
 DEFAULT_LOCALES = "en"
 
+log = logging.getLogger("test_driver")
+
 
 def setup_tool_shed_tmp_dir():
     tool_shed_test_tmp_dir = os.environ.get('TOOL_SHED_TEST_TMP_DIR', None)
@@ -48,7 +50,7 @@ def configure_environment():
 
 def build_logger():
     """Build a logger for test driver script."""
-    return logging.getLogger("test_driver")
+    return log
 
 
 def nose_config_and_run( argv=None, env=None, ignore_files=[], plugins=None ):
