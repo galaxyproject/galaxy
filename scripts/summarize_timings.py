@@ -1,9 +1,7 @@
+"""Script to parse timings out of a Galaxy log and summarize."""
 from __future__ import print_function
 
-try:
-    from argparse import ArgumentParser
-except ImportError:
-    ArgumentParser = None
+from argparse import ArgumentParser
 import re
 
 import numpy
@@ -15,19 +13,19 @@ TIMING_LINE_PATTERN = re.compile("\((\d+.\d+) ms\)")
 
 
 def main(argv=None):
-    if ArgumentParser is None:
-        raise Exception("Test requires Python 2.7")
+    """Entry point for script."""
     arg_parser = ArgumentParser(description=DESCRIPTION)
     arg_parser.add_argument("--file", default="paster.log")
     arg_parser.add_argument("--print_lines", default=False, action="store_true")
-    arg_parser.add_argument("--pattern")
+    arg_parser.add_argument("--pattern", default=None)
 
     args = arg_parser.parse_args(argv)
     print_lines = args.print_lines
-    filter_pattern = re.compile(args.pattern)
+    pattern_str = args.pattern
+    filter_pattern = re.compile(pattern_str) if pattern_str is not None else None
     times = []
     for line in open(args.file, "r"):
-        if not filter_pattern.search(line):
+        if filter_pattern and not filter_pattern.search(line):
             continue
 
         match = TIMING_LINE_PATTERN.search(line)
