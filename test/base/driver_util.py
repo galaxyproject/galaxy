@@ -24,7 +24,12 @@ from .nose_util import run
 from .instrument import StructuredTestDataPlugin
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
-TOOL_SHED_TEST_DATA = os.path.join(galaxy_root, "test", "tool_shed", "test_data")
+GALAXY_TEST_DIRECTORY = os.path.join(galaxy_root, "test")
+TOOL_SHED_TEST_DATA = os.path.join(GALAXY_TEST_DIRECTORY, "tool_shed", "test_data")
+FRAMEWORK_TOOLS_DIR = os.path.join(GALAXY_TEST_DIRECTORY, "functional", "tools")
+FRAMEWORK_UPLOAD_TOOL_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "upload_tool_conf.xml")
+FRAMEWORK_SAMPLE_TOOLS_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "samples_tool_conf.xml")
+FRAMEWORK_DATATYPES_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "sample_datatypes_conf.xml")
 
 DEFAULT_LOCALES = "en"
 
@@ -219,6 +224,9 @@ __all__ = [
     "configure_environment",
     "copy_database_template",
     "build_logger",
+    "FRAMEWORK_UPLOAD_TOOL_CONF",
+    "FRAMEWORK_SAMPLE_TOOLS_CONF",
+    "FRAMEWORK_DATATYPES_CONF",
     "galaxy_database_conf",
     "get_webapp_global_conf",
     "nose_config_and_run",

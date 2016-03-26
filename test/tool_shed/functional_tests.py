@@ -47,14 +47,6 @@ shed_tool_conf_xml_template = '''<?xml version="1.0"?>
 </toolbox>
 '''
 
-tool_conf_xml = '''<?xml version="1.0"?>
-<toolbox>
-    <section name="Get Data" id="getext">
-        <tool file="data_source/upload.xml"/>
-    </section>
-</toolbox>
-'''
-
 tool_data_table_conf_xml_template = '''<?xml version="1.0"?>
 <tables>
 </tables>
@@ -84,7 +76,7 @@ def main():
     shed_tool_data_table_conf_file = os.environ.get( 'TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF', os.path.join( tool_shed_test_tmp_dir, 'shed_tool_data_table_conf.xml' ) )
     galaxy_shed_data_manager_conf_file = os.environ.get( 'GALAXY_SHED_DATA_MANAGER_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_shed_data_manager_conf.xml' ) )
     galaxy_tool_data_table_conf_file = os.environ.get( 'GALAXY_TEST_TOOL_DATA_TABLE_CONF', os.path.join( tool_shed_test_tmp_dir, 'tool_data_table_conf.xml' ) )
-    galaxy_tool_conf_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_tool_conf.xml' ) )
+    galaxy_tool_conf_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', driver_util.FRAMEWORK_UPLOAD_TOOL_CONF )
     galaxy_shed_tool_conf_file = os.environ.get( 'GALAXY_TEST_SHED_TOOL_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_shed_tool_conf.xml' ) )
     galaxy_migrated_tool_conf_file = os.environ.get( 'GALAXY_TEST_MIGRATED_TOOL_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_migrated_tool_conf.xml' ) )
     galaxy_tool_sheds_conf_file = os.environ.get( 'GALAXY_TEST_TOOL_SHEDS_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_sheds_conf.xml' ) )
@@ -191,8 +183,6 @@ def main():
 
     # ---- Optionally start up a Galaxy instance ------------------------------------------------------
     if 'TOOL_SHED_TEST_OMIT_GALAXY' not in os.environ:
-        # Generate the tool_conf.xml file.
-        file( galaxy_tool_conf_file, 'w' ).write( tool_conf_xml )
         # Generate the shed_tool_conf.xml file.
         tool_sheds_conf_template_parser = string.Template( tool_sheds_conf_xml_template )
         tool_sheds_conf_xml = tool_sheds_conf_template_parser.safe_substitute( shed_url=tool_shed_test_host, shed_port=tool_shed_test_port )

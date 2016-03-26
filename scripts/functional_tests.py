@@ -95,25 +95,24 @@ def main():
     testing_installed_tools = __check_arg( '-installed' )
     datatypes_conf_override = None
 
-    framework_tool_dir = os.path.join('test', 'functional', 'tools')
     if testing_migrated_tools or testing_installed_tools:
         # Store a jsonified dictionary of tool_id : GALAXY_TEST_FILE_DIR pairs.
         galaxy_tool_shed_test_file = 'shed_tools_dict'
         # We need the upload tool for functional tests, so we'll create a temporary tool panel config that defines it.
-        tool_config_file = os.path.join( framework_tool_dir, 'upload_tool_conf.xml' )
+        tool_config_file = driver_util.FRAMEWORK_UPLOAD_TOOL_CONF
         galaxy_test_file_dir = None
         library_import_dir = None
         user_library_import_dir = None
     else:
         framework_test = __check_arg( '-framework' )  # Run through suite of tests testing framework.
         if framework_test:
-            tool_conf = os.path.join( framework_tool_dir, 'samples_tool_conf.xml' )
-            datatypes_conf_override = os.path.join( framework_tool_dir, 'sample_datatypes_conf.xml' )
+            tool_conf = driver_util.FRAMEWORK_SAMPLE_TOOLS_CONF
+            datatypes_conf_override = driver_util.FRAMEWORK_DATATYPES_CONF
         else:
             # Use tool_conf.xml toolbox.
             tool_conf = None
             if __check_arg( '-with_framework_test_tools' ):
-                tool_conf = "%s,%s" % ( 'config/tool_conf.xml.sample', os.path.join( framework_tool_dir, 'samples_tool_conf.xml' ) )
+                tool_conf = "%s,%s" % ( 'config/tool_conf.xml.sample', driver_util.FRAMEWORK_SAMPLE_TOOLS_CONF )
         test_dir = default_galaxy_test_file_dir
         tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', tool_conf )
         galaxy_test_file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', test_dir )
