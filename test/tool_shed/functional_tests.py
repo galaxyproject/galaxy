@@ -115,11 +115,6 @@ def main():
                    tool_parse_help=False,
                    tool_data_table_config_path=galaxy_tool_data_table_conf_file,
                    use_heartbeat=False )
-    for dir in [ tool_shed_test_tmp_dir ]:
-        try:
-            os.makedirs( dir )
-        except OSError:
-            pass
 
     print "Tool shed database connection:", toolshed_database_connection
     print "Galaxy database connection:", galaxy_database_connection
