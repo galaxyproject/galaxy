@@ -63,7 +63,6 @@ def main():
     tool_shed_test_port = os.environ.get( 'TOOL_SHED_TEST_PORT', None )
     galaxy_test_host = os.environ.get( 'GALAXY_TEST_HOST', default_galaxy_test_host )
     galaxy_test_port = os.environ.get( 'GALAXY_TEST_PORT', None )
-    tool_dependency_dir = os.environ.get( 'TOOL_SHED_TOOL_DEPENDENCY_DIR', None )
     if not os.path.isdir( tool_shed_test_tmp_dir ):
         os.mkdir( tool_shed_test_tmp_dir )
     shed_db_path = driver_util.database_files_path(tool_shed_test_tmp_dir, prefix="TOOL_SHED")
@@ -134,11 +133,6 @@ def main():
     os.environ[ 'TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF' ] = shed_tool_data_table_conf_file
     # ---- Build Tool Shed Application --------------------------------------------------
     toolshedapp = None
-#    if not toolshed_database_connection.startswith( 'sqlite://' ):
-#        kwargs[ 'database_engine_option_max_overflow' ] = '20'
-    if tool_dependency_dir is not None:
-        kwargs[ 'tool_dependency_dir' ] = tool_dependency_dir
-
     kwargs[ 'global_conf' ] = tool_shed_global_conf
 
     if not toolshed_database_connection.startswith( 'sqlite://' ):
