@@ -132,9 +132,7 @@ def main():
         # Generate shed_data_manager_conf.xml
         if not os.environ.get( 'GALAXY_SHED_DATA_MANAGER_CONF' ):
             open( galaxy_shed_data_manager_conf_file, 'wb' ).write( shed_data_manager_conf_xml_template )
-        kwargs = dict( enable_tool_shed_check=True,
-                       hours_between_check=0.001,
-                       migrated_tools_config=galaxy_migrated_tool_conf_file,
+        kwargs = dict( migrated_tools_config=galaxy_migrated_tool_conf_file,
                        shed_data_manager_config_file=galaxy_shed_data_manager_conf_file,
                        shed_tool_data_table_config=shed_tool_data_table_conf_file,
                        shed_tool_path=galaxy_shed_tool_path,
@@ -146,7 +144,8 @@ def main():
                 galaxy_db_path,
                 use_test_file_dir=False,
                 default_install_db_merged=False,
-                default_tool_data_table_config_path=default_tool_data_table_config_path
+                default_tool_data_table_config_path=default_tool_data_table_config_path,
+                enable_tool_shed_check=True,
             )
         )
         print "Galaxy database connection:", kwargs["database_connection"]

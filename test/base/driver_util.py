@@ -85,6 +85,7 @@ def setup_galaxy_config(
     use_test_file_dir=False,
     default_install_db_merged=True,
     default_tool_data_table_config_path=None,
+    enable_tool_shed_check=False,
 ):
     """Setup environment and build config for test Galaxy instance."""
     if not os.path.exists(tmpdir):
@@ -143,7 +144,9 @@ def setup_galaxy_config(
     )
     config.update(database_conf(tmpdir))
     config.update(install_database_conf(tmpdir, default_merged=default_install_db_merged))
-
+    if enable_tool_shed_check:
+        config["enable_tool_shed_check"] = enable_tool_shed_check
+        config["hours_between_check"] = 0.001
     if tool_dependency_dir:
         config["tool_dependency_dir"] = tool_dependency_dir
         # Used by shed's twill dependency stuff - todo read from
