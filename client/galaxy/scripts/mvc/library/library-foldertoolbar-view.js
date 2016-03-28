@@ -426,6 +426,7 @@ var FolderToolbarView = Backbone.View.extend({
     mod_utils.get({
         url      :  Galaxy.root + "api/datatypes?extension_only=False",
         success  :  function( datatypes ) {
+                        that.list_extensions = [];
                         for (key in datatypes) {
                             that.list_extensions.push({
                                 id              : datatypes[key].extension,
@@ -438,11 +439,13 @@ var FolderToolbarView = Backbone.View.extend({
                             return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
                         });
                         that.list_extensions.unshift(that.auto);
-                    }
+                    },
+        cache    : true
       });
     mod_utils.get({
         url     :    Galaxy.root + "api/genomes",
         success : function( genomes ) {
+                    that.list_genomes = [];
                     for ( key in genomes ) {
                         that.list_genomes.push({
                             id      : genomes[key][1],
@@ -452,7 +455,8 @@ var FolderToolbarView = Backbone.View.extend({
                     that.list_genomes.sort(function(a, b) {
                         return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
                     });
-                }
+                },
+        cache   : true
     });
   },
 
