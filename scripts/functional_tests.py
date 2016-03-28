@@ -18,7 +18,6 @@ driver_util.configure_environment()
 log = driver_util.build_logger()
 
 from base.api_util import get_master_api_key, get_user_api_key
-from base.test_logging import logging_config_file
 from galaxy.web import buildapp
 
 
@@ -67,9 +66,7 @@ def main():
         # ---- Build Application --------------------------------------------------
         kwargs = dict( shed_tool_data_table_config=shed_tool_data_table_config,
                        tool_config_file=tool_config_file,
-                       update_integrated_tool_panel=False,
-                       enable_beta_tool_formats=True,
-                       auto_configure_logging=logging_config_file is None )
+                       update_integrated_tool_panel=False, )
         kwargs.update(galaxy_config)
         if datatypes_conf_override:
             kwargs[ 'datatypes_config_file' ] = datatypes_conf_override

@@ -34,6 +34,8 @@ from galaxy.webapps.tool_shed.app import UniverseApplication as ToolshedUniverse
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
 
+from base.test_logging import logging_config_file
+
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 DEFAULT_WEB_HOST = "localhost"
 GALAXY_TEST_DIRECTORY = os.path.join(galaxy_root, "test")
@@ -140,9 +142,11 @@ def setup_galaxy_config(
         allow_user_creation=True,
         allow_user_deletion=True,
         api_allow_run_as='test@bx.psu.edu',
+        auto_configure_logging=logging_config_file is None ,
         check_migrate_tools=False,
         cleanup_job='onsuccess',
         data_manager_config_file=data_manager_config_file,
+        enable_beta_tool_formats=True,
         file_path=file_path,
         galaxy_data_manager_data_path=galaxy_data_manager_data_path,
         id_secret='changethisinproductiontoo',
