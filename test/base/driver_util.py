@@ -98,6 +98,8 @@ def setup_galaxy_config(
     enable_tool_shed_check=False,
     default_tool_conf=None,
     shed_tool_conf=None,
+    datatypes_conf=None,
+    update_integrated_tool_panel=False,
 ):
     """Setup environment and build config for test Galaxy instance."""
     if not os.path.exists(tmpdir):
@@ -173,13 +175,15 @@ def setup_galaxy_config(
         tool_data_table_config_path=tool_data_table_config_path,
         tool_parse_help=False,
         tool_path=tool_path,
-        update_integrated_tool_panel=False,
+        update_integrated_tool_panel=update_integrated_tool_panel,
         use_tasked_jobs=True,
         use_heartbeat=False,
         user_library_import_dir=user_library_import_dir,
     )
     config.update(database_conf(tmpdir))
     config.update(install_database_conf(tmpdir, default_merged=default_install_db_merged))
+    if datatypes_conf is not None:
+        config['datatypes_config_file'] = datatypes_conf
     if enable_tool_shed_check:
         config["enable_tool_shed_check"] = enable_tool_shed_check
         config["hours_between_check"] = 0.001

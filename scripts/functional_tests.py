@@ -54,6 +54,7 @@ def main():
             use_test_file_dir=not testing_shed_tools,
             default_install_db_merged=True,
             default_tool_conf=default_tool_conf,
+            datatypes_conf=datatypes_conf_override,
         )
 
     app = None
@@ -61,12 +62,8 @@ def main():
 
     if start_server:
         # ---- Build Application --------------------------------------------------
-        kwargs = dict( shed_tool_data_table_config=shed_tool_data_table_config,
-                       update_integrated_tool_panel=False, )
+        kwargs = dict( shed_tool_data_table_config=shed_tool_data_table_config )
         kwargs.update(galaxy_config)
-        if datatypes_conf_override:
-            kwargs[ 'datatypes_config_file' ] = datatypes_conf_override
-
         app = driver_util.build_galaxy_app(kwargs)
         server_wrapper = driver_util.launch_server(
             app,

@@ -146,6 +146,7 @@ def main():
                 default_tool_data_table_config_path=default_tool_data_table_config_path,
                 enable_tool_shed_check=True,
                 shed_tool_conf=galaxy_shed_tool_conf_file,
+                update_integrated_tool_panel=True,
             )
         )
         print "Galaxy database connection:", kwargs["database_connection"]
