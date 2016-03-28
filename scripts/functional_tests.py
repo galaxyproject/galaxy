@@ -87,7 +87,6 @@ def main():
     if start_server:
         # ---- Build Application --------------------------------------------------
         kwargs = dict( shed_tool_data_table_config=shed_tool_data_table_config,
-                       test_conf="test.conf",
                        tool_config_file=tool_config_file,
                        tool_data_table_config_path=tool_data_table_config_path,
                        galaxy_data_manager_data_path=galaxy_data_manager_data_path,
