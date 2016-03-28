@@ -130,7 +130,7 @@ var DatasetAssociation = Backbone.Model
 
     /** Does this model already contain detailed data (as opposed to just summary level data)? */
     hasDetails : function(){
-        return this.has( 'peek' );
+        return this.has( 'annotation' );
     },
 
     /** Convenience function to match dataset.has_data. */

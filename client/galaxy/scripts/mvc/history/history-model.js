@@ -251,12 +251,12 @@ var History = Backbone.Model
             // we're updating, reset the update time
             self.lastUpdateTime = new Date();
 
-            contentsOptions.reset = true;
-            contentsOptions.silent = true;
-            // console.log( 'fetching contents' );
-            return self.contents.fetch( contentsOptions );
+            // contentsOptions.reset = true;
+            // contentsOptions.silent = true;
+            // // console.log( 'fetching contents' );
+            // return self.contents.fetch( contentsOptions );
 
-            // return self.contents.fetchFirst( contentsOptions );
+            return self.contents.fetchFirst( contentsOptions );
         });
     },
 
@@ -348,6 +348,7 @@ var HistoryCollection = _collectionSuper.extend( BASE_MVC.LoggableMixin ).extend
     initialize : function( models, options ){
         options = options || {};
         this.log( 'HistoryCollection.initialize', models, options );
+        _collectionSuper.prototype.initialize.call( this, models, options );
 
         /** @type {boolean} should deleted histories be included */
         this.includeDeleted = options.includeDeleted || false;
@@ -357,9 +358,6 @@ var HistoryCollection = _collectionSuper.extend( BASE_MVC.LoggableMixin ).extend
         /** @type {String} encoded id of the history that's current */
         this.currentHistoryId = options.currentHistoryId;
 
-        this.on( 'all', function(){
-           this.info( this + ', event:', arguments );
-        });
         this.setUpListeners();
         // note: models are sent to reset *after* this fn ends; up to this point
         // the collection *is empty*
@@ -371,7 +369,7 @@ var HistoryCollection = _collectionSuper.extend( BASE_MVC.LoggableMixin ).extend
 
     /** set up reflexive event handlers */
     setUpListeners : function setUpListeners(){
-        this.on({
+        return this.on({
             // when a history is deleted, remove it from the collection (if optionally set to do so)
             'change:deleted' : function( history ){
                 // TODO: this becomes complicated when more filters are used
@@ -460,6 +458,7 @@ var HistoryCollection = _collectionSuper.extend( BASE_MVC.LoggableMixin ).extend
         return 'HistoryCollection(' + this.length + ',current:' + this.currentHistoryId + ')';
     }
 });
+
 
 //==============================================================================
 return {

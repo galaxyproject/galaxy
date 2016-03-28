@@ -105,6 +105,65 @@ var HistoryView = _super.extend(
         // this.on( 'all', function(){ console.debug( arguments ); });
     },
 
+    // ------------------------------------------------------------------------ inf. scrolling
+    /** override to track the scroll container for this view */
+    _setUpBehaviors : function( $where ){
+        var DEBOUNCED_MS = 20,
+            self = this,
+            $newRender = _super.prototype._setUpBehaviors.call( this, $where );
+        // this needs to be handled outside the events hash since we're accessing the scollContainer
+        // (rebind and debounce the method so we can cache for any later removal)
+        self.scrollHandler = _.debounce( _.bind( this.scrollHandler, self ), DEBOUNCED_MS );
+        self.$scrollContainer( $where ).on( 'scroll', self.scrollHandler );
+        return self;
+    },
+
+    scrollHandler : function( ev ){
+        var FETCH_MORE_PX_THRESHOLD = 128;
+        var self = this;
+        var $container = this.$scrollContainer();
+        var pxToBottom = this.$el.outerHeight() - ( $container.scrollTop() + $container.innerHeight() );
+
+        // if the scrollbar is past the trigger point, we're not already fetching,
+        // AND we're not displaying some panel OVER this one
+        // note: is( :visible ) won't work here - it's still visible when this is covered with other panels
+        if( pxToBottom < FETCH_MORE_PX_THRESHOLD && !self._fetching && _.isEmpty( self.panelStack ) ){
+            self.listenToOnce( self.model.contents, 'sync', self.bulkAppendItemViews );
+            // TODO: gotta be a better way than a _fetching flag
+            self._fetching = true;
+            self.model.contents.fetchMore({ silent : true, useSync: true })
+                .always( function(){ delete self._fetching; });
+        }
+    },
+
+    addItemView : function( model, collection, options ){
+        console.log( 'addItemView:', options );
+        return _super.prototype.addItemView.call( this, model, collection, options );
+    },
+
+    showContentsLoadingIndicator : function( speed ){
+        speed = !_.isNumber( speed )? this.fxSpeed : speed;
+        // look for an existing indicator and stop all animations on it, otherwise make one
+        var $indicator = this.$list().find( '.contents-loading-indicator' );
+        if( $indicator.size() ){
+            $indicator.clearQueue();
+            $indicator.stop();
+        } else {
+            $indicator = $( '<li class="contents-loading-indicator">' + _l( 'Loading...' ) + '</li>' ).hide();
+        }
+        // move it to the bottom and fade it in
+        return $indicator
+            .appendTo( this.$list() )
+            .fadeIn( speed );
+    },
+
+    hideContentsLoadingIndicator : function( speed ){
+        speed = !_.isNumber( speed )? this.fxSpeed : speed;
+        this.$list().find( '.contents-loading-indicator' ).hide({ duration: speed, complete: function _complete(){
+            $( this ).remove();
+        }});
+    },
+
     // ------------------------------------------------------------------------ loading history/hda models
     /**  */
     loadHistory : function( historyId, options, contentsOptions ){
@@ -154,6 +213,8 @@ var HistoryView = _super.extend(
         _super.prototype._setUpCollectionListeners.call( this );
         return this.listenTo( this.collection, {
             // 'all' : function(){ console.log( this.collection + ':', arguments ); },
+            'fetching-more'     : this.showContentsLoadingIndicator,
+            'fetching-more-done': this.hideContentsLoadingIndicator,
         });
     },
 
@@ -298,12 +359,23 @@ var HistoryView = _super.extend(
         var self = this;
 
         self.showDeleted = show;
+        //TODO: at this point deleted/hidden makes more sense (simpler) in the collection
+        self.model.contents.includeDeleted = show;
         self.trigger( 'show-deleted', show );
-        var whenFetched = show? self.model.contents.fetchDeleted({ silent: true }) : jQuery.when();
-        whenFetched.done( function(){ self.renderItems(); });
-        if( store ){
-            self.storage.set( 'show_deleted', show );
+        if( store ){ self.storage.set( 'show_deleted', show ); }
+
+        // this seems brittle or at least not cohesive with the other non-hid approaches
+        var lastHid = self.collection.last().get( 'hid' );
+        console.log( 'lastHid:', lastHid );
+        var fetch = jQuery.when();
+        if( show ){
+            fetch = self.model.contents.fetchDeleted({
+                silent  : true,
+                filters : { 'hid-ge' : lastHid }
+            });
         }
+        fetch.done( function(){ self.renderItems(); });
+
         return self.showDeleted;
     },
 
@@ -313,41 +385,51 @@ var HistoryView = _super.extend(
     toggleShowHidden : function( show, store ){
         show = ( show !== undefined )?( show ):( !this.showHidden );
         store = ( store !== undefined )?( store ):( true );
-
         var self = this;
+
         self.showHidden = show;
+        self.model.contents.includeHidden = show;
         self.trigger( 'show-hidden', show );
-        var whenFetched = show? self.model.contents.fetchHidden({ silent: true }) : jQuery.when();
-        whenFetched.done( function(){ self.renderItems(); });
         if( store ){
             self.storage.set( 'show_hidden', show );
         }
+        var fetch = jQuery.when();
+        if( show ){
+            fetch = self.model.contents.fetchHidden({
+                silent  : true,
+            });
+        }
+        fetch.done( function(){ self.renderItems(); });
+
         return self.showHidden;
     },
 
     /** On the first search, if there are no details - load them, then search */
     _firstSearch : function( searchFor ){
-        var panel = this,
+        var self = this,
             inputSelector = '> .controls .search-input';
         this.log( 'onFirstSearch', searchFor );
 
-        if( panel.model.contents.haveDetails() ){
-            panel.searchItems( searchFor );
+        console.log( '_firstSearch:', self.model.contents.haveDetails() );
+        if( self.model.contents.haveDetails() ){
+            self.searchItems( searchFor );
             return;
         }
 
-        panel.$el.find( inputSelector ).searchInput( 'toggle-loading' );
-        // panel.model.contents.fetchAllDetails({ silent: true })
-        panel.model.contents.progressivelyFetchDetails({ silent: true })
+        self.$el.find( inputSelector ).searchInput( 'toggle-loading' );
+        // self.model.contents.fetchAllDetails({ silent: true })
+        self.model.contents.progressivelyFetchDetails({ silent: true })
             .progress( function( response, limit, offset ){
                 // console.log( 'progress:', offset, offset + response.length );
-                panel.renderItems();
+                // self.renderItems();
+                self.listenToOnce( self.model.contents, 'sync', self.bulkAppendItemViews );
+                // self.bulkAppendItemViews( self.model.contents, response, {});
             })
             .always( function(){
-                panel.$el.find( inputSelector ).searchInput( 'toggle-loading' );
+                self.$el.find( inputSelector ).searchInput( 'toggle-loading' );
             })
             .done( function(){
-                panel.searchItems( panel.searchFor );
+                self.searchItems( self.searchFor );
             });
     },
 

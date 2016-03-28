@@ -8,7 +8,7 @@ define([
 'use strict';
 
 //==============================================================================
-var _super = CONTROLLED_FETCH_COLLECTION.ControlledFetchCollection;
+var _super = CONTROLLED_FETCH_COLLECTION.PaginatedCollection;
 /** @class Backbone collection for history content.
  *      NOTE: history content seems like a dataset collection, but differs in that it is mixed:
  *          each element can be either an HDA (dataset) or a DatasetCollection and co-exist on
@@ -43,6 +43,11 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return { validationError : 'Unknown history_content_type: ' + attrs.history_content_type };
     },
 
+    /** @type {Number} limit used for the first fetch (or a reset) */
+    limitOnFirstFetch   : 100,
+    /** @type {Number} limit used for each subsequent fetch */
+    limitPerFetch       : 50,
+
     /** Set up */
     initialize : function( models, options ){
         options = options || {};
@@ -58,7 +63,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         /** @type {Boolean} does this collection contain and fetch non-visible elements */
         this.includeHidden = options.includeHidden || false;
 
-        this.on( 'all', function(){ console.debug( this + ', event:', arguments ); });
+        return _super.prototype.initialize.call( this, models, options );
     },
 
     /** root api url */
@@ -198,24 +203,30 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
 
     /**  */
     fetchDeleted : function( options ){
+        options = options || {};
         var self = this;
-        self.trigger( 'fetching-deleted', self );
-        return self.fetch( _.extend( options || {}, { filters : {
+        options.filters = _.extend( options.filters, {
             // all deleted, purged or not
             deleted : true,
             purged  : undefined
+        });
 
-        }})).always( function(){ self.trigger( 'fetching-deleted-done', self ); });
+        self.trigger( 'fetching-deleted', self );
+        return self.fetch( options )
+            .always( function(){ self.trigger( 'fetching-deleted-done', self ); });
     },
 
     /**  */
     fetchHidden : function( options ){
+        options = options || {};
         var self = this;
-        self.trigger( 'fetching-hidden', self );
-        return self.fetch( _.extend( options || {}, { filters : {
+        options.filters = _.extend( options.filters, {
             visible : false
+        });
 
-        }})).always( function(){ self.trigger( 'fetching-hidden-done', self ); });
+        self.trigger( 'fetching-hidden', self );
+        return self.fetch( options )
+            .always( function(){ self.trigger( 'fetching-hidden-done', self ); });
     },
 
     /** fetch detailed model data for all contents in this collection */
@@ -264,7 +275,9 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return deferred;
     },
 
+    /**  */
     progressivelyFetchDetails : function( options ){
+        console.log( 'progressivelyFetchDetails:', options );
         options = options || {};
         var deferred = jQuery.Deferred();
         var self = this;
@@ -272,12 +285,14 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         // TODO: only fetch tags and annotations if specifically requested
         var searchAttributes = HDA_MODEL.HistoryDatasetAssociation.prototype.searchAttributes;
         var detailKeys = searchAttributes.join( ',' );
-        // console.log( 'progressivelyFetchDetails:', limit, options );
 
+        // TODO: remove the need to maintain allFetched/lastFetched here
+        // by using fetchFirst/More here
         function _notifyAndContinue( response, offset ){
             // console.log( 'rcvd:', response.length );
             deferred.notify( response, limit, offset );
             if( !response.length || response.length < limit ){
+                self.allFetched = true;
                 deferred.resolve( response, limit, offset );
                 return;
             }
@@ -294,23 +309,17 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
                 offset  : offset,
             });
 
+            console.log( 'fetchFn:', fetchFn + '' );
+            var fetchFn = offset === 0? self.fetchFirst : self.fetchMore;
             // console.log( 'fetching:', _options.limit, _options.offset );
             _.defer( function(){
-                self.fetch( _options )
+                fetchFn.call( self, _options )
                     .fail( deferred.reject )
                     .done( function( r ){ _notifyAndContinue( r, offset ); });
             });
         }
         _recursivelyFetch();
         return deferred;
-    },
-
-    _test_progressivelyFetchDetails : function( options ){
-        var self = this;
-        var xhr = self.progressivelyFetchDetails( options );
-        xhr.progress( function(){
-
-        });
     },
 
     /**  */

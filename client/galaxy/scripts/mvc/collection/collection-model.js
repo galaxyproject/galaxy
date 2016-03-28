@@ -239,9 +239,7 @@ var DatasetCollection = Backbone.Model
     //TODO:?? the following are the same interface as DatasetAssociation - can we combine?
     /** Does the DC contain any elements yet? Is a fetch() required? */
     hasDetails : function(){
-        //TODO: this is incorrect for (accidentally) empty collections
-        this.debug( 'hasDetails:', this.elements.length );
-        return this.elements.length !== 0;
+        return this.has( 'annotation' );
     },
 
     /** Given the filters, what models in this.elements would be returned? */

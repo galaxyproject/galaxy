@@ -325,13 +325,18 @@ var HistoryViewEdit = _super.extend(
      */
     _handleHdaDeletionChange : function( itemModel ){
         var contentsShown = this.model.get( 'contents_shown' );
-        if( itemModel.get( 'deleted' ) && !this.showDeleted ){
-            this.removeItemView( itemModel );
-            contentsShown.shown -= 1;
+        if( itemModel.get( 'deleted' ) ){
             contentsShown.deleted += 1;
+            if( !this.showDeleted ){
+                this.removeItemView( itemModel );
+            } else {
+                contentsShown.shown -= 1;
+            }
         } else {
-            contentsShown.shown += 1;
             contentsShown.deleted -= 1;
+            if( !this.showDeleted ){
+                contentsShown.shown -= 1;
+            }
         }
         this.model.set( 'contents_shown', contentsShown );
         this._renderCounts();
@@ -342,14 +347,21 @@ var HistoryViewEdit = _super.extend(
      */
     _handleHdaVisibleChange : function( itemModel ){
         var contentsShown = this.model.get( 'contents_shown' );
-        if( itemModel.hidden() && !this.showHidden ){
-            this.removeItemView( itemModel );
-            contentsShown.shown -= 1;
+        // console.log( '_handleHdaVisibleChange:', contentsShown, itemModel.hidden(), this.showHidden );
+        if( itemModel.hidden() ){
             contentsShown.hidden += 1;
+            if( !this.showHidden ){
+                this.removeItemView( itemModel );
+            } else {
+                contentsShown.shown -= 1;
+            }
         } else {
-            contentsShown.shown += 1;
             contentsShown.hidden -= 1;
+            if( !this.showHidden ){
+                contentsShown.shown -= 1;
+            }
         }
+        // console.log( 'contentsShown:', contentsShown.shown, contentsShown.hidden );
         this.model.set( 'contents_shown', contentsShown );
         this._renderCounts();
     },
@@ -523,7 +535,8 @@ var HistoryViewEdit = _super.extend(
 HistoryViewEdit.prototype.templates = (function(){
 
     var countsTemplate = BASE_MVC.wrapTemplate([
-        '<%- view.views.length %> ', _l( 'shown' ),
+        '<% var shown = Math.max( view.views.length, history.contents_shown.shown ) %>',
+        '<% if( shown ){ %><%- shown %> ', _l( 'shown' ), '<% } %>',
         '<% if( history.contents_shown.deleted ){ %>',
             '<% if( view.showDeleted ){ %>',
                 ', <a class="toggle-deleted-link" href="javascript:void(0);">',

@@ -12,6 +12,20 @@ define([
  */
 var ControlledFetchCollection = Backbone.Collection.extend({
 
+    /**  */
+    initialize : function( models, options ){
+        this.setOrder( options.order || this.order, { silent: true });
+        // this.on( 'all', function(){ console.log( this.toString(), arguments ); });
+        return Backbone.Collection.prototype.initialize.call( this, models, options );
+    },
+
+    /** set up to track order changes and re-sort when changed */
+    _setUpListeners : function(){
+        return this.on({
+            'changed-order' : this.sort
+        });
+    },
+
     /** override to provide order and offsets based on instance vars, set limit if passed,
      *  and set allFetched/fire 'all-fetched' when xhr returns
      */
@@ -128,11 +142,12 @@ var ControlledFetchCollection = Backbone.Collection.extend({
         var oldOrder = collection.order;
         collection.order = order;
         collection.comparator = comparator;
-        collection.trigger( 'changed-order', collection.order, oldOrder, collection );
-        collection.sort( options );
+
+        if( !options.silent ){
+            collection.trigger( 'changed-order', options );
+        }
         return collection;
     },
-
 });
 
 
@@ -143,12 +158,13 @@ var ControlledFetchCollection = Backbone.Collection.extend({
 var PaginatedCollection = ControlledFetchCollection.extend({
 
     /** @type {Number} limit used for the first fetch (or a reset) */
-    limitOnFirstFetch   : 10,
+    limitOnFirstFetch   : null,
     /** @type {Number} limit used for each subsequent fetch */
-    limitPerFetch       : 4,
+    limitPerFetch       : 100,
 
     /**  */
     fetchFirst : function( options ){
+        console.log( 'ControlledFetchCollection.fetchFirst:', options );
         options = options? _.clone( options ) : {};
         this.allFetched = false;
         this.lastFetched = 0;
@@ -199,6 +215,7 @@ var PaginatedCollection = ControlledFetchCollection.extend({
 
 //==============================================================================
     return {
-        ControlledFetchCollection       : ControlledFetchCollection,
+        ControlledFetchCollection   : ControlledFetchCollection,
+        PaginatedCollection         : PaginatedCollection,
     };
 });
