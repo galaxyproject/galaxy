@@ -184,36 +184,23 @@ def main():
         galaxy_global_conf = driver_util.get_webapp_global_conf()
         galaxy_global_conf[ '__file__' ] = 'config/galaxy.ini.sample'
 
-        kwargs = dict( allow_user_creation=True,
-                       allow_user_deletion=True,
-                       admin_users='test@bx.psu.edu',
-                       allow_library_path_paste=True,
-                       database_connection=galaxy_database_connection,
+        kwargs = dict( database_connection=galaxy_database_connection,
                        database_auto_migrate=galaxy_database_auto_migrate,
                        datatype_converters_config_file="datatype_converters_conf.xml.sample",
-                       check_migrate_tools=False,
                        enable_tool_shed_check=True,
                        file_path=galaxy_file_path,
                        global_conf=galaxy_global_conf,
                        hours_between_check=0.001,
-                       id_secret='changethisinproductiontoo',
-                       job_queue_workers=5,
-                       log_destination="stdout",
                        migrated_tools_config=galaxy_migrated_tool_conf_file,
                        new_file_path=galaxy_tempfiles,
-                       running_functional_tests=True,
                        shed_data_manager_config_file=galaxy_shed_data_manager_conf_file,
                        shed_tool_data_table_config=shed_tool_data_table_conf_file,
                        shed_tool_path=galaxy_shed_tool_path,
-                       template_path="templates",
                        tool_data_path=tool_data_path,
                        tool_dependency_dir=galaxy_tool_dependency_dir,
                        tool_config_file=[ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ],
                        tool_sheds_config_file=galaxy_tool_sheds_conf_file,
-                       tool_parse_help=False,
-                       tool_data_table_config_path=galaxy_tool_data_table_conf_file,
-                       update_integrated_tool_panel=False,
-                       use_heartbeat=False )
+                       tool_data_table_config_path=galaxy_tool_data_table_conf_file )
         kwargs.setup_galaxy_config(use_test_file_dir=False)
         kwargs.update(install_database_conf)
         # ---- Build Galaxy Application --------------------------------------------------

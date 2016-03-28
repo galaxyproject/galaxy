@@ -84,7 +84,22 @@ def setup_galaxy_config(use_test_file_dir=False):
         user_library_import_dir = None
         library_import_dir = None
     return dict(
+        admin_users='test@bx.psu.edu',
+        allow_library_path_paste=True,
+        allow_user_creation=True,
+        allow_user_deletion=True,
+        api_allow_run_as='test@bx.psu.edu',
+        check_migrate_tools=False,
+        id_secret='changethisinproductiontoo',
+        job_queue_workers=5,
         library_import_dir=library_import_dir,
+        log_destination="stdout",
+        running_functional_tests=True,
+        template_path='templates',
+        tool_parse_help=False,
+        update_integrated_tool_panel=False,
+        use_tasked_jobs=True,
+        use_heartbeat=False,
         user_library_import_dir=user_library_import_dir,
     )
 
