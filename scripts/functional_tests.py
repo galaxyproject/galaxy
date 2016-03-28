@@ -31,12 +31,9 @@ def main():
 
     testing_shed_tools = testing_migrated_tools or testing_installed_tools
     if testing_shed_tools:
-        # Store a jsonified dictionary of tool_id : GALAXY_TEST_FILE_DIR pairs.
-        galaxy_tool_shed_test_file = 'shed_tools_dict'
         # We need the upload tool for functional tests, so we'll create a temporary tool panel config that defines it.
         tool_config_file = driver_util.FRAMEWORK_UPLOAD_TOOL_CONF
     else:
-        galaxy_tool_shed_test_file = None
         framework_test = _check_arg( '-framework' )  # Run through suite of tests testing framework.
         if framework_test:
             tool_conf = driver_util.FRAMEWORK_SAMPLE_TOOLS_CONF
@@ -118,7 +115,7 @@ def main():
         if testing_shed_tools:
             driver_util.setup_shed_tools_for_test(
                 app,
-                galaxy_tool_shed_test_file,
+                galaxy_test_tmp_dir,
                 testing_migrated_tools,
                 testing_installed_tools,
             )
@@ -154,13 +151,6 @@ def main():
         )
 
         success = driver_util.nose_config_and_run()
-
-        # TODO: just put this in tempdir being managed for this test.
-        if galaxy_tool_shed_test_file is not None:
-            try:
-                os.unlink( galaxy_tool_shed_test_file )
-            except:
-                log.info( "Unable to remove file: %s" % galaxy_tool_shed_test_file )
     except:
         log.exception( "Failure running tests" )
 

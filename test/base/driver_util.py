@@ -337,8 +337,10 @@ def cleanup_directory(tempdir):
         pass
 
 
-def setup_shed_tools_for_test(app, galaxy_tool_shed_test_file, testing_migrated_tools, testing_installed_tools):
+def setup_shed_tools_for_test(app, tmpdir, testing_migrated_tools, testing_installed_tools):
     """Modify Galaxy app's toolbox for migrated or installed tool tests."""
+    # Store a jsonified dictionary of tool_id : GALAXY_TEST_FILE_DIR pairs.
+    galaxy_tool_shed_test_file = os.path.join(tmpdir, 'shed_tools_dict')
     shed_tools_dict = {}
     if testing_migrated_tools:
         has_test_data, shed_tools_dict = parse_tool_panel_config(MIGRATED_TOOL_PANEL_CONFIG, shed_tools_dict)
