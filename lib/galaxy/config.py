@@ -22,6 +22,7 @@ from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
 from galaxy.util import string_as_bool
 from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.util.path_util import resolve_path
 from galaxy.web.formatting import expand_pretty_datetime_format
 from .version import VERSION_MAJOR
 
@@ -37,13 +38,6 @@ try:
 except ImportError:
     # This is not a uwsgi process, or something went horribly wrong.
     process_is_uwsgi = False
-
-
-def resolve_path( path, root ):
-    """If 'path' is relative make absolute by prepending 'root'"""
-    if not os.path.isabs( path ):
-        path = os.path.join( root, path )
-    return path
 
 
 class Configuration( object ):
@@ -94,7 +88,8 @@ class Configuration( object ):
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
         # and moved to the tool shed.
-        self.integrated_tool_panel_config = resolve_path( kwargs.get( 'integrated_tool_panel_config', 'integrated_tool_panel.xml' ), self.root )
+        self.integrated_tool_panel_config = resolve_path( kwargs.get( 'integrated_tool_panel_config', 'config/integrated_tool_panel.xml' ), self.root )
+
         integrated_tool_panel_tracking_directory = kwargs.get( 'integrated_tool_panel_tracking_directory', None )
         if integrated_tool_panel_tracking_directory:
             self.integrated_tool_panel_tracking_directory = resolve_path( integrated_tool_panel_tracking_directory, self.root )

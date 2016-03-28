@@ -8,17 +8,11 @@ import logging
 import logging.config
 import ConfigParser
 from galaxy.util import string_as_bool, listify
+from galaxy.util.path_util import resolve_path
 from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.version import VERSION, VERSION_MAJOR
 
 log = logging.getLogger( __name__ )
-
-
-def resolve_path( path, root ):
-    """If 'path' is relative make absolute by prepending 'root'"""
-    if not( os.path.isabs( path ) ):
-        path = os.path.join( root, path )
-    return path
 
 
 class ConfigurationError( Exception ):
@@ -72,7 +66,7 @@ class Configuration( object ):
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "shed-tool-data" ), os.getcwd() )
-        self.integrated_tool_panel_config = resolve_path( kwargs.get( 'integrated_tool_panel_config', 'integrated_tool_panel.xml' ), self.root )
+        self.integrated_tool_panel_config = resolve_path( kwargs.get( 'integrated_tool_panel_config', 'config/integrated_tool_panel.xml' ), self.root )
         self.builds_file_path = resolve_path( kwargs.get( "builds_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'builds.txt') ), self.root )
         self.len_file_path = resolve_path( kwargs.get( "len_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'chrom') ), self.root )
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )

@@ -3,9 +3,12 @@ import shutil
 import tempfile
 import time
 import traceback
+import logging
 
 from .panel import ToolPanelElements
 from .panel import panel_item_types
+
+from galaxy.util.path_util import resolve_path
 
 
 INTEGRATED_TOOL_PANEL_DESCRIPTION = """
@@ -22,6 +25,8 @@ via its API - but if changes are necessary (such as to hide a tool or re-assign
 its section) modify that file and restart Galaxy.
 """
 
+log = logging.getLogger( __name__ )
+
 
 class ManagesIntegratedToolPanelMixin:
 
@@ -34,6 +39,7 @@ class ManagesIntegratedToolPanelMixin:
         self._integrated_tool_panel_config_has_contents = os.path.exists( self._integrated_tool_panel_config ) and os.stat( self._integrated_tool_panel_config ).st_size > 0
         if self._integrated_tool_panel_config_has_contents:
             self._load_integrated_tool_panel_keys()
+        self.root = config.root
 
     def _save_integrated_tool_panel(self):
         if self.update_integrated_tool_panel:
@@ -95,10 +101,28 @@ class ManagesIntegratedToolPanelMixin:
                     os.write( fd, '    </section>\n' )
         os.write( fd, '</toolbox>\n' )
         os.close( fd )
+
+        old_default = 'integrated_tool_panel.xml'
+        # TODO: Get the new_default via a variable into config, and do not repeat it
+        full_path_old_default = os.path.abspath( resolve_path( old_default, self.root ) )
+
         destination = os.path.abspath( self._integrated_tool_panel_config )
+
         if tracking_directory:
             open(filename + ".stack", "w").write(''.join(traceback.format_stack()))
             shutil.copy( filename, filename + ".copy" )
             filename = filename + ".copy"
-        shutil.move( filename, destination )
-        os.chmod( self._integrated_tool_panel_config, 0o644 )
+
+        # Check if the 16.01 and older configuration still exists
+        if os.path.isfile(full_path_old_default) and (full_path_old_default != self._integrated_tool_panel_config):
+            try:
+                os.symlink(full_path_old_default, destination)
+                log.warn( "Old file 'integrated_tool_panel.xml' is now removed from the root directory by default, but "
+                         "you still have it from an older version. Please move it to %s" % destination )
+            except OSError:
+                log.warn( "You have two integrated_tool_conf.xml files. "
+                          "Please remove the one at root location (be careful to not lose your data!)" )
+        # We are in 16.04 configuration or integrated_tool_panel_config is configured
+        else:
+            shutil.move( filename, destination )
+        os.chmod( os.path.realpath( self._integrated_tool_panel_config ), 0o644 )
