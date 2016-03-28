@@ -21,13 +21,7 @@ tool_shed_test_tmp_dir = driver_util.setup_tool_shed_tmp_dir()
 
 # This is for the tool shed application.
 from galaxy.webapps.tool_shed import buildapp as toolshedbuildapp
-from galaxy.webapps.tool_shed.app import UniverseApplication as ToolshedUniverseApplication
-# This is for the galaxy application.
-from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.web import buildapp as galaxybuildapp
-from galaxy.util.properties import load_app_properties
-
-from functional import database_contexts
 
 default_tool_shed_test_host = "localhost"
 default_galaxy_test_host = 'localhost'
@@ -89,14 +83,11 @@ def main():
     os.environ[ 'TEST_HG_WEB_CONFIG_DIR' ] = hgweb_config_dir
     print "Directory location for hgweb.config:", hgweb_config_dir
     toolshed_database_conf = driver_util.database_conf(shed_db_path, prefix="TOOL_SHED")
-    tool_shed_global_conf = driver_util.get_webapp_global_conf()
-    tool_shed_global_conf[ '__file__' ] = 'tool_shed_wsgi.ini.sample'
     kwargs = dict( admin_users='test@bx.psu.edu',
                    allow_user_creation=True,
                    allow_user_deletion=True,
                    datatype_converters_config_file='datatype_converters_conf.xml.sample',
                    file_path=shed_file_path,
-                   global_conf=tool_shed_global_conf,
                    hgweb_config_dir=hgweb_config_dir,
                    job_queue_workers=5,
                    id_secret='changethisinproductiontoo',
@@ -111,25 +102,19 @@ def main():
                    tool_data_table_config_path=galaxy_tool_data_table_conf_file,
                    use_heartbeat=False )
     kwargs.update(toolshed_database_conf)
-    print "Tool shed database connection:", toolshed_database_conf["database_connection"]
-
     # Generate the tool_data_table_conf.xml file.
     file( galaxy_tool_data_table_conf_file, 'w' ).write( tool_data_table_conf_xml_template )
     # Generate the shed_tool_data_table_conf.xml file.
     file( shed_tool_data_table_conf_file, 'w' ).write( tool_data_table_conf_xml_template )
     os.environ[ 'TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF' ] = shed_tool_data_table_conf_file
     # ---- Build Tool Shed Application --------------------------------------------------
-    toolshedapp = None
-    kwargs[ 'global_conf' ] = tool_shed_global_conf
-
-    toolshedapp = ToolshedUniverseApplication( **kwargs )
-    database_contexts.tool_shed_context = toolshedapp.model.context
-    log.info( "Embedded Toolshed application started" )
+    toolshedapp = driver_util.build_shed_app(kwargs)
 
     # ---- Run tool shed webserver ------------------------------------------------------
     # TODO: Needed for hg middleware ('lib/galaxy/webapps/tool_shed/framework/middleware/hg.py')
-    tool_shed_global_conf[ 'database_connection' ] = kwargs["database_connection"]
-    toolshedwebapp = toolshedbuildapp.app_factory( tool_shed_global_conf,
+    kwargs['global_conf']['database_connection'] = kwargs["database_connection"]
+
+    toolshedwebapp = toolshedbuildapp.app_factory( kwargs['global_conf'],
                                                    use_translogger=False,
                                                    static_enabled=True,
                                                    app=toolshedapp )
@@ -170,25 +155,14 @@ def main():
                        tool_data_table_config_path=galaxy_tool_data_table_conf_file )
         kwargs.update(driver_util.setup_galaxy_config(galaxy_db_path, use_test_file_dir=False, default_install_db_merged=False))
         print "Galaxy database connection:", kwargs["database_connection"]
-        # Set the global_conf[ '__file__' ] option to the location of the temporary .ini file, which gets passed to set_metadata.sh.
-        kwargs[ 'global_conf' ] = driver_util.get_webapp_global_conf()
-        kwargs[ 'global_conf' ][ '__file__' ] = "config/galaxy.ini.sample"
-        kwargs = load_app_properties(
-            kwds=kwargs
-        )
-        # Build the Universe Application
-        galaxyapp = GalaxyUniverseApplication( **kwargs )
-
-        log.info( "Embedded Galaxy application started" )
 
         # ---- Run galaxy webserver ------------------------------------------------------
         galaxy_server = None
+        galaxyapp = driver_util.build_galaxy_app(kwargs)
         galaxywebapp = galaxybuildapp.app_factory( kwargs['global_conf'],
                                                    use_translogger=False,
                                                    static_enabled=True,
                                                    app=galaxyapp )
-        database_contexts.galaxy_context = galaxyapp.model.context
-        database_contexts.install_context = galaxyapp.install_model.context
         galaxy_server, galaxy_test_port = driver_util.serve_webapp(
             galaxywebapp, host=galaxy_test_host, port=galaxy_test_port
         )

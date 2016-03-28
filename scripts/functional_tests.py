@@ -19,9 +19,6 @@ log = driver_util.build_logger()
 
 from base.api_util import get_master_api_key, get_user_api_key
 from base.test_logging import logging_config_file
-from functional import database_contexts
-from galaxy.app import UniverseApplication
-from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
 
 default_galaxy_test_host = "localhost"
@@ -109,16 +106,7 @@ def main():
         if datatypes_conf_override:
             kwargs[ 'datatypes_config_file' ] = datatypes_conf_override
 
-        # Set the global_conf[ '__file__' ] option to the location of the temporary .ini file, which gets passed to set_metadata.sh.
-        kwargs[ 'global_conf' ] = driver_util.get_webapp_global_conf()
-        kwargs[ 'global_conf' ][ '__file__' ] = "config/galaxy.ini.sample"
-        kwargs = load_app_properties(
-            kwds=kwargs
-        )
-        # Build the Universe Application
-        app = UniverseApplication( **kwargs )
-        database_contexts.galaxy_context = app.model.context
-        log.info( "Embedded Universe application started" )
+        app = driver_util.build_galaxy_app(kwargs)
 
     # ---- Run webserver ------------------------------------------------------
     server = None

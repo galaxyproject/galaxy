@@ -25,7 +25,12 @@ from .tool_shed_util import parse_tool_panel_config
 from .nose_util import run
 from .instrument import StructuredTestDataPlugin
 
+from functional import database_contexts
+
+from galaxy.app import UniverseApplication as GalaxyUniverseApplication
+from galaxy.webapps.tool_shed.app import UniverseApplication as ToolshedUniverseApplication
 from galaxy.util import asbool
+from galaxy.util.properties import load_app_properties
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 GALAXY_TEST_DIRECTORY = os.path.join(galaxy_root, "test")
@@ -360,6 +365,43 @@ def setup_shed_tools_for_test(app, galaxy_tool_shed_test_file, testing_migrated_
         from galaxy import tools  # noqa, delay import because this brings in so many modules for small tests
         app.toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app)
 
+
+def build_galaxy_app(simple_kwargs):
+    """Build a Galaxy app object from a simple keyword arguments.
+
+    Construct paste style complex dictionary and use load_app_properties so
+    Galaxy override variables are respected. Also setup "global" references
+    to sqlalchemy database context for Galaxy and install databases.
+    """
+    log.info("Galaxy database connection:", simple_kwargs["database_connection"])
+    simple_kwargs['global_conf'] = get_webapp_global_conf()
+    simple_kwargs['global_conf']['__file__'] = "config/galaxy.ini.sample"
+    simple_kwargs = load_app_properties(
+        kwds=simple_kwargs
+    )
+    # Build the Universe Application
+    app = GalaxyUniverseApplication( **simple_kwargs )
+    log.info( "Embedded Galaxy application started" )
+    database_contexts.galaxy_context = app.model.context
+    database_contexts.install_context = app.install_model.context
+    return app
+
+
+def build_shed_app(simple_kwargs):
+    """Build a Galaxy app object from a simple keyword arguments.
+
+    Construct paste style complex dictionary. Also setup "global" reference
+    to sqlalchemy database context for tool shed database.
+    """
+    log.info("Tool shed database connection:", simple_kwargs["database_connection"])
+    # TODO: Simplify global_conf to match Galaxy above...
+    simple_kwargs['__file__'] = 'tool_shed_wsgi.ini.sample'
+    simple_kwargs['global_conf'] = get_webapp_global_conf()
+
+    app = ToolshedUniverseApplication( **simple_kwargs )
+    database_contexts.tool_shed_context = app.model.context
+    log.info( "Embedded Toolshed application started" )
+    return app
 
 __all__ = [
     "cleanup_directory",
