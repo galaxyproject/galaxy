@@ -35,6 +35,14 @@ Run a specific API test:
     ./run_tests.sh -api test/api/test_tools.py:ToolsTestCase.test_map_over_with_output_format_actions
 
 
+External Tests:
+
+A small subset of tests can be run against an existing Galxy
+instance. The external Galaxy instance URL can be configured with
+--external_url. If this is set eithre --external_master_key or
+--external_user_key must be set as well - more tests can be executed
+with --external_master_key than with a user key.
+
 Extra options:
  --verbose_errors      Force some tests produce more verbose error reporting.
  --no_cleanup          Do not delete temp files for Python functional tests (-toolshed, -framework, etc...)
@@ -45,6 +53,10 @@ Extra options:
  --dockerize           Run tests in a pre-configured Docker container (must be first argument if present).
  --db <type>           For use with --dockerize, run tests using partially migrated 'postgres', 'mysql',
                        or 'sqlite' databases.
+  --external_url       External URL to use for Galaxy testing (only certain tests).
+  --external_master_key Master API key used to configure external tests.
+  --external_user_key  User API used for external tests - not required if
+                       external_master_key is specified.
 
 Environment Variables:
 
@@ -199,6 +211,18 @@ do
       -with_framework_test_tools|--with_framework_test_tools)
           with_framework_test_tools_arg="-with_framework_test_tools"
           shift
+          ;;
+      --external_url)
+          GALAXY_TEST_EXTERNAL=$2
+          shift 2
+          ;;
+      --external_master_key)
+          GALAXY_CONFIG_MASTER_KEY=$2
+          shift 2
+          ;;
+      --external_user_key)
+          GALAXY_TEST_USER_API_KEY=$2
+          shift 2
           ;;
       -w|-workflow|--workflow)
           if [ $# -gt 1 ]; then

@@ -38,14 +38,14 @@ def main():
         default_tool_conf = driver_util.FRAMEWORK_SAMPLE_TOOLS_CONF
         datatypes_conf_override = driver_util.FRAMEWORK_DATATYPES_CONF
 
-    start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ
+    external_galaxy = os.environ.get('GALAXY_TEST_EXTERNAL', None)
 
     galaxy_test_tmp_dir = driver_util.get_galaxy_test_tmp_dir()
 
     app = None
     server_wrapper = None
 
-    if start_server:
+    if external_galaxy is None:
         tempdir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
         # Configure the database path.
         galaxy_db_path = driver_util.database_files_path(tempdir)
@@ -65,6 +65,8 @@ def main():
             galaxy_config,
         )
         log.info("Functional tests will be run against %s:%s" % (server_wrapper.host, server_wrapper.port))
+    else:
+        log.info("Functional tests will be run against %s" % external_galaxy)
 
     # ---- Find tests ---------------------------------------------------------
     success = False
@@ -90,19 +92,20 @@ def main():
                 user_api_key=get_user_api_key(),
             )
 
-        # We must make sure that functional.test_toolbox is always imported after
-        # database_contexts.galaxy_content is set (which occurs in this method above).
-        # If functional.test_toolbox is imported before database_contexts.galaxy_content
-        # is set, sa_session will be None in all methods that use it.
-        import functional.test_toolbox
-        functional.test_toolbox.toolbox = app.toolbox
-        # When testing data managers, do not test toolbox.
-        functional.test_toolbox.build_tests(
-            app=app,
-            testing_shed_tools=testing_shed_tools,
-            master_api_key=get_master_api_key(),
-            user_api_key=get_user_api_key(),
-        )
+        if app is not None:
+            # We must make sure that functional.test_toolbox is always imported after
+            # database_contexts.galaxy_content is set (which occurs in this method above).
+            # If functional.test_toolbox is imported before database_contexts.galaxy_content
+            # is set, sa_session will be None in all methods that use it.
+            import functional.test_toolbox
+            functional.test_toolbox.toolbox = app.toolbox
+            # When testing data managers, do not test toolbox.
+            functional.test_toolbox.build_tests(
+                app=app,
+                testing_shed_tools=testing_shed_tools,
+                master_api_key=get_master_api_key(),
+                user_api_key=get_user_api_key(),
+            )
         success = driver_util.nose_config_and_run()
     except:
         log.exception( "Failure running tests" )
