@@ -15,7 +15,7 @@ var ControlledFetchCollection = Backbone.Collection.extend({
     /**  */
     initialize : function( models, options ){
         this.setOrder( options.order || this.order, { silent: true });
-        // this.on( 'all', function(){ console.log( this.toString(), arguments ); });
+        this.on( 'all', function(){ console.log( this.toString(), arguments ); });
         return Backbone.Collection.prototype.initialize.call( this, models, options );
     },
 
@@ -30,9 +30,6 @@ var ControlledFetchCollection = Backbone.Collection.extend({
      *  and set allFetched/fire 'all-fetched' when xhr returns
      */
     fetch : function( options ){
-        // options = options || {};
-        // // console.log( 'ControlledFetchCollection.fetch:', options );
-        // if( options.reset ){ this.allFetched = false; }
         options = this._buildFetchOptions( options );
         return Backbone.Collection.prototype.fetch.call( this, options );
     },

@@ -52,7 +52,7 @@ var HistoryListDatasetCollection = ListDC.extend( hcontentMixin ).extend(
 
     /** String representation. */
     toString : function(){
-        return ListDC.prototype.toString.call( this ) + ':List';
+        return 'History' + ListDC.prototype.toString.call( this );
     }
 });
 
@@ -75,7 +75,7 @@ var HistoryPairDatasetCollection = PairDC.extend( hcontentMixin ).extend(
 
     /** String representation. */
     toString : function(){
-        return ListDC.prototype.toString.call( this ) + ':Pair';
+        return 'History' + PairDC.prototype.toString.call( this );
     }
 });
 
@@ -98,7 +98,7 @@ var HistoryListPairedDatasetCollection = ListPairedDC.extend( hcontentMixin ).ex
 
     /** String representation. */
     toString : function(){
-        return ListPairedDC.prototype.toString.call( this ) + ':Pair';
+        return 'History' + ListPairedDC.prototype.toString.call( this );
     }
 });
 

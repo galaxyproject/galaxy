@@ -48,8 +48,13 @@ var History = Backbone.Model
         this.log( this + ".initialize:", historyJSON, contentsJSON, options );
 
         /** HistoryContents collection of the HDAs contained in this history. */
-        this.log( 'creating history contents:', contentsJSON );
-        this.contents = new HISTORY_CONTENTS.HistoryContents( contentsJSON || [], { historyId: this.get( 'id' )});
+        console.log( 'creating history contents:', contentsJSON );
+        this.contents = new HISTORY_CONTENTS.HistoryContents( contentsJSON || [], {
+            historyId   : this.get( 'id' ),
+            order       : options.order,
+        });
+
+        console.log( 'creating history contents:', this.contents );
 
         this._setUpListeners();
         this._setUpCollectionListeners();
@@ -232,32 +237,32 @@ var History = Backbone.Model
 
     /**  */
     fetchWithContents : function( options, contentsOptions ){
+        options = options || {};
+        var self = this;
+
         // console.log( this + '.fetchWithContents' );
         // TODO: push down to a base class
-        options = options || {};
-        contentsOptions = contentsOptions || {};
         options.view = 'current';
-
-        var self = this;
         // fetch history then use history data to fetch (paginated) contents
         return this.fetch( options ).pipe( function getContents( history ){
             self.contents.historyId = history.id;
-            // now that we have a history id, we can read the prefs
-            // and make the contents fetch based on those
-            var prefs = HISTORY_PREFS.HistoryPrefs.get( history.id ).toJSON();
-            self.contents.includeDeleted = prefs.show_deleted;
-            self.contents.includeHidden = prefs.show_hidden;
-
-            // we're updating, reset the update time
-            self.lastUpdateTime = new Date();
-
-            // contentsOptions.reset = true;
-            // contentsOptions.silent = true;
-            // // console.log( 'fetching contents' );
-            // return self.contents.fetch( contentsOptions );
-
-            return self.contents.fetchFirst( contentsOptions );
+            return self.fetchContents( contentsOptions );
         });
+    },
+
+    /**  */
+    fetchContents : function( options ){
+        options = options || {};
+        var self = this;
+        // now that we have a history id, we can read the prefs
+        // and make the contents fetch based on those
+        var prefs = HISTORY_PREFS.HistoryPrefs.get( self.id ).toJSON();
+        self.contents.includeDeleted = prefs.show_deleted;
+        self.contents.includeHidden = prefs.show_hidden;
+
+        // we're updating, reset the update time
+        self.lastUpdateTime = new Date();
+        return self.contents.fetchFirst( options );
     },
 
     /** save this history, _Mark_ing it as deleted (just a flag) */

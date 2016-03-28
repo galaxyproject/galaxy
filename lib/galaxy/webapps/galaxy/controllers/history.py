@@ -607,7 +607,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         use_panels = galaxy.util.string_as_bool( use_panels )
 
         history_dictionary = {}
-        contents = []
         user_is_owner = False
         try:
             if id:
@@ -623,8 +622,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             # include all datasets: hidden, deleted, and purged
             history_dictionary = self.history_serializer.serialize_to_view( history_to_view,
                 view='detailed', user=trans.user, trans=trans )
-            contents = self.history_serializer.serialize_contents( history_to_view,
-                'contents', trans=trans, user=trans.user )
 
         except Exception, exc:
             user_id = str( trans.user.id ) if trans.user else '(anonymous)'
@@ -637,7 +634,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             return trans.show_error_message( error_msg, use_panels=use_panels )
 
         return trans.fill_template_mako( "history/view.mako",
-            history=history_dictionary, contents=contents,
+            history=history_dictionary,
             user_is_owner=user_is_owner, history_is_current=history_is_current,
             show_deleted=show_deleted, show_hidden=show_hidden, use_panels=use_panels )
 
@@ -704,16 +701,10 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         user_is_owner = trans.user == history.user
         history_dictionary = self.history_serializer.serialize_to_view( history,
             view='detailed', user=trans.user, trans=trans )
-        contents = self.history_serializer.serialize_contents( history, 'contents', trans=trans, user=trans.user )
-
         history_dictionary[ 'annotation' ] = self.get_item_annotation_str( trans.sa_session, history.user, history )
-        # note: adding original annotation since this is published - get_dict returns user-based annos
-        # for hda_dict in hda_dicts:
-        #    hda_dict[ 'annotation' ] = hda.annotation
-        #    dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
 
         return trans.stream_template_mako( "history/display.mako", item=history, item_data=[],
-            user_is_owner=user_is_owner, history_dict=history_dictionary, content_dicts=contents,
+            user_is_owner=user_is_owner, history_dict=history_dictionary,
             user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
 
     # ......................................................................... sharing & publishing

@@ -356,7 +356,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
      *  @returns the visible item views
      */
     renderItems : function( $whereTo ){
-        // console.log( 'rendering items -------------------------------------------' );
+        console.log( 'rendering items -------------------------------------------' );
         $whereTo = $whereTo || this.$el;
         var panel = this;
         panel.log( this + '.renderItems', $whereTo );
@@ -366,7 +366,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         // console.log( 'views freed' );
         //TODO:? cache and re-use views?
         var shownModels = panel._filterCollection();
-        // console.log( 'models filtered' );
+        console.log( 'models filtered:', shownModels );
 
         panel.views = shownModels.map( function( itemModel ){
             var view = panel._createItemView( itemModel );
@@ -469,7 +469,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
 
     /** Attach views in this.views to the model based on $whereTo */
     _attachItems : function( $whereTo ){
-        console.log( '_attachItems:', $whereTo );
+        console.log( '_attachItems:', $whereTo, this.$list( $whereTo ) );
         //ASSUMES: $list has been emptied
         this.$list( $whereTo ).append( this.views.map( function( view ){
             return view.$el;

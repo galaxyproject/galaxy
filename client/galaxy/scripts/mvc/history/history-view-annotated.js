@@ -71,22 +71,63 @@ var AnnotatedHistoryView = _super.extend(
      *      with the content in the left td and annotation/extra-info in the right
      */
     _attachItems : function( $whereTo ){
+        var self = this;
+        console.log( '_attachItems:', $whereTo.find( '> .list-items' ) );
+        console.log( '_attachItems:', $whereTo, this.$list( $whereTo ) );
         this.$list( $whereTo ).append( this.views.map( function( view ){
-            //TODO:?? possibly make this more flexible: instead of annotation use this._additionalInfo()
-            // build a row around the dataset with the std itemView in the first cell and the annotation in the next
-            var stateClass = _.find( view.el.classList, function( c ){ return ( /^state\-/ ).test( c ); }),
-                annotation = view.model.get( 'annotation' ) || '',
-                $tr = $( '<tr/>' ).append([
-                    $( '<td/>' ).addClass( 'contents-container' ).append( view.$el )
-                        // visually match the cell bg to the dataset at runtime (prevents the empty space)
-                        // (getting bg via jq on hidden elem doesn't work on chrome/webkit - so use states)
-                        //.css( 'background-color', view.$el.css( 'background-color' ) ),
-                        .addClass( stateClass? stateClass.replace( '-', '-color-' ): '' ),
-                    $( '<td/>' ).addClass( 'additional-info' ).text( annotation )
-                ]);
-            return $tr;
+            return self._wrapViewInRow( view );
         }));
         return this;
+    },
+
+    _wrapViewInRow : function( view ){
+        //TODO:?? possibly make this more flexible: instead of annotation use this._additionalInfo()
+        // build a row around the dataset with the std itemView in the first cell and the annotation in the next
+        var stateClass = _.find( view.el.classList, function( c ){ return ( /^state\-/ ).test( c ); });
+        var annotation = view.model.get( 'annotation' ) || '';
+        return $( '<tr/>' ).append([
+                $( '<td/>' ).addClass( 'contents-container' ).append( view.$el )
+                    // visually match the cell bg to the dataset at runtime (prevents the empty space)
+                    // (getting bg via jq on hidden elem doesn't work on chrome/webkit - so use states)
+                    //.css( 'background-color', view.$el.css( 'background-color' ) ),
+                    .addClass( stateClass? stateClass.replace( '-', '-color-' ): '' ),
+                $( '<td/>' ).addClass( 'additional-info' ).text( annotation )
+            ]);
+    },
+
+    /**  */
+    bulkAppendItemViews : function( collection, response, options ){
+//TODO: duplication
+        //PRECONDITION: response is an array of contguous content models
+        console.log( "bulkAppendItemViews:", collection, response, options );
+        if( !response || !response.length ){ return; }
+        var self = this;
+
+        // find where to insert the block
+        // note: don't use filteredCollection since we may be searching and the first model may not match search
+        // TODO: when Backbone > 1.1: self.collection.findIndex
+        var firstModelIndex = self.collection.models.findIndex( function( m ){
+            return m.id === response[0].type_id;
+        });
+        console.log( 'firstModelIndex:', firstModelIndex );
+
+        var $viewEls = [];
+        response.forEach( function( modelJSON ){
+            var model = self.collection.get( modelJSON.type_id );
+            if( !self._filterItem( model ) ){ return; }
+
+            var view = self._createItemView( model );
+            self.views.push( view );
+            $viewEls.push( self._wrapViewInRow( view.render( 0 ) ) );
+            // TODO: not attached *yet* actually
+            self.trigger( 'view:attached', view );
+            self.trigger( 'view:attached:rendered' );
+        });
+        if( $viewEls.length ){
+            self.$emptyMessage().hide();
+            self.$list().append( $viewEls );
+            self._insertIntoListAt( firstModelIndex, $viewEls );
+        }
     },
 
     // ------------------------------------------------------------------------ panel events
