@@ -68,6 +68,13 @@ def build_logger():
 
 def setup_galaxy_config(tmpdir, use_test_file_dir=False):
     """Setup environment and build config for test Galaxy instance."""
+    if not os.path.exists(tmpdir):
+        os.makedirs(tmpdir)
+    file_path = os.path.join(tmpdir, 'files')
+    template_cache_path = tempfile.mkdtemp(prefix='compiled_templates_', dir=tmpdir)
+    new_file_path = tempfile.mkdtemp(prefix='new_files_path_', dir=tmpdir )
+    job_working_directory = tempfile.mkdtemp(prefix='job_working_directory_', dir=tmpdir)
+
     if use_test_file_dir:
         galaxy_test_file_dir = os.environ.get('GALAXY_TEST_FILE_DIR', GALAXY_TEST_FILE_DIR)
         os.environ['GALAXY_TEST_FILE_DIR'] = galaxy_test_file_dir
@@ -94,11 +101,15 @@ def setup_galaxy_config(tmpdir, use_test_file_dir=False):
         allow_user_deletion=True,
         api_allow_run_as='test@bx.psu.edu',
         check_migrate_tools=False,
+        file_path=file_path,
         id_secret='changethisinproductiontoo',
+        job_working_directory=job_working_directory,
         job_queue_workers=5,
         library_import_dir=library_import_dir,
         log_destination="stdout",
+        new_file_path=new_file_path,
         running_functional_tests=True,
+        template_cache_path=template_cache_path,
         template_path='templates',
         tool_parse_help=False,
         tool_path=tool_path,

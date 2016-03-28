@@ -149,24 +149,15 @@ def main():
 
     if start_server:
         tempdir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
-        galaxy_config = driver_util.setup_galaxy_config(tempdir, use_test_file_dir=use_test_file_dir)
         # Configure the database path.
         galaxy_db_path = driver_util.database_files_path(tempdir)
+        galaxy_config = driver_util.setup_galaxy_config(
+            galaxy_db_path,
+            use_test_file_dir=use_test_file_dir
+        )
 
-        # Configure the paths Galaxy needs to  test tools.
-        file_path = os.path.join( galaxy_db_path, 'files' )
-        template_cache_path = os.path.join( galaxy_db_path, 'compiled_templates' )
-        new_file_path = tempfile.mkdtemp( prefix='new_files_path_', dir=tempdir )
-        job_working_directory = tempfile.mkdtemp( prefix='job_working_directory_', dir=tempdir )
         database_connection, database_auto_migrate = driver_util.database_conf(galaxy_db_path)
         install_database_conf = driver_util.install_database_conf(galaxy_db_path, default_merged=True)
-        kwargs = {}
-        for dir in file_path, new_file_path, template_cache_path:
-            try:
-                if not os.path.exists( dir ):
-                    os.makedirs( dir )
-            except OSError:
-                pass
 
     # Data Manager testing temp path
     # For storing Data Manager outputs and .loc files so that real ones don't get clobbered
@@ -179,14 +170,7 @@ def main():
     if start_server:
         kwargs = dict( database_connection=database_connection,
                        database_auto_migrate=database_auto_migrate,
-                       file_path=file_path,
-                       job_queue_workers=5,
-                       job_working_directory=job_working_directory,
-                       log_destination="stdout",
-                       new_file_path=new_file_path,
-                       template_cache_path=template_cache_path,
                        shed_tool_data_table_config=shed_tool_data_table_config,
-                       template_path="templates",
                        test_conf="test.conf",
                        tool_config_file=tool_config_file,
                        tool_data_table_config_path=tool_data_table_config_path,

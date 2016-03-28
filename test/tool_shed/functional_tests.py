@@ -80,10 +80,8 @@ def main():
         os.environ[ 'GALAXY_TEST_TOOL_DATA_PATH' ] = tool_data_path
     galaxy_db_path = driver_util.database_files_path(tool_shed_test_tmp_dir)
     shed_file_path = os.path.join( shed_db_path, 'files' )
-    galaxy_file_path = os.path.join( galaxy_db_path, 'files' )
     hgweb_config_file_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
     new_repos_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
-    galaxy_tempfiles = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
     galaxy_shed_tool_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
     galaxy_migrated_tool_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
     hgweb_config_dir = hgweb_config_file_path
@@ -172,11 +170,9 @@ def main():
         kwargs = dict( database_connection=galaxy_database_connection,
                        database_auto_migrate=galaxy_database_auto_migrate,
                        enable_tool_shed_check=True,
-                       file_path=galaxy_file_path,
                        global_conf=galaxy_global_conf,
                        hours_between_check=0.001,
                        migrated_tools_config=galaxy_migrated_tool_conf_file,
-                       new_file_path=galaxy_tempfiles,
                        shed_data_manager_config_file=galaxy_shed_data_manager_conf_file,
                        shed_tool_data_table_config=shed_tool_data_table_conf_file,
                        shed_tool_path=galaxy_shed_tool_path,
@@ -184,7 +180,7 @@ def main():
                        tool_config_file=[ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ],
                        tool_sheds_config_file=galaxy_tool_sheds_conf_file,
                        tool_data_table_config_path=galaxy_tool_data_table_conf_file )
-        kwargs.update(driver_util.setup_galaxy_config(tool_shed_test_tmp_dir, use_test_file_dir=False))
+        kwargs.update(driver_util.setup_galaxy_config(galaxy_db_path, use_test_file_dir=False))
         kwargs.update(install_database_conf)
         # ---- Build Galaxy Application --------------------------------------------------
         if not galaxy_database_connection.startswith( 'sqlite://' ):
