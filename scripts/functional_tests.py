@@ -44,6 +44,9 @@ def main():
 
     galaxy_test_tmp_dir = driver_util.get_galaxy_test_tmp_dir()
 
+    app = None
+    server_wrapper = None
+
     if start_server:
         tempdir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
         # Configure the database path.
@@ -56,10 +59,6 @@ def main():
             datatypes_conf=datatypes_conf_override,
         )
 
-    app = None
-    server_wrapper = None
-
-    if start_server:
         # ---- Build Application --------------------------------------------------
         app = driver_util.build_galaxy_app(galaxy_config)
         server_wrapper = driver_util.launch_server(
