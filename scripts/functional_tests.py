@@ -112,17 +112,13 @@ def main():
 
     start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ
     tool_data_table_config_path = None
-    if os.path.exists( 'tool_data_table_conf.test.xml' ):
-        # If explicitly defined tables for test, use those.
-        tool_data_table_config_path = 'tool_data_table_conf.test.xml'
-    else:
-        # ... otherise find whatever Galaxy would use as the default and
-        # the sample data for fucntional tests to that.
-        default_tool_data_config = 'config/tool_data_table_conf.xml.sample'
-        for tool_data_config in ['config/tool_data_table_conf.xml', 'tool_data_table_conf.xml' ]:
-            if os.path.exists( tool_data_config ):
-                default_tool_data_config = tool_data_config
-        tool_data_table_config_path = '%s,test/functional/tool-data/sample_tool_data_tables.xml' % default_tool_data_config
+    # ... otherise find whatever Galaxy would use as the default and
+    # the sample data for fucntional tests to that.
+    default_tool_data_config = 'config/tool_data_table_conf.xml.sample'
+    for tool_data_config in ['config/tool_data_table_conf.xml', 'tool_data_table_conf.xml' ]:
+        if os.path.exists( tool_data_config ):
+            default_tool_data_config = tool_data_config
+    tool_data_table_config_path = '%s,test/functional/tool-data/sample_tool_data_tables.xml' % default_tool_data_config
 
     default_data_manager_config = 'config/data_manager_conf.xml.sample'
     for data_manager_config in ['config/data_manager_conf.xml', 'data_manager_conf.xml' ]:
