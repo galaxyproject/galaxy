@@ -80,7 +80,6 @@ def main():
                        tool_config_file=tool_config_file,
                        galaxy_data_manager_data_path=galaxy_data_manager_data_path,
                        update_integrated_tool_panel=False,
-                       cleanup_job='onsuccess',
                        enable_beta_tool_formats=True,
                        auto_configure_logging=logging_config_file is None,
                        data_manager_config_file=data_manager_config_file )

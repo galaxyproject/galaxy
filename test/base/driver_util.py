@@ -123,6 +123,7 @@ def setup_galaxy_config(
         allow_user_deletion=True,
         api_allow_run_as='test@bx.psu.edu',
         check_migrate_tools=False,
+        cleanup_job='onsuccess',
         file_path=file_path,
         id_secret='changethisinproductiontoo',
         job_working_directory=job_working_directory,
