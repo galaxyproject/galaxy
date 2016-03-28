@@ -86,11 +86,13 @@ def main():
     # For storing Data Manager outputs and .loc files so that real ones don't get clobbered
     data_manager_test_tmp_path = tempfile.mkdtemp( prefix='data_manager_test_tmp', dir=galaxy_test_tmp_dir )
     galaxy_data_manager_data_path = tempfile.mkdtemp( prefix='data_manager_tool-data', dir=data_manager_test_tmp_path )
-
-    # ---- Build Application --------------------------------------------------
     master_api_key = get_master_api_key()
+
     app = None
+    server = None
+
     if start_server:
+        # ---- Build Application --------------------------------------------------
         kwargs = dict( shed_tool_data_table_config=shed_tool_data_table_config,
                        test_conf="test.conf",
                        tool_config_file=tool_config_file,
@@ -107,11 +109,6 @@ def main():
             kwargs[ 'datatypes_config_file' ] = datatypes_conf_override
 
         app = driver_util.build_galaxy_app(kwargs)
-
-    # ---- Run webserver ------------------------------------------------------
-    server = None
-
-    if start_server:
         webapp = buildapp.app_factory( kwargs[ 'global_conf' ], app=app,
             use_translogger=False, static_enabled=True )
         server, galaxy_test_port = driver_util.serve_webapp( webapp, host=galaxy_test_host, port=galaxy_test_port )
