@@ -24,17 +24,19 @@ from galaxy.web import buildapp
 def main():
     """Entry point for test driver script."""
     # ---- Configuration ------------------------------------------------------
-    testing_migrated_tools = _check_arg( '-migrated' )
-    testing_installed_tools = _check_arg( '-installed' )
-    datatypes_conf_override = None
-
-    default_tool_conf = None
+    testing_migrated_tools = _check_arg('-migrated')
+    testing_installed_tools = _check_arg('-installed')
+    testing_framework_tools = _check_arg('-framework')
+    testing_data_manager = _check_arg('-data_managers')
+    testing_workflow = _check_arg('-workflow')
     testing_shed_tools = testing_migrated_tools or testing_installed_tools
-    if not testing_shed_tools:
-        framework_test = _check_arg( '-framework' )  # Run through suite of tests testing framework.
-        if framework_test:
-            default_tool_conf = driver_util.FRAMEWORK_SAMPLE_TOOLS_CONF
-            datatypes_conf_override = driver_util.FRAMEWORK_DATATYPES_CONF
+
+    datatypes_conf_override = None
+    default_tool_conf = None
+
+    if testing_framework_tools:
+        default_tool_conf = driver_util.FRAMEWORK_SAMPLE_TOOLS_CONF
+        datatypes_conf_override = driver_util.FRAMEWORK_DATATYPES_CONF
 
     start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ
 
@@ -74,14 +76,11 @@ def main():
                 testing_migrated_tools,
                 testing_installed_tools,
             )
-        workflow_test = _check_arg( '-workflow', param=True )
-        if workflow_test:
+        if testing_workflow:
             import functional.workflow
-            functional.workflow.WorkflowTestCase.workflow_test_file = workflow_test
             functional.workflow.WorkflowTestCase.master_api_key = get_master_api_key()
             functional.workflow.WorkflowTestCase.user_api_key = get_user_api_key()
-        data_manager_test = _check_arg( '-data_managers', param=False )
-        if data_manager_test:
+        if testing_data_manager:
             import functional.test_data_managers
             functional.test_data_managers.data_managers = app.data_managers  # seems like a hack...
             functional.test_data_managers.build_tests(
@@ -120,15 +119,11 @@ def main():
         return 1
 
 
-def _check_arg( name, param=False ):
+def _check_arg( name ):
     try:
         index = sys.argv.index( name )
         del sys.argv[ index ]
-        if param:
-            ret_val = sys.argv[ index ]
-            del sys.argv[ index ]
-        else:
-            ret_val = True
+        ret_val = True
     except ValueError:
         ret_val = False
     return ret_val

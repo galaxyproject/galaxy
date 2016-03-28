@@ -389,7 +389,8 @@ elif [ -n "$data_managers_test" ] ; then
     [ -n "$test_id" ] && class=":TestForDataManagerTool_$test_id" || class=""
     extra_args="functional.test_data_managers$class -data_managers"
 elif [ -n "$workflow_test" ]; then
-    extra_args="functional.workflow:WorkflowTestCase $workflow_file"
+    GALAXY_TEST_WORKFLOW_FILE="$workflow_file"
+    extra_args="functional.workflow:WorkflowTestCase"
 elif [ -n "$toolshed_script" ]; then
     extra_args="$toolshed_script"
 elif [ -n "$api_script" ]; then
