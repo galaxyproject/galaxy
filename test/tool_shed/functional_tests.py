@@ -87,16 +87,14 @@ def main():
     hgweb_config_dir = hgweb_config_file_path
     os.environ[ 'TEST_HG_WEB_CONFIG_DIR' ] = hgweb_config_dir
     print "Directory location for hgweb.config:", hgweb_config_dir
-    toolshed_database_connection, toolshed_database_auto_migrate = driver_util.database_conf(shed_db_path, prefix="TOOL_SHED")
-    galaxy_database_connection, galaxy_database_auto_migrate = driver_util.database_conf(galaxy_db_path)
+    toolshed_database_conf = driver_util.database_conf(shed_db_path, prefix="TOOL_SHED")
+    galaxy_database_conf = driver_util.database_conf(galaxy_db_path)
     install_database_conf = driver_util.install_database_conf(galaxy_db_path, default_merged=False)
     tool_shed_global_conf = driver_util.get_webapp_global_conf()
     tool_shed_global_conf[ '__file__' ] = 'tool_shed_wsgi.ini.sample'
     kwargs = dict( admin_users='test@bx.psu.edu',
                    allow_user_creation=True,
                    allow_user_deletion=True,
-                   database_connection=toolshed_database_connection,
-                   database_auto_migrate=toolshed_database_auto_migrate,
                    datatype_converters_config_file='datatype_converters_conf.xml.sample',
                    file_path=shed_file_path,
                    global_conf=tool_shed_global_conf,
@@ -113,9 +111,9 @@ def main():
                    tool_parse_help=False,
                    tool_data_table_config_path=galaxy_tool_data_table_conf_file,
                    use_heartbeat=False )
-
-    print "Tool shed database connection:", toolshed_database_connection
-    print "Galaxy database connection:", galaxy_database_connection
+    kwargs.update(toolshed_database_conf)
+    print "Tool shed database connection:", toolshed_database_conf["database_connection"]
+    print "Galaxy database connection:", galaxy_database_conf["database_connection"]
 
     # Generate the tool_data_table_conf.xml file.
     file( galaxy_tool_data_table_conf_file, 'w' ).write( tool_data_table_conf_xml_template )
@@ -126,15 +124,13 @@ def main():
     toolshedapp = None
     kwargs[ 'global_conf' ] = tool_shed_global_conf
 
-    if not toolshed_database_connection.startswith( 'sqlite://' ):
-            kwargs[ 'database_engine_option_pool_size' ] = '10'
-
     toolshedapp = ToolshedUniverseApplication( **kwargs )
     database_contexts.tool_shed_context = toolshedapp.model.context
     log.info( "Embedded Toolshed application started" )
 
     # ---- Run tool shed webserver ------------------------------------------------------
-    tool_shed_global_conf[ 'database_connection' ] = toolshed_database_connection
+    # TODO: Needed for hg middleware ('lib/galaxy/webapps/tool_shed/framework/middleware/hg.py')
+    tool_shed_global_conf[ 'database_connection' ] = kwargs["database_connection"]
     toolshedwebapp = toolshedbuildapp.app_factory( tool_shed_global_conf,
                                                    use_translogger=False,
                                                    static_enabled=True,
@@ -167,9 +163,7 @@ def main():
         galaxy_global_conf = driver_util.get_webapp_global_conf()
         galaxy_global_conf[ '__file__' ] = 'config/galaxy.ini.sample'
 
-        kwargs = dict( database_connection=galaxy_database_connection,
-                       database_auto_migrate=galaxy_database_auto_migrate,
-                       enable_tool_shed_check=True,
+        kwargs = dict( enable_tool_shed_check=True,
                        global_conf=galaxy_global_conf,
                        hours_between_check=0.001,
                        migrated_tools_config=galaxy_migrated_tool_conf_file,
@@ -181,18 +175,15 @@ def main():
                        tool_sheds_config_file=galaxy_tool_sheds_conf_file,
                        tool_data_table_config_path=galaxy_tool_data_table_conf_file )
         kwargs.update(driver_util.setup_galaxy_config(galaxy_db_path, use_test_file_dir=False))
+        kwargs.update(galaxy_database_conf)
         kwargs.update(install_database_conf)
         # ---- Build Galaxy Application --------------------------------------------------
-        if not galaxy_database_connection.startswith( 'sqlite://' ):
-            kwargs[ 'database_engine_option_pool_size' ] = '10'
-            kwargs[ 'database_engine_option_max_overflow' ] = '20'
         galaxyapp = GalaxyUniverseApplication( **kwargs )
 
         log.info( "Embedded Galaxy application started" )
 
         # ---- Run galaxy webserver ------------------------------------------------------
         galaxy_server = None
-        galaxy_global_conf[ 'database_file' ] = galaxy_database_connection
         galaxywebapp = galaxybuildapp.app_factory( galaxy_global_conf,
                                                    use_translogger=False,
                                                    static_enabled=True,

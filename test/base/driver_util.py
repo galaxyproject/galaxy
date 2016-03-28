@@ -196,7 +196,14 @@ def database_conf(db_path, prefix="GALAXY"):
             copy_database_template(os.environ[template_var], db_path)
             database_auto_migrate = True
         database_connection = 'sqlite:///%s' % db_path
-    return database_connection, database_auto_migrate
+    config = {
+        "database_connection": database_connection,
+        "database_auto_migrate": database_auto_migrate
+    }
+    if not database_connection.startswith("sqlite://"):
+        config["database_engine_option_max_overflow"] = "20"
+        config["database_engine_option_pool_size"] = "10"
+    return config
 
 
 def install_database_conf(db_path, default_merged=False):

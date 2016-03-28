@@ -110,8 +110,6 @@ def main():
     if galaxy_test_tmp_dir is None:
         galaxy_test_tmp_dir = tempfile.mkdtemp()
 
-    database_auto_migrate = False
-
     if start_server:
         tempdir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
         # Configure the database path.
@@ -121,7 +119,7 @@ def main():
             use_test_file_dir=not testing_shed_tools,
         )
 
-        database_connection, database_auto_migrate = driver_util.database_conf(galaxy_db_path)
+        database_conf = driver_util.database_conf(galaxy_db_path)
         install_database_conf = driver_util.install_database_conf(galaxy_db_path, default_merged=True)
 
     # Data Manager testing temp path
@@ -133,9 +131,7 @@ def main():
     master_api_key = get_master_api_key()
     app = None
     if start_server:
-        kwargs = dict( database_connection=database_connection,
-                       database_auto_migrate=database_auto_migrate,
-                       shed_tool_data_table_config=shed_tool_data_table_config,
+        kwargs = dict( shed_tool_data_table_config=shed_tool_data_table_config,
                        test_conf="test.conf",
                        tool_config_file=tool_config_file,
                        tool_data_table_config_path=tool_data_table_config_path,
@@ -147,10 +143,8 @@ def main():
                        auto_configure_logging=logging_config_file is None,
                        data_manager_config_file=data_manager_config_file )
         kwargs.update(galaxy_config)
+        kwargs.update(database_conf)
         kwargs.update(install_database_conf)
-        if not database_connection.startswith( 'sqlite://' ):
-            kwargs[ 'database_engine_option_max_overflow' ] = '20'
-            kwargs[ 'database_engine_option_pool_size' ] = '10'
         if datatypes_conf_override:
             kwargs[ 'datatypes_config_file' ] = datatypes_conf_override
         # If the user has passed in a path for the .ini file, do not overwrite it.
