@@ -35,10 +35,6 @@ def main():
         if framework_test:
             default_tool_conf = driver_util.FRAMEWORK_SAMPLE_TOOLS_CONF
             datatypes_conf_override = driver_util.FRAMEWORK_DATATYPES_CONF
-        else:
-            # Use tool_conf.xml toolbox.
-            if _check_arg( '-with_framework_test_tools' ):
-                default_tool_conf = "%s,%s" % ( 'config/tool_conf.xml.sample', driver_util.FRAMEWORK_SAMPLE_TOOLS_CONF )
 
     start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ
 
