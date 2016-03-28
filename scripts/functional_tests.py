@@ -223,39 +223,6 @@ def main():
         # Pass in through script setenv, will leave a copy of ALL test validate files
         os.environ[ 'GALAXY_TEST_HOST' ] = galaxy_test_host
 
-        def _run_functional_test( testing_shed_tools=None ):
-            workflow_test = _check_arg( '-workflow', param=True )
-            if workflow_test:
-                import functional.workflow
-                functional.workflow.WorkflowTestCase.workflow_test_file = workflow_test
-                functional.workflow.WorkflowTestCase.master_api_key = master_api_key
-                functional.workflow.WorkflowTestCase.user_api_key = get_user_api_key()
-            data_manager_test = _check_arg( '-data_managers', param=False )
-            if data_manager_test:
-                import functional.test_data_managers
-                functional.test_data_managers.data_managers = app.data_managers  # seems like a hack...
-                functional.test_data_managers.build_tests(
-                    tmp_dir=data_manager_test_tmp_path,
-                    testing_shed_tools=testing_shed_tools,
-                    master_api_key=master_api_key,
-                    user_api_key=get_user_api_key(),
-                )
-            else:
-                # We must make sure that functional.test_toolbox is always imported after
-                # database_contexts.galaxy_content is set (which occurs in this method above).
-                # If functional.test_toolbox is imported before database_contexts.galaxy_content
-                # is set, sa_session will be None in all methods that use it.
-                import functional.test_toolbox
-                functional.test_toolbox.toolbox = app.toolbox
-                # When testing data managers, do not test toolbox.
-                functional.test_toolbox.build_tests(
-                    app=app,
-                    testing_shed_tools=testing_shed_tools,
-                    master_api_key=master_api_key,
-                    user_api_key=get_user_api_key(),
-                )
-            return driver_util.nose_config_and_run()
-
         if testing_shed_tools:
             driver_util.setup_shed_tools_for_test(
                 app,
@@ -263,7 +230,40 @@ def main():
                 testing_migrated_tools,
                 testing_installed_tools,
             )
-        success = _run_functional_test( testing_shed_tools=True )
+        workflow_test = _check_arg( '-workflow', param=True )
+        if workflow_test:
+            import functional.workflow
+            functional.workflow.WorkflowTestCase.workflow_test_file = workflow_test
+            functional.workflow.WorkflowTestCase.master_api_key = master_api_key
+            functional.workflow.WorkflowTestCase.user_api_key = get_user_api_key()
+        data_manager_test = _check_arg( '-data_managers', param=False )
+        if data_manager_test:
+            import functional.test_data_managers
+            functional.test_data_managers.data_managers = app.data_managers  # seems like a hack...
+            functional.test_data_managers.build_tests(
+                tmp_dir=data_manager_test_tmp_path,
+                testing_shed_tools=testing_shed_tools,
+                master_api_key=master_api_key,
+                user_api_key=get_user_api_key(),
+            )
+
+        # We must make sure that functional.test_toolbox is always imported after
+        # database_contexts.galaxy_content is set (which occurs in this method above).
+        # If functional.test_toolbox is imported before database_contexts.galaxy_content
+        # is set, sa_session will be None in all methods that use it.
+        import functional.test_toolbox
+        functional.test_toolbox.toolbox = app.toolbox
+        # When testing data managers, do not test toolbox.
+        functional.test_toolbox.build_tests(
+            app=app,
+            testing_shed_tools=testing_shed_tools,
+            master_api_key=master_api_key,
+            user_api_key=get_user_api_key(),
+        )
+
+        success = driver_util.nose_config_and_run()
+
+        # TODO: just put this in tempdir being managed for this test.
         if galaxy_tool_shed_test_file is not None:
             try:
                 os.unlink( galaxy_tool_shed_test_file )
