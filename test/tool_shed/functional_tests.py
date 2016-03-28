@@ -31,11 +31,6 @@ from functional import database_contexts
 default_tool_shed_test_host = "localhost"
 default_galaxy_test_host = 'localhost'
 
-# Use separate databases for Galaxy and tool shed install info by default,
-# set GALAXY_TEST_INSTALL_DB_MERGED to True to revert to merged databases
-# behavior.
-default_install_db_merged = False
-
 
 tool_sheds_conf_xml_template = '''<?xml version="1.0"?>
 <tool_sheds>
