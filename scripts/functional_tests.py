@@ -48,9 +48,7 @@ def main():
     start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ
 
     shed_tool_data_table_config = 'config/shed_tool_data_table_conf.xml'
-    galaxy_test_tmp_dir = os.environ.get( 'GALAXY_TEST_TMP_DIR', None )
-    if galaxy_test_tmp_dir is None:
-        galaxy_test_tmp_dir = tempfile.mkdtemp()
+    galaxy_test_tmp_dir = driver_util.get_galaxy_test_tmp_dir()
 
     if start_server:
         tempdir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )

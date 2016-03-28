@@ -64,6 +64,14 @@ def setup_tool_shed_tmp_dir():
     return tool_shed_test_tmp_dir
 
 
+def get_galaxy_test_tmp_dir():
+    """Create test directory for use by Galaxy server being setup for testing."""
+    galaxy_test_tmp_dir = os.environ.get('GALAXY_TEST_TMP_DIR', None)
+    if galaxy_test_tmp_dir is None:
+        galaxy_test_tmp_dir = tempfile.mkdtemp()
+    return galaxy_test_tmp_dir
+
+
 def configure_environment():
     """Hack up environment for test cases."""
     # no op remove if unused

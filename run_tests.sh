@@ -62,6 +62,8 @@ GALAXY_TEST_INSTALL_DB_MERGED Set to use same database for Galaxy and install fr
 GALAXY_TEST_DB_TEMPLATE     If GALAXY_TEST_DBURI is unset, this URL can be retrieved
                             and should be an sqlite database that will be upgraded
                             and tested against.
+GALAXY_TEST_TMP_DIR         Temp directory used for files required by Galaxy server setup
+                            for Galaxy functional tests.
 HTTP_ACCEPT_LANGUAGE        Defaults to 'en'
 GALAXY_TEST_NO_CLEANUP      Do not cleanup main test directory after tests,
                             the deprecated option TOOL_SHED_TEST_NO_CLEANUP does the
