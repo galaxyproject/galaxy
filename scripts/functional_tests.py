@@ -154,7 +154,7 @@ def main():
         template_cache_path = os.path.join( galaxy_db_path, 'compiled_templates' )
         new_file_path = tempfile.mkdtemp( prefix='new_files_path_', dir=tempdir )
         job_working_directory = tempfile.mkdtemp( prefix='job_working_directory_', dir=tempdir )
-        database_connection, database_auto_migrate = driver_util.galaxy_database_conf(galaxy_db_path)
+        database_connection, database_auto_migrate = driver_util.database_conf(galaxy_db_path)
         install_database_conf = driver_util.install_database_conf(galaxy_db_path, default_merged=True)
         kwargs = {}
         for dir in file_path, new_file_path, template_cache_path:

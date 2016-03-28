@@ -92,11 +92,8 @@ def main():
     hgweb_config_dir = hgweb_config_file_path
     os.environ[ 'TEST_HG_WEB_CONFIG_DIR' ] = hgweb_config_dir
     print "Directory location for hgweb.config:", hgweb_config_dir
-    if 'TOOL_SHED_TEST_DBURI' in os.environ:
-        toolshed_database_connection = os.environ[ 'TOOL_SHED_TEST_DBURI' ]
-    else:
-        toolshed_database_connection = 'sqlite:///' + os.path.join( shed_db_path, 'community_test.sqlite' )
-    galaxy_database_connection, galaxy_database_auto_migrate = driver_util.galaxy_database_conf(galaxy_db_path)
+    toolshed_database_connection, toolshed_database_auto_migrate = driver_util.database_conf(shed_db_path, prefix="TOOL_SHED")
+    galaxy_database_connection, galaxy_database_auto_migrate = driver_util.database_conf(galaxy_db_path)
     install_database_conf = driver_util.install_database_conf(galaxy_db_path, default_merged=False)
     tool_shed_global_conf = driver_util.get_webapp_global_conf()
     tool_shed_global_conf[ '__file__' ] = 'tool_shed_wsgi.ini.sample'
@@ -104,6 +101,7 @@ def main():
                    allow_user_creation=True,
                    allow_user_deletion=True,
                    database_connection=toolshed_database_connection,
+                   database_auto_migrate=toolshed_database_auto_migrate,
                    datatype_converters_config_file='datatype_converters_conf.xml.sample',
                    file_path=shed_file_path,
                    global_conf=tool_shed_global_conf,

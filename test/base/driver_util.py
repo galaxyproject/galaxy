@@ -149,20 +149,23 @@ def copy_database_template( source, db_path ):
         raise Exception( "Failed to copy database template from source %s" % source )
 
 
-def galaxy_database_conf(db_path):
+def database_conf(db_path, prefix="GALAXY"):
     """Find (and populate if needed) Galaxy database connection."""
     database_auto_migrate = False
-    if 'GALAXY_TEST_DBURI' in os.environ:
-        database_connection = os.environ['GALAXY_TEST_DBURI']
+    dburi_var = "%s_TEST_DBURI" % prefix
+    if dburi_var in os.environ:
+        database_connection = os.environ[dburi_var]
     else:
-        db_path = os.path.join(db_path, 'universe.sqlite')
-        if 'GALAXY_TEST_DB_TEMPLATE' in os.environ:
+        default_db_filename = "%s.sqlite" % prefix.lower()
+        template_var = "%s_TEST_DB_TEMPLATE" % prefix
+        db_path = os.path.join(db_path, default_db_filename)
+        if template_var in os.environ:
             # Middle ground between recreating a completely new
             # database and pointing at existing database with
             # GALAXY_TEST_DBURI. The former requires a lot of setup
             # time, the latter results in test failures in certain
             # cases (namely tool shed tests expecting clean database).
-            copy_database_template(os.environ['GALAXY_TEST_DB_TEMPLATE'], db_path)
+            copy_database_template(os.environ[template_var], db_path)
             database_auto_migrate = True
         database_connection = 'sqlite:///%s' % db_path
     return database_connection, database_auto_migrate
@@ -297,7 +300,7 @@ __all__ = [
     "FRAMEWORK_UPLOAD_TOOL_CONF",
     "FRAMEWORK_SAMPLE_TOOLS_CONF",
     "FRAMEWORK_DATATYPES_CONF",
-    "galaxy_database_conf",
+    "database_conf",
     "get_webapp_global_conf",
     "nose_config_and_run",
     "setup_galaxy_config",
