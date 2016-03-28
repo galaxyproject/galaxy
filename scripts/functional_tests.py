@@ -175,7 +175,6 @@ def main():
     if start_server:
         kwargs = dict( database_connection=database_connection,
                        database_auto_migrate=database_auto_migrate,
-                       datatype_converters_config_file="datatype_converters_conf.xml.sample",
                        file_path=file_path,
                        job_queue_workers=5,
                        job_working_directory=job_working_directory,
