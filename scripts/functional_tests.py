@@ -47,11 +47,6 @@ def main():
 
     start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ
 
-    default_data_manager_config = 'config/data_manager_conf.xml.sample'
-    for data_manager_config in ['config/data_manager_conf.xml', 'data_manager_conf.xml' ]:
-        if os.path.exists( data_manager_config ):
-            default_data_manager_config = data_manager_config
-    data_manager_config_file = "%s,test/functional/tools/sample_data_manager_conf.xml" % default_data_manager_config
     shed_tool_data_table_config = 'config/shed_tool_data_table_conf.xml'
     galaxy_test_tmp_dir = os.environ.get( 'GALAXY_TEST_TMP_DIR', None )
     if galaxy_test_tmp_dir is None:
@@ -81,8 +76,7 @@ def main():
                        galaxy_data_manager_data_path=galaxy_data_manager_data_path,
                        update_integrated_tool_panel=False,
                        enable_beta_tool_formats=True,
-                       auto_configure_logging=logging_config_file is None,
-                       data_manager_config_file=data_manager_config_file )
+                       auto_configure_logging=logging_config_file is None )
         kwargs.update(galaxy_config)
         if datatypes_conf_override:
             kwargs[ 'datatypes_config_file' ] = datatypes_conf_override

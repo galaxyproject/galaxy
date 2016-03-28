@@ -115,6 +115,11 @@ def setup_galaxy_config(
     if tool_dependency_dir is None:
         tool_dependency_dir = tempfile.mkdtemp(dir=tmpdir, prefix="tool_dependencies")
     tool_data_table_config_path = _tool_data_table_config_path(default_tool_data_table_config_path)
+    default_data_manager_config = 'config/data_manager_conf.xml.sample'
+    for data_manager_config in ['config/data_manager_conf.xml', 'data_manager_conf.xml' ]:
+        if os.path.exists( data_manager_config ):
+            default_data_manager_config = data_manager_config
+    data_manager_config_file = "%s,test/functional/tools/sample_data_manager_conf.xml" % default_data_manager_config
     master_api_key = get_master_api_key()
     config = dict(
         admin_users='test@bx.psu.edu',
@@ -124,6 +129,7 @@ def setup_galaxy_config(
         api_allow_run_as='test@bx.psu.edu',
         check_migrate_tools=False,
         cleanup_job='onsuccess',
+        data_manager_config_file=data_manager_config_file,
         file_path=file_path,
         id_secret='changethisinproductiontoo',
         job_working_directory=job_working_directory,
