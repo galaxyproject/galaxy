@@ -60,10 +60,6 @@ def main():
             default_install_db_merged=True,
         )
 
-    # Data Manager testing temp path
-    # For storing Data Manager outputs and .loc files so that real ones don't get clobbered
-    data_manager_test_tmp_path = tempfile.mkdtemp( prefix='data_manager_test_tmp', dir=galaxy_test_tmp_dir )
-    galaxy_data_manager_data_path = tempfile.mkdtemp( prefix='data_manager_tool-data', dir=data_manager_test_tmp_path )
     app = None
     server_wrapper = None
 
@@ -71,7 +67,6 @@ def main():
         # ---- Build Application --------------------------------------------------
         kwargs = dict( shed_tool_data_table_config=shed_tool_data_table_config,
                        tool_config_file=tool_config_file,
-                       galaxy_data_manager_data_path=galaxy_data_manager_data_path,
                        update_integrated_tool_panel=False,
                        enable_beta_tool_formats=True,
                        auto_configure_logging=logging_config_file is None )

@@ -129,6 +129,11 @@ def setup_galaxy_config(
             default_data_manager_config = data_manager_config
     data_manager_config_file = "%s,test/functional/tools/sample_data_manager_conf.xml" % default_data_manager_config
     master_api_key = get_master_api_key()
+
+    # Data Manager testing temp path
+    # For storing Data Manager outputs and .loc files so that real ones don't get clobbered
+    galaxy_data_manager_data_path = tempfile.mkdtemp(prefix='data_manager_tool-data', dir=tmpdir)
+
     config = dict(
         admin_users='test@bx.psu.edu',
         allow_library_path_paste=True,
@@ -139,6 +144,7 @@ def setup_galaxy_config(
         cleanup_job='onsuccess',
         data_manager_config_file=data_manager_config_file,
         file_path=file_path,
+        galaxy_data_manager_data_path=galaxy_data_manager_data_path,
         id_secret='changethisinproductiontoo',
         job_working_directory=job_working_directory,
         job_queue_workers=5,
