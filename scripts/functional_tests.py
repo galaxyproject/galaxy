@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+"""Test driver for many Galaxy Python functional tests.
+
+Launch this script by running ``run_tests.sh`` from GALAXY_ROOT, see
+that script for a list of options.
+"""
 
 import os
 import os.path
@@ -51,11 +56,11 @@ job_conf_xml = '''<?xml version="1.0"?>
 
 
 def generate_config_file( input_filename, output_filename, config_items ):
-    '''
-    Generate a config file with the configuration that has been defined for the embedded web application.
+    """Generate a config file with the configuration that has been defined for the embedded web application.
+
     This is mostly relevant when setting metadata externally, since the script for doing that does not
     have access to app.config.
-    '''
+    """
     cp = SafeConfigParser()
     cp.read( input_filename )
     config_items_by_section = []
@@ -85,12 +90,13 @@ def generate_config_file( input_filename, output_filename, config_items ):
 
 
 def main():
+    """Entry point for test driver script."""
     # ---- Configuration ------------------------------------------------------
     galaxy_test_host = os.environ.get( 'GALAXY_TEST_HOST', default_galaxy_test_host )
     galaxy_test_port = os.environ.get( 'GALAXY_TEST_PORT', None )
     tool_path = os.environ.get( 'GALAXY_TEST_TOOL_PATH', 'tools' )
-    testing_migrated_tools = __check_arg( '-migrated' )
-    testing_installed_tools = __check_arg( '-installed' )
+    testing_migrated_tools = _check_arg( '-migrated' )
+    testing_installed_tools = _check_arg( '-installed' )
     datatypes_conf_override = None
 
     use_test_file_dir = not (testing_migrated_tools or testing_installed_tools)
@@ -100,14 +106,14 @@ def main():
         # We need the upload tool for functional tests, so we'll create a temporary tool panel config that defines it.
         tool_config_file = driver_util.FRAMEWORK_UPLOAD_TOOL_CONF
     else:
-        framework_test = __check_arg( '-framework' )  # Run through suite of tests testing framework.
+        framework_test = _check_arg( '-framework' )  # Run through suite of tests testing framework.
         if framework_test:
             tool_conf = driver_util.FRAMEWORK_SAMPLE_TOOLS_CONF
             datatypes_conf_override = driver_util.FRAMEWORK_DATATYPES_CONF
         else:
             # Use tool_conf.xml toolbox.
             tool_conf = None
-            if __check_arg( '-with_framework_test_tools' ):
+            if _check_arg( '-with_framework_test_tools' ):
                 tool_conf = "%s,%s" % ( 'config/tool_conf.xml.sample', driver_util.FRAMEWORK_SAMPLE_TOOLS_CONF )
         tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', tool_conf )
 
@@ -243,13 +249,13 @@ def main():
         os.environ[ 'GALAXY_TEST_HOST' ] = galaxy_test_host
 
         def _run_functional_test( testing_shed_tools=None ):
-            workflow_test = __check_arg( '-workflow', param=True )
+            workflow_test = _check_arg( '-workflow', param=True )
             if workflow_test:
                 import functional.workflow
                 functional.workflow.WorkflowTestCase.workflow_test_file = workflow_test
                 functional.workflow.WorkflowTestCase.master_api_key = master_api_key
                 functional.workflow.WorkflowTestCase.user_api_key = get_user_api_key()
-            data_manager_test = __check_arg( '-data_managers', param=False )
+            data_manager_test = _check_arg( '-data_managers', param=False )
             if data_manager_test:
                 import functional.test_data_managers
                 functional.test_data_managers.data_managers = app.data_managers  # seems like a hack...
@@ -327,7 +333,7 @@ def main():
         return 1
 
 
-def __check_arg( name, param=False ):
+def _check_arg( name, param=False ):
     try:
         index = sys.argv.index( name )
         del sys.argv[ index ]

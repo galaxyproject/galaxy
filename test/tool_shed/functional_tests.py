@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+"""Test driver for tool shed functional tests.
+
+Launch this script by running ``run_tests.sh -t`` from GALAXY_ROOT.
+"""
 from __future__ import absolute_import
 
 import os
@@ -58,6 +62,7 @@ shed_data_manager_conf_xml_template = '''<?xml version="1.0"?>
 
 
 def main():
+    """Entry point for test driver script."""
     # ---- Configuration ------------------------------------------------------
     tool_shed_test_host = os.environ.get( 'TOOL_SHED_TEST_HOST', default_tool_shed_test_host )
     tool_shed_test_port = os.environ.get( 'TOOL_SHED_TEST_PORT', None )
