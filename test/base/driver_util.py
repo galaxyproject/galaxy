@@ -83,6 +83,7 @@ def setup_galaxy_config(tmpdir, use_test_file_dir=False):
     else:
         user_library_import_dir = None
         library_import_dir = None
+    tool_path = os.environ.get('GALAXY_TEST_TOOL_PATH', 'tools')
     tool_dependency_dir = os.environ.get('GALAXY_TOOL_DEPENDENCY_DIR', None)
     if tool_dependency_dir is None:
         tool_dependency_dir = tempfile.mkdtemp(dir=tmpdir, prefix="tool_dependencies")
@@ -100,6 +101,7 @@ def setup_galaxy_config(tmpdir, use_test_file_dir=False):
         running_functional_tests=True,
         template_path='templates',
         tool_parse_help=False,
+        tool_path=tool_path,
         update_integrated_tool_panel=False,
         use_tasked_jobs=True,
         use_heartbeat=False,

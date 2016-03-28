@@ -94,7 +94,6 @@ def main():
     # ---- Configuration ------------------------------------------------------
     galaxy_test_host = os.environ.get( 'GALAXY_TEST_HOST', default_galaxy_test_host )
     galaxy_test_port = os.environ.get( 'GALAXY_TEST_PORT', None )
-    tool_path = os.environ.get( 'GALAXY_TEST_TOOL_PATH', 'tools' )
     testing_migrated_tools = _check_arg( '-migrated' )
     testing_installed_tools = _check_arg( '-installed' )
     datatypes_conf_override = None
@@ -191,7 +190,6 @@ def main():
                        test_conf="test.conf",
                        tool_config_file=tool_config_file,
                        tool_data_table_config_path=tool_data_table_config_path,
-                       tool_path=tool_path,
                        galaxy_data_manager_data_path=galaxy_data_manager_data_path,
                        update_integrated_tool_panel=False,
                        master_api_key=master_api_key,
