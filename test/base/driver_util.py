@@ -1,6 +1,7 @@
 """Scripts for drivers of Galaxy functional tests."""
 
 import httplib
+import json
 import logging
 import os
 import random
@@ -20,6 +21,7 @@ import nose.plugins.manager
 
 from paste import httpserver
 
+from .tool_shed_util import parse_tool_panel_config
 from .nose_util import run
 from .instrument import StructuredTestDataPlugin
 
@@ -33,6 +35,10 @@ FRAMEWORK_TOOLS_DIR = os.path.join(GALAXY_TEST_DIRECTORY, "functional", "tools")
 FRAMEWORK_UPLOAD_TOOL_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "upload_tool_conf.xml")
 FRAMEWORK_SAMPLE_TOOLS_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "samples_tool_conf.xml")
 FRAMEWORK_DATATYPES_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "sample_datatypes_conf.xml")
+MIGRATED_TOOL_PANEL_CONFIG = 'config/migrated_tools_conf.xml'
+INSTALLED_TOOL_PANEL_CONFIGS = [
+    os.environ.get('GALAXY_TEST_SHED_TOOL_CONF', 'config/shed_tool_conf.xml')
+]
 
 DEFAULT_LOCALES = "en"
 
@@ -314,6 +320,37 @@ def cleanup_directory(tempdir):
         pass
 
 
+def setup_shed_tools_for_test(app, galaxy_tool_shed_test_file, testing_migrated_tools, testing_installed_tools):
+    """Modify Galaxy app's toolbox for migrated or installed tool tests."""
+    shed_tools_dict = {}
+    if testing_migrated_tools:
+        has_test_data, shed_tools_dict = parse_tool_panel_config(MIGRATED_TOOL_PANEL_CONFIG, shed_tools_dict)
+    elif testing_installed_tools:
+        for shed_tool_config in INSTALLED_TOOL_PANEL_CONFIGS:
+            has_test_data, shed_tools_dict = parse_tool_panel_config(shed_tool_config, shed_tools_dict)
+    # Persist the shed_tools_dict to the galaxy_tool_shed_test_file.
+    with open(galaxy_tool_shed_test_file, 'w') as shed_tools_file:
+        shed_tools_file.write(json.dumps(shed_tools_dict))
+    if not os.path.isabs(galaxy_tool_shed_test_file):
+        galaxy_tool_shed_test_file = os.path.join(galaxy_root, galaxy_tool_shed_test_file)
+    os.environ['GALAXY_TOOL_SHED_TEST_FILE'] = galaxy_tool_shed_test_file
+    if testing_installed_tools:
+        # TODO: Do this without modifying app - that is a pretty violation
+        # of Galaxy's abstraction - we shouldn't require app at all let alone
+        # be modifying it.
+
+        tool_configs = app.config.tool_configs
+        # Eliminate the migrated_tool_panel_config from the app's tool_configs, append the list of installed_tool_panel_configs,
+        # and reload the app's toolbox.
+        relative_migrated_tool_panel_config = os.path.join(app.config.root, MIGRATED_TOOL_PANEL_CONFIG)
+        if relative_migrated_tool_panel_config in tool_configs:
+            tool_configs.remove(relative_migrated_tool_panel_config)
+        for installed_tool_panel_config in INSTALLED_TOOL_PANEL_CONFIGS:
+            tool_configs.append(installed_tool_panel_config)
+        from galaxy import tools  # noqa, delay import because this brings in so many modules for small tests
+        app.toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app)
+
+
 __all__ = [
     "cleanup_directory",
     "configure_environment",
@@ -326,5 +363,6 @@ __all__ = [
     "get_webapp_global_conf",
     "nose_config_and_run",
     "setup_galaxy_config",
+    "setup_shed_tools_for_test",
     "wait_for_http_server",
 ]

@@ -69,7 +69,8 @@ GALAXY_TEST_NO_CLEANUP      Do not cleanup main test directory after tests,
 GALAXY_TEST_HOST            Host to use for Galaxy server setup for testing.
 GALAXY_TEST_PORT            Port to use for Galaxy server setup for testing.
 GALAXY_TEST_TOOL_PATH       Defaults to 'tools'
-
+GALAXY_TEST_SHED_TOOL_CONF  Shed toolbox conf (defaults to config/shed_tool_conf.xml)
+                            used when testing installed to tools with -installed.
 TOOL_SHED_TEST_HOST         Host to use for shed server setup for testing.
 TOOL_SHED_TEST_PORT         Port to use for shed server setup for testing.
 TOOL_SHED_TEST_FILE_DIR     Defaults to test/tool_shed/test_data.

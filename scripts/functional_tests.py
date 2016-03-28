@@ -10,7 +10,6 @@ import os.path
 import sys
 import tempfile
 from ConfigParser import SafeConfigParser
-from json import dumps
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 sys.path[1:1] = [ os.path.join( galaxy_root, "lib" ), os.path.join( galaxy_root, "test" ) ]
@@ -21,18 +20,12 @@ log = driver_util.build_logger()
 
 from base.api_util import get_master_api_key, get_user_api_key
 from base.test_logging import logging_config_file
-from base.tool_shed_util import parse_tool_panel_config
 from functional import database_contexts
-from galaxy import tools
 from galaxy.app import UniverseApplication
 from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
 
 default_galaxy_test_host = "localhost"
-migrated_tool_panel_config = 'config/migrated_tools_conf.xml'
-installed_tool_panel_configs = [
-    os.environ.get('GALAXY_TEST_SHED_TOOL_CONF', 'config/shed_tool_conf.xml')
-]
 
 
 # Set up a job_conf.xml that explicitly limits jobs to 10 minutes.
@@ -98,13 +91,14 @@ def main():
     testing_installed_tools = _check_arg( '-installed' )
     datatypes_conf_override = None
 
-    use_test_file_dir = not (testing_migrated_tools or testing_installed_tools)
-    if not use_test_file_dir:
+    testing_shed_tools = testing_migrated_tools or testing_installed_tools
+    if testing_shed_tools:
         # Store a jsonified dictionary of tool_id : GALAXY_TEST_FILE_DIR pairs.
         galaxy_tool_shed_test_file = 'shed_tools_dict'
         # We need the upload tool for functional tests, so we'll create a temporary tool panel config that defines it.
         tool_config_file = driver_util.FRAMEWORK_UPLOAD_TOOL_CONF
     else:
+        galaxy_tool_shed_test_file = None
         framework_test = _check_arg( '-framework' )  # Run through suite of tests testing framework.
         if framework_test:
             tool_conf = driver_util.FRAMEWORK_SAMPLE_TOOLS_CONF
@@ -153,7 +147,7 @@ def main():
         galaxy_db_path = driver_util.database_files_path(tempdir)
         galaxy_config = driver_util.setup_galaxy_config(
             galaxy_db_path,
-            use_test_file_dir=use_test_file_dir
+            use_test_file_dir=not testing_shed_tools,
         )
 
         database_connection, database_auto_migrate = driver_util.database_conf(galaxy_db_path)
@@ -225,7 +219,6 @@ def main():
     log.info( "Functional tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
     success = False
     try:
-        tool_configs = app.config.tool_configs
         # What requires these? Handy for (eg) functional tests to save outputs?
         # Pass in through script setenv, will leave a copy of ALL test validate files
         os.environ[ 'GALAXY_TEST_HOST' ] = galaxy_test_host
@@ -263,36 +256,19 @@ def main():
                 )
             return driver_util.nose_config_and_run()
 
-        if not use_test_file_dir:
-            shed_tools_dict = {}
-            if testing_migrated_tools:
-                has_test_data, shed_tools_dict = parse_tool_panel_config( migrated_tool_panel_config, shed_tools_dict )
-            elif testing_installed_tools:
-                for shed_tool_config in installed_tool_panel_configs:
-                    has_test_data, shed_tools_dict = parse_tool_panel_config( shed_tool_config, shed_tools_dict )
-            # Persist the shed_tools_dict to the galaxy_tool_shed_test_file.
-            shed_tools_file = open( galaxy_tool_shed_test_file, 'w' )
-            shed_tools_file.write( dumps( shed_tools_dict ) )
-            shed_tools_file.close()
-            if not os.path.isabs( galaxy_tool_shed_test_file ):
-                galaxy_tool_shed_test_file = os.path.join( os.getcwd(), galaxy_tool_shed_test_file )
-            os.environ[ 'GALAXY_TOOL_SHED_TEST_FILE' ] = galaxy_tool_shed_test_file
-            if testing_installed_tools:
-                # Eliminate the migrated_tool_panel_config from the app's tool_configs, append the list of installed_tool_panel_configs,
-                # and reload the app's toolbox.
-                relative_migrated_tool_panel_config = os.path.join( app.config.root, migrated_tool_panel_config )
-                if relative_migrated_tool_panel_config in tool_configs:
-                    tool_configs.remove( relative_migrated_tool_panel_config )
-                for installed_tool_panel_config in installed_tool_panel_configs:
-                    tool_configs.append( installed_tool_panel_config )
-                app.toolbox = tools.ToolBox( tool_configs, app.config.tool_path, app )
-            success = _run_functional_test( testing_shed_tools=True )
+        if testing_shed_tools:
+            driver_util.setup_shed_tools_for_test(
+                app,
+                galaxy_tool_shed_test_file,
+                testing_migrated_tools,
+                testing_installed_tools,
+            )
+        success = _run_functional_test( testing_shed_tools=True )
+        if galaxy_tool_shed_test_file is not None:
             try:
                 os.unlink( galaxy_tool_shed_test_file )
             except:
                 log.info( "Unable to remove file: %s" % galaxy_tool_shed_test_file )
-        else:
-            success = _run_functional_test( )
     except:
         log.exception( "Failure running tests" )
 
