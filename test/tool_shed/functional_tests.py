@@ -86,8 +86,6 @@ def main():
     galaxy_tempfiles = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
     galaxy_shed_tool_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
     galaxy_migrated_tool_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
-    galaxy_tool_dependency_dir = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
-    os.environ[ 'GALAXY_TEST_TOOL_DEPENDENCY_DIR' ] = galaxy_tool_dependency_dir
     hgweb_config_dir = hgweb_config_file_path
     os.environ[ 'TEST_HG_WEB_CONFIG_DIR' ] = hgweb_config_dir
     print "Directory location for hgweb.config:", hgweb_config_dir
@@ -188,11 +186,10 @@ def main():
                        shed_tool_data_table_config=shed_tool_data_table_conf_file,
                        shed_tool_path=galaxy_shed_tool_path,
                        tool_data_path=tool_data_path,
-                       tool_dependency_dir=galaxy_tool_dependency_dir,
                        tool_config_file=[ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ],
                        tool_sheds_config_file=galaxy_tool_sheds_conf_file,
                        tool_data_table_config_path=galaxy_tool_data_table_conf_file )
-        kwargs.setup_galaxy_config(use_test_file_dir=False)
+        kwargs.update(driver_util.setup_galaxy_config(tool_shed_test_tmp_dir, use_test_file_dir=False))
         kwargs.update(install_database_conf)
         # ---- Build Galaxy Application --------------------------------------------------
         if not galaxy_database_connection.startswith( 'sqlite://' ):

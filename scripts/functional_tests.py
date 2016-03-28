@@ -94,7 +94,6 @@ def main():
     datatypes_conf_override = None
 
     use_test_file_dir = not (testing_migrated_tools or testing_installed_tools)
-    galaxy_config = driver_util.setup_galaxy_config(use_test_file_dir=use_test_file_dir)
     if not use_test_file_dir:
         # Store a jsonified dictionary of tool_id : GALAXY_TEST_FILE_DIR pairs.
         galaxy_tool_shed_test_file = 'shed_tools_dict'
@@ -132,7 +131,6 @@ def main():
             default_data_manager_config = data_manager_config
     data_manager_config_file = "%s,test/functional/tools/sample_data_manager_conf.xml" % default_data_manager_config
     shed_tool_data_table_config = 'config/shed_tool_data_table_conf.xml'
-    tool_dependency_dir = os.environ.get( 'GALAXY_TOOL_DEPENDENCY_DIR', None )
     galaxy_test_tmp_dir = os.environ.get( 'GALAXY_TEST_TMP_DIR', None )
     if galaxy_test_tmp_dir is None:
         galaxy_test_tmp_dir = tempfile.mkdtemp()
@@ -146,6 +144,7 @@ def main():
 
     if start_server:
         tempdir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
+        galaxy_config = driver_util.setup_galaxy_config(tempdir, use_test_file_dir=use_test_file_dir)
         # Configure the database path.
         galaxy_db_path = driver_util.database_files_path(tempdir)
 
@@ -199,8 +198,6 @@ def main():
         if not database_connection.startswith( 'sqlite://' ):
             kwargs[ 'database_engine_option_max_overflow' ] = '20'
             kwargs[ 'database_engine_option_pool_size' ] = '10'
-        if tool_dependency_dir is not None:
-            kwargs[ 'tool_dependency_dir' ] = tool_dependency_dir
         if datatypes_conf_override:
             kwargs[ 'datatypes_config_file' ] = datatypes_conf_override
         # If the user has passed in a path for the .ini file, do not overwrite it.

@@ -66,7 +66,7 @@ def build_logger():
     return log
 
 
-def setup_galaxy_config(use_test_file_dir=False):
+def setup_galaxy_config(tmpdir, use_test_file_dir=False):
     """Setup environment and build config for test Galaxy instance."""
     if use_test_file_dir:
         galaxy_test_file_dir = os.environ.get('GALAXY_TEST_FILE_DIR', GALAXY_TEST_FILE_DIR)
@@ -83,7 +83,10 @@ def setup_galaxy_config(use_test_file_dir=False):
     else:
         user_library_import_dir = None
         library_import_dir = None
-    return dict(
+    tool_dependency_dir = os.environ.get('GALAXY_TOOL_DEPENDENCY_DIR', None)
+    if tool_dependency_dir is None:
+        tool_dependency_dir = tempfile.mkdtemp(dir=tmpdir, prefix="tool_dependencies")
+    config = dict(
         admin_users='test@bx.psu.edu',
         allow_library_path_paste=True,
         allow_user_creation=True,
@@ -102,6 +105,12 @@ def setup_galaxy_config(use_test_file_dir=False):
         use_heartbeat=False,
         user_library_import_dir=user_library_import_dir,
     )
+    if tool_dependency_dir:
+        config["tool_dependency_dir"] = tool_dependency_dir
+        # Used by shed's twill dependency stuff - todo read from
+        # Galaxy's config API.
+        os.environ["GALAXY_TEST_TOOL_DEPENDENCY_DIR"] = tool_dependency_dir
+    return config
 
 
 def nose_config_and_run( argv=None, env=None, ignore_files=[], plugins=None ):
