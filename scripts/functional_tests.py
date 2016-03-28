@@ -108,7 +108,7 @@ def main():
             import functional.test_data_managers
             functional.test_data_managers.data_managers = app.data_managers  # seems like a hack...
             functional.test_data_managers.build_tests(
-                tmp_dir=data_manager_test_tmp_path,
+                tmp_dir=galaxy_test_tmp_dir,
                 testing_shed_tools=testing_shed_tools,
                 master_api_key=get_master_api_key(),
                 user_api_key=get_user_api_key(),
@@ -136,7 +136,7 @@ def main():
     if server_wrapper is not None:
         server_wrapper.stop()
         server_wrapper = None
-    driver_util.cleanup_directory(tempdir)
+    driver_util.cleanup_directory(galaxy_test_tmp_dir)
     if success:
         return 0
     else:
