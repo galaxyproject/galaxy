@@ -23,9 +23,6 @@ tool_shed_test_tmp_dir = driver_util.setup_tool_shed_tmp_dir()
 from galaxy.webapps.tool_shed import buildapp as toolshedbuildapp
 from galaxy.web import buildapp as galaxybuildapp
 
-default_tool_shed_test_host = "localhost"
-default_galaxy_test_host = 'localhost'
-
 
 tool_sheds_conf_xml_template = '''<?xml version="1.0"?>
 <tool_sheds>
@@ -54,10 +51,6 @@ shed_data_manager_conf_xml_template = '''<?xml version="1.0"?>
 def main():
     """Entry point for test driver script."""
     # ---- Configuration ------------------------------------------------------
-    tool_shed_test_host = os.environ.get( 'TOOL_SHED_TEST_HOST', default_tool_shed_test_host )
-    tool_shed_test_port = os.environ.get( 'TOOL_SHED_TEST_PORT', None )
-    galaxy_test_host = os.environ.get( 'GALAXY_TEST_HOST', default_galaxy_test_host )
-    galaxy_test_port = os.environ.get( 'GALAXY_TEST_PORT', None )
     if not os.path.isdir( tool_shed_test_tmp_dir ):
         os.mkdir( tool_shed_test_tmp_dir )
     shed_db_path = driver_util.database_files_path(tool_shed_test_tmp_dir, prefix="TOOL_SHED")
@@ -113,18 +106,12 @@ def main():
     # ---- Run tool shed webserver ------------------------------------------------------
     # TODO: Needed for hg middleware ('lib/galaxy/webapps/tool_shed/framework/middleware/hg.py')
     kwargs['global_conf']['database_connection'] = kwargs["database_connection"]
-
-    toolshedwebapp = toolshedbuildapp.app_factory( kwargs['global_conf'],
-                                                   use_translogger=False,
-                                                   static_enabled=True,
-                                                   app=toolshedapp )
-
-    tool_shed_server, tool_shed_test_port = driver_util.serve_webapp(
-        toolshedwebapp, host=tool_shed_test_host, port=tool_shed_test_port
+    tool_shed_server, tool_shed_test_host, tool_shed_test_port = driver_util.launch_server(
+        toolshedapp,
+        toolshedbuildapp.app_factory,
+        kwargs,
+        prefix="TOOL_SHED",
     )
-    os.environ[ 'TOOL_SHED_TEST_PORT' ] = tool_shed_test_port
-    driver_util.wait_for_http_server(tool_shed_test_host, tool_shed_test_port)
-    log.info( "Embedded web server started" )
 
     # ---- Optionally start up a Galaxy instance ------------------------------------------------------
     if 'TOOL_SHED_TEST_OMIT_GALAXY' not in os.environ:
@@ -157,26 +144,18 @@ def main():
         print "Galaxy database connection:", kwargs["database_connection"]
 
         # ---- Run galaxy webserver ------------------------------------------------------
-        galaxy_server = None
         galaxyapp = driver_util.build_galaxy_app(kwargs)
-        galaxywebapp = galaxybuildapp.app_factory( kwargs['global_conf'],
-                                                   use_translogger=False,
-                                                   static_enabled=True,
-                                                   app=galaxyapp )
-        galaxy_server, galaxy_test_port = driver_util.serve_webapp(
-            galaxywebapp, host=galaxy_test_host, port=galaxy_test_port
+        galaxy_server, galaxy_test_host, galaxy_test_port = driver_util.launch_server(
+            galaxyapp,
+            galaxybuildapp.app_factory,
+            kwargs,
         )
-        os.environ[ 'GALAXY_TEST_PORT' ] = galaxy_test_port
-        driver_util.wait_for_http_server(galaxy_test_host, galaxy_test_port)
-        log.info( "Embedded galaxy web server started" )
+
     # ---- Find tests ---------------------------------------------------------
     log.info( "Functional tests will be run against %s:%s" % ( tool_shed_test_host, tool_shed_test_port ) )
     log.info( "Galaxy tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
     success = False
     try:
-        # Pass in through script set env, will leave a copy of ALL test validate files.
-        os.environ[ 'TOOL_SHED_TEST_HOST' ] = tool_shed_test_host
-        os.environ[ 'GALAXY_TEST_HOST' ] = galaxy_test_host
         success = driver_util.nose_config_and_run()
     except:
         log.exception( "Failure running tests" )

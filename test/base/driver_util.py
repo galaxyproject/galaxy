@@ -33,6 +33,7 @@ from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
+DEFAULT_WEB_HOST = "localhost"
 GALAXY_TEST_DIRECTORY = os.path.join(galaxy_root, "test")
 GALAXY_TEST_FILE_DIR = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
 TOOL_SHED_TEST_DATA = os.path.join(GALAXY_TEST_DIRECTORY, "tool_shed", "test_data")
@@ -402,6 +403,36 @@ def build_shed_app(simple_kwargs):
     database_contexts.tool_shed_context = app.model.context
     log.info( "Embedded Toolshed application started" )
     return app
+
+
+def launch_server(app, webapp_factory, kwargs, prefix="GALAXY"):
+    """Launch a web server for a given app using supplied factory.
+
+    Consistently read either GALAXY_TEST_HOST and GALAXY_TEST_PORT or
+    TOOL_SHED_TEST_HOST and TOOL_SHED_TEST_PORT and ensure these are
+    all set after this method has been called.
+    """
+    host_env_key = "%s_TEST_HOST" % prefix
+    port_env_key = "%s_TEST_PORT" % prefix
+    host = os.environ.get(host_env_key, DEFAULT_WEB_HOST)
+    port = os.environ.get(port_env_key, None)
+
+    webapp = webapp_factory(
+        kwargs[ 'global_conf' ],
+        app=app,
+        use_translogger=False,
+        static_enabled=True
+    )
+    server, port = serve_webapp(
+        webapp,
+        host=host, port=port
+    )
+    os.environ[host_env_key] = host
+    os.environ[port_env_key] = port
+    wait_for_http_server(host, port)
+    log.info("Embedded web server for %s started" % prefix.lower())
+    return server, host, port
+
 
 __all__ = [
     "cleanup_directory",

@@ -21,14 +21,10 @@ from base.api_util import get_master_api_key, get_user_api_key
 from base.test_logging import logging_config_file
 from galaxy.web import buildapp
 
-default_galaxy_test_host = "localhost"
-
 
 def main():
     """Entry point for test driver script."""
     # ---- Configuration ------------------------------------------------------
-    galaxy_test_host = os.environ.get( 'GALAXY_TEST_HOST', default_galaxy_test_host )
-    galaxy_test_port = os.environ.get( 'GALAXY_TEST_PORT', None )
     testing_migrated_tools = _check_arg( '-migrated' )
     testing_installed_tools = _check_arg( '-installed' )
     datatypes_conf_override = None
@@ -109,21 +105,16 @@ def main():
             kwargs[ 'datatypes_config_file' ] = datatypes_conf_override
 
         app = driver_util.build_galaxy_app(kwargs)
-        webapp = buildapp.app_factory( kwargs[ 'global_conf' ], app=app,
-            use_translogger=False, static_enabled=True )
-        server, galaxy_test_port = driver_util.serve_webapp( webapp, host=galaxy_test_host, port=galaxy_test_port )
-        os.environ['GALAXY_TEST_PORT'] = galaxy_test_port
-        driver_util.wait_for_http_server(galaxy_test_host, galaxy_test_port)
-        log.info( "Embedded web server started" )
+        server, galaxy_test_host, galaxy_test_port = driver_util.launch_server(
+            app,
+            buildapp.app_factory,
+            kwargs,
+        )
 
     # ---- Find tests ---------------------------------------------------------
     log.info( "Functional tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
     success = False
     try:
-        # What requires these? Handy for (eg) functional tests to save outputs?
-        # Pass in through script setenv, will leave a copy of ALL test validate files
-        os.environ[ 'GALAXY_TEST_HOST' ] = galaxy_test_host
-
         if testing_shed_tools:
             driver_util.setup_shed_tools_for_test(
                 app,
