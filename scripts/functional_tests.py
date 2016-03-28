@@ -9,7 +9,6 @@ import os
 import os.path
 import sys
 import tempfile
-from ConfigParser import SafeConfigParser
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 sys.path[1:1] = [ os.path.join( galaxy_root, "lib" ), os.path.join( galaxy_root, "test" ) ]
@@ -26,40 +25,6 @@ from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
 
 default_galaxy_test_host = "localhost"
-
-
-def generate_config_file( input_filename, output_filename, config_items ):
-    """Generate a config file with the configuration that has been defined for the embedded web application.
-
-    This is mostly relevant when setting metadata externally, since the script for doing that does not
-    have access to app.config.
-    """
-    cp = SafeConfigParser()
-    cp.read( input_filename )
-    config_items_by_section = []
-    for label, value in config_items:
-        found = False
-        # Attempt to determine the correct section for this configuration option.
-        for section in cp.sections():
-            if cp.has_option( section, label ):
-                config_tuple = section, label, value
-                config_items_by_section.append( config_tuple )
-                found = True
-                continue
-        # Default to app:main if no section was found.
-        if not found:
-            config_tuple = 'app:main', label, value
-            config_items_by_section.append( config_tuple )
-    print( config_items_by_section )
-
-    # Replace the default values with the provided configuration.
-    for section, label, value in config_items_by_section:
-        if cp.has_option( section, label ):
-            cp.remove_option( section, label )
-        cp.set( section, label, str( value ) )
-    fh = open( output_filename, 'w' )
-    cp.write( fh )
-    fh.close()
 
 
 def main():
@@ -143,20 +108,10 @@ def main():
         kwargs.update(galaxy_config)
         if datatypes_conf_override:
             kwargs[ 'datatypes_config_file' ] = datatypes_conf_override
-        # If the user has passed in a path for the .ini file, do not overwrite it.
-        galaxy_config_file = os.environ.get( 'GALAXY_TEST_INI_FILE', None )
-        if not galaxy_config_file:
-            galaxy_config_file = os.path.join( galaxy_test_tmp_dir, 'functional_tests_wsgi.ini' )
-            config_items = []
-            for label in kwargs:
-                config_tuple = label, kwargs[ label ]
-                config_items.append( config_tuple )
-            # Write a temporary file, based on config/galaxy.ini.sample, using the configuration options defined above.
-            generate_config_file( 'config/galaxy.ini.sample', galaxy_config_file, config_items )
+
         # Set the global_conf[ '__file__' ] option to the location of the temporary .ini file, which gets passed to set_metadata.sh.
         kwargs[ 'global_conf' ] = driver_util.get_webapp_global_conf()
-        kwargs[ 'global_conf' ][ '__file__' ] = galaxy_config_file
-        kwargs[ 'config_file' ] = galaxy_config_file
+        kwargs[ 'global_conf' ][ '__file__' ] = "config/galaxy.ini.sample"
         kwargs = load_app_properties(
             kwds=kwargs
         )

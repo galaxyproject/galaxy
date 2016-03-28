@@ -25,6 +25,7 @@ from galaxy.webapps.tool_shed.app import UniverseApplication as ToolshedUniverse
 # This is for the galaxy application.
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.web import buildapp as galaxybuildapp
+from galaxy.util.properties import load_app_properties
 
 from functional import database_contexts
 
@@ -157,11 +158,7 @@ def main():
         # Generate shed_data_manager_conf.xml
         if not os.environ.get( 'GALAXY_SHED_DATA_MANAGER_CONF' ):
             open( galaxy_shed_data_manager_conf_file, 'wb' ).write( shed_data_manager_conf_xml_template )
-        galaxy_global_conf = driver_util.get_webapp_global_conf()
-        galaxy_global_conf[ '__file__' ] = 'config/galaxy.ini.sample'
-
         kwargs = dict( enable_tool_shed_check=True,
-                       global_conf=galaxy_global_conf,
                        hours_between_check=0.001,
                        migrated_tools_config=galaxy_migrated_tool_conf_file,
                        shed_data_manager_config_file=galaxy_shed_data_manager_conf_file,
@@ -173,14 +170,20 @@ def main():
                        tool_data_table_config_path=galaxy_tool_data_table_conf_file )
         kwargs.update(driver_util.setup_galaxy_config(galaxy_db_path, use_test_file_dir=False, default_install_db_merged=False))
         print "Galaxy database connection:", kwargs["database_connection"]
-        # ---- Build Galaxy Application --------------------------------------------------
+        # Set the global_conf[ '__file__' ] option to the location of the temporary .ini file, which gets passed to set_metadata.sh.
+        kwargs[ 'global_conf' ] = driver_util.get_webapp_global_conf()
+        kwargs[ 'global_conf' ][ '__file__' ] = "config/galaxy.ini.sample"
+        kwargs = load_app_properties(
+            kwds=kwargs
+        )
+        # Build the Universe Application
         galaxyapp = GalaxyUniverseApplication( **kwargs )
 
         log.info( "Embedded Galaxy application started" )
 
         # ---- Run galaxy webserver ------------------------------------------------------
         galaxy_server = None
-        galaxywebapp = galaxybuildapp.app_factory( galaxy_global_conf,
+        galaxywebapp = galaxybuildapp.app_factory( kwargs['global_conf'],
                                                    use_translogger=False,
                                                    static_enabled=True,
                                                    app=galaxyapp )
