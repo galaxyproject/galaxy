@@ -27,6 +27,7 @@ from galaxy.util import asbool
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 GALAXY_TEST_DIRECTORY = os.path.join(galaxy_root, "test")
+GALAXY_TEST_FILE_DIR = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
 TOOL_SHED_TEST_DATA = os.path.join(GALAXY_TEST_DIRECTORY, "tool_shed", "test_data")
 FRAMEWORK_TOOLS_DIR = os.path.join(GALAXY_TEST_DIRECTORY, "functional", "tools")
 FRAMEWORK_UPLOAD_TOOL_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "upload_tool_conf.xml")
@@ -63,6 +64,29 @@ def configure_environment():
 def build_logger():
     """Build a logger for test driver script."""
     return log
+
+
+def setup_galaxy_config(use_test_file_dir=False):
+    """Setup environment and build config for test Galaxy instance."""
+    if use_test_file_dir:
+        galaxy_test_file_dir = os.environ.get('GALAXY_TEST_FILE_DIR', GALAXY_TEST_FILE_DIR)
+        os.environ['GALAXY_TEST_FILE_DIR'] = galaxy_test_file_dir
+        first_test_file_dir = galaxy_test_file_dir.split(",")[0]
+        if not os.path.isabs(first_test_file_dir):
+            first_test_file_dir = os.path.join(galaxy_root, first_test_file_dir)
+        library_import_dir = first_test_file_dir
+        import_dir = os.path.join(first_test_file_dir, 'users')
+        if os.path.exists(import_dir):
+            user_library_import_dir = import_dir
+        else:
+            user_library_import_dir = None
+    else:
+        user_library_import_dir = None
+        library_import_dir = None
+    return dict(
+        library_import_dir=library_import_dir,
+        user_library_import_dir=user_library_import_dir,
+    )
 
 
 def nose_config_and_run( argv=None, env=None, ignore_files=[], plugins=None ):
@@ -261,5 +285,6 @@ __all__ = [
     "galaxy_database_conf",
     "get_webapp_global_conf",
     "nose_config_and_run",
+    "setup_galaxy_config",
     "wait_for_http_server",
 ]

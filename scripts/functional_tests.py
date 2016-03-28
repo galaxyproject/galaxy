@@ -24,7 +24,6 @@ from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
 
 default_galaxy_test_host = "localhost"
-default_galaxy_test_file_dir = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
 migrated_tool_panel_config = 'config/migrated_tools_conf.xml'
 installed_tool_panel_configs = [
     os.environ.get('GALAXY_TEST_SHED_TOOL_CONF', 'config/shed_tool_conf.xml')
@@ -94,14 +93,13 @@ def main():
     testing_installed_tools = __check_arg( '-installed' )
     datatypes_conf_override = None
 
-    if testing_migrated_tools or testing_installed_tools:
+    use_test_file_dir = not (testing_migrated_tools or testing_installed_tools)
+    galaxy_config = driver_util.setup_galaxy_config(use_test_file_dir=use_test_file_dir)
+    if not use_test_file_dir:
         # Store a jsonified dictionary of tool_id : GALAXY_TEST_FILE_DIR pairs.
         galaxy_tool_shed_test_file = 'shed_tools_dict'
         # We need the upload tool for functional tests, so we'll create a temporary tool panel config that defines it.
         tool_config_file = driver_util.FRAMEWORK_UPLOAD_TOOL_CONF
-        galaxy_test_file_dir = None
-        library_import_dir = None
-        user_library_import_dir = None
     else:
         framework_test = __check_arg( '-framework' )  # Run through suite of tests testing framework.
         if framework_test:
@@ -112,18 +110,7 @@ def main():
             tool_conf = None
             if __check_arg( '-with_framework_test_tools' ):
                 tool_conf = "%s,%s" % ( 'config/tool_conf.xml.sample', driver_util.FRAMEWORK_SAMPLE_TOOLS_CONF )
-        test_dir = default_galaxy_test_file_dir
         tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', tool_conf )
-        galaxy_test_file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', test_dir )
-        first_test_file_dir = galaxy_test_file_dir.split(",")[0]
-        if not os.path.isabs( first_test_file_dir ):
-            first_test_file_dir = os.path.join( os.getcwd(), first_test_file_dir )
-        library_import_dir = first_test_file_dir
-        import_dir = os.path.join( first_test_file_dir, 'users' )
-        if os.path.exists(import_dir):
-            user_library_import_dir = import_dir
-        else:
-            user_library_import_dir = None
 
     start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ
     tool_data_table_config_path = None
@@ -198,7 +185,6 @@ def main():
                        id_secret='changethisinproductiontoo',
                        job_queue_workers=5,
                        job_working_directory=job_working_directory,
-                       library_import_dir=library_import_dir,
                        log_destination="stdout",
                        new_file_path=new_file_path,
                        template_cache_path=template_cache_path,
@@ -213,7 +199,6 @@ def main():
                        tool_parse_help=False,
                        update_integrated_tool_panel=False,
                        use_heartbeat=False,
-                       user_library_import_dir=user_library_import_dir,
                        master_api_key=master_api_key,
                        use_tasked_jobs=True,
                        check_migrate_tools=False,
@@ -221,6 +206,7 @@ def main():
                        enable_beta_tool_formats=True,
                        auto_configure_logging=logging_config_file is None,
                        data_manager_config_file=data_manager_config_file )
+        kwargs.update(galaxy_config)
         kwargs.update(install_database_conf)
         if not database_connection.startswith( 'sqlite://' ):
             kwargs[ 'database_engine_option_max_overflow' ] = '20'
@@ -304,7 +290,7 @@ def main():
                 )
             return driver_util.nose_config_and_run()
 
-        if testing_migrated_tools or testing_installed_tools:
+        if not use_test_file_dir:
             shed_tools_dict = {}
             if testing_migrated_tools:
                 has_test_data, shed_tools_dict = parse_tool_panel_config( migrated_tool_panel_config, shed_tools_dict )
@@ -333,8 +319,6 @@ def main():
             except:
                 log.info( "Unable to remove file: %s" % galaxy_tool_shed_test_file )
         else:
-            if galaxy_test_file_dir:
-                os.environ[ 'GALAXY_TEST_FILE_DIR' ] = galaxy_test_file_dir
             success = _run_functional_test( )
     except:
         log.exception( "Failure running tests" )

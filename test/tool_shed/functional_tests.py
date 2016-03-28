@@ -214,7 +214,7 @@ def main():
                        tool_data_table_config_path=galaxy_tool_data_table_conf_file,
                        update_integrated_tool_panel=False,
                        use_heartbeat=False )
-
+        kwargs.setup_galaxy_config(use_test_file_dir=False)
         kwargs.update(install_database_conf)
         # ---- Build Galaxy Application --------------------------------------------------
         if not galaxy_database_connection.startswith( 'sqlite://' ):
