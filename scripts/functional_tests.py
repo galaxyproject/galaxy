@@ -117,10 +117,8 @@ def main():
         galaxy_config = driver_util.setup_galaxy_config(
             galaxy_db_path,
             use_test_file_dir=not testing_shed_tools,
+            default_install_db_merged=True,
         )
-
-        database_conf = driver_util.database_conf(galaxy_db_path)
-        install_database_conf = driver_util.install_database_conf(galaxy_db_path, default_merged=True)
 
     # Data Manager testing temp path
     # For storing Data Manager outputs and .loc files so that real ones don't get clobbered
@@ -143,8 +141,6 @@ def main():
                        auto_configure_logging=logging_config_file is None,
                        data_manager_config_file=data_manager_config_file )
         kwargs.update(galaxy_config)
-        kwargs.update(database_conf)
-        kwargs.update(install_database_conf)
         if datatypes_conf_override:
             kwargs[ 'datatypes_config_file' ] = datatypes_conf_override
         # If the user has passed in a path for the .ini file, do not overwrite it.

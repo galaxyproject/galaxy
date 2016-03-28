@@ -72,7 +72,7 @@ def build_logger():
     return log
 
 
-def setup_galaxy_config(tmpdir, use_test_file_dir=False):
+def setup_galaxy_config(tmpdir, use_test_file_dir=False, default_install_db_merged=True):
     """Setup environment and build config for test Galaxy instance."""
     if not os.path.exists(tmpdir):
         os.makedirs(tmpdir)
@@ -124,6 +124,9 @@ def setup_galaxy_config(tmpdir, use_test_file_dir=False):
         use_heartbeat=False,
         user_library_import_dir=user_library_import_dir,
     )
+    config.update(database_conf(tmpdir))
+    config.update(install_database_conf(tmpdir, default_merged=default_install_db_merged))
+
     if tool_dependency_dir:
         config["tool_dependency_dir"] = tool_dependency_dir
         # Used by shed's twill dependency stuff - todo read from
