@@ -79,7 +79,12 @@ def build_logger():
     return log
 
 
-def setup_galaxy_config(tmpdir, use_test_file_dir=False, default_install_db_merged=True):
+def setup_galaxy_config(
+    tmpdir,
+    use_test_file_dir=False,
+    default_install_db_merged=True,
+    default_tool_data_table_config_path=None,
+):
     """Setup environment and build config for test Galaxy instance."""
     if not os.path.exists(tmpdir):
         os.makedirs(tmpdir)
@@ -107,6 +112,7 @@ def setup_galaxy_config(tmpdir, use_test_file_dir=False, default_install_db_merg
     tool_dependency_dir = os.environ.get('GALAXY_TOOL_DEPENDENCY_DIR', None)
     if tool_dependency_dir is None:
         tool_dependency_dir = tempfile.mkdtemp(dir=tmpdir, prefix="tool_dependencies")
+    tool_data_table_config_path = _tool_data_table_config_path(default_tool_data_table_config_path)
     config = dict(
         admin_users='test@bx.psu.edu',
         allow_library_path_paste=True,
@@ -124,6 +130,7 @@ def setup_galaxy_config(tmpdir, use_test_file_dir=False, default_install_db_merg
         running_functional_tests=True,
         template_cache_path=template_cache_path,
         template_path='templates',
+        tool_data_table_config_path=tool_data_table_config_path,
         tool_parse_help=False,
         tool_path=tool_path,
         update_integrated_tool_panel=False,
@@ -140,6 +147,19 @@ def setup_galaxy_config(tmpdir, use_test_file_dir=False, default_install_db_merg
         # Galaxy's config API.
         os.environ["GALAXY_TEST_TOOL_DEPENDENCY_DIR"] = tool_dependency_dir
     return config
+
+
+def _tool_data_table_config_path(default_tool_data_table_config_path=None):
+    tool_data_table_config_path = os.environ.get('GALAXY_TEST_TOOL_DATA_TABLE_CONF', default_tool_data_table_config_path)
+    if tool_data_table_config_path is None:
+        # ... otherise find whatever Galaxy would use as the default and
+        # the sample data for fucntional tests to that.
+        default_tool_data_config = 'config/tool_data_table_conf.xml.sample'
+        for tool_data_config in ['config/tool_data_table_conf.xml', 'tool_data_table_conf.xml' ]:
+            if os.path.exists( tool_data_config ):
+                default_tool_data_config = tool_data_config
+        tool_data_table_config_path = '%s,test/functional/tool-data/sample_tool_data_tables.xml' % default_tool_data_config
+    return tool_data_table_config_path
 
 
 def nose_config_and_run( argv=None, env=None, ignore_files=[], plugins=None ):

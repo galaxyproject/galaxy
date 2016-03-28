@@ -56,7 +56,7 @@ def main():
     shed_db_path = driver_util.database_files_path(tool_shed_test_tmp_dir, prefix="TOOL_SHED")
     shed_tool_data_table_conf_file = os.environ.get( 'TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF', os.path.join( tool_shed_test_tmp_dir, 'shed_tool_data_table_conf.xml' ) )
     galaxy_shed_data_manager_conf_file = os.environ.get( 'GALAXY_SHED_DATA_MANAGER_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_shed_data_manager_conf.xml' ) )
-    galaxy_tool_data_table_conf_file = os.environ.get( 'GALAXY_TEST_TOOL_DATA_TABLE_CONF', os.path.join( tool_shed_test_tmp_dir, 'tool_data_table_conf.xml' ) )
+    default_tool_data_table_config_path = os.path.join( tool_shed_test_tmp_dir, 'tool_data_table_conf.xml' )
     galaxy_tool_conf_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', driver_util.FRAMEWORK_UPLOAD_TOOL_CONF )
     galaxy_shed_tool_conf_file = os.environ.get( 'GALAXY_TEST_SHED_TOOL_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_shed_tool_conf.xml' ) )
     galaxy_migrated_tool_conf_file = os.environ.get( 'GALAXY_TEST_MIGRATED_TOOL_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_migrated_tool_conf.xml' ) )
@@ -92,11 +92,10 @@ def main():
                    email_from='functional@localhost',
                    template_path='templates',
                    tool_parse_help=False,
-                   tool_data_table_config_path=galaxy_tool_data_table_conf_file,
                    use_heartbeat=False )
     kwargs.update(toolshed_database_conf)
     # Generate the tool_data_table_conf.xml file.
-    file( galaxy_tool_data_table_conf_file, 'w' ).write( tool_data_table_conf_xml_template )
+    file( default_tool_data_table_config_path, 'w' ).write( tool_data_table_conf_xml_template )
     # Generate the shed_tool_data_table_conf.xml file.
     file( shed_tool_data_table_conf_file, 'w' ).write( tool_data_table_conf_xml_template )
     os.environ[ 'TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF' ] = shed_tool_data_table_conf_file
@@ -141,9 +140,15 @@ def main():
                        shed_tool_path=galaxy_shed_tool_path,
                        tool_data_path=tool_data_path,
                        tool_config_file=[ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ],
-                       tool_sheds_config_file=galaxy_tool_sheds_conf_file,
-                       tool_data_table_config_path=galaxy_tool_data_table_conf_file )
-        kwargs.update(driver_util.setup_galaxy_config(galaxy_db_path, use_test_file_dir=False, default_install_db_merged=False))
+                       tool_sheds_config_file=galaxy_tool_sheds_conf_file )
+        kwargs.update(
+            driver_util.setup_galaxy_config(
+                galaxy_db_path,
+                use_test_file_dir=False,
+                default_install_db_merged=False,
+                default_tool_data_table_config_path=default_tool_data_table_config_path
+            )
+        )
         print "Galaxy database connection:", kwargs["database_connection"]
 
         # ---- Run galaxy webserver ------------------------------------------------------

@@ -46,14 +46,6 @@ def main():
         tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', tool_conf )
 
     start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ
-    tool_data_table_config_path = None
-    # ... otherise find whatever Galaxy would use as the default and
-    # the sample data for fucntional tests to that.
-    default_tool_data_config = 'config/tool_data_table_conf.xml.sample'
-    for tool_data_config in ['config/tool_data_table_conf.xml', 'tool_data_table_conf.xml' ]:
-        if os.path.exists( tool_data_config ):
-            default_tool_data_config = tool_data_config
-    tool_data_table_config_path = '%s,test/functional/tool-data/sample_tool_data_tables.xml' % default_tool_data_config
 
     default_data_manager_config = 'config/data_manager_conf.xml.sample'
     for data_manager_config in ['config/data_manager_conf.xml', 'data_manager_conf.xml' ]:
@@ -88,7 +80,6 @@ def main():
         # ---- Build Application --------------------------------------------------
         kwargs = dict( shed_tool_data_table_config=shed_tool_data_table_config,
                        tool_config_file=tool_config_file,
-                       tool_data_table_config_path=tool_data_table_config_path,
                        galaxy_data_manager_data_path=galaxy_data_manager_data_path,
                        update_integrated_tool_panel=False,
                        master_api_key=master_api_key,
@@ -148,7 +139,6 @@ def main():
             master_api_key=master_api_key,
             user_api_key=get_user_api_key(),
         )
-
         success = driver_util.nose_config_and_run()
     except:
         log.exception( "Failure running tests" )
