@@ -45,6 +45,43 @@ Extra options:
  --dockerize           Run tests in a pre-configured Docker container (must be first argument if present).
  --db <type>           For use with --dockerize, run tests using partially migrated 'postgres', 'mysql',
                        or 'sqlite' databases.
+
+Environment Variables:
+
+In addition to the above command-line options, many environment Variables
+can be used to control the Galaxy functional testing processing.
+
+Functional Test Environment Variables
+
+GALAXY_TEST_DBURI           Database connection string used for functional test
+                            database for Galaxy.
+GALAXY_TEST_INSTALL_DBURI   Database connection string used for functional test
+                            database for Galaxy's install framework.
+GALAXY_TEST_INSTALL_DB_MERGED Set to use same database for Galaxy and install framework,
+                              this defaults to True for Galaxy tests an False for shed tests.
+GALAXY_TEST_DB_TEMPLATE     If GALAXY_TEST_DBURI is unset, this URL can be retrieved
+                            and should be an sqlite database that will be upgraded
+                            and tested against.
+HTTP_ACCEPT_LANGUAGE        Defaults to 'en'
+GALAXY_TEST_NO_CLEANUP      Do not cleanup main test directory after tests,
+                            the deprecated option TOOL_SHED_TEST_NO_CLEANUP does the
+                            same thing.
+GALAXY_TEST_HOST            Host to use for Galaxy server setup for testing.
+GALAXY_TEST_PORT            Port to use for Galaxy server setup for testing.
+GALAXY_TEST_TOOL_PATH       Defaults to 'tools'
+
+TOOL_SHED_TEST_HOST         Host to use for shed server setup for testing.
+TOOL_SHED_TEST_PORT         Port to use for shed server setup for testing.
+TOOL_SHED_TEST_FILE_DIR     Defaults to test/tool_shed/test_data.
+TOOL_SHED_TEST_TMP_DIR      Defaults to random /tmp directory - place for tool shed
+                            test server files to be placed.
+TOOL_SHED_TEST_OMIT_GALAXY  Do not launch a Galaxy server for tool shed testing.
+
+Unit Test Environment Variables
+
+GALAXY_TEST_INCLUDE_SLOW - Used in unit tests to trigger slower tests that
+                           aren't included by default with --unit/-u.
+
 EOF
 }
 
