@@ -53,8 +53,8 @@ var FolderRowView = Backbone.View.extend({
         template = this.templateRowFile();
       }
     } else {
-      console.error('Unknown library item type found.');
-      console.error(folder_item.get('type') || folder_item.get('model_class'));
+      Galaxy.emit.error('Unknown library item type found.');
+      Galaxy.emit.error(folder_item.get('type') || folder_item.get('model_class'));
     }
     this.setElement(template({content_item: folder_item, edit_mode: this.options.edit_mode, button_config: this.options.visibility_config}));
     this.$el.show();
@@ -224,7 +224,7 @@ var FolderRowView = Backbone.View.extend({
     return _.template([
       '<tr class="folder_row light library-row" data-id="<%- content_item.id %>">',
         '<td>',
-          '<span title="Folder" class="fa fa-folder-o"></span>',
+          '<span title="Folder" class="fa fa-folder-o"/>',
         '</td>',
         '<td style="text-align: center; "><input style="margin: 0;" type="checkbox"></td>',
         '<% if(!edit_mode) { %>',
@@ -245,15 +245,21 @@ var FolderRowView = Backbone.View.extend({
           '</td>',
           '<td>',
             '<% if(edit_mode) { %>',  // start edit mode
-              '<button data-toggle="tooltip" data-placement="top" title="Save changes" class="primary-button btn-xs save_folder_btn" type="button" style="<% if(button_config.save_folder_btn === false) { print("display:none;") } %>"><span class="fa fa-floppy-o"> Save</span></button>',
-              '<button data-toggle="tooltip" data-placement="top" title="Discard changes" class="primary-button btn-xs cancel_folder_btn" type="button" style="<% if(button_config.cancel_folder_btn === false) { print("display:none;") } %>"><span class="fa fa-times"> Cancel</span></button>',
+              '<button data-toggle="tooltip" data-placement="top" title="Save changes" class="primary-button btn-xs save_folder_btn" type="button" style="<% if(button_config.save_folder_btn === false) { print("display:none;") } %>">',
+                '<span class="fa fa-floppy-o"/>',
+                '&nbsp;Save',
+              '</button>',
+              '<button data-toggle="tooltip" data-placement="top" title="Discard changes" class="primary-button btn-xs cancel_folder_btn" type="button" style="<% if(button_config.cancel_folder_btn === false) { print("display:none;") } %>">',
+                '<span class="fa fa-times"/>',
+                '&nbsp;Cancel',
+              '</button>',
             '<% } else if (!edit_mode){%>',  // start no edit mode
               '<button data-toggle="tooltip" data-placement="top" title="Modify \'<%- content_item.get("name") %>\'" class="primary-button btn-xs edit_folder_btn" type="button" style="<% if(button_config.edit_folder_btn === false) { print("display:none;") } %>">',
-                '<span class="fa fa-pencil"></span>',
+                '<span class="fa fa-pencil"/>',
               '</button>',
               '<a href="#/folders/<%- content_item.id %>/permissions">',
                 '<button data-toggle="tooltip" data-placement="top" class="primary-button btn-xs permission_folder_btn" title="Manage \'<%- content_item.get("name") %>\'" style="<% if(button_config.permission_folder_btn === false) { print("display:none;") } %>">',
-                  '<span class="fa fa-group"></span>',
+                  '<span class="fa fa-group"/>',
                 '</button>',
               '</a>',
             '<% } %>',  //end no edit mode
@@ -263,67 +269,107 @@ var FolderRowView = Backbone.View.extend({
   },
 
   templateRowFile: function(){
-    tmpl_array = [];
-
-    tmpl_array.push('<tr class="dataset_row light library-row" data-id="<%- content_item.id %>">');
-    tmpl_array.push('  <td>');
-    tmpl_array.push('    <span title="Dataset" class="fa fa-file-o"></span>');
-    tmpl_array.push('  </td>');
-    tmpl_array.push('  <td style="text-align: center; "><input style="margin: 0;" type="checkbox"></td>');
-    tmpl_array.push('  <td><a href="#folders/<%- content_item.get("folder_id") %>/datasets/<%- content_item.id %>" class="library-dataset"><%- content_item.get("name") %><a></td>'); // dataset
-    tmpl_array.push('  <td><%- content_item.get("message") %></td>');
-    tmpl_array.push('  <td><%= _.escape(content_item.get("file_ext")) %></td>'); // data type
-    tmpl_array.push('  <td><%= _.escape(content_item.get("file_size")) %></td>'); // size
-    tmpl_array.push('  <td><%= _.escape(content_item.get("update_time")) %></td>'); // time updated
-    tmpl_array.push('  <td>');
-    tmpl_array.push('    <% if (content_item.get("is_unrestricted")) { %><span data-toggle="tooltip" data-placement="top" title="Unrestricted dataset" style="color:grey;" class="fa fa-globe fa-lg"></span><% } %>');
-    tmpl_array.push('    <% if (content_item.get("is_private")) { %><span data-toggle="tooltip" data-placement="top" title="Private dataset" style="color:grey;" class="fa fa-key fa-lg"></span><% } %>');
-    tmpl_array.push('    <% if ((content_item.get("is_unrestricted") === false) && (content_item.get("is_private") === false)) { %><span data-toggle="tooltip" data-placement="top" title="Restricted dataset" style="color:grey;" class="fa fa-shield fa-lg"></span><% } %>');
-    tmpl_array.push('    <% if (content_item.get("can_manage")) { %><a href="#folders/<%- content_item.get("folder_id") %>/datasets/<%- content_item.id %>/permissions"><button data-toggle="tooltip" data-placement="top" class="primary-button btn-xs permissions-dataset-btn" title="Manage permissions"><span class="fa fa-group"></span></button></a><% } %>');
-    tmpl_array.push('  </td>');
-    tmpl_array.push('</tr>');
-
-    return _.template(tmpl_array.join(''));
+    return _.template([
+    '<tr class="dataset_row light library-row" data-id="<%- content_item.id %>">',
+      '<td>',
+        '<span title="Dataset" class="fa fa-file-o"/>',
+      '</td>',
+      '<td style="text-align: center; ">',
+        '<input style="margin: 0;" type="checkbox">',
+      '</td>',
+      '<td>',
+        '<a href="#folders/<%- content_item.get("folder_id") %>/datasets/<%- content_item.id %>" class="library-dataset">',
+          '<%- content_item.get("name") %>',
+        '<a>',
+      '</td>',
+      '<td><%- content_item.get("message") %></td>',
+      '<td><%= _.escape(content_item.get("file_ext")) %></td>',
+      '<td><%= _.escape(content_item.get("file_size")) %></td>',
+      '<td><%= _.escape(content_item.get("update_time")) %></td>',
+      '<td>',
+        '<% if (content_item.get("is_unrestricted")) { %>',
+          '<span data-toggle="tooltip" data-placement="top" title="Unrestricted dataset" style="color:grey;" class="fa fa-globe fa-lg"/>',
+        '<% } %>',
+        '<% if (content_item.get("is_private")) { %>',
+          '<span data-toggle="tooltip" data-placement="top" title="Private dataset" style="color:grey;" class="fa fa-key fa-lg"/>',
+        '<% } %>',
+        '<% if ((content_item.get("is_unrestricted") === false) && (content_item.get("is_private") === false)) { %>',
+          '<span data-toggle="tooltip" data-placement="top" title="Restricted dataset" style="color:grey;" class="fa fa-shield fa-lg"/>',
+        '<% } %>',
+        '<% if (content_item.get("can_manage")) { %>',
+          '<a href="#folders/<%- content_item.get("folder_id") %>/datasets/<%- content_item.id %>/permissions">',
+            '<button data-toggle="tooltip" data-placement="top" class="primary-button btn-xs permissions-dataset-btn" title="Manage permissions">',
+              '<span class="fa fa-group"/>',
+            '</button>',
+          '</a>',
+        '<% } %>',
+      '</td>',
+    '</tr>'
+    ].join(''));
   },
 
   templateRowDeletedFile: function(){
-    tmpl_array = [];
-
-    tmpl_array.push('<tr class="active deleted_dataset library-row" data-id="<%- content_item.id %>">');
-    tmpl_array.push('  <td>');
-    tmpl_array.push('    <span title="Dataset" class="fa fa-file-o"></span>');
-    tmpl_array.push('  </td>');
-    tmpl_array.push('  <td></td>');
-    tmpl_array.push('  <td style="color:grey;"><%- content_item.get("name") %></td>'); // dataset
-    tmpl_array.push('  <td><%- content_item.get("message") %></td>');
-    tmpl_array.push('  <td><%= _.escape(content_item.get("file_ext")) %></td>'); // data type
-    tmpl_array.push('  <td><%= _.escape(content_item.get("file_size")) %></td>'); // size
-    tmpl_array.push('  <td><%= _.escape(content_item.get("update_time")) %></td>'); // time updated
-    tmpl_array.push('  <td><span data-toggle="tooltip" data-placement="top" title="Marked deleted" style="color:grey;" class="fa fa-ban fa-lg"> </span><button data-toggle="tooltip" data-placement="top" title="Undelete <%- content_item.get("name") %>" class="primary-button btn-xs undelete_dataset_btn" type="button" style="margin-left:1em;"><span class="fa fa-unlock"> Undelete</span></button></td>');
-    tmpl_array.push('</tr>');
-
-    return _.template(tmpl_array.join(''));
+    return _.template([
+    '<tr class="active deleted_dataset library-row" data-id="<%- content_item.id %>">',
+      '<td>',
+        '<span title="Dataset" class="fa fa-file-o"/>',
+      '</td>',
+      '<td></td>',
+      '<td style="color:grey;">',
+        '<%- content_item.get("name") %>',
+      '</td>',
+      '<td>',
+        '<%- content_item.get("message") %>',
+      '</td>',
+      '<td>',
+        '<%= _.escape(content_item.get("file_ext")) %>',
+      '</td>',
+      '<td>',
+        '<%= _.escape(content_item.get("file_size")) %>',
+      '</td>',
+      '<td>',
+        '<%= _.escape(content_item.get("update_time")) %>',
+      '</td>',
+      '<td>',
+        '<span data-toggle="tooltip" data-placement="top" title="Marked deleted" style="color:grey;" class="fa fa-ban fa-lg"/>',
+        '<button data-toggle="tooltip" data-placement="top" title="Undelete <%- content_item.get("name") %>" class="primary-button btn-xs undelete_dataset_btn" type="button" style="margin-left:1em;">',
+          '<span class="fa fa-unlock"/>',
+          '&nbsp;Undelete',
+        '</button>',
+      '</td>',
+    '</tr>'
+    ].join(''));
   },
 
   templateRowDeletedFolder: function(){
-    tmpl_array = [];
-
-    tmpl_array.push('<tr class="active deleted_folder light library-row" data-id="<%- content_item.id %>">');
-    tmpl_array.push('  <td>');
-    tmpl_array.push('    <span title="Folder" class="fa fa-folder-o"></span>');
-    tmpl_array.push('  </td>');
-    tmpl_array.push('  <td></td>');
-    tmpl_array.push('  <td style="color:grey;">');
-    tmpl_array.push('    <%- content_item.get("name") %>');
-    tmpl_array.push('  </td>');
-    tmpl_array.push('  <td><%- content_item.get("description") %></td>');
-    tmpl_array.push('  <td>folder</td>');
-    tmpl_array.push('  <td></td>');
-    tmpl_array.push('  <td><%= _.escape(content_item.get("update_time")) %></td>'); // time updated
-    tmpl_array.push('  <td><span data-toggle="tooltip" data-placement="top" title="Marked deleted" style="color:grey;" class="fa fa-ban fa-lg"> </span><button data-toggle="tooltip" data-placement="top" title="Undelete <%- content_item.get("name") %>" class="primary-button btn-xs undelete_folder_btn" type="button" style="margin-left:1em;"><span class="fa fa-unlock"> Undelete</span></button></td>');
-    tmpl_array.push('</tr>');
-
-    return _.template(tmpl_array.join(''));
+    return _.template([
+    '<tr class="active deleted_folder light library-row" data-id="<%- content_item.id %>">',
+      '<td>',
+        '<span title="Folder" class="fa fa-folder-o"/>',
+      '</td>',
+      '<td></td>',
+      '<td style="color:grey;">',
+        '<%- content_item.get("name") %>',
+      '</td>',
+      '<td>',
+        '<%- content_item.get("description") %>',
+      '</td>',
+      '<td>',
+        'folder',
+      '</td>',
+      '<td></td>',
+      '<td>',
+        '<%= _.escape(content_item.get("update_time")) %>',
+      '</td>',
+      '<td>',
+        '<span data-toggle="tooltip" data-placement="top" title="Marked deleted" style="color:grey;" class="fa fa-ban fa-lg"/>',
+        '<button data-toggle="tooltip" data-placement="top" title="Undelete <%- content_item.get("name") %>" class="primary-button btn-xs undelete_folder_btn" type="button" style="margin-left:1em;">',
+          '<span class="fa fa-unlock"/>',
+          '&nbsp;Undelete',
+        '</button>',
+      '</td>',
+    '</tr>'
+    ].join(''));
   }
 
 });

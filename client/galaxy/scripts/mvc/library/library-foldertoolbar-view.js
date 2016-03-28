@@ -639,7 +639,7 @@ var FolderToolbarView = Backbone.View.extend({
         this.modal.$el.find( '.modal-body' ).html( template( { folder_name : this.options.folder_name } ) );
         break;
       case "deleting_datasets":
-        template = this.templateDeletingDatasetsProgressBar();
+        template = this.templateDeletingItemsProgressBar();
         this.modal.$el.find( '.modal-body' ).html( template() );
         break;
       case "to_history":
@@ -959,13 +959,13 @@ var FolderToolbarView = Backbone.View.extend({
   deleteSelectedItems: function(){
     var checkedValues = $('#folder_table').find(':checked');
     if(checkedValues.length === 0){
-        mod_toastr.info('You must select at least one dataset for deletion.');
+        mod_toastr.info('You must select at least one item for deletion.');
     } else {
-      var template = this.templateDeletingDatasetsProgressBar();
+      var template = this.templateDeletingItemsProgressBar();
       this.modal = Galaxy.modal;
       this.modal.show({
           closing_events  : true,
-          title           : 'Deleting selected datasets',
+          title           : 'Deleting selected items',
           body            : template({}),
           buttons         : {
               'Close'     : function() {Galaxy.modal.hide();}
@@ -1038,7 +1038,7 @@ var FolderToolbarView = Backbone.View.extend({
     this.modal = Galaxy.modal;
     this.modal.show({
         closing_events  : true,
-        title           : 'Location Information',
+        title           : 'Location Details',
         body            : template({library: library, options: that.options}),
         buttons         : {
             'Close'     : function() {Galaxy.modal.hide();}
@@ -1090,10 +1090,10 @@ var FolderToolbarView = Backbone.View.extend({
           '<span class="library-paginator folder-paginator"></span>',
           '<div class="checkbox toolbar-item logged-dataset-manipulation" style="height: 20px; display:none;">',
             '<label>',
-              '<input id="include_deleted_datasets_chk" type="checkbox"> include deleted </input>',
+              '<input id="include_deleted_datasets_chk" type="checkbox">include deleted</input>',
             '</label>',
           '</div>',
-          '<button style="display:none;" data-toggle="tooltip" data-placement="top" title="Create New Folder" id="toolbtn_create_folder" class="btn btn-default primary-button add-library-items" type="button">',
+          '<button style="display:none;" data-toggle="tooltip" data-placement="top" title="Create New Folder" id="toolbtn_create_folder" class="btn btn-default primary-button add-library-items toolbar-item" type="button">',
             '<span class="fa fa-plus"></span><span class="fa fa-folder"></span>',
           '</button>',
           '<% if(mutiple_add_dataset_options) { %>',
@@ -1127,8 +1127,8 @@ var FolderToolbarView = Backbone.View.extend({
             '<span class="fa fa-book"></span>',
             '&nbsp;to History',
           '</button>',
-          '<div id="toolbtn_dl" class="btn-group dataset-manipulation" style="margin-left: 0.5em; display:none; ">',
-            '<button title="Download selected datasets as archive" id="drop_toggle" type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">',
+          '<div class="btn-group dataset-manipulation" style="margin-left: 0.5em; display:none; ">',
+            '<button title="Download selected items as archive" type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">',
               '<span class="fa fa-download"></span> Download <span class="caret"></span>',
             '</button>',
             '<ul class="dropdown-menu" role="menu">',
@@ -1139,9 +1139,9 @@ var FolderToolbarView = Backbone.View.extend({
           '</div>',
             '<button data-toggle="tooltip" data-placement="top" title="Mark selected items deleted" id="toolbtn_bulk_delete" class="primary-button logged-dataset-manipulation" style="margin-left: 0.5em; display:none; " type="button">',
             '<span class="fa fa-times"></span> Delete</button>',
-            '<button data-id="<%- id %>" data-toggle="tooltip" data-placement="top" title="Show location information" class="primary-button toolbtn-show-locinfo" style="margin-left: 0.5em;" type="button">',
+            '<button data-id="<%- id %>" data-toggle="tooltip" data-placement="top" title="Show location details" class="primary-button toolbtn-show-locinfo" style="margin-left: 0.5em;" type="button">',
               '<span class="fa fa-info-circle"></span>',
-              '&nbsp;Location Info',
+              '&nbsp;Details',
             '</button>',
             '<span class="help-button" data-toggle="tooltip" data-placement="top" title="Visit Libraries Wiki">',
               '<a href="https://wiki.galaxyproject.org/DataLibraries/screen/FolderContents" target="_blank">',
@@ -1160,7 +1160,6 @@ var FolderToolbarView = Backbone.View.extend({
     '</div>',
     // paginator will append here
     '<div class="folder-paginator paginator-bottom"></div>'
-
     ].join(''));
   },
 
@@ -1262,7 +1261,7 @@ var FolderToolbarView = Backbone.View.extend({
   templateImportIntoHistoryProgressBar : function (){
     return _.template([
     '<div class="import_text">',
-      'Importing selected datasets to history <b><%= _.escape(history_name) %></b>',
+      'Importing selected items to history <b><%= _.escape(history_name) %></b>',
     '</div>',
     '<div class="progress">',
       '<div class="progress-bar progress-bar-import" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 00%;">',
@@ -1285,7 +1284,7 @@ var FolderToolbarView = Backbone.View.extend({
     ].join(''));
   },
 
-  templateDeletingDatasetsProgressBar: function (){
+  templateDeletingItemsProgressBar: function (){
     return _.template([
     '<div class="import_text">',
     '</div>',
@@ -1423,7 +1422,7 @@ var FolderToolbarView = Backbone.View.extend({
       '<% } %>',
     '</ul>',
     '<span>',
-      'showing&nbsp;',
+      '&nbsp;showing&nbsp;',
       '<a data-toggle="tooltip" data-placement="top" title="Click to change the number of items on page" class="page_size_prompt">',
         '<%- items_shown %>',
       '</a>',
