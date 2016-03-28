@@ -22,6 +22,7 @@ import nose.plugins.manager
 
 from paste import httpserver
 
+from .api_util import get_master_api_key
 from .tool_shed_util import parse_tool_panel_config
 from .nose_util import run
 from .instrument import StructuredTestDataPlugin
@@ -113,6 +114,7 @@ def setup_galaxy_config(
     if tool_dependency_dir is None:
         tool_dependency_dir = tempfile.mkdtemp(dir=tmpdir, prefix="tool_dependencies")
     tool_data_table_config_path = _tool_data_table_config_path(default_tool_data_table_config_path)
+    master_api_key = get_master_api_key()
     config = dict(
         admin_users='test@bx.psu.edu',
         allow_library_path_paste=True,
@@ -127,6 +129,7 @@ def setup_galaxy_config(
         library_import_dir=library_import_dir,
         log_destination="stdout",
         new_file_path=new_file_path,
+        master_api_key=master_api_key,
         running_functional_tests=True,
         template_cache_path=template_cache_path,
         template_path='templates',

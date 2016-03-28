@@ -71,8 +71,6 @@ def main():
     # For storing Data Manager outputs and .loc files so that real ones don't get clobbered
     data_manager_test_tmp_path = tempfile.mkdtemp( prefix='data_manager_test_tmp', dir=galaxy_test_tmp_dir )
     galaxy_data_manager_data_path = tempfile.mkdtemp( prefix='data_manager_tool-data', dir=data_manager_test_tmp_path )
-    master_api_key = get_master_api_key()
-
     app = None
     server_wrapper = None
 
@@ -82,7 +80,6 @@ def main():
                        tool_config_file=tool_config_file,
                        galaxy_data_manager_data_path=galaxy_data_manager_data_path,
                        update_integrated_tool_panel=False,
-                       master_api_key=master_api_key,
                        cleanup_job='onsuccess',
                        enable_beta_tool_formats=True,
                        auto_configure_logging=logging_config_file is None,
@@ -113,7 +110,7 @@ def main():
         if workflow_test:
             import functional.workflow
             functional.workflow.WorkflowTestCase.workflow_test_file = workflow_test
-            functional.workflow.WorkflowTestCase.master_api_key = master_api_key
+            functional.workflow.WorkflowTestCase.master_api_key = get_master_api_key()
             functional.workflow.WorkflowTestCase.user_api_key = get_user_api_key()
         data_manager_test = _check_arg( '-data_managers', param=False )
         if data_manager_test:
@@ -122,7 +119,7 @@ def main():
             functional.test_data_managers.build_tests(
                 tmp_dir=data_manager_test_tmp_path,
                 testing_shed_tools=testing_shed_tools,
-                master_api_key=master_api_key,
+                master_api_key=get_master_api_key(),
                 user_api_key=get_user_api_key(),
             )
 
@@ -136,7 +133,7 @@ def main():
         functional.test_toolbox.build_tests(
             app=app,
             testing_shed_tools=testing_shed_tools,
-            master_api_key=master_api_key,
+            master_api_key=get_master_api_key(),
             user_api_key=get_user_api_key(),
         )
         success = driver_util.nose_config_and_run()
