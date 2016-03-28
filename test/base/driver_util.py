@@ -96,6 +96,8 @@ def setup_galaxy_config(
     default_install_db_merged=True,
     default_tool_data_table_config_path=None,
     enable_tool_shed_check=False,
+    default_tool_conf=None,
+    shed_tool_conf=None,
 ):
     """Setup environment and build config for test Galaxy instance."""
     if not os.path.exists(tmpdir):
@@ -136,6 +138,14 @@ def setup_galaxy_config(
     # For storing Data Manager outputs and .loc files so that real ones don't get clobbered
     galaxy_data_manager_data_path = tempfile.mkdtemp(prefix='data_manager_tool-data', dir=tmpdir)
 
+    tool_conf = os.environ.get('GALAXY_TEST_TOOL_CONF', default_tool_conf)
+    if tool_conf is None:
+        # As a fallback always at least allow upload.
+        tool_conf = FRAMEWORK_UPLOAD_TOOL_CONF
+
+    if shed_tool_conf is not None:
+        tool_conf = "%s,%s" % (tool_conf, shed_tool_conf)
+
     config = dict(
         admin_users='test@bx.psu.edu',
         allow_library_path_paste=True,
@@ -159,6 +169,7 @@ def setup_galaxy_config(
         running_functional_tests=True,
         template_cache_path=template_cache_path,
         template_path='templates',
+        tool_config_file=tool_conf,
         tool_data_table_config_path=tool_data_table_config_path,
         tool_parse_help=False,
         tool_path=tool_path,

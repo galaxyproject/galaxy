@@ -28,21 +28,17 @@ def main():
     testing_installed_tools = _check_arg( '-installed' )
     datatypes_conf_override = None
 
+    default_tool_conf = None
     testing_shed_tools = testing_migrated_tools or testing_installed_tools
-    if testing_shed_tools:
-        # We need the upload tool for functional tests, so we'll create a temporary tool panel config that defines it.
-        tool_config_file = driver_util.FRAMEWORK_UPLOAD_TOOL_CONF
-    else:
+    if not testing_shed_tools:
         framework_test = _check_arg( '-framework' )  # Run through suite of tests testing framework.
         if framework_test:
-            tool_conf = driver_util.FRAMEWORK_SAMPLE_TOOLS_CONF
+            default_tool_conf = driver_util.FRAMEWORK_SAMPLE_TOOLS_CONF
             datatypes_conf_override = driver_util.FRAMEWORK_DATATYPES_CONF
         else:
             # Use tool_conf.xml toolbox.
-            tool_conf = None
             if _check_arg( '-with_framework_test_tools' ):
-                tool_conf = "%s,%s" % ( 'config/tool_conf.xml.sample', driver_util.FRAMEWORK_SAMPLE_TOOLS_CONF )
-        tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', tool_conf )
+                default_tool_conf = "%s,%s" % ( 'config/tool_conf.xml.sample', driver_util.FRAMEWORK_SAMPLE_TOOLS_CONF )
 
     start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ
 
@@ -57,6 +53,7 @@ def main():
             galaxy_db_path,
             use_test_file_dir=not testing_shed_tools,
             default_install_db_merged=True,
+            default_tool_conf=default_tool_conf,
         )
 
     app = None
@@ -65,7 +62,6 @@ def main():
     if start_server:
         # ---- Build Application --------------------------------------------------
         kwargs = dict( shed_tool_data_table_config=shed_tool_data_table_config,
-                       tool_config_file=tool_config_file,
                        update_integrated_tool_panel=False, )
         kwargs.update(galaxy_config)
         if datatypes_conf_override:
