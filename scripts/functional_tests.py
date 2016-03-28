@@ -42,7 +42,6 @@ def main():
 
     start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ
 
-    shed_tool_data_table_config = 'config/shed_tool_data_table_conf.xml'
     galaxy_test_tmp_dir = driver_util.get_galaxy_test_tmp_dir()
 
     if start_server:
@@ -62,13 +61,11 @@ def main():
 
     if start_server:
         # ---- Build Application --------------------------------------------------
-        kwargs = dict( shed_tool_data_table_config=shed_tool_data_table_config )
-        kwargs.update(galaxy_config)
-        app = driver_util.build_galaxy_app(kwargs)
+        app = driver_util.build_galaxy_app(galaxy_config)
         server_wrapper = driver_util.launch_server(
             app,
             buildapp.app_factory,
-            kwargs,
+            galaxy_config,
         )
         log.info("Functional tests will be run against %s:%s" % (server_wrapper.host, server_wrapper.port))
 

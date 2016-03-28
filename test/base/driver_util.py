@@ -95,6 +95,7 @@ def setup_galaxy_config(
     use_test_file_dir=False,
     default_install_db_merged=True,
     default_tool_data_table_config_path=None,
+    default_shed_tool_data_table_config=None,
     enable_tool_shed_check=False,
     default_tool_conf=None,
     shed_tool_conf=None,
@@ -148,6 +149,10 @@ def setup_galaxy_config(
     if shed_tool_conf is not None:
         tool_conf = "%s,%s" % (tool_conf, shed_tool_conf)
 
+    shed_tool_data_table_config = default_shed_tool_data_table_config
+    if shed_tool_data_table_config is None:
+        shed_tool_data_table_config = 'config/shed_tool_data_table_conf.xml'
+
     config = dict(
         admin_users='test@bx.psu.edu',
         allow_library_path_paste=True,
@@ -169,6 +174,7 @@ def setup_galaxy_config(
         new_file_path=new_file_path,
         master_api_key=master_api_key,
         running_functional_tests=True,
+        shed_tool_data_table_config=shed_tool_data_table_config,
         template_cache_path=template_cache_path,
         template_path='templates',
         tool_config_file=tool_conf,

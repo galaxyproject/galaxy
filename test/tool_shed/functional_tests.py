@@ -133,7 +133,6 @@ def main():
             open( galaxy_shed_data_manager_conf_file, 'wb' ).write( shed_data_manager_conf_xml_template )
         kwargs = dict( migrated_tools_config=galaxy_migrated_tool_conf_file,
                        shed_data_manager_config_file=galaxy_shed_data_manager_conf_file,
-                       shed_tool_data_table_config=shed_tool_data_table_conf_file,
                        shed_tool_path=galaxy_shed_tool_path,
                        tool_data_path=tool_data_path,
 
@@ -144,6 +143,7 @@ def main():
                 use_test_file_dir=False,
                 default_install_db_merged=False,
                 default_tool_data_table_config_path=default_tool_data_table_config_path,
+                default_shed_tool_data_table_config=shed_tool_data_table_conf_file,
                 enable_tool_shed_check=True,
                 shed_tool_conf=galaxy_shed_tool_conf_file,
                 update_integrated_tool_panel=True,
