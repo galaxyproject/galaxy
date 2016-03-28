@@ -106,12 +106,15 @@ def main():
     # ---- Run tool shed webserver ------------------------------------------------------
     # TODO: Needed for hg middleware ('lib/galaxy/webapps/tool_shed/framework/middleware/hg.py')
     kwargs['global_conf']['database_connection'] = kwargs["database_connection"]
-    tool_shed_server, tool_shed_test_host, tool_shed_test_port = driver_util.launch_server(
+    tool_shed_server_wrapper = driver_util.launch_server(
         toolshedapp,
         toolshedbuildapp.app_factory,
         kwargs,
         prefix="TOOL_SHED",
     )
+    tool_shed_test_host = tool_shed_server_wrapper.host
+    tool_shed_test_port = tool_shed_server_wrapper.port
+    log.info( "Functional tests will be run against %s:%s" % ( tool_shed_test_host, tool_shed_test_port ) )
 
     # ---- Optionally start up a Galaxy instance ------------------------------------------------------
     if 'TOOL_SHED_TEST_OMIT_GALAXY' not in os.environ:
@@ -145,15 +148,14 @@ def main():
 
         # ---- Run galaxy webserver ------------------------------------------------------
         galaxyapp = driver_util.build_galaxy_app(kwargs)
-        galaxy_server, galaxy_test_host, galaxy_test_port = driver_util.launch_server(
+        galaxy_server_wrapper = driver_util.launch_server(
             galaxyapp,
             galaxybuildapp.app_factory,
             kwargs,
         )
+        log.info("Galaxy tests will be run against %s:%s" % (galaxy_server_wrapper.host, galaxy_server_wrapper.port))
 
     # ---- Find tests ---------------------------------------------------------
-    log.info( "Functional tests will be run against %s:%s" % ( tool_shed_test_host, tool_shed_test_port ) )
-    log.info( "Galaxy tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
     success = False
     try:
         success = driver_util.nose_config_and_run()
@@ -162,27 +164,11 @@ def main():
 
     log.info( "Shutting down" )
     # ---- Tear down -----------------------------------------------------------
-    if tool_shed_server:
-        log.info( "Shutting down embedded web server" )
-        tool_shed_server.server_close()
-        tool_shed_server = None
-        log.info( "Embedded web server stopped" )
-    if toolshedapp:
-        log.info( "Shutting down tool shed app" )
-        toolshedapp.shutdown()
-        toolshedapp = None
-        log.info( "Embedded tool shed application stopped" )
-    if 'TOOL_SHED_TEST_OMIT_GALAXY' not in os.environ:
-        if galaxy_server:
-            log.info( "Shutting down galaxy web server" )
-            galaxy_server.server_close()
-            galaxy_server = None
-            log.info( "Embedded galaxy server stopped" )
-        if galaxyapp:
-            log.info( "Shutting down galaxy app" )
-            galaxyapp.shutdown()
-            galaxyapp = None
-            log.info( "Embedded galaxy application stopped" )
+    tool_shed_server_wrapper.stop()
+    tool_shed_server_wrapper = None
+    if galaxy_server_wrapper is not None:
+        galaxy_server_wrapper.stop()
+        galaxy_server_wrapper = None
     driver_util.cleanup_directory(tool_shed_test_tmp_dir)
     if success:
         return 0

@@ -1,5 +1,6 @@
 """Scripts for drivers of Galaxy functional tests."""
 
+import collections
 import httplib
 import json
 import logging
@@ -404,6 +405,22 @@ def build_shed_app(simple_kwargs):
     log.info( "Embedded Toolshed application started" )
     return app
 
+ServerWrapper = collections.namedtuple('ServerWrapper', ['app', 'server', 'name', 'host', 'port'])
+
+
+def _stop(self):
+    if self.server is not None:
+        log.info("Shutting down embedded %s web server" % self.name)
+        self.server.server_close()
+        log.info("Embedded web server %s stopped" % self.name)
+
+    if self.app is not None:
+        log.info("Stopping application %s" % self.name)
+        self.app.shutdown()
+        log.info("Application %s stopped." % self.name)
+
+ServerWrapper.stop = _stop
+
 
 def launch_server(app, webapp_factory, kwargs, prefix="GALAXY"):
     """Launch a web server for a given app using supplied factory.
@@ -412,6 +429,8 @@ def launch_server(app, webapp_factory, kwargs, prefix="GALAXY"):
     TOOL_SHED_TEST_HOST and TOOL_SHED_TEST_PORT and ensure these are
     all set after this method has been called.
     """
+    name = prefix.lower()
+
     host_env_key = "%s_TEST_HOST" % prefix
     port_env_key = "%s_TEST_PORT" % prefix
     host = os.environ.get(host_env_key, DEFAULT_WEB_HOST)
@@ -430,8 +449,10 @@ def launch_server(app, webapp_factory, kwargs, prefix="GALAXY"):
     os.environ[host_env_key] = host
     os.environ[port_env_key] = port
     wait_for_http_server(host, port)
-    log.info("Embedded web server for %s started" % prefix.lower())
-    return server, host, port
+    log.info("Embedded web server for %s started" % name)
+    return ServerWrapper(
+        app, server, name, host, port
+    )
 
 
 __all__ = [

@@ -85,7 +85,7 @@ def main():
     master_api_key = get_master_api_key()
 
     app = None
-    server = None
+    server_wrapper = None
 
     if start_server:
         # ---- Build Application --------------------------------------------------
@@ -105,14 +105,14 @@ def main():
             kwargs[ 'datatypes_config_file' ] = datatypes_conf_override
 
         app = driver_util.build_galaxy_app(kwargs)
-        server, galaxy_test_host, galaxy_test_port = driver_util.launch_server(
+        server_wrapper = driver_util.launch_server(
             app,
             buildapp.app_factory,
             kwargs,
         )
+        log.info("Functional tests will be run against %s:%s" % (server_wrapper.host, server_wrapper.port))
 
     # ---- Find tests ---------------------------------------------------------
-    log.info( "Functional tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
     success = False
     try:
         if testing_shed_tools:
@@ -166,16 +166,9 @@ def main():
 
     log.info( "Shutting down" )
     # ---- Tear down -----------------------------------------------------------
-    if server:
-        log.info( "Shutting down embedded web server" )
-        server.server_close()
-        server = None
-        log.info( "Embedded web server stopped" )
-    if app:
-        log.info( "Shutting down app" )
-        app.shutdown()
-        app = None
-        log.info( "Embedded Universe application stopped" )
+    if server_wrapper is not None:
+        server_wrapper.stop()
+        server_wrapper = None
     driver_util.cleanup_directory(tempdir)
     if success:
         return 0
