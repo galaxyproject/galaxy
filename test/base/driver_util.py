@@ -22,7 +22,7 @@ import nose.plugins.manager
 
 from paste import httpserver
 
-from .api_util import get_master_api_key
+from .api_util import get_master_api_key, get_user_api_key
 from .tool_shed_util import parse_tool_panel_config
 from .nose_util import run
 from .instrument import StructuredTestDataPlugin
@@ -30,6 +30,7 @@ from .instrument import StructuredTestDataPlugin
 from functional import database_contexts
 
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
+from galaxy.web import buildapp
 from galaxy.webapps.tool_shed.app import UniverseApplication as ToolshedUniverseApplication
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
@@ -575,6 +576,72 @@ class TestDriver(object):
             self.tear_down()
 
 
+class GalaxyTestDriver(TestDriver):
+    """Instantial a Galaxy-style nose TestDriver for testing Galaxy."""
+
+    testing_shed_tools = False
+
+    def setup(self):
+        """Setup a Galaxy server for functional test (if needed)."""
+        self.external_galaxy = os.environ.get('GALAXY_TEST_EXTERNAL', None)
+        self.galaxy_test_tmp_dir = get_galaxy_test_tmp_dir()
+        self.temp_directories.append(self.galaxy_test_tmp_dir)
+
+        testing_shed_tools = getattr(self, "testing_shed_tools", False)
+        default_tool_conf = getattr(self, "default_tool_conf", None)
+        datatypes_conf_override = getattr(self, "datatypes_conf_override", None)
+
+        if self.external_galaxy is None:
+            tempdir = tempfile.mkdtemp(dir=self.galaxy_test_tmp_dir)
+            # Configure the database path.
+            galaxy_db_path = database_files_path(tempdir)
+            galaxy_config = setup_galaxy_config(
+                galaxy_db_path,
+                use_test_file_dir=not testing_shed_tools,
+                default_install_db_merged=True,
+                default_tool_conf=default_tool_conf,
+                datatypes_conf=datatypes_conf_override,
+            )
+
+            # ---- Build Application --------------------------------------------------
+            self.app = build_galaxy_app(galaxy_config)
+            server_wrapper = launch_server(
+                self.app,
+                buildapp.app_factory,
+                galaxy_config,
+            )
+            self.server_wrappers.append(server_wrapper)
+            log.info("Functional tests will be run against %s:%s" % (server_wrapper.host, server_wrapper.port))
+        else:
+            log.info("Functional tests will be run against %s" % self.external_galaxy)
+
+    def setup_shed_tools(self, testing_migrated_tools=False, testing_installed_tools=True):
+        setup_shed_tools_for_test(
+            self.app,
+            self.galaxy_test_tmp_dir,
+            testing_migrated_tools,
+            testing_installed_tools
+        )
+
+    def build_tool_tests(self):
+        if self.app is None:
+            return
+
+        # We must make sure that functional.test_toolbox is always imported after
+        # database_contexts.galaxy_content is set (which occurs in this method above).
+        # If functional.test_toolbox is imported before database_contexts.galaxy_content
+        # is set, sa_session will be None in all methods that use it.
+        import functional.test_toolbox
+        functional.test_toolbox.toolbox = self.app.toolbox
+        # When testing data managers, do not test toolbox.
+        functional.test_toolbox.build_tests(
+            app=self.app,
+            testing_shed_tools=self.testing_shed_tools,
+            master_api_key=get_master_api_key(),
+            user_api_key=get_user_api_key(),
+        )
+
+
 def drive_test(test_driver_class):
     """Instantiate driver class, run, and exit appropriately."""
     sys.exit(test_driver_class().run())
@@ -591,7 +658,6 @@ __all__ = [
     "get_webapp_global_conf",
     "nose_config_and_run",
     "setup_galaxy_config",
-    "setup_shed_tools_for_test",
     "TestDriver",
     "wait_for_http_server",
 ]
