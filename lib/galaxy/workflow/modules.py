@@ -1118,6 +1118,7 @@ class ToolModule( WorkflowModule ):
 
         # Combine workflow and runtime post job actions into the effective post
         # job actions for this execution.
+        flush_required = False
         effective_post_job_actions = step.post_job_actions[:]
         for key, value in self.runtime_post_job_actions.iteritems():
             effective_post_job_actions.append( self.__to_pja( key, value, None ) )
@@ -1125,7 +1126,11 @@ class ToolModule( WorkflowModule ):
             if pja.action_type in ActionBox.immediate_actions:
                 ActionBox.execute( self.trans.app, self.trans.sa_session, pja, job, replacement_dict )
             else:
-                job.add_post_job_action( pja )
+                pjaa = model.PostJobActionAssociation( pja, job_id=job.id )
+                self.trans.sa_session.add(pjaa)
+                flush_required = True
+        if flush_required:
+            self.trans.sa_session.flush()
 
     def add_dummy_datasets( self, connections=None):
         if connections:
