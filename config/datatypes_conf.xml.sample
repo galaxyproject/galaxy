@@ -487,7 +487,7 @@
         <converter file="cml_to_mol2_converter.xml" target_datatype="mol2"/>
         </datatype>
     <datatype extension="fps" type="galaxy.datatypes.molecules:FPS" mimetype="text/html" display_in_upload="True" />
-    <datatype extension="obfs" type="galaxy.datatypes.molecules:OBFS" mimetype="text/html" display_in_upload="False" />
+    <datatype extension="obfs" type="galaxy.datatypes.molecules:OBFS" mimetype="text/html" display_in_upload="True" />
     <datatype extension="phar" type="galaxy.datatypes.molecules:PHAR" display_in_upload="False" />
     <datatype extension="pdb" type="galaxy.datatypes.molecules:PDB" display_in_upload="True" />
   </registration>
