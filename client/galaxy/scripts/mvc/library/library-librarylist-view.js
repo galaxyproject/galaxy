@@ -25,7 +25,8 @@ var LibraryListView = Backbone.View.extend({
 
     defaults: {
         page_count: null,
-        show_page: null
+        show_page: null,
+        all_fetched: false
     },
 
     /**
@@ -39,6 +40,7 @@ var LibraryListView = Backbone.View.extend({
         this.modal = null;
         // collection of {Item}s
         this.collection = new mod_library_model.Libraries();
+        this.collection.url = this.collection.urlRoot + '?deleted=false';
         this.collection.fetch({
           success: function(){
             that.render();
@@ -117,6 +119,29 @@ var LibraryListView = Backbone.View.extend({
         }
         $( "#center [data-toggle]" ).tooltip();
         $( "#center" ).css( 'overflow','auto' );
+    },
+
+    fetchDeleted: function(){
+      if (this.options.all_fetched){
+        this.render();
+      } else{
+        var that = this;
+        this.collection.url = this.collection.urlRoot + '?deleted=true';
+        this.collection.fetch({
+          remove: false,
+          success: function(){
+            that.options.all_fetched = true;
+            that.render();
+          },
+          error: function( model, response ){
+              if ( typeof response.responseJSON !== "undefined" ){
+                mod_toastr.error( response.responseJSON.err_msg );
+              } else {
+                mod_toastr.error( 'An error ocurred.' );
+              }
+          }
+        });
+      }
     },
 
     /**

@@ -19,7 +19,7 @@ define([], function() {
     });
 
     var Libraries = Backbone.Collection.extend({
-      url: Galaxy.root + 'api/libraries',
+      urlRoot: Galaxy.root + 'api/libraries',
 
       model: Library,
 
