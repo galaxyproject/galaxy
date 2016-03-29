@@ -263,14 +263,22 @@
             top: 0px;
             width: 100%;
             height: 100%;
-            opacity: 0.2;
             background: @white;
+        }
+        .ui-form-backdrop-default {
+            display: block;
+            opacity: 0.2;
             cursor: not-allowed;
+        }
+        .ui-form-backdrop-silent {
+            display: block;
+            opacity: 0.0;
+            cursor: default;
         }
     }
     .ui-form-preview {
         &:extend(.ui-input);
-        margin-top: 5px;
+        margin-top: @ui-margin-vertical;
         border-color: transparent !important;
         box-shadow: none !important;
     }
