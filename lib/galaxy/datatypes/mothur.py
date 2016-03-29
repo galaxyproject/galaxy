@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 ## Mothur Classes 
 
 class Otu( Text ):
-    file_ext = 'otu'
+    file_ext = 'mothur.otu'
     MetadataElement( name="columns", default=0, desc="Number of columns", readonly=True, visible=True, no_value=0 )
     MetadataElement( name="labels", default=[], desc="Label Names", readonly=True, visible=True, no_value=[] )
     def __init__(self, **kwd):
@@ -61,20 +61,20 @@ class Otu( Text ):
                     line = line.strip()
                     if not line:
                         break #EOF
-                    if line:
-                        if line[0] != '@':
-                            linePieces = line.split('\t')
-                            if len(linePieces) < 2:
-                                return False
+                    if line and line[0] != '@':
+                        linePieces = line.split('\t')
+                        if len(linePieces) < 2:
+                            return False
+                        if count >= 1:
                             try:
                                 check = int(linePieces[1])
                                 if check + 2 != len(linePieces):
                                     return False
                             except ValueError:
                                 return False
-                            count += 1
-                            if count == 5:
-                                return True
+                        count += 1
+                        if count == 5:
+                            return True
             if count < 5 and count > 0:
                 return True
         except:
@@ -82,7 +82,7 @@ class Otu( Text ):
         return False
 
 class Sabund( Otu ):
-    file_ext = 'sabund'
+    file_ext = 'mothur.sabund'
     def __init__(self, **kwd):
         """
         # http://www.mothur.org/wiki/Sabund_file
@@ -104,30 +104,27 @@ class Sabund( Otu ):
                     line = line.strip()
                     if not line:
                         break #EOF
-                    if line:
-                        if line[0] != '@':
-                            linePieces = line.split('\t')
-                            if len(linePieces) < 2:
+                    if line and line[0] != '@':
+                        linePieces = line.split('\t')
+                        if len(linePieces) < 2:
+                            return False
+                        try:
+                            check = int(linePieces[1])
+                            if check + 2 != len(linePieces):
                                 return False
-                            try:
-                                check = int(linePieces[1])
-                                if check + 2 != len(linePieces):
-                                    return False
-                                for i in range( 2, len(linePieces)):
-                                    ival = int(linePieces[i])
-                            except ValueError:
-                                return False
-                            count += 1
-                            if count >= 5:
-                                return True
-            if count < 5 and count > 0:
+                            for i in range( 2, len(linePieces)):
+                                ival = int(linePieces[i])
+                        except ValueError:
+                            return False
+                        count += 1
+            if count > 0:
                 return True
         except:
             pass
         return False
 
 class GroupAbund( Otu ):
-    file_ext = 'grpabund'
+    file_ext = 'mothur.shared'
     MetadataElement( name="groups", default=[], desc="Group Names", readonly=True, visible=True, no_value=[] )
     def __init__(self, **kwd):
         Otu.__init__( self, **kwd )
@@ -192,26 +189,25 @@ class GroupAbund( Otu ):
                     line = line.strip()
                     if not line:
                         break #EOF
-                    if line:
-                        if line[0] != '@':
-                            linePieces = line.split('\t')
-                            if len(linePieces) < 3:
-                                return False
-                            if count > 0 or linePieces[0] != 'label':
-                                try:
-                                    check = int(linePieces[2])
-                                    if check + 3 != len(linePieces):
-                                        return False
-                                    for i in range( 3, len(linePieces)):
-                                        if vals_are_int:
-                                            ival = int(linePieces[i])
-                                        else:
-                                            fval = float(linePieces[i])
-                                except ValueError:
+                    if line and line[0] != '@':
+                        linePieces = line.split('\t')
+                        if len(linePieces) < 3:
+                            return False
+                        if count > 0 or linePieces[0] != 'label':
+                            try:
+                                check = int(linePieces[2])
+                                if check + 3 != len(linePieces):
                                     return False
-                            count += 1
-                            if count >= 5:
-                                return True
+                                for i in range( 3, len(linePieces)):
+                                    if vals_are_int:
+                                        ival = int(linePieces[i])
+                                    else:
+                                        fval = float(linePieces[i])
+                            except ValueError:
+                                return False
+                        count += 1
+                        if count >= 5:
+                            return True
             if count < 5 and count > 0:
                 return True
         except:
@@ -219,7 +215,7 @@ class GroupAbund( Otu ):
         return False
 
 class SecondaryStructureMap(Tabular):
-    file_ext = 'map'
+    file_ext = 'mothur.map'
     def __init__(self, **kwd):
         """Initialize secondary structure map datatype"""
         Tabular.__init__( self, **kwd )
@@ -244,21 +240,21 @@ class SecondaryStructureMap(Tabular):
                     if line:
                         try:
                             pointer = int(line)
-                            if pointer > 0:
-                                if pointer > line_num:
-                                    rowidxmap[line_num] = pointer 
-                                elif pointer < line_num & rowidxmap[pointer] != line_num:
+                            if pointer > line_num:
+                                rowidxmap[pointer] = line_num
+                            elif pointer > 0 or line_num in rowidxmap:
+                                if rowidxmap[line_num] != pointer:
                                     return False
                         except ValueError:
                             return False
-            if count < 5 and count > 0:
-                return True
         except:
-            pass
-        return False
+            return False
+        if line_num < 3:
+            return False
+        return True
 
 class SequenceAlignment( Fasta ):
-    file_ext = 'align'
+    file_ext = 'mothur.align'
     def __init__(self, **kwd):
         Fasta.__init__( self, **kwd )
         """Initialize AlignCheck datatype"""
@@ -296,7 +292,7 @@ class SequenceAlignment( Fasta ):
         return False
 
 class AlignCheck( Tabular ):
-    file_ext = 'align.check'
+    file_ext = 'mothur.align.check'
     def __init__(self, **kwd):
         """Initialize AlignCheck datatype"""
         Tabular.__init__( self, **kwd )
@@ -324,7 +320,7 @@ class AlignReport(Tabular):
 QueryName	QueryLength	TemplateName	TemplateLength	SearchMethod	SearchScore	AlignmentMethod	QueryStart	QueryEnd	TemplateStart	TemplateEnd	PairwiseAlignmentLength	GapsInQuery	GapsInTemplate	LongestInsert	SimBtwnQuery&Template
 AY457915	501		82283		1525		kmer		89.07		needleman	5		501		1		499		499			2		0		0		97.6
     """
-    file_ext = 'align.report'
+    file_ext = 'mothur.align.report'
     def __init__(self, **kwd):
         """Initialize AlignCheck datatype"""
         Tabular.__init__( self, **kwd )
@@ -334,7 +330,7 @@ AY457915	501		82283		1525		kmer		89.07		needleman	5		501		1		499		499			2		0		0	
                              ]
 
 class BellerophonChimera( Tabular ):
-    file_ext = 'bellerophon.chimera'
+    file_ext = 'mothur.bellerophon.chimera'
     def __init__(self, **kwd):
         """Initialize AlignCheck datatype"""
         Tabular.__init__( self, **kwd )
@@ -355,7 +351,7 @@ class SecondaryStructureMatch(Tabular):
         self.column_names = ['name','pound','dash','plus','equal','loop','tilde','total']
 
 class DistanceMatrix( Text ):
-    file_ext = 'dist'
+    file_ext = 'mothur.dist'
     """Add metadata elements"""
     MetadataElement( name="sequence_count", default=0, desc="Number of sequences", readonly=True, visible=True, optional=True, no_value='?' )
 
@@ -366,13 +362,15 @@ class DistanceMatrix( Text ):
         Text.set_meta(self, dataset,overwrite = overwrite, skip = skip, **kwd )
         try:
             with open( dataset.file_name ) as fh:
-                line = fh.readline().strip().strip()
+                line = '@'
+                while line[0] == '@':
+                    line = fh.readline().strip().strip()
                 dataset.metadata.sequence_count = int(line) 
         except Exception, e:
             log.warn("DistanceMatrix set_meta %s" % e)
 
 class LowerTriangleDistanceMatrix(DistanceMatrix):
-    file_ext = 'lower.dist'
+    file_ext = 'mothur.lower.dist'
     def __init__(self, **kwd):
         """Initialize secondary structure map datatype"""
         DistanceMatrix.__init__( self, **kwd )
@@ -428,7 +426,7 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
         return False
 
 class SquareDistanceMatrix(DistanceMatrix):
-    file_ext = 'square.dist'
+    file_ext = 'mothur.square.dist'
 
     def __init__(self, **kwd):
         DistanceMatrix.__init__( self, **kwd )
@@ -449,17 +447,15 @@ class SquareDistanceMatrix(DistanceMatrix):
         try:
             with open( filename ) as fh:
                 count = 0
-                line = fh.readline()
-                line = line.strip()
-                seq_cnt = int(line)
-                col_cnt = seq_cnt + 1
                 while True:
-                    line = fh.readline()
-                    line = line.strip()
+                    line = fh.readline().strip()
                     if not line:
                         break #EOF
-                    if line:
-                        if line[0] != '@':
+                    if line[0] != '@':
+                        if count == 0:
+                            seq_cnt = int(line)
+                            col_cnt = seq_cnt + 1
+                        else:
                             linePieces = line.split('\t')
                             if len(linePieces) != col_cnt :
                                 return False
@@ -468,17 +464,15 @@ class SquareDistanceMatrix(DistanceMatrix):
                                     check = float(linePieces[i])
                             except ValueError:
                                 return False
-                            count += 1
-                            if count == 5:
-                                return True
-            if count < 5 and count > 0:
+                        count += 1
+            if count > 2:
                 return True
         except:
             pass
         return False
 
 class PairwiseDistanceMatrix(DistanceMatrix,Tabular):
-    file_ext = 'pair.dist'
+    file_ext = 'mothur.pair.dist'
     def __init__(self, **kwd):
         """Initialize secondary structure map datatype"""
         Tabular.__init__( self, **kwd )
@@ -501,28 +495,27 @@ class PairwiseDistanceMatrix(DistanceMatrix,Tabular):
                     line = line.strip()
                     if not line:
                         break #EOF
-                    if line:
-                        if line[0] != '@':
-                            linePieces = line.split('\t')
-                            if len(linePieces) != 3:
-                                return False
+                    if line and line[0] != '@':
+                        linePieces = line.split('\t')
+                        if len(linePieces) != 3:
+                            return False
+                        try:
+                            check = float(linePieces[2])
                             try:
-                                check = float(linePieces[2])
-                                try:
-                                    # See if it's also an integer
-                                    check_int = int(linePieces[2])
-                                except ValueError:
-                                    # At least one value is not an
-                                    # integer
-                                    all_ints = False
+                                # See if it's also an integer
+                                check_int = int(linePieces[2])
                             except ValueError:
+                                # At least one value is not an
+                                # integer
+                                all_ints = False
+                        except ValueError:
+                            return False
+                        count += 1
+                        if count == 5:
+                            if not all_ints:
+                                return True
+                            else:
                                 return False
-                            count += 1
-                            if count == 5:
-                                if not all_ints:
-                                    return True
-                                else:
-                                    return False
             if count < 5 and count > 0:
                 if not all_ints:
                     return True
@@ -532,16 +525,9 @@ class PairwiseDistanceMatrix(DistanceMatrix,Tabular):
             pass
         return False
 
-class AlignCheck(Tabular):
-    file_ext = 'align.check'
-    def __init__(self, **kwd):
-        """Initialize secondary structure map datatype"""
-        Tabular.__init__( self, **kwd )
-        self.column_names = ['name','pound','dash','plus','equal','loop','tilde','total']
-        self.columns = 8
 
 class Names(Tabular):
-    file_ext = 'names'
+    file_ext = 'mothur.names'
     def __init__(self, **kwd):
         """
         # http://www.mothur.org/wiki/Name_file
@@ -552,7 +538,7 @@ class Names(Tabular):
         self.columns = 2
 
 class Summary(Tabular):
-    file_ext = 'summary'
+    file_ext = 'mothur.summary'
     def __init__(self, **kwd):
         """summarizes the quality of sequences in an unaligned or aligned fasta-formatted sequence file"""
         Tabular.__init__( self, **kwd )
@@ -560,7 +546,7 @@ class Summary(Tabular):
         self.columns = 6
 
 class Group(Tabular):
-    file_ext = 'groups'
+    file_ext = 'mothur.groups'
     MetadataElement( name="groups", default=[], desc="Group Names", readonly=True, visible=True, no_value=[] )
     def __init__(self, **kwd):
         """
@@ -588,7 +574,7 @@ class Group(Tabular):
             pass
 
 class AccNos(Tabular):
-    file_ext = 'accnos'
+    file_ext = 'mothur.accnos'
     def __init__(self, **kwd):
         """A list of names"""
         Tabular.__init__( self, **kwd )
@@ -596,7 +582,7 @@ class AccNos(Tabular):
         self.columns = 1
 
 class Oligos( Text ):
-    file_ext = 'oligos'
+    file_ext = 'mothur.oligos'
 
     def sniff( self, filename ):
         """
@@ -631,7 +617,7 @@ class Oligos( Text ):
         return False
 
 class Frequency(Tabular):
-    file_ext = 'freq'
+    file_ext = 'mothur.freq'
     def __init__(self, **kwd):
         """A list of names"""
         Tabular.__init__( self, **kwd )
@@ -656,17 +642,18 @@ class Frequency(Tabular):
                     if not line:
                         break #EOF
                     else:
+                        if count == 0 and line[0] != '#':
+                            return False
                         if line[0] != '#':
+                            linePieces = line.split('\t')
+                            if len(linePieces) != 2:
+                                return False
                             try:
-                                linePieces = line.split('\t')
                                 i = int(linePieces[0])
                                 f = float(linePieces[1])
-                                count += 1
-                                continue
                             except:
                                 return False
-                            if count > 20:
-                                return True
+                        count += 1
                 if count > 0:
                     return True
         except:
@@ -674,7 +661,7 @@ class Frequency(Tabular):
         return False
 
 class Quantile(Tabular):
-    file_ext = 'quan'
+    file_ext = 'mothur.quan'
     MetadataElement( name="filtered", default=False, no_value=False, optional=True , desc="Quantiles calculated using a mask", readonly=True)
     MetadataElement( name="masked", default=False, no_value=False, optional=True , desc="Quantiles calculated using a frequency filter", readonly=True)
     def __init__(self, **kwd):
@@ -722,7 +709,7 @@ class Quantile(Tabular):
         return False
 
 class LaneMask(Text):
-    file_ext = 'filter'
+    file_ext = 'mothur.filter'
 
     def sniff( self, filename ):
         """
@@ -730,13 +717,17 @@ class LaneMask(Text):
         """
         try:
             with open( filename ) as fh:
+                count=0
                 while True:
-                    buff = fh.read(1000)
-                    if not buff:
+                    line = fh.readline().strip()
+                    if not line:
                         break #EOF
                     else:
+                        count+=1
                         if not re.match('^[01]+$',line):
                             return False
+                if count != 1:
+                    return False
                 return True
         except:
             pass
@@ -744,7 +735,7 @@ class LaneMask(Text):
 
 class CountTable(Tabular):
     MetadataElement( name="groups", default=[], desc="Group Names", readonly=True, visible=True, no_value=[] )
-    file_ext = 'count_table'
+    file_ext = 'mothur.count_table'
 
     def __init__(self, **kwd):
         """
@@ -792,7 +783,7 @@ class CountTable(Tabular):
             pass
 
 class RefTaxonomy(Tabular):
-    file_ext = 'ref.taxonomy'
+    file_ext = 'mothur.ref.taxonomy'
     """
         # http://www.mothur.org/wiki/Taxonomy_outline
         A table with 2 or 3 columns:
@@ -849,105 +840,22 @@ class RefTaxonomy(Tabular):
             pass
         return False
 
-class SequenceTaxonomy(RefTaxonomy):
-    file_ext = 'seq.taxonomy'
-    """
-        # http://www.mothur.org/wiki/Taxonomy_outline
-        A table with 2 columns:
-        - SequenceName
-        - Taxonomy (semicolon-separated taxonomy in descending order)
-        Example:
-          X56533.1        Eukaryota;Alveolata;Ciliophora;Intramacronucleata;Oligohymenophorea;Hymenostomatida;Tetrahymenina;Glaucomidae;Glaucoma;
-          X97975.1        Eukaryota;Parabasalidea;Trichomonada;Trichomonadida;unclassified_Trichomonadida;
-          AF052717.1      Eukaryota;Parabasalidea;
-    """
-    def __init__(self, **kwd):
-        Tabular.__init__( self, **kwd )
-        self.column_names = ['name','taxonomy']
-
-    def sniff( self, filename ):
-        """
-        Determines whether the file is a SequenceTaxonomy
-        """
-        try:
-            pat = '^([^ \t\n\r\f\v;]+([(]\d+[)])?[;])+$'
-            with open( filename ) as fh:
-                count = 0
-                while True:
-                    line = fh.readline()
-                    if not line:
-                        break #EOF
-                    line = line.strip()
-                    if line:
-                        fields = line.split('\t')
-                        if len(fields) != 2:
-                            return False
-                        if not re.match(pat,fields[1]):
-                            return False
-                        count += 1
-                        if count > 10:
-                            break
-                if count > 0:
-                    return True
-        except:
-            pass
-        return False
-
-class RDPSequenceTaxonomy(SequenceTaxonomy):
-    file_ext = 'rdp.taxonomy'
-    """
-        A table with 2 columns:
-        - SequenceName
-        - Taxonomy (semicolon-separated taxonomy in descending order, RDP requires exactly 6 levels deep)
-        Example:
-          AB001518.1      Bacteria;Bacteroidetes;Sphingobacteria;Sphingobacteriales;unclassified_Sphingobacteriales;
-          AB001724.1      Bacteria;Cyanobacteria;Cyanobacteria;Family_II;GpIIa;
-          AB001774.1      Bacteria;Chlamydiae;Chlamydiae;Chlamydiales;Chlamydiaceae;Chlamydophila;
-    """
-    def sniff( self, filename ):
-        """
-        Determines whether the file is a SequenceTaxonomy
-        """
-        try:
-            pat = '^([^ \t\n\r\f\v;]+([(]\d+[)])?[;]){6}$'
-            with open( filename ) as fh:
-                count = 0
-                while True:
-                    line = fh.readline()
-                    if not line:
-                        break #EOF
-                    line = line.strip()
-                    if line:
-                        fields = line.split('\t')
-                        if len(fields) != 2:
-                            return False
-                        if not re.match(pat,fields[1]):
-                            return False
-                        count += 1
-                        if count > 10:
-                            break
-                if count > 0:
-                    return True
-        except:
-            pass
-        return False
-
 class ConsensusTaxonomy(Tabular):
-    file_ext = 'cons.taxonomy'
+    file_ext = 'mothur.cons.taxonomy'
     def __init__(self, **kwd):
         """A list of names"""
         Tabular.__init__( self, **kwd )
         self.column_names = ['OTU','count','taxonomy']
 
 class TaxonomySummary(Tabular):
-    file_ext = 'tax.summary'
+    file_ext = 'mothur.tax.summary'
     def __init__(self, **kwd):
         """A Summary of taxon classification"""
         Tabular.__init__( self, **kwd )
         self.column_names = ['taxlevel','rankID','taxon','daughterlevels','total']
 
 class Phylip(Text):
-    file_ext = 'phy'
+    file_ext = 'mothur.phy'
 
     def sniff( self, filename ):
         """
@@ -1000,7 +908,7 @@ class Phylip(Text):
 
 
 class Axes(Tabular):
-    file_ext = 'axes'
+    file_ext = 'mothur.axes'
 
     def __init__(self, **kwd):
         """Initialize axes datatype"""
@@ -1072,7 +980,7 @@ class Axes(Tabular):
 class SffFlow(Tabular):
     MetadataElement( name="flow_values", default="", no_value="", optional=True , desc="Total number of flow values", readonly=True)
     MetadataElement( name="flow_order", default="TACG", no_value="TACG", desc="Total number of flow values", readonly=False)
-    file_ext = 'sff.flow'
+    file_ext = 'mothur.sff.flow'
     """
         # http://www.mothur.org/wiki/Flow_file
         The first line is the total number of flow values - 800 for Titanium data. For GS FLX it would be 400. 

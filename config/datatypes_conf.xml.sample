@@ -495,7 +495,7 @@
     <datatype extension="mothur.list" type="galaxy.datatypes.mothur:Otu" subclass="True" display_in_upload="true"/>
     <datatype extension="mothur.sabund" type="galaxy.datatypes.mothur:Sabund" display_in_upload="true"/>
     <datatype extension="mothur.rabund" type="galaxy.datatypes.mothur:Sabund" subclass="True" display_in_upload="true"/>
-    <datatype extension="mothur.shared" type="galaxy.datatypes.mothur:GroupAbund" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.shared" type="galaxy.datatypes.mothur:GroupAbund" display_in_upload="true"/>
     <datatype extension="mothur.relabund" type="galaxy.datatypes.mothur:GroupAbund" subclass="True" display_in_upload="true"/>
     <datatype extension="mothur.names" type="galaxy.datatypes.mothur:Names" display_in_upload="true"/>
     <datatype extension="mothur.design" type="galaxy.datatypes.mothur:Group" subclass="True" display_in_upload="true"/>
@@ -517,8 +517,8 @@
     <datatype extension="mothur.ref.taxonomy" type="galaxy.datatypes.mothur:RefTaxonomy" display_in_upload="true">
       <converter file="ref_to_seq_taxonomy_converter.xml" target_datatype="mothur.seq.taxonomy"/>
     </datatype>
-    <datatype extension="mothur.seq.taxonomy" type="galaxy.datatypes.mothur:SequenceTaxonomy" display_in_upload="true"/>
-    <datatype extension="mothur.rdp.taxonomy" type="galaxy.datatypes.mothur:RDPSequenceTaxonomy" display_in_upload="true"/>
+    <datatype extension="mothur.seq.taxonomy" type="galaxy.datatypes.mothur:RefTaxonomy" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.rdp.taxonomy" type="galaxy.datatypes.mothur:RefTaxonomy" subclass="True" display_in_upload="true"/>
     <datatype extension="mothur.cons.taxonomy" type="galaxy.datatypes.mothur:ConsensusTaxonomy" display_in_upload="true"/>
     <datatype extension="mothur.tax.summary" type="galaxy.datatypes.mothur:TaxonomySummary" display_in_upload="true"/>
     <datatype extension="mothur.freq" type="galaxy.datatypes.mothur:Frequency" display_in_upload="true"/>
@@ -538,21 +538,18 @@
     defined format first, followed by next-most rigidly defined,
     and so on.
     -->
-    <sniffer type="galaxy.datatypes.mothur:Otu"/>
     <sniffer type="galaxy.datatypes.mothur:Sabund"/>
+    <sniffer type="galaxy.datatypes.mothur:Otu"/>
     <sniffer type="galaxy.datatypes.mothur:GroupAbund"/>
     <sniffer type="galaxy.datatypes.mothur:SecondaryStructureMap"/>
-    <sniffer type="galaxy.datatypes.mothur:SequenceAlignment"/>
     <sniffer type="galaxy.datatypes.mothur:LowerTriangleDistanceMatrix"/>
     <sniffer type="galaxy.datatypes.mothur:SquareDistanceMatrix"/>
     <sniffer type="galaxy.datatypes.mothur:PairwiseDistanceMatrix"/>
     <sniffer type="galaxy.datatypes.mothur:Oligos"/>
-    <sniffer type="galaxy.datatypes.mothur:Frequency"/>
     <sniffer type="galaxy.datatypes.mothur:Quantile"/>
+    <sniffer type="galaxy.datatypes.mothur:Frequency"/>
     <sniffer type="galaxy.datatypes.mothur:LaneMask"/>
     <sniffer type="galaxy.datatypes.mothur:RefTaxonomy"/>
-    <sniffer type="galaxy.datatypes.mothur:SequenceTaxonomy"/>
-    <sniffer type="galaxy.datatypes.mothur:RDPSequenceTaxonomy"/>
     <sniffer type="galaxy.datatypes.mothur:Phylip"/>
     <sniffer type="galaxy.datatypes.mothur:Axes"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyAscii"/>
