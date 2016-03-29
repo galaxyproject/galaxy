@@ -75,6 +75,9 @@ class Hg( object ):
                     connection.execute( sql_cmd )
                     connection.close()
         elif cmd in [ 'unbundle', 'pushkey' ]:
+            if self.config[ 'disable_push' ]:
+                msg = 'Pushing to Tool Shed is disabled.'
+                return self.__display_exception_remotely( start_response, msg )
             # This is an hg push from the command line.  When doing this, the following commands, in order,
             # will be retrieved from environ (see the docs at http://mercurial.selenic.com/wiki/WireProtocol):
             # # If mercurial version >= '2.2.3': capabilities -> batch -> branchmap -> unbundle -> listkeys -> pushkey -> listkeys
