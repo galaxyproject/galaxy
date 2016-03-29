@@ -108,7 +108,7 @@ var HistoryView = _super.extend(
     // ------------------------------------------------------------------------ inf. scrolling
     /** override to track the scroll container for this view */
     _setUpBehaviors : function( $where ){
-        var DEBOUNCED_MS = 20,
+        var DEBOUNCED_MS = 40,
             self = this,
             $newRender = _super.prototype._setUpBehaviors.call( this, $where );
         // this needs to be handled outside the events hash since we're accessing the scollContainer
@@ -118,11 +118,11 @@ var HistoryView = _super.extend(
         return self;
     },
 
+    /**  */
     scrollHandler : function( ev ){
         var FETCH_MORE_PX_THRESHOLD = 128;
         var self = this;
-        var $container = this.$scrollContainer();
-        var pxToBottom = this.$el.outerHeight() - ( $container.scrollTop() + $container.innerHeight() );
+        var pxToBottom = self._scrollDistanceToBottom();
 
         // if the scrollbar is past the trigger point, we're not already fetching,
         // AND we're not displaying some panel OVER this one
@@ -136,30 +136,37 @@ var HistoryView = _super.extend(
         }
     },
 
-    addItemView : function( model, collection, options ){
-        console.log( 'addItemView:', options );
-        return _super.prototype.addItemView.call( this, model, collection, options );
+    /** return the number of px the scrollbar has until it bottoms out */
+    _scrollDistanceToBottom : function(){
+        var $container = this.$scrollContainer();
+        var pxToBottom = this.$el.outerHeight() - ( $container.scrollTop() + $container.innerHeight() );
+        return pxToBottom;
     },
 
+    /**  */
     showContentsLoadingIndicator : function( speed ){
-        speed = !_.isNumber( speed )? this.fxSpeed : speed;
+        speed = _.isNumber( speed )? speed : this.fxSpeed;
+        if( this.$emptyMessage().is( ':visible' ) ){
+            this.$emptyMessage().hide();
+        }
         // look for an existing indicator and stop all animations on it, otherwise make one
         var $indicator = this.$list().find( '.contents-loading-indicator' );
         if( $indicator.size() ){
             $indicator.clearQueue();
             $indicator.stop();
         } else {
-            $indicator = $( '<li class="contents-loading-indicator">' + _l( 'Loading...' ) + '</li>' ).hide();
+            $indicator = $( '<div class="contents-loading-indicator">' + _l( 'Loading...' ) + '</div>' ).hide();
         }
         // move it to the bottom and fade it in
         return $indicator
-            .appendTo( this.$list() )
+            .insertAfter( this.$( '> .list-items' ) )
             .fadeIn( speed );
     },
 
+    /**  */
     hideContentsLoadingIndicator : function( speed ){
-        speed = !_.isNumber( speed )? this.fxSpeed : speed;
-        this.$list().find( '.contents-loading-indicator' ).hide({ duration: speed, complete: function _complete(){
+        speed = _.isNumber( speed )? speed : this.fxSpeed;
+        this.$( '> .contents-loading-indicator' ).slideUp({ duration: speed, complete: function _complete(){
             $( this ).remove();
         }});
     },

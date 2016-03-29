@@ -47,10 +47,10 @@ ${parent.stylesheets()}
 #history-view-controls {
     margin: 10px 10px 10px 10px;
 }
-.history-panel .title {
+.history-panel > .controls .title {
     font-size: 120%;
 }
-.history-panel .title input {
+.history-panel > .controls .title input {
     font-size: 100%;
 }
 a.btn {

@@ -48,13 +48,10 @@ var History = Backbone.Model
         this.log( this + ".initialize:", historyJSON, contentsJSON, options );
 
         /** HistoryContents collection of the HDAs contained in this history. */
-        console.log( 'creating history contents:', contentsJSON );
         this.contents = new HISTORY_CONTENTS.HistoryContents( contentsJSON || [], {
             historyId   : this.get( 'id' ),
             order       : options.order,
         });
-
-        console.log( 'creating history contents:', this.contents );
 
         this._setUpListeners();
         this._setUpCollectionListeners();
@@ -339,16 +336,22 @@ var History = Backbone.Model
 
 
 //==============================================================================
-var _collectionSuper = CONTROLLED_FETCH_COLLECTION.ControlledFetchCollection;
+var _collectionSuper = CONTROLLED_FETCH_COLLECTION.PaginatedCollection;
 /** @class A collection of histories (per user)
  *      that maintains the current history as the first in the collection.
  *  New or copied histories become the current history.
  */
 var HistoryCollection = _collectionSuper.extend( BASE_MVC.LoggableMixin ).extend({
-    _logNamespace : 'history',
+    _logNamespace       : 'history',
 
-    model   : History,
-    order   : 'update_time',
+    model               : History,
+    /** @type {String} initial order used by collection */
+    order               : 'update_time',
+    /** @type {Number} limit used for the first fetch (or a reset) */
+    limitOnFirstFetch   : 10,
+    /** @type {Number} limit used for each subsequent fetch */
+    limitPerFetch       : 10,
+
 
     initialize : function( models, options ){
         options = options || {};
@@ -357,8 +360,6 @@ var HistoryCollection = _collectionSuper.extend( BASE_MVC.LoggableMixin ).extend
 
         /** @type {boolean} should deleted histories be included */
         this.includeDeleted = options.includeDeleted || false;
-        // set the sort order
-        this.setOrder( _.has( this.comparators, options.order )? options.order : this.order );
 
         /** @type {String} encoded id of the history that's current */
         this.currentHistoryId = options.currentHistoryId;
@@ -397,19 +398,22 @@ var HistoryCollection = _collectionSuper.extend( BASE_MVC.LoggableMixin ).extend
         });
     },
 
-    /** override to filter out deleted and purged and return a detailed json view */
+    /** override to change view */
     _buildFetchData : function( options ){
-        var defaults = {
-            view    : 'detailed'
-        };
+        return _.extend( _collectionSuper.prototype._buildFetchData.call( this, options ), {
+            view : 'current'
+        });
+    },
+
+    /** override to filter out deleted and purged */
+    _buildFetchFilters : function( options ){
+        var superFilters = _collectionSuper.prototype._buildFetchFilters.call( this, options ) || {};
+        var filters = {};
         if( !this.includeDeleted ){
-            defaults.filters = {
-                deleted : false,
-                purged  : false,
-            };
+            filters.deleted = false;
+            filters.purged = false;
         }
-        var data = _collectionSuper.prototype._buildFetchData.call( this, options );
-        return _.defaults( data, defaults );
+        return _.defaults( superFilters, filters );
     },
 
     /** @type {Object} map of collection available sorting orders containing comparator fns */
@@ -422,9 +426,14 @@ var HistoryCollection = _collectionSuper.extend( BASE_MVC.LoggableMixin ).extend
 
     /** override to always have the current history first */
     sort : function( options ){
+        options = options || {};
+        var silent = options.silent;
         var currentHistory = this.remove( this.get( this.currentHistoryId ) );
-        _collectionSuper.prototype.sort.call( this, options );
+        _collectionSuper.prototype.sort.call( this, _.defaults({ silent: true }, options ) );
         this.unshift( currentHistory, { silent: true });
+        if( !silent ){
+            this.trigger( 'sort', this, options );
+        }
         return this;
     },
 
@@ -453,11 +462,11 @@ var HistoryCollection = _collectionSuper.extend( BASE_MVC.LoggableMixin ).extend
         return this;
     },
 
-    /** override to reset allFetched flag to false */
-    reset : function( models, options ){
-        this.allFetched = false;
-        return _collectionSuper.prototype.reset.call( this, models, options );
-    },
+    // /** override to reset allFetched flag to false */
+    // reset : function( models, options ){
+    //     this.allFetched = false;
+    //     return _collectionSuper.prototype.reset.call( this, models, options );
+    // },
 
     toString: function toString(){
         return 'HistoryCollection(' + this.length + ',current:' + this.currentHistoryId + ')';

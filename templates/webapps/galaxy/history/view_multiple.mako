@@ -15,6 +15,11 @@
         margin: 0px;
         padding: 0px;
     }
+    .contents-loading-indicator {
+        /*background: blue;*/
+        /*color: white;*/
+        text-align: center;
+    }
     </style>
 </%def>
 
@@ -32,15 +37,17 @@ define( 'app', function(){
         $(function(){
             console.log( bootstrapped.order );
             histories = new HISTORY_MODEL.HistoryCollection( bootstrapped.histories, {
-                includeDeleted  : bootstrapped.includingDeleted,
-                order           : bootstrapped.order,
-                currentHistoryId: '${histories[0][ "id" ]}'
+                includeDeleted      : bootstrapped.includingDeleted,
+                order               : bootstrapped.order,
+                limitOnFirstFetch   : bootstrapped.limit,
+                limitPerFetch       : bootstrapped.limit,
+                lastFetched         : bootstrapped.limit,
+                currentHistoryId    : '${histories[0][ "id" ]}',
             });
 
             multipanel = new MULTI_HISTORY.MultiPanelColumns({
                 el                          : $( '#center' ).get(0),
                 histories                   : histories,
-                perPage                     : bootstrapped.limit
             }).render( 0 );
         });
     });

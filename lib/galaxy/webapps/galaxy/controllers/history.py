@@ -667,7 +667,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         history_dictionaries = []
         for history in histories:
             history_dictionary = self.history_serializer.serialize_to_view( history,
-                view='detailed', user=trans.user, trans=trans )
+                view='current', user=trans.user, trans=trans )
             history_dictionaries.append( history_dictionary )
 
         return trans.fill_template_mako( "history/view_multiple.mako", histories=history_dictionaries,

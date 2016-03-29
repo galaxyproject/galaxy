@@ -14,9 +14,9 @@ var ControlledFetchCollection = Backbone.Collection.extend({
 
     /**  */
     initialize : function( models, options ){
+        Backbone.Collection.prototype.initialize.call( this, models, options );
         this.setOrder( options.order || this.order, { silent: true });
-        this.on( 'all', function(){ console.log( this.toString(), arguments ); });
-        return Backbone.Collection.prototype.initialize.call( this, models, options );
+        // this.on( 'all', function(){ console.log( this.toString(), arguments ); });
     },
 
     /** set up to track order changes and re-sort when changed */
@@ -160,8 +160,17 @@ var PaginatedCollection = ControlledFetchCollection.extend({
     limitPerFetch       : 100,
 
     /**  */
+    initialize : function( models, options ){
+        ControlledFetchCollection.prototype.initialize.call( this, models, options );
+        this.limitOnFirstFetch = options.limitOnFirstFetch || this.limitOnFirstFetch;
+        this.limitPerFetch = options.limitPerFetch || this.limitPerFetch;
+        this.allFetched = false;
+        this.lastFetched = options.lastFetched || 0;
+    },
+
+    /**  */
     fetchFirst : function( options ){
-        console.log( 'ControlledFetchCollection.fetchFirst:', options );
+        // console.log( 'ControlledFetchCollection.fetchFirst:', options );
         options = options? _.clone( options ) : {};
         this.allFetched = false;
         this.lastFetched = 0;
@@ -173,11 +182,11 @@ var PaginatedCollection = ControlledFetchCollection.extend({
 
     /**  */
     fetchMore : function( options ){
-        console.log( 'ControlledFetchCollection.fetchMore:', options );
+        // console.log( 'ControlledFetchCollection.fetchMore:', options );
         options = _.clone( options || {} );
         var collection = this;
 
-        console.log( 'fetchMore, options.reset:', options.reset );
+        // console.log( 'fetchMore, options.reset:', options.reset );
         if( ( !options.reset && collection.allFetched ) ){
             console.warn( 'allFetched' ); return jQuery.when();
         }
@@ -186,7 +195,7 @@ var PaginatedCollection = ControlledFetchCollection.extend({
         //  the first fetch offset === limit (limit 4, offset 4, collection.length 4)
         options.offset = options.reset? 0 : collection.lastFetched;
         var limit = options.limit = options.limit || collection.limitPerFetch || null;
-        console.log( 'fetchMore, limit:', limit, 'offset:', options.offset );
+        // console.log( 'fetchMore, limit:', limit, 'offset:', options.offset );
 
         collection.trigger( 'fetching-more' );
         return collection.fetch( options )
@@ -197,7 +206,7 @@ var PaginatedCollection = ControlledFetchCollection.extend({
             .done( function _postFetchMore( fetchedData ){
                 var numFetched = _.isArray( fetchedData )? fetchedData.length : 0;
                 collection.lastFetched += numFetched;
-                console.log( 'fetchMore, lastFetched:', collection.lastFetched );
+                // console.log( 'fetchMore, lastFetched:', collection.lastFetched );
                 // anything less than a full page means we got all there is to get
                 if( !limit || numFetched < limit ){
                     collection.allFetched = true;

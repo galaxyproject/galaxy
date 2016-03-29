@@ -41,6 +41,38 @@ TODO:
     ?columns should be a panel, not have a panel
 
 ============================================================================== */
+/** A history view that  */
+var HistoryInnerView = HISTORY_VIEW_EDIT.HistoryViewEdit.extend({
+
+    /** override to avoid showing intial empty message */
+    _renderEmptyMessage : function( $whereTo ){
+        var self = this;
+        var empty = !self.model.get( 'contents_shown' ).shown;
+        var $emptyMsg = self.$emptyMessage( $whereTo );
+
+        if( empty ){
+            return $emptyMsg.empty().append( self.emptyMsg ).show();
+
+        } else if( self.searchFor && self.model.contents.haveDetails() ){
+            return $emptyMsg.empty().append( self.noneFoundMsg ).show();
+        }
+        return $();
+    },
+
+    /** override because (unlike other histories) $el is also the container for these views */
+    _scrollDistanceToBottom : function(){
+        var SLOP = 3;
+        var innerViewHeight = this.$el.children().toArray()
+            .map( function( e ){ return $( e ).outerHeight(); })
+            .reduce( function( a, c ){ return a + c; });
+        var scrollBottom = this.$el.scrollTop() + this.$el.innerHeight();
+        var distanceToBottom = ( SLOP + innerViewHeight ) - scrollBottom;
+        return distanceToBottom;
+    },
+});
+
+
+// ==============================================================================
 /** @class A container for a history panel that renders controls for that history (delete, copy, etc.)
  */
 var HistoryViewColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
@@ -66,52 +98,13 @@ var HistoryViewColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
     /** create a history panel for this column */
     createPanel : function createPanel( panelOptions ){
-        panelOptions = _.extend({
-            model       : this.model,
-            //el          : this.$panel(),
+        return new HistoryInnerView( _.defaults( panelOptions, {
+            model           : this.model,
             // non-current panels should set their hdas to draggable
-            purgeAllowed: this.purgeAllowed,
-            dragItems   : true
-        }, panelOptions );
-        //this.log( 'panelOptions:', panelOptions );
-//TODO: use current-history-panel for current
-        var panel = new HISTORY_VIEW_EDIT.HistoryViewEdit( panelOptions );
-        panel._renderEmptyMessage = this.__patch_renderEmptyMessage;
-        return panel;
-    },
-
-//TODO: move to stub-class to avoid monkey-patching
-    /** the function monkey-patched into panels to show contents loading state */
-    __patch_renderEmptyMessage : function( $whereTo ){
-        var panel = this,
-            // a more useful attribute, but does not account for collections (for some reason)
-            // hdaCount = _.chain( this.model.get( 'state_ids' ) ).values().flatten().value().length,
-            empty = panel.model.get( 'empty' ),
-            newMsg = panel.emptyMsg,
-            $emptyMsg = panel.$emptyMessage( $whereTo );
-
-        if( !_.isEmpty( panel.hdaViews ) ){
-            return $emptyMsg.hide();
-        }
-
-        if( !empty ){
-            if( !this.model.contents.length ){
-                newMsg = '<span class="fa fa-spinner fa-spin"></span> <i>' + _l( 'loading datasets' ) + '...</i>';
-
-            } if( panel.searchFor ){
-                // this is a hack until HDCAs implement searching and haveDetails entirely
-                var mixed = !!panel.model.contents.find( function( c ){
-                    return c.get( 'model_class' ) !== 'HistoryDatasetAssociation';
-                });
-                if( !mixed && !panel.model.contents.haveDetails() ){
-                    newMsg = '<span class="fa fa-spinner fa-spin"></span> <i>' + _l( 'searching' ) + '...</i>';
-
-                } else {
-                    newMsg = panel.noneFoundMsg;
-                }
-            }
-        }
-        return $emptyMsg.empty().append( newMsg ).show();
+            purgeAllowed    : this.purgeAllowed,
+            dragItems       : true,
+            $scrollContainer: function(){ return this.$el; },
+        }));
     },
 
     /** set up reflexive listeners */
@@ -362,7 +355,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         var multipanel = this;
         //multipanel.log( 'setUpListeners', multipanel );
         this.on( 'end-of-scroll', function(){
-            multipanel.collection.fetch({ limit : multipanel.perPage });
+            multipanel.collection.fetchMore();
         });
     },
 
@@ -389,6 +382,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
      *  @fires 'new-collection' when set with this view as the arg
      */
     addModels : function addModels( models, collection, options ){
+        console.log( 'addModels:', models, collection, options );
         options = options || {};
         var multipanel = this;
         models = _.isArray( models )? models : [ models ];
@@ -434,13 +428,16 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
     /** Re-render and set currentHistoryId to reflect a new current history */
     setCurrentHistory : function setCurrentHistory( history ){
+        // console.log( 'setCurrentHistory:', history );
         var oldCurrentColumn = _.findWhere( this.columnMap, { currentHistory: true });
         if( oldCurrentColumn ){
             oldCurrentColumn.currentHistory = false;
             oldCurrentColumn.$el.height( '' );
         }
+        // console.log( '                 :', oldCurrentColumn );
 
         var newCurrentColumn = this.columnMap[ this.collection.currentHistoryId ];
+        // console.log( '                 :', newCurrentColumn );
         newCurrentColumn.currentHistory = true;
         this.collection.sort();
         this._recalcFirstColumnHeight();
@@ -716,23 +713,17 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
      *      queueing the ajax call and using a named queue to prevent the call being sent twice
      */
     queueHdaFetch : function queueHdaFetch( column ){
-        //this.log( 'queueHdaFetch:', column );
+        // console.log( 'queueHdaFetch:', column, column.model.get( 'contents_shown' ) );
         // if the history model says it has hdas but none are present, queue an ajax req for them
-        if( column.model.contents.length === 0 && !column.model.get( 'empty' ) ){
+        if( column.model.contents.length === 0 && column.model.get( 'contents_shown' ).shown ){
             //this.log( '\t fetch needed:', column );
-            var xhrData = {},
-                ids = _.values( column.panel.storage.get( 'expandedIds' ) ).join();
-            if( ids ){
-                xhrData.details = ids;
-            }
+            var ids = _.values( column.panel.storage.get( 'expandedIds' ) ).join();
+            var fetchOptions = ids? { details : ids } : {};
             // this uses a 'named' queue so that duplicate requests are ignored
             this.hdaQueue.add({
                 name : column.model.id,
                 fn : function(){
-                    var xhr = column.model.contents.fetch({ data: xhrData, silent: true });
-                    return xhr.done( function( response ){
-                        column.panel.renderItems();
-                    });
+                    return column.model.contents.fetchFirst( fetchOptions );
                 }
             });
             // the queue is re-used, so if it's not processing requests - start it again
@@ -742,16 +733,13 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
     /** Get the *detailed* json for *all* of a column's history's contents - req'd for searching */
     queueHdaFetchDetails : function( column ){
-        if( ( column.model.contents.length === 0 && !column.model.get( 'empty' ) )
-        ||  ( !column.model.contents.haveDetails() ) ){
+        if( ( column.model.contents.length === 0 && column.model.get( 'contents_shown' ).shown )
+         || ( !column.model.contents.haveDetails() ) ){
             // this uses a 'named' queue so that duplicate requests are ignored
             this.hdaQueue.add({
                 name : column.model.id,
                 fn : function(){
-                    var xhr = column.model.contents.fetch({ data: { details: 'all' }, silent: true });
-                    return xhr.done( function( response ){
-                        column.panel.renderItems();
-                    });
+                    return column.model.contents.fetch({ details: 'all' });
                 }
             });
             // the queue is re-used, so if it's not processing requests - start it again
@@ -838,7 +826,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         collection.setOrder( orderKey );
         collection.reset( collection.slice( 0, 1 ), { silent : true });
         multipanel.setCollection( collection );
-        collection.fetch({ limit : multipanel.perPage });
+        collection.fetchFirst();
         multipanel.once( 'columns-rendered', multipanel._scrollLeft, this );
         //TODO: check allFetched and do not reset if so - just sort instead
     },

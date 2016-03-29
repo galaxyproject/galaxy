@@ -48,6 +48,9 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     /** @type {Number} limit used for each subsequent fetch */
     limitPerFetch       : 50,
 
+    /** @type {String} order used here and when fetching from server */
+    order : 'create_time',
+
     /** Set up */
     initialize : function( models, options ){
         options = options || {};
@@ -73,13 +76,6 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     url : function(){
         return this.urlRoot + '/' + this.historyId + '/contents';
     },
-
-    // ........................................................................ order
-    /** @type {String} order used here and when fetching from server */
-    order : 'create_time',
-
-    /** local comparator */
-    comparator : BASE_MVC.buildComparator( 'create_time', { ascending: false }),
 
     // ........................................................................ common queries
     /** Get the id of every model in this collection not in a 'ready' state (running).
@@ -194,7 +190,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
                 visible          : ''
             };
         }
-        console.log( 'fetching updated:', this.historyId, since );
+        // console.log( 'fetching updated:', this.historyId, since );
         return this.fetch( options )
             // .done( function( r ){ console.log( 'updated:\n', JSON.stringify( r ) ); })
             .done( function( r ){ console.log( 'updated:', r.length, r ); })
@@ -277,7 +273,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
 
     /**  */
     progressivelyFetchDetails : function( options ){
-        console.log( 'progressivelyFetchDetails:', options );
+        // console.log( 'progressivelyFetchDetails:', options );
         options = options || {};
         var deferred = jQuery.Deferred();
         var self = this;
@@ -309,7 +305,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
                 offset  : offset,
             });
 
-            console.log( 'fetchFn:', fetchFn + '' );
+            // console.log( 'fetchFn:', fetchFn + '' );
             var fetchFn = offset === 0? self.fetchFirst : self.fetchMore;
             // console.log( 'fetching:', _options.limit, _options.offset );
             _.defer( function(){

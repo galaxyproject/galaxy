@@ -356,7 +356,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
      *  @returns the visible item views
      */
     renderItems : function( $whereTo ){
-        console.log( 'rendering items -------------------------------------------' );
+        // console.log( this + ', rendering items -------------------------------------------' );
         $whereTo = $whereTo || this.$el;
         var panel = this;
         panel.log( this + '.renderItems', $whereTo );
@@ -366,16 +366,13 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         // console.log( 'views freed' );
         //TODO:? cache and re-use views?
         var shownModels = panel._filterCollection();
-        console.log( 'models filtered:', shownModels );
+        // console.log( 'models filtered:', shownModels );
 
         panel.views = shownModels.map( function( itemModel ){
             var view = panel._createItemView( itemModel );
             view.render( 0 );
             return view;
         });
-        // console.log( 'views created' );
-        //panel.debug( item$els );
-        //panel.debug( newViews );
 
         $list.empty();
         // console.log( 'list emptied' );
@@ -469,7 +466,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
 
     /** Attach views in this.views to the model based on $whereTo */
     _attachItems : function( $whereTo ){
-        console.log( '_attachItems:', $whereTo, this.$list( $whereTo ) );
+        // console.log( '_attachItems:', $whereTo, this.$list( $whereTo ) );
         //ASSUMES: $list has been emptied
         this.$list( $whereTo ).append( this.views.map( function( view ){
             return view.$el;
@@ -501,7 +498,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
     // ------------------------------------------------------------------------ collection/views syncing
     /** Add a view (if the model should be viewable) to the panel */
     addItemView : function( model, collection, options ){
-        console.log( this + '.addItemView:', model );
+        // console.log( this + '.addItemView:', model );
         var panel = this;
         // get the index of the model in the list of filtered models shown by this list
         // in order to insert the view in the proper place
@@ -565,7 +562,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
     /** add item views in bulk */
     bulkAppendItemViews : function( collection, response, options ){
         //PRECONDITION: response is an array of contguous content models
-        console.log( "bulkAppendItemViews:", collection, response, options );
+        // console.log( "bulkAppendItemViews:", collection, response, options );
         if( !response || !response.length ){ return; }
         var self = this;
 
@@ -575,7 +572,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         var firstModelIndex = self.collection.models.findIndex( function( m ){
             return m.id === response[0].type_id;
         });
-        console.log( 'firstModelIndex:', firstModelIndex );
+        // console.log( 'firstModelIndex:', firstModelIndex );
 
         var $viewEls = [];
         response.forEach( function( modelJSON ){
