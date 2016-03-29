@@ -529,11 +529,61 @@ def launch_server(app, webapp_factory, kwargs, prefix="GALAXY"):
     )
 
 
+class TestDriver(object):
+    """Responsible for the life-cycle of a Galaxy-style functional test.
+
+    Sets up servers, configures tests, runs nose, and tears things
+    down. This is somewhat like a Python TestCase - but different
+    because it is meant to provide a main() endpoint.
+    """
+
+    def __init__(self):
+        """Setup tracked resources."""
+        self.server_wrappers = []
+        self.temp_directories = []
+
+    def setup(self):
+        """Called before tests are built."""
+
+    def build_tests(self):
+        """After environment is setup, setup nose tests."""
+
+    def tear_down(self):
+        """Cleanup resources tracked by this object."""
+        for server_wrapper in self.server_wrappers:
+            server_wrapper.stop()
+        for temp_directory in self.temp_directories:
+            cleanup_directory(temp_directory)
+
+    def run(self):
+        """Driver whole test.
+
+        Setup environment, build tests (if needed), run test,
+        and finally cleanup resources.
+        """
+        configure_environment()
+        self.setup()
+        self.build_tests()
+        try:
+            success = nose_config_and_run()
+            return 0 if success else 1
+        except Exception as e:
+            log.info("Failure running tests")
+            raise e
+        finally:
+            log.info( "Shutting down")
+            self.tear_down()
+
+
+def drive_test(test_driver_class):
+    """Instantiate driver class, run, and exit appropriately."""
+    sys.exit(test_driver_class().run())
+
+
 __all__ = [
-    "cleanup_directory",
-    "configure_environment",
     "copy_database_template",
     "build_logger",
+    "drive_test",
     "FRAMEWORK_UPLOAD_TOOL_CONF",
     "FRAMEWORK_SAMPLE_TOOLS_CONF",
     "FRAMEWORK_DATATYPES_CONF",
@@ -542,5 +592,6 @@ __all__ = [
     "nose_config_and_run",
     "setup_galaxy_config",
     "setup_shed_tools_for_test",
+    "TestDriver",
     "wait_for_http_server",
 ]

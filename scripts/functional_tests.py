@@ -14,63 +14,61 @@ galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pa
 sys.path[1:1] = [ os.path.join( galaxy_root, "lib" ), os.path.join( galaxy_root, "test" ) ]
 
 from base import driver_util
-driver_util.configure_environment()
 log = driver_util.build_logger()
 
 from base.api_util import get_master_api_key, get_user_api_key
 from galaxy.web import buildapp
 
 
-def main():
-    """Entry point for test driver script."""
-    # ---- Configuration ------------------------------------------------------
-    testing_migrated_tools = _check_arg('-migrated')
-    testing_installed_tools = _check_arg('-installed')
-    testing_framework_tools = _check_arg('-framework')
-    testing_data_manager = _check_arg('-data_managers')
-    testing_workflow = _check_arg('-workflow')
-    testing_shed_tools = testing_migrated_tools or testing_installed_tools
+class GalaxyTestDriver(driver_util.TestDriver):
+    """Instantial a Galaxy-style nose TestDriver for testing Galaxy."""
 
-    datatypes_conf_override = None
-    default_tool_conf = None
+    def setup(self):
+        """Setup a Galaxy server for functional test (if needed)."""
+        # ---- Configuration ------------------------------------------------------
+        testing_migrated_tools = _check_arg('-migrated')
+        testing_installed_tools = _check_arg('-installed')
+        testing_framework_tools = _check_arg('-framework')
+        testing_data_manager = _check_arg('-data_managers')
+        testing_workflow = _check_arg('-workflow')
+        testing_shed_tools = testing_migrated_tools or testing_installed_tools
 
-    if testing_framework_tools:
-        default_tool_conf = driver_util.FRAMEWORK_SAMPLE_TOOLS_CONF
-        datatypes_conf_override = driver_util.FRAMEWORK_DATATYPES_CONF
+        datatypes_conf_override = None
+        default_tool_conf = None
 
-    external_galaxy = os.environ.get('GALAXY_TEST_EXTERNAL', None)
+        if testing_framework_tools:
+            default_tool_conf = driver_util.FRAMEWORK_SAMPLE_TOOLS_CONF
+            datatypes_conf_override = driver_util.FRAMEWORK_DATATYPES_CONF
 
-    galaxy_test_tmp_dir = driver_util.get_galaxy_test_tmp_dir()
+        external_galaxy = os.environ.get('GALAXY_TEST_EXTERNAL', None)
 
-    app = None
-    server_wrapper = None
+        galaxy_test_tmp_dir = driver_util.get_galaxy_test_tmp_dir()
+        self.temp_directories.append(galaxy_test_tmp_dir)
 
-    if external_galaxy is None:
-        tempdir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
-        # Configure the database path.
-        galaxy_db_path = driver_util.database_files_path(tempdir)
-        galaxy_config = driver_util.setup_galaxy_config(
-            galaxy_db_path,
-            use_test_file_dir=not testing_shed_tools,
-            default_install_db_merged=True,
-            default_tool_conf=default_tool_conf,
-            datatypes_conf=datatypes_conf_override,
-        )
+        if external_galaxy is None:
+            tempdir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
+            # Configure the database path.
+            galaxy_db_path = driver_util.database_files_path(tempdir)
+            galaxy_config = driver_util.setup_galaxy_config(
+                galaxy_db_path,
+                use_test_file_dir=not testing_shed_tools,
+                default_install_db_merged=True,
+                default_tool_conf=default_tool_conf,
+                datatypes_conf=datatypes_conf_override,
+            )
 
-        # ---- Build Application --------------------------------------------------
-        app = driver_util.build_galaxy_app(galaxy_config)
-        server_wrapper = driver_util.launch_server(
-            app,
-            buildapp.app_factory,
-            galaxy_config,
-        )
-        log.info("Functional tests will be run against %s:%s" % (server_wrapper.host, server_wrapper.port))
-    else:
-        log.info("Functional tests will be run against %s" % external_galaxy)
+            # ---- Build Application --------------------------------------------------
+            app = driver_util.build_galaxy_app(galaxy_config)
+            server_wrapper = driver_util.launch_server(
+                app,
+                buildapp.app_factory,
+                galaxy_config,
+            )
+            self.server_wrappers.append(server_wrapper)
+            log.info("Functional tests will be run against %s:%s" % (server_wrapper.host, server_wrapper.port))
+        else:
+            log.info("Functional tests will be run against %s" % external_galaxy)
 
-    # ---- Find tests ---------------------------------------------------------
-    success = False
-    try:
         if testing_shed_tools:
             driver_util.setup_shed_tools_for_test(
                 app,
@@ -106,20 +104,6 @@ def main():
                 master_api_key=get_master_api_key(),
                 user_api_key=get_user_api_key(),
             )
-        success = driver_util.nose_config_and_run()
-    except:
-        log.exception( "Failure running tests" )
-
-    log.info( "Shutting down" )
-    # ---- Tear down -----------------------------------------------------------
-    if server_wrapper is not None:
-        server_wrapper.stop()
-        server_wrapper = None
-    driver_util.cleanup_directory(galaxy_test_tmp_dir)
-    if success:
-        return 0
-    else:
-        return 1
 
 
 def _check_arg( name ):
@@ -132,4 +116,4 @@ def _check_arg( name ):
     return ret_val
 
 if __name__ == "__main__":
-    sys.exit( main() )
+    driver_util.drive_test(GalaxyTestDriver)
