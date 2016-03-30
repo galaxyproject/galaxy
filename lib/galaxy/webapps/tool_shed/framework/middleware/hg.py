@@ -74,7 +74,7 @@ class Hg( object ):
                     connection.execute( sql_cmd )
                     connection.close()
         elif cmd in [ 'unbundle', 'pushkey' ]:
-            if self.config[ 'disable_push' ]:
+            if self.config.get('disable_push', True):
                 msg = 'Pushing to Tool Shed is disabled.'
                 return self.__display_exception_remotely( start_response, msg )
             # This is an hg push from the command line.  When doing this, the following commands, in order,
