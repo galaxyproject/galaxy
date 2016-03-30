@@ -933,7 +933,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                             message += "The workflow requires the following tools that are not available in this Galaxy instance."
                             message += "You can likely install the required tools from one of the Galaxy tool sheds listed below.<br/>"
                             for missing_tool_tup in missing_tool_tups:
-                                missing_tool_id, missing_tool_name, missing_tool_version = missing_tool_tup
+                                missing_tool_id, missing_tool_name, missing_tool_version, step_id = missing_tool_tup
                                 message += "<b>Tool name</b> %s, <b>id</b> %s, <b>version</b> %s<br/>" % (
                                            escape( missing_tool_name ),
                                            escape( missing_tool_id ),
