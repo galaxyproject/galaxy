@@ -4,7 +4,7 @@ import os
 import shutil
 
 from six import string_types
-from sqlalchemy import false, or_
+from sqlalchemy import or_
 
 import tool_shed.repository_types.util as rt_util
 from admin import AdminGalaxy
@@ -191,6 +191,56 @@ class AdminToolshed( AdminGalaxy ):
         params = dict( galaxy_url=web.url_for( '/', qualified=True ) )
         url = util.build_url( tool_shed_url, pathspec=[ 'repository', 'browse_valid_categories' ], params=params )
         return trans.response.send_redirect( url )
+
+    @web.expose
+    @web.require_admin
+    def browse_toolsheds( self, trans, **kwd ):
+        message = escape( kwd.get( 'message', '' ) )
+        return trans.fill_template( '/webapps/galaxy/admin/toolsheds.mako',
+                                    message=message,
+                                    status='error' )
+
+    @web.expose
+    @web.require_admin
+    def browse_toolshed( self, trans, **kwd ):
+        tool_shed_url = kwd.get( 'tool_shed_url', '' )
+        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
+        url = common_util.url_join( tool_shed_url, pathspec=[ 'api', 'categories' ] )
+        categories = json.loads( common_util.tool_shed_get( trans.app, url ) )
+        repositories = []
+        url = common_util.url_join( tool_shed_url, pathspec=[ 'api', 'repositories' ] )
+        for repo in json.loads( common_util.tool_shed_get( trans.app, url ) ):
+            repositories.append( dict( value=repo[ 'id' ], label='%s/%s' % ( repo[ 'owner' ], repo[ 'name' ] ) ) )
+        return trans.fill_template( '/admin/tool_shed_repository/browse_categories.mako',
+                                    tool_shed_url=tool_shed_url,
+                                    categories=categories,
+                                    repositories=json.dumps( repositories ) )
+
+    @web.expose
+    @web.require_admin
+    def browse_tool_shed_category( self, trans, **kwd ):
+        tool_shed_url = kwd.get( 'tool_shed_url', '' )
+        category_id = kwd.get( 'category_id', '' )
+        url = common_util.url_join( tool_shed_url )
+        json_data = json.loads( common_util.tool_shed_get( trans.app, url, pathspec=[ 'api', 'categories', category_id, 'repositories' ] ) )
+        for idx, repository in enumerate( json_data[ 'repositories' ] ):
+            try:
+                metadata = json.loads( common_util.tool_shed_get( trans.app,
+                                                                  url,
+                                                                  pathspec=[ 'api', 'repositories', repository[ 'id' ], 'metadata' ],
+                                                                  params=dict( recursive=False ) ) )
+                json_data[ 'repositories' ][ idx ][ 'metadata' ] = metadata
+            except:
+                json_data[ 'repositories' ][ idx ][ 'metadata' ] = { 'tools_functionally_correct': True }
+
+        repositories = []
+        url = common_util.url_join( tool_shed_url, pathspec=[ 'api', 'repositories' ] )
+        for repo in json.loads( common_util.tool_shed_get( trans.app, url ) ):
+            repositories.append( dict( value=repo[ 'id' ], label='%s/%s' % ( repo[ 'owner' ], repo[ 'name' ] ) ) )
+        return trans.fill_template( '/admin/tool_shed_repository/browse_category.mako',
+                                    tool_shed_url=tool_shed_url,
+                                    category=json_data,
+                                    repositories=json.dumps( repositories ) )
 
     @web.expose
     @web.require_admin
@@ -1224,6 +1274,21 @@ class AdminToolshed( AdminGalaxy ):
 
     @web.expose
     @web.require_admin
+    def preview_repository( self, trans, **kwd ):
+        tool_shed_url = kwd.get( 'tool_shed_url', '' )
+        tsr_id = kwd.get( 'tsr_id', '' )
+        toolshed_data = json.loads( common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id ] ) )
+        toolshed_data[ 'metadata' ] = json.loads( common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id, 'metadata' ] ) )
+        shed_tool_conf_select_field = tool_util.build_shed_tool_conf_select_field( trans.app )
+        tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field( trans.app )
+        return trans.fill_template( '/admin/tool_shed_repository/preview_repository.mako',
+                                    tool_shed_url=tool_shed_url,
+                                    toolshed_data=toolshed_data,
+                                    tool_panel_section_select_field=tool_panel_section_select_field,
+                                    shed_tool_conf_select_field=shed_tool_conf_select_field )
+
+    @web.expose
+    @web.require_admin
     def purge_repository( self, trans, **kwd ):
         """Purge a "white ghost" repository from the database."""
         repository_id = kwd.get( 'id', None )
@@ -2008,41 +2073,8 @@ class AdminToolshed( AdminGalaxy ):
 
     @web.expose
     @web.require_admin
-    def update_tool_shed_status_for_installed_repository( self, trans, all_installed_repositories=False, **kwd ):
-        message = escape( kwd.get( 'message', '' ) )
-        status = kwd.get( 'status', 'done' )
-        if all_installed_repositories:
-            success_count = 0
-            repository_names_not_updated = []
-            updated_count = 0
-            for repository in trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
-                                                         .filter( trans.install_model.ToolShedRepository.table.c.deleted == false() ):
-                ok, updated = \
-                    repository_util.check_or_update_tool_shed_status_for_installed_repository( trans.app, repository )
-                if ok:
-                    success_count += 1
-                else:
-                    repository_names_not_updated.append( '<b>%s</b>' % escape( str( repository.name ) ) )
-                if updated:
-                    updated_count += 1
-            message = "Checked the status in the tool shed for %d repositories.  " % success_count
-            message += "Updated the tool shed status for %d repositories.  " % updated_count
-            if repository_names_not_updated:
-                message += "Unable to retrieve status from the tool shed for the following repositories:\n"
-                message += ", ".join( repository_names_not_updated )
-        else:
-            repository_id = kwd.get( 'id', None )
-            repository = suc.get_tool_shed_repository_by_id( trans.app, repository_id )
-            ok, updated = \
-                repository_util.check_or_update_tool_shed_status_for_installed_repository( trans.app, repository )
-            if ok:
-                if updated:
-                    message = "The tool shed status for repository <b>%s</b> has been updated." % escape( str( repository.name ) )
-                else:
-                    message = "The status has not changed in the tool shed for repository <b>%s</b>." % escape( str( repository.name ) )
-            else:
-                message = "Unable to retrieve status from the tool shed for repository <b>%s</b>." % escape( str( repository.name ) )
-                status = 'error'
+    def update_tool_shed_status_for_installed_repository( self, trans, **kwd ):
+        message, status = repository_util.check_for_updates( trans.app, trans.install_model, kwd.get( 'id', None ) )
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                           action='browse_repositories',
                                                           message=message,

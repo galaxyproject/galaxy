@@ -785,6 +785,8 @@ class RepositoriesController( BaseAPIController ):
                 metadata_dict[ 'tool_dependencies' ] = repository.get_tool_dependencies( changehash )
             else:
                 metadata_dict[ 'tool_dependencies' ] = {}
+            if metadata.includes_tools:
+                metadata_dict[ 'tools' ] = metadata.metadata[ 'tools' ]
             all_metadata[ '%s:%s' % ( int( changeset ), changehash ) ] = metadata_dict
         return all_metadata
 

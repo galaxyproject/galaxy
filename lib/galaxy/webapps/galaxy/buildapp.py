@@ -147,8 +147,8 @@ def uwsgi_app_factory():
     root = os.path.abspath(uwsgi.opt.get('galaxy_root', os.getcwd()))
     config_file = uwsgi.opt.get('galaxy_config_file', os.path.join(root, 'config', 'galaxy.ini'))
     global_conf = {
-        '__file__' : config_file if os.path.exists(__file__) else None,
-        'here' : root }
+        '__file__': config_file if os.path.exists(__file__) else None,
+        'here': root }
     parser = configparser.ConfigParser()
     parser.read(config_file)
     try:
@@ -626,6 +626,18 @@ def populate_api_routes( webapp, app ):
                             path_prefix='/api',
                             new={ 'install_repository_revision': 'POST' },
                             parent_resources=dict( member_name='tool_shed_repository', collection_name='tool_shed_repositories' ) )
+
+    webapp.mapper.connect( 'tool_shed_repository',
+                           '/api/tool_shed_repositories/:id/status',
+                           controller='tool_shed_repositories',
+                           action='status',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'install_repository',
+                           '/api/tool_shed_repositories/install',
+                           controller='tool_shed_repositories',
+                           action='install',
+                           conditions=dict( method=[ 'POST' ] ) )
 
     # ==== Trace/Metrics Logger
     # Connect logger from app

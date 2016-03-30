@@ -37,11 +37,12 @@ class ToolPanelManager( object ):
             self.config_elems_to_xml_file( config_elems, shed_tool_conf, tool_path )
 
     def add_to_tool_panel( self, repository_name, repository_clone_url, changeset_revision, repository_tools_tups, owner,
-                           shed_tool_conf, tool_panel_dict, new_install=True ):
+                           shed_tool_conf, tool_panel_dict, new_install=True, tool_panel_section_mapping={} ):
         """A tool shed repository is being installed or updated so handle tool panel alterations accordingly."""
         # We need to change the in-memory version and the file system version of the shed_tool_conf file.
         shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
         tool_path = shed_tool_conf_dict[ 'tool_path' ]
+        tool_panel_dict = self.update_tool_panel_dict( tool_panel_dict, tool_panel_section_mapping, repository_tools_tups )
         # Generate the list of ElementTree Element objects for each section or tool.
         elem_list = self.generate_tool_panel_elem_list( repository_name,
                                                         repository_clone_url,
@@ -465,3 +466,14 @@ class ToolPanelManager( object ):
         # Update the config_elems of the in-memory shed_tool_conf_dict.
         shed_tool_conf_dict[ 'config_elems' ] = config_elems
         toolbox.update_shed_config( shed_tool_conf_dict, integrated_panel_changes=uninstall )
+
+    def update_tool_panel_dict( self, tool_panel_dict, tool_panel_section_mapping, repository_tools_tups ):
+        for tool_guid in tool_panel_dict:
+            if tool_guid not in tool_panel_section_mapping:
+                continue
+            for idx, tool in enumerate( tool_panel_dict[ tool_guid ] ):
+                section_name = tool_panel_section_mapping[ tool_guid ][ 'tool_panel_section' ]
+                section_id = str( tool_panel_section_mapping[ tool_guid ][ 'tool_panel_section' ].lower().replace( ' ', '_' ) )
+                tool_panel_dict[ tool_guid ][ idx ][ 'name' ] = section_name
+                tool_panel_dict[ tool_guid ][ idx ][ 'id' ] = section_id
+        return tool_panel_dict

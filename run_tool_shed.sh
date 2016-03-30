@@ -2,6 +2,13 @@
 
 cd `dirname $0`
 
+: ${GALAXY_VIRTUAL_ENV:=.venv}
+
+if [ -d "$GALAXY_VIRTUAL_ENV" ];
+then
+    . "$GALAXY_VIRTUAL_ENV/bin/activate"
+fi
+
 ./scripts/common_startup.sh
 
 : ${GALAXY_VIRTUAL_ENV:=.venv}
