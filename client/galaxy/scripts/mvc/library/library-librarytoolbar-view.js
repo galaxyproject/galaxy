@@ -148,7 +148,7 @@ var LibraryToolbarView = Backbone.View.extend({
   includeDeletedChecked: function( event ){
     if (event.target.checked){
         Galaxy.libraries.preferences.set( { 'with_deleted': true } );
-        Galaxy.libraries.libraryListView.render();
+        Galaxy.libraries.libraryListView.fetchDeleted();
     } else{
         Galaxy.libraries.preferences.set( { 'with_deleted': false } );
         Galaxy.libraries.libraryListView.render();
@@ -182,7 +182,9 @@ var LibraryToolbarView = Backbone.View.extend({
               '<% if(admin_user === true) { %>',
                   '<div class="checkbox toolbar-item" style="height: 20px;">',
                     '<label>',
-                      '<input id="include_deleted_chk" type="checkbox"> include deleted </input>',
+                      '<input id="include_deleted_chk" type="checkbox">',
+                        '&nbsp;include deleted ',
+                      '</input>',
                     '</label>',
                   '</div>',
                   '<span class="toolbar-item" data-toggle="tooltip" data-placement="top" title="Create New Library">',
