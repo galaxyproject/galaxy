@@ -854,59 +854,6 @@ class TaxonomySummary(Tabular):
         Tabular.__init__( self, **kwd )
         self.column_names = ['taxlevel','rankID','taxon','daughterlevels','total']
 
-class Phylip(Text):
-    file_ext = 'mothur.phy'
-
-    def sniff( self, filename ):
-        """
-        Determines whether the file is in Phylip format (Interleaved or Sequential)
-        The first line of the input file contains the number of species and the
-        number of characters, in free format, separated by blanks (not by
-        commas). The information for each species follows, starting with a
-        ten-character species name (which can include punctuation marks and blanks),
-        and continuing with the characters for that species.
-        http://evolution.genetics.washington.edu/phylip/doc/main.html#inputfiles
-        Interleaved Example:
-            6   39
-        Archaeopt CGATGCTTAC CGCCGATGCT
-        HesperorniCGTTACTCGT TGTCGTTACT
-        BaluchitheTAATGTTAAT TGTTAATGTT
-        B. virginiTAATGTTCGT TGTTAATGTT
-        BrontosaurCAAAACCCAT CATCAAAACC
-        B.subtilisGGCAGCCAAT CACGGCAGCC
-        
-        TACCGCCGAT GCTTACCGC
-        CGTTGTCGTT ACTCGTTGT
-        AATTGTTAAT GTTAATTGT
-        CGTTGTTAAT GTTCGTTGT
-        CATCATCAAA ACCCATCAT
-        AATCACGGCA GCCAATCAC
-        """
-        try:
-            with open( filename ) as fh:
-                # counts line
-                line = fh.readline().strip()
-                linePieces = line.split()
-                count = int(linePieces[0])
-                seq_len = int(linePieces[1])
-                # data lines
-                """
-                TODO check data lines
-                while True:
-                    line = fh.readline()
-                    # name is the first 10 characters
-                    name = line[0:10]
-                    seq = line[10:].strip()
-                    # nucleic base or amino acid 1-char designators (spaces allowed)
-                    bases = ''.join(seq.split())
-                    # float per base (each separated by space)
-                """
-                return True
-        except:
-            pass
-        return False
-
-
 class Axes(Tabular):
     file_ext = 'mothur.axes'
 

@@ -550,7 +550,6 @@
     <sniffer type="galaxy.datatypes.mothur:Frequency"/>
     <sniffer type="galaxy.datatypes.mothur:LaneMask"/>
     <sniffer type="galaxy.datatypes.mothur:RefTaxonomy"/>
-    <sniffer type="galaxy.datatypes.mothur:Phylip"/>
     <sniffer type="galaxy.datatypes.mothur:Axes"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyAscii"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyBinary"/>
