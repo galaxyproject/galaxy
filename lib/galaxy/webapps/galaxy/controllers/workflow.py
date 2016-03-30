@@ -870,7 +870,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 # NOTE: blocks the web thread.
                 try:
                     workflow_data = urllib2.urlopen( url ).read()
-                except Exception, e:
+                except Exception as e:
                     message = "Failed to open URL: <b>%s</b><br>Exception: %s" % ( escape( url ), escape( str( e ) ) )
                     status = 'error'
             elif workflow_text:
@@ -897,7 +897,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 # Convert incoming workflow data from json
                 try:
                     data = json.loads( workflow_data )
-                except Exception, e:
+                except Exception as e:
                     data = None
                     message = "The data content does not appear to be a Galaxy workflow."
                     status = 'error'
