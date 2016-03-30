@@ -136,6 +136,7 @@ class Configuration( object ):
         self.sentry_dsn = kwargs.get( 'sentry_dsn', None )
         # Where the tool shed hgweb.config file is stored - the default is the Galaxy installation directory.
         self.hgweb_config_dir = resolve_path( kwargs.get( 'hgweb_config_dir', '' ), self.root )
+        self.disable_push = string_as_bool( kwargs.get( "disable_push", "True" ) )
         # Proxy features
         self.apache_xsendfile = kwargs.get( 'apache_xsendfile', False )
         self.nginx_x_accel_redirect_base = kwargs.get( 'nginx_x_accel_redirect_base', False )
