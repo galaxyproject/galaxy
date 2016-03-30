@@ -300,9 +300,10 @@ var History = Backbone.Model
         if( !allDatasets ){
             postData.all_datasets = false;
         }
+        postData.view = 'current';
 
-        var history = this,
-            copy = jQuery.post( this.urlRoot, postData );
+        var history = this;
+        var copy = jQuery.post( this.urlRoot, postData );
         // if current - queue to setAsCurrent before firing 'copied'
         if( current ){
             return copy.then( function( response ){
@@ -351,7 +352,6 @@ var HistoryCollection = _collectionSuper.extend( BASE_MVC.LoggableMixin ).extend
     limitOnFirstFetch   : 10,
     /** @type {Number} limit used for each subsequent fetch */
     limitPerFetch       : 10,
-
 
     initialize : function( models, options ){
         options = options || {};
@@ -412,6 +412,10 @@ var HistoryCollection = _collectionSuper.extend( BASE_MVC.LoggableMixin ).extend
         if( !this.includeDeleted ){
             filters.deleted = false;
             filters.purged = false;
+        } else {
+            // force API to return both deleted and non
+            //TODO: when the API is updated, remove this
+            filters.deleted = null;
         }
         return _.defaults( superFilters, filters );
     },
@@ -462,16 +466,11 @@ var HistoryCollection = _collectionSuper.extend( BASE_MVC.LoggableMixin ).extend
         return this;
     },
 
-    // /** override to reset allFetched flag to false */
-    // reset : function( models, options ){
-    //     this.allFetched = false;
-    //     return _collectionSuper.prototype.reset.call( this, models, options );
-    // },
-
     toString: function toString(){
         return 'HistoryCollection(' + this.length + ',current:' + this.currentHistoryId + ')';
     }
 });
+window.HistoryCollection = HistoryCollection;
 
 
 //==============================================================================

@@ -36,23 +36,29 @@ define( 'app', function(){
     ], function( HISTORY_MODEL, MULTI_HISTORY ){
         $(function(){
             console.log( bootstrapped.order );
-            histories = new HISTORY_MODEL.HistoryCollection( bootstrapped.histories, {
+            histories = new HISTORY_MODEL.HistoryCollection( [], {
                 includeDeleted      : bootstrapped.includingDeleted,
                 order               : bootstrapped.order,
                 limitOnFirstFetch   : bootstrapped.limit,
                 limitPerFetch       : bootstrapped.limit,
-                lastFetched         : bootstrapped.limit,
-                currentHistoryId    : '${histories[0][ "id" ]}',
+                // lastFetched         : bootstrapped.limit,
+                currentHistoryId    : bootstrapped.current_history_id,
             });
 
             multipanel = new MULTI_HISTORY.MultiPanelColumns({
                 el                          : $( '#center' ).get(0),
                 histories                   : histories,
-            }).render( 0 );
+            })
+            histories.fetchFirst().done( function(){
+                multipanel.createColumns();
+                multipanel.render( 0 );
+            });
         });
     });
 });
 </script>
-${ galaxy_client.load( app='app', histories=histories,
+${ galaxy_client.load( app='app', current_history_id=current_history_id,
     includingDeleted=include_deleted_histories, order=order, limit=limit ) }
+##${ galaxy_client.load( app='app', histories=histories,
+##    includingDeleted=include_deleted_histories, order=order, limit=limit ) }
 </%def>

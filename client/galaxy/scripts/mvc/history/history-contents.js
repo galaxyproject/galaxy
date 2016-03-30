@@ -95,7 +95,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return _.first( this.filter( function( content ){ return content.get( 'hid' ) === hid; }) );
     },
 
-    /** return true if any contents don't have details */
+    /** return true if all contents have details */
     haveDetails : function(){
         return this.all( function( content ){ return content.hasDetails(); });
     },
@@ -330,6 +330,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
 
     /** copy an existing, accessible hda into this collection */
     copy : function( json ){
+        // TODO: somehow showhorn all this into 'save'
         var id, type, contentType;
         if( _.isString( json ) ){
             id = json;
@@ -351,7 +352,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
                 type    : type
             })
             .done( function( response ){
-                collection.add([ response ]);
+                collection.add([ response ], { parse: true });
             })
             .fail( function( error, status, message ){
                 collection.trigger( 'error', collection, xhr, {},
@@ -386,6 +387,16 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     },
 
     // ........................................................................ searching
+    /** return true if all contents have the searchable attributes */
+    haveSearchDetails : function(){
+        return this.allFetched && this.all( function( content ){
+            // null (which is a valid returned annotation value)
+            // will return false when using content.has( 'annotation' )
+            //TODO: a bit hacky - formalize
+            return _.has( content.attributes, 'annotation' );
+        });
+    },
+
     /** return a new collection of contents whose attributes contain the substring matchesWhat */
     matches : function( matchesWhat ){
         return this.filter( function( content ){

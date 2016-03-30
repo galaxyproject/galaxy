@@ -115,6 +115,12 @@ var ControlledFetchCollection = Backbone.Collection.extend({
         return filterMap;
     },
 
+    /** override to reset allFetched flag to false */
+    reset : function( models, options ){
+        this.allFetched = false;
+        return Backbone.Collection.prototype.reset.call( this, models, options );
+    },
+
     // ........................................................................ order
     order : null,
 
@@ -133,7 +139,8 @@ var ControlledFetchCollection = Backbone.Collection.extend({
         options = options || {};
         var collection = this;
         var comparator = collection.comparators[ order ];
-        if( _.isUndefined( comparator ) ){ return; }
+        if( _.isUndefined( comparator ) ){ throw new Error( 'unknown order: ' + order ); }
+        // if( _.isUndefined( comparator ) ){ return; }
         if( comparator === collection.comparator ){ return; }
 
         var oldOrder = collection.order;
@@ -210,12 +217,26 @@ var PaginatedCollection = ControlledFetchCollection.extend({
                 // anything less than a full page means we got all there is to get
                 if( !limit || numFetched < limit ){
                     collection.allFetched = true;
-                    collection.trigger( 'all-fetched', collection );
+                    collection.trigger( 'all-fetched', this );
                 }
             }
         );
     },
 
+    fetchAll : function( options ){
+        // whitelist options to prevent allowing limit/offset/filters
+        // (use vanilla fetch instead)
+        options = options || {};
+        var self = this;
+        options = _.pick( options, 'silent' );
+//TODO: this doesn't work
+        options.filters = {};
+        return self.fetch( options ).done( function( fetchData ){
+            console.log( 'triggering:...' );
+            self.allFetched = true;
+            self.trigger( 'all-fetched', self );
+        });
+    },
 });
 
 

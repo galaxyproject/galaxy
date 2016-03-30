@@ -106,28 +106,31 @@ var HistoryView = _super.extend(
     },
 
     // ------------------------------------------------------------------------ inf. scrolling
+    /** @type {Number} ms to debounce scroll handler for infinite scrolling */
+    INFINITE_SCROLL_DEBOUNCE_MS : 40,
+    /** @type {Number} number of px (or less) from the bottom the scrollbar should be before fetching */
+    INFINITE_SCROLL_FETCH_THRESHOLD_PX : 128,
+
     /** override to track the scroll container for this view */
     _setUpBehaviors : function( $where ){
-        var DEBOUNCED_MS = 40,
-            self = this,
+        var self = this,
             $newRender = _super.prototype._setUpBehaviors.call( this, $where );
         // this needs to be handled outside the events hash since we're accessing the scollContainer
         // (rebind and debounce the method so we can cache for any later removal)
-        self.scrollHandler = _.debounce( _.bind( this.scrollHandler, self ), DEBOUNCED_MS );
+        self.scrollHandler = _.debounce( _.bind( this.scrollHandler, self ), self.INFINITE_SCROLL_DEBOUNCE_MS );
         self.$scrollContainer( $where ).on( 'scroll', self.scrollHandler );
         return self;
     },
 
     /**  */
     scrollHandler : function( ev ){
-        var FETCH_MORE_PX_THRESHOLD = 128;
         var self = this;
         var pxToBottom = self._scrollDistanceToBottom();
 
         // if the scrollbar is past the trigger point, we're not already fetching,
-        // AND we're not displaying some panel OVER this one
+        // AND we're not displaying some panel OVER this one: fetch more contents
         // note: is( :visible ) won't work here - it's still visible when this is covered with other panels
-        if( pxToBottom < FETCH_MORE_PX_THRESHOLD && !self._fetching && _.isEmpty( self.panelStack ) ){
+        if( pxToBottom < self.INFINITE_SCROLL_FETCH_THRESHOLD_PX && !self._fetching && _.isEmpty( self.panelStack ) ){
             self.listenToOnce( self.model.contents, 'sync', self.bulkAppendItemViews );
             // TODO: gotta be a better way than a _fetching flag
             self._fetching = true;

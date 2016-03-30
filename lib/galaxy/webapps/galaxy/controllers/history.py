@@ -638,39 +638,17 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             user_is_owner=user_is_owner, history_is_current=history_is_current,
             show_deleted=show_deleted, show_hidden=show_hidden, use_panels=use_panels )
 
-    # @web.require_login( "use more than one Galaxy history" )
+    @web.require_login( "use more than one Galaxy history" )
     @web.expose
     def view_multiple( self, trans, include_deleted_histories=False, order='update_time', limit=10 ):
         """
         """
-        if not trans.user:
-            log_in_url = url_for( controller="user", action="login", use_panels=True )
-            log_in_link = "<a href='%s'>log in</a>" % ( log_in_url )
-            register_url = url_for( controller="user", action="create", use_panels=True )
-            register_link = "<a href='%s'>register</a>" % ( register_url )
-            return trans.show_error_message( "You need to %s or %s to use multiple histories"
-                                             % ( log_in_link, register_link ), use_panels=True )
-
+        current_history_id = trans.security.encode_id( trans.history.id )
         # TODO: allow specifying user_id for admin?
         include_deleted_histories = galaxy.util.string_as_bool( include_deleted_histories )
-        order_by = self.history_manager.parse_order_by( order, default='update_time' )
         limit = parse_int( limit, min_val=1, default=10, allow_none=True)
 
-        deleted_filter = None
-        if not include_deleted_histories:
-            deleted_filter = [ model.History.deleted == false(), model.History.purged == false() ]
-
-        current_history = trans.get_history()
-        histories = [ current_history ]
-        histories += self.history_manager.by_user( trans.user, filters=deleted_filter, limit=limit, order_by=order_by )
-
-        history_dictionaries = []
-        for history in histories:
-            history_dictionary = self.history_serializer.serialize_to_view( history,
-                view='current', user=trans.user, trans=trans )
-            history_dictionaries.append( history_dictionary )
-
-        return trans.fill_template_mako( "history/view_multiple.mako", histories=history_dictionaries,
+        return trans.fill_template_mako( "history/view_multiple.mako", current_history_id=current_history_id,
             include_deleted_histories=include_deleted_histories, order=order, limit=limit )
 
     @web.expose
