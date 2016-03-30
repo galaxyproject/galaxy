@@ -15,7 +15,7 @@ var LibraryToolbarView = Backbone.View.extend({
   },
 
   events: {
-    'click #create_new_library_btn' : 'showLibraryModal',
+    'click #create_new_library_btn' : 'createLibraryFromModal',
     'click #include_deleted_chk'    : 'includeDeletedChecked',
     'click #lib_page_size_prompt'   : 'showPageSizePrompt',
     'keyup .library-search-input'   : 'searchLibraries'
@@ -58,7 +58,7 @@ var LibraryToolbarView = Backbone.View.extend({
    * User clicked on 'New library' button. Show modal to
    * satisfy the wish.
    */
-  showLibraryModal : function (event){
+  createLibraryFromModal : function (event){
     event.preventDefault();
     event.stopPropagation();
     var self = this;
@@ -240,7 +240,7 @@ var LibraryToolbarView = Backbone.View.extend({
     return _.template([
       '<div id="new_library_modal">',
         '<form>',
-          '<input type="text" name="Name" value="" placeholder="Name">',
+          '<input type="text" name="Name" value="" placeholder="Name" autofocus>',
           '<input type="text" name="Description" value="" placeholder="Description">',
           '<input type="text" name="Synopsis" value="" placeholder="Synopsis">',
         '</form>',

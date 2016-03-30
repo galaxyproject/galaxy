@@ -53,9 +53,12 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             results = []
             if hits:
                 for hit in hits:
-                    tool = self._get_tool( hit )
-                    if tool:
-                        results.append( tool.id )
+                    try:
+                        tool = self._get_tool( hit, user=trans.user )
+                        if tool:
+                            results.append( tool.id )
+                    except exceptions.AuthenticationFailed:
+                        pass
             return results
 
         # Find whether to detect.
@@ -218,6 +221,11 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         tool = trans.app.toolbox.get_tool( payload[ 'tool_id' ] , tool_version ) if 'tool_id' in payload else None
         if not tool or not tool.allow_user_access( trans.user ):
             raise exceptions.MessageException( 'Tool not found or not accessible.' )
+        if trans.app.config.user_activation_on:
+            if not trans.user:
+                log.warning( "Anonymous user attempts to execute tool, but account activation is turned on." )
+            elif not trans.user.active:
+                log.warning( "User \"%s\" attempts to execute tool, but account activation is turned on and user account is not active." % trans.user.email )
 
         # Set running history from payload parameters.
         # History not set correctly as part of this API call for
@@ -295,8 +303,10 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
     def _get_tool( self, id, tool_version=None, user=None ):
         id = urllib.unquote_plus( id )
         tool = self.app.toolbox.get_tool( id, tool_version )
-        if not tool or not tool.allow_user_access( user ):
-            raise exceptions.ObjectNotFound("Could not find tool with id '%s'" % id)
+        if not tool:
+            raise exceptions.ObjectNotFound( "Could not find tool with id '%s'." % id )
+        if not tool.allow_user_access( user ):
+            raise exceptions.AuthenticationFailed( "Access denied, please login for tool with id '%s'." % id )
         return tool
 
     def _rerun_tool( self, trans, payload, **kwargs ):

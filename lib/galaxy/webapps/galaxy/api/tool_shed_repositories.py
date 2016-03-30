@@ -14,7 +14,6 @@ from galaxy.web.base.controller import BaseAPIController
 from tool_shed.galaxy_install.install_manager import InstallRepositoryManager, RepositoriesInstalledException
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryManager
-from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
 from tool_shed.util import workflow_util
@@ -115,7 +114,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         params = dict( name=name, owner=owner )
         pathspec = [ 'api', 'repositories', 'get_ordered_installable_revisions' ]
         try:
-            raw_text = common_util.tool_shed_get( self.app, tool_shed_url, pathspec=pathspec, params=params )
+            raw_text = util.url_get( tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
         except Exception, e:
             message = "Error attempting to retrieve the latest installable revision from tool shed %s for repository %s owned by %s: %s" % \
                 ( str( tool_shed_url ), str( name ), str( owner ), str( e ) )

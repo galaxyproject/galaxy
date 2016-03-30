@@ -62,7 +62,7 @@ class TestExportImportRepository( ShedTwillTestCase ):
         '''
         global capsule_filepath
         repository = self.test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
-        capsule_filepath = self.export_capsule( repository )
+        capsule_filepath = self.export_capsule( repository, aggressive=True, includes_dependencies=True )
         log.debug( os.path.exists( capsule_filepath ) )
 
     def test_0015_verify_exported_capsule( self ):

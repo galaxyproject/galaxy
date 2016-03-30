@@ -186,7 +186,7 @@ class JobHandlerQueue( object ):
         jobs (either from the database or from its own queue), then iterates
         over all new and waiting jobs to check the state of the jobs each
         depends on. If the job has dependencies that have not finished, it
-        it goes to the waiting queue. If the job has dependencies with errors,
+        goes to the waiting queue. If the job has dependencies with errors,
         it is marked as having errors and removed from the queue. If the job
         belongs to an inactive user it is ignored.
         Otherwise, the job is dispatched.

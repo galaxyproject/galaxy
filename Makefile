@@ -5,12 +5,47 @@ RELEASE_NEXT:=16.04
 #RELEASE_NEXT_BRANCH:=release_$(RELEASE_NEXT)
 RELEASE_NEXT_BRANCH:=dev
 RELEASE_UPSTREAM:=upstream
+# Location of virtualenv used for development.
+VENV?=.venv
+# Source virtualenv to execute command (flake8, sphinx, twine, etc...)
+IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
+PROJECT_URL?=https://github.com/galaxyproject/galaxy
 GRUNT_DOCKER_NAME:=galaxy/client-builder:16.01
 
 all: help
 	@echo "This makefile is primarily used for building Galaxy's JS client. A sensible all target is not yet implemented."
 
-npm-deps:
+docs: ## generate Sphinx HTML documentation, including API docs
+	$(IN_VENV) $(MAKE) -C doc clean
+	$(IN_VENV) $(MAKE) -C doc html
+
+_open-docs:
+	open doc/_build/html/index.html || xdg-open doc/_build/html/index.html
+
+open-docs: docs _open-docs ## generate Sphinx HTML documentation and open in browser
+
+open-project: ## open project on github
+	open $(PROJECT_URL) || xdg-open $(PROJECT_URL)
+
+lint: ## check style using tox and flake8 for Python 2 and Python 3
+	$(IN_VENV) tox -e py27-lint && tox -e py34-lint
+
+release-issue: ## Create release issue on github
+	$(IN_VENV) python scripts/bootstrap_history.py --create-release-issue $(RELEASE_CURR)
+
+release-check-metadata: ## check github PR metadata for target release
+	$(IN_VENV) python scripts/bootstrap_history.py --check-release $(RELEASE_CURR)
+
+release-check-blocking-issues: ## Check github for release blocking issues
+	$(IN_VENV) python scripts/bootstrap_history.py --check-blocking-issues $(RELEASE_CURR)
+
+release-check-blocking-prs: ## Check github for release blocking PRs
+	$(IN_VENV) python scripts/bootstrap_history.py --check-blocking-prs $(RELEASE_CURR)
+
+release-bootstrap-history: ## bootstrap history for a new release
+	$(IN_VENV) python scripts/bootstrap_history.py --release $(RELEASE_CURR)
+
+npm-deps: ## Install NodeJS dependencies.
 	cd client && npm install
 
 grunt: npm-deps ## Calls out to Grunt to build client
@@ -22,7 +57,7 @@ style: npm-deps ## Calls the style task of Grunt
 webpack: npm-deps ## Pack javascript
 	cd client && node_modules/webpack/bin/webpack.js -p
 
-client: grunt style webpack ## Process all client-side tasks
+client: grunt style webpack ## Rebuild all client-side artifacts
 
 grunt-docker-image: ## Build docker image for running grunt
 	docker build -t ${GRUNT_DOCKER_NAME} client
@@ -35,7 +70,7 @@ clean-grunt-docker-image: ## Remove grunt docker image
 
 
 # Release Targets
-create_release_rc: ## Create a release-candidate branch
+release-create-rc: ## Create a release-candidate branch 
 	git checkout dev
 	git pull --ff-only ${RELEASE_UPSTREAM} dev
 	git push origin dev
