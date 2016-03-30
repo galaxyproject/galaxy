@@ -2,6 +2,7 @@
 Provides a `TraceLogger` implementation that logs to a fluentd collector
 """
 
+import json
 import threading
 import time
 
@@ -41,4 +42,4 @@ class FluentTraceLogger( object ):
             kwargs.update( self.thread_local.context )
         self.lock.release()
         event_time = event_time or time.time()
-        self.sender.emit_with_time( label, int(event_time), kwargs )
+        self.sender.emit_with_time( label, int(event_time), json.dumps(kwargs, default=str))
