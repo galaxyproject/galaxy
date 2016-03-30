@@ -540,7 +540,7 @@ class ShedTwillTestCase( TwillTestCase ):
             'Repository <b>%s</b> has been created' % name,
         ]
 
-    def export_capsule( self, repository, aggressive=False, includes_dependencies=None ):
+    def export_capsule( self, repository, aggressive=True, includes_dependencies=None ):
         # TODO: Remove this method and restore _exort_capsule as export_capsule
         # after transient problem is fixed.
         if not aggressive:
@@ -548,18 +548,11 @@ class ShedTwillTestCase( TwillTestCase ):
         else:
             try:
                 return self._export_capsule(repository, includes_dependencies=includes_dependencies)
-            except Exception as original_error:
+            except Exception:
+                # Empirically this fails occasionally, we don't know
+                # why however.
                 time.sleep(1)
-                capsule_filename = None
-                try:
-                    capsule_filename = self._export_capsule( repository )
-                except Exception:
-                    pass
-                if capsule_filename is None:
-                    log.info("Tried and retried to export capsule - this is a known issue with the test case - the test will fail.")
-                    raise original_error
-                else:
-                    raise Exception("Transient problem with export capsule test would be fixed with a sleep and retry")
+                return self._export_capsule( repository, includes_dependencies=includes_dependencies)
 
     def _export_capsule( self, repository, includes_dependencies=None ):
         url = '/repository/export?repository_id=%s&changeset_revision=%s' % \
