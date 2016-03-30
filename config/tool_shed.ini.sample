@@ -35,9 +35,6 @@ database_file = database/community.sqlite
 # The default is the Galaxy installation directory.
 #hgweb_config_dir = None
 
-# Disable Mercurial pushing to repositories.
-#disable_push = True
-
 # Where tool shed repositories are stored.
 file_path = database/community_files
 # Temporary storage for additional datasets,
