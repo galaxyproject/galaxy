@@ -73,9 +73,7 @@ class Otu( Text ):
                             except ValueError:
                                 return False
                         count += 1
-                        if count == 5:
-                            return True
-            if count < 5 and count > 0:
+            if count > 2:
                 return True
         except:
             pass
@@ -416,10 +414,7 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
                             return False
                         # Increment line counter
                         count += 1
-                        # Only check first 5 lines
-                        if count == 5:
-                            return True
-            if count < 5 and count > 0:
+            if count > 2:
                 return True
         except:
             pass
@@ -511,12 +506,7 @@ class PairwiseDistanceMatrix(DistanceMatrix,Tabular):
                         except ValueError:
                             return False
                         count += 1
-                        if count == 5:
-                            if not all_ints:
-                                return True
-                            else:
-                                return False
-            if count < 5 and count > 0:
+            if count > 2:
                 if not all_ints:
                     return True
                 else:
