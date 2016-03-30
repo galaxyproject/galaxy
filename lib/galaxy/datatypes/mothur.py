@@ -327,27 +327,6 @@ AY457915	501		82283		1525		kmer		89.07		needleman	5		501		1		499		499			2		0		0	
                              'PairwiseAlignmentLength','GapsInQuery','GapsInTemplate','LongestInsert','SimBtwnQuery&Template'
                              ]
 
-class BellerophonChimera( Tabular ):
-    file_ext = 'mothur.bellerophon.chimera'
-    def __init__(self, **kwd):
-        """Initialize AlignCheck datatype"""
-        Tabular.__init__( self, **kwd )
-        self.column_names = ['Name','Score','Left','Right']
-
-class SecondaryStructureMatch(Tabular):
-    """
-	name	pound	dash	plus	equal	loop	tilde	total
-	9_1_12	42	68	8	28	275	420	872
-	9_1_14	36	68	6	26	266	422	851
-	9_1_15	44	68	8	28	276	418	873
-	9_1_16	34	72	6	30	267	430	860
-	9_1_18	46	80	2	36	261	
-    """
-    def __init__(self, **kwd):
-        """Initialize SecondaryStructureMatch datatype"""
-        Tabular.__init__( self, **kwd )
-        self.column_names = ['name','pound','dash','plus','equal','loop','tilde','total']
-
 class DistanceMatrix( Text ):
     file_ext = 'mothur.dist'
     """Add metadata elements"""
