@@ -305,20 +305,25 @@
 
 
 <%def name="body()">
-    <%
-        item_name = get_item_name(item)
-    %>
+    <div style="overflow: auto; height: 100%;">
+        <div class="page-container" style="padding: 10px;">
 
-    <h2>Sharing and Publishing or Download and Export ${get_class_display_name( item.__class__ )} '${get_item_name( item ) | h}'</h2>
+            <%
+                item_name = get_item_name(item)
+            %>
 
-    ${self.render_sharing(item)}
+            <h2>Sharing and Publishing or Download and Export ${get_class_display_name( item.__class__ )} '${get_item_name( item ) | h}'</h2>
 
-    ${self.render_download_to_file(item)}
+            ${self.render_sharing(item)}
 
-    ${self.render_url_for_importing(item)}
+            ${self.render_download_to_file(item)}
 
-    ${self.render_more(item)}
+            ${self.render_url_for_importing(item)}
 
-    ${self.render_footer()}
+            ${self.render_more(item)}
 
+            ${self.render_footer()}
+
+        </div>
+    </div>
 </%def>
