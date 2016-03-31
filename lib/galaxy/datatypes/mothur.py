@@ -26,23 +26,20 @@ class Otu(Text):
             ncols = 0
             data_lines = 0
             comment_lines = 0
-            try:
-                with open(dataset.file_name) as fh:
-                    for line in fh:
-                        fields = line.strip().split('\t')
-                        if len(fields) >= 2:
-                            data_lines += 1
-                            ncols = max(ncols, len(fields))
-                            label_names.add(fields[0])
-                        else:
-                            comment_lines += 1
-                    # Set the discovered metadata values for the dataset
-                    dataset.metadata.data_lines = data_lines
-                    dataset.metadata.columns = ncols
-                    dataset.metadata.labels = list(label_names)
-                    dataset.metadata.labels.sort()
-            except:
-                pass
+
+            headers = get_headers(dataset.file_name, sep='\t', count=-1)
+            for line in headers:
+                if len(line) >= 2:
+                    data_lines += 1
+                    ncols = max(ncols, len(line))
+                    label_names.add(line[0])
+                else:
+                    comment_lines += 1
+            # Set the discovered metadata values for the dataset
+            dataset.metadata.data_lines = data_lines
+            dataset.metadata.columns = ncols
+            dataset.metadata.labels = list(label_names)
+            dataset.metadata.labels.sort()
 
     def sniff(self, filename):
         """
@@ -144,35 +141,27 @@ class GroupAbund(Otu):
             data_lines = 0
             comment_lines = 0
             ncols = 0
-            try:
-                with open(dataset.file_name) as fh:
-                    line = fh.readline()
-                    fields = line.strip().split('\t')
-                    ncols = max(ncols, len(fields))
-                    if fields[0] == 'label' and fields[1] == 'Group':
-                        skip = 1
-                        comment_lines += 1
-                    else:
-                        skip = 0
-                        data_lines += 1
-                        label_names.add(fields[0])
-                        group_names.add(fields[1])
-                    for line in fh:
-                        data_lines += 1
-                        fields = line.strip().split('\t')
-                        ncols = max(ncols, len(fields))
-                        label_names.add(fields[0])
-                        group_names.add(fields[1])
-                    # Set the discovered metadata values for the dataset
-                    dataset.metadata.data_lines = data_lines
-                    dataset.metadata.columns = ncols
-                    dataset.metadata.labels = list(label_names)
-                    dataset.metadata.labels.sort()
-                    dataset.metadata.groups = list(group_names)
-                    dataset.metadata.groups.sort()
-                    dataset.metadata.skip = skip
-            except:
-                pass
+
+            headers = get_headers(dataset.file_name, sep='\t', count=max_data_lines)
+            for line in headers:
+                if line[0] == 'label' and line[1] == 'Group':
+                    skip = 1
+                    comment_lines += 1
+                else:
+                    skip = 0
+                    data_lines += 1
+                    ncols = max(ncols, len(line))
+                    label_names.add(line[0])
+                    group_names.add(line[1])
+
+            # Set the discovered metadata values for the dataset
+            dataset.metadata.data_lines = data_lines
+            dataset.metadata.columns = ncols
+            dataset.metadata.labels = list(label_names)
+            dataset.metadata.labels.sort()
+            dataset.metadata.groups = list(group_names)
+            dataset.metadata.groups.sort()
+            dataset.metadata.skip = skip
 
     def sniff(self, filename, vals_are_int=False):
         """
@@ -269,14 +258,9 @@ class AlignCheck(Tabular):
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         data_lines = 0
-        if dataset.has_data():
-            dataset_fh = open(dataset.file_name)
-            while True:
-                line = dataset_fh.readline()
-                if not line:
-                    break
-                data_lines += 1
-            dataset_fh.close()
+        headers = get_headers(dataset.file_name, sep='\t', count=-1)
+        for line in headers:
+            data_lines += 1
         dataset.metadata.comment_lines = 1
         dataset.metadata.data_lines = data_lines - 1 if data_lines > 0 else 0
         dataset.metadata.column_names = self.column_names
@@ -309,14 +293,15 @@ class DistanceMatrix(Text):
 
     def set_meta(self, dataset, overwrite=True, skip=0, **kwd):
         Text.set_meta(self, dataset, overwrite=overwrite, skip=skip, **kwd)
-        try:
-            with open(dataset.file_name) as fh:
-                line = '@'
-                while line[0] == '@':
-                    line = fh.readline().strip().strip()
-                dataset.metadata.sequence_count = int(line)
-        except Exception, e:
-            log.warn("DistanceMatrix set_meta %s" % e)
+
+        headers = get_headers(dataset.file_name, sep='\t', count=-1)
+        for line in headers:
+            if not line[0].startswith('@'):
+                try:
+                    dataset.metadata.sequence_count = int(line[0])
+                    break
+                except Exception, e:
+                    log.warn("DistanceMatrix set_meta %s" % e)
 
 
 class LowerTriangleDistanceMatrix(DistanceMatrix):
@@ -530,19 +515,15 @@ class Group(Tabular):
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=None, **kwd):
         Tabular.set_meta(self, dataset, overwrite, skip, max_data_lines)
         group_names = set()
-        try:
-            with open(dataset.file_name) as fh:
-                for line in fh:
-                    fields = line.strip().split('\t')
-                    try:
-                        group_names.add(fields[1])
-                    except IndexError:
-                        # Ignore missing 2nd column
-                        pass
-                dataset.metadata.groups = []
-                dataset.metadata.groups += group_names
-        except:
-            pass
+
+        headers = get_headers(dataset.file_name, sep='\t')
+        for line in headers:
+            try:
+                group_names.add(line[1])
+            except IndexError:
+                # Ignore missing 2nd column
+                pass
+        dataset.metadata.groups = list(group_names)
 
 
 class AccNos(Tabular):
@@ -739,30 +720,23 @@ class CountTable(Tabular):
         self.column_names = ['name', 'total']
 
     def set_meta(self, dataset, overwrite=True, skip=1, max_data_lines=None, **kwd):
-        try:
-            data_lines = 0
-            with open(dataset.file_name) as fh:
-                line = fh.readline()
-                if line:
-                    line = line.strip()
-                    colnames = line.split()
-                    if len(colnames) > 1:
-                        dataset.metadata.columns = len(colnames)
-                        if len(colnames) > 2:
-                            dataset.metadata.groups = colnames[2:]
-                        column_types = ['str']
-                        for i in range(1, len(colnames)):
-                            column_types.append('int')
-                        dataset.metadata.column_types = column_types
-                        dataset.metadata.comment_lines = 1
-                while line:
-                    line = fh.readline()
-                    if not line:
-                        break
-                    data_lines += 1
-                dataset.metadata.data_lines = data_lines
-        except:
-            pass
+
+        data_lines = 0
+        headers = get_headers(dataset.file_name, sep='\t', count=-1)
+        colnames = headers[0]
+        if len(colnames) > 1:
+            dataset.metadata.columns = len(colnames)
+        if len(colnames) > 2:
+            dataset.metadata.groups = colnames[2:]
+            column_types = ['str']
+            for i in range(1, len(headers[0])):
+                column_types.append('int')
+            dataset.metadata.column_types = column_types
+            dataset.metadata.comment_lines = 1
+        for line in headers[1:]:
+            data_lines += 1
+
+        dataset.metadata.data_lines = data_lines
 
 
 class RefTaxonomy(Tabular):
@@ -930,12 +904,11 @@ class SffFlow(Tabular):
 
     def set_meta(self, dataset, overwrite=True, skip=1, max_data_lines=None, **kwd):
         Tabular.set_meta(self, dataset, overwrite, 1, max_data_lines)
+
+        headers = get_headers(dataset.file_name, sep='\t')
         try:
-            with open(dataset.file_name) as fh:
-                line = fh.readline()
-                line = line.strip()
-                flow_values = int(line)
-                dataset.metadata.flow_values = flow_values
+            flow_values = int(headers[0][0])
+            dataset.metadata.flow_values = flow_values
         except:
             pass
 
@@ -947,9 +920,9 @@ class SffFlow(Tabular):
             out.append('<tr>')
             out.append('<th>%d. Name</th>' % 1)
             out.append('<th>%d. Flows</th>' % 2)
-            for i in range(3, dataset.metadata.columns+1):
-                base = dataset.metadata.flow_order[(i+1) % 4]
-                out.append('<th>%d. %d %s</th>' % (i-2, base))
+            for i in range(3, dataset.metadata.columns + 1):
+                base = dataset.metadata.flow_order[(i + 1) % 4]
+                out.append('<th>%d. %d %s</th>' % (i - 2, base))
             out.append('</tr>')
             out.append(self.make_html_peek_rows(dataset, skipchars=skipchars))
             out.append('</table>')
