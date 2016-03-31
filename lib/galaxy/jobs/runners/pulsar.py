@@ -1,3 +1,7 @@
+"""Job runner used to execute Galaxy jobs through Pulsar.
+
+More infromation on Pulsar can be found at http://pulsar.readthedocs.org/.
+"""
 from __future__ import absolute_import  # Need to import pulsar_client absolutely.
 
 import logging
@@ -27,7 +31,11 @@ from pulsar.client import PathMapper
 
 log = logging.getLogger( __name__ )
 
-__all__ = [ 'PulsarLegacyJobRunner', 'PulsarRESTJobRunner', 'PulsarMQJobRunner' ]
+__all__ = [
+    'PulsarLegacyJobRunner',
+    'PulsarRESTJobRunner',
+    'PulsarMQJobRunner',
+]
 
 NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE = "Pulsar misconfiguration - Pulsar client configured to set metadata remotely, but remote Pulsar isn't properly configured with a galaxy_home directory."
 NO_REMOTE_DATATYPES_CONFIG = "Pulsar client is configured to use remote datatypes configuration when setting metadata externally, but Pulsar is not configured with this information. Defaulting to datatypes_conf.xml."
@@ -133,13 +141,12 @@ PARAMETER_SPECIFICATION_IGNORED = object()
 
 
 class PulsarJobRunner( AsynchronousJobRunner ):
-    """
-    Pulsar Job Runner
-    """
+    """Base class for pulsar job runners."""
+
     runner_name = "PulsarJobRunner"
 
     def __init__( self, app, nworkers, **kwds ):
-        """Start the job runner """
+        """Start the job runner."""
         super( PulsarJobRunner, self ).__init__( app, nworkers, runner_param_specs=PULSAR_PARAM_SPECS, **kwds )
         self._init_worker_threads()
         galaxy_url = self.runner_params.galaxy_url
@@ -165,7 +172,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
         self.client_manager = build_client_manager(**client_manager_kwargs)
 
     def url_to_destination( self, url ):
-        """Convert a legacy URL to a job destination"""
+        """Convert a legacy URL to a job destination."""
         return JobDestination( runner="pulsar", params=url_to_destination_params( url ) )
 
     def check_watched_item(self, job_state):
@@ -243,7 +250,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
         self.monitor_job(pulsar_job_state)
 
     def __prepare_job(self, job_wrapper, job_destination):
-        """ Build command-line and Pulsar client for this job. """
+        """Build command-line and Pulsar client for this job."""
         command_line = None
         client = None
         remote_job_config = None
@@ -424,9 +431,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             job_wrapper.fail("Unable to finish job", exception=True)
 
     def fail_job( self, job_state, message=GENERIC_REMOTE_ERROR ):
-        """
-        Seperated out so we can use the worker threads for it.
-        """
+        """Seperated out so we can use the worker threads for it."""
         self.stop_job( self.sa_session.query( self.app.model.Job ).get( job_state.job_wrapper.job_id ) )
         job_state.job_wrapper.fail( getattr( job_state, "fail_message", message ) )
 
@@ -475,7 +480,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             client.kill()
 
     def recover( self, job, job_wrapper ):
-        """Recovers jobs stuck in the queued/running state when Galaxy started"""
+        """Recover jobs stuck in the queued/running state when Galaxy started."""
         job_state = self._job_state( job, job_wrapper )
         job_wrapper.command_line = job.get_command_line()
         state = job.get_state()
@@ -538,7 +543,9 @@ class PulsarJobRunner( AsynchronousJobRunner ):
 
     @staticmethod
     def __use_remote_datatypes_conf( pulsar_client ):
-        """ When setting remote metadata, use integrated datatypes from this
+        """Use remote metadata datatypes instead of Galaxy's.
+
+        When setting remote metadata, use integrated datatypes from this
         Galaxy instance or use the datatypes config configured via the remote
         Pulsar.
 
@@ -604,6 +611,8 @@ class PulsarJobRunner( AsynchronousJobRunner ):
 
 
 class PulsarLegacyJobRunner( PulsarJobRunner ):
+    """Flavor of Pulsar job runner mimicking behavior of old LWR runner."""
+
     destination_defaults = dict(
         rewrite_parameters="false",
         dependency_resolution="local",
@@ -611,6 +620,8 @@ class PulsarLegacyJobRunner( PulsarJobRunner ):
 
 
 class PulsarMQJobRunner( PulsarJobRunner ):
+    """Flavor of Pulsar job runner with sensible defaults for message queue communication."""
+
     destination_defaults = dict(
         default_file_action="remote_transfer",
         rewrite_parameters="true",
@@ -640,6 +651,8 @@ class PulsarMQJobRunner( PulsarJobRunner ):
 
 
 class PulsarRESTJobRunner( PulsarJobRunner ):
+    """Flavor of Pulsar job runner with sensible defaults for RESTful usage."""
+
     destination_defaults = dict(
         default_file_action="transfer",
         rewrite_parameters="true",
