@@ -1125,15 +1125,17 @@ class ModelFilterParser( HasAModelManager ):
         """
         # Attempts to parse epoch int back into date string
         try:
-            epoch = int( date_string )
-            date = datetime.datetime.fromtimestamp( epoch )
-            return date.isoformat().replace( 'T', ' ', 1 )
+            # MySQL may not support microseconds precision
+            epoch = round(float(date_string))
+            datetime_obj = datetime.datetime.fromtimestamp( epoch )
+            return datetime_obj.isoformat(' ')
         except ValueError:
             pass
-        # or removes T from date string
+        # Removes T from date string
         if not hasattr( self, 'date_string_re' ):
-            self.date_string_re = re.compile( r'^\d{4}\-\d{2}\-\d{2}T' )
-        if self.date_string_re.match( date_string ):
-            return date_string.replace( 'T', ' ', 1 )
-        # or as is
-        return date_string
+            self.date_string_re = re.compile( r'^(\d{4}\-\d{2}\-\d{2})T' )
+        date_string = self.date_string_re.sub(r'\1 ', date_string, count=1)
+        # MySQL may not support microseconds precision
+        if not hasattr( self, 'date_string_microseconds_re' ):
+            self.date_string_microseconds_re = re.compile(r'^(\d{4}\-\d{2}\-\d{2} \d{2}:\d{2}:\d{2})\.\d+')  # YYYY-MM-DD HH:MM:SS.mmmmmm
+        return self.date_string_microseconds_re.sub(r'\1', date_string, count=1)
