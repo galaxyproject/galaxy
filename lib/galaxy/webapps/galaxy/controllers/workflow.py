@@ -870,7 +870,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 # NOTE: blocks the web thread.
                 try:
                     workflow_data = urllib2.urlopen( url ).read()
-                except Exception, e:
+                except Exception as e:
                     message = "Failed to open URL: <b>%s</b><br>Exception: %s" % ( escape( url ), escape( str( e ) ) )
                     status = 'error'
             elif workflow_text:
@@ -897,7 +897,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 # Convert incoming workflow data from json
                 try:
                     data = json.loads( workflow_data )
-                except Exception, e:
+                except Exception as e:
                     data = None
                     message = "The data content does not appear to be a Galaxy workflow."
                     status = 'error'
@@ -933,7 +933,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                             message += "The workflow requires the following tools that are not available in this Galaxy instance."
                             message += "You can likely install the required tools from one of the Galaxy tool sheds listed below.<br/>"
                             for missing_tool_tup in missing_tool_tups:
-                                missing_tool_id, missing_tool_name, missing_tool_version = missing_tool_tup
+                                missing_tool_id, missing_tool_name, missing_tool_version, step_id = missing_tool_tup
                                 message += "<b>Tool name</b> %s, <b>id</b> %s, <b>version</b> %s<br/>" % (
                                            escape( missing_tool_name ),
                                            escape( missing_tool_id ),
