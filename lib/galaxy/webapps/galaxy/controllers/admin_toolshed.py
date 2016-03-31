@@ -225,10 +225,9 @@ class AdminToolshed( AdminGalaxy ):
         json_data = json.loads( util.url_get( url, pathspec=[ 'api', 'categories', category_id, 'repositories' ] ) )
         for idx, repository in enumerate( json_data[ 'repositories' ] ):
             try:
-                metadata = json.loads( util.url_get(
-                                                                  url,
-                                                                  pathspec=[ 'api', 'repositories', repository[ 'id' ], 'metadata' ],
-                                                                  params=dict( recursive=False ) ) )
+                metadata = json.loads( util.url_get( url,
+                                                     pathspec=[ 'api', 'repositories', repository[ 'id' ], 'metadata' ],
+                                                     params=dict( recursive=False ) ) )
                 json_data[ 'repositories' ][ idx ][ 'metadata' ] = metadata
             except:
                 json_data[ 'repositories' ][ idx ][ 'metadata' ] = { 'tools_functionally_correct': True }
