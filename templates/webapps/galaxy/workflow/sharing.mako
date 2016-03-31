@@ -1,7 +1,7 @@
 ##
-## Base template for sharing or publishing an item. Template expects the following parameters:
-## (a) item - item to be shared.
+## Template for "Sharing and Publishing" and "Download and Export"
 ##
+
 <%!
     def inherit(context):
         if context.get('use_panels', False) == True:
@@ -74,7 +74,6 @@
 </%def>
 
 
-
 ## Share and Publish section
 
 <%def name="render_sharing(item)">
@@ -89,7 +88,6 @@
         #
         # Setup and variables needed for page.
         #
-
         # Get class name strings.
         item_class_name = get_class_display_name( item.__class__ )
         item_class_name_lc = item_class_name.lower()
@@ -98,6 +96,7 @@
 
         # Get item name.
         item_name = get_item_name(item)
+        print item_name
     %>
     ## Require that user have a public username before sharing or publishing an item.
     %if trans.get_user().username is None or trans.get_user().username is "":
@@ -188,6 +187,7 @@
         ## Sharing with Galaxy users.
         ##
         <h3>Share ${item_class_name} with Individual Users</h3>
+        <p> Description: Share the workflow with users of this Galaxy server by choosing the user.</p>
             <div>
                 %if item.users_shared_with:
                     <p>
@@ -236,12 +236,11 @@
 </%def>
 
 
-
 ## Download and Export section
 
 <%def name="render_url_for_importing(item)">
     <h3>URL for Importing to Another Galaxy</h3>
-
+    <p>Description: Generate and use the URL to import the workflow into another Galaxy server.</p>
     %if item.importable:
         Use this URL to import the ${get_class_display_name( item.__class__ ).lower()} directly into another Galaxy server:
         <div class="display-url">
@@ -250,23 +249,25 @@
         </div>
         (Copy this URL into the box titled 'Workflow URL' in the Import Workflow page.)
     %else:
-        <a href="${h.url_for(controller=self.controller, action='sharing', id=trans.security.encode_id( item.id ) )}">This  ${get_class_display_name( item.__class__ ).lower()} must be accessible before it can be imported into another Galaxy.</a>
+        <a href="${h.url_for(controller=self.controller, action='sharing', id=trans.security.encode_id( item.id ) )}">This ${get_class_display_name( item.__class__ ).lower()} must be accessible before it can be imported into another Galaxy.</a>
     %endif
 </%def>
 
+
 <%def name="render_download_to_file(item)">
     <h3>Download to File</h3>
-
+    <p>Description: Download workflow to a .ga file.</p>
     <a href="${h.url_for( controller=self.controller, action='display_by_username_and_slug', username=item.user.username,
                           slug=item.slug, format='json-download' )}">
         Download ${get_class_display_name( item.__class__ ).lower()} to file so that it can be saved or imported into another Galaxy server.</a>
 </%def>
 
+
 <%def name="render_footer()">
-    ASDKSNAD
     <br><br>
     <a href="${h.url_for(controller=self.controller, action="list" )}">Back to ${self.item_class_plural_name} List</a>
 </%def>
+
 
 <%def name="render_export_to_myexp(item)">
     ##
@@ -292,12 +293,12 @@
     </div>
 </%def>
 
+
 <%def name="render_more(item)">
     ## Add form to export to myExperiment.
     ${self.render_export_to_myexp(item)}
     ## Add link to render as SVG image.
     <h3>Create Image</h3>
-
     <a href="${h.url_for(controller='workflow', action='gen_image', id=trans.security.encode_id( item.id ) )}">
         Create image of ${get_class_display_name( item.__class__ ).lower()} in SVG format
     </a>
@@ -308,13 +309,12 @@
     <div style="overflow: auto; height: 100%;">
         <div class="page-container" style="padding: 10px;">
 
-            <%
-                item_name = get_item_name(item)
-            %>
-
-            <h2>Sharing and Publishing or Download and Export ${get_class_display_name( item.__class__ )} '${get_item_name( item ) | h}'</h2>
+            <h2>Sharing and Publishing ${get_class_display_name( item.__class__ )} '${get_item_name( item ) | h}'</h2>
 
             ${self.render_sharing(item)}
+
+            <br><br>
+            <h2>Download and Export ${get_class_display_name( item.__class__ )} '${get_item_name( item ) | h}'</h2>
 
             ${self.render_download_to_file(item)}
 
