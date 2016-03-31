@@ -20,6 +20,8 @@ from tool_shed.util import workflow_util
 from tool_shed.util import tool_util
 from tool_shed.util import repository_util
 
+from sqlalchemy import and_
+
 log = logging.getLogger( __name__ )
 
 
@@ -216,9 +218,19 @@ class ToolShedRepositoriesController( BaseAPIController ):
         Display a list of dictionaries containing information about installed tool shed repositories.
         """
         # Example URL: http://localhost:8763/api/tool_shed_repositories
+        clause_list = []
+        if 'name' in kwd:
+            clause_list.append( self.app.install_model.ToolShedRepository.table.c.name == kwd.get( 'name', None ) )
+        if 'owner' in kwd:
+            clause_list.append( self.app.install_model.ToolShedRepository.table.c.owner == kwd.get( 'owner', None ) )
+        if 'changeset' in kwd:
+            clause_list.append( self.app.install_model.ToolShedRepository.table.c.changeset_revision == kwd.get( 'changeset', None ) )
         tool_shed_repository_dicts = []
-        for tool_shed_repository in trans.install_model.context.query( self.app.install_model.ToolShedRepository ) \
-                                                               .order_by( self.app.install_model.ToolShedRepository.table.c.name ):
+        query = trans.install_model.context.query( self.app.install_model.ToolShedRepository ) \
+                                           .order_by( self.app.install_model.ToolShedRepository.table.c.name )
+        if len( clause_list ) > 0:
+            query = query.filter( and_( *clause_list ) )
+        for tool_shed_repository in query.all():
             tool_shed_repository_dict = \
                 tool_shed_repository.to_dict( value_mapper=self.__get_value_mapper( trans, tool_shed_repository ) )
             tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
