@@ -502,7 +502,7 @@
     <datatype extension="mothur.summary" type="galaxy.datatypes.mothur:Summary" display_in_upload="true"/>
     <datatype extension="mothur.groups" type="galaxy.datatypes.mothur:Group" display_in_upload="true"/>
     <datatype extension="mothur.oligos" type="galaxy.datatypes.mothur:Oligos" display_in_upload="true"/>
-    <datatype extension="mothur.align" type="galaxy.datatypes.mothur:SequenceAlignment" display_in_upload="true"/>
+    <datatype extension="mothur.align" type="galaxy.datatypes.sequence:Fasta" subclass="True" display_in_upload="true"/>
     <datatype extension="mothur.accnos" type="galaxy.datatypes.mothur:AccNos" display_in_upload="true"/>
     <datatype extension="mothur.otulabels" type="galaxy.datatypes.mothur:AccNos" display_in_upload="true"/>
     <datatype extension="mothur.otu.corr" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="true"/>
