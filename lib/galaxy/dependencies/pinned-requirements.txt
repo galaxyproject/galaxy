@@ -3,8 +3,7 @@ bx-python==0.7.3
 MarkupSafe==0.23
 PyYAML==3.11
 SQLAlchemy==1.0.8
-# Mercurial >= 3.5 changed the bundle format, which breaks hg push of TS repositories
-mercurial==3.4.2
+mercurial==3.7.3
 numpy==1.9.2
 pycrypto==2.6.1
 
