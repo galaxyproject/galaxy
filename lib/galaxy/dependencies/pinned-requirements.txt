@@ -25,6 +25,7 @@ Mako==1.0.2
 pytz==2015.4
 Babel==2.0
 Beaker==1.7.0
+dictobj==0.3.1
 
 # Cheetah and dependencies
 Cheetah==2.4.4
