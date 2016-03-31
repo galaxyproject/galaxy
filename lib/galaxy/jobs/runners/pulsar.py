@@ -18,6 +18,10 @@ from pulsar.client import PulsarOutputs
 from pulsar.client import ClientOutputs
 from pulsar.client import PathMapper
 
+import pulsar.core
+
+import yaml
+
 from galaxy import model
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 from galaxy.jobs import ComputeEnvironment
@@ -35,6 +39,7 @@ __all__ = [
     'PulsarLegacyJobRunner',
     'PulsarRESTJobRunner',
     'PulsarMQJobRunner',
+    'PulsarEmbeddedJobRunner',
 ]
 
 NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE = "Pulsar misconfiguration - Pulsar client configured to set metadata remotely, but remote Pulsar isn't properly configured with a galaxy_home directory."
@@ -62,6 +67,10 @@ PULSAR_PARAM_SPECS = dict(
         default=None,
     ),
     galaxy_url=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    pulsar_config=dict(
         map=specs.to_str_or_none,
         default=None,
     ),
@@ -144,6 +153,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
     """Base class for pulsar job runners."""
 
     runner_name = "PulsarJobRunner"
+    default_build_pulsar_app = False
 
     def __init__( self, app, nworkers, **kwds ):
         """Start the job runner."""
@@ -163,13 +173,39 @@ class PulsarJobRunner( AsynchronousJobRunner ):
         self._init_monitor_thread()
 
     def __init_client_manager( self ):
+        pulsar_conf = self.runner_params.get('pulsar_conf', None)
+        self.__init_pulsar_app(pulsar_conf)
+
         client_manager_kwargs = {}
         for kwd in 'manager', 'cache', 'transport', 'persistence_directory':
             client_manager_kwargs[ kwd ] = self.runner_params[ kwd ]
+        if self.pulsar_app is not None:
+            # TODO: Make this more generic and configurable - client_manager
+            # should define an app and client (destination) should reference
+            # a job manager.
+            job_manager = self.pulsar_app.only_manager
+            client_manager_kwargs[ "job_manager" ] = job_manager
+            # TODO: Hack remove this following line pulsar lib update
+            # that includes https://github.com/galaxyproject/pulsar/commit/ce0636a5b64fae52d165bcad77b2caa3f0e9c232
+            client_manager_kwargs[ "file_cache" ] = None
+
         for kwd in self.runner_params.keys():
             if kwd.startswith( 'amqp_' ):
                 client_manager_kwargs[ kwd ] = self.runner_params[ kwd ]
         self.client_manager = build_client_manager(**client_manager_kwargs)
+
+    def __init_pulsar_app( self, pulsar_conf_path ):
+        if pulsar_conf_path is None and not self.default_build_pulsar_app:
+            self.pulsar_app = None
+            return
+        conf = {}
+        if pulsar_conf_path is None:
+            log.info("Creating a Pulsar app with default configuration (no pulsar_conf specified).")
+        else:
+            log.info("Loading Pulsar app configuration from %s" % pulsar_conf_path)
+            with open(pulsar_conf_path, "r") as f:
+                conf.update(yaml.load(f) or {})
+        self.pulsar_app = pulsar.core.PulsarApp(**conf)
 
     def url_to_destination( self, url ):
         """Convert a legacy URL to a job destination."""
@@ -659,6 +695,21 @@ class PulsarRESTJobRunner( PulsarJobRunner ):
         dependency_resolution="remote",
         url=PARAMETER_SPECIFICATION_REQUIRED,
     )
+
+
+class PulsarEmbeddedJobRunner(PulsarJobRunner):
+    """Flavor of Puslar job runnner that runs Pulsar's server code directly within Galaxy.
+
+    This is an appropriate job runner for when the desire is to use Pulsar staging
+    but their is not need to run a remote service.
+    """
+
+    destination_defaults = dict(
+        default_file_action="copy",
+        rewrite_parameters="true",
+        dependency_resolution="remote",
+    )
+    default_build_pulsar_app = True
 
 
 class PulsarComputeEnvironment( ComputeEnvironment ):

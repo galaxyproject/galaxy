@@ -98,6 +98,26 @@
                deprecated and will disappear with a future release of Galaxy.
           -->
         </plugin>
+        <plugin id="pulsar_embedded" type="runner" load="galaxy.jobs.runners.pulsar:PulsarEmbeddedJobRunner">
+          <!-- The embedded Pulsar runner starts a Pulsar app
+               internal to Galaxy and communicates it directly.
+               This maybe be useful for instance when Pulsar
+               staging is important but a Pulsar server is
+               unneeded (most obviously for instance if compute
+               servers cannot mount Galaxy's files but Galaxy
+               can mount a scratch directory available on
+               compute). -->
+          <!-- Specify a complete description of the Pulsar app
+               to create. Currently this configuration (if set)
+               must create exactly on job manager. For more
+               information on configuring a Pulsar app see:
+
+               https://github.com/galaxyproject/pulsar/blob/master/app.yml.sample
+               http://pulsar.readthedocs.org/en/latest/configure.html
+          -->
+          <!-- <param id="pulsar_conf">path/to/pulsar/app.yml</param> -->
+        </plugin>
+
     </plugins>
     <handlers default="handlers">
         <!-- Additional job handlers - the id should match the name of a
