@@ -343,16 +343,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                     email=email,
                                     use_panels=use_panels )
 
-    # @web.expose
-    # @web.require_login( "use workflows" )
-    # def export( self, trans, id=None, **kwd ):
-        # """
-        # Handles download/export workflow command.
-        # """
-        # stored = self.get_stored_workflow( trans, id, check_ownership=False, check_accessible=True )
-
-        # return trans.fill_template( "/workflow/export.mako", item=stored, use_panels=True )
-
     @web.expose
     @web.require_login( "Share or export Galaxy workflows" )
     def sharing( self, trans, id, **kwargs ):
