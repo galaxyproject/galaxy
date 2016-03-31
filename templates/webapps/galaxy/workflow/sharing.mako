@@ -41,6 +41,7 @@
     self.item_class_plural_name = get_class_plural_display_name( item.__class__ )
     self.item_class_plural_name_lc = self.item_class_plural_name.lower()
     self.controller = get_controller_name(item)
+    self.active_view="workflow"
 %>
 </%def>
 
@@ -226,7 +227,7 @@
                        href="${h.url_for(controller=controller_name, action='share', id=trans.security.encode_id(item.id), use_panels=use_panels )}">
                         <span>Share with a user</span>
                     </a>
-                    <br />
+                    ## <br />
 
                 %endif
             </div>
@@ -234,55 +235,6 @@
     %endif
 </%def>
 
-## ##
-## ## Share workflow with indiviual Galaxy users
-## ##
-
-## <%def name="render_sharing_for_users(item)">
-##     <h3>Share workflow with Individual Users</h3>
-##         <div>
-##             %if item.users_shared_with:
-##                 <p>
-##                     The following users will see this ${item_class_name_lc} in their ${item_class_name_lc} list and will be
-##                     able to view, import, and run it.
-##                 </p>
-
-##                 <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
-##                     <tr class="header">
-##                         <th>Email</th>
-##                         <th></th>
-##                     </tr>
-##                     %for i, association in enumerate( item.users_shared_with ):
-##                         <% user = association.user %>
-##                         <tr>
-##                             <td>
-##                                 <div class="menubutton popup" id="user-${i}-popup">${user.email}</div>
-##                             </td>
-##                             <td>
-##                                 <div popupmenu="user-${i}-popup">
-##                                 <a class="action-button" href="${h.url_for(controller=controller_name, action='sharing', id=trans.security.encode_id( item.id ), unshare_user=trans.security.encode_id( user.id ), use_panels=use_panels )}">Unshare</a>
-##                                 </div>
-##                             </td>
-##                         </tr>
-##                     %endfor
-##                 </table>
-##                 <p>
-##                 <a class="action-button"
-##                    href="${h.url_for(controller=controller_name, action='share', id=trans.security.encode_id(item.id), use_panels=use_panels )}">
-##                     <span>Share with another user</span>
-##                 </a>
-##                 </p>
-##             %else:
-##                 <p>You have not shared this ${item_class_name_lc} with any users.</p>
-
-##                 <a class="action-button"
-##                    href="${h.url_for(controller=controller_name, action='share', id=trans.security.encode_id(item.id), use_panels=use_panels )}">
-##                     <span>Share with a user</span>
-##                 </a>
-##                 <br />
-##             %endif
-##     </div>
-## </%def>
 
 
 ## Download and Export section
@@ -311,7 +263,8 @@
 </%def>
 
 <%def name="render_footer()">
-    <p><br><br>
+    ASDKSNAD
+    <br><br>
     <a href="${h.url_for(controller=self.controller, action="list" )}">Back to ${self.item_class_plural_name} List</a>
 </%def>
 
@@ -362,9 +315,10 @@
 
     ${self.render_download_to_file(item)}
 
-	${self.render_url_for_importing(item)}
+    ${self.render_url_for_importing(item)}
 
-	${self.render_more(item)}
+    ${self.render_more(item)}
 
-	${self.render_footer()}
+    ${self.render_footer()}
+
 </%def>
