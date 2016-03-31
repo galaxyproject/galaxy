@@ -4,10 +4,10 @@ Mothur Metagenomics Datatypes
 import logging
 import sys
 import re
+from galaxy.datatypes.sniff import get_headers
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.tabular import Tabular
-from galaxy.datatypes.sequence import Fasta
 
 log = logging.getLogger(__name__)
 
@@ -47,31 +47,32 @@ class Otu(Text):
     def sniff(self, filename):
         """
         Determines whether the file is otu (operational taxonomic unit) format
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.otu' )
+        >>> Otu().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.otu' )
+        >>> Otu().sniff( fname )
+        False
         """
-        try:
-            with open(filename) as fh:
-                count = 0
-                while True:
-                    line = fh.readline()
-                    line = line.strip()
-                    if not line:
-                        break  # EOF
-                    if line and line[0] != '@':
-                        linePieces = line.split('\t')
-                        if len(linePieces) < 2:
+        headers = get_headers(filename, sep='\t')
+        count = 0
+        for line in headers:
+            if not line[0].startswith('@'):
+                if len(line) < 2:
+                    return False
+                if count >= 1:
+                    try:
+                        check = int(line[1])
+                        if check + 2 != len(line):
                             return False
-                        if count >= 1:
-                            try:
-                                check = int(linePieces[1])
-                                if check + 2 != len(linePieces):
-                                    return False
-                            except ValueError:
-                                return False
-                        count += 1
-            if count > 2:
-                return True
-        except:
-            pass
+                    except ValueError:
+                        return False
+                count += 1
+        if count > 2:
+            return True
+
         return False
 
 
@@ -91,32 +92,33 @@ class Sabund(Otu):
         """
         Determines whether the file is otu (operational taxonomic unit) format
         label<TAB>count[<TAB>value(1..n)]
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.sabund' )
+        >>> Sabund().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.sabund' )
+        >>> Sabund().sniff( fname )
+        False
         """
-        try:
-            with open(filename) as fh:
-                count = 0
-                while True:
-                    line = fh.readline()
-                    line = line.strip()
-                    if not line:
-                        break  # EOF
-                    if line and line[0] != '@':
-                        linePieces = line.split('\t')
-                        if len(linePieces) < 2:
-                            return False
-                        try:
-                            check = int(linePieces[1])
-                            if check + 2 != len(linePieces):
-                                return False
-                            for i in range(2, len(linePieces)):
-                                int(linePieces[i])
-                        except ValueError:
-                            return False
-                        count += 1
-            if count > 0:
-                return True
-        except:
-            pass
+        headers = get_headers(filename, sep='\t')
+        count = 0
+        for line in headers:
+            if not line[0].startswith('@'):
+                if len(line) < 2:
+                    return False
+                try:
+                    check = int(line[1])
+                    if check + 2 != len(line):
+                        return False
+                    for i in range(2, len(line)):
+                        int(line[i])
+                except ValueError:
+                    return False
+                count += 1
+        if count > 0:
+            return True
+
         return False
 
 
@@ -177,39 +179,37 @@ class GroupAbund(Otu):
         Determines whether the file is a otu (operational taxonomic unit)
         Shared format
         label<TAB>group<TAB>count[<TAB>value(1..n)]
-        The first line is column headings as of Mothur v 1.20
+        The first line is column headings as of Mothur v 1.2
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.shared' )
+        >>> GroupAbund().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.shared' )
+        >>> GroupAbund().sniff( fname )
+        False
         """
-        try:
-            with open(filename) as fh:
-                count = 0
-                while True:
-                    line = fh.readline()
-                    line = line.strip()
-                    if not line:
-                        break  # EOF
-                    if line and line[0] != '@':
-                        linePieces = line.split('\t')
-                        if len(linePieces) < 3:
+        headers = get_headers(filename, sep='\t')
+        count = 0
+        for line in headers:
+            if not line[0].startswith('@'):
+                if len(line) < 3:
+                    return False
+                if count > 0 or line[0] != 'label':
+                    try:
+                        check = int(line[2])
+                        if check + 3 != len(line):
                             return False
-                        if count > 0 or linePieces[0] != 'label':
-                            try:
-                                check = int(linePieces[2])
-                                if check + 3 != len(linePieces):
-                                    return False
-                                for i in range(3, len(linePieces)):
-                                    if vals_are_int:
-                                        int(linePieces[i])
-                                    else:
-                                        float(linePieces[i])
-                            except ValueError:
-                                return False
-                        count += 1
-                        if count >= 5:
-                            return True
-            if count < 5 and count > 0:
-                return True
-        except:
-            pass
+                        for i in range(3, len(line)):
+                            if vals_are_int:
+                                int(line[i])
+                            else:
+                                float(line[i])
+                    except ValueError:
+                        return False
+                count += 1
+        if count > 1:
+            return True
         return False
 
 
@@ -227,72 +227,34 @@ class SecondaryStructureMap(Tabular):
         A single column with an integer value which indicates the row that this
         row maps to. Check to make sure if structMap[10] = 380 then
         structMap[380] = 10 and vice versa.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.map' )
+        >>> SecondaryStructureMap().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.map' )
+        >>> SecondaryStructureMap().sniff( fname )
+        False
         """
-        try:
-            with open(filename) as fh:
-                line_num = 0
-                rowidxmap = {}
-                while True:
-                    line = fh.readline()
-                    line_num += 1
-                    line = line.strip()
-                    if not line:
-                        break  # EOF
-                    if line:
-                        try:
-                            pointer = int(line)
-                            if pointer > line_num:
-                                rowidxmap[pointer] = line_num
-                            elif pointer > 0 or line_num in rowidxmap:
-                                if rowidxmap[line_num] != pointer:
-                                    return False
-                        except ValueError:
-                            return False
-        except:
-            return False
+        headers = get_headers(filename, sep='\t')
+        line_num = 0
+        rowidxmap = {}
+        for line in headers:
+            line_num += 1
+            if len(line) > 1:
+                return False
+            try:
+                pointer = int(line[0])
+                if pointer > line_num:
+                    rowidxmap[pointer] = line_num
+                elif pointer > 0 or line_num in rowidxmap:
+                    if rowidxmap[line_num] != pointer:
+                        return False
+            except (ValueError, KeyError):
+                return False
         if line_num < 3:
             return False
         return True
-
-
-class SequenceAlignment(Fasta):
-    file_ext = 'mothur.align'
-
-    def __init__(self, **kwd):
-        Fasta.__init__(self, **kwd)
-        """Initialize AlignCheck datatype"""
-
-    def sniff(self, filename):
-        """
-        Determines whether the file is in Mothur align fasta format
-        Each sequence line must be the same length
-        """
-        try:
-            with open(filename) as fh:
-                len = -1
-                while True:
-                    line = fh.readline()
-                    if not line:
-                        break  # EOF
-                    line = line.strip()
-                    if line:  # first non-empty line
-                        if line.startswith('>'):
-                            # next line.strip() must not be '', nor startwith '>'
-                            line = fh.readline().strip()
-                            if line == '' or line.startswith('>'):
-                                break
-                            if len < 0:
-                                len = len(line)
-                            elif len != len(line):
-                                return False
-                        else:
-                            # non-empty line, but its not a fasta header
-                            break
-                if len > 0:
-                    return True
-        except:
-            pass
-        return False
 
 
 class AlignCheck(Tabular):
@@ -372,43 +334,51 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
         Determines whether the file is a lower-triangle distance matrix (phylip) format
         The first line has the number of sequences in the matrix.
         The remaining lines have the sequence name followed by a list of distances from all preceeding sequences
-                5
+                5  # possibly but not always preceded by a tab :/
                 U68589
                 U68590	0.3371
                 U68591	0.3609	0.3782
                 U68592	0.4155	0.3197	0.4148
                 U68593	0.2872	0.1690	0.3361	0.2842
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.lower.dist' )
+        >>> LowerTriangleDistanceMatrix().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.lower.dist' )
+        >>> LowerTriangleDistanceMatrix().sniff( fname )
+        False
         """
-        try:
-            with open(filename) as fh:
-                count = 0
-                line = fh.readline()
-                sequence_count = int(line.strip())
-                while True:
-                    line = fh.readline()
-                    line = line.strip()
-                    if not line:
-                        break  # EOF
-                    if line:
-                        # Split into fields
-                        linePieces = line.split('\t')
-                        # Each line should have the same number of
-                        # fields as the Python line index
-                        linePieces = line.split('\t')
-                        if len(linePieces) != (count + 1):
-                            return False
-                        # Distances should be floats
+        numlines = 300
+        headers = get_headers(filename, sep='\t', count=numlines)
+        line_num = 0
+        for line in headers:
+            if not line[0].startswith('@'):
+                # first line should contain the number of sequences in the file
+                if line_num == 0:
+                    if len(line) > 2:
+                        return False
+                    else:
                         try:
-                            for linePiece in linePieces[2:]:
-                                float(linePiece)
+                            sequence_count = int(''.join(line))
                         except ValueError:
                             return False
-                        # Increment line counter
-                        count += 1
-            if count > 2:
-                return True
-        except:
-            pass
+                else:
+                    # number of fields should equal the line number
+                    if len(line) != (line_num):
+                        return False
+                    try:
+                        # Distances should be floats
+                        for column in line[2:]:
+                            float(column)
+                    except ValueError:
+                        return False
+                line_num += 1
+
+        # check if the number of lines in the file was as expected
+        if line_num == sequence_count + 1 or line_num == numlines + 1:
+            return True
+
         return False
 
 
@@ -431,32 +401,44 @@ class SquareDistanceMatrix(DistanceMatrix):
                U68589  0.0000  0.3371  0.3610
                U68590  0.3371  0.0000  0.3783
                U68590  0.3371  0.0000  0.3783
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.square.dist' )
+        >>> SquareDistanceMatrix().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.square.dist' )
+        >>> SquareDistanceMatrix().sniff( fname )
+        False
         """
-        try:
-            with open(filename) as fh:
-                count = 0
-                while True:
-                    line = fh.readline().strip()
-                    if not line:
-                        break  # EOF
-                    if line[0] != '@':
-                        if count == 0:
-                            seq_cnt = int(line)
-                            col_cnt = seq_cnt + 1
-                        else:
-                            linePieces = line.split('\t')
-                            if len(linePieces) != col_cnt:
-                                return False
-                            try:
-                                for i in range(1, col_cnt):
-                                    float(linePieces[i])
-                            except ValueError:
-                                return False
-                        count += 1
-            if count > 2:
-                return True
-        except:
-            pass
+        numlines = 300
+        headers = get_headers(filename, sep='\t', count=numlines)
+        line_num = 0
+        for line in headers:
+            if not line[0].startswith('@'):
+                if line_num == 0:
+                    if len(line) > 2:
+                        return False
+                    else:
+                        try:
+                            sequence_count = int(''.join(line))
+                        except ValueError:
+                            return False
+                else:
+                    # number of fields should equal the number of sequences
+                    if len(line) != sequence_count + 1:
+                        return False
+                    try:
+                        # Distances should be floats
+                        for column in line[2:]:
+                            float(column)
+                    except ValueError:
+                        return False
+                line_num += 1
+
+        # check if the number of lines in the file was as expected
+        if line_num == sequence_count + 1 or line_num == numlines + 1:
+            return True
+
         return False
 
 
@@ -476,38 +458,36 @@ class PairwiseDistanceMatrix(DistanceMatrix, Tabular):
         """
         Determines whether the file is a pairwise distance matrix (Column-formatted distance matrix) format
         The first and second columns have the sequence names and the third column is the distance between those sequences.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.pair.dist' )
+        >>> PairwiseDistanceMatrix().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.pair.dist' )
+        >>> PairwiseDistanceMatrix().sniff( fname )
+        False
         """
-        try:
-            with open(filename) as fh:
-                count = 0
-                all_ints = True
-                while True:
-                    line = fh.readline()
-                    line = line.strip()
-                    if not line:
-                        break  # EOF
-                    if line and line[0] != '@':
-                        linePieces = line.split('\t')
-                        if len(linePieces) != 3:
-                            return False
-                        try:
-                            float(linePieces[2])
-                            try:
-                                # See if it's also an integer
-                                int(linePieces[2])
-                            except ValueError:
-                                # At least one value is not an integer
-                                all_ints = False
-                        except ValueError:
-                            return False
-                        count += 1
-            if count > 2:
-                if not all_ints:
-                    return True
-                else:
+        headers = get_headers(filename, sep='\t')
+        count = 0
+        for line in headers:
+            if not line[0].startswith('@'):
+                if len(line) != 3:
                     return False
-        except:
-            pass
+                try:
+                    float(line[2])
+                    try:
+                        # See if it's also an integer
+                        int(line[2])
+                    except ValueError:
+                        # At least one value is not an integer
+                        all_ints = False
+                except ValueError:
+                    return False
+                count += 1
+
+        if count > 2:
+            return not all_ints
+
         return False
 
 
@@ -582,32 +562,30 @@ class Oligos(Text):
         """
         http://www.mothur.org/wiki/Oligos_File
         Determines whether the file is a otu (operational taxonomic unit) format
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.oligos' )
+        >>> Oligos().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.oligos' )
+        >>> Oligos().sniff( fname )
+        False
         """
-        try:
-            with open(filename) as fh:
-                count = 0
-                while True:
-                    line = fh.readline()
-                    line = line.strip()
-                    if not line:
-                        break  # EOF
-                    else:
-                        if line[0] != '#':
-                            linePieces = line.split('\t')
-                            if len(linePieces) == 2 and re.match('forward|reverse', linePieces[0]):
-                                count += 1
-                                continue
-                            elif len(linePieces) == 3 and re.match('barcode', linePieces[0]):
-                                count += 1
-                                continue
-                            else:
-                                return False
-                            if count > 20:
-                                return True
-                if count > 0:
-                    return True
-        except:
-            pass
+        headers = get_headers(filename, sep='\t')
+        count = 0
+        for line in headers:
+            if not line[0].startswith('@') and not line[0].startswith('#'):
+                if len(line) == 2 and re.match('forward|reverse', line[0]):
+                    count += 1
+                    continue
+                elif len(line) == 3 and re.match('barcode', line[0]):
+                    count += 1
+                    continue
+                else:
+                    return False
+        if count > 0:
+            return True
+
         return False
 
 
@@ -628,32 +606,36 @@ class Frequency(Tabular):
         1	0.000
         ...
         155	0.975
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.freq' )
+        >>> Frequency().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.freq' )
+        >>> Frequency().sniff( fname )
+        False
         """
-        try:
-            with open(filename) as fh:
-                count = 0
-                while True:
-                    line = fh.readline()
-                    line = line.strip()
-                    if not line:
-                        break  # EOF
-                    else:
-                        if count == 0 and line[0] != '#':
-                            return False
-                        if line[0] != '#':
-                            linePieces = line.split('\t')
-                            if len(linePieces) != 2:
-                                return False
-                            try:
-                                int(linePieces[0])
-                                float(linePieces[1])
-                            except:
-                                return False
-                        count += 1
-                if count > 0:
-                    return True
-        except:
-            pass
+        headers = get_headers(filename, sep='\t')
+        count = 0
+        for line in headers:
+            if not line[0].startswith('@'):
+                if count == 0:
+                    # first line should be #<version string>
+                    if not line[0].startswith('#') and len(line) == 1:
+                        return False
+                else:
+                    # all other lines should be <int> <float>
+                    if len(line) != 2:
+                        return False
+                    try:
+                        int(line[0])
+                        float(line[1])
+                    except:
+                        return False
+                count += 1
+        if count > 1:
+            return True
+
         return False
 
 
@@ -675,36 +657,35 @@ class Quantile(Tabular):
         2       0.309198        0.309198        0.37161 0.37161 0.37161 0.37161
         3       0.510982        0.563213        0.693529        0.858939        1.07442 1.20608
         ...
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.quan' )
+        >>> Quantile().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.quan' )
+        >>> Quantile().sniff( fname )
+        False
         """
-        try:
-            with open(filename) as fh:
-                count = 0
-                while True:
-                    line = fh.readline()
-                    line = line.strip()
-                    if not line:
-                        break  # EOF
-                    else:
-                        if line[0] != '#':
-                            try:
-                                linePieces = line.split('\t')
-                                int(linePieces[0])
-                                float(linePieces[1])
-                                float(linePieces[2])
-                                float(linePieces[3])
-                                float(linePieces[4])
-                                float(linePieces[5])
-                                float(linePieces[6])
-                                count += 1
-                                continue
-                            except:
-                                return False
-                            if count > 10:
-                                return True
-                if count > 0:
-                    return True
-        except:
-            pass
+        headers = get_headers(filename, sep='\t')
+        count = 0
+        for line in headers:
+            if not line[0].startswith('@') and not line[0].startswith('#'):
+                if len(line) != 7:
+                    return False
+                try:
+                    int(line[0])
+                    float(line[1])
+                    float(line[2])
+                    float(line[3])
+                    float(line[4])
+                    float(line[5])
+                    float(line[6])
+                except:
+                    return False
+                count += 1
+        if count > 0:
+            return True
+
         return False
 
 
@@ -714,24 +695,23 @@ class LaneMask(Text):
     def sniff(self, filename):
         """
         Determines whether the file is a lane mask filter:  1 line consisting of zeros and ones.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.filter' )
+        >>> LaneMask().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.filter' )
+        >>> LaneMask().sniff( fname )
+        False
         """
-        try:
-            with open(filename) as fh:
-                count = 0
-                while True:
-                    line = fh.readline().strip()
-                    if not line:
-                        break  # EOF
-                    else:
-                        count += 1
-                        if not re.match('^[01]+$', line):
-                            return False
-                if count != 1:
-                    return False
-                return True
-        except:
-            pass
-        return False
+        headers = get_headers(filename, sep='\t')
+        if len(headers) != 1 or len(headers[0]) != 1:
+            return False
+
+        if not re.match('^[01]+$', headers[0][0]):
+            return False
+
+        return True
 
 
 class CountTable(Tabular):
@@ -788,7 +768,14 @@ class CountTable(Tabular):
 class RefTaxonomy(Tabular):
     file_ext = 'mothur.ref.taxonomy'
 
-    """
+    def __init__(self, **kwd):
+        Tabular.__init__(self, **kwd)
+        self.column_names = ['name', 'taxonomy']
+
+    def sniff(self, filename):
+        """
+        Determines whether the file is a Reference Taxonomy
+
         http://www.mothur.org/wiki/Taxonomy_outline
         A table with 2 or 3 columns:
         - SequenceName
@@ -802,46 +789,38 @@ class RefTaxonomy(Tabular):
           v3_AA008	Bacteria;Firmicutes;Bacilli;Lactobacillales;Streptococcaceae;Streptococcus	5
           v3_AA016	Bacteria	120
           v3_AA019	Archaea;Crenarchaeota;Marine_Group_I	1
-    """
-    def __init__(self, **kwd):
-        Tabular.__init__(self, **kwd)
-        self.column_names = ['name', 'taxonomy']
 
-    def sniff(self, filename):
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.ref.taxonomy' )
+        >>> RefTaxonomy().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.ref.taxonomy' )
+        >>> RefTaxonomy().sniff( fname )
+        False
         """
-        Determines whether the file is a Reference Taxonomy
-        """
-        try:
-            pat = '^([^ \t\n\r\x0c\x0b;]+([(]\\d+[)])?(;[^ \t\n\r\x0c\x0b;]+([(]\\d+[)])?)*(;)?)$'
-            with open(filename) as fh:
-                count = 0
-                # VAMPS  taxonomy files do not require a semicolon after the last taxonomy category
-                # but assume assume the file will have some multi-level taxonomy assignments
-                found_semicolons = False
-                while True:
-                    line = fh.readline()
-                    if not line:
-                        break  # EOF
-                    line = line.strip()
-                    if line:
-                        fields = line.split('\t')
-                        if not (2 <= len(fields) <= 3):
-                            return False
-                        if not re.match(pat, fields[1]):
-                            return False
-                        if not found_semicolons and str(fields[1]).count(';') > 0:
-                            found_semicolons = True
-                        if len(fields) == 3:
-                            int(fields[2])
-                        count += 1
-                        if count > 100:
-                            break
-                if count > 0:
-                    # This will be true if at least one entry
-                    # has semicolons in the 2nd column
-                    return found_semicolons
-        except:
-            pass
+        headers = get_headers(filename, sep='\t', count=300)
+        count = 0
+        pat = '^([^ \t\n\r\x0c\x0b;]+([(]\\d+[)])?(;[^ \t\n\r\x0c\x0b;]+([(]\\d+[)])?)*(;)?)$'
+        found_semicolons = False
+        for line in headers:
+            if not line[0].startswith('@') and not line[0].startswith('#'):
+                if not (2 <= len(line) <= 3):
+                    return False
+                if not re.match(pat, line[1]):
+                    return False
+                if not found_semicolons and str(line[1]).count(';') > 0:
+                    found_semicolons = True
+                if len(line) == 3:
+                    try:
+                        int(line[2])
+                    except:
+                        return False
+                count += 1
+
+        if count > 0:
+            # Require that at least one entry has semicolons in the 2nd column
+            return found_semicolons
+
         return False
 
 
@@ -880,58 +859,52 @@ class Axes(Tabular):
            forest  0.000000        0.145743
            pasture 0.145743        0.000000
 
-       ==> 98_sq_phylip_amazon.nmds.axes <==
+        ==> 98_sq_phylip_amazon.nmds.axes <==
                    axis1   axis2
            U68589  0.262608        -0.077498
            U68590  0.027118        0.195197
            U68591  0.329854        0.014395
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.axes' )
+        >>> Axes().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.axes' )
+        >>> Axes().sniff( fname )
+        False
         """
-        try:
-            with open(filename) as fh:
-                count = 0
-                line = fh.readline()
-                line = line.strip()
-                col_cnt = None
-                all_integers = True
-                while True:
-                    line = fh.readline()
-                    line = line.strip()
-                    if not line:
-                        break  # EOF
-                    if line:
-                        fields = line.split('\t')
-                        if col_cnt is None:  # ignore values in first line as they may be column headings
-                            col_cnt = len(fields)
-                            # There should be at least 2 columns
-                            if col_cnt < 2:
-                                return False
-                        else:
-                            if len(fields) != col_cnt:
-                                return False
-                            try:
-                                for i in range(1, col_cnt):
-                                    check = float(fields[i])
-                                    # Check abs value is <= 1.0
-                                    if abs(check) > 1.0:
-                                        return False
-                                    # Also test for whether value is an integer
-                                    try:
-                                        check = int(fields[i])
-                                    except ValueError:
-                                        all_integers = False
-                            except ValueError:
-                                return False
-                            count += 1
-                        if count > 10:
-                            break
-                if count > 0:
-                    if not all_integers:
-                        # At least one value was a float
-                        return True
-                    else:
-                        return False
-        except:
-            pass
+        headers = get_headers(filename, sep='\t')
+        count = 0
+        col_cnt = None
+        all_integers = True
+        for line in headers:
+            if count == 0:
+                pass
+            elif col_cnt is None:
+                col_cnt = len(line)
+                if col_cnt < 2:
+                    return False
+            else:
+                if len(line) != col_cnt:
+                    return False
+                try:
+                    for i in range(1, col_cnt):
+                        check = float(line[i])
+                        # Check abs value is <= 1.0
+                        if abs(check) > 1.0:
+                            return False
+                        # Also test for whether value is an integer
+                        try:
+                            check = int(line[i])
+                        except ValueError:
+                            all_integers = False
+                except ValueError:
+                    return False
+            count += 1
+
+        if count > 0:
+            return not all_integers
+
         return False
 
 
@@ -984,3 +957,8 @@ class SffFlow(Tabular):
         except Exception, exc:
             out = "Can't create peek %s" % str(exc)
         return out
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod(sys.modules[__name__])
