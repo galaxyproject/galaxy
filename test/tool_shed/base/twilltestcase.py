@@ -258,9 +258,14 @@ class ShedTwillTestCase( TwillTestCase ):
         commands.commit( ui.ui(), hgrepo, **options )
         try:
             commands.push( ui.ui(), hgrepo, dest=url )
-        except Abort, e:
-            message = e
+        except Abort as a:
+            message = a
             if 'authorization failed' in message:
+                return False
+            else:
+                raise
+        except Exception as e:
+            if str(e).find('Pushing to Tool Shed is disabled') != -1:
                 return False
             else:
                 raise
