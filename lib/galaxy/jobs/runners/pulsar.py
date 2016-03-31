@@ -4,7 +4,19 @@ More infromation on Pulsar can be found at http://pulsar.readthedocs.org/.
 """
 from __future__ import absolute_import  # Need to import pulsar_client absolutely.
 
+import errno
 import logging
+import os
+from time import sleep
+
+from pulsar.client import build_client_manager
+from pulsar.client import url_to_destination_params
+from pulsar.client import finish_job as pulsar_finish_job
+from pulsar.client import submit_job as pulsar_submit_job
+from pulsar.client import ClientJobDescription
+from pulsar.client import PulsarOutputs
+from pulsar.client import ClientOutputs
+from pulsar.client import PathMapper
 
 from galaxy import model
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
@@ -16,18 +28,6 @@ from galaxy.util import string_as_bool_or_none
 from galaxy.util.bunch import Bunch
 from galaxy.util import specs
 
-import errno
-from time import sleep
-import os
-
-from pulsar.client import build_client_manager
-from pulsar.client import url_to_destination_params
-from pulsar.client import finish_job as pulsar_finish_job
-from pulsar.client import submit_job as pulsar_submit_job
-from pulsar.client import ClientJobDescription
-from pulsar.client import PulsarOutputs
-from pulsar.client import ClientOutputs
-from pulsar.client import PathMapper
 
 log = logging.getLogger( __name__ )
 
