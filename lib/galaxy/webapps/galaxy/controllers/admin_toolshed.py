@@ -206,10 +206,10 @@ class AdminToolshed( AdminGalaxy ):
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
         url = util.build_url( tool_shed_url, pathspec=[ 'api', 'categories' ] )
-        categories = json.loads( common_util.tool_shed_get( trans.app, url ) )
+        categories = json.loads( util.url_get( url ) )
         repositories = []
         url = util.build_url( tool_shed_url, pathspec=[ 'api', 'repositories' ] )
-        for repo in json.loads( common_util.tool_shed_get( trans.app, url ) ):
+        for repo in json.loads( util.url_get( url ) ):
             repositories.append( dict( value=repo[ 'id' ], label='%s/%s' % ( repo[ 'owner' ], repo[ 'name' ] ) ) )
         return trans.fill_template( '/admin/tool_shed_repository/browse_categories.mako',
                                     tool_shed_url=tool_shed_url,
@@ -222,10 +222,10 @@ class AdminToolshed( AdminGalaxy ):
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         category_id = kwd.get( 'category_id', '' )
         url = util.build_url( tool_shed_url )
-        json_data = json.loads( common_util.tool_shed_get( trans.app, url, pathspec=[ 'api', 'categories', category_id, 'repositories' ] ) )
+        json_data = json.loads( util.url_get( url, pathspec=[ 'api', 'categories', category_id, 'repositories' ] ) )
         for idx, repository in enumerate( json_data[ 'repositories' ] ):
             try:
-                metadata = json.loads( common_util.tool_shed_get( trans.app,
+                metadata = json.loads( util.url_get(
                                                                   url,
                                                                   pathspec=[ 'api', 'repositories', repository[ 'id' ], 'metadata' ],
                                                                   params=dict( recursive=False ) ) )
@@ -235,7 +235,7 @@ class AdminToolshed( AdminGalaxy ):
 
         repositories = []
         url = util.build_url( tool_shed_url, pathspec=[ 'api', 'repositories' ] )
-        for repo in json.loads( common_util.tool_shed_get( trans.app, url ) ):
+        for repo in json.loads( util.url_get( url ) ):
             repositories.append( dict( value=repo[ 'id' ], label='%s/%s' % ( repo[ 'owner' ], repo[ 'name' ] ) ) )
         return trans.fill_template( '/admin/tool_shed_repository/browse_category.mako',
                                     tool_shed_url=tool_shed_url,
@@ -1277,8 +1277,8 @@ class AdminToolshed( AdminGalaxy ):
     def preview_repository( self, trans, **kwd ):
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         tsr_id = kwd.get( 'tsr_id', '' )
-        toolshed_data = json.loads( common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id ] ) )
-        toolshed_data[ 'metadata' ] = json.loads( common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id, 'metadata' ] ) )
+        toolshed_data = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id ] ) )
+        toolshed_data[ 'metadata' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id, 'metadata' ] ) )
         shed_tool_conf_select_field = tool_util.build_shed_tool_conf_select_field( trans.app )
         tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field( trans.app )
         return trans.fill_template( '/admin/tool_shed_repository/preview_repository.mako',
