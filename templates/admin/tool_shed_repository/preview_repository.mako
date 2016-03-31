@@ -246,7 +246,6 @@ function check_if_installed(name, owner, changeset) {
             var installed = !repository.deleted && !repository.uninstalled;
             var changeset_match = repository.changeset_revision == changeset ||
                                   repository.installed_changeset_revision == changeset;
-            console.log(changeset_match);
             if (repository.name == name && repository.owner == owner && installed && changeset_match) {
                 $('#install_repository').prop('disabled', true);
                 $('#install_repository').val('This revision is already installed');
