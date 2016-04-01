@@ -97,6 +97,7 @@ def setup_galaxy_config(
     default_install_db_merged=True,
     default_tool_data_table_config_path=None,
     default_shed_tool_data_table_config=None,
+    default_job_config_file=None,
     enable_tool_shed_check=False,
     default_tool_conf=None,
     shed_tool_conf=None,
@@ -126,6 +127,7 @@ def setup_galaxy_config(
     else:
         user_library_import_dir = None
         library_import_dir = None
+    job_config_file = os.environ.get('GALAXY_TEST_JOB_CONFIG_FILE', default_job_config_file)
     tool_path = os.environ.get('GALAXY_TEST_TOOL_PATH', 'tools')
     tool_dependency_dir = os.environ.get('GALAXY_TOOL_DEPENDENCY_DIR', None)
     if tool_dependency_dir is None:
@@ -168,8 +170,9 @@ def setup_galaxy_config(
         file_path=file_path,
         galaxy_data_manager_data_path=galaxy_data_manager_data_path,
         id_secret='changethisinproductiontoo',
-        job_working_directory=job_working_directory,
+        job_config_file=job_config_file,
         job_queue_workers=5,
+        job_working_directory=job_working_directory,
         library_import_dir=library_import_dir,
         log_destination="stdout",
         new_file_path=new_file_path,
