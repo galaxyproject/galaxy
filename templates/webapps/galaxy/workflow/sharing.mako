@@ -66,6 +66,9 @@
             margin: 0.5em 0em 0.5em 0.5em;
             font-weight: bold;
         }
+        .sharing-section{
+            margin-top: 1em;
+        }
     </style>
 </%def>
 
@@ -117,7 +120,7 @@
         </form>
     %else:
         ## User has a public username, so private sharing and publishing options.
-        <h3>Make ${item_class_name} Accessible via Link or Publish It</h3>
+        <h3>Share</h3>
             <div>
                 %if item.importable:
                     <%
@@ -185,7 +188,8 @@
         ##
         ## Sharing with Galaxy users.
         ##
-        <h3>Share ${item_class_name} with Individual Users</h3>
+        <div class="sharing-section">
+        ## <p>Share ${item_class_name} with Individual Users</p>
             <div>
                 %if item.users_shared_with:
                     <p>
@@ -219,7 +223,7 @@
                         <span>Share with another user</span>
                     </a>
                 %else:
-                    <p>You have not shared this ${item_class_name_lc} with any users.</p>
+                    <p>You have not shared this ${item_class_name_lc} with any users yet.</p>
 
                     <a class="action-button"
                        href="${h.url_for(controller=controller_name, action='share', id=trans.security.encode_id(item.id), use_panels=use_panels )}">
@@ -229,24 +233,29 @@
                 %endif
             </div>
         </div>
+        </div>
     %endif
 </%def>
 
 
 ## Download and Export section
 <%def name="render_download_to_file(item)">
-    <h3>Download to File</h3>
+    <hr/>
+    <h3>Export</h3>
+    <div class="sharing-section">
     <button>
         <a href="${h.url_for( controller=self.controller, action='display_by_username_and_slug', username=item.user.username, slug=item.slug, format='json-download' )}" style="text-decoration: none;">
         Download
         </a>
     </button>
     ${get_class_display_name( item.__class__ ).lower()} as a file so that it can be saved or imported into another Galaxy server.
+    </div>
 </%def>
 
 
 <%def name="render_url_for_importing(item)">
-    <h3>Get URL for Importing to Another Galaxy</h3>
+    ## <h3>Get URL for Importing to Another Galaxy</h3>
+    <div class="sharing-section">
     %if item.importable:
         Use this URL to import the ${get_class_display_name( item.__class__ ).lower()} directly into another Galaxy server:
         <div class="display-url">
@@ -257,6 +266,7 @@
     %else:
         This ${get_class_display_name( item.__class__ ).lower()} must be accessible. Please use the option above to "Make Workflow Accessible and Publish" before receiving a URL for importing to another Galaxy.</a>
     %endif
+    </div>
 </%def>
 
 <%def name="render_header()">
@@ -268,9 +278,9 @@
     ##
     ## Renders form for exporting workflow to myExperiment.
     ##
-    <h3>Export to myExperiment</h3>
-    <div>
-        <span>You need an account on the <a href="http://www.myexperiment.org/" target="_blank">www.myexperiment.org</a> site.</span>
+    ## <h3>Export to myExperiment</h3>
+    <div class="sharing-section">
+        <span>Export to the <a href="http://www.myexperiment.org/" target="_blank">www.myexperiment.org</a> site.</span>
         <form action="${h.url_for(controller='workflow', action='export_to_myexp', id=trans.security.encode_id( item.id ) )}"
                 method="POST">
             <div class="form-row">
@@ -282,7 +292,7 @@
                 <input type="password" name="myexp_password" value="" size="25" placeholder="password"/>
             </div>
             <div class="form-row">
-                <input type="submit" value="Export"/>
+                <input type="submit" value="Export to myExperiment"/>
             </div>
         </form>
     </div>
@@ -291,12 +301,16 @@
 
 <%def name="render_more(item)">
     ## Add link to render as SVG image.
-    <h3>Export to Image</h3>
+    ## <h3>Export to Image</h3>
+    <div class="sharing-section">
     <button><a href="${h.url_for(controller='workflow', action='gen_image', id=trans.security.encode_id( item.id ) )}" style="text-decoration: none;">
         Create image</a></button> of ${get_class_display_name( item.__class__ ).lower()} in SVG format
     </a>
+    </div>
     ## Add form to export to myExperiment.
+    <div class="sharing-section">
     ${self.render_export_to_myexp(item)}
+    </div>
 </%def>
 
 
@@ -305,6 +319,7 @@
         <div class="page-container" style="padding: 10px;">
             ${self.render_header()}
             <h2>${get_class_display_name( item.__class__ )} '${get_item_name( item ) | h}'</h2>
+            <hr/>
             <p>
             ${self.render_sharing(item)}
             ${self.render_download_to_file(item)}
