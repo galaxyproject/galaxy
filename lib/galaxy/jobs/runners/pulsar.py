@@ -217,7 +217,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
                 command_line=command_line,
                 input_files=self.get_input_files(job_wrapper),
                 client_outputs=self.__client_outputs(client, job_wrapper),
-                working_directory=job_wrapper.working_directory,
+                working_directory=job_wrapper.tool_working_directory,
                 tool=job_wrapper.tool,
                 config_files=job_wrapper.extra_filenames,
                 dependencies_description=dependencies_description,
