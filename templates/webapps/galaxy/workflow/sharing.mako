@@ -121,36 +121,34 @@
     %else:
         ## User has a public username, so private sharing and publishing options.
         <h3>Share</h3>
-            <div>
-                %if item.importable:
-                    <%
-                        item_status = "accessible via link"
-                        if item.published:
-                            item_status = item_status + " and published"
-                    %>
-                    This ${item_class_name_lc} is currently <strong>${item_status}</strong>.
-                    <div>
-                        <p>Anyone can view and import this ${item_class_name_lc} by visiting the following URL:
-                        <blockquote>
-                            <%
-                                url = h.url_for( controller=controller_name, action='display_by_username_and_slug', username=trans.get_user().username, slug=item.slug, qualified=True )
-                                url_parts = url.split("/")
-                            %>
-                            <a id="item-url" href="${url}" target="_top">${url}</a>
-                            <span id="item-url-text" style="display: none">
-                                ${"/".join( url_parts[:-1] )}/<span id='item-identifier'>${url_parts[-1]}</span>
-                            </span>
+        <div>
+            %if item.importable:
+                <%
+                    item_status = "accessible via link"
+                    if item.published:
+                        item_status = item_status + " and published"
+                %>
+                This ${item_class_name_lc} is currently <strong>${item_status}</strong>.
+                <div>
+                    Anyone can view and import this ${item_class_name_lc} by visiting the following URL:
+                    <blockquote>
+                        <%
+                            url = h.url_for( controller=controller_name, action='display_by_username_and_slug', username=trans.get_user().username, slug=item.slug, qualified=True )
+                            url_parts = url.split("/")
+                        %>
+                        <a id="item-url" href="${url}" target="_top">${url}</a>
+                        <span id="item-url-text" style="display: none">
+                            ${"/".join( url_parts[:-1] )}/<span id='item-identifier'>${url_parts[-1]}</span>
+                        </span>
 
-                            <a href="#" id="edit-identifier"><img src="${h.url_for('/static/images/fugue/pencil.png')}"/></a>
-                        </blockquote>
+                        <a href="#" id="edit-identifier"><img src="${h.url_for('/static/images/fugue/pencil.png')}"/></a>
+                    </blockquote>
 
-                        %if item.published:
-                            This ${item_class_name_lc} is publicly listed and searchable in Galaxy's <a href='${h.url_for( controller=controller_name, action='list_published' )}' target="_top">Published ${item_class_plural_name}</a> section.
-                        %endif
-                    </div>
-
-                    <p>
-                    <div>
+                    %if item.published:
+                        This ${item_class_name_lc} is publicly listed and searchable in Galaxy's <a href='${h.url_for( controller=controller_name, action='list_published' )}' target="_top">Published ${item_class_plural_name}</a> section.
+                    %endif
+                </div>
+                <div>
                     <form action="${h.url_for( controller=controller_name, action='sharing', id=trans.security.encode_id( item.id ) )}" method="POST">
                         %if not item.published:
                             ## Item is importable but not published. User can disable importable or publish.
@@ -169,70 +167,63 @@
                             <div class="toolParamHelp">Disables this ${item_class_name_lc}'s link so that it is not accessible and removes ${item_class_name_lc} from Galaxy's <a href='${h.url_for(controller=controller_name, action='list_published' )}' target='_top'>Published ${item_class_plural_name}</a> section so that it is not publicly listed or searchable.</div>
                         %endif
                     </form>
+                </div>
+            %else:
+                <p>This ${item_class_name_lc} is currently restricted so that only you and the users listed below can access it.</p>
+                <form action="${h.url_for(controller=controller_name, action='sharing', id=trans.security.encode_id(item.id) )}" method="POST">
+                    <input class="action-button" type="submit" name="make_accessible_via_link" value="Make ${item_class_name} Accessible via Link">
+                    <div class="toolParamHelp">Generates a web link that you can share with other people so that they can view and import the ${item_class_name_lc}.</div>
+
+                    <br />
+                    <input class="action-button" type="submit" name="make_accessible_and_publish" value="Make ${item_class_name} Accessible and Publish" method="POST">
+                    <div class="toolParamHelp">
+                        Makes the ${item_class_name_lc} accessible via link (see above) and publishes the ${item_class_name_lc} to Galaxy's <a href='${h.url_for(controller=controller_name, action='list_published' )}' target='_top'>Published ${item_class_plural_name}</a> section, where it is publicly listed and searchable.
                     </div>
+                </form>
+            %endif
+            ##
+            ## Sharing with Galaxy users.
+            ##
+            <div class="sharing-section">
+                <div>
+                    %if item.users_shared_with:
+                        <p>
+                            The following users will see this ${item_class_name_lc} in their ${item_class_name_lc} list and will be
+                            able to view, import, and run it.
+                        </p>
 
-                %else:
-
-                    <p>This ${item_class_name_lc} is currently restricted so that only you and the users listed below can access it.</p>
-
-                    <form action="${h.url_for(controller=controller_name, action='sharing', id=trans.security.encode_id(item.id) )}" method="POST">
-                        <input class="action-button" type="submit" name="make_accessible_via_link" value="Make ${item_class_name} Accessible via Link">
-                        <div class="toolParamHelp">Generates a web link that you can share with other people so that they can view and import the ${item_class_name_lc}.</div>
-
-                        <br />
-                        <input class="action-button" type="submit" name="make_accessible_and_publish" value="Make ${item_class_name} Accessible and Publish" method="POST">
-                        <div class="toolParamHelp">Makes the ${item_class_name_lc} accessible via link (see above) and publishes the ${item_class_name_lc} to Galaxy's <a href='${h.url_for(controller=controller_name, action='list_published' )}' target='_top'>Published ${item_class_plural_name}</a> section, where it is publicly listed and searchable.</div>
-                    </form>
-
-                %endif
-        ##
-        ## Sharing with Galaxy users.
-        ##
-        <div class="sharing-section">
-        ## <p>Share ${item_class_name} with Individual Users</p>
-            <div>
-                %if item.users_shared_with:
-                    <p>
-                        The following users will see this ${item_class_name_lc} in their ${item_class_name_lc} list and will be
-                        able to view, import, and run it.
-                    </p>
-
-                    <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
-                        <tr class="header">
-                            <th>Email</th>
-                            <th></th>
-                        </tr>
-                        %for i, association in enumerate( item.users_shared_with ):
-                            <% user = association.user %>
-                            <tr>
-                                <td>
-                                    <div class="menubutton popup" id="user-${i}-popup">${user.email}</div>
-                                </td>
-                                <td>
-                                    <div popupmenu="user-${i}-popup">
-                                    <a class="action-button" href="${h.url_for(controller=controller_name, action='sharing', id=trans.security.encode_id( item.id ), unshare_user=trans.security.encode_id( user.id ), use_panels=use_panels )}">Unshare</a>
-                                    </div>
-                                </td>
+                        <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
+                            <tr class="header">
+                                <th>Email</th>
+                                <th></th>
                             </tr>
-                        %endfor
-                    </table>
+                            %for i, association in enumerate( item.users_shared_with ):
+                                <% user = association.user %>
+                                <tr>
+                                    <td>
+                                        <div class="menubutton popup" id="user-${i}-popup">${user.email}</div>
+                                    </td>
+                                    <td>
+                                        <div popupmenu="user-${i}-popup">
+                                        <a class="action-button" href="${h.url_for(controller=controller_name, action='sharing', id=trans.security.encode_id( item.id ), unshare_user=trans.security.encode_id( user.id ), use_panels=use_panels )}">Unshare</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            %endfor
+                        </table>
 
-                    <p>
-                    <a class="action-button"
-                       href="${h.url_for(controller=controller_name, action='share', id=trans.security.encode_id(item.id), use_panels=use_panels )}">
-                        <span>Share with another user</span>
-                    </a>
-                %else:
-                    <p>You have not shared this ${item_class_name_lc} with any users yet.</p>
-
-                    <a class="action-button"
-                       href="${h.url_for(controller=controller_name, action='share', id=trans.security.encode_id(item.id), use_panels=use_panels )}">
-                        <span>Share with a user</span>
-                    </a>
-
-                %endif
+                        <a class="action-button"
+                           href="${h.url_for(controller=controller_name, action='share', id=trans.security.encode_id(item.id), use_panels=use_panels )}">
+                            <span>Share with another user</span>
+                        </a>
+                    %else:
+                        <p>You have not shared this ${item_class_name_lc} with any users yet.</p>
+                        <a class="action-button" href="${h.url_for(controller=controller_name, action='share', id=trans.security.encode_id(item.id), use_panels=use_panels )}">
+                            <span>Share with a user</span>
+                        </a>
+                    %endif
+                </div>
             </div>
-        </div>
         </div>
     %endif
 </%def>
@@ -254,7 +245,6 @@
 
 
 <%def name="render_url_for_importing(item)">
-    ## <h3>Get URL for Importing to Another Galaxy</h3>
     <div class="sharing-section">
     %if item.importable:
         Use this URL to import the ${get_class_display_name( item.__class__ ).lower()} directly into another Galaxy server:
@@ -278,7 +268,6 @@
     ##
     ## Renders form for exporting workflow to myExperiment.
     ##
-    ## <h3>Export to myExperiment</h3>
     <div class="sharing-section">
         <span>Export to the <a href="http://www.myexperiment.org/" target="_blank">www.myexperiment.org</a> site.</span>
         <form action="${h.url_for(controller='workflow', action='export_to_myexp', id=trans.security.encode_id( item.id ) )}"
@@ -301,15 +290,17 @@
 
 <%def name="render_more(item)">
     ## Add link to render as SVG image.
-    ## <h3>Export to Image</h3>
     <div class="sharing-section">
-    <button><a href="${h.url_for(controller='workflow', action='gen_image', id=trans.security.encode_id( item.id ) )}" style="text-decoration: none;">
-        Create image</a></button> of ${get_class_display_name( item.__class__ ).lower()} in SVG format
-    </a>
+        <button>
+            <a href="${h.url_for(controller='workflow', action='gen_image', id=trans.security.encode_id( item.id ) )}" style="text-decoration: none;">
+                Create image
+            </a>
+        </button>
+        of ${get_class_display_name( item.__class__ ).lower()} in SVG format
     </div>
     ## Add form to export to myExperiment.
     <div class="sharing-section">
-    ${self.render_export_to_myexp(item)}
+        ${self.render_export_to_myexp(item)}
     </div>
 </%def>
 
@@ -320,7 +311,6 @@
             ${self.render_header()}
             <h2>${get_class_display_name( item.__class__ )} '${get_item_name( item ) | h}'</h2>
             <hr/>
-            <p>
             ${self.render_sharing(item)}
             ${self.render_download_to_file(item)}
             ${self.render_url_for_importing(item)}
