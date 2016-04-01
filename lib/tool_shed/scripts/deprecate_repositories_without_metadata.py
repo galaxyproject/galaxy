@@ -19,7 +19,7 @@ from sqlalchemy import and_, distinct, false, not_
 import galaxy.webapps.tool_shed.config as tool_shed_config
 import galaxy.webapps.tool_shed.model.mapping
 from galaxy.util import send_mail as galaxy_send_mail
-from tool_shed.util.common_util import url_join
+from galaxy.util import build_url
 
 log = logging.getLogger()
 log.setLevel( 10 )
@@ -28,7 +28,7 @@ assert sys.version_info[:2] >= ( 2, 4 )
 
 
 def build_citable_url( host, repository ):
-    return url_join( host, pathspec=[ 'view', repository.user.username, repository.name ] )
+    return build_url( host, pathspec=[ 'view', repository.user.username, repository.name ] )
 
 
 def main():

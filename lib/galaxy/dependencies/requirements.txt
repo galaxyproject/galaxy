@@ -26,6 +26,7 @@ Mako
 pytz
 Babel
 Beaker
+dictobj
 
 # Cheetah and dependencies
 Cheetah

@@ -261,9 +261,14 @@ class ShedTwillTestCase( TwillTestCase ):
         commands.commit( ui.ui(), hgrepo, **options )
         try:
             commands.push( ui.ui(), hgrepo, dest=url )
-        except Abort, e:
-            message = e
+        except Abort as a:
+            message = a
             if 'authorization failed' in message:
+                return False
+            else:
+                raise
+        except Exception as e:
+            if str(e).find('Pushing to Tool Shed is disabled') != -1:
                 return False
             else:
                 raise
@@ -540,10 +545,33 @@ class ShedTwillTestCase( TwillTestCase ):
             'Repository <b>%s</b> has been created' % name,
         ]
 
-    def export_capsule( self, repository ):
+    def export_capsule( self, repository, aggressive=True, includes_dependencies=None ):
+        # TODO: Remove this method and restore _exort_capsule as export_capsule
+        # after transient problem is fixed.
+        if not aggressive:
+            return self._export_capsule(repository, includes_dependencies=includes_dependencies)
+        else:
+            try:
+                return self._export_capsule(repository, includes_dependencies=includes_dependencies)
+            except Exception:
+                # Empirically this fails occasionally, we don't know
+                # why however.
+                time.sleep(1)
+                return self._export_capsule( repository, includes_dependencies=includes_dependencies)
+
+    def _export_capsule( self, repository, includes_dependencies=None ):
         url = '/repository/export?repository_id=%s&changeset_revision=%s' % \
             ( self.security.encode_id( repository.id ), self.get_repository_tip( repository ) )
         self.visit_url( url )
+        log.info( "Visited url %s looking for export capsule button" % url )
+        self.check_page_for_string( "Repository '" )
+        self.check_page_for_string( "Export" )
+        # Explicit check for True/False since None means we don't know if this
+        # includes dependencies and so we skip both checks...
+        if includes_dependencies is True:
+            self.check_page_for_string( "Export repository dependencies?" )
+        elif includes_dependencies is False:
+            self.check_page_for_string( "No repository dependencies are defined for revision" )
         self.submit_form( 'export_repository', 'export_repository_button' )
         fd, capsule_filename = tempfile.mkstemp()
         os.close( fd )

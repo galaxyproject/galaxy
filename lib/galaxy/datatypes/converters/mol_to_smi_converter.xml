@@ -1,0 +1,21 @@
+<tool id="CONVERTER_mol_to_smi" name="MOL to SMILES" version="1.0.0">
+    <description></description>
+    <requirements>
+        <requirement type="package" version="2.3.2">openbabel</requirement>
+    </requirements>
+    <command>
+<![CDATA[
+        obabel -imol "${input}" -osmi  -O "${output}" -e 2>&1
+]]>
+    </command>
+    <inputs>
+        <param name="input" type="data" format="mol" label="Molecules in MOL-format"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="smi"/>
+    </outputs>
+    <help>
+<![CDATA[
+]]>
+    </help>
+</tool>

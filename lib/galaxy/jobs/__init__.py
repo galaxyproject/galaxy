@@ -1662,10 +1662,13 @@ class JobWrapper( object ):
                                                                          **kwds )
         if resolve_metadata_dependencies:
             metadata_tool = self.app.toolbox.get_tool("__SET_METADATA__")
-            dependency_shell_commands = metadata_tool.build_dependency_shell_commands(job_directory=self.working_directory)
-            if dependency_shell_commands:
-                dependency_shell_commands = "; ".join(dependency_shell_commands)
-                command = "%s; %s" % (dependency_shell_commands, command)
+            if metadata_tool is not None:
+                # Due to tool shed hacks for migrate and installed tool tests...
+                # see (``setup_shed_tools_for_test`` in test/base/driver_util.py).
+                dependency_shell_commands = metadata_tool.build_dependency_shell_commands(job_directory=self.working_directory)
+                if dependency_shell_commands:
+                    dependency_shell_commands = "; ".join(dependency_shell_commands)
+                    command = "%s; %s" % (dependency_shell_commands, command)
         return command
 
     @property
