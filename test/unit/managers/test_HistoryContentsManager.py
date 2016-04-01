@@ -347,6 +347,9 @@ class HistoryContentsFilterParserTestCase( HistoryAsContainerBaseTestCase ):
         self.log( 'should error if locale is used' )
         self.assertRaises( ValueError, self.filter_parser.parse_date, 'Fri Feb 13 18:31:30 2009' )
 
+        self.log( 'should error if wrong milliseconds format is used' )
+        self.assertRaises( ValueError, self.filter_parser.parse_date, '2009-02-13 18:13:00.' )
+        self.assertRaises( ValueError, self.filter_parser.parse_date, '2009-02-13 18:13:00.1234567' )
 
 # =============================================================================
 if __name__ == '__main__':
