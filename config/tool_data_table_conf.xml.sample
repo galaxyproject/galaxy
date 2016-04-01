@@ -85,4 +85,9 @@
         <columns>value, name, url</columns>
         <file path="tool-data/vcf_iobio.loc" />
     </table>
+    <!-- simple biom servers -->
+    <table name="biom_simple_display" comment_char="#">
+        <columns>value, name, url</columns>
+        <file path="tool-data/biom_simple_display.loc" />
+    </table>
 </tables>
