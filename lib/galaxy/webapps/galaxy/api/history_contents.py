@@ -334,6 +334,12 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         else:
             message = "Invalid 'source' parameter in request %s" % source
             raise exceptions.RequestParameterInvalidException(message)
+
+        # if the consumer specified keys or view, use the secondary serializer
+        if 'view' in kwd or 'keys' in kwd:
+            return self.hdca_serializer.serialize_to_view( dataset_collection_instance,
+                user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+
         return self.__collection_dict( trans, dataset_collection_instance, view="element" )
 
     @expose_api_anonymous

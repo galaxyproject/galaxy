@@ -349,7 +349,9 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
             xhr = jQuery.post( this.url(), {
                 content : id,
                 source  : contentType,
-                type    : type
+                type    : type,
+                view    : 'detailed',
+                keys    : 'create_time,update_time'
             })
             .done( function( response ){
                 collection.add([ response ], { parse: true });

@@ -156,7 +156,6 @@ var DatasetAssociation = Backbone.Model
         if( parsed.update_time ){
             parsed.update_time = new Date( parsed.update_time );
         }
-        console.log( 'dataset-model.parsed:', parsed );
         return parsed;
     },
 
