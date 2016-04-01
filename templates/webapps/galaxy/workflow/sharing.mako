@@ -51,7 +51,7 @@
     <style>
         ## Put some whitespace before each section header.
         h3 {
-            margin-top: 1.5em;
+            margin-top: 1em;
         }
         input.action-button {
             margin-left: 0;
@@ -246,7 +246,6 @@
 
 
 <%def name="render_url_for_importing(item)">
-    <br>
     <h3>Get URL for Importing to Another Galaxy</h3>
     %if item.importable:
         Use this URL to import the ${get_class_display_name( item.__class__ ).lower()} directly into another Galaxy server:
@@ -260,10 +259,7 @@
     %endif
 </%def>
 
-
-
-
-<%def name="render_footer()">
+<%def name="render_header()">
     <a href="${h.url_for(controller=self.controller, action="list" )}">Go back to ${self.item_class_plural_name} List</a>
 </%def>
 
@@ -279,11 +275,11 @@
                 method="POST">
             <div class="form-row">
                 <label>myExperiment username:</label>
-                <input type="text" name="myexp_username" value="" size="40"/>
+                <input type="text" name="myexp_username" value="" size="25" placeholder="username"/>
             </div>
             <div class="form-row">
                 <label>myExperiment password:</label>
-                <input type="password" name="myexp_password" value="" size="40"/>
+                <input type="password" name="myexp_password" value="" size="25" placeholder="password"/>
             </div>
             <div class="form-row">
                 <input type="submit" value="Export"/>
@@ -300,14 +296,14 @@
         Create image</a></button> of ${get_class_display_name( item.__class__ ).lower()} in SVG format
     </a>
     ## Add form to export to myExperiment.
-    ## ${self.render_export_to_myexp(item)}
+    ${self.render_export_to_myexp(item)}
 </%def>
 
 
 <%def name="body()">
     <div style="overflow: auto; height: 100%;">
         <div class="page-container" style="padding: 10px;">
-            ${self.render_footer()}
+            ${self.render_header()}
             <h2>${get_class_display_name( item.__class__ )} '${get_item_name( item ) | h}'</h2>
             <p>
             ${self.render_sharing(item)}
