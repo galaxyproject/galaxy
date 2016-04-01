@@ -48,8 +48,8 @@ class XmlToolConfSource(ToolConfSource):
 
     def is_shed_tool_conf(self):
         has_tool_path = self.parse_tool_path() is not None
-        shed_conf = string_as_bool(self.root.get("shed_conf", "True"))
-        return has_tool_path and shed_conf
+        is_shed_conf = string_as_bool(self.root.get("is_shed_conf", "True"))
+        return has_tool_path and is_shed_conf
 
     def parse_monitor(self):
         return string_as_bool(self.root.get('monitor', DEFAULT_MONITOR))
