@@ -23,8 +23,11 @@ class ToolConfSource(object):
 
     @abstractmethod
     def parse_tool_path(self):
-        """ Return tool_path for tools in this toolbox.
-        """
+        """Return tool_path for tools in this toolbox or None."""
+
+    @abstractmethod
+    def is_shed_tool_conf(self):
+        """Decide if this tool conf is a shed tool conf."""
 
     def parse_monitor(self):
         """Monitor the toolbox configuration source for changes and reload."""
@@ -42,6 +45,11 @@ class XmlToolConfSource(ToolConfSource):
 
     def parse_items(self):
         return map(ensure_tool_conf_item, self.root.getchildren())
+
+    def is_shed_tool_conf(self):
+        has_tool_path = self.parse_tool_path() is not None
+        shed_conf = string_as_bool(self.root.get("shed_conf", "True"))
+        return has_tool_path and shed_conf
 
     def parse_monitor(self):
         return string_as_bool(self.root.get('monitor', DEFAULT_MONITOR))
@@ -62,6 +70,9 @@ class YamlToolConfSource(ToolConfSource):
 
     def parse_monitor(self):
         return self.as_dict.get('monitor', DEFAULT_MONITOR)
+
+    def is_shed_tool_conf(self):
+        return False
 
 
 class ToolConfItem(object):

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<toolbox tool_path="${tool_conf_dir}">
+<toolbox tool_path="${tool_conf_dir}" shed_conf="false">
   <tool file="upload.xml"/>
   <tool file="simple_constructs.xml" />
   <tool file="inheritance_simple.xml" />
