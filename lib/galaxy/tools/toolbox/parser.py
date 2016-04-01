@@ -1,3 +1,8 @@
+"""This module is used to parse tool_conf files.
+
+These files define tool lists, sections, labels, etc... the elements of the
+Galaxy tool panel.
+"""
 from abc import ABCMeta
 from abc import abstractmethod
 
@@ -8,15 +13,13 @@ DEFAULT_MONITOR = False
 
 
 class ToolConfSource(object):
-    """ This interface represents an abstract source to parse tool
-    information from.
-    """
+    """Interface represents a container of tool references."""
+
     __metaclass__ = ABCMeta
 
     @abstractmethod
     def parse_items(self):
-        """ Return a list of ToolConfItem
-        """
+        """Return a list of ToolConfItem describing source."""
 
     @abstractmethod
     def parse_tool_path(self):
@@ -24,8 +27,7 @@ class ToolConfSource(object):
         """
 
     def parse_monitor(self):
-        """ Monitor the toolbox configuration source for changes and
-        reload. """
+        """Monitor the toolbox configuration source for changes and reload."""
         return DEFAULT_MONITOR
 
 
@@ -63,8 +65,9 @@ class YamlToolConfSource(ToolConfSource):
 
 
 class ToolConfItem(object):
-    """ This interface represents an abstract source to parse tool
-    information from.
+    """Abstract description of a tool conf item.
+
+    These may include tools, labels, sections, and workflows.
     """
 
     def __init__(self, type, attributes, elem=None):
@@ -136,3 +139,8 @@ def get_toolbox_parser(config_filename):
         return YamlToolConfSource(config_filename)
     else:
         return XmlToolConfSource(config_filename)
+
+__all__ = [
+    "get_toolbox_parser",
+    "ensure_tool_conf_item",
+]
