@@ -189,7 +189,6 @@
         ##
         <br>
         <h3>2. Share ${item_class_name} with Individual Users</h3>
-        <p> Description: Share the workflow with users of this Galaxy server by choosing the user.</p>
             <div>
                 %if item.users_shared_with:
                     <p>
@@ -243,7 +242,6 @@
 
 <%def name="render_download_to_file(item)">
     <h3>3. Download to File</h3>
-    <p>Description: Download workflow to a .ga file.</p>
     <a href="${h.url_for( controller=self.controller, action='display_by_username_and_slug', username=item.user.username,
                           slug=item.slug, format='json-download' )}">
         Download ${get_class_display_name( item.__class__ ).lower()} to file so that it can be saved or imported into another Galaxy server.</a>
@@ -253,7 +251,6 @@
 <%def name="render_url_for_importing(item)">
     <br>
     <h3>4. URL for Importing to Another Galaxy</h3>
-    ## <p>Description: Generate and use the URL to import the workflow into another Galaxy server.</p>
     %if item.importable:
         Use this URL to import the ${get_class_display_name( item.__class__ ).lower()} directly into another Galaxy server:
         <div class="display-url">
