@@ -322,7 +322,7 @@ class BaseJobRunner( object ):
         compute_job_directory=None
     ):
         if not compute_working_directory:
-            compute_working_directory = job_wrapper.working_directory
+            compute_working_directory = job_wrapper.tool_working_directory
 
         if not compute_tool_directory:
             compute_tool_directory = job_wrapper.tool.tool_dir

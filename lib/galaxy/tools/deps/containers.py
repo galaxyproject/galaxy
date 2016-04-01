@@ -298,7 +298,7 @@ class DockerContainer(Container):
             defaults = "$job_directory:ro,$tool_directory:ro,$job_directory/outputs:rw,$working_directory:rw"
         elif self.app_info.outputs_to_working_directory:
             # Should need default_file_path (which is a course estimate given
-            # object stores anyway.
+            # object stores anyway).
             defaults = "$galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:ro"
         else:
             defaults = "$galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:rw"

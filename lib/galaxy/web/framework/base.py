@@ -180,6 +180,7 @@ class WebApplication( object ):
         # Is the method callable
         if not callable( method ):
             raise httpexceptions.HTTPNotFound( "Action not callable for " + path_info )
+        environ['controller_action_key'] = "%s.%s.%s" % ('api' if environ['is_api_request'] else 'web', controller_name, action or 'default')
         # Combine mapper args and query string / form args and call
         kwargs = trans.request.params.mixed()
         kwargs.update( map )

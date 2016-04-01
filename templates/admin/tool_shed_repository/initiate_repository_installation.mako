@@ -21,7 +21,7 @@
                 dataType: "html",
                 data: { operation: "install", tool_shed_repository_ids: iri_ids, encoded_kwd: encoded_kwd, reinstalling: reinstalling },
                 success : function ( data ) {
-                    //alert( "Initializing repository installation succeeded" );
+                    console.log( "Initializing repository installation succeeded" );
                 },
             });
         };

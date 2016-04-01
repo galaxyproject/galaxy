@@ -15,7 +15,7 @@ var LibraryToolbarView = Backbone.View.extend({
   },
 
   events: {
-    'click #create_new_library_btn' : 'showLibraryModal',
+    'click #create_new_library_btn' : 'createLibraryFromModal',
     'click #include_deleted_chk'    : 'includeDeletedChecked',
     'click #lib_page_size_prompt'   : 'showPageSizePrompt',
     'keyup .library-search-input'   : 'searchLibraries'
@@ -58,7 +58,7 @@ var LibraryToolbarView = Backbone.View.extend({
    * User clicked on 'New library' button. Show modal to
    * satisfy the wish.
    */
-  showLibraryModal : function (event){
+  createLibraryFromModal : function (event){
     event.preventDefault();
     event.stopPropagation();
     var self = this;
@@ -148,7 +148,7 @@ var LibraryToolbarView = Backbone.View.extend({
   includeDeletedChecked: function( event ){
     if (event.target.checked){
         Galaxy.libraries.preferences.set( { 'with_deleted': true } );
-        Galaxy.libraries.libraryListView.render();
+        Galaxy.libraries.libraryListView.fetchDeleted();
     } else{
         Galaxy.libraries.preferences.set( { 'with_deleted': false } );
         Galaxy.libraries.libraryListView.render();
@@ -182,7 +182,9 @@ var LibraryToolbarView = Backbone.View.extend({
               '<% if(admin_user === true) { %>',
                   '<div class="checkbox toolbar-item" style="height: 20px;">',
                     '<label>',
-                      '<input id="include_deleted_chk" type="checkbox"> include deleted </input>',
+                      '<input id="include_deleted_chk" type="checkbox">',
+                        '&nbsp;include deleted ',
+                      '</input>',
                     '</label>',
                   '</div>',
                   '<span class="toolbar-item" data-toggle="tooltip" data-placement="top" title="Create New Library">',
@@ -240,7 +242,7 @@ var LibraryToolbarView = Backbone.View.extend({
     return _.template([
       '<div id="new_library_modal">',
         '<form>',
-          '<input type="text" name="Name" value="" placeholder="Name">',
+          '<input type="text" name="Name" value="" placeholder="Name" autofocus>',
           '<input type="text" name="Description" value="" placeholder="Description">',
           '<input type="text" name="Synopsis" value="" placeholder="Synopsis">',
         '</form>',

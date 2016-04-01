@@ -61,6 +61,7 @@
                     <div class="toolSectionBg">                        
                     %if trans.app.tool_shed_registry and trans.app.tool_shed_registry.tool_sheds:
                         <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='browse_tool_sheds' )}" target="galaxy_main">Search Tool Shed</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='browse_toolsheds' )}" target="galaxy_main">Search Tool Shed (Beta)</a></div>
                     %endif
                     %if installing_repository_ids:
                         <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='monitor_repository_installation', tool_shed_repository_ids=installing_repository_ids )}" target="galaxy_main">Monitor installing repositories</a></div>

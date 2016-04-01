@@ -46,7 +46,6 @@ from six.moves import UserDict
 from six.moves import copyreg as copy_reg
 import sys
 
-from .dictobj import cmp
 from galaxy.util import sanitize_lists_to_string as _sanitize_lists_to_string
 
 log = logging.getLogger( __name__ )
@@ -96,6 +95,11 @@ if sys.version_info > (3, 0):
     # __coerce__ doesn't do anything under Python anyway.
     def coerce(x, y):
         return x
+
+
+def cmp(x, y):
+    # Builtin in Python 2, but not Python 3.
+    return (x > y) - (x < y)
 
 
 def sanitize_lists_to_string( values, valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP, invalid_character=INVALID_CHARACTER  ):

@@ -6,7 +6,8 @@ import urllib2
 
 sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir ) )
 
-from tool_shed.util import common_util, hg_util
+from tool_shed.util import hg_util
+from galaxy import util
 
 
 class HTTPRedirectWithDataHandler( urllib2.HTTPRedirectHandler ):
@@ -131,7 +132,7 @@ def get_api_url( base, parts=[], params=None ):
         parts.insert( 0, 'api' )
     elif 'api' not in parts:
         parts.insert( 0, 'api' )
-    url = common_util.url_join( base, pathspec=parts, params=params )
+    url = util.build_url( base, pathspec=parts, params=params )
     return url
 
 

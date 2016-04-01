@@ -404,8 +404,8 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         """
         if payload:
             kwd.update(payload)
-        kwd[ 'space_to_tab' ] = 'False'
-        kwd[ 'to_posix_lines' ] = 'True'
+        kwd['space_to_tab'] = False
+        kwd['to_posix_lines'] = True
         kwd[ 'dbkey' ] = kwd.get( 'dbkey', '?' )
         kwd[ 'file_type' ] = kwd.get( 'file_type', 'auto' )
         kwd['link_data_only'] = 'link_to_files' if util.string_as_bool( kwd.get( 'link_data', False ) ) else 'copy_files'
