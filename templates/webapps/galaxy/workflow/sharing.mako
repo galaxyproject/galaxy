@@ -1,5 +1,5 @@
 ##
-## Template for "Sharing and Publishing" and "Download and Export"
+## Template for "Share or Download"
 ##
 
 <%!
@@ -51,7 +51,7 @@
     <style>
         ## Put some whitespace before each section header.
         h3 {
-            margin-top: 1.5em;
+            margin-top: 1em;
         }
         input.action-button {
             margin-left: 0;
@@ -117,9 +117,7 @@
         </form>
     %else:
         ## User has a public username, so private sharing and publishing options.
-
-        <h3>1. Make ${item_class_name} Accessible via Link and Publish It</h3>
-
+        <h3>Make ${item_class_name} Accessible via Link or Publish It</h3>
             <div>
                 %if item.importable:
                     <%
@@ -148,7 +146,7 @@
                         %endif
                     </div>
 
-                    <p>You can:
+                    <p>
                     <div>
                     <form action="${h.url_for( controller=controller_name, action='sharing', id=trans.security.encode_id( item.id ) )}" method="POST">
                         %if not item.published:
@@ -172,7 +170,7 @@
 
                 %else:
 
-                    <p>This ${item_class_name_lc} is currently restricted so that only you and the users listed below can access it. You can:</p>
+                    <p>This ${item_class_name_lc} is currently restricted so that only you and the users listed below can access it.</p>
 
                     <form action="${h.url_for(controller=controller_name, action='sharing', id=trans.security.encode_id(item.id) )}" method="POST">
                         <input class="action-button" type="submit" name="make_accessible_via_link" value="Make ${item_class_name} Accessible via Link">
@@ -187,8 +185,7 @@
         ##
         ## Sharing with Galaxy users.
         ##
-        <br>
-        <h3>2. Share ${item_class_name} with Individual Users</h3>
+        <h3>Share ${item_class_name} with Individual Users</h3>
             <div>
                 %if item.users_shared_with:
                     <p>
@@ -228,7 +225,6 @@
                        href="${h.url_for(controller=controller_name, action='share', id=trans.security.encode_id(item.id), use_panels=use_panels )}">
                         <span>Share with a user</span>
                     </a>
-                    ## <br />
 
                 %endif
             </div>
@@ -238,19 +234,19 @@
 
 
 ## Download and Export section
-
-
 <%def name="render_download_to_file(item)">
-    <h3>3. Download to File</h3>
-    <a href="${h.url_for( controller=self.controller, action='display_by_username_and_slug', username=item.user.username,
-                          slug=item.slug, format='json-download' )}">
-        Download ${get_class_display_name( item.__class__ ).lower()} to file so that it can be saved or imported into another Galaxy server.</a>
+    <h3>Download to File</h3>
+    <button>
+        <a href="${h.url_for( controller=self.controller, action='display_by_username_and_slug', username=item.user.username, slug=item.slug, format='json-download' )}" style="text-decoration: none;">
+        Download
+        </a>
+    </button>
+    ${get_class_display_name( item.__class__ ).lower()} as a file so that it can be saved or imported into another Galaxy server.
 </%def>
 
 
 <%def name="render_url_for_importing(item)">
-    <br>
-    <h3>4. URL for Importing to Another Galaxy</h3>
+    <h3>Get URL for Importing to Another Galaxy</h3>
     %if item.importable:
         Use this URL to import the ${get_class_display_name( item.__class__ ).lower()} directly into another Galaxy server:
         <div class="display-url">
@@ -259,15 +255,11 @@
         </div>
         (Copy this URL into the box titled 'Workflow URL' in the Import Workflow page.)
     %else:
-        This ${get_class_display_name( item.__class__ ).lower()} must be accessible before it can be imported into another Galaxy. Please use the option to "Make Workflow Accessible via Link and Publish It" before receiving a URL for importing to another Galaxy.</a>
+        This ${get_class_display_name( item.__class__ ).lower()} must be accessible. Please use the option above to "Make Workflow Accessible and Publish" before receiving a URL for importing to another Galaxy.</a>
     %endif
 </%def>
 
-
-
-
-<%def name="render_footer()">
-    <br><br>
+<%def name="render_header()">
     <a href="${h.url_for(controller=self.controller, action="list" )}">Go back to ${self.item_class_plural_name} List</a>
 </%def>
 
@@ -276,17 +268,18 @@
     ##
     ## Renders form for exporting workflow to myExperiment.
     ##
-    <h3>5. Export to myExperiment</h3>
-    <div class="toolForm">
+    <h3>Export to myExperiment</h3>
+    <div>
+        <span>You need an account on the <a href="http://www.myexperiment.org/" target="_blank">www.myexperiment.org</a> site.</span>
         <form action="${h.url_for(controller='workflow', action='export_to_myexp', id=trans.security.encode_id( item.id ) )}"
                 method="POST">
             <div class="form-row">
                 <label>myExperiment username:</label>
-                <input type="text" name="myexp_username" value="" size="40"/>
+                <input type="text" name="myexp_username" value="" size="25" placeholder="username"/>
             </div>
             <div class="form-row">
                 <label>myExperiment password:</label>
-                <input type="password" name="myexp_password" value="" size="40"/>
+                <input type="password" name="myexp_password" value="" size="25" placeholder="password"/>
             </div>
             <div class="form-row">
                 <input type="submit" value="Export"/>
@@ -297,35 +290,26 @@
 
 
 <%def name="render_more(item)">
-    ## Add form to export to myExperiment.
-    <br>
-    ${self.render_export_to_myexp(item)}
     ## Add link to render as SVG image.
-    <br>
-    <h3>6. Create Image</h3>
-    <a href="${h.url_for(controller='workflow', action='gen_image', id=trans.security.encode_id( item.id ) )}">
-        Create image of ${get_class_display_name( item.__class__ ).lower()} in SVG format
+    <h3>Export to Image</h3>
+    <button><a href="${h.url_for(controller='workflow', action='gen_image', id=trans.security.encode_id( item.id ) )}" style="text-decoration: none;">
+        Create image</a></button> of ${get_class_display_name( item.__class__ ).lower()} in SVG format
     </a>
+    ## Add form to export to myExperiment.
+    ${self.render_export_to_myexp(item)}
 </%def>
 
 
 <%def name="body()">
     <div style="overflow: auto; height: 100%;">
         <div class="page-container" style="padding: 10px;">
-
-            <h2>Share or Download${get_class_display_name( item.__class__ )} '${get_item_name( item ) | h}'</h2>
+            ${self.render_header()}
+            <h2>${get_class_display_name( item.__class__ )} '${get_item_name( item ) | h}'</h2>
             <p>
-            The Galaxy user has the following options to Share, Publish, Download, and Export workflows.
             ${self.render_sharing(item)}
-            <br>
             ${self.render_download_to_file(item)}
-            <br>
             ${self.render_url_for_importing(item)}
-            <br>
             ${self.render_more(item)}
-            <br>
-            ${self.render_footer()}
-
         </div>
     </div>
 </%def>
