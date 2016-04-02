@@ -13,7 +13,7 @@ cat <<EOF
 '${0##*/} -sid ccc'                 for testing one section with sid 'ccc' ('ccc' is the string after 'section::')
 '${0##*/} -list'                    for listing all the tool ids
 '${0##*/} -api (test_path)'         for running all the test scripts in the ./test/api directory
-'${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./test/tool_shed/functional directory
+'${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./test/shed_functional/functional directory
 '${0##*/} -workflow test.xml'       for running a workflow test case as defined by supplied workflow xml test file (experimental)
 '${0##*/} -installed'               for running tests of Tool Shed installed tools
 '${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"
@@ -135,7 +135,7 @@ GALAXY_TEST_SHED_TOOL_CONF      Shed toolbox conf (defaults to
                                 installed to tools with -installed.
 TOOL_SHED_TEST_HOST             Host to use for shed server setup for testing.
 TOOL_SHED_TEST_PORT             Port to use for shed server setup for testing.
-TOOL_SHED_TEST_FILE_DIR         Defaults to test/tool_shed/test_data.
+TOOL_SHED_TEST_FILE_DIR         Defaults to test/shed_functional/test_data.
 TOOL_SHED_TEST_TMP_DIR          Defaults to random /tmp directory - place for
                                 tool shed test server files to be placed.
 TOOL_SHED_TEST_OMIT_GALAXY      Do not launch a Galaxy server for tool shed
@@ -247,13 +247,13 @@ do
           fi
           ;;
       -t|-toolshed|--toolshed)
-          test_script="./test/tool_shed/functional_tests.py"
+          test_script="./test/shed_functional/functional_tests.py"
           report_file="run_toolshed_tests.html"
           if [ $# -gt 1 ]; then
               toolshed_script=$2
               shift 2
           else
-              toolshed_script="./test/tool_shed/functional"
+              toolshed_script="./test/shed_functional/functional"
               shift 1
           fi
           ;;
