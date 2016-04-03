@@ -60,4 +60,4 @@ Please see `CONTRIBUTING.md <CONTRIBUTING.md>`_ .
 Roadmap
 =============================
 
-Interested in what are the next steps for Galaxy? Take a look here: https://github.com/galaxyproject/galaxy/issues/1928
+Interested in the next steps for Galaxy? Take a look here: https://github.com/galaxyproject/galaxy/issues/1928
