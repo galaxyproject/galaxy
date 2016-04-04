@@ -133,8 +133,7 @@ var History = Backbone.Model
 
     /** Return the number of running hda/hdcas in this history (note: unknown === 0) */
     numOfUnfinishedShownContents : function(){
-        var contents = this.contents.running().visibleAndUndeleted();
-        return contents? contents.length : 0;
+        return this.contents.running().visibleAndUndeleted().length || 0;
     },
 
     // ........................................................................ search

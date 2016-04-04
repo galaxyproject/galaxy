@@ -42,17 +42,25 @@ var DatasetListItemView = _super.extend(
     /** event listeners */
     _setUpListeners : function(){
         _super.prototype._setUpListeners.call( this );
+        var self = this;
 
         // re-rendering on any model changes
-        this.listenTo( this.model, 'change', function( model, options ){
-            // if the model moved into the ready state and is expanded without details, fetch those details now
-            if( this.model.changedAttributes().state && this.model.inReadyState()
-            &&  this.expanded && !this.model.hasDetails() ){
-                // will render automatically (due to fetch -> change)
-                this.model.fetch();
+        return self.listenTo( self.model, {
+            'change': function( model, options ){
+                // if the model moved into the ready state and is expanded without details, fetch those details now
+                if( self.model.changedAttributes().state
+                &&  self.model.inReadyState()
+                &&  self.expanded
+                && !self.model.hasDetails() ){
+                    // normally, will render automatically (due to fetch -> change),
+                    // but! setting_metadata sometimes doesn't cause any other changes besides state
+                    // so, not rendering causes it to seem frozen in setting_metadata state
+                    self.model.fetch({ silent : true })
+                        .done( function(){ self.render(); });
 
-            } else {
-                this.render();
+                } else {
+                    self.render();
+                }
             }
         });
     },

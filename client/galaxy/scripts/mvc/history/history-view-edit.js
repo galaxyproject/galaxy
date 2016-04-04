@@ -306,19 +306,11 @@ var HistoryViewEdit = _super.extend(
         var options = _super.prototype._getItemViewOptions.call( this, model );
         _.extend( options, {
             purgeAllowed            : this.purgeAllowed,
-//TODO: not working
             tagsEditorShown         : ( this.tagsEditor && !this.tagsEditor.hidden ),
             annotationEditorShown   : ( this.annotationEditor && !this.annotationEditor.hidden )
         });
         return options;
     },
-
-    ///** Override to alter data in drag based on multiselection */
-    //_setUpItemViewListeners : function( view ){
-    //    var panel = this;
-    //    _super.prototype._setUpItemViewListeners.call( panel, view );
-    //
-    //},
 
     /** If this item is deleted and we're not showing deleted items, remove the view
      *  @param {Model} the item model to check
