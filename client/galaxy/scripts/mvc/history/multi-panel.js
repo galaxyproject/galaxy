@@ -44,21 +44,6 @@ TODO:
 /** A history view that  */
 var HistoryInnerView = HISTORY_VIEW_EDIT.HistoryViewEdit.extend({
 
-    /** override to avoid showing intial empty message */
-    _renderEmptyMessage : function( $whereTo ){
-        var self = this;
-        var empty = !self.model.get( 'contents_shown' ).shown;
-        var $emptyMsg = self.$emptyMessage( $whereTo );
-
-        if( empty ){
-            return $emptyMsg.empty().append( self.emptyMsg ).show();
-
-        } else if( self.searchFor && self.model.contents.haveSearchDetails() && !self.views.length ){
-            return $emptyMsg.empty().append( self.noneFoundMsg ).show();
-        }
-        return $();
-    },
-
     /** override because (unlike other histories) $el is also the container for these views */
     _scrollDistanceToBottom : function(){
         var SLOP = 3;

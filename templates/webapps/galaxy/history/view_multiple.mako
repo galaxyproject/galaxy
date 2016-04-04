@@ -15,11 +15,6 @@
         margin: 0px;
         padding: 0px;
     }
-    .contents-loading-indicator {
-        /*background: blue;*/
-        /*color: white;*/
-        text-align: center;
-    }
     </style>
 </%def>
 

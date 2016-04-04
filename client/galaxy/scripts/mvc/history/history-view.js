@@ -153,23 +153,23 @@ var HistoryView = _super.extend(
             this.$emptyMessage().hide();
         }
         // look for an existing indicator and stop all animations on it, otherwise make one
-        var $indicator = this.$list().find( '.contents-loading-indicator' );
+        var $indicator = this.$( '.contents-loading-indicator' );
         if( $indicator.size() ){
-            $indicator.clearQueue();
-            $indicator.stop();
-        } else {
-            $indicator = $( '<div class="contents-loading-indicator">' + _l( 'Loading...' ) + '</div>' ).hide();
+            return $indicator.clearQueue().stop();
         }
+
         // move it to the bottom and fade it in
+        // $indicator = $( '<div class="contents-loading-indicator">' + _l( 'Loading...' ) + '</div>' ).hide();
+        $indicator = $( '<div class="contents-loading-indicator"><span class="fa fa-2x fa-spin fa-spinner"></span></div>' ).hide();
         return $indicator
             .insertAfter( this.$( '> .list-items' ) )
-            .fadeIn( speed );
+            .slideDown( speed );
     },
 
     /**  */
     hideContentsLoadingIndicator : function( speed ){
         speed = _.isNumber( speed )? speed : this.fxSpeed;
-        this.$( '> .contents-loading-indicator' ).slideUp({ duration: speed, complete: function _complete(){
+        this.$( '> .contents-loading-indicator' ).hide({ duration: 0, complete: function _complete(){
             $( this ).remove();
         }});
     },
@@ -266,6 +266,21 @@ var HistoryView = _super.extend(
         var $newRender = _super.prototype._buildNewRender.call( this );
         this._renderSelectButton( $newRender );
         return $newRender;
+    },
+
+    /** override to avoid showing intial empty message using contents_shown */
+    _renderEmptyMessage : function( $whereTo ){
+        var self = this;
+        var empty = !self.model.get( 'contents_shown' ).shown;
+        var $emptyMsg = self.$emptyMessage( $whereTo );
+
+        if( empty ){
+            return $emptyMsg.empty().append( self.emptyMsg ).show();
+
+        } else if( self.searchFor && self.model.contents.haveSearchDetails() && !self.views.length ){
+            return $emptyMsg.empty().append( self.noneFoundMsg ).show();
+        }
+        return $();
     },
 
     /** button for starting select mode */
@@ -431,9 +446,7 @@ var HistoryView = _super.extend(
         self.model.contents.progressivelyFetchDetails({ silent: true })
             .progress( function( response, limit, offset ){
                 // console.log( 'progress:', offset, offset + response.length );
-                // self.renderItems();
                 self.listenToOnce( self.model.contents, 'sync', self.bulkAppendItemViews );
-                // self.bulkAppendItemViews( self.model.contents, response, {});
             })
             .always( function(){
                 self.$el.find( inputSelector ).searchInput( 'toggle-loading' );

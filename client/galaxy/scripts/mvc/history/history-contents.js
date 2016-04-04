@@ -300,7 +300,6 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
                 limit   : limit,
                 offset  : offset,
             });
-
             // console.log( 'fetchFn:', fetchFn + '' );
             var fetchFn = offset === 0? self.fetchFirst : self.fetchMore;
             // console.log( 'fetching:', _options.limit, _options.offset );

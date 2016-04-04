@@ -47,16 +47,9 @@ var _super = HISTORY_VIEW_EDIT.HistoryViewEdit;
  *      will poll for updates.
  *      displays datasets in reverse hid order.
  */
-var CurrentHistoryView = _super.extend(
-/** @lends CurrentHistoryView.prototype */{
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
+var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype */{
 
     className           : _super.prototype.className + ' current-history-panel',
-
-    emptyMsg            : _l( "This history is empty. Click 'Get Data' on the left tool menu to start" ),
-    noneFoundMsg        : _l( "No matching datasets found" ),
 
     /**  */
     HDCAViewClass       : _super.prototype.HDCAViewClass.extend({
@@ -200,36 +193,18 @@ var CurrentHistoryView = _super.extend(
         return $( this.templates.quotaMsg( {}, this ) ).prependTo( $whereTo.find( '.messages' ) );
     },
 
-    /** In this override, add links to open data uploader or get data in the tools section */
-    _renderEmptyMessage : function( $whereTo ){
-        var panel = this,
-            $emptyMsg = panel.$emptyMessage( $whereTo ),
-            $toolMenu = $( '.toolMenuContainer' );
+    emptyMsg : [
+        _l( 'This history is empty' ), '. ',
+        _l( 'You can ' ),
+        '<a class="uploader-link" href="javascript:void(0)">',
+            _l( 'load your own data' ),
+        '</a>',
+        _l( ' or ' ),
+        '<a class="get-data-link" href="javascript:void(0)">',
+            _l( 'get data from an external source' ),
+        '</a>'
+    ].join(''),
 
-        if( ( _.isEmpty( panel.views ) && !panel.searchFor )
-        &&  ( Galaxy && Galaxy.upload && $toolMenu.size() ) ){
-            $emptyMsg.empty();
-
-            $emptyMsg.html([
-                _l( 'This history is empty' ), '. ', _l( 'You can ' ),
-                '<a class="uploader-link" href="javascript:void(0)">',
-                    _l( 'load your own data' ),
-                '</a>',
-                _l( ' or ' ), '<a class="get-data-link" href="javascript:void(0)">',
-                    _l( 'get data from an external source' ),
-                '</a>'
-            ].join('') );
-            $emptyMsg.find( '.uploader-link' ).click( function( ev ){
-                Galaxy.upload.show( ev );
-            });
-            $emptyMsg.find( '.get-data-link' ).click( function( ev ){
-                $toolMenu.parent().scrollTop( 0 );
-                $toolMenu.find( 'span:contains("Get Data")' ).click();
-            });
-            return $emptyMsg.show();
-        }
-        return _super.prototype._renderEmptyMessage.call( this, $whereTo );
-    },
 
     /** In this override, get and set current panel preferences when editor is used */
     _renderTags : function( $where ){
@@ -345,6 +320,18 @@ var CurrentHistoryView = _super.extend(
 //TODO: MEM: free the panel
         this.render();
     },
+
+    // ........................................................................ panel events
+    /** event map */
+    events : _.extend( _.clone( _super.prototype.events ), {
+        // the two links in the empty message
+        'click .uploader-link' : function( ev ){ Galaxy.upload.show( ev ); },
+        'click .get-data-link' : function( ev ){
+            var $toolMenu = $( '.toolMenuContainer' );
+            $toolMenu.parent().scrollTop( 0 );
+            $toolMenu.find( 'span:contains("Get Data")' ).click();
+        }
+    }),
 
     // ........................................................................ external objects/MVC
     listenToGalaxy : function( galaxy ){
