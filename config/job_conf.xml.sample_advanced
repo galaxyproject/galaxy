@@ -114,7 +114,7 @@
                https://github.com/galaxyproject/pulsar/blob/master/app.yml.sample
                http://pulsar.readthedocs.org/en/latest/configure.html
           -->
-          <!-- <param id="pulsar_conf">path/to/pulsar/app.yml</param> -->
+          <!-- <param id="pulsar_config">path/to/pulsar/app.yml</param> -->
         </plugin>
 
     </plugins>

@@ -173,7 +173,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
         self._init_monitor_thread()
 
     def __init_client_manager( self ):
-        pulsar_conf = self.runner_params.get('pulsar_conf', None)
+        pulsar_conf = self.runner_params.get('pulsar_config', None)
         self.__init_pulsar_app(pulsar_conf)
 
         client_manager_kwargs = {}
