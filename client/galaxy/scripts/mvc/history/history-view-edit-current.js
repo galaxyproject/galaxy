@@ -348,10 +348,15 @@ var CurrentHistoryView = _super.extend(
 
     // ........................................................................ external objects/MVC
     listenToGalaxy : function( galaxy ){
-        // TODO: MEM: questionable reference island / closure practice
-        this.listenTo( galaxy, 'galaxy_main:load', function( data ){
-            var pathToMatch = data.fullpath,
-                useToURLRegexMap = {
+        this.listenTo( galaxy, {
+            // when the galaxy_main iframe is loaded with a new page,
+            // compare the url to the following list and if there's a match
+            // pull the id from url and indicate in the history view that
+            // the dataset with that id is the 'current'ly active dataset
+            'galaxy_main:load': function( data ){
+                var pathToMatch = data.fullpath;
+                var hdaId = null;
+                var useToURLRegexMap = {
                     'display'       : /datasets\/([a-f0-9]+)\/display/,
                     'edit'          : /datasets\/([a-f0-9]+)\/edit/,
                     'report_error'  : /dataset\/errors\?id=([a-f0-9]+)/,
@@ -359,21 +364,19 @@ var CurrentHistoryView = _super.extend(
                     'show_params'   : /datasets\/([a-f0-9]+)\/show_params/,
                     // no great way to do this here? (leave it in the dataset event handlers above?)
                     // 'visualization' : 'visualization',
-                },
-                hdaId = null,
-                hdaUse = null;
-            _.find( useToURLRegexMap, function( regex, use ){
-                var match = pathToMatch.match( regex );
-                if( match && match.length == 2 ){
-                    hdaId = match[1];
-                    hdaUse = use;
-                    return true;
-                }
-                return false;
-            });
-            // need to type mangle to go from web route to history contents
-            hdaId = 'dataset-' + hdaId;
-            this._setCurrentContentById( hdaId );
+                };
+                _.find( useToURLRegexMap, function( regex, use ){
+                    // grab the more specific match result (1), save, and use it as the find flag
+                    hdaId = _.result( pathToMatch.match( regex ), 1 );
+                    return hdaId;
+                });
+                // need to type mangle to go from web route to history contents
+                this._setCurrentContentById( hdaId? ( 'dataset-' + hdaId ) : null );
+            },
+            // when the center panel is given a new view, clear the current indicator
+            'center-panel:load': function( view ){
+                this._setCurrentContentById();
+            }
         });
     },
 

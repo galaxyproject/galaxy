@@ -367,21 +367,19 @@ var HistoryViewEdit = _super.extend(
     },
 
     /** toggle the visibility of each content's tagsEditor applying all the args sent to this function */
-    toggleHDATagEditors : function( showOrHide ){
-        var args = Array.prototype.slice.call( arguments, 1 );
+    toggleHDATagEditors : function( showOrHide, speed ){
         _.each( this.views, function( view ){
             if( view.tagsEditor ){
-                view.tagsEditor.toggle.apply( view.tagsEditor, args );
+                view.tagsEditor.toggle( showOrHide, speed );
             }
         });
     },
 
     /** toggle the visibility of each content's annotationEditor applying all the args sent to this function */
-    toggleHDAAnnotationEditors : function( showOrHide ){
-        var args = Array.prototype.slice.call( arguments, 1 );
+    toggleHDAAnnotationEditors : function( showOrHide, speed ){
         _.each( this.views, function( view ){
             if( view.annotationEditor ){
-                view.annotationEditor.toggle.apply( view.annotationEditor, args );
+                view.annotationEditor.toggle( showOrHide, speed );
             }
         });
     },

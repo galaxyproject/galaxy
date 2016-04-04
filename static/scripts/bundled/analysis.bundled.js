@@ -13464,10 +13464,15 @@ webpackJsonp([0,1],[
 	
 	    // ........................................................................ external objects/MVC
 	    listenToGalaxy : function( galaxy ){
-	        // TODO: MEM: questionable reference island / closure practice
-	        this.listenTo( galaxy, 'galaxy_main:load', function( data ){
-	            var pathToMatch = data.fullpath,
-	                useToURLRegexMap = {
+	        this.listenTo( galaxy, {
+	            // when the galaxy_main iframe is loaded with a new page,
+	            // compare the url to the following list and if there's a match
+	            // pull the id from url and indicate in the history view that
+	            // the dataset with that id is the 'current'ly active dataset
+	            'galaxy_main:load': function( data ){
+	                var pathToMatch = data.fullpath;
+	                var hdaId = null;
+	                var useToURLRegexMap = {
 	                    'display'       : /datasets\/([a-f0-9]+)\/display/,
 	                    'edit'          : /datasets\/([a-f0-9]+)\/edit/,
 	                    'report_error'  : /dataset\/errors\?id=([a-f0-9]+)/,
@@ -13475,21 +13480,19 @@ webpackJsonp([0,1],[
 	                    'show_params'   : /datasets\/([a-f0-9]+)\/show_params/,
 	                    // no great way to do this here? (leave it in the dataset event handlers above?)
 	                    // 'visualization' : 'visualization',
-	                },
-	                hdaId = null,
-	                hdaUse = null;
-	            _.find( useToURLRegexMap, function( regex, use ){
-	                var match = pathToMatch.match( regex );
-	                if( match && match.length == 2 ){
-	                    hdaId = match[1];
-	                    hdaUse = use;
-	                    return true;
-	                }
-	                return false;
-	            });
-	            // need to type mangle to go from web route to history contents
-	            hdaId = 'dataset-' + hdaId;
-	            this._setCurrentContentById( hdaId );
+	                };
+	                _.find( useToURLRegexMap, function( regex, use ){
+	                    // grab the more specific match result (1), save, and use it as the find flag
+	                    hdaId = _.result( pathToMatch.match( regex ), 1 );
+	                    return hdaId;
+	                });
+	                // need to type mangle to go from web route to history contents
+	                this._setCurrentContentById( hdaId? ( 'dataset-' + hdaId ) : null );
+	            },
+	            // when the center panel is given a new view, clear the current indicator
+	            'center-panel:load': function( view ){
+	                this._setCurrentContentById();
+	            }
 	        });
 	    },
 	
@@ -14261,11 +14264,7 @@ webpackJsonp([0,1],[
 	                visible          : ''
 	            };
 	        }
-	        // console.log( 'fetching updated:', this.historyId, since );
-	        return this.fetch( options )
-	            // .done( function( r ){ console.log( 'updated:\n', JSON.stringify( r ) ); })
-	            .done( function( r ){ console.log( 'updated:', r.length, r ); })
-	        ;
+	        return this.fetch( options );
 	    },
 	
 	    /**  */
@@ -16358,21 +16357,19 @@ webpackJsonp([0,1],[
 	    },
 	
 	    /** toggle the visibility of each content's tagsEditor applying all the args sent to this function */
-	    toggleHDATagEditors : function( showOrHide ){
-	        var args = Array.prototype.slice.call( arguments, 1 );
+	    toggleHDATagEditors : function( showOrHide, speed ){
 	        _.each( this.views, function( view ){
 	            if( view.tagsEditor ){
-	                view.tagsEditor.toggle.apply( view.tagsEditor, args );
+	                view.tagsEditor.toggle( showOrHide, speed );
 	            }
 	        });
 	    },
 	
 	    /** toggle the visibility of each content's annotationEditor applying all the args sent to this function */
-	    toggleHDAAnnotationEditors : function( showOrHide ){
-	        var args = Array.prototype.slice.call( arguments, 1 );
+	    toggleHDAAnnotationEditors : function( showOrHide, speed ){
 	        _.each( this.views, function( view ){
 	            if( view.annotationEditor ){
-	                view.annotationEditor.toggle.apply( view.annotationEditor, args );
+	                view.annotationEditor.toggle( showOrHide, speed );
 	            }
 	        });
 	    },
@@ -22218,7 +22215,6 @@ webpackJsonp([0,1],[
 	    render : function(){
 	        var view = this;
 	        this.$el.html( this._template() );
-	        this.$el.find( "[title]" ).tooltip( this.tooltipConfig );
 	
 	        //TODO: handle empties better
 	        this.$annotation().make_text_editable({
@@ -22237,15 +22233,11 @@ webpackJsonp([0,1],[
 	    /** @returns {String} the html text used to build the view's DOM */
 	    _template : function(){
 	        var annotation = this.model.get( 'annotation' );
-	        //if( !annotation ){
-	        //    //annotation = [ '<em class="annotation-empty">', _l( 'Click to add an annotation' ), '</em>' ].join( '' );
-	        //    annotation = [ '<em class="annotation-empty"></em>' ].join( '' );
-	        //}
 	        return [
 	            //TODO: make prompt optional
 	            '<label class="prompt">', _l( 'Annotation' ), '</label>',
 	            // set up initial tags by adding as CSV to input vals (necc. to init select2)
-	            '<div class="annotation" title="', _l( 'Edit annotation' ), '">',
+	            '<div class="annotation">',
 	                _.escape( annotation ),
 	            '</div>'
 	        ].join( '' );

@@ -29,7 +29,6 @@ var AnnotationEditor = Backbone.View
     render : function(){
         var view = this;
         this.$el.html( this._template() );
-        this.$el.find( "[title]" ).tooltip( this.tooltipConfig );
 
         //TODO: handle empties better
         this.$annotation().make_text_editable({
@@ -48,15 +47,11 @@ var AnnotationEditor = Backbone.View
     /** @returns {String} the html text used to build the view's DOM */
     _template : function(){
         var annotation = this.model.get( 'annotation' );
-        //if( !annotation ){
-        //    //annotation = [ '<em class="annotation-empty">', _l( 'Click to add an annotation' ), '</em>' ].join( '' );
-        //    annotation = [ '<em class="annotation-empty"></em>' ].join( '' );
-        //}
         return [
             //TODO: make prompt optional
             '<label class="prompt">', _l( 'Annotation' ), '</label>',
             // set up initial tags by adding as CSV to input vals (necc. to init select2)
-            '<div class="annotation" title="', _l( 'Edit annotation' ), '">',
+            '<div class="annotation">',
                 _.escape( annotation ),
             '</div>'
         ].join( '' );
