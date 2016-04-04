@@ -3,7 +3,7 @@ import os
 import tempfile
 
 from galaxy.tools.deps.resolvers import INDETERMINATE_DEPENDENCY
-from galaxy.util import listify
+from galaxy.util import listify, url_get
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import shed_util_common as suc
@@ -249,7 +249,7 @@ class Repository( RecipeTag, SyncDatabase ):
                        owner=owner,
                        changeset_revision=changeset_revision )
         pathspec = [ 'repository', 'get_tool_dependencies_config_contents' ]
-        text = common_util.tool_shed_get( self.app, tool_shed_url, pathspec=pathspec, params=params )
+        text = url_get( tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
         if text:
             # Write the contents to a temporary file on disk so it can be reloaded and parsed.
             fh = tempfile.NamedTemporaryFile( 'wb', prefix="tmp-toolshed-cttdc"  )

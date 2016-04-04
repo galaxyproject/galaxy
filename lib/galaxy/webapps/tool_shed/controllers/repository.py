@@ -809,7 +809,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     return update
         params['latest_changeset_revision'] = str( latest_changeset_revision )
         params['latest_ctx_rev'] = str( update_to_ctx.rev() )
-        url = common_util.url_join( galaxy_url, pathspec=pathspec, params=params )
+        url = util.build_url( galaxy_url, pathspec=pathspec, params=params )
         return trans.response.send_redirect( url )
 
     @web.expose
@@ -1065,7 +1065,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         trans.sa_session.flush()
         tool_shed_url = web.url_for( '/', qualified=True )
         pathspec = [ 'repos', str( repository.user.username ), str( repository.name ), 'archive', file_type_str ]
-        download_url = common_util.url_join( tool_shed_url, pathspec=pathspec )
+        download_url = util.build_url( tool_shed_url, pathspec=pathspec )
         return trans.response.send_redirect( download_url )
 
     @web.expose
@@ -1534,7 +1534,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                         time_tested = repository_metadata.time_last_tested.strftime( '%a, %d %b %Y %H:%M:%S UT' )
                     # Generate a citable URL for this repository with owner and changeset revision.
                     pathspec = [ 'view', str( user.username ), str( repository.name ), str( repository_metadata.changeset_revision ) ]
-                    repository_citable_url = common_util.url_join( tool_shed_url, pathspec=pathspec )
+                    repository_citable_url = util.build_url( tool_shed_url, pathspec=pathspec )
                     passed_tests = len( tool_test_results.get( 'passed_tests', [] ) )
                     failed_tests = len( tool_test_results.get( 'failed_tests', [] ) )
                     missing_test_components = len( tool_test_results.get( 'missing_test_components', [] ) )
@@ -1982,7 +1982,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                            repository_ids=','.join( util.listify( repository_ids ) ),
                            changeset_revisions=','.join( util.listify( changeset_revisions ) ) )
             pathspec = [ 'admin_toolshed', 'prepare_for_install' ]
-            url = common_util.url_join( galaxy_url, pathspec=pathspec, params=params )
+            url = util.build_url( galaxy_url, pathspec=pathspec, params=params )
             return trans.response.send_redirect( url )
         else:
             message = 'Repository installation is not possible due to an invalid Galaxy URL: <b>%s</b>.  ' % galaxy_url

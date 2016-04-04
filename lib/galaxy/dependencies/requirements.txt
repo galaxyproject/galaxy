@@ -26,6 +26,7 @@ Mako
 pytz
 Babel
 Beaker
+dictobj
 
 # Cheetah and dependencies
 Cheetah
@@ -37,6 +38,10 @@ requests
 
 # kombu and dependencies
 kombu
+
+# Pulsar requirements
+psutil
+pulsar-galaxy-lib==0.7.0.dev1
 
 # sqlalchemy-migrate and dependencies
 sqlalchemy-migrate

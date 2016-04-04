@@ -263,8 +263,9 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
 
     >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
     >>> from galaxy.datatypes import registry
+    >>> sample_conf = os.path.join(util.galaxy_directory(), "config", "datatypes_conf.xml.sample")
     >>> datatypes_registry = registry.Registry()
-    >>> datatypes_registry.load_datatypes()
+    >>> datatypes_registry.load_datatypes(root_dir=util.galaxy_directory(), config=sample_conf)
     >>> sniff_order = datatypes_registry.sniff_order
     >>> guess_ext(fname, sniff_order)
     'xml'
@@ -324,6 +325,24 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
     >>> fname = get_test_fname('test.mz5')
     >>> guess_ext(fname, sniff_order)
     'h5'
+    >>> fname = get_test_fname('drugbank_drugs.cml')
+    >>> guess_ext(fname, sniff_order)
+    'cml'
+    >>> fname = get_test_fname('q.fps')
+    >>> guess_ext(fname, sniff_order)
+    'fps'
+    >>> fname = get_test_fname('drugbank_drugs.inchi')
+    >>> guess_ext(fname, sniff_order)
+    'inchi'
+    >>> fname = get_test_fname('drugbank_drugs.mol2')
+    >>> guess_ext(fname, sniff_order)
+    'mol2'
+    >>> fname = get_test_fname('drugbank_drugs.sdf')
+    >>> guess_ext(fname, sniff_order)
+    'sdf'
+    >>> fname = get_test_fname('5e5z.pdb')
+    >>> guess_ext(fname, sniff_order)
+    'pdb'
     """
     for datatype in sniff_order:
         """

@@ -19,7 +19,7 @@ define([], function() {
     });
 
     var Libraries = Backbone.Collection.extend({
-      url: Galaxy.root + 'api/libraries',
+      urlRoot: Galaxy.root + 'api/libraries',
 
       model: Library,
 
@@ -182,7 +182,7 @@ define([], function() {
               var file_item = new Ldda(obj.folder_contents[i])
               this.get("folder").add(file_item);
             } else{
-              console.error('Unknown folder item type encountered while parsing response.');
+              Galaxy.emit.error('Unknown folder item type encountered while parsing response.');
             }
           };
         return obj;

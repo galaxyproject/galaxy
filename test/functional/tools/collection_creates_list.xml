@@ -22,7 +22,7 @@
           <element name="l12" value="simple_line.txt" />
         </collection>
       </param>
-      <output_collection name="list_output" type="list">
+      <output_collection name="list_output" type="list" count="2">
         <element name="l11">
           <assert_contents>
             <has_text_matching expression="^identifier is l11\n$" />

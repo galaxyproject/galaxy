@@ -961,8 +961,13 @@ class PostJobAction( object ):
 
 
 class PostJobActionAssociation( object ):
-    def __init__(self, pja, job):
-        self.job = job
+    def __init__(self, pja, job=None, job_id=None ):
+        if job is not None:
+            self.job = job
+        elif job_id is not None:
+            self.job_id = job_id
+        else:
+            raise Exception("PostJobActionAssociation must be created with a job or a job_id.")
         self.post_job_action = pja
 
 
@@ -1173,7 +1178,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         dataset.history = self
         if genome_build not in [None, '?']:
             self.genome_build = genome_build
-        self.datasets.append( dataset )
+        dataset.history_id = self.id
         return dataset
 
     def add_datasets( self, sa_session, datasets, parent_id=None, genome_build=None, set_hid=True, quota=True, flush=False ):
@@ -1208,7 +1213,8 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             dataset.history = self
             if set_genome:
                 self.genome_build = genome_build
-        self.datasets.extend( datasets )
+        for dataset in datasets:
+            dataset.history_id = self.id
         return datasets
 
     def add_dataset_collection( self, history_dataset_collection, set_hid=True ):
