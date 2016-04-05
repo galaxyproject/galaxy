@@ -14,8 +14,8 @@ repositories = dict( freebayes=dict( name='package_freebayes_0550',
                                      description='Description for filtering_0550',
                                      long_description='Long description for filtering_0550' ) )
 
-category_name = 'Test 0540'
-category_description = 'Verify API endpoint to retrieve all metadata'
+category_name = 'Test 0550'
+category_description = 'Verify metadata updates'
 
 '''
 1. Create repository package_freebayes_0550.
@@ -34,8 +34,8 @@ category_description = 'Verify API endpoint to retrieve all metadata'
 '''
 
 
-class TestGetAllMetadata( ShedTwillTestCase ):
-    '''Verify that the code correctly handles the repository admin role.'''
+class TestGetUpdatedMetadata( ShedTwillTestCase ):
+    '''Verify that updated repositories still have correct dependency links.'''
 
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
@@ -54,11 +54,11 @@ class TestGetAllMetadata( ShedTwillTestCase ):
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         # Create a repository named package_freebayes_0550 owned by user1.
         freebayes = self.get_or_create_repository( name=repositories['freebayes']['name'],
-                                                    description=repositories['freebayes']['description'],
-                                                    long_description=repositories['freebayes']['long_description'],
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id( category.id ),
-                                                    strings_displayed=[] )
+                                                   description=repositories['freebayes']['description'],
+                                                   long_description=repositories['freebayes']['long_description'],
+                                                   owner=common.test_user_1_name,
+                                                   category_id=self.security.encode_id( category.id ),
+                                                   strings_displayed=[] )
         assert freebayes is not None, 'Error creating freebayes %s' % repositories['freebayes']['name']
         self.upload_file( freebayes,
                           filename='0550_files/package_freebayes_1_0550.tgz',
@@ -73,7 +73,7 @@ class TestGetAllMetadata( ShedTwillTestCase ):
         self.display_manage_repository_page( freebayes, strings_displayed=[ 'Tool dependencies', 'will not be', 'to this repository' ] )
 
     def test_0010_create_samtools_repository( self ):
-        '''Create the package_samtools_0550 repository.'''
+        '''Create and populate the package_samtools_0550 repository.'''
         category = self.create_category( name=category_name, description=category_description )
         samtools = self.get_or_create_repository( name=repositories['samtools']['name'],
                                                     description=repositories['samtools']['description'],
