@@ -8,8 +8,8 @@ def remove_version_from_guid( guid ):
     """
     if "/repos/" not in guid:
         return None
-    tool_version = guid.split("/")[-1]
-    return guid.split(tool_version)[0]
+    last_slash = guid.rfind('/')
+    return guid[:last_slash]
 
 
 class LineageMap(object):
