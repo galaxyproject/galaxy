@@ -414,8 +414,46 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
         if( !$msg.is( ':hidden' ) ){ $msg.slideUp( this.fxSpeed ); }
     },
 
-    /** Return a string rep of the history
-     */
+    // ........................................................................ options menu
+    /**  */
+    _filterAndUpdate : function( filterParams, updateWhat ){
+        var self = this;
+        return self.model.contents.fetch({ filters: filterParams })
+            .then( function(){
+                // TODO: could probably re-use the response json from the fetch here
+                var hidden = self.model.contents.hidden();
+                hidden.ajaxQueue( Backbone.Model.prototype.save, updateWhat )
+                    .done( function(){ console.log( 'rendering' ); Galaxy.currHistoryPanel.renderItems(); });
+            });
+    },
+
+    //TODO: remove to batch
+    /** unhide any hidden datasets */
+    unhideHidden : function() {
+        var self = this;
+        if( confirm( _l( 'Really unhide all hidden datasets?' ) ) ){
+            // get all hidden, regardless of deleted/purged
+            return self._filterAndUpdate({ visible: false, deleted: '', purged: '' }, { visible : true });
+        }
+        return jQuery.when();
+    },
+
+    //TODO: remove to batch
+    /** delete any hidden datasets */
+    deleteHidden : function() {
+        var self = this;
+        if( confirm( _l( 'Really delete all hidden datasets?' ) ) ){
+            return self._filterAndUpdate(
+                // get all hidden, regardless of deleted/purged
+                { visible: false, deleted: '', purged: '' },
+                // both delete *and* unhide them
+                { deleted : true, visible: true }
+            );
+        }
+        return jQuery.when();
+    },
+
+    /** Return a string rep of the history */
     toString    : function(){
         return 'CurrentHistoryView(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }

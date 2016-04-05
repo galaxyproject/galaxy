@@ -358,6 +358,12 @@ var HistoryView = _super.extend(
         });
     },
 
+    /** override to remove expandedIds from webstorage */
+    collapseAll : function(){
+        this.storage.set( 'expandedIds', {} );
+        _super.prototype.collapseAll.call( this );
+    },
+
     // ------------------------------------------------------------------------ selection
     /** Override to correctly set the historyId of the new collection */
     getSelectedModels : function(){

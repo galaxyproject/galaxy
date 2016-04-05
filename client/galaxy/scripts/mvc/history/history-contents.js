@@ -244,6 +244,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         // use reverse order (stylistic choice)
         var ajaxFns = this.chain().reverse().map( function( content, i ){
             return function(){
+// var xhr = ajaxFn.call( content, options, { url: 'blah.blah' });
                 var xhr = ajaxFn.call( content, options );
                 // if successful, notify using the deferred to allow tracking progress
                 xhr.done( function( response ){
