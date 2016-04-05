@@ -103,19 +103,18 @@
                internal to Galaxy and communicates it directly.
                This maybe be useful for instance when Pulsar
                staging is important but a Pulsar server is
-               unneeded (most obviously for instance if compute
-               servers cannot mount Galaxy's files but Galaxy
-               can mount a scratch directory available on
-               compute). -->
+               unneeded (for instance if compute servers cannot
+               mount Galaxy's files but Galaxy can mount a
+               scratch directory available on compute). -->
           <!-- Specify a complete description of the Pulsar app
                to create. Currently this configuration (if set)
-               must create exactly on job manager. For more
+               must create exactly one job manager. For more
                information on configuring a Pulsar app see:
 
                https://github.com/galaxyproject/pulsar/blob/master/app.yml.sample
                http://pulsar.readthedocs.org/en/latest/configure.html
           -->
-          <!-- <param id="pulsar_conf">path/to/pulsar/app.yml</param> -->
+          <!-- <param id="pulsar_config">path/to/pulsar/app.yml</param> -->
         </plugin>
 
     </plugins>
