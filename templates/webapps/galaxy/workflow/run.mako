@@ -449,7 +449,17 @@ if wf_parms:
       <span class="conditional-start"></span>
       ${row_for_param( input.test_param, group_values[ input.test_param.name ], other_values, group_errors, prefix, step, already_used )}
       ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, new_prefix, step, other_values, already_used )}
-    %elif input.type != "section":
+    %elif input.type == "section":
+      <% group_values = values[input.name] %>
+      <% new_prefix = prefix + input.name + "|" %>
+      <% group_errors = errors.get( input.name, {} ) %>
+      <div class="form-title-row"><b>${input.title}:</b></div>
+      <div class="repeat-group">
+        <div class="repeat-group-item">
+      ${do_inputs( input.inputs, group_values, group_errors, new_prefix, step, other_values, already_used )}
+        </div>
+      </div>
+    %else:
       ${row_for_param( input, values[ input.name ], other_values, errors, prefix, step, already_used )}
     %endif
   %endfor
