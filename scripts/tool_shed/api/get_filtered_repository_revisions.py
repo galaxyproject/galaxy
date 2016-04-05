@@ -25,7 +25,7 @@ import os
 import sys
 import urllib
 
-sys.path.insert( 1, 'lib' )
+sys.path.insert( 1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir, 'lib' ) )
 from galaxy.util import asbool
 from tool_shed.util import hg_util
 
