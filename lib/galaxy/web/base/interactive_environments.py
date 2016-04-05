@@ -61,13 +61,14 @@ class InteractiveEnvironmentRequest(object):
 
         # This duplicates the logic in the proxy manager
         if self.attr.galaxy_config.dynamic_proxy_external_proxy:
-            slash = '/'
-            if self.attr.galaxy_config.cookie_path.endswith('/'):
-                slash = ''
-            self.attr.proxy_prefix = '%s%s%s' % (
-                self.attr.galaxy_config.cookie_path,
-                slash,
-                self.attr.galaxy_config.dynamic_proxy_prefix)
+            self.attr.proxy_prefix = '/'.join(
+                (
+                    '',
+                    self.attr.galaxy_config.cookie_path.strip('/'),
+                    self.attr.galaxy_config.dynamic_proxy_prefix.strip('/'),
+                    self.attr.viz_id,
+                )
+            )
         else:
             self.attr.proxy_prefix = ''
 
@@ -294,7 +295,7 @@ class InteractiveEnvironmentRequest(object):
             log.error( "%s\n%s" % (stdout, stderr) )
             return None
         else:
-            container_id = stdout
+            container_id = stdout.strip()
             log.debug( "Container id: %s" % container_id)
             inspect_data = self.inspect_container(container_id)
             port_mappings = self.get_container_port_mapping(inspect_data)
@@ -315,6 +316,8 @@ class InteractiveEnvironmentRequest(object):
                 host=self.attr.docker_hostname,
                 port=host_port,
                 proxy_prefix=self.attr.proxy_prefix,
+                route_name=self.attr.viz_id,
+                container_ids=[container_id],
             )
             # These variables then become available for use in templating URLs
             self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]
