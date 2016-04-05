@@ -5,7 +5,7 @@
 <%def name="title()">Galaxy Administration</%def>
 
 <%def name="stylesheets()">
-    ${parent.stylesheets()}    
+    ${parent.stylesheets()}
     ## Include "base.css" for styling tool menu and forms (details)
     ${h.css( "base", "autocomplete_tagging", "tool_menu" )}
 
@@ -58,10 +58,12 @@
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionTitle">Tools and Tool Shed</div>
                 <div class="toolSectionBody">
-                    <div class="toolSectionBg">                        
+                    <div class="toolSectionBg">
                     %if trans.app.tool_shed_registry and trans.app.tool_shed_registry.tool_sheds:
                         <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='browse_tool_sheds' )}" target="galaxy_main">Search Tool Shed</a></div>
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='browse_toolsheds' )}" target="galaxy_main">Search Tool Shed (Beta)</a></div>
+                        %if trans.app.config.enable_beta_ts_api_install:
+                            <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='browse_toolsheds' )}" target="galaxy_main">Search Tool Shed (Beta)</a></div>
+                        %endif
                     %endif
                     %if installing_repository_ids:
                         <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='monitor_repository_installation', tool_shed_repository_ids=installing_repository_ids )}" target="galaxy_main">Monitor installing repositories</a></div>
@@ -120,7 +122,7 @@
                     </div>
                 </div>
             </div>
-        </div>    
+        </div>
     </div>
 </%def>
 
