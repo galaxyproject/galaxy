@@ -1471,7 +1471,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        is_admin = trans.is_admin
+        is_admin = trans.user_is_admin()
         return suc.get_repository_file_contents( trans.app, file_path, repository_id, is_admin )
 
     @web.expose
