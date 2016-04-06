@@ -604,36 +604,32 @@ def get_repository_for_dependency_relationship( app, tool_shed, name, owner, cha
         message += "required parameters is None: tool_shed: %s, name: %s, owner: %s, changeset_revision: %s " % \
             ( str( tool_shed ), str( name ), str( owner ), str( changeset_revision ) )
         raise Exception( message )
-    repository = get_installed_repository( app=app,
-                                           tool_shed=tool_shed,
-                                           name=name,
-                                           owner=owner,
-                                           installed_changeset_revision=changeset_revision )
-    if not repository:
-        repository = get_installed_repository( app=app,
-                                               tool_shed=tool_shed,
-                                               name=name,
-                                               owner=owner,
-                                               changeset_revision=changeset_revision )
-    if not repository:
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed )
-        repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
-        repo_info_tuple = (None, repository_clone_url, changeset_revision, None, owner, None, None)
-        repository, pcr = repository_was_previously_installed( app, tool_shed_url, name, repo_info_tuple )
-    if not repository:
-        # The received changeset_revision is no longer installable, so get the next changeset_revision
-        # in the repository's changelog in the tool shed that is associated with repository_metadata.
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed )
-        params = dict( name=name, owner=owner, changeset_revision=changeset_revision )
-        pathspec = [ 'repository', 'next_installable_changeset_revision' ]
-        text = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
-        if text:
-            repository = get_installed_repository( app=app,
-                                                   tool_shed=tool_shed,
-                                                   name=name,
-                                                   owner=owner,
-                                                   changeset_revision=text )
-    return repository
+    repositories = get_installed_repository( app=app,
+                                             tool_shed=tool_shed,
+                                             name=name,
+                                             owner=owner,
+                                             return_all=True)
+    if repositories:
+        if repositories[0].installed_changeset_revision == changeset_revision:
+            repository = repositories[0]
+        else:
+            changeset_repo_d = { repo.changeset_revision: repo for repo in repositories }
+            repository = changeset_repo_d.get( changeset_revision, None )
+        if not repository:
+            tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed )
+            repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
+            repo_info_tuple = (None, repository_clone_url, changeset_revision, None, owner, None, None)
+            repository, pcr = repository_was_previously_installed( app, tool_shed_url, name, repo_info_tuple )
+        if not repository:
+            # The received changeset_revision is no longer installable, so get the next changeset_revision
+            # in the repository's changelog in the tool shed that is associated with repository_metadata.
+            params = dict( name=name, owner=owner, changeset_revision=changeset_revision )
+            pathspec = [ 'repository', 'next_installable_changeset_revision' ]
+            text = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
+            if text:
+                repository = changeset_repo_d.get(text, None)
+        return repository
+    return None
 
 
 def get_repository_file_contents( app, file_path, repository_id ):
@@ -877,7 +873,7 @@ def get_tool_shed_from_clone_url( repository_clone_url ):
     return tmp_url.split( '/repos/' )[ 0 ].rstrip( '/' )
 
 
-def get_installed_repository( app, tool_shed, name, owner, changeset_revision=None, installed_changeset_revision=None ):
+def get_installed_repository( app, tool_shed, name, owner, changeset_revision=None, installed_changeset_revision=None, return_all=False ):
     """
     Return a tool shed repository database record defined by the combination of a toolshed, repository name,
     repository owner and either current or originally installed changeset_revision.
@@ -888,6 +884,8 @@ def get_installed_repository( app, tool_shed, name, owner, changeset_revision=No
     clause_list = [ app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
                     app.install_model.ToolShedRepository.table.c.name == name,
                     app.install_model.ToolShedRepository.table.c.owner == owner ]
+    if return_all:
+        return query.filter( and_( *clause_list ) ).all()
     if changeset_revision is not None:
         clause_list.append( app.install_model.ToolShedRepository.table.c.changeset_revision == changeset_revision )
     if installed_changeset_revision is not None:
@@ -1212,32 +1210,29 @@ def repository_was_previously_installed( app, tool_shed_url, repository_name, re
         get_repo_info_tuple_contents( repo_info_tuple )
     tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
     # See if we can locate the repository using the value of changeset_revision.
-    tool_shed_repository = get_installed_repository( app,
-                                                     tool_shed=tool_shed,
-                                                     name=repository_name,
-                                                     owner=repository_owner,
-                                                     installed_changeset_revision=changeset_revision )
-    if tool_shed_repository:
-        return tool_shed_repository, changeset_revision
-    # Get all previous changeset revisions from the tool shed for the repository back to, but excluding,
-    # the previous valid changeset revision to see if it was previously installed using one of them.
-    params = dict( galaxy_url=url_for( '/', qualified=True ),
-                   name=repository_name,
-                   owner=repository_owner,
-                   changeset_revision=changeset_revision,
-                   from_tip=str( from_tip ) )
-    pathspec = [ 'repository', 'previous_changeset_revisions' ]
-    text = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
-    if text:
-        changeset_revisions = util.listify( text )
-        for previous_changeset_revision in changeset_revisions:
-            tool_shed_repository = get_installed_repository( app,
-                                                             tool_shed=tool_shed,
-                                                             name=repository_name,
-                                                             owner=repository_owner,
-                                                             installed_changeset_revision=previous_changeset_revision )
-            if tool_shed_repository:
-                return tool_shed_repository, previous_changeset_revision
+    tool_shed_repositories = get_installed_repository(app,
+                                                      tool_shed = tool_shed,
+                                                      name = repository_name,
+                                                      owner = repository_owner,
+                                                      return_all = True)
+    if tool_shed_repositories:
+        tool_shed_repository = tool_shed_repositories[0]
+        installed_changeset_revision = tool_shed_repository.installed_changeset_revision
+        if installed_changeset_revision == changeset_revision:
+            return tool_shed_repository, changeset_revision
+        # Get all previous changeset revisions from the tool shed for the repository back to, but excluding,
+        # the previous valid changeset revision to see if it was previously installed using one of them.
+        params = dict( galaxy_url=url_for( '/', qualified=True ),
+                       name=repository_name,
+                       owner=repository_owner,
+                       changeset_revision=changeset_revision,
+                       from_tip=str( from_tip ) )
+        pathspec = [ 'repository', 'previous_changeset_revisions' ]
+        text = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
+        if text:
+            changeset_revisions = util.listify( text )
+            if installed_changeset_revision in changeset_revisions:
+                return tool_shed_repository, installed_changeset_revision
     return None, None
 
 
