@@ -15,7 +15,7 @@ try:
 
     from pykube.config import KubeConfig
     from pykube.http import HTTPClient
-    from pykube.objects import Pod
+    from pykube.objects import Job
 except ImportError as exc:
     operator = None
     K8S_IMPORT_MESSAGE = ('The Python pbs-python package is required to use '
@@ -44,8 +44,7 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
         # self.cli_interface = CliInterface()
 
         # here we need to fetch the default kubeconfig path from the plugin defined in job_conf...
-        self._pykube_api = HTTPClient(KubeConfig.from_file(fromJobConfPluginParams))
-        # TODO how do we read from the config file the plugin parameters
+        self._pykube_api = HTTPClient(KubeConfig.from_file(self.runner_params["k8s_config_path"]))
 
         # TODO do we need these?
         # self._init_monitor_thread()
