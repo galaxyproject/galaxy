@@ -617,10 +617,14 @@ def get_repository_for_dependency_relationship( app, tool_shed, name, owner, cha
             repository = changeset_repo_d.get( changeset_revision, None )
         if not repository:
             tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed )
-            repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
-            repo_info_tuple = (None, repository_clone_url, changeset_revision, None, owner, None, None)
-            repository, pcr = repository_was_previously_installed( app, tool_shed_url, name, repo_info_tuple )
-        if not repository:
+            changeset_revisions = get_previous_changeset_revisions(app=app,
+                                                                   tool_shed_url=tool_shed_url,
+                                                                   name=name,
+                                                                   owner=owner,
+                                                                   changeset_revision=changeset_revision)
+            for previous_changeset in changeset_revisions:
+                if previous_changeset in changeset_repo_d:
+                    return changeset_repo_d[ previous_changeset ]
             # The received changeset_revision is no longer installable, so get the next changeset_revision
             # in the repository's changelog in the tool shed that is associated with repository_metadata.
             params = dict( name=name, owner=owner, changeset_revision=changeset_revision )
@@ -876,7 +880,8 @@ def get_tool_shed_from_clone_url( repository_clone_url ):
 def get_installed_repository( app, tool_shed, name, owner, changeset_revision=None, installed_changeset_revision=None, return_all=False ):
     """
     Return a tool shed repository database record defined by the combination of a toolshed, repository name,
-    repository owner and either current or originally installed changeset_revision.
+    repository owner and either current or originally installed changeset_revision. If return_all=True,
+    returns a list of all tool shed repository database records that match tool_shed, name and owner.
     """
     query = app.install_model.context.query( app.install_model.ToolShedRepository )
     # We store the port, if one exists, in the database.
@@ -1211,29 +1216,47 @@ def repository_was_previously_installed( app, tool_shed_url, repository_name, re
     tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
     # See if we can locate the repository using the value of changeset_revision.
     tool_shed_repositories = get_installed_repository(app,
-                                                      tool_shed = tool_shed,
-                                                      name = repository_name,
-                                                      owner = repository_owner,
-                                                      return_all = True)
+                                                      tool_shed=tool_shed,
+                                                      name=repository_name,
+                                                      owner=repository_owner,
+                                                      return_all=True)
     if tool_shed_repositories:
         tool_shed_repository = tool_shed_repositories[0]
         installed_changeset_revision = tool_shed_repository.installed_changeset_revision
         if installed_changeset_revision == changeset_revision:
             return tool_shed_repository, changeset_revision
         # Get all previous changeset revisions from the tool shed for the repository back to, but excluding,
-        # the previous valid changeset revision to see if it was previously installed using one of them.
-        params = dict( galaxy_url=url_for( '/', qualified=True ),
-                       name=repository_name,
-                       owner=repository_owner,
-                       changeset_revision=changeset_revision,
-                       from_tip=str( from_tip ) )
-        pathspec = [ 'repository', 'previous_changeset_revisions' ]
-        text = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
-        if text:
-            changeset_revisions = util.listify( text )
+        # the previous valid changeset revision and check if any of these correspond to the installed_changeset_revision.
+        # This means the repository has been previously installed.
+        changeset_revisions = get_previous_changeset_revisions(app=app,
+                                                               tool_shed_url=tool_shed_url,
+                                                               name=repository_name,
+                                                               owner=repository_owner,
+                                                               changeset_revision=changeset_revision,
+                                                               from_tip=from_tip)
+        if changeset_revisions:
             if installed_changeset_revision in changeset_revisions:
                 return tool_shed_repository, installed_changeset_revision
     return None, None
+
+
+def get_previous_changeset_revisions(app, tool_shed_url, name, owner, changeset_revision, from_tip=False):
+    """
+    Requests previous_changeset_revisions for a repository from a toolshed and returns them in a list.
+    """
+    params = dict( galaxy_url=url_for( '/', qualified=True ),
+                   name=name,
+                   owner=owner,
+                   changeset_revision=changeset_revision,
+                   from_tip=str( from_tip ) )
+    pathspec = [ 'repository', 'previous_changeset_revisions' ]
+    text = util.url_get( tool_shed_url,
+                         password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ),
+                         pathspec=pathspec,
+                         params=params )
+    if text:
+        return util.listify( text )
+    return []
 
 
 def set_image_paths( app, encoded_repository_id, text ):
