@@ -155,4 +155,3 @@ class TestGetUpdatedMetadata( ShedTwillTestCase ):
                               repositories[ 'samtools' ][ 'name' ],
                               repositories[ 'filtering' ][ 'name' ] ]
         self.fetch_repository_metadata( filtering, strings_displayed=strings_displayed, strings_not_displayed=None )
-
