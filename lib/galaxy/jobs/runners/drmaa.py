@@ -135,11 +135,11 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
 
         # set up the drmaa job template
         jt = dict(
-            remoteCommand = ajs.job_file,
-            jobName = ajs.job_name,
-            workingDirectory = job_wrapper.working_directory,
-            outputPath = ":%s" % ajs.output_file,
-            errorPath = ":%s" % ajs.error_file
+            remoteCommand=ajs.job_file,
+            jobName=ajs.job_name,
+            workingDirectory=job_wrapper.working_directory,
+            outputPath=":%s" % ajs.output_file,
+            errorPath=":%s" % ajs.error_file
         )
 
         # Avoid a jt.exitCodePath for now - it's only used when finishing.
