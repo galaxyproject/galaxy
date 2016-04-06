@@ -273,6 +273,7 @@ class BaseJobRunner( object ):
             log.debug( 'executing external set_meta script for job %d: %s' % ( job_wrapper.job_id, external_metadata_script ) )
             external_metadata_proc = subprocess.Popen( args=external_metadata_script,
                                                        shell=True,
+                                                       cwd=job_wrapper.working_directory,
                                                        env=os.environ,
                                                        preexec_fn=os.setpgrp )
             job_wrapper.external_output_metadata.set_job_runner_external_pid( external_metadata_proc.pid, self.sa_session )
