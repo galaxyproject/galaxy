@@ -1471,7 +1471,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        return suc.get_repository_file_contents( trans.app, file_path, repository_id )
+        is_admin = trans.is_admin
+        return suc.get_repository_file_contents( trans.app, file_path, repository_id, is_admin )
 
     @web.expose
     def get_functional_test_rss( self, trans, **kwd ):
