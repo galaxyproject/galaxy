@@ -76,11 +76,11 @@ class TestGetUpdatedMetadata( ShedTwillTestCase ):
         '''Create and populate the package_samtools_0550 repository.'''
         category = self.create_category( name=category_name, description=category_description )
         samtools = self.get_or_create_repository( name=repositories['samtools']['name'],
-                                                    description=repositories['samtools']['description'],
-                                                    long_description=repositories['samtools']['long_description'],
-                                                    owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id( category.id ),
-                                                    strings_displayed=[] )
+                                                  description=repositories['samtools']['description'],
+                                                  long_description=repositories['samtools']['long_description'],
+                                                  owner=common.test_user_1_name,
+                                                  category_id=self.security.encode_id( category.id ),
+                                                  strings_displayed=[] )
         assert samtools is not None, 'Error creating samtools %s' % repositories['samtools']['name']
         self.upload_file( samtools,
                           filename='0550_files/package_samtools_1_0550.tgz',
