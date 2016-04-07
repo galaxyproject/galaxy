@@ -45,6 +45,7 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
 
         # here we need to fetch the default kubeconfig path from the plugin defined in job_conf...
         self._pykube_api = HTTPClient(KubeConfig.from_file(self.runner_params["k8s_config_path"]))
+        self._galaxy_vol_name = "pvc_galaxy"
 
         # TODO do we need these?
         # self._init_monitor_thread()
@@ -131,15 +132,27 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
 
     def __get_k8s_mountable_volumes(self, job_wrapper):
         """Provides the required volumes that the containers in the pod should be able to mount. This should be using
-        the new persistent volumes and persistent volumes claim objects.
+        the new persistent volumes and persistent volumes claim objects. This requires that both a PersistentVolume and
+        a PersistentVolumeClaim are created before starting galaxy (starting a k8s job).
         """
-        
+        # TODO on this initial version we only support a single volume to be mounted.
+        k8s_mountable_volume = {
+            "name": self._galaxy_vol_name,
+            "persistentVolumeClaim": {
+                "claimName": self.runner_params['k8s_persistent_volume_claim_name']
+            }
+        }
+        return k8s_mountable_volume
 
     def __get_k8s_containers(self, job_wrapper):
         """Fills in all required for setting up the docker containers to be used."""
         k8s_container = {
             "name": self.__get_k8s_container_name(job_wrapper),
-            "image": self.__assemble_k8s_container_image_name(job_wrapper)
+            "image": self.__assemble_k8s_container_image_name(job_wrapper),
+            "volumeMounts": {
+                "mountPath": self.runner_params['k8s_persistent_volume_claim_mount_path'],
+                "name": self._galaxy_vol_name
+            }
         }
 
         if self.__requires_ports(job_wrapper):
