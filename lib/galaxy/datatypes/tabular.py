@@ -875,18 +875,18 @@ class FeatureLocationIndex( Tabular ):
 
 
 @dataproviders.decorators.has_dataproviders
-class CSV( TabularData ):
+class BaseCSV( TabularData ):
     """
     Delimiter-separated table data.
     This includes CSV, TSV and other dialects understood by the
     Python 'csv' module https://docs.python.org/2/library/csv.html
-
-    WARNING: This type is BUGGY it is kept purely for backward compatibility
-    It will incorrectly sniff tab separated files for which the get_meta method fails!
+    Must be extended to define the dialect to use, strict_width: and file_ext.
+    See Python module csv for documentation of dialect settings
     """
     delimiter = ','
     file_ext = 'csv'  # File extension
     peek_size = 1024  # File chunk used for sniffing CSV dialect
+    big_peek_size = 10240  # Large File chunk used for sniffing CSV dialect
 
     def is_int( self, column_text ):
         try:
@@ -911,55 +911,6 @@ class CSV( TabularData ):
             return 'float'
         else:
             return 'str'
-
-    def sniff( self, filename ):
-        """ Return True if if recognizes dialect and header. """
-        if not csv.Sniffer().has_header(open(filename, 'r').read(self.peek_size)):
-            return False
-        # Fetch at least three consecutive lines to be reasonably sure
-        reader = csv.reader(open(filename, 'r'))
-        for i in range(0, 3):
-            reader.next()
-        return True
-
-    def set_meta( self, dataset, **kwd ):
-        with open(dataset.file_name, 'r') as csvfile:
-            # Parse file
-            reader = csv.reader(csvfile)
-            data_row = None
-            header_row = None
-            try:
-                header_row = reader.next()
-                data_row = reader.next()
-                for row in reader:
-                    pass
-            except csv.Error as e:
-                raise Exception('CSV reader error - line %d: %s' % (reader.line_num, e))
-
-            # Guess column types
-            column_types = []
-            for cell in data_row:
-                column_types.append(self.guess_type(cell))
-
-            # Set metadata
-            dataset.metadata.data_lines = reader.line_num - 1
-            dataset.metadata.comment_lines = 1
-            dataset.metadata.column_types = column_types
-            dataset.metadata.columns = max( len( header_row ), len( data_row ) )
-            dataset.metadata.column_names = header_row
-            dataset.metadata.delimiter = reader.dialect.delimiter
-
-
-@dataproviders.decorators.has_dataproviders
-class BaseCSV( CSV ):
-    """
-    Delimiter-separated table data.
-    This includes CSV, TSV and other dialects understood by the
-    Python 'csv' module https://docs.python.org/2/library/csv.html
-    Must be extended to define the dialect to use, strict_width: and file_ext.
-    See Python module csv for documentation of dialect settings
-    """
-    big_peek_size = 10240  # Large File chunk used for sniffing CSV dialect
 
     def sniff( self, filename ):
         """ Return True if if recognizes dialect and header. """
@@ -1042,7 +993,7 @@ class BaseCSV( CSV ):
 
 
 @dataproviders.decorators.has_dataproviders
-class ExcelCSV( BaseCSV ):
+class CSV( BaseCSV ):
     """
     Comma separated table data.
     Only sniffs comma separated files with at least 2 columns
@@ -1056,7 +1007,7 @@ class ExcelCSV( BaseCSV ):
 
 
 @dataproviders.decorators.has_dataproviders
-class ExcelTSV( BaseCSV ):
+class TSV( BaseCSV ):
     """
     Comma separated table data.
     Only sniff tab separated files with at least two columns
