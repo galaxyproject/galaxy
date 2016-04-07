@@ -325,6 +325,9 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
     >>> fname = get_test_fname('test.mz5')
     >>> guess_ext(fname, sniff_order)
     'h5'
+    >>> fname = get_test_fname('issue1818.tabular')
+    >>> guess_ext(fname, sniff_order)
+    'tabular'
     >>> fname = get_test_fname('drugbank_drugs.cml')
     >>> guess_ext(fname, sniff_order)
     'cml'
@@ -344,6 +347,7 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
     >>> guess_ext(fname, sniff_order)
     'pdb'
     """
+    file_ext = None
     for datatype in sniff_order:
         """
         Some classes may not have a sniff function, which is ok.  In fact, the
@@ -355,9 +359,19 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
         """
         try:
             if datatype.sniff( fname ):
-                return datatype.file_ext
+                file_ext = datatype.file_ext
+                break
         except:
             pass
+    # Ugly hack for tsv vs tabular sniffing, we want to prefer tabular
+    # to tsv but it doesn't have a sniffer - is TSV was sniffed just check
+    # if it is an okay tabular and use that instead.
+    if file_ext == 'tsv':
+        if is_column_based( fname, '\t', 1, is_multi_byte=is_multi_byte ):
+            file_ext = 'tabular'
+    if file_ext is not None:
+        return file_ext
+
     headers = get_headers( fname, None )
     is_binary = False
     if is_multi_byte:

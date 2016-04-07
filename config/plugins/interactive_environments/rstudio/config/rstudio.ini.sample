@@ -17,8 +17,7 @@ password_auth = True
 # usual group/sudo changes.
 #command = docker {docker_args}
 
-# The docker image name that should be started.
-image = erasche/docker-rstudio-notebook:15.10
+# The image argument was moved to "allowed_images.yml.sample"
 
 # Additional arguments that are passed to the `docker run` command.
 #command_inject = --sig-proxy=true -e DEBUG=false

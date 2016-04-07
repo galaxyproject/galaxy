@@ -1,12 +1,8 @@
 import os
 import shutil
-from sys import version_info
 from tempfile import mkdtemp
 
-if version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest as unittest
+import unittest as unittest
 
 from galaxy.tools.deps import DependencyManager
 from galaxy.tools.deps.resolvers.conda import CondaDependencyResolver

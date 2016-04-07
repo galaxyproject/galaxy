@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!-- A job config for testing the Pulsar embedded runner -->
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="4"/>
+        <plugin id="pulsar_embed" type="runner" load="galaxy.jobs.runners.pulsar:PulsarEmbeddedJobRunner">
+        </plugin>
+    </plugins>
+    <handlers>
+        <handler id="main"/>
+    </handlers>
+    <destinations default="pulsar_embed">
+        <destination id="local" runner="local">
+        </destination>
+        <destination id="pulsar_embed" runner="pulsar_embed">
+        </destination>
+    </destinations>
+    <tools>
+        <tool id="upload1" destination="local" />
+    </tools>
+</job_conf>

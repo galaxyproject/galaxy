@@ -93,7 +93,12 @@ var Collection = Backbone.Collection.extend({
                     title   : 'Saved Visualizations',
                     url     : 'visualization/list',
                     target  : '_frame'
-            }]
+                },{
+                    title   : 'Interactive Environments',
+                    url     : 'visualization/gie_list',
+                    target  : 'galaxy_main'
+                }
+            ]
         });
 
         //

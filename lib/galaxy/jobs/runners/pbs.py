@@ -272,7 +272,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
         # write the job script
         if self.app.config.pbs_stage_path != '':
             # touch the ecfile so that it gets staged
-            with file(ecfile, 'a'):
+            with open(ecfile, 'a'):
                 os.utime(ecfile, None)
 
             stage_commands = pbs_symlink_template % (
