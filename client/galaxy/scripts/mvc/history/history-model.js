@@ -77,7 +77,7 @@ var History = Backbone.Model
         });
     },
 
-    /**  */
+    /** event handlers for the contents submodels */
     _setUpCollectionListeners : function(){
         if( !this.contents ){ return this; }
         // bubble up errors
@@ -153,7 +153,7 @@ var History = Backbone.Model
         return this.fetch({ data : $.param({ keys : 'size,non_ready_jobs' }) });
     },
 
-    /**  */
+    /** check for any changes since the last time we updated (or fetch all if ) */
     refresh : function( options ){
         // console.log( this + '.refresh' );
         options = options || {};
@@ -169,7 +169,7 @@ var History = Backbone.Model
             .done( _.bind( self.checkForUpdates, self ) );
     },
 
-    /**  */
+    /** continuously fetch updated contents every UPDATE_DELAY ms if this history's datasets or jobs are unfinished */
     checkForUpdates : function( options ){
         // console.log( this + '.checkForUpdates' );
         options = options || {};
@@ -231,7 +231,7 @@ var History = Backbone.Model
         return parsed;
     },
 
-    /**  */
+    /** fetch this histories data (using options) then it's contents (using contentsOptions) */
     fetchWithContents : function( options, contentsOptions ){
         options = options || {};
         var self = this;
@@ -246,7 +246,7 @@ var History = Backbone.Model
         });
     },
 
-    /**  */
+    /** fetch this histories contents, adjusting options based on the stored history preferences */
     fetchContents : function( options ){
         options = options || {};
         var self = this;
@@ -392,7 +392,6 @@ var HistoryCollection = _collectionSuper.extend( BASE_MVC.LoggableMixin ).extend
                 var oldCurrentId = this.currentHistoryId;
                 this.trigger( 'no-longer-current', oldCurrentId );
                 this.currentHistoryId = history.id;
-//TODO:? sort?
             }
         });
     },

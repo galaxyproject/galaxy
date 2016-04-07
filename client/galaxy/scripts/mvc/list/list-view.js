@@ -117,8 +117,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
     },
 
     // ------------------------------------------------------------------------ listeners
-    /** create any event listeners for the list
-     */
+    /** create any event listeners for the list */
     _setUpListeners : function(){
         this.off();
 
@@ -219,8 +218,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         return this;
     },
 
-    /** Build a temp div containing the new children for the view's $el.
-     */
+    /** Build a temp div containing the new children for the view's $el. */
     _buildNewRender : function(){
         this.debug( this + '(ListPanel)._buildNewRender' );
         var $newRender = $( this.templates.el( {}, this ) );
@@ -232,8 +230,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         return $newRender;
     },
 
-    /** Build a temp div containing the new children for the view's $el.
-     */
+    /** Build a temp div containing the new children for the view's $el. */
     _renderControls : function( $newRender ){
         this.debug( this + '(ListPanel)._renderControls' );
         var $controls = $( this.templates.controls( {}, this ) );
@@ -241,15 +238,13 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         return $controls;
     },
 
-    /**
-     */
+    /** return a jQuery object containing the title DOM */
     _renderTitle : function( $where ){
         //$where = $where || this.$el;
         //$where.find( '.title' ).replaceWith( ... )
     },
 
-    /**
-     */
+    /** return a jQuery object containing the subtitle DOM (if any) */
     _renderSubtitle : function( $where ){
         //$where = $where || this.$el;
         //$where.find( '.title' ).replaceWith( ... )
@@ -285,7 +280,9 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         return this;
     },
 
-    /**  */
+    /** Set up any behaviors, handlers (ep. plugins) that need to be called when the entire view has been built but
+     *  not attached to the page yet.
+     */
     _setUpBehaviors : function( $where ){
         $where = $where || this.$el;
         $where.find( '.controls [title]' ).tooltip({ placement: 'bottom' });
@@ -337,7 +334,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         // override or set via attributes.$scrollContainer
         return this.$el.parent().parent();
     },
-    /**  */
+    /** list-items: where the subviews are contained in the view's dom */
     $list : function( $where ){
         return ( $where || this.$el ).find( '> .list-items' );
     },
@@ -370,7 +367,6 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
 
         panel.views = shownModels.map( function( itemModel ){
             var view = panel._createItemView( itemModel );
-            view.render( 0 );
             return view;
         });
 
@@ -466,12 +462,19 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
 
     /** Attach views in this.views to the model based on $whereTo */
     _attachItems : function( $whereTo ){
+        var self = this;
         // console.log( '_attachItems:', $whereTo, this.$list( $whereTo ) );
         //ASSUMES: $list has been emptied
         this.$list( $whereTo ).append( this.views.map( function( view ){
-            return view.$el;
+            return self._renderItemView$el( view );
         }));
         return this;
+    },
+
+    /** get a given subview's $el (or whatever may wrap it) and return it */
+    _renderItemView$el : function( view ){
+        // useful to wrap and override
+        return view.render(0).$el;
     },
 
     /** render the empty/none-found message */
@@ -533,7 +536,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
 
         // use the modelIndex to splice into views and insert at the proper index in the DOM
         panel.views.splice( modelIndex, 0, view );
-        panel._insertIntoListAt( modelIndex, view.render( 0 ).$el.hide() );
+        panel._insertIntoListAt( modelIndex, panel._renderItemView$el.hide() );
 
         panel.trigger( 'view:attached', view );
         if( useFx ){
@@ -547,7 +550,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         return view;
     },
 
-    /**  */
+    /** insert a jq object as a child of list-items at the specified *DOM index* */
     _insertIntoListAt : function( index, $what ){
         var $list = this.$list();
         if( index === 0 ){
@@ -581,7 +584,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
 
             var view = self._createItemView( model );
             self.views.push( view );
-            $viewEls.push( view.render( 0 ).$el );
+            $viewEls.push( self._renderItemView$el( view ) );
             // TODO: not attached *yet* actually
             self.trigger( 'view:attached', view );
             self.trigger( 'view:attached:rendered' );
@@ -827,7 +830,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         return this.scrollTo( 0, speed );
     },
 
-    /**  */
+    /** scroll to the given view in list-items */
     scrollToItem : function( view, speed ){
         if( !view ){ return this; }
         //var itemTop = view.$el.offset().top;
@@ -857,7 +860,6 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
 // ............................................................................ TEMPLATES
 /** underscore templates */
 ListPanel.prototype.templates = (function(){
-//TODO: move to require text! plugin
 
     var elTemplate = BASE_MVC.wrapTemplate([
         // temp container
@@ -943,7 +945,7 @@ var ModelListPanel = ListPanel.extend({
             }
             this._setUpModelListeners();
 
-//TODO: relation btwn model, collection becoming tangled here
+            //TODO: relation btwn model, collection becoming tangled here
             // free the collection, and assign the new collection to either
             //  the model[ modelCollectionKey ], attributes.collection, or an empty vanilla collection
             this.collection.off();
@@ -1011,7 +1013,7 @@ ModelListPanel.prototype.templates = (function(){
     var controlsTemplate = BASE_MVC.wrapTemplate([
         '<div class="controls">',
             '<div class="title">',
-//TODO: this is really the only difference - consider factoring titlebar out
+                //TODO: this is really the only difference - consider factoring titlebar out
                 '<div class="name"><%- model.name %></div>',
             '</div>',
             '<div class="subtitle"><%- view.subtitle %></div>',

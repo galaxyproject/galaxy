@@ -80,7 +80,6 @@ var HistoryView = _super.extend(
     freeModel : function(){
         _super.prototype.freeModel.call( this );
         if( this.model ){
-//TODO: move to History.free()
             this.model.clearUpdateTimeout();
         }
         return this;
@@ -126,7 +125,7 @@ var HistoryView = _super.extend(
         return self;
     },
 
-    /**  */
+    /** when the view is scrolled, check how close the scroll is to the bottom, then fetch more if close to ending */
     scrollHandler : function( ev ){
         var self = this;
         var pxToBottom = self._scrollDistanceToBottom();
@@ -150,7 +149,7 @@ var HistoryView = _super.extend(
         return pxToBottom;
     },
 
-    /**  */
+    /** show the user that the contents are loading/contacting the server */
     showContentsLoadingIndicator : function( speed ){
         speed = _.isNumber( speed )? speed : this.fxSpeed;
         if( this.$emptyMessage().is( ':visible' ) ){
@@ -170,7 +169,7 @@ var HistoryView = _super.extend(
             .slideDown( speed );
     },
 
-    /**  */
+    /** show the user we're done loading */
     hideContentsLoadingIndicator : function( speed ){
         speed = _.isNumber( speed )? speed : this.fxSpeed;
         this.$( '> .contents-loading-indicator' ).hide({ duration: 0, complete: function _complete(){
@@ -179,7 +178,7 @@ var HistoryView = _super.extend(
     },
 
     // ------------------------------------------------------------------------ loading history/hda models
-    /**  */
+    /** load the history with the given id then it's contents, sending ajax options to both */
     loadHistory : function( historyId, options, contentsOptions ){
         this.info( 'loadHistory:', historyId, options, contentsOptions );
         var self = this;
@@ -467,7 +466,6 @@ var HistoryView = _super.extend(
     },
 
     // ........................................................................ error handling
-//TODO: to mixin or base model
     /** Event handler for errors (from the panel, the history, or the history's contents)
      *  Alternately use two strings for model and xhr to use custom message and title (respectively)
      *  @param {Model or View} model    the (Backbone) source of the error
@@ -475,6 +473,7 @@ var HistoryView = _super.extend(
      *  @param {Object} options         the options map commonly used with bbone ajax
      */
     errorHandler : function( model, xhr, options ){
+        //TODO: to mixin or base model
         // interrupted ajax or no connection
         if( xhr && xhr.status === 0 && xhr.readyState === 0 ){
             // return ERROR_MODAL.offlineErrorModal();

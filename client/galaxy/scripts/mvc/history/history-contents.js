@@ -119,7 +119,6 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return new HistoryContents( this.filter( filterFn ) );
     },
 
-//TODO: revisit includeDeleted/Hidden naming and toggle fn
     /** create a setter in order to publish the change */
     setIncludeDeleted : function( setting ){
         if( _.isBoolean( setting ) && setting !== this.includeDeleted ){
@@ -148,7 +147,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     },
 
     // ............. ControlledFetch stuff
-    /**  */
+    /** override to include the API versioning flag */
     _buildFetchData : function( options ){
         return _.extend( _super.prototype._buildFetchData.call( this, options ), {
             v : 'dev'
@@ -164,7 +163,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         'details',
     ]),
 
-    /**  */
+    /** override to add deleted/hidden filters */
     _buildFetchFilters : function( options ){
         var superFilters = _super.prototype._buildFetchFilters.call( this, options ) || {};
         var filters = {};
@@ -193,7 +192,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return this.fetch( options );
     },
 
-    /**  */
+    /** fetch all the deleted==true contents of this collection */
     fetchDeleted : function( options ){
         options = options || {};
         var self = this;
@@ -208,7 +207,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
             .always( function(){ self.trigger( 'fetching-deleted-done', self ); });
     },
 
-    /**  */
+    /** fetch all the visible==false contents of this collection */
     fetchHidden : function( options ){
         options = options || {};
         var self = this;
@@ -268,7 +267,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return deferred;
     },
 
-    /**  */
+    /** fetch contents' details in batches of limitPerCall - note: only get searchable details here */
     progressivelyFetchDetails : function( options ){
         // console.log( 'progressivelyFetchDetails:', options );
         options = options || {};
@@ -314,7 +313,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return deferred;
     },
 
-    /**  */
+    /** does some bit of JSON represent something that can be copied into this contents collection */
     isCopyable : function( contentsJSON ){
         var copyableModelClasses = [
             'HistoryDatasetAssociation',
@@ -359,8 +358,9 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return xhr;
     },
 
-    /**  */
+    /** create a new HDCA in this collection */
     createHDCA : function( elementIdentifiers, collectionType, name, options ){
+        //TODO?: can't we do this with collection.create?
         //precondition: elementIdentifiers is an array of plain js objects
         //  in the proper form to create the collectionType
         var contents = this,

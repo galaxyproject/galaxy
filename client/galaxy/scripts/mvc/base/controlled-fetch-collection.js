@@ -12,11 +12,10 @@ define([
  */
 var ControlledFetchCollection = Backbone.Collection.extend({
 
-    /**  */
+    /** call setOrder on initialization to build the comparator based on options */
     initialize : function( models, options ){
         Backbone.Collection.prototype.initialize.call( this, models, options );
         this.setOrder( options.order || this.order, { silent: true });
-        // this.on( 'all', function(){ console.log( this.toString(), arguments ); });
     },
 
     /** set up to track order changes and re-sort when changed */
@@ -34,7 +33,7 @@ var ControlledFetchCollection = Backbone.Collection.extend({
         return Backbone.Collection.prototype.fetch.call( this, options );
     },
 
-    /**  */
+    /** build ajax data/parameters from options */
     _buildFetchOptions : function( options ){
         // note: we normally want options passed in to override the defaults built here
         // so most of these fns will generate defaults
@@ -88,7 +87,7 @@ var ControlledFetchCollection = Backbone.Collection.extend({
         'keys'
     ],
 
-    /**  */
+    /** add any needed filters here based on collection state */
     _buildFetchFilters : function( options ){
         // override
         return _.clone( options.filters || {} );
@@ -166,16 +165,19 @@ var PaginatedCollection = ControlledFetchCollection.extend({
     /** @type {Number} limit used for each subsequent fetch */
     limitPerFetch       : 100,
 
-    /**  */
     initialize : function( models, options ){
         ControlledFetchCollection.prototype.initialize.call( this, models, options );
+        /** @type {Integer} number of contents to return from the first fetch */
         this.limitOnFirstFetch = options.limitOnFirstFetch || this.limitOnFirstFetch;
+        /** @type {Integer} limit for every fetch after the first */
         this.limitPerFetch = options.limitPerFetch || this.limitPerFetch;
+        /** @type {Boolean} are all contents fetched? */
         this.allFetched = false;
+        /** @type {Integer} what was the offset of the last content returned */
         this.lastFetched = options.lastFetched || 0;
     },
 
-    /**  */
+    /** fetch the first 'page' of data */
     fetchFirst : function( options ){
         // console.log( 'ControlledFetchCollection.fetchFirst:', options );
         options = options? _.clone( options ) : {};
@@ -187,7 +189,7 @@ var PaginatedCollection = ControlledFetchCollection.extend({
         }));
     },
 
-    /**  */
+    /** fetch the next page of data */
     fetchMore : function( options ){
         // console.log( 'ControlledFetchCollection.fetchMore:', options );
         options = _.clone( options || {} );
@@ -195,7 +197,7 @@ var PaginatedCollection = ControlledFetchCollection.extend({
 
         // console.log( 'fetchMore, options.reset:', options.reset );
         if( ( !options.reset && collection.allFetched ) ){
-            console.warn( 'allFetched' ); return jQuery.when();
+            return jQuery.when();
         }
 
         // TODO: this fails in the edge case where
@@ -223,13 +225,14 @@ var PaginatedCollection = ControlledFetchCollection.extend({
         );
     },
 
+    /** fetch all the collection */
     fetchAll : function( options ){
         // whitelist options to prevent allowing limit/offset/filters
         // (use vanilla fetch instead)
         options = options || {};
         var self = this;
         options = _.pick( options, 'silent' );
-//TODO: this doesn't work
+        //TODO?: this doesn't work?
         options.filters = {};
         return self.fetch( options ).done( function( fetchData ){
             console.log( 'triggering:...' );

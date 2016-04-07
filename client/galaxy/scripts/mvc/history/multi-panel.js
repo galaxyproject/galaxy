@@ -62,7 +62,7 @@ var HistoryInnerView = HISTORY_VIEW_EDIT.HistoryViewEdit.extend({
 /** @class A container for a history panel that renders controls for that history (delete, copy, etc.)
  */
 var HistoryViewColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
-//TODO: extend from panel? (instead of aggregating)
+
     _logNamespace : logNamespace,
 
     tagName     : 'div',
@@ -118,7 +118,6 @@ var HistoryViewColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
     /** do the dimensions of this column overlap the given (horizontal) browser coords? */
     inView : function( viewLeft, viewRight ){
-//TODO: offset is expensive
         var columnLeft = this.$el.offset().left,
             columnRight = columnLeft + this.$el.width();
         if( columnRight < viewLeft ){ return false; }
@@ -745,7 +744,6 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     },
 
     // ------------------------------------------------------------------------ events/behaviors
-    /**  */
     events : {
         // will move to the server root (gen. Analyze data)
         'click .done.btn'           : 'close',
@@ -975,7 +973,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         });
     },
 
-    /**  */
+    /** is the middle, horizontally scrolling section scrolled fully to the right? */
     checkForEndOfScroll : function( viewport ){
         viewport = viewport || this._viewport();
         var END_PADDING = 16,

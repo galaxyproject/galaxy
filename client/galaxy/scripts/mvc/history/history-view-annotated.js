@@ -21,17 +21,12 @@ var _super = HISTORY_VIEW.HistoryView;
  *      datasets displayed in a table:
  *          datasets in left cells, dataset annotations in the right
  */
-var AnnotatedHistoryView = _super.extend(
-/** @lends AnnotatedHistoryView.prototype */{
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
+var AnnotatedHistoryView = _super.extend(/** @lends AnnotatedHistoryView.prototype */{
 
     className    : _super.prototype.className + ' annotated-history-panel',
 
     // ------------------------------------------------------------------------ panel rendering
-    /** In this override, add the history annotation
-     */
+    /** In this override, add the history annotation */
     _buildNewRender : function(){
         //TODO: shouldn't this display regardless (on all non-current panels)?
         var $newRender = _super.prototype._buildNewRender.call( this );
@@ -70,23 +65,15 @@ var AnnotatedHistoryView = _super.extend(
     /** In this override, wrap the content view in a table row
      *      with the content in the left td and annotation/extra-info in the right
      */
-    _attachItems : function( $whereTo ){
-        var self = this;
-        console.log( '_attachItems:', $whereTo.find( '> .list-items' ) );
-        console.log( '_attachItems:', $whereTo, this.$list( $whereTo ) );
-        this.$list( $whereTo ).append( this.views.map( function( view ){
-            return self._wrapViewInRow( view );
-        }));
-        return this;
-    },
 
-    _wrapViewInRow : function( view ){
+    /** override to wrap each subview in a row */
+    _renderItemView$el : function( view ){
         //TODO:?? possibly make this more flexible: instead of annotation use this._additionalInfo()
         // build a row around the dataset with the std itemView in the first cell and the annotation in the next
         var stateClass = _.find( view.el.classList, function( c ){ return ( /^state\-/ ).test( c ); });
         var annotation = view.model.get( 'annotation' ) || '';
         return $( '<tr/>' ).append([
-                $( '<td/>' ).addClass( 'contents-container' ).append( view.$el )
+                $( '<td/>' ).addClass( 'contents-container' ).append( view.render(0).$el )
                     // visually match the cell bg to the dataset at runtime (prevents the empty space)
                     // (getting bg via jq on hidden elem doesn't work on chrome/webkit - so use states)
                     //.css( 'background-color', view.$el.css( 'background-color' ) ),
@@ -95,43 +82,7 @@ var AnnotatedHistoryView = _super.extend(
             ]);
     },
 
-    /**  */
-    bulkAppendItemViews : function( collection, response, options ){
-//TODO: duplication
-        //PRECONDITION: response is an array of contguous content models
-        console.log( "bulkAppendItemViews:", collection, response, options );
-        if( !response || !response.length ){ return; }
-        var self = this;
-
-        // find where to insert the block
-        // note: don't use filteredCollection since we may be searching and the first model may not match search
-        // TODO: when Backbone > 1.1: self.collection.findIndex
-        var firstModelIndex = self.collection.models.findIndex( function( m ){
-            return m.id === response[0].type_id;
-        });
-        console.log( 'firstModelIndex:', firstModelIndex );
-
-        var $viewEls = [];
-        response.forEach( function( modelJSON ){
-            var model = self.collection.get( modelJSON.type_id );
-            if( !self._filterItem( model ) ){ return; }
-
-            var view = self._createItemView( model );
-            self.views.push( view );
-            $viewEls.push( self._wrapViewInRow( view.render( 0 ) ) );
-            // TODO: not attached *yet* actually
-            self.trigger( 'view:attached', view );
-            self.trigger( 'view:attached:rendered' );
-        });
-        if( $viewEls.length ){
-            self.$emptyMessage().hide();
-            self.$list().append( $viewEls );
-            self._insertIntoListAt( firstModelIndex, $viewEls );
-        }
-    },
-
     // ------------------------------------------------------------------------ panel events
-    /** event map */
     events : _.extend( _.clone( _super.prototype.events ), {
         // clicking on any part of the row will expand the items
         'click tr' : function( ev ){

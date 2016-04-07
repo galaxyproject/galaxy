@@ -51,7 +51,7 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
 
     className           : _super.prototype.className + ' current-history-panel',
 
-    /**  */
+    /** override to use drilldown (and not foldout) for how collections are displayed */
     HDCAViewClass       : _super.prototype.HDCAViewClass.extend({
         foldoutStyle : 'drilldown'
     }),
@@ -317,7 +317,7 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
     /** Handle drilldown close by freeing the panel and re-rendering this panel */
     _collapseDrilldownPanel : function( drilldown ){
         this.panelStack.pop();
-//TODO: MEM: free the panel
+        //TODO: MEM: free the panel
         this.render();
     },
 
@@ -367,7 +367,7 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
         });
     },
 
-//TODO: remove quota meter from panel and remove this
+    //TODO: remove quota meter from panel and remove this
     /** add listeners to an external quota meter (mvc/user/user-quotameter.js) */
     connectToQuotaMeter : function( quotaMeter ){
         if( !quotaMeter ){
@@ -386,7 +386,6 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
         return this;
     },
 
-//TODO: this seems more like a per user message than a history message; IOW, this doesn't belong here
     /** Override to preserve the quota message */
     clearMessages : function( ev ){
         var $target = !_.isUndefined( ev )?
@@ -406,7 +405,6 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
         if( $msg.is( ':hidden' ) ){ $msg.slideDown( this.fxSpeed ); }
     },
 
-//TODO: this seems more like a per user message than a history message
     /** Hide the over quota message (which happens to be in the history panel).
      */
     hideQuotaMessage : function(){
@@ -415,7 +413,8 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
     },
 
     // ........................................................................ options menu
-    /**  */
+    //TODO: remove to batch
+    /** helper that fetches using filterParams then calls save on each fetched using updateWhat as the save params */
     _filterAndUpdate : function( filterParams, updateWhat ){
         var self = this;
         return self.model.contents.fetch({ filters: filterParams })
@@ -427,7 +426,6 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
             });
     },
 
-    //TODO: remove to batch
     /** unhide any hidden datasets */
     unhideHidden : function() {
         var self = this;
@@ -438,7 +436,6 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
         return jQuery.when();
     },
 
-    //TODO: remove to batch
     /** delete any hidden datasets */
     deleteHidden : function() {
         var self = this;

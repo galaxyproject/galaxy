@@ -391,7 +391,7 @@ var HistoryViewEdit = _super.extend(
     },
 
     // ------------------------------------------------------------------------ as drop target
-    /**  */
+    /** turn all the drag and drop handlers on and add some help text above the drop area */
     dropTargetOn : function(){
         if( this.dropTarget ){ return this; }
         this.dropTarget = true;
@@ -403,7 +403,7 @@ var HistoryViewEdit = _super.extend(
             'dragleave' : _.bind( this.dragleave, this ),
             'drop'      : _.bind( this.drop, this )
         };
-//TODO: scroll to top
+
         var $dropTarget = this._renderDropTarget();
         this.$list().before([ this._renderDropTargetHelp(), $dropTarget ]);
         for( var evName in dropHandlers ){
@@ -415,32 +415,20 @@ var HistoryViewEdit = _super.extend(
         return this;
     },
 
-    /**  */
+    /** render a box to serve as a 'drop here' area on the history */
     _renderDropTarget : function(){
         this.$( '.history-drop-target' ).remove();
-        return $( '<div/>' ).addClass( 'history-drop-target' )
-            .css({
-                'height': '64px',
-                'margin': '0px 10px 10px 10px',
-                'border': '1px dashed black',
-                'border-radius' : '3px'
-            });
+        return $( '<div/>' ).addClass( 'history-drop-target' );
     },
 
-    /**  */
+    /** tell the user how it works  */
     _renderDropTargetHelp : function(){
         this.$( '.history-drop-target-help' ).remove();
         return $( '<div/>' ).addClass( 'history-drop-target-help' )
-            .css({
-                'margin'        : '10px 10px 4px 10px',
-                'color'         : 'grey',
-                'font-size'     : '80%',
-                'font-style'    : 'italic'
-            })
             .text( _l( 'Drag datasets here to copy them to the current history' ) );
     },
 
-    /**  */
+    /** shut down drag and drop event handlers and remove drop target */
     dropTargetOff : function(){
         if( !this.dropTarget ){ return this; }
         //this.log( 'dropTargetOff' );
@@ -455,7 +443,7 @@ var HistoryViewEdit = _super.extend(
         this.$( '.history-drop-target-help' ).remove();
         return this;
     },
-    /**  */
+    /** toggle the target on/off */
     dropTargetToggle : function(){
         if( this.dropTarget ){
             this.dropTargetOff();
@@ -465,26 +453,23 @@ var HistoryViewEdit = _super.extend(
         return this;
     },
 
-    /**  */
     dragenter : function( ev ){
         //console.debug( 'dragenter:', this, ev );
         ev.preventDefault();
         ev.stopPropagation();
         this.$( '.history-drop-target' ).css( 'border', '2px solid black' );
     },
-    /**  */
     dragover : function( ev ){
         ev.preventDefault();
         ev.stopPropagation();
     },
-    /**  */
     dragleave : function( ev ){
         //console.debug( 'dragleave:', this, ev );
         ev.preventDefault();
         ev.stopPropagation();
         this.$( '.history-drop-target' ).css( 'border', '1px dashed black' );
     },
-    /**  */
+    /** when (text) is dropped try to parse as json and trigger an event */
     drop : function( ev ){
         ev.preventDefault();
         //ev.stopPropagation();
@@ -504,7 +489,7 @@ var HistoryViewEdit = _super.extend(
         return false;
     },
 
-    /**  */
+    /** handler that copies data into the contents */
     dataDropped : function( data ){
         var panel = this;
         // HDA: dropping will copy it to the history

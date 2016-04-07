@@ -10,20 +10,17 @@ var logNamespace = 'history';
 /** session storage for individual history preferences */
 var HistoryPrefs = BASE_MVC.SessionStorageModel.extend(
 /** @lends HistoryPrefs.prototype */{
-//TODO:?? possibly mark as current T/F - have History.currId() (a class method) return that value
+    //TODO:?? move to user prefs?
     defaults : {
-//TODO:?? expandedIds to array?
+        //TODO:?? expandedIds to array?
         expandedIds : {},
-        //TODO:?? move to user?
         show_deleted : false,
         show_hidden  : false
-        //TODO: add scroll position?
     },
 
     /** add an hda id to the hash of expanded hdas */
     addExpanded : function( model ){
         var key = 'expandedIds';
-//TODO:?? is this right anymore?
         this.save( key, _.extend( this.get( key ), _.object([ model.id ], [ model.get( 'id' ) ]) ) );
     },
 
