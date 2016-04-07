@@ -6,6 +6,7 @@ define([
     "mvc/history/hda-li",
     "mvc/history/hdca-li",
     "mvc/user/user-model",
+    "mvc/ui/error-modal",
     "ui/fa-icon-button",
     "mvc/base-mvc",
     "utils/localization",
@@ -18,11 +19,14 @@ define([
     HDA_LI,
     HDCA_LI,
     USER,
+    ERROR_MODAL,
     faIconButton,
     BASE_MVC,
     _l
 ){
 'use strict';
+
+window.ERROR_MODAL = ERROR_MODAL;
 
 /* =============================================================================
 TODO:
@@ -462,138 +466,36 @@ var HistoryView = _super.extend(
             });
     },
 
-//TODO: break this out
     // ........................................................................ error handling
+//TODO: to mixin or base model
     /** Event handler for errors (from the panel, the history, or the history's contents)
+     *  Alternately use two strings for model and xhr to use custom message and title (respectively)
      *  @param {Model or View} model    the (Backbone) source of the error
      *  @param {XMLHTTPRequest} xhr     any ajax obj. assoc. with the error
      *  @param {Object} options         the options map commonly used with bbone ajax
-     *  @param {String} msg             optional message passed to ease error location
-     *  @param {Object} msg             optional object containing error details
      */
-    errorHandler : function( model, xhr, options, msg, details ){
-        this.error( model, xhr, options, msg, details );
-
-        // interrupted ajax
+    errorHandler : function( model, xhr, options ){
+        // interrupted ajax or no connection
         if( xhr && xhr.status === 0 && xhr.readyState === 0 ){
-            //TODO: gmail style 'retrying in Ns'
-
+            // return ERROR_MODAL.offlineErrorModal();
+            // fail silently
+            return;
+        }
+        // otherwise, leave something to report in the console
+        this.error( model, xhr, options );
+        // and feedback to a modal
+        // if sent two strings (and possibly details as 'options'), use those as message and title
+        if( _.isString( model ) && _.isString( xhr ) ){
+            var message = model;
+            var title = xhr;
+            return ERROR_MODAL.errorModal( message, title, options );
+        }
         // bad gateway
-        } else if( xhr && xhr.status === 502 ){
-            //TODO: gmail style 'retrying in Ns'
-
-        // otherwise, show an error message inside the panel
-        } else {
-            // if sentry is available, attempt to get the event id
-            var parsed = this._parseErrorMessage( model, xhr, options, msg, details );
-            // it's possible to have a triggered error before the message container is rendered - wait for it to show
-            if( !this.$messages().is( ':visible' ) ){
-                this.once( 'rendered', function(){
-                    this.displayMessage( 'error', parsed.message, parsed.details );
-                });
-            } else {
-                this.displayMessage( 'error', parsed.message, parsed.details );
-            }
+        // TODO: possibly to global handler
+        if( xhr && xhr.status === 502 ){
+            return ERROR_MODAL.badGatewayErrorModal();
         }
-    },
-
-    /** Parse an error event into an Object usable by displayMessage based on the parameters
-     *      note: see errorHandler for more info on params
-     */
-    _parseErrorMessage : function( model, xhr, options, msg, details, sentryId ){
-        //if( xhr.responseText ){
-        //    xhr.responseText = _.escape( xhr.responseText );
-        //}
-        var user = Galaxy.user,
-            // add the args (w/ some extra info) into an obj
-            parsed = {
-                message : this._bePolite( msg ),
-                details : {
-                    message : msg,
-                    raven   : ( window.Raven && _.isFunction( Raven.lastEventId) )?
-                                    ( Raven.lastEventId() ):( undefined ),
-                    agent   : navigator.userAgent,
-                    // add ajax data from Galaxy object cache
-                    url     : ( window.Galaxy )?( Galaxy.lastAjax.url ):( undefined ),
-                    data    : ( window.Galaxy )?( Galaxy.lastAjax.data ):( undefined ),
-                    options : ( xhr )?( _.omit( options, 'xhr' ) ):( options ),
-                    xhr     : xhr,
-                    source  : ( _.isFunction( model.toJSON ) )?( model.toJSON() ):( model + '' ),
-                    user    : ( user instanceof USER.User )?( user.toJSON() ):( user + '' )
-                }
-            };
-
-        // add any extra details passed in
-        _.extend( parsed.details, details || {} );
-        // fancy xhr.header parsing (--> obj)
-        if( xhr &&  _.isFunction( xhr.getAllResponseHeaders ) ){
-            var responseHeaders = xhr.getAllResponseHeaders();
-            responseHeaders = _.compact( responseHeaders.split( '\n' ) );
-            responseHeaders = _.map( responseHeaders, function( header ){
-                return header.split( ': ' );
-            });
-            parsed.details.xhr.responseHeaders = _.object( responseHeaders );
-        }
-        return parsed;
-    },
-
-    /** Modify an error message to be fancy and wear a monocle. */
-    _bePolite : function( msg ){
-        msg = msg || _l( 'An error occurred while getting updates from the server' );
-        return msg + '. ' + _l( 'Please contact a Galaxy administrator if the problem persists' ) + '.';
-    },
-
-    // ........................................................................ (error) messages
-    /** Display a message in the top of the panel.
-     *  @param {String} type    type of message ('done', 'error', 'warning')
-     *  @param {String} msg     the message to display
-     *  @param {Object or HTML} modal contents displayed when the user clicks 'details' in the message
-     */
-    displayMessage : function( type, msg, details ){
-        //precondition: msgContainer must have been rendered even if there's no model
-        var panel = this;
-        //this.log( 'displayMessage', type, msg, details );
-
-        this.scrollToTop();
-        var $msgContainer = this.$messages(),
-            $msg = $( '<div/>' ).addClass( type + 'message' ).html( msg );
-        //this.log( '  ', $msgContainer );
-
-        if( !_.isEmpty( details ) ){
-            var $detailsLink = $( '<a href="javascript:void(0)">Details</a>' )
-                .click( function(){
-                    Galaxy.modal.show( panel._messageToModalOptions( type, msg, details ) );
-                    return false;
-                });
-            $msg.append( ' ', $detailsLink );
-        }
-        return $msgContainer.append( $msg );
-    },
-
-    /** convert msg and details into modal options usable by Galaxy.modal */
-    _messageToModalOptions : function( type, msg, details ){
-        // only error is fleshed out here
-        var panel = this,
-            options = { title: 'Details' };
-        if( _.isObject( details ) ){
-
-            details = _.omit( details, _.functions( details ) );
-            var text = JSON.stringify( details, null, '  ' ),
-                pre = $( '<pre/>' ).text( text );
-            options.body = $( '<div/>' ).append( pre );
-
-        } else {
-            options.body = $( '<div/>' ).html( details );
-        }
-
-        options.buttons = {
-            'Ok': function(){
-                Galaxy.modal.hide();
-                panel.clearMessages();
-            }
-            //TODO: if( type === 'error' ){ options.buttons[ 'Report this error' ] = function(){} }
-        };
-        return options;
+        return ERROR_MODAL.ajaxErrorModal( model, xhr, options );
     },
 
     /** Remove all messages from the panel. */
@@ -637,21 +539,21 @@ HistoryView.prototype.templates = (function(){
 
             '<div class="actions"></div>',
 
-            '<div class="messages">',
-                '<% if( history.deleted && history.purged ){ %>',
-                    '<div class="deleted-msg warningmessagesmall">',
-                        _l( 'This history has been purged and deleted' ),
-                    '</div>',
-                '<% } else if( history.deleted ){ %>',
-                    '<div class="deleted-msg warningmessagesmall">',
-                        _l( 'This history has been deleted' ),
-                    '</div>',
-                '<% } else if( history.purged ){ %>',
-                    '<div class="deleted-msg warningmessagesmall">',
-                        _l( 'This history has been purged' ),
-                    '</div>',
-                '<% } %>',
+            '<% if( history.deleted && history.purged ){ %>',
+                '<div class="deleted-msg warningmessagesmall">',
+                    _l( 'This history has been purged and deleted' ),
+                '</div>',
+            '<% } else if( history.deleted ){ %>',
+                '<div class="deleted-msg warningmessagesmall">',
+                    _l( 'This history has been deleted' ),
+                '</div>',
+            '<% } else if( history.purged ){ %>',
+                '<div class="deleted-msg warningmessagesmall">',
+                    _l( 'This history has been purged' ),
+                '</div>',
+            '<% } %>',
 
+            '<div class="messages">',
                 '<% if( history.message ){ %>',
                     // should already be localized
                     '<div class="<%= history.message.level || "info" %>messagesmall">',

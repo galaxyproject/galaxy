@@ -1,7 +1,8 @@
 define([
     "mvc/ui/ui-modal",
+    "mvc/ui/error-modal",
     "utils/localization"
-], function( MODAL, _l ){
+], function( MODAL, ERROR_MODAL, _l ){
 
 'use strict';
 
@@ -17,7 +18,7 @@ var CopyDialog = {
     defaultName     : _.template( "Copy of '<%- name %>'" ),
     title           : _.template( _l( 'Copying history' ) + ' "<%- name %>"' ),
     submitLabel     : _l( 'Copy' ),
-    errorMessage    : _l( 'History could not be copied' ),
+    errorMessage    : _l( 'History could not be copied.' ),
     progressive     : _l( 'Copying history' ),
     activeLabel     : _l( 'Copy only the active, non-deleted datasets' ),
     allLabel        : _l( 'Copy all datasets including deleted ones' ),
@@ -101,12 +102,12 @@ var CopyDialog = {
                 .done( function( response ){
                     deferred.resolve( response );
                 })
-                //TODO: make this unneccessary with pub-sub error or handling via Galaxy
-                .fail( function(){
-                    alert([ dialog.errorMessage, _l( 'Please contact a Galaxy administrator' ) ].join( '. ' ));
+                .fail( function( xhr, status, message ){
+                    var options = { name: name, copyAllDatasets: copyAllDatasets };
+                    ERROR_MODAL.ajaxErrorModal( history, xhr, options, dialog.errorMessage );
                     deferred.rejectWith( deferred, arguments );
                 })
-                .always( function(){
+                .done( function(){
                     if( autoClose ){ modal.hide(); }
                 });
         }
@@ -161,7 +162,7 @@ var ImportDialog = _.extend( {}, CopyDialog, {
     defaultName     : _.template( "imported: <%- name %>" ),
     title           : _.template( _l( 'Importing history' ) + ' "<%- name %>"' ),
     submitLabel     : _l( 'Import' ),
-    errorMessage    : _l( 'History could not be imported' ),
+    errorMessage    : _l( 'History could not be imported.' ),
     progressive     : _l( 'Importing history' ),
     activeLabel     : _l( 'Import only the active, non-deleted datasets' ),
     allLabel        : _l( 'Import all datasets including deleted ones' ),

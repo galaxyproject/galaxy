@@ -2,11 +2,12 @@ define([
     "mvc/history/history-model",
     "mvc/history/history-view-edit",
     "mvc/history/copy-dialog",
+    "mvc/ui/error-modal",
     "mvc/base-mvc",
     "utils/ajax-queue",
     "ui/mode-button",
     "ui/search-input"
-], function( HISTORY_MODEL, HISTORY_VIEW_EDIT, historyCopyDialog, baseMVC, ajaxQueue ){
+], function( HISTORY_MODEL, HISTORY_VIEW_EDIT, historyCopyDialog, ERROR_MODAL, baseMVC, ajaxQueue ){
 
 'use strict';
 
@@ -190,33 +191,18 @@ var HistoryViewColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         'click .delete-history' : function(){
             var column = this;
             this.model._delete()
-                .fail( function( xhr, status, error ){
-                    alert( _l( 'Could not delete the history' ) + ':\n' + error );
-                })
-                .done( function( data ){
-                    column.render();
-                });
+                .done( function( data ){ column.render(); });
         },
         'click .undelete-history' : function(){
             var column = this;
             this.model.undelete()
-                .fail( function( xhr, status, error ){
-                    alert( _l( 'Could not undelete the history' ) + ':\n' + error );
-                })
-                .done( function( data ){
-                    column.render();
-                });
+                .done( function( data ){ column.render(); });
         },
         'click .purge-history' : function(){
             if( confirm( _l( 'This will permanently remove the data. Are you sure?' ) ) ){
                 var column = this;
                 this.model.purge()
-                    .fail( function( xhr, status, error ){
-                        alert( _l( 'Could not purge the history' ) + ':\n' + error );
-                    })
-                    .done( function( data ){
-                        column.render();
-                    });
+                    .done( function( data ){ column.render(); });
             }
         },
         // will copy this history and make the copy the current history
@@ -382,7 +368,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         var multipanel = this;
         multipanel.listenTo( multipanel.collection, {
             // handle ajax errors from the collection
-            'error'                         : multipanel._ajaxErrorHandler,
+            'error'                         : multipanel.errorHandler,
             // add multiple models
             'add'                           : multipanel.addModels,
             // when all the histories a user has have been fetched
@@ -451,15 +437,41 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
        }
     },
 
+    // ........................................................................ error handling
+    /** Event handler for errors (from the history collection mainly)
+     *  Alternately use two strings for model and xhr to use custom message and title (respectively)
+     *  (e.g. this.trigger( 'error', 'Heres a message', 'Heres a title' ))
+     *  @param {Model or View} model    the (Backbone) source of the error
+     *  @param {XMLHTTPRequest} xhr     any ajax obj. assoc. with the error
+     *  @param {Object} options         the options map commonly used with bbone ajax
+     */
+    errorHandler : function( model, xhr, options ){
+        // interrupted ajax or no connection
+        if( xhr && xhr.status === 0 && xhr.readyState === 0 ){
+            // return ERROR_MODAL.offlineErrorModal();
+            // fail silently
+            return;
+        }
+        // otherwise, leave something to report in the console
+        this.error( model, xhr, options );
+        // and feedback to a modal
+        // if sent two strings (and possibly details as 'options'), use those as message and title
+        if( _.isString( model ) && _.isString( xhr ) ){
+            var message = model;
+            var title = xhr;
+            return ERROR_MODAL.errorModal( message, title, options );
+        }
+        // bad gateway
+        // TODO: possibly to global handler
+        if( xhr && xhr.status === 502 ){
+            return ERROR_MODAL.badGatewayErrorModal();
+        }
+        return ERROR_MODAL.ajaxErrorModal( model, xhr, options );
+    },
+
     /** If Galaxy object is available handle error there, otherwise, locally (and crudely) */
     _ajaxErrorHandler : function(){
-        var errArgs = _.toArray( arguments );
-        if( window.Galaxy && Galaxy.handleErrors ){
-            Galaxy.handleErrors.apply( Galaxy, errArgs );
-        } else {
-            alert( _l( 'There was a problem getting data from the server' ) );
-            console.error( errArgs[0].responseText );
-        }
+        ERROR_MODAL.ajaxErrorModal.apply( null, _.toArray( arguments ) );
     },
 
     /** create a new history and set it to current */

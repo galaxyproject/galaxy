@@ -98,7 +98,7 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
     /** loads a history & contents w/ details and makes them the current history */
     switchToHistory : function( historyId, attributes ){
         if( Galaxy.user.isAnonymous() ){
-            this.trigger( 'error', _l( 'You must be logged in to switch histories' ) );
+            this.trigger( 'error', _l( 'You must be logged in to switch histories' ), _l( 'Anonymous user' ) );
             return $.when();
         }
         return this.loadHistory( historyId, { url : Galaxy.root + 'history/set_as_current?id=' + historyId });
@@ -107,7 +107,7 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
     /** creates a new history on the server and sets it as the user's current history */
     createNewHistory : function( attributes ){
         if( Galaxy.user.isAnonymous() ){
-            this.trigger( 'error', _l( 'You must be logged in to create histories' ) );
+            this.trigger( 'error', _l( 'You must be logged in to create histories' ), _l( 'Anonymous user' )  );
             return $.when();
         }
         return this.loadHistory( null, { url : Galaxy.root + 'history/create_new_current' });
@@ -423,7 +423,7 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
                 // TODO: could probably re-use the response json from the fetch here
                 var hidden = self.model.contents.hidden();
                 hidden.ajaxQueue( Backbone.Model.prototype.save, updateWhat )
-                    .done( function(){ console.log( 'rendering' ); Galaxy.currHistoryPanel.renderItems(); });
+                    .done( function(){ Galaxy.currHistoryPanel.renderItems(); });
             });
     },
 
