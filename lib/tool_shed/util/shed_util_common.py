@@ -1150,12 +1150,14 @@ def open_repository_files_folder( app, folder_path, repository_id, is_admin=Fals
 
 
 def is_path_browsable( app, path, repository_id, is_admin=False ):
-    allowed = False
+    """
+    Detects whether the given path is browsable i.e. is within the
+    allowed repository folders. Admins can additionaly browse folders
+    with tool dependencies.
+    """
     if is_admin and is_path_within_dependency_dir( app, path ):
-        allowed = True
-    if not allowed:
-        allowed = is_path_within_repo( app, path, repository_id)
-    return allowed
+        return True
+    return is_path_within_repo( app, path, repository_id)
 
 
 def is_path_within_repo( app, path, repository_id ):
