@@ -44,7 +44,6 @@ def handle_outputs(job_directory=None):
                     secondary_file_path,
                     extra_target,
                 )
-                print extra_target
         else:
             with open(target_path, "w") as f:
                 f.write(json.dumps(output))
