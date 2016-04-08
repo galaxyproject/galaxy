@@ -4,7 +4,7 @@ import ConfigParser
 import os
 import sys
 
-sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir ) )
+sys.path.insert( 1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir, 'lib' ) )
 
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
@@ -69,7 +69,7 @@ def check_db( config_parser ):
 
 
 def admin_user_info( ):
-    user_info_config = os.path.abspath( os.path.join( os.getcwd(), 'lib/tool_shed/scripts/bootstrap_tool_shed', 'user_info.xml' ) )
+    user_info_config = os.path.abspath( os.path.join( os.getcwd(), 'scripts/tool_shed/bootstrap_tool_shed', 'user_info.xml' ) )
     tree, error_message = xml_util.parse_xml( user_info_config )
     username = None
     email = None

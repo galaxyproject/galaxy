@@ -23,9 +23,8 @@ Here is a working example of how to use this script.
 import argparse
 import os
 import sys
-import urllib
 
-sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir ) )
+sys.path.insert( 1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir, 'lib' ) )
 from galaxy.util import asbool
 from tool_shed.util import hg_util
 
@@ -44,14 +43,14 @@ def main( options ):
     test_install_error = str( options.test_install_error )
     tools_functionally_correct = str( options.tools_functionally_correct )
     parts = [ 'repository_revisions' ]
-    params = urllib.urlencode( dict( do_not_test=do_not_test,
-                                     downloadable=downloadable,
-                                     includes_tools=includes_tools,
-                                     malicious=malicious,
-                                     missing_test_components=missing_test_components,
-                                     skip_tool_test=skip_tool_test,
-                                     test_install_error=test_install_error,
-                                     tools_functionally_correct=tools_functionally_correct ) )
+    params = dict( do_not_test=do_not_test,
+                   downloadable=downloadable,
+                   includes_tools=includes_tools,
+                   malicious=malicious,
+                   missing_test_components=missing_test_components,
+                   skip_tool_test=skip_tool_test,
+                   test_install_error=test_install_error,
+                   tools_functionally_correct=tools_functionally_correct )
     api_url = get_api_url( base=base_tool_shed_url, parts=parts, params=params )
     baseline_repository_dicts, error_message = json_from_url( api_url )
     if baseline_repository_dicts is None or error_message:

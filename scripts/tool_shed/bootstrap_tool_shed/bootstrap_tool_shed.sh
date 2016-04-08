@@ -11,15 +11,15 @@ stop_err() {
 	exit 1
 }
 
-tool_shed=`./lib/tool_shed/scripts/bootstrap_tool_shed/parse_run_sh_args.sh $@`
+tool_shed=`./scripts/tool_shed/bootstrap_tool_shed/parse_run_sh_args.sh $@`
 
 if [ $? -ne 0 ] ; then
 	exit 0
 fi
 
-log_file="lib/tool_shed/scripts/bootstrap_tool_shed/bootstrap.log"
+log_file="scripts/tool_shed/bootstrap_tool_shed/bootstrap.log"
 
-database_result=`python ./lib/tool_shed/scripts/bootstrap_tool_shed/bootstrap_util.py --execute check_db --config_file ${TOOL_SHED_CONFIG_FILE}`
+database_result=`python ./scripts/tool_shed/bootstrap_tool_shed/bootstrap_util.py --execute check_db --config_file ${TOOL_SHED_CONFIG_FILE}`
 
 if [ $? -ne 0 ] ; then
 	stop_err "Unable to bootstrap tool shed. $database_result"
@@ -36,8 +36,8 @@ else
 fi
 
 if [ $? -eq 0 ] ; then
-	user_auth=`python ./lib/tool_shed/scripts/bootstrap_tool_shed/bootstrap_util.py --execute admin_user_info --config_file ${TOOL_SHED_CONFIG_FILE}`
-	local_shed_url=`python ./lib/tool_shed/scripts/bootstrap_tool_shed/bootstrap_util.py --execute get_url --config_file ${TOOL_SHED_CONFIG_FILE}`
+	user_auth=`python ./scripts/tool_shed/bootstrap_tool_shed/bootstrap_util.py --execute admin_user_info --config_file ${TOOL_SHED_CONFIG_FILE}`
+	local_shed_url=`python ./scripts/tool_shed/bootstrap_tool_shed/bootstrap_util.py --execute get_url --config_file ${TOOL_SHED_CONFIG_FILE}`
 fi
 
 admin_user_name=`echo $user_auth | awk 'BEGIN { FS="__SEP__" } ; { print \$1 }'`
@@ -46,7 +46,7 @@ admin_user_password=`echo $user_auth | awk 'BEGIN { FS="__SEP__" } ; { print \$3
 
 echo -n "Creating user '$admin_user_name' with email address '$admin_user_email'..."
 
-python ./lib/tool_shed/scripts/bootstrap_tool_shed/create_user_with_api_key.py -c ${TOOL_SHED_CONFIG_FILE} >> $log_file
+python ./scripts/tool_shed/bootstrap_tool_shed/create_user_with_api_key.py -c ${TOOL_SHED_CONFIG_FILE} >> $log_file
 
 echo " done."
 
@@ -94,10 +94,10 @@ echo " done."
 
 if [ $? -eq 0 ] ; then
 	echo -n "Creating users... "
-	python lib/tool_shed/scripts/api/create_users.py -a $api_key -f $tool_shed -t $local_shed_url >> $log_file
+	python scripts/tool_shed/api/create_users.py -a $api_key -f $tool_shed -t $local_shed_url >> $log_file
 	echo "done."
 	echo -n "Creating categories... "
-	python lib/tool_shed/scripts/api/create_categories.py -a $api_key -f $tool_shed -t $local_shed_url >> $log_file
+	python scripts/tool_shed/api/create_categories.py -a $api_key -f $tool_shed -t $local_shed_url >> $log_file
 	echo "done."
 else
 	stop_err "Error getting API key from local tool shed."
