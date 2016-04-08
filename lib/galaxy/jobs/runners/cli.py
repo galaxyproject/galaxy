@@ -17,6 +17,7 @@ __all__ = [ 'ShellJobRunner' ]
 
 DEFAULT_EMBED_METADATA_IN_JOB = True
 
+
 class ShellJobRunner( AsynchronousJobRunner ):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
@@ -53,7 +54,7 @@ class ShellJobRunner( AsynchronousJobRunner ):
         """Create job script and submit it to the DRM"""
         # prepare the job
         include_metadata = asbool( job_wrapper.job_destination.params.get( "embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB ) )
-        if not self.prepare_job( job_wrapper, include_metadata=include_metadata):
+        if not self.prepare_job( job_wrapper, include_metadata=include_metadata ):
              return
 
         # Get shell and job execution interface
