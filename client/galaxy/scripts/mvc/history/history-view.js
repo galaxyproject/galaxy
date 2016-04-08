@@ -108,75 +108,6 @@ var HistoryView = _super.extend(
         // this.on( 'all', function(){ console.debug( arguments ); });
     },
 
-    // ------------------------------------------------------------------------ inf. scrolling
-    /** @type {Number} ms to debounce scroll handler for infinite scrolling */
-    INFINITE_SCROLL_DEBOUNCE_MS : 40,
-    /** @type {Number} number of px (or less) from the bottom the scrollbar should be before fetching */
-    INFINITE_SCROLL_FETCH_THRESHOLD_PX : 128,
-
-    /** override to track the scroll container for this view */
-    _setUpBehaviors : function( $where ){
-        var self = this,
-            $newRender = _super.prototype._setUpBehaviors.call( this, $where );
-        // this needs to be handled outside the events hash since we're accessing the scollContainer
-        // (rebind and debounce the method so we can cache for any later removal)
-        self.scrollHandler = _.debounce( _.bind( this.scrollHandler, self ), self.INFINITE_SCROLL_DEBOUNCE_MS );
-        self.$scrollContainer( $where ).on( 'scroll', self.scrollHandler );
-        return self;
-    },
-
-    /** when the view is scrolled, check how close the scroll is to the bottom, then fetch more if close to ending */
-    scrollHandler : function( ev ){
-        var self = this;
-        var pxToBottom = self._scrollDistanceToBottom();
-
-        // if the scrollbar is past the trigger point, we're not already fetching,
-        // AND we're not displaying some panel OVER this one: fetch more contents
-        // note: is( :visible ) won't work here - it's still visible when this is covered with other panels
-        if( pxToBottom < self.INFINITE_SCROLL_FETCH_THRESHOLD_PX && !self._fetching && _.isEmpty( self.panelStack ) ){
-            self.listenToOnce( self.model.contents, 'sync', self.bulkAppendItemViews );
-            // TODO: gotta be a better way than a _fetching flag
-            self._fetching = true;
-            self.model.contents.fetchMore({ silent : true, useSync: true })
-                .always( function(){ delete self._fetching; });
-        }
-    },
-
-    /** return the number of px the scrollbar has until it bottoms out */
-    _scrollDistanceToBottom : function(){
-        var $container = this.$scrollContainer();
-        var pxToBottom = this.$el.outerHeight() - ( $container.scrollTop() + $container.innerHeight() );
-        return pxToBottom;
-    },
-
-    /** show the user that the contents are loading/contacting the server */
-    showContentsLoadingIndicator : function( speed ){
-        speed = _.isNumber( speed )? speed : this.fxSpeed;
-        if( this.$emptyMessage().is( ':visible' ) ){
-            this.$emptyMessage().hide();
-        }
-        // look for an existing indicator and stop all animations on it, otherwise make one
-        var $indicator = this.$( '.contents-loading-indicator' );
-        if( $indicator.size() ){
-            return $indicator.clearQueue().stop();
-        }
-
-        // move it to the bottom and fade it in
-        // $indicator = $( '<div class="contents-loading-indicator">' + _l( 'Loading...' ) + '</div>' ).hide();
-        $indicator = $( '<div class="contents-loading-indicator"><span class="fa fa-2x fa-spin fa-spinner"></span></div>' ).hide();
-        return $indicator
-            .insertAfter( this.$( '> .list-items' ) )
-            .slideDown( speed );
-    },
-
-    /** show the user we're done loading */
-    hideContentsLoadingIndicator : function( speed ){
-        speed = _.isNumber( speed )? speed : this.fxSpeed;
-        this.$( '> .contents-loading-indicator' ).hide({ duration: 0, complete: function _complete(){
-            $( this ).remove();
-        }});
-    },
-
     // ------------------------------------------------------------------------ loading history/hda models
     /** load the history with the given id then it's contents, sending ajax options to both */
     loadHistory : function( historyId, options, contentsOptions ){
@@ -375,6 +306,75 @@ var HistoryView = _super.extend(
         return collection;
     },
 
+    // ------------------------------------------------------------------------ inf. scrolling
+    /** @type {Number} ms to debounce scroll handler for infinite scrolling */
+    INFINITE_SCROLL_DEBOUNCE_MS : 40,
+    /** @type {Number} number of px (or less) from the bottom the scrollbar should be before fetching */
+    INFINITE_SCROLL_FETCH_THRESHOLD_PX : 128,
+
+    /** override to track the scroll container for this view */
+    _setUpBehaviors : function( $where ){
+        var self = this,
+            $newRender = _super.prototype._setUpBehaviors.call( this, $where );
+        // this needs to be handled outside the events hash since we're accessing the scollContainer
+        // (rebind and debounce the method so we can cache for any later removal)
+        self.scrollHandler = _.debounce( _.bind( this.scrollHandler, self ), self.INFINITE_SCROLL_DEBOUNCE_MS );
+        self.$scrollContainer( $where ).on( 'scroll', self.scrollHandler );
+        return self;
+    },
+
+    /** when the view is scrolled, check how close the scroll is to the bottom, then fetch more if close to ending */
+    scrollHandler : function( ev ){
+        var self = this;
+        var pxToBottom = self._scrollDistanceToBottom();
+
+        // if the scrollbar is past the trigger point, we're not already fetching,
+        // AND we're not displaying some panel OVER this one: fetch more contents
+        // note: is( :visible ) won't work here - it's still visible when this is covered with other panels
+        if( pxToBottom < self.INFINITE_SCROLL_FETCH_THRESHOLD_PX && !self._fetching && _.isEmpty( self.panelStack ) ){
+            self.listenToOnce( self.model.contents, 'sync', self.bulkAppendItemViews );
+            // TODO: gotta be a better way than a _fetching flag
+            self._fetching = true;
+            self.model.contents.fetchMore({ silent : true, useSync: true })
+                .always( function(){ delete self._fetching; });
+        }
+    },
+
+    /** return the number of px the scrollbar has until it bottoms out */
+    _scrollDistanceToBottom : function(){
+        var $container = this.$scrollContainer();
+        var pxToBottom = this.$el.outerHeight() - ( $container.scrollTop() + $container.innerHeight() );
+        return pxToBottom;
+    },
+
+    /** show the user that the contents are loading/contacting the server */
+    showContentsLoadingIndicator : function( speed ){
+        speed = _.isNumber( speed )? speed : this.fxSpeed;
+        if( this.$emptyMessage().is( ':visible' ) ){
+            this.$emptyMessage().hide();
+        }
+        // look for an existing indicator and stop all animations on it, otherwise make one
+        var $indicator = this.$( '.contents-loading-indicator' );
+        if( $indicator.size() ){
+            return $indicator.clearQueue().stop();
+        }
+
+        // move it to the bottom and fade it in
+        // $indicator = $( '<div class="contents-loading-indicator">' + _l( 'Loading...' ) + '</div>' ).hide();
+        $indicator = $( this.templates.contentsLoadingIndicator( {}, this )).hide();
+        return $indicator
+            .insertAfter( this.$( '> .list-items' ) )
+            .slideDown( speed );
+    },
+
+    /** show the user we're done loading */
+    hideContentsLoadingIndicator : function( speed ){
+        speed = _.isNumber( speed )? speed : this.fxSpeed;
+        this.$( '> .contents-loading-indicator' ).hide({ duration: 0, complete: function _complete(){
+            $( this ).remove();
+        }});
+    },
+
     // ------------------------------------------------------------------------ panel events
     /** event map */
     events : _.extend( _.clone( _super.prototype.events ), {
@@ -399,8 +399,8 @@ var HistoryView = _super.extend(
         if( store ){ self.storage.set( 'show_deleted', show ); }
 
         // this seems brittle or at least not cohesive with the other non-hid approaches
-        var lastHid = self.collection.last().get( 'hid' );
-        console.log( 'lastHid:', lastHid );
+        var last = self.collection.last();
+        var lastHid = last? last.get( 'hid' ) : 0;
         var fetch = jQuery.when();
         if( show ){
             fetch = self.model.contents.fetchDeleted({
@@ -444,7 +444,7 @@ var HistoryView = _super.extend(
             inputSelector = '> .controls .search-input';
         this.log( 'onFirstSearch', searchFor );
 
-        console.log( '_firstSearch:', self.model.contents.haveDetails() );
+        // console.log( '_firstSearch:', self.model.contents.haveDetails() );
         if( self.model.contents.haveDetails() ){
             self.searchItems( searchFor );
             return;
@@ -582,8 +582,15 @@ HistoryView.prototype.templates = (function(){
         '</div>'
     ], 'history' );
 
+    var contentsLoadingIndicatorTemplate = BASE_MVC.wrapTemplate([
+        '<div class="contents-loading-indicator">',
+            '<span class="fa fa-2x fa-spin fa-spinner">',
+        '</span></div>'
+    ], 'history' );
+
     return _.extend( _.clone( _super.prototype.templates ), {
-        controls : controlsTemplate
+        controls                : controlsTemplate,
+        contentsLoadingIndicator: contentsLoadingIndicatorTemplate
     });
 }());
 

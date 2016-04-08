@@ -235,7 +235,6 @@ var PaginatedCollection = ControlledFetchCollection.extend({
         //TODO?: this doesn't work?
         options.filters = {};
         return self.fetch( options ).done( function( fetchData ){
-            console.log( 'triggering:...' );
             self.allFetched = true;
             self.trigger( 'all-fetched', self );
         });

@@ -386,7 +386,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     },
 
     _postFetchAll : function( fetchData ){
-        console.log( '_postFetchAll' );
+        // console.log( '_postFetchAll' );
         this.$( '.histories-loading-indicator' ).remove();
         // when new histories is fetched and the indicator is not required,
         // the panel will jump slightly left - totally aesthetic but jarring

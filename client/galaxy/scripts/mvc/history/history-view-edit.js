@@ -110,19 +110,19 @@ var HistoryViewEdit = _super.extend(
     _setUpCollectionListeners : function(){
         _super.prototype._setUpCollectionListeners.call( this );
         this.listenTo( this.collection, {
-            'change:deleted': this._handleHdaDeletionChange,
-            'change:visible': this._handleHdaVisibleChange,
+            'change:deleted': this._handleItemDeletionChange,
+            'change:visible': this._handleItemVisibleChange,
             'change:purged' : function( model ){
                 // hafta get the new nice-size w/o the purged model
                 this.model.fetch();
             },
             // loading indicators for deleted/hidden
             'fetching-deleted'      : function( collection ){
-                this.$( '> .controls .toggle-deleted-link' ).parent()
+                this.$( '> .controls .deleted-count' )
                     .html( '<i>' + _l( 'loading deleted...' ) + '</i>' );
             },
             'fetching-hidden'       : function( collection ){
-                this.$( '> .controls .toggle-hidden-link' ).parent()
+                this.$( '> .controls .hidden-count' )
                     .html( '<i>' + _l( 'loading hidden...' ) + '</i>' );
             },
             'fetching-deleted-done fetching-hidden-done'  : this._renderCounts,
@@ -315,21 +315,22 @@ var HistoryViewEdit = _super.extend(
     /** If this item is deleted and we're not showing deleted items, remove the view
      *  @param {Model} the item model to check
      */
-    _handleHdaDeletionChange : function( itemModel ){
+    _handleItemDeletionChange : function( itemModel ){
+        // console.log( '_handleItemDeletionChange:', contentsShown, itemModel.get( 'deleted' ), this.showDeleted );
         var contentsShown = this.model.get( 'contents_shown' );
         if( itemModel.get( 'deleted' ) ){
             contentsShown.deleted += 1;
             if( !this.showDeleted ){
                 this.removeItemView( itemModel );
-            } else {
-                contentsShown.shown -= 1;
             }
+            contentsShown.shown -= 1;
         } else {
             contentsShown.deleted -= 1;
             if( !this.showDeleted ){
                 contentsShown.shown -= 1;
             }
         }
+        // console.log( 'contentsShown:', contentsShown.shown, contentsShown.deleted );
         this.model.set( 'contents_shown', contentsShown );
         this._renderCounts();
     },
@@ -337,16 +338,15 @@ var HistoryViewEdit = _super.extend(
     /** If this item is hidden and we're not showing hidden items, remove the view
      *  @param {Model} the item model to check
      */
-    _handleHdaVisibleChange : function( itemModel ){
+    _handleItemVisibleChange : function( itemModel ){
         var contentsShown = this.model.get( 'contents_shown' );
         // console.log( '_handleHdaVisibleChange:', contentsShown, itemModel.hidden(), this.showHidden );
         if( itemModel.hidden() ){
             contentsShown.hidden += 1;
             if( !this.showHidden ){
                 this.removeItemView( itemModel );
-            } else {
-                contentsShown.shown -= 1;
             }
+            contentsShown.shown -= 1;
         } else {
             contentsShown.hidden -= 1;
             if( !this.showHidden ){
@@ -511,32 +511,40 @@ HistoryViewEdit.prototype.templates = (function(){
 
     var countsTemplate = BASE_MVC.wrapTemplate([
         '<% var shown = Math.max( view.views.length, history.contents_shown.shown ) %>',
-        '<% if( shown ){ %><%- shown %> ', _l( 'shown' ), '<% } %>',
+        '<% if( shown ){ %>',
+            '<span class="shown-count">',
+                '<%- shown %> ', _l( 'shown' ),
+            '</span>',
+        '<% } %>',
+
         '<% if( history.contents_shown.deleted ){ %>',
+            '<span class="deleted-count">',
             '<% if( view.showDeleted ){ %>',
-                ', <a class="toggle-deleted-link" href="javascript:void(0);">',
+                '<a class="toggle-deleted-link" href="javascript:void(0);">',
                     _l( 'hide deleted' ),
                 '</a>',
             '<% } else { %>',
-                ', <%- history.contents_shown.deleted %> <a class="toggle-deleted-link" href="javascript:void(0);">',
+                '<%- history.contents_shown.deleted %> ',
+                '<a class="toggle-deleted-link" href="javascript:void(0);">',
                     _l( 'deleted' ),
                 '</a>',
             '<% } %>',
-        '<% } else { %>',
-            '<span class="toggle-deleted-link"></span>',
+            '</span>',
         '<% } %>',
+
         '<% if( history.contents_shown.hidden ){ %>',
+            '<span class="hidden-count">',
             '<% if( view.showHidden ){ %>',
-                ', <a class="toggle-hidden-link" href="javascript:void(0);">',
+                '<a class="toggle-hidden-link" href="javascript:void(0);">',
                     _l( 'hide hidden' ),
                 '</a>',
             '<% } else { %>',
-                ', <%- history.contents_shown.hidden %> <a class="toggle-hidden-link" href="javascript:void(0);">',
+                '<%- history.contents_shown.hidden %> ',
+                '<a class="toggle-hidden-link" href="javascript:void(0);">',
                     _l( 'hidden' ),
                 '</a>',
             '<% } %>',
-        '<% } else { %>',
-            '<span class="toggle-hidden-link"></span>',
+            '</span>',
         '<% } %>',
     ], 'history' );
 
