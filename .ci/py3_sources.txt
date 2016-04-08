@@ -1,5 +1,6 @@
 lib/galaxy/util/
 lib/galaxy/jobs/runners/util/
+lib/galaxy/tools/cwl/
 lib/galaxy/tools/parser/
 lib/galaxy/tools/lint.py
 lib/galaxy/tools/lint_util.py
