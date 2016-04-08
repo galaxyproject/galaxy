@@ -126,13 +126,10 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         log.info( "Parsing the tool configuration %s" % config_filename )
         tool_conf_source = get_toolbox_parser(config_filename)
         tool_path = tool_conf_source.parse_tool_path()
-        if tool_path:
-            # We're parsing a shed_tool_conf file since we have a tool_path attribute.
-            parsing_shed_tool_conf = True
+        parsing_shed_tool_conf = tool_conf_source.is_shed_tool_conf()
+        if parsing_shed_tool_conf:
             # Keep an in-memory list of xml elements to enable persistence of the changing tool config.
             config_elems = []
-        else:
-            parsing_shed_tool_conf = False
         tool_path = self.__resolve_tool_path(tool_path, config_filename)
         # Only load the panel_dict under certain conditions.
         load_panel_dict = not self._integrated_tool_panel_config_has_contents
@@ -176,7 +173,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         elif item_type == 'workflow':
             self._load_workflow_tag_set( item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, load_panel_dict=load_panel_dict, index=index )
         elif item_type == 'section':
-            self._load_section_tag_set( item, tool_path=tool_path, load_panel_dict=load_panel_dict, index=index )
+            self._load_section_tag_set( item, tool_path=tool_path, load_panel_dict=load_panel_dict, index=index, internal=internal )
         elif item_type == 'label':
             self._load_label_tag_set( item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, load_panel_dict=load_panel_dict, index=index )
         elif item_type == 'tool_dir':
@@ -403,6 +400,8 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             # exact tool id match not found, or all versions requested, search for other options, e.g. migrated tools or different versions
             rval = []
             tool_lineage = self._lineage_map.get( tool_id )
+            if not tool_lineage:
+                tool_lineage = self._lineage_map.get_versionless( tool_id )
             if tool_lineage:
                 lineage_tool_versions = tool_lineage.get_versions( )
                 for lineage_tool_version in lineage_tool_versions:
@@ -558,20 +557,22 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     # Backward compatibility issue - the tag used to be named 'changeset_revision'.
                     installed_changeset_revision_elem = item.elem.find( "changeset_revision" )
                 installed_changeset_revision = installed_changeset_revision_elem.text
-                try:
-                    splitted_path = path.split('/')
-                    assert splitted_path[0] == tool_shed
-                    assert splitted_path[2] == repository_owner
-                    assert splitted_path[3] == repository_name
-                    if splitted_path[4] != installed_changeset_revision:
-                        # This can happen if the Tool Shed repository has been
-                        # updated to a new revision and the installed_changeset_revision
-                        # element in shed_tool_conf.xml file has been updated too
-                        log.debug("The installed_changeset_revision for tool %s is %s, using %s instead", path, installed_changeset_revision, splitted_path[4])
-                        installed_changeset_revision = splitted_path[4]
-                except Exception as e:
-                    log.debug("Error while loading tool %s : %s", path, e)
-                    pass
+                if "/repos/" in path:  # The only time "/repos/" should not be in path is during testing!
+                    try:
+                        tool_shed_path, reduced_path = path.split('/repos/', 1)
+                        splitted_path = reduced_path.split('/')
+                        assert tool_shed_path == tool_shed
+                        assert splitted_path[0] == repository_owner
+                        assert splitted_path[1] == repository_name
+                        if splitted_path[2] != installed_changeset_revision:
+                            # This can happen if the Tool Shed repository has been
+                            # updated to a new revision and the installed_changeset_revision
+                            # element in shed_tool_conf.xml file has been updated too
+                            log.debug("The installed_changeset_revision for tool %s is %s, using %s instead", path, installed_changeset_revision, splitted_path[2])
+                            installed_changeset_revision = splitted_path[2]
+                    except AssertionError:
+                        log.debug("Error while loading tool %s", path)
+                        pass
                 tool_shed_repository = self._get_tool_shed_repository( tool_shed,
                                                                        repository_name,
                                                                        repository_owner,
@@ -614,8 +615,8 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             log.exception( "Error reading tool from path: %s" % path )
 
     def _get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
-        # Abstract class does't have a dependency on the database, for full tool shed
-        # support the actual Galaxy ToolBox implement this method and return a ToolShd repository.
+        # Abstract class doesn't have a dependency on the database, for full Tool Shed
+        # support the actual Galaxy ToolBox implements this method and returns a Tool Shed repository.
         return None
 
     def __add_tool( self, tool, load_panel_dict, panel_dict ):
@@ -652,7 +653,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             panel_dict[ key ] = label
         integrated_panel_dict.update_or_append( index, key, label )
 
-    def _load_section_tag_set( self, item, tool_path, load_panel_dict, index=None ):
+    def _load_section_tag_set( self, item, tool_path, load_panel_dict, index=None, internal=False ):
         key = item.get( "id" )
         if key in self._tool_panel:
             section = self._tool_panel[ key ]
@@ -675,7 +676,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                 load_panel_dict=load_panel_dict,
                 guid=sub_item.get( 'guid' ),
                 index=sub_index,
-                internal=True,
+                internal=internal,
             )
 
         # Ensure each tool's section is stored

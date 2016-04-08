@@ -4,20 +4,38 @@ adapt cwltool to Galaxy features and abstract the library away from the rest
 of the framework.
 """
 from __future__ import absolute_import
-from abc import ABCMeta, abstractmethod
-from galaxy.util.odict import odict
+
 import json
+import logging
 import os
+from abc import ABCMeta, abstractmethod
+
+from galaxy.util import safe_makedirs
+from galaxy.util.bunch import Bunch
+from galaxy.util.odict import odict
 
 from .cwltool_deps import (
+    ensure_cwltool_available,
     main,
     workflow,
-    ensure_cwltool_available,
 )
 
-from galaxy.util.bunch import Bunch
+log = logging.getLogger(__name__)
 
 JOB_JSON_FILE = ".cwl_job.json"
+SECONDARY_FILES_EXTRA_PREFIX = "__secondary_files__"
+
+
+SUPPORTED_TOOL_REQUIREMENTS = [
+    "CreateFileRequirement",
+    "DockerRequirement",
+    "EnvVarRequirement",
+    "InlineJavascriptRequirement",
+]
+
+
+SUPPORTED_WORKFLOW_REQUIREMENTS = SUPPORTED_TOOL_REQUIREMENTS + [
+]
 
 
 def tool_proxy(tool_path):
@@ -29,29 +47,80 @@ def tool_proxy(tool_path):
     return tool
 
 
+def workflow_proxy(workflow_path):
+    ensure_cwltool_available()
+    workflow = to_cwl_workflow_object(workflow_path)
+    return workflow
+
+
 def load_job_proxy(job_directory):
     ensure_cwltool_available()
     job_objects_path = os.path.join(job_directory, JOB_JSON_FILE)
     job_objects = json.load(open(job_objects_path, "r"))
     tool_path = job_objects["tool_path"]
     job_inputs = job_objects["job_inputs"]
+    output_dict = job_objects["output_dict"]
     cwl_tool = tool_proxy(tool_path)
-    cwl_job = cwl_tool.job_proxy(job_inputs, job_directory=job_directory)
+    cwl_job = cwl_tool.job_proxy(job_inputs, output_dict, job_directory=job_directory)
     return cwl_job
 
 
 def to_cwl_tool_object(tool_path):
-    if workflow is None:
-        raise Exception("Using CWL tools requires cwltool module.")
     proxy_class = None
     cwl_tool = None
     make_tool = workflow.defaultMakeTool
     cwl_tool = main.load_tool(tool_path, False, False, make_tool, False)
-    proxy_class = Draft2ToolProxy
-    if proxy_class is None:
-        raise Exception("Unsupported CWL object encountered.")
+    if isinstance(cwl_tool, int):
+        raise Exception("Failed to load tool.")
+
+    raw_tool = cwl_tool.tool
+    check_requirements(raw_tool)
+    if "class" not in raw_tool:
+        raise Exception("File does not declare a class, not a valid Draft 3+ CWL tool.")
+    process_class = raw_tool["class"]
+    if process_class == "CommandLineTool":
+        proxy_class = CommandLineToolProxy
+    elif process_class == "ExpressionTool":
+        proxy_class = ExpressionToolProxy
+    else:
+        raise Exception("File not a CWL CommandLineTool.")
+    if "cwlVersion" not in raw_tool:
+        raise Exception("File does not declare a CWL version, pre-draft 3 CWL tools are not supported.")
+
+    cwl_version = raw_tool["cwlVersion"]
+    if cwl_version != "https://w3id.org/cwl/cwl#draft-3":
+        raise Exception("Only draft 3 CWL tools are supported by Galaxy.")
+
     proxy = proxy_class(cwl_tool, tool_path)
     return proxy
+
+
+def to_cwl_workflow_object(workflow_path):
+    proxy_class = WorkflowProxy
+    make_tool = workflow.defaultMakeTool
+    cwl_workflow = main.load_tool(workflow_path, False, False, make_tool, False)
+    raw_workflow = cwl_workflow.tool
+    check_requirements(raw_workflow, tool=False)
+
+    proxy = proxy_class(cwl_workflow, workflow_path)
+    return proxy
+
+
+def check_requirements(rec, tool=True):
+    if isinstance(rec, dict):
+        if "requirements" in rec:
+            for r in rec["requirements"]:
+                if tool:
+                    possible = SUPPORTED_TOOL_REQUIREMENTS
+                else:
+                    possible = SUPPORTED_WORKFLOW_REQUIREMENTS
+                if r["class"] not in possible:
+                    raise Exception("Unsupported requirement %s" % r["class"])
+        for d in rec:
+            check_requirements(rec[d], tool=tool)
+    if isinstance(rec, list):
+        for d in rec:
+            check_requirements(d, tool=tool)
 
 
 class ToolProxy( object ):
@@ -61,12 +130,12 @@ class ToolProxy( object ):
         self._tool = tool
         self._tool_path = tool_path
 
-    def job_proxy(self, input_dict, job_directory="."):
+    def job_proxy(self, input_dict, output_dict, job_directory="."):
         """ Build a cwltool.job.Job describing computation using a input_json
         Galaxy will generate mapping the Galaxy description of the inputs into
         a cwltool compatible variant.
         """
-        return JobProxy(self, input_dict, job_directory=job_directory)
+        return JobProxy(self, input_dict, output_dict, job_directory=job_directory)
 
     @abstractmethod
     def input_instances(self):
@@ -85,7 +154,7 @@ class ToolProxy( object ):
         """ Return description to tool. """
 
 
-class Draft2ToolProxy(ToolProxy):
+class CommandLineToolProxy(ToolProxy):
 
     def description(self):
         # Feels like I should be getting some abstract namespaced thing
@@ -116,8 +185,6 @@ class Draft2ToolProxy(ToolProxy):
         rval = []
         if not rval and schema["type"] == "record":
             for output in schema["fields"]:
-                # TODO: Handle non-files differently? Make them
-                # JSON maybe?.
                 # output_type = output.get("type", None)
                 # if output_type != "File":
                 #     template = "Unhandled output type [%s] encountered."
@@ -138,87 +205,229 @@ class Draft2ToolProxy(ToolProxy):
         return None
 
 
+class ExpressionToolProxy(CommandLineToolProxy):
+    pass
+
+
 class JobProxy(object):
 
-    def __init__(self, tool_proxy, input_dict, job_directory):
+    def __init__(self, tool_proxy, input_dict, output_dict, job_directory):
         self._tool_proxy = tool_proxy
         self._input_dict = input_dict
+        self._output_dict = output_dict
         self._job_directory = job_directory
 
-    def cwl_job(self):
-        return self._tool_proxy._tool.job(
-            self._input_dict,
-            self._job_directory,
-            self._output_callback,
-            use_container=False
-        ).next()
+        self._final_output = []
+        self._ok = True
+        self._cwl_job = None
+        self._is_command_line_job = None
 
-    def _output_callback(self, out):
-        pass
+    def cwl_job(self):
+        self._ensure_cwl_job_initialized()
+        return self._cwl_job
+
+    @property
+    def is_command_line_job(self):
+        self._ensure_cwl_job_initialized()
+        assert self._is_command_line_job is not None
+
+    def _ensure_cwl_job_initialized(self):
+        if self._cwl_job is None:
+            self._cwl_job = self._tool_proxy._tool.job(
+                self._input_dict,
+                self._job_directory,
+                self._output_callback,
+                use_container=False
+            ).next()
+            self._is_command_line_job = hasattr(self._cwl_job, "command_line")
+
+    @property
+    def command_line(self):
+        if self.is_command_line_job:
+            return self.cwl_job().command_line
+        else:
+            return ["true"]
+
+    @property
+    def stdin(self):
+        if self.is_command_line_job:
+            return self.cwl_job().stdin
+        else:
+            return None
+
+    @property
+    def stdout(self):
+        if self.is_command_line_job:
+            return self.cwl_job().stdout
+        else:
+            return None
+
+    @property
+    def environment(self):
+        if self.is_command_line_job:
+            return self.cwl_job().environment
+        else:
+            return {}
+
+    @property
+    def generate_files(self):
+        if self.is_command_line_job:
+            return self.cwl_job().generatefiles
+        else:
+            return {}
+
+    def _output_callback(self, out, process_status):
+        if process_status == "success":
+            self._final_output = out
+        else:
+            self._ok = False
+
+        log.info("Output are %s, status is %s" % (out, process_status))
+
+    def collect_outputs(self, tool_working_directory):
+        if not self.is_command_line_job:
+            self.cwl_job().run(
+            )
+            return self._final_output
+        else:
+            return self.cwl_job().collect_outputs(tool_working_directory)
 
     def save_job(self):
         job_file = JobProxy._job_file(self._job_directory)
         job_objects = {
             "tool_path": os.path.abspath(self._tool_proxy._tool_path),
             "job_inputs": self._input_dict,
+            "output_dict": self._output_dict,
         }
         json.dump(job_objects, open(job_file, "w"))
 
-    # @staticmethod
-    # def load_job(tool_proxy, job_directory):
-    #     job_file = JobProxy._job_file(job_directory)
-    #     input_dict = json.load(open(job_file, "r"))
-    #     return JobProxy(tool_proxy, input_dict, job_directory)
+    def _output_extra_files_dir(self, output_name):
+        output_id = self.output_id(output_name)
+        return os.path.join(self._job_directory, "dataset_%s_files" % output_id)
+
+    def output_id(self, output_name):
+        output_id = self._output_dict[output_name]["id"]
+        return output_id
+
+    def output_path(self, output_name):
+        output_id = self._output_dict[output_name]["path"]
+        return output_id
+
+    def output_secondary_files_dir(self, output_name, create=False):
+        extra_files_dir = self._output_extra_files_dir(output_name)
+        secondary_files_dir = os.path.join(extra_files_dir, SECONDARY_FILES_EXTRA_PREFIX)
+        if create and not os.path.exists(secondary_files_dir):
+            safe_makedirs(secondary_files_dir)
+        return secondary_files_dir
 
     @staticmethod
     def _job_file(job_directory):
         return os.path.join(job_directory, JOB_JSON_FILE)
 
 
-def _simple_field_union(field):
-    field_type = _field_to_field_type(field)
-    non_null_type = None
-    if len(field_type) == 2:
-        if "null" == field_type[0]:
-            non_null_type = field_type[1]
-        elif "null" == field_type[1]:
-            non_null_type = field_type[1]
+class WorkflowProxy(object):
 
-    if non_null_type is None:
-        raise Exception("General union types not yet implemented (simple).")
+    def __init__(self, workflow, workflow_path):
+        self._workflow = workflow
+        self._workflow_path = workflow_path
+
+    def step_proxies(self):
+        proxies = []
+        for step in self._workflow.steps:
+            proxies.append(StepProxy(self, step))
+        return proxies
+
+    @property
+    def runnables(self):
+        runnables = []
+        for step in self._workflow.steps:
+            if "run" in step.tool:
+                runnables.append(step.tool["run"])
+        return runnables
+
+    def to_dict(self):
+        name = os.path.basename(self._workflow_path)
+        steps = {}
+
+        index = 0
+        for i, input_dict in self._workflow.tool['inputs']:
+            index += 1
+            steps[index] = input_dict
+
+        for i, step_proxy in enumerate(self.step_proxies()):
+            index += 1
+            steps[index] = step_proxy.to_dict()
+
+        return {
+            'name': name,
+            'steps': steps,
+        }
+
+
+class StepProxy(object):
+
+    def __init__(self, workflow_proxy, step):
+        self._workflow_proxy = workflow_proxy
+        self._step = step
+
+    def to_dict(self):
+        return {}
+
+
+def _simple_field_union(field):
+    field_type = _field_to_field_type(field)  # Must be a list if in here?
+
+    def any_of_in_field_type(types):
+        return any([t in field_type for t in types])
 
     name, label, description = _field_metadata(field)
 
     case_name = "_cwl__type_"
-    case_label = "Specify %s" % label
+    case_label = "Specify Parameter %s As" % label
 
-    options = [
-        {"value": "null", "label": "No", "selected": True},
-        {"value": "%s" % non_null_type, "label": "Yes", "selected": False},
-    ]
+    def value_input(**kwds):
+        value_name = "_cwl__value_"
+        value_label = label
+        value_description = description
+        return InputInstance(
+            value_name,
+            value_label,
+            value_description,
+            **kwds
+        )
+
+    select_options = []
+    case_options = []
+    if "null" in field_type:
+        select_options.append({"value": "null", "label": "None", "selected": True})
+        case_options.append(("null", []))
+    if any_of_in_field_type(["Any", "string"]):
+        select_options.append({"value": "string", "label": "Simple String"})
+        case_options.append(("string", [value_input(input_type=INPUT_TYPE.TEXT)]))
+    if any_of_in_field_type(["Any", "boolean"]):
+        select_options.append({"value": "boolean", "label": "Boolean"})
+        case_options.append(("boolean", [value_input(input_type=INPUT_TYPE.BOOLEAN)]))
+    if any_of_in_field_type(["Any", "int"]):
+        select_options.append({"value": "int", "label": "Integer"})
+        case_options.append(("int", [value_input(input_type=INPUT_TYPE.INTEGER)]))
+    if any_of_in_field_type(["Any", "float"]):
+        select_options.append({"value": "float", "label": "Floating Point Number"})
+        case_options.append(("float", [value_input(input_type=INPUT_TYPE.FLOAT)]))
+    if any_of_in_field_type(["Any", "File"]):
+        select_options.append({"value": "data", "label": "Dataset"})
+        case_options.append(("data", [value_input(input_type=INPUT_TYPE.DATA)]))
+    if "Any" in field_type:
+        select_options.append({"value": "json", "label": "JSON Data Structure"})
+        case_options.append(("json", [value_input(input_type=INPUT_TYPE.TEXT, area=True)]))
 
     case_input = SelectInputInstance(
         name=case_name,
         label=case_label,
         description=False,
-        options=options,
+        options=select_options,
     )
 
-    non_null_type_kwds = _simple_field_to_input_type_kwds(field, field_type=non_null_type)
-    non_null_name = "_cwl__value_"
-    non_null_label = label
-    non_null_description = description
-    non_null_input = InputInstance(
-        non_null_name,
-        non_null_label,
-        non_null_description,
-        **non_null_type_kwds
-    )
-    options = [
-        ("null", []),
-        (non_null_type, [non_null_input]),
-    ]
-    return ConditionalInstance(name, case_input, options)
+    return ConditionalInstance(name, case_input, case_options)
 
 
 def _simple_field_to_input(field):
@@ -237,6 +446,9 @@ def _simple_field_to_input_type_kwds(field, field_type=None):
     simple_map_type_map = {
         "File": INPUT_TYPE.DATA,
         "int": INPUT_TYPE.INTEGER,
+        "long": INPUT_TYPE.INTEGER,
+        "float": INPUT_TYPE.INTEGER,
+        "double": INPUT_TYPE.INTEGER,
         "string": INPUT_TYPE.TEXT,
         "boolean": INPUT_TYPE.BOOLEAN,
     }
@@ -270,6 +482,9 @@ def _field_to_field_type(field):
         elif len(field_type) == 1:
             field_type = field_type[0]
 
+    if field_type == "Any":
+        field_type = ["Any"]
+
     return field_type
 
 
@@ -282,13 +497,19 @@ def _field_metadata(field):
 
 def _simple_field_to_output(field):
     name = field["name"]
-    output_instance = OutputInstance(name, output_type=OUTPUT_TYPE.GLOB)
+    output_data_class = field["type"]
+    output_instance = OutputInstance(
+        name,
+        output_data_type=output_data_class,
+        output_type=OUTPUT_TYPE.GLOB
+    )
     return output_instance
 
 
 INPUT_TYPE = Bunch(
     DATA="data",
     INTEGER="integer",
+    FLOAT="float",
     TEXT="text",
     BOOLEAN="boolean",
     SELECT="select",
@@ -341,13 +562,14 @@ class SelectInputInstance(object):
 
 class InputInstance(object):
 
-    def __init__(self, name, label, description, input_type, array=False):
+    def __init__(self, name, label, description, input_type, array=False, area=False):
         self.input_type = input_type
         self.name = name
         self.label = label
         self.description = description
         self.required = True
         self.array = array
+        self.area = area
 
     def to_dict(self, itemwise=True):
         if itemwise and self.array:
@@ -367,8 +589,13 @@ class InputInstance(object):
                 type=self.input_type,
                 optional=not self.required,
             )
+            if self.area:
+                as_dict["area"] = True
+
             if self.input_type == INPUT_TYPE.INTEGER:
                 as_dict["value"] = "0"
+            if self.input_type == INPUT_TYPE.FLOAT:
+                as_dict["value"] = "0.0"
         return as_dict
 
 
@@ -380,8 +607,9 @@ OUTPUT_TYPE = Bunch(
 
 class OutputInstance(object):
 
-    def __init__(self, name, output_type, path=None):
+    def __init__(self, name, output_data_type, output_type, path=None):
         self.name = name
+        self.output_data_type = output_data_type
         self.output_type = output_type
         self.path = path
 
