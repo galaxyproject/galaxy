@@ -2,13 +2,13 @@ import logging
 from galaxy import web
 from galaxy.web.base.controller import BaseUIController
 
+from tool_shed.util.common_util import generate_clone_url_for_repository_in_tool_shed
 from tool_shed.util.shed_util_common import get_repository_by_name_and_owner
 from tool_shed.util.hg_util import update_repository
 from tool_shed.metadata import repository_metadata_manager
 
 import mercurial.__version__
 from mercurial.hgweb.hgwebdir_mod import hgwebdir
-from mercurial.hgweb.request import wsgiapplication
 from mercurial import hg
 from mercurial import ui
 
@@ -41,6 +41,7 @@ class HgController( BaseUIController ):
             # interface will result in a new head being created.
             update_repository( repo, ctx_rev=None )
             # Set metadata using the repository files on disk.
+            repository_clone_url = generate_clone_url_for_repository_in_tool_shed( trans.user, repository )
             rmm = repository_metadata_manager.RepositoryMetadataManager( app=trans.app,
                                                                          user=trans.user,
                                                                          repository=repository,
