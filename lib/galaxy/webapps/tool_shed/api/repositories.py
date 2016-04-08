@@ -117,7 +117,7 @@ class RepositoriesController( BaseAPIController ):
             error_message += "invalid parameters received."
             log.debug( error_message )
             return []
-        return repository.ordered_installable_revisions( self.app )
+        return [ revision[ 1 ] for revision in repository.installable_revisions( self.app, sort_revisions=True ) ]
 
     @web.expose_api_anonymous
     def get_repository_revision_install_info( self, trans, name, owner, changeset_revision, **kwd ):
