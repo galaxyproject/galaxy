@@ -15,8 +15,12 @@
 
 USER="galaxy"
 GROUP="nogroup"
-DIR="/home/galaxy/galaxy_dist/"
-PYTHON="/usr/bin/python"
+GALAXY_DIR="/home/galaxy/galaxy_dist/"
+# Galaxy releases >= 16.01 installs dependencies by default into a virtualenv in <GALAXY_DIR>/.venv
+# A simple way to activate this virtualenv is to use the python interpreter in <GALAXY_DIR>/.venv
+# See https://wiki.galaxyproject.org/News/2016_01_GalaxyRelease and
+# https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/framework_dependencies.rst
+PYTHON="/home/galaxy/galaxy_dist/.venv/bin/python"
 OPTS="./scripts/paster.py serve --log-file /home/galaxy/galaxy.log config/galaxy.ini"
 PIDFILE="/var/run/galaxy.pid"
 
@@ -24,7 +28,7 @@ case "${1:-''}" in
   'start')
            log_daemon_msg "Starting Galaxy"
            if start-stop-daemon --chuid $USER --group $GROUP --start --make-pidfile \
-	             --pidfile $PIDFILE --background --chdir $DIR --exec $PYTHON -- $OPTS; then
+	             --pidfile $PIDFILE --background --chdir $GALAXY_DIR --exec $PYTHON -- $OPTS; then
              log_end_msg 0
            else
              log_end_msg 1
