@@ -55,7 +55,7 @@ class ShellJobRunner( AsynchronousJobRunner ):
         # prepare the job
         include_metadata = asbool( job_wrapper.job_destination.params.get( "embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB ) )
         if not self.prepare_job( job_wrapper, include_metadata=include_metadata ):
-             return
+            return
 
         # Get shell and job execution interface
         job_destination = job_wrapper.job_destination
