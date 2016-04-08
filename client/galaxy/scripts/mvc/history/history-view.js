@@ -445,7 +445,7 @@ var HistoryView = _super.extend(
         this.log( 'onFirstSearch', searchFor );
 
         // console.log( '_firstSearch:', self.model.contents.haveDetails() );
-        if( self.model.contents.haveDetails() ){
+        if( self.model.contents.haveSearchDetails() ){
             self.searchItems( searchFor );
             return;
         }

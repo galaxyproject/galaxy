@@ -3,8 +3,9 @@ define([
     "mvc/history/hda-model",
     "mvc/history/hdca-model",
     "mvc/history/history-preferences",
-    "mvc/base-mvc"
-], function( CONTROLLED_FETCH_COLLECTION, HDA_MODEL, HDCA_MODEL, HISTORY_PREFS, BASE_MVC ){
+    "mvc/base-mvc",
+    "utils/ajax-queue"
+], function( CONTROLLED_FETCH_COLLECTION, HDA_MODEL, HDCA_MODEL, HISTORY_PREFS, BASE_MVC, AJAX_QUEUE ){
 'use strict';
 
 //==============================================================================
@@ -231,40 +232,11 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     // ............. quasi-batch ops
     /** using a queue, perform ajaxFn on each of the models in this collection */
     ajaxQueue : function( ajaxFn, options ){
-        var deferred = jQuery.Deferred(),
-            startingLength = this.length,
-            responses = [];
-
-        if( !startingLength ){
-            deferred.resolve([]);
-            return deferred;
-        }
-
-        // use reverse order (stylistic choice)
-        var ajaxFns = this.chain().reverse().map( function( content, i ){
-            return function(){
-// var xhr = ajaxFn.call( content, options, { url: 'blah.blah' });
-                var xhr = ajaxFn.call( content, options );
-                // if successful, notify using the deferred to allow tracking progress
-                xhr.done( function( response ){
-                    deferred.notify({ curr: i, total: startingLength, response: response, model: content });
-                });
-                // (regardless of previous error or success) if not last ajax call, shift and call the next
-                //  if last fn, resolve deferred
-                xhr.always( function( response ){
-                    responses.push( response );
-                    if( ajaxFns.length ){
-                        ajaxFns.shift()();
-                    } else {
-                        deferred.resolve( responses );
-                    }
-                });
-            };
-        }).value();
-        // start the queue
-        ajaxFns.shift()();
-
-        return deferred;
+        var queue = new AJAX_QUEUE.AjaxQueue(this.chain().reverse().map( function( content, i ){
+            return function(){ ajaxFn.call( content, options ); };
+        }));
+        queue.start();
+        return queue.deferred;
     },
 
     /** fetch contents' details in batches of limitPerCall - note: only get searchable details here */
@@ -360,28 +332,15 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
 
     /** create a new HDCA in this collection */
     createHDCA : function( elementIdentifiers, collectionType, name, options ){
-        //TODO?: can't we do this with collection.create?
         //precondition: elementIdentifiers is an array of plain js objects
         //  in the proper form to create the collectionType
-        var contents = this,
-            typeToModel = {
-                list    : HDCA_MODEL.HistoryListDatasetCollection,
-                paired  : HDCA_MODEL.HistoryPairDatasetCollection
-            },
-            hdca = new (typeToModel[ collectionType ])({
+        return hdca.create({
                 history_id          : this.historyId,
+                collection_type     : collectionType,
                 name                : name,
                 // should probably be able to just send in a bunch of json here and restruct per class
                 element_identifiers : elementIdentifiers
-            });
-        // do I even need to use new above, can I just pass the attrs here
-        return hdca.save()
-            .done( function( response ){
-                contents.add( hdca );
-            })
-            .fail( function( xhr, status, message ){
-                contents.trigger( 'error', xhr, status, message );
-            });
+            }, { wait: true });
     },
 
     // ........................................................................ searching

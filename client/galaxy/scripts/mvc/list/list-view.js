@@ -536,7 +536,8 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
 
         // use the modelIndex to splice into views and insert at the proper index in the DOM
         panel.views.splice( modelIndex, 0, view );
-        panel._insertIntoListAt( modelIndex, panel._renderItemView$el.hide() );
+        panel._insertIntoListAt( modelIndex, panel._renderItemView$el( view ).hide() );
+
 
         panel.trigger( 'view:attached', view );
         if( useFx ){

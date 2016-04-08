@@ -182,9 +182,6 @@ var DatasetCollection = Backbone.Model
         .extend(/** @lends DatasetCollection.prototype */{
     _logNamespace : 'collections',
 
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
-
     /** default attributes for a model */
     defaults : {
         /* 'list', 'paired', or 'list:paired' */
@@ -239,7 +236,7 @@ var DatasetCollection = Backbone.Model
     //TODO:?? the following are the same interface as DatasetAssociation - can we combine?
     /** Does the DC contain any elements yet? Is a fetch() required? */
     hasDetails : function(){
-        return this.has( 'annotation' );
+        return this.elements.length !== 0;
     },
 
     /** Given the filters, what models in this.elements would be returned? */
