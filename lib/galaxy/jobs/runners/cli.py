@@ -134,7 +134,7 @@ class ShellJobRunner( AsynchronousJobRunner ):
                 if ajs.job_wrapper.get_state() == model.Job.states.DELETED:
                     continue
 
-                external_metadata = not asbool( job_wrapper.job_destination.params.get( "embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB ) )
+                external_metadata = not asbool( ajs.job_wrapper.job_destination.params.get( "embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB ) )
                 if external_metadata:
                     self._handle_metadata_externally( ajs.job_wrapper, resolve_requirements=True )
 
