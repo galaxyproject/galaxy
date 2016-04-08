@@ -14,6 +14,7 @@ log = logging.getLogger( __name__ )
 
 __all__ = [ 'ShellJobRunner' ]
 
+DEFAULT_EMBED_METADATA_IN_JOB = True
 
 class ShellJobRunner( AsynchronousJobRunner ):
     """
