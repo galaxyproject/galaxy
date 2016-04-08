@@ -8,6 +8,7 @@ import logging
 from galaxy import model
 from galaxy.jobs import JobDestination
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
+from galaxy.util import asbool
 from .util.cli import CliInterface, split_params
 
 log = logging.getLogger( __name__ )
