@@ -255,8 +255,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         function _notifyAndContinue( response, offset ){
             // console.log( 'rcvd:', response.length );
             deferred.notify( response, limit, offset );
-            if( !response.length || response.length < limit ){
-                self.allFetched = true;
+            if( self.allFetched ){
                 deferred.resolve( response, limit, offset );
                 return;
             }
@@ -271,8 +270,8 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
                 keys    : detailKeys,
                 limit   : limit,
                 offset  : offset,
+                reset   : offset === 0
             });
-            // console.log( 'fetchFn:', fetchFn + '' );
             var fetchFn = offset === 0? self.fetchFirst : self.fetchMore;
             // console.log( 'fetching:', _options.limit, _options.offset );
             _.defer( function(){
@@ -339,7 +338,9 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
                 collection_type     : collectionType,
                 name                : name,
                 // should probably be able to just send in a bunch of json here and restruct per class
+                // note: element_identifiers is now (incorrectly) an attribute
                 element_identifiers : elementIdentifiers
+            // do not create the model on the client until the ajax returns
             }, { wait: true });
     },
 

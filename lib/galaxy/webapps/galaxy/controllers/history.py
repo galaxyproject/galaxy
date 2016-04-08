@@ -581,7 +581,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             current_history=trans.history )
 
         history_dictionary = self.history_serializer.serialize_to_view( history_to_view,
-            view='detailed', user=trans.user, trans=trans )
+            view='current', user=trans.user, trans=trans )
         contents = self.history_serializer.serialize_contents( history_to_view,
             'contents', trans=trans, user=trans.user )
 
@@ -626,7 +626,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
             # include all datasets: hidden, deleted, and purged
             history_dictionary = self.history_serializer.serialize_to_view( history_to_view,
-                view='detailed', user=trans.user, trans=trans )
+                view='current', user=trans.user, trans=trans )
 
         except Exception, exc:
             user_id = str( trans.user.id ) if trans.user else '(anonymous)'
@@ -683,7 +683,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # create ownership flag for template, dictify models
         user_is_owner = trans.user == history.user
         history_dictionary = self.history_serializer.serialize_to_view( history,
-            view='detailed', user=trans.user, trans=trans )
+            view='current', user=trans.user, trans=trans )
         history_dictionary[ 'annotation' ] = self.get_item_annotation_str( trans.sa_session, history.user, history )
 
         return trans.stream_template_mako( "history/display.mako", item=history, item_data=[],

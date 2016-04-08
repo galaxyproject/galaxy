@@ -73,7 +73,7 @@
             show_hidden     : false,
             el              : $( "#history-" + historyJSON.id ),
             model           : historyModel
-        })
+        });
         historyModel.fetchContents()
             .fail( function(){ alert( 'Galaxy history failed to load' ); })
             .done( function(){ historyView.render(); })

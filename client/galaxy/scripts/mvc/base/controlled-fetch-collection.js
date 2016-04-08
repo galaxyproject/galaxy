@@ -183,7 +183,7 @@ var PaginatedCollection = ControlledFetchCollection.extend({
         options = options? _.clone( options ) : {};
         this.allFetched = false;
         this.lastFetched = 0;
-        return this.fetchMore( _.extend( options, {
+        return this.fetchMore( _.defaults( options, {
             reset : true,
             limit : this.limitOnFirstFetch,
         }));

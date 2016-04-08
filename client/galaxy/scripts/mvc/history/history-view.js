@@ -356,7 +356,7 @@ var HistoryView = _super.extend(
         // look for an existing indicator and stop all animations on it, otherwise make one
         var $indicator = this.$( '.contents-loading-indicator' );
         if( $indicator.size() ){
-            return $indicator.clearQueue().stop();
+            return $indicator.stop().clearQueue();
         }
 
         // move it to the bottom and fade it in
@@ -370,7 +370,7 @@ var HistoryView = _super.extend(
     /** show the user we're done loading */
     hideContentsLoadingIndicator : function( speed ){
         speed = _.isNumber( speed )? speed : this.fxSpeed;
-        this.$( '> .contents-loading-indicator' ).hide({ duration: 0, complete: function _complete(){
+        this.$( '> .contents-loading-indicator' ).slideUp({ duration: 100, complete: function _complete(){
             $( this ).remove();
         }});
     },
@@ -440,8 +440,9 @@ var HistoryView = _super.extend(
 
     /** On the first search, if there are no details - load them, then search */
     _firstSearch : function( searchFor ){
-        var self = this,
-            inputSelector = '> .controls .search-input';
+        var self = this;
+        var inputSelector = '> .controls .search-input';
+        var initialContentsLength = self.model.contents.length;
         this.log( 'onFirstSearch', searchFor );
 
         // console.log( '_firstSearch:', self.model.contents.haveDetails() );
@@ -450,15 +451,23 @@ var HistoryView = _super.extend(
             return;
         }
 
-        self.$el.find( inputSelector ).searchInput( 'toggle-loading' );
-        // self.model.contents.fetchAllDetails({ silent: true })
+        self.$( inputSelector ).searchInput( 'toggle-loading' );
+        // self.$( inputSelector + ' input' ).prop( 'disabled', true );
         self.model.contents.progressivelyFetchDetails({ silent: true })
             .progress( function( response, limit, offset ){
-                // console.log( 'progress:', offset, offset + response.length );
-                self.listenToOnce( self.model.contents, 'sync', self.bulkAppendItemViews );
+                console.log( 'progress:', offset, offset + response.length );
+                // if we're still only merging new attrs to what the contents already have,
+                // just render what's there again
+                if( offset + response.length <= initialContentsLength ){
+                    self.renderItems();
+                // if we're adding new items, then listen for sync'ing and bulk add those views
+                } else {
+                    self.listenToOnce( self.model.contents, 'sync', self.bulkAppendItemViews );
+                }
             })
             .always( function(){
                 self.$el.find( inputSelector ).searchInput( 'toggle-loading' );
+                // self.$( inputSelector + ' input' ).prop( 'disabled', false );
             })
             .done( function(){
                 self.searchItems( self.searchFor );

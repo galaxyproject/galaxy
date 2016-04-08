@@ -14,32 +14,6 @@ define([
 var logNamespace = 'history';
 /* ==============================================================================
 TODO:
-    rendering/delayed rendering is a mess
-        may not need to render columns in renderColumns (just moving them/attaching them may be enough)
-    copy places old current in wrong location
-    handle delete current
-        currently manual by user - delete then create new - make one step
-    render
-        move all columns over as one (agg. then html())
-    performance
-        rendering columns could be better
-    move in-view from pubsub
-
-    handle errors
-    handle no histories
-    handle no histories found
-
-    include hidden/deleted
-        allow toggling w/o setting in storage
-    reloading with expanded collections doesn't get details of that collection
-
-    change includeDeleted to an ajax call
-
-    better narrowing
-
-    privatize non-interface fns
-    search for and drag and drop - should reset after dataset is loaded (or alt. clear search)
-    ?columns should be a panel, not have a panel
 
 ============================================================================== */
 /** A history view that  */
