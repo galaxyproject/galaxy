@@ -322,8 +322,10 @@ def check_blocking_issues(argv):
     release_name = argv[2]
     block = 0
     github = _github_client()
-    issues = github.issues.list(
-        state="open",
+    issues = github.issues.list_by_repo(
+        user='galaxyproject',
+        repo='galaxy',
+        state="open"
     )
     for page in issues:
         for issue in page:
