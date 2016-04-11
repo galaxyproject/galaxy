@@ -904,7 +904,7 @@ class ToolModule( WorkflowModule ):
         data_inputs = []
 
         def callback( input, prefixed_name, prefixed_label, **kwargs ):
-            if hasattr( input, 'hidden' ) and not input.hidden:
+            if not hasattr( input, 'hidden' ) or not input.hidden:
                 if isinstance( input, DataToolParameter ):
                     data_inputs.append( dict(
                         name=prefixed_name,
@@ -912,7 +912,7 @@ class ToolModule( WorkflowModule ):
                         multiple=input.multiple,
                         extensions=input.extensions,
                         input_type="dataset", ) )
-                if isinstance( input, DataCollectionToolParameter ):
+                elif isinstance( input, DataCollectionToolParameter ):
                     data_inputs.append( dict(
                         name=prefixed_name,
                         label=prefixed_label,
