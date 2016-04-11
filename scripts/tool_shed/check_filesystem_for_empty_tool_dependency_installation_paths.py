@@ -3,7 +3,7 @@ import os
 import shutil
 import sys
 
-sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
+sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, 'lib' ) )
 
 from tool_shed.util.basic_util import INSTALLATION_LOG
 
