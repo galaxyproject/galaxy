@@ -2,7 +2,7 @@
 Galaxy web framework helpers
 """
 
-import time
+from ..base import server_starttime
 from datetime import datetime, timedelta
 
 from galaxy.util import hash_util
@@ -12,8 +12,6 @@ from webhelpers import date
 from webhelpers.html.tags import stylesheet_link, javascript_link
 
 from routes import url_for
-
-server_starttime = int(time.time())
 
 
 def time_ago( x ):
