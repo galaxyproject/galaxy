@@ -21,3 +21,10 @@ reviewers:
         name: global
         required: 2
         members: all
+    -
+        name: dev
+        required: 1
+        members: all
+        conditions:
+            branches:
+                - dev
