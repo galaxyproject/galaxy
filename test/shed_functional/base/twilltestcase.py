@@ -261,12 +261,6 @@ class ShedTwillTestCase( TwillTestCase ):
         commands.commit( ui.ui(), hgrepo, **options )
         try:
             commands.push( ui.ui(), hgrepo, dest=url )
-        except Abort as a:
-            message = a
-            if 'authorization failed' in message:
-                return False
-            else:
-                raise
         except Exception as e:
             if str(e).find('Pushing to Tool Shed is disabled') != -1:
                 return False
@@ -277,12 +271,6 @@ class ShedTwillTestCase( TwillTestCase ):
     def __push_again( hgrepo, url ):
         try:
             commands.push( ui.ui(), hgrepo, dest=url )
-        except Abort as a:
-            message = a
-            if 'authorization failed' in message:
-                return False
-            else:
-                raise
         except Exception as e:
             if str(e).find('Pushing to Tool Shed is disabled') != -1:
                 return False
