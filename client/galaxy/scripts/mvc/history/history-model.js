@@ -31,7 +31,8 @@ var History = Backbone.Model
         state           : 'new',
 
         deleted         : false,
-        contents_shown  : {},
+        contents_active : {},
+        contents_states : {},
     },
 
     urlRoot: Galaxy.root + 'api/histories',

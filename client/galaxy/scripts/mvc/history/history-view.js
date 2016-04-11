@@ -200,10 +200,10 @@ var HistoryView = _super.extend(
         return $newRender;
     },
 
-    /** override to avoid showing intial empty message using contents_shown */
+    /** override to avoid showing intial empty message using contents_active */
     _renderEmptyMessage : function( $whereTo ){
         var self = this;
-        var empty = !self.model.get( 'contents_shown' ).shown;
+        var empty = !self.model.get( 'contents_active' ).active;
         var $emptyMsg = self.$emptyMessage( $whereTo );
 
         if( empty ){

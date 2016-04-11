@@ -676,9 +676,9 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
      *      queueing the ajax call and using a named queue to prevent the call being sent twice
      */
     queueHdaFetch : function queueHdaFetch( column ){
-        // console.log( 'queueHdaFetch:', column, column.model.get( 'contents_shown' ) );
+        // console.log( 'queueHdaFetch:', column, column.model.get( 'contents_active' ) );
         // if the history model says it has hdas but none are present, queue an ajax req for them
-        if( column.model.contents.length === 0 && column.model.get( 'contents_shown' ).shown ){
+        if( column.model.contents.length === 0 && column.model.get( 'contents_active' ).active ){
             // console.log( 'fetch needed: ' + column );
             var ids = _.values( column.panel.storage.get( 'expandedIds' ) ).join();
             var fetchOptions = ids? { details : ids } : {};
@@ -696,7 +696,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
     /** Get the *detailed* json for *all* of a column's history's contents - req'd for searching */
     queueHdaFetchDetails : function( column ){
-        if( ( column.model.contents.length === 0 && column.model.get( 'contents_shown' ).shown )
+        if( ( column.model.contents.length === 0 && column.model.get( 'contents_active' ).active )
          || ( !column.model.contents.haveDetails() ) ){
             // this uses a 'named' queue so that duplicate requests are ignored
             this.hdaQueue.add({

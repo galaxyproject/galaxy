@@ -317,21 +317,21 @@ var HistoryViewEdit = _super.extend(
      */
     _handleItemDeletionChange : function( itemModel ){
         // console.log( '_handleItemDeletionChange:', contentsShown, itemModel.get( 'deleted' ), this.showDeleted );
-        var contentsShown = this.model.get( 'contents_shown' );
+        var contentsShown = this.model.get( 'contents_active' );
         if( itemModel.get( 'deleted' ) ){
             contentsShown.deleted += 1;
             if( !this.showDeleted ){
                 this.removeItemView( itemModel );
             }
-            contentsShown.shown -= 1;
+            contentsShown.active -= 1;
         } else {
             contentsShown.deleted -= 1;
             if( !this.showDeleted ){
-                contentsShown.shown -= 1;
+                contentsShown.active -= 1;
             }
         }
-        // console.log( 'contentsShown:', contentsShown.shown, contentsShown.deleted );
-        this.model.set( 'contents_shown', contentsShown );
+        // console.log( 'contentsShown:', contentsShown.active, contentsShown.deleted );
+        this.model.set( 'contents_active', contentsShown );
         this._renderCounts();
     },
 
@@ -339,22 +339,22 @@ var HistoryViewEdit = _super.extend(
      *  @param {Model} the item model to check
      */
     _handleItemVisibleChange : function( itemModel ){
-        var contentsShown = this.model.get( 'contents_shown' );
+        var contentsShown = this.model.get( 'contents_active' );
         // console.log( '_handleHdaVisibleChange:', contentsShown, itemModel.hidden(), this.showHidden );
         if( itemModel.hidden() ){
             contentsShown.hidden += 1;
             if( !this.showHidden ){
                 this.removeItemView( itemModel );
             }
-            contentsShown.shown -= 1;
+            contentsShown.active -= 1;
         } else {
             contentsShown.hidden -= 1;
             if( !this.showHidden ){
-                contentsShown.shown -= 1;
+                contentsShown.active -= 1;
             }
         }
-        // console.log( 'contentsShown:', contentsShown.shown, contentsShown.hidden );
-        this.model.set( 'contents_shown', contentsShown );
+        // console.log( 'contentsShown:', contentsShown.active, contentsShown.hidden );
+        this.model.set( 'contents_active', contentsShown );
         this._renderCounts();
     },
 
@@ -510,21 +510,21 @@ var HistoryViewEdit = _super.extend(
 HistoryViewEdit.prototype.templates = (function(){
 
     var countsTemplate = BASE_MVC.wrapTemplate([
-        '<% var shown = Math.max( view.views.length, history.contents_shown.shown ) %>',
+        '<% var shown = Math.max( view.views.length, history.contents_active.active ) %>',
         '<% if( shown ){ %>',
             '<span class="shown-count">',
                 '<%- shown %> ', _l( 'shown' ),
             '</span>',
         '<% } %>',
 
-        '<% if( history.contents_shown.deleted ){ %>',
+        '<% if( history.contents_active.deleted ){ %>',
             '<span class="deleted-count">',
             '<% if( view.showDeleted ){ %>',
                 '<a class="toggle-deleted-link" href="javascript:void(0);">',
                     _l( 'hide deleted' ),
                 '</a>',
             '<% } else { %>',
-                '<%- history.contents_shown.deleted %> ',
+                '<%- history.contents_active.deleted %> ',
                 '<a class="toggle-deleted-link" href="javascript:void(0);">',
                     _l( 'deleted' ),
                 '</a>',
@@ -532,14 +532,14 @@ HistoryViewEdit.prototype.templates = (function(){
             '</span>',
         '<% } %>',
 
-        '<% if( history.contents_shown.hidden ){ %>',
+        '<% if( history.contents_active.hidden ){ %>',
             '<span class="hidden-count">',
             '<% if( view.showHidden ){ %>',
                 '<a class="toggle-hidden-link" href="javascript:void(0);">',
                     _l( 'hide hidden' ),
                 '</a>',
             '<% } else { %>',
-                '<%- history.contents_shown.hidden %> ',
+                '<%- history.contents_active.hidden %> ',
                 '<a class="toggle-hidden-link" href="javascript:void(0);">',
                     _l( 'hidden' ),
                 '</a>',

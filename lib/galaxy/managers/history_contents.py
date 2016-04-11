@@ -6,6 +6,8 @@ not easily made.
 from sqlalchemy import literal
 from sqlalchemy import sql
 from sqlalchemy import asc, desc
+from sqlalchemy import true, false
+from sqlalchemy import func
 
 from galaxy import model
 from galaxy import exceptions as glx_exceptions
@@ -124,6 +126,53 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         # TODO: allow order_by None
         raise glx_exceptions.RequestParameterInvalidException( 'Unknown order_by', order_by=order_by_string,
             available=[ 'create_time', 'update_time', 'name', 'hid' ])
+
+    # history specific methods
+    def state_counts( self, history ):
+        """
+        Return a dictionary containing the counts of all contents in each state
+        keyed by the distinct states.
+
+        Note: does not include deleted/hidden contents.
+        """
+        filters = [
+            sql.column( 'deleted' ) == false(),
+            sql.column( 'visible' ) == true()
+        ]
+        contents_subquery = self._union_of_contents_query( history, filters=filters ).subquery()
+        statement = ( sql.select([ sql.column( 'state' ), func.count('*') ])
+            .select_from( contents_subquery )
+            .group_by( sql.column( 'state' ) ) )
+        counts = self.app.model.context.execute( statement ).fetchall()
+        return dict( counts )
+
+    def active_counts( self, history ):
+        """
+        Return a dictionary keyed with 'deleted', 'hidden', and 'active' with values
+        for each representing the count of contents in each state.
+
+        Note: counts for deleted and hidden overlap; In other words, a dataset that's
+        both deleted and hidden will be added to both totals.
+        """
+        returned = dict( deleted=0, hidden=0, active=0 )
+        contents_subquery = self._union_of_contents_query( history ).subquery()
+        columns = [
+            sql.column( 'deleted' ),
+            sql.column( 'visible' ),
+            func.count( '*' )
+        ]
+        statement = ( sql.select( columns )
+            .select_from( contents_subquery )
+            .group_by( sql.column( 'deleted' ), sql.column( 'visible' ) ) )
+        groups = self.app.model.context.execute( statement ).fetchall()
+        for deleted, visible, count in groups:
+            if deleted:
+                returned[ 'deleted' ] += count
+            if not visible:
+                returned[ 'hidden' ] += count
+            if not deleted and visible:
+                returned[ 'active' ] += count
+        return returned
 
     # ---- private
     def _session( self ):

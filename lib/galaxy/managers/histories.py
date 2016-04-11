@@ -5,7 +5,7 @@ Histories are containers for datasets or dataset collections
 created (or copied) by users over the course of an analysis.
 """
 
-from sqlalchemy import sql, func, desc, asc, true, false
+from sqlalchemy import desc, asc
 
 from galaxy import model
 from galaxy import exceptions as glx_exceptions
@@ -225,7 +225,7 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             'username_and_slug',
             'genome_build',
             # 'contents_states',
-            'contents_shown',
+            'contents_active',
             'hid_counter',
         ], include_keys_from='summary' )
 
@@ -254,7 +254,7 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
                                                   in self.manager.non_ready_jobs( i ) ],
 
             'contents_states': self.serialize_contents_states,
-            'contents_shown': self.serialize_contents_shown,
+            'contents_active': self.serialize_contents_active,
         })
 
     # remove this
@@ -341,46 +341,17 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
 
         Note: does not include deleted/hidden contents.
         """
-        union_query_fn = self.manager.contents_manager._union_of_contents_query
-        filters = [
-            sql.column( 'deleted' ) == false(),
-            sql.column( 'visible' ) == true()
-        ]
-        contents_subquery = union_query_fn( history, filters=filters ).subquery()
-        statement = ( sql.select([ sql.column( 'state' ), func.count('*') ])
-            .select_from( contents_subquery )
-            .group_by( sql.column( 'state' ) ) )
-        counts = self.app.model.context.execute( statement ).fetchall()
-        return dict( counts )
+        return self.manager.contents_manager.state_counts( history )
 
-    def serialize_contents_shown( self, history, key, trans=None, **context ):
+    def serialize_contents_active( self, history, key, **context ):
         """
-        Return a dictionary keyed with 'deleted', 'hidden', and 'shown' with values
+        Return a dictionary keyed with 'deleted', 'hidden', and 'active' with values
         for each representing the count of contents in each state.
 
         Note: counts for deleted and hidden overlap; In other words, a dataset that's
         both deleted and hidden will be added to both totals.
         """
-        returned = dict( deleted=0, hidden=0, shown=0 )
-        union_query_fn = self.manager.contents_manager._union_of_contents_query
-        contents_subquery = union_query_fn( history ).subquery()
-        columns = [
-            sql.column( 'deleted' ),
-            sql.column( 'visible' ),
-            func.count( '*' )
-        ]
-        statement = ( sql.select( columns )
-            .select_from( contents_subquery )
-            .group_by( sql.column( 'deleted' ), sql.column( 'visible' ) ) )
-        groups = self.app.model.context.execute( statement ).fetchall()
-        for deleted, visible, count in groups:
-            if deleted:
-                returned[ 'deleted' ] += count
-            if not visible:
-                returned[ 'hidden' ] += count
-            if not deleted and visible:
-                returned[ 'shown' ] += count
-        return returned
+        return self.manager.contents_manager.active_counts( history )
 
 
 class HistoryDeserializer( sharable.SharableModelDeserializer, deletable.PurgableDeserializerMixin ):
