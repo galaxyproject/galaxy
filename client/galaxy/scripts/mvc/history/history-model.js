@@ -468,7 +468,6 @@ var HistoryCollection = _collectionSuper.extend( BASE_MVC.LoggableMixin ).extend
         return 'HistoryCollection(' + this.length + ',current:' + this.currentHistoryId + ')';
     }
 });
-window.HistoryCollection = HistoryCollection;
 
 
 //==============================================================================
