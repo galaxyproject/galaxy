@@ -445,17 +445,17 @@ var HistoryView = _super.extend(
         var initialContentsLength = self.model.contents.length;
         this.log( 'onFirstSearch', searchFor );
 
-        // console.log( '_firstSearch:', self.model.contents.haveDetails() );
+        // if the contents already have enough details to search, search and return now
         if( self.model.contents.haveSearchDetails() ){
             self.searchItems( searchFor );
             return;
         }
 
+        // otherwise, load the details progressively here
         self.$( inputSelector ).searchInput( 'toggle-loading' );
-        // self.$( inputSelector + ' input' ).prop( 'disabled', true );
+        // TODO?: self.$( inputSelector + ' input' ).prop( 'disabled', true ) ?? not disabling could cause trouble here
         self.model.contents.progressivelyFetchDetails({ silent: true })
             .progress( function( response, limit, offset ){
-                console.log( 'progress:', offset, offset + response.length );
                 // if we're still only merging new attrs to what the contents already have,
                 // just render what's there again
                 if( offset + response.length <= initialContentsLength ){
@@ -467,7 +467,6 @@ var HistoryView = _super.extend(
             })
             .always( function(){
                 self.$el.find( inputSelector ).searchInput( 'toggle-loading' );
-                // self.$( inputSelector + ' input' ).prop( 'disabled', false );
             })
             .done( function(){
                 self.searchItems( self.searchFor );
