@@ -5,13 +5,13 @@ approve_by_comment: true
 # - :+1:
 # - +1
 # - LGTM
-approve_regex: '^:\+1:|^\+1|^LGTM'
+approve_regex: '^(:\+1:|\+1|LGTM)'
 # Accepted sentences are:
 # At the beginning of the comment:
 # - No
 # - :-1:
 # - -1
-reject_regex: '^No|^:-1:|^-1'
+reject_regex: '^(No|:-1:|-1)'
 reject_value: -1
 reset_on_push: true
 author_approval: ignored
