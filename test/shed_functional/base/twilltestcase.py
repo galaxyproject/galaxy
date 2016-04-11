@@ -11,7 +11,6 @@ from json import loads
 
 import twill.commands as tc
 from mercurial import commands, hg, ui
-from mercurial.util import Abort
 
 import galaxy.model.tool_shed_install as galaxy_model
 import galaxy.util
