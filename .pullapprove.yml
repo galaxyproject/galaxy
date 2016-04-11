@@ -1,0 +1,23 @@
+# See http://docs.pullapprove.com for explanations of the following
+approve_by_comment: true
+# Accepted sentences are:
+# At the beginning of the comment:
+# - :+1:
+# - +1
+# - LGTM
+approve_regex: '^:\+1:|^\+1|^LGTM'
+# Accepted sentences are:
+# At the beginning of the comment:
+# - No
+# - :-1:
+# - -1
+reject_regex: '^No|^:\-1:|^-1'
+reject_value: -1
+reset_on_push: true
+author_approval: ignored
+# TODO: More granular reviewers group
+reviewers:
+    -
+        name: global
+        required: 2
+        members: all
