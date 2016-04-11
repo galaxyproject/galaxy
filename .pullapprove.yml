@@ -11,7 +11,7 @@ approve_regex: '^:\+1:|^\+1|^LGTM'
 # - No
 # - :-1:
 # - -1
-reject_regex: '^No|^:\-1:|^-1'
+reject_regex: '^No|^:-1:|^-1'
 reject_value: -1
 reset_on_push: true
 author_approval: ignored
