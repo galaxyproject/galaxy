@@ -214,7 +214,7 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
         # in the Historys' case, each of these views includes the keys from the previous
 
         #: ..note: this is a custom view for newer (2016/3) UI and should be considered volatile
-        self.add_view( 'current', [
+        self.add_view( 'dev-detailed', [
             'contents_url',
             'size',
             'user_id',

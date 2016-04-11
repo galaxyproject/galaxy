@@ -239,7 +239,7 @@ var History = Backbone.Model
 
         // console.log( this + '.fetchWithContents' );
         // TODO: push down to a base class
-        options.view = 'current';
+        options.view = 'dev-detailed';
         // fetch history then use history data to fetch (paginated) contents
         return this.fetch( options ).pipe( function getContents( history ){
             self.contents.historyId = history.id;
@@ -300,7 +300,7 @@ var History = Backbone.Model
         if( !allDatasets ){
             postData.all_datasets = false;
         }
-        postData.view = 'current';
+        postData.view = 'dev-detailed';
 
         var history = this;
         var copy = jQuery.post( this.urlRoot, postData );
@@ -400,7 +400,7 @@ var HistoryCollection = _collectionSuper.extend( BASE_MVC.LoggableMixin ).extend
     /** override to change view */
     _buildFetchData : function( options ){
         return _.extend( _collectionSuper.prototype._buildFetchData.call( this, options ), {
-            view : 'current'
+            view : 'dev-detailed'
         });
     },
 
