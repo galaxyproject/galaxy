@@ -119,11 +119,11 @@ var HistoryViewEdit = _super.extend(
             // loading indicators for deleted/hidden
             'fetching-deleted'      : function( collection ){
                 this.$( '> .controls .deleted-count' )
-                    .html( '<i>' + _l( 'loading deleted...' ) + '</i>' );
+                    .html( '<i>' + _l( 'loading...' ) + '</i>' );
             },
             'fetching-hidden'       : function( collection ){
                 this.$( '> .controls .hidden-count' )
-                    .html( '<i>' + _l( 'loading hidden...' ) + '</i>' );
+                    .html( '<i>' + _l( 'loading...' ) + '</i>' );
             },
             'fetching-deleted-done fetching-hidden-done'  : this._renderCounts,
         });
