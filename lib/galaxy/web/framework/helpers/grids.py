@@ -2,7 +2,7 @@ import logging
 import math
 
 from galaxy.model.item_attrs import RuntimeException, UsesAnnotations, UsesItemRatings
-from galaxy.util import sanitize_text
+from galaxy.util import sanitize_text, unicodify
 from galaxy.util.json import loads, dumps
 from galaxy.util.odict import odict
 from galaxy.web.framework import decorators
@@ -371,7 +371,7 @@ class GridColumn( object ):
             value = None
         if self.format:
             value = self.format( value )
-        return escape(value)
+        return escape(unicodify(value))
 
     def get_link( self, trans, grid, item ):
         if self.link and self.link( item ):
