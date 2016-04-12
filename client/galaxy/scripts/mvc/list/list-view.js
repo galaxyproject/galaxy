@@ -353,7 +353,6 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
      *  @returns the visible item views
      */
     renderItems : function( $whereTo ){
-        // console.log( this + ', rendering items -------------------------------------------' );
         $whereTo = $whereTo || this.$el;
         var panel = this;
         panel.log( this + '.renderItems', $whereTo );
@@ -573,7 +572,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         // find where to insert the block
         // note: don't use filteredCollection since we may be searching and the first model may not match search
         // TODO: when Backbone > 1.1: self.collection.findIndex
-        var firstModelIndex = self.collection.models.findIndex( function( m ){
+        var firstModelIndex = _.findIndex( self.collection.models, function( m ){
             return m.id === response[0].type_id;
         });
         // console.log( 'firstModelIndex:', firstModelIndex );
