@@ -208,8 +208,17 @@ var CurrentHistoryView = _super.extend(
     _buildNewRender : function(){
         if( !this.model ){ return $(); }
         var $newRender = _super.prototype._buildNewRender.call( this );
+        var $controls = $newRender.find( '> .controls' ).css({
+            // position    : 'fixed',
+            // width       : $( '#right' ).width(),
+            // margin      : '0px',
+            // border      : '0px 0px 1px solid grey',
+            // background  : '#DFE5F9',
+            // padding     : '10px 10px 0px',
+        });
         //TODO: hacky
-        $newRender.find( '.search' ).prependTo( $newRender.find( '.controls' ) );
+        $newRender.find( '.search' ).prependTo( $controls );
+        // this.$list( $newRender ).css( 'margin-top', '104px' );
         this._renderQuotaMessage( $newRender );
         return $newRender;
     },

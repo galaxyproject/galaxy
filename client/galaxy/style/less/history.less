@@ -3,18 +3,66 @@
 
 // ---------------------------------------------------------------------------- panel header buttons
 .history-panel-header {
-    .panel-header-button {
-        display : inline-block;
-        height  : @icon-btn-size;
-        width   : @icon-btn-size;
-        text-align  : center;
-        line-height : @icon-btn-size - 3;
-        font-size   : 1.2em;
-
-        padding: 0px;
-    }
 }
 
+.history-right-panel {
+    .three-rows(@panel_header_height, @panel_footer_height);
+
+    .header,
+    .footer {
+        .unselectable();
+        border: solid @layout-border-color 0px;
+        background: @navbar-default-bg;
+        color: #555;
+        a {
+            color: #555;
+        }
+    }
+
+    .header {
+        text-shadow: rgba(255,255,255,.8) 0 1px 0;
+        border-bottom-width: 1px;
+        padding: 8px 10px 0;
+        font-weight: bold;
+
+        .title {
+        }
+
+        .buttons > * {
+            .fa {
+                font-size: 1.4em;
+            }
+            &:hover {
+                color: maroon;
+                .transition(color .25s linear);
+            }
+        }
+    }
+
+    .middle {
+        overflow: auto;
+        background: #DFE5F9;
+    }
+
+    .footer {
+        // line-height: @panel_footer_height;
+        border-top-width: 1px;
+
+        .drag {
+            // position: absolute;
+            // top: 0;
+            // left: 0;
+            // padding: 0 5px;
+            // text-align: center;
+            // height: @panel_footer_height;
+            // width: @panel_footer_height - 5;
+            // background-image: url(../images/visualization/draggable_horizontal.png);
+            // background-repeat: no-repeat;
+            // background-position: 50% 50%;
+            // cursor: w-resize;
+        }
+    }
+}
 
 // ---------------------------------------------------------------------------- dataset states
 //.dataset .state-icon {

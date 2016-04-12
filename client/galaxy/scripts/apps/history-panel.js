@@ -59,27 +59,55 @@ var HistoryPanel = RightPanel.extend({
 
     render : function(){
         RightPanel.prototype.render.call( this );
-        this.$( '.unified-panel-header' ).addClass( 'history-panel-header' );
-        this.$( '.panel-header-buttons' ).append([
+        this.$( '> .header .buttons' ).append([
             this.refreshButton.$el,
             this.optionsButton.$el,
             this.viewMultiButton? this.viewMultiButton.$el : null,
         ]);
-        this.historyView
-            .setElement( this.$( '.history-panel' ) );
-            // causes blink/flash due to loadCurrentHistory rendering as well
-            // .render();
+        this.historyView.setElement( this.$( '.history-panel' ) );
+        this.$el.attr( 'class', 'history-right-panel' );
+
+    },
+
+    /** panel dom template. id is 'right' or 'left' */
+    template: function(){
+        return [
+            this._templateHeader(),
+            this._templateBody(),
+            this._templateFooter(),
+        ].join('');
+    },
+
+    /** panel dom template. id is 'right' or 'left' */
+    _templateHeader: function( data ){
+        return [
+            '<div class="header">',
+                '<div class="buttons" style="float: right"/>',
+                '<div class="title">', _.escape( this.title ), '</div>',
+            '</div>',
+        ].join('');
     },
 
     _templateBody : function( data ){
         return [
-            '<div class="unified-panel-body unified-panel-body-background">',
+            '<div class="middle">',
                 '<div id="current-history-panel" class="history-panel"/>',
             '</div>'
         ].join('');
     },
 
+    /** panel dom template. id is 'right' or 'left' */
+    _templateFooter: function( data ){
+        return [
+            '<div class="footer">',
+                '<div class="panel-collapse ', _.escape( this.id ), '"/>',
+                '<div class="drag"/>',
+            '</div>',
+        ].join('');
+    },
+
     toString : function(){ return 'HistoryPanel'; }
+
 });
 
 module.exports = HistoryPanel;

@@ -1,0 +1,76 @@
+// ------------------------------------ prefix function
+.vendor-prefix-property(@property; @value){
+    -webkit-@{property}: @value;
+       // -moz-@{property}: @value;
+        -ms-@{property}: @value;
+         // -o-@{property}: @value;
+            @{property}: @value;
+}
+
+// ------------------------------------ containers
+.flex-vertical-container,
+.flex-horizontal-container {
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+
+    /* force ff to squish beyond content:
+       https://developer.mozilla.org/en-US/Firefox/Releases/34/Site_Compatibility#CSS */
+    // min-width: 0px;
+    // min-height: 0px;
+
+    .vendor-prefix-property(flex-wrap, wrap);
+    .vendor-prefix-property(align-items, stretch);
+    -ms-flex-align: stretch;
+
+    .vendor-prefix-property(align-content, stretch);
+    -ms-flex-line-pack: stretch;
+
+    .vendor-prefix-property(justify-content, flex-start);
+    -ms-flex-pack: start;
+}
+
+.flex-vertical-container {
+    flex-flow: column nowrap;
+}
+
+.flex-horizontal-container {
+    flex-flow: row nowrap;
+}
+
+// ------------------------------------ contents
+.flex-row,
+.flex-column {
+    .vendor-prefix-property(flex, 1 1 auto);
+
+    .vendor-prefix-property(align-self, auto);
+    -ms-flex-item-align: auto;
+}
+
+// ------------------------------------ convenience versions
+.three-rows(@header-height, @footer-height){
+    .flex-vertical-container;
+
+    & > * {
+        .flex-column;
+    }
+    .header {
+        .vendor-prefix-property(flex, 0 0 @header-height);
+    }
+    .footer {
+        .vendor-prefix-property(flex, 0 0 @footer-height);
+    }
+}
+
+.test {
+    .three-rows(64px, 64px);
+
+    height: 100%;
+    & > * {
+        border-radius: 3px;
+        background: steelblue;
+    }
+    & > *:not(:last-child) {
+        margin-bottom: 4px;
+    }
+}
