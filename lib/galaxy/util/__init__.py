@@ -1209,15 +1209,16 @@ def send_mail( frm, to, subject, body, config ):
     """
     Sends an email.
     """
+    if config.smtp_server is None:
+        log.error( "Mail is not configured for this Galaxy instance." )
+        log.info( msg )
+        return
+
     to = listify( to )
     msg = email_mime_text.MIMEText(  body.encode( 'ascii', 'replace' ) )
     msg[ 'To' ] = ', '.join( to )
     msg[ 'From' ] = frm
     msg[ 'Subject' ] = subject
-    if config.smtp_server is None:
-        log.error( "Mail is not configured for this Galaxy instance." )
-        log.info( msg )
-        return
     smtp_ssl = asbool( getattr(config, 'smtp_ssl', False ) )
     if smtp_ssl:
         s = smtplib.SMTP_SSL()
