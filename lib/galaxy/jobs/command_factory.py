@@ -23,6 +23,7 @@ def build_command(
     include_metadata=False,
     include_work_dir_outputs=True,
     remote_command_params={},
+    metadata_directory=None,
 ):
     """
     Compose the sequence of commands necessary to execute a job. This will
@@ -79,9 +80,10 @@ def build_command(
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)
 
     commands_builder.capture_return_code()
-    commands_builder.append_command("cd ..")
 
     if include_metadata and job_wrapper.requires_setting_metadata:
+        metadata_directory = metadata_directory or job_wrapper.working_directory
+        commands_builder.append_command("cd '%s'" % metadata_directory)
         __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params)
 
     return commands_builder.build()
