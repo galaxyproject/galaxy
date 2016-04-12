@@ -48,7 +48,8 @@
 }
 
 // ------------------------------------ convenience versions
-.three-rows(@header-height, @footer-height){
+// has a fixed height header
+.two-rows-header(@header-height){
     .flex-vertical-container;
 
     & > * {
@@ -57,20 +58,12 @@
     .header {
         .vendor-prefix-property(flex, 0 0 @header-height);
     }
-    .footer {
-        .vendor-prefix-property(flex, 0 0 @footer-height);
-    }
 }
 
-.test {
-    .three-rows(64px, 64px);
-
-    height: 100%;
-    & > * {
-        border-radius: 3px;
-        background: steelblue;
-    }
-    & > *:not(:last-child) {
-        margin-bottom: 4px;
+// has a fixed height header and footer
+.three-rows-header-footer(@header-height, @footer-height){
+    .two-rows-header(@header-height);
+    .footer {
+        .vendor-prefix-property(flex, 0 0 @footer-height);
     }
 }

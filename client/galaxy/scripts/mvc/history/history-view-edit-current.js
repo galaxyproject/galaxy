@@ -204,21 +204,19 @@ var CurrentHistoryView = _super.extend(
         return panel;
     },
 
+    // /** In this override, handle null models and move the search input to the top */
+    // render : function( speed ){
+    //     _super.prototype.render.call( this, speed );
+    //     this.$el.addClass( 'fixed-header' );
+    //     this.$( '> .controls' ).width( this.$el.innerWidth() );
+    //     return this;
+    // },
+
     /** In this override, handle null models and move the search input to the top */
     _buildNewRender : function(){
         if( !this.model ){ return $(); }
         var $newRender = _super.prototype._buildNewRender.call( this );
-        var $controls = $newRender.find( '> .controls' ).css({
-            // position    : 'fixed',
-            // width       : $( '#right' ).width(),
-            // margin      : '0px',
-            // border      : '0px 0px 1px solid grey',
-            // background  : '#DFE5F9',
-            // padding     : '10px 10px 0px',
-        });
-        //TODO: hacky
-        $newRender.find( '.search' ).prependTo( $controls );
-        // this.$list( $newRender ).css( 'margin-top', '104px' );
+        $newRender.find( '.search' ).prependTo( $newRender.find( '> .controls' ) );
         this._renderQuotaMessage( $newRender );
         return $newRender;
     },

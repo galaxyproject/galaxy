@@ -2,11 +2,8 @@
 @import "sprite-history-buttons.less";
 
 // ---------------------------------------------------------------------------- panel header buttons
-.history-panel-header {
-}
-
 .history-right-panel {
-    .three-rows(@panel_header_height, @panel_footer_height);
+    .three-rows-header-footer(@panel_header_height, @panel_footer_height);
 
     .header,
     .footer {
@@ -16,6 +13,9 @@
         color: #555;
         a {
             color: #555;
+            &:hover {
+                color: maroon;
+            }
         }
     }
 
@@ -24,17 +24,17 @@
         border-bottom-width: 1px;
         padding: 8px 10px 0;
         font-weight: bold;
-
-        .title {
-        }
-
-        .buttons > * {
-            .fa {
-                font-size: 1.4em;
-            }
-            &:hover {
-                color: maroon;
-                .transition(color .25s linear);
+        .buttons {
+            float: right;
+            & > * {
+                margin: 0;
+                padding: 0;
+                &:not(:first-child) {
+                    margin-left: 8px;
+                }
+                .fa {
+                    font-size: 1.4em;
+                }
             }
         }
     }
@@ -45,24 +45,54 @@
     }
 
     .footer {
-        // line-height: @panel_footer_height;
         border-top-width: 1px;
-
+        // drag icon used as handle for changing width of panel
         .drag {
-            // position: absolute;
-            // top: 0;
-            // left: 0;
-            // padding: 0 5px;
-            // text-align: center;
-            // height: @panel_footer_height;
-            // width: @panel_footer_height - 5;
-            // background-image: url(../images/visualization/draggable_horizontal.png);
-            // background-repeat: no-repeat;
-            // background-position: 50% 50%;
-            // cursor: w-resize;
+            height: @panel_footer_height;
+            width: @panel_footer_height - 5;
+            background: url(../images/visualization/draggable_horizontal.png) 50% 50% no-repeat;
+            cursor: ew-resize;
         }
     }
+
+    // .history-panel.fixed-header {
+    //     margin-top: 114px;
+    //     & > .controls {
+    //         background: white;
+    //         position: absolute;
+    //         margin: 0px;
+    //         margin-top: -114px;
+    //         border: 0px solid grey;
+    //         border-bottom-width: 1px;
+    //         background: #DFE5F9;
+    //         padding: 10px 10px 0px;
+    //     }
+    //     & > .list-items {
+    //     }
+    // }
 }
+
+.history-right-panel {
+    .middle {
+        overflow: hidden;
+    }
+}
+
+#current-history-panel {
+    .flex-vertical-container;
+
+    & > * {
+        .flex-column;
+    }
+    & > .controls {
+        .vendor-prefix-property(flex, 0 0 114px);
+    }
+    & > .list-items {
+        height: 100%;
+        overflow: auto;
+    }
+}
+
 
 // ---------------------------------------------------------------------------- dataset states
 //.dataset .state-icon {
