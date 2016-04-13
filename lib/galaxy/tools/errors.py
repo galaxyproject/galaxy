@@ -4,6 +4,7 @@ Functionality for dealing with tool errors.
 import string
 from galaxy import model, util, web
 from galaxy.util.sanitize_html import sanitize_html
+import cgi
 
 error_report_template = """
 GALAXY TOOL ERROR REPORT
@@ -204,10 +205,8 @@ class ErrorReporter( object ):
             message=sanitize_html( util.unicodify( message ), 'utf-8', 'text/html'  )
         )
 
-        self.report = string.Template( error_report_template ) \
-            .safe_substitute( report_variables )
-        self.html_report = string.Template( error_report_template_html ) \
-            .safe_substitute( report_variables )
+        self.report = string.Template( error_report_template ).safe_substitute( report_variables )
+        self.html_report = cgi.escape( string.Template( error_report_template_html ).safe_substitute( report_variables ) )
 
     def _send_report( self, user, email=None, message=None, **kwd ):
         return self.report
