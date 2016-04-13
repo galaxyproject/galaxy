@@ -202,11 +202,13 @@ class ErrorReporter( object ):
             job_info=util.unicodify( job.info ),
             job_traceback=util.unicodify( job.traceback ),
             email_str=email_str,
-            message=sanitize_html( util.unicodify( message ), 'utf-8', 'text/html'  )
+            message=util.unicodify( message )
         )
 
         self.report = string.Template( error_report_template ).safe_substitute( report_variables )
-        self.html_report = cgi.escape( string.Template( error_report_template_html ).safe_substitute( report_variables ) )
+        # Escape the message for use in the HTML report
+        report_variables['message'] = cgi.escape(report_variables['message'])
+        self.html_report = string.Template( error_report_template_html ).safe_substitute( report_variables )
 
     def _send_report( self, user, email=None, message=None, **kwd ):
         return self.report
