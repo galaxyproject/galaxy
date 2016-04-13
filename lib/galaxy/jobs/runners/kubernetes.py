@@ -103,11 +103,13 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
         k8s_job = Job(self._pykube_api, k8s_job_obj).create()
 
 
-        # define job attributes
-        ajs = AsynchronousJobState( files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper )
+        # define job attributes in the AsyncronousJobState for follow-up
+        ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper,
+                                   job_id=k8s_job_name, job_destination=job_destination)
+        self.monitor_queue.put(ajs)
 
         # external_runJob_script can be None, in which case it's not used.
-        external_runjob_script = job_wrapper.get_destination_configuration("drmaa_external_runjob_script", None)
+        external_runjob_script = None
 
     def __produce_unique_k8s_job_name(self, job_wrapper):
         return job_wrapper.get_id_tag() + "-" +
