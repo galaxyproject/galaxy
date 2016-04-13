@@ -71,16 +71,6 @@ class InputValueWrapper( ToolParameterValueWrapper ):
         self.value = value
         self._other_values = other_values
 
-    def __eq__( self, other ):
-        if isinstance( other, basestring ):
-            return str( self ) == other
-        elif isinstance( other, int ):
-            return int( self ) == other
-        elif isinstance( other, float ):
-            return float( self ) == other
-        else:
-            return super( InputValueWrapper, self ) == other
-
     def __str__( self ):
         to_param_dict_string = self.input.to_param_dict_string( self.value, self._other_values )
         if isinstance( to_param_dict_string, list ):
@@ -139,12 +129,6 @@ class SelectToolParameterWrapper( ToolParameterValueWrapper ):
         self._other_values = other_values
         self._path_rewriter = path_rewriter or DEFAULT_PATH_REWRITER
         self.fields = self.SelectToolParameterFieldWrapper( input, value, other_values, self._path_rewriter )
-
-    def __eq__( self, other ):
-        if isinstance( other, basestring ):
-            return str( self ) == other
-        else:
-            return super( SelectToolParameterWrapper, self ) == other
 
     def __str__( self ):
         # Assuming value is never a path - otherwise would need to pass
