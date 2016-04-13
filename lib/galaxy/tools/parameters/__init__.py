@@ -14,6 +14,7 @@ REPLACE_ON_TRUTHY = object()
 # Some tools use the code tag and access the code base, expecting certain tool parameters to be available here.
 __all__ = [ DataCollectionToolParameter, DataToolParameter, SelectToolParameter ]
 
+
 def visit_input_values( inputs, input_values, callback, name_prefix='', label_prefix='', parent_prefix='', context=None, no_replacement_value=REPLACE_ON_TRUTHY ):
     """
     Given a tools parameter definition (`inputs`) and a specific set of
