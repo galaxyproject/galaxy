@@ -1228,10 +1228,6 @@ def send_mail( frm, to, subject, body, config, html=None ):
     :param html: Alternative HTML representation of the body content. If
                  provided will convert the message to a MIMEMultipart. (Default 'None')
     """
-    if config.smtp_server is None:
-        log.error( "Mail is not configured for this Galaxy instance." )
-        log.info( msg )
-        return
 
     to = listify( to )
     if html is None:
@@ -1242,6 +1238,11 @@ def send_mail( frm, to, subject, body, config, html=None ):
     msg[ 'To' ] = ', '.join( to )
     msg[ 'From' ] = frm
     msg[ 'Subject' ] = subject
+
+    if config.smtp_server is None:
+        log.error( "Mail is not configured for this Galaxy instance." )
+        log.info( msg )
+        return
 
     if html is not None:
         mp_text = email_mime_text.MIMEText( body.encode( 'ascii', 'replace' ), 'plain' )
