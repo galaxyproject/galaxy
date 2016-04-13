@@ -79,7 +79,7 @@ padding:10px;
     <tbody>
         <tr><td>Dataset</td><td>${dataset_id} (${dataset_id_encoded})</td></tr>
         <tr><td>History</td><td><a href="${history_view_link}">${history_id} (${history_id_encoded})</a></td></tr>
-        <tr><td>Failed Job</td><td>${hid}: ${history_item_name}</td></tr>
+        <tr><td>Failed Job</td><td>${hid}: ${history_item_name} (${hda_id_encoded})</td></tr>
     </tbody>
 </table>
 
