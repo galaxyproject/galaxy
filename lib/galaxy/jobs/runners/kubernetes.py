@@ -265,12 +265,14 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
         return job_states
 
     def stop_job( self, job ):
-        """Attempts to delete a dispatched job"""
+        """Attempts to delete a dispatched job to the k8s cluster"""
         try:
-            shell_params, job_params = self.parse_destination_params(job.destination_params)
-            shell, job_interface = self.get_cli_plugins(shell_params, job_params)
-            cmd_out = shell.execute(job_interface.delete( job.job_runner_external_id ))
-            assert cmd_out.returncode == 0, cmd_out.stderr
+            jobs = Job.objects(self._pykube_api).filter(selector="app="+job.job_runner_external_id)
+            if jobs.response['items'].len() >= 0:
+                job_to_delete = Job(self._pykube_api, jobs.response['items'][0])
+                if job_to_delete.exists():
+                    job_to_delete.delete()
+            assert not job_to_delete.exists(), "Could not delete job,"+job.job_runner_external_id+" it still exists"
             log.debug( "(%s/%s) Terminated at user's request" % ( job.id, job.job_runner_external_id ) )
         except Exception as e:
             log.debug( "(%s/%s) User killed running job, but error encountered during termination: %s" % ( job.id, job.job_runner_external_id, e ) )
