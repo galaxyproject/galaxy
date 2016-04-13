@@ -1230,10 +1230,10 @@ def send_mail( frm, to, subject, body, config, html=None ):
     """
 
     to = listify( to )
-    if html is None:
-        msg = email_mime_text.MIMEText(  body.encode( 'ascii', 'replace' ) )
-    else:
+    if html:
         msg = email_mime_multipart.MIMEMultipart('alternative')
+    else:
+        msg = email_mime_text.MIMEText(  body.encode( 'ascii', 'replace' ) )
 
     msg[ 'To' ] = ', '.join( to )
     msg[ 'From' ] = frm
