@@ -1,7 +1,7 @@
 #!$shell
 
-$integrity_injection
 $headers
+$integrity_injection
 $slots_statement
 export GALAXY_SLOTS
 GALAXY_LIB="$galaxy_lib"
