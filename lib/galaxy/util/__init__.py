@@ -1244,7 +1244,7 @@ def send_mail( frm, to, subject, body, config, html=None ):
         log.info( msg )
         return
 
-    if not html:
+    if html:
         mp_text = email_mime_text.MIMEText( body.encode( 'ascii', 'replace' ), 'plain' )
         mp_html = email_mime_text.MIMEText( html.encode( 'ascii', 'replace' ), 'html' )
         msg.attach(mp_text)
