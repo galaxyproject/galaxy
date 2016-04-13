@@ -30,7 +30,7 @@ var PageLayoutView = Backbone.View.extend( BaseMVC.LoggableMixin ).extend({
         _.extend( this, _.pick( options, this._panelIds ) );
         this.options = _.defaults( _.omit( options.config, this._panelIds ), this.defaultOptions );
         Galaxy.modal = this.modal = new Modal.View();
-        this.masthead = new Masthead.View( this.options.config );
+        this.masthead = new Masthead.View( this.options );
         this.$el.attr( 'scroll', 'no' );
         this.$el.html( this._template() );
         this.$el.append( this.masthead.frame.$el );
