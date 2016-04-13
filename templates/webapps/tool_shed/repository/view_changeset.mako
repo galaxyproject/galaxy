@@ -74,7 +74,7 @@ ${render_tool_shed_repository_actions( repository=repository, metadata=metadata 
                 </tr>
             %endif
             <tr>
-                <td>
+                <td class="preserve-text-breaks">
                     <b>Commit message:</b>
                     <br/>${ util.unicodify( ctx.description() ) | h}<br/>
                 </td>
