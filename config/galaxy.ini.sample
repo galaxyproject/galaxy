@@ -881,6 +881,13 @@ use_interactive = True
 # to True to force these to lower case.
 #normalize_remote_user_email = False
 
+# If an e-mail address is specified here, it will hijack remote user mechanics
+# (``use_remote_user``) and have the webapp inject a single fixed user. This
+# has the effect of turning Galaxy into a single user application with no
+# login or external proxy required. Such applications should not be exposed to
+# the world.
+#single_user =
+
 # Administrative users - set this to a comma-separated list of valid Galaxy
 # users (email addresses).  These users will have access to the Admin section
 # of the server, and will have access to create users, groups, roles,

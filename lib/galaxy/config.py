@@ -153,6 +153,7 @@ class Configuration( object ):
         self.max_metadata_value_size = int( kwargs.get( "max_metadata_value_size", 5242880 ) )
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
         self.normalize_remote_user_email = string_as_bool( kwargs.get( "normalize_remote_user_email", "False" ) )
+        self.single_user = kwargs.get( "single_user", None )
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
         self.remote_user_header = kwargs.get( "remote_user_header", 'HTTP_REMOTE_USER' )
         self.remote_user_logout_href = kwargs.get( "remote_user_logout_href", None )

@@ -40,12 +40,16 @@ errorpage = """
 
 
 class RemoteUser( object ):
-    def __init__( self, app, maildomain=None, display_servers=None, admin_users=None, remote_user_header=None, remote_user_secret_header=None ):
+    def __init__(
+        self, app, maildomain=None, display_servers=None, admin_users=None,
+        single_user=None, remote_user_header=None, remote_user_secret_header=None,
+    ):
         self.app = app
         self.maildomain = maildomain
         self.display_servers = display_servers or []
         self.admin_users = admin_users or []
         self.remote_user_header = remote_user_header or 'HTTP_REMOTE_USER'
+        self.single_user = single_user
         self.config_secret_header = remote_user_secret_header
 
     def __call__( self, environ, start_response ):
@@ -59,6 +63,11 @@ class RemoteUser( object ):
             if host in self.display_servers:
                 environ[ self.remote_user_header ] = 'remote_display_server@%s' % ( self.maildomain or 'example.org' )
                 return self.app( environ, start_response )
+
+        if self.single_user:
+            assert self.remote_user_header not in environ
+            environ[ self.remote_user_header ] = self.single_user
+
         # Apache sets REMOTE_USER to the string '(null)' when using the
         # Rewrite* method for passing REMOTE_USER and a user is
         # un-authenticated.  Any other possible values need to go here as well.
