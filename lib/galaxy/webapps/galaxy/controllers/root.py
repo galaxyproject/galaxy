@@ -48,7 +48,6 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
 
     def _get_extended_config( self, trans ):
         app = trans.app
-        configured_for_inactivity_warning = app.config.user_activation_on and app.config.inactivity_box_content is not None
         user_requests = bool( trans.user and ( trans.user.requests or app.security_agent.get_accessible_request_types( trans, trans.user ) ) )
         config = {
             'active_view'                   : 'analysis',
@@ -59,7 +58,7 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
             'toolbox'                       : app.toolbox.to_dict( trans, in_panel=False ),
             'toolbox_in_panel'              : app.toolbox.to_dict( trans ),
             'message_box_visible'           : app.config.message_box_visible,
-            'show_inactivity_warning'       : configured_for_inactivity_warning and trans.user and not trans.user.active,
+            'show_inactivity_warning'       : app.config.user_activation_on and trans.user and not trans.user.active,
             # TODO: move to user
             'user_requests'                 : user_requests
         }

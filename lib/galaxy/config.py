@@ -194,8 +194,10 @@ class Configuration( object ):
         activation_email = kwargs.get( 'activation_email', None )
         self.email_from = kwargs.get( 'email_from', activation_email )
         self.user_activation_on = string_as_bool( kwargs.get( 'user_activation_on', False ) )
-        self.activation_grace_period = kwargs.get( 'activation_grace_period', None )
-        self.inactivity_box_content = kwargs.get( 'inactivity_box_content', None )
+        self.activation_grace_period = int( kwargs.get( 'activation_grace_period', 3 ) )
+        default_inactivity_box_content = ( "Your account has not been activated yet. Feel free to browse around and see what's available, but"
+                                           " you won't be able to upload data or run jobs until you have verified your email address." )
+        self.inactivity_box_content = kwargs.get( 'inactivity_box_content', default_inactivity_box_content )
         self.terms_url = kwargs.get( 'terms_url', None )
         self.instance_resource_url = kwargs.get( 'instance_resource_url', None )
         self.registration_warning_message = kwargs.get( 'registration_warning_message', None )

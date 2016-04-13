@@ -617,9 +617,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         """
         #  Activation is forced and the user is not active yet. Check the grace period.
         activation_grace_period = trans.app.config.activation_grace_period
-        #  Default value is 3 hours.
-        if activation_grace_period is None:
-            activation_grace_period = 3
         delta = timedelta( hours=int( activation_grace_period ) )
         time_difference = datetime.utcnow() - create_time
         return ( time_difference > delta or activation_grace_period == 0 )
