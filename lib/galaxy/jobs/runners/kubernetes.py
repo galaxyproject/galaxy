@@ -112,7 +112,7 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
         external_runjob_script = None
 
     def __produce_unique_k8s_job_name(self, job_wrapper):
-        return job_wrapper.get_id_tag() + "-" +
+        return "galaxy-" + job_wrapper.get_id_tag()
 
     def __get_k8s_job_spec(self, job_wrapper):
         """Creates the k8s Job spec. For a Job spec, the only requirement is to have a .spec.template."""
