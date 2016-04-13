@@ -157,7 +157,6 @@ class ToolEvaluator( object ):
                 elif isinstance( input, Conditional ):
                     values = input_values[ input.name ]
                     current = values["__current_case__"]
-                    func( values, input.test_param )
                     do_walk( input.cases[current].inputs, values )
                 elif isinstance( input, Section ):
                     values = input_values[ input.name ]
