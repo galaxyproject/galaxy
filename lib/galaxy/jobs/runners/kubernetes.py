@@ -162,16 +162,22 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
             }
         }
 
-        if self.__requires_ports(job_wrapper):
-            k8s_container['ports'] = self.__get_k8s_containers_ports(job_wrapper)
+        #if self.__requires_ports(job_wrapper):
+        #    k8s_container['ports'] = self.__get_k8s_containers_ports(job_wrapper)
 
         return k8s_container
+
+    #def __get_k8s_containers_ports(self, job_wrapper):
+
+    #    for k,v self.runner_params:
+    #        if k.startswith("container_port_"):
 
     def __assemble_k8s_container_image_name(self, job_wrapper):
         """Assembles the container image name as repo/owner/image:tag, where repo, owner and tag are optional"""
         job_destination = job_wrapper.job_destination
 
-        # Determine the job's Kubernetes destination (context, namespace) and options from the job destination definition
+        # Determine the job's Kubernetes destination (context, namespace) and options from the job destination
+        # definition
         repo = ""
         owner = ""
         if 'repo' in job_destination.params:
