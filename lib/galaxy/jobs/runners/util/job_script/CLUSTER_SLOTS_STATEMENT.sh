@@ -15,6 +15,8 @@ elif [ -n "$SLURM_NTASKS" ] || [ -n "$SLURM_CPUS_PER_TASK" ]; then
     GALAXY_SLOTS=`expr "${SLURM_NTASKS:-1}" \* "${SLURM_CPUS_PER_TASK:-1}"`
 elif [ -n "$NSLOTS" ]; then
     GALAXY_SLOTS="$NSLOTS"
+elif [ -n "$NCPUS" ]; then
+    GALAXY_SLOTS="$NCPUS"
 elif [ -n "$PBS_NCPUS" ]; then
     GALAXY_SLOTS="$PBS_NCPUS"
 elif [ -f "$PBS_NODEFILE" ]; then
