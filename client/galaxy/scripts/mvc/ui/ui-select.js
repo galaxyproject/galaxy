@@ -181,14 +181,18 @@ var View = Backbone.View.extend(
     // get index
     _getIndex: function(value) {
         // search index
-        for (var key in this.select_data) {
-            if (this.select_data[key].id == value) {
-                return key;
-            }
-        }
+        // replaced the index search code 
+        // by UnderscoreJS method to make it faster and compact
+        _.findIndex(this.select_data, {id: value});
         
+	// Old code
+        //for (var key in this.select_data) {
+        //    if (this.select_data[key].id == value) {
+        //        return key;
+        //    }
+        //}
         // not found
-        return -1;
+        //return -1;
     },
     
     // get value
