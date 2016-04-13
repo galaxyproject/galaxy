@@ -915,41 +915,30 @@ div.debug {
 .grid-header {
     padding-bottom: 1em;
 }
-
 .grid-header h2 {
     margin: 0;
     margin-bottom: 0.5em;
 }
-
 .grid-header .title {
     font-weight: bold;
 }
-
 .grid {
     padding-top: 1em;
     border-collapse: collapse;
     width: 100%;
 }
-
 .grid tbody td {
     line-height: @line-height-base;
     border-top: solid #DDDDDD 1px;
     border-bottom: solid #DDDDDD 1px;
     padding: 5px;
 }
-
 .grid tbody td:empty {
     padding: 0;
 }
-
-.grid tbody td.linewrap {
-    white-space: pre-line;
-}
-
 .grid thead tr {
     height: 2em;
 }
-
 .grid thead th {
     line-height: @line-height-base;
     background: @table-heading-bg;
@@ -960,14 +949,12 @@ div.debug {
     text-align: left;
     white-space: nowrap;
 }
-
 .grid tfoot td {
     background-color: #F8F8F8;
     border-top: solid #DDDDDD 1px;
     border-bottom: solid #DDDDDD 1px;
     padding: 5px;
 }
-
 .grid .current {
     background-color: #EEEEFF;
 }
@@ -1376,6 +1363,10 @@ div.permissionContainer {
             padding:.8em;
     }
 
+}
+
+.preserve-text-breaks {
+    white-space: pre-line;
 }
 
 // Icon buttons.
