@@ -83,15 +83,18 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
 
         # Determine the job's Kubernetes destination (context, namespace) and options from the job destination definition
 
+        # Construction of the Kubernetes Job object follows: http://kubernetes.io/docs/user-guide/persistent-volumes/
+        k8s_job_name = self.__produce_unique_k8s_job_name(job_wrapper)
         k8s_job_obj = {
             "apiVersion": "batch/v1",
             "kind": "Job",
             "metadata":
                  # metadata.name is the name of the pod resource created, and must be unique
                  # http://kubernetes.io/docs/user-guide/configuring-containers/
-                 {"name": self.__produce_unique_k8s_job_name(job_wrapper)}
+                 {"name": k8s_job_name}
             ,
-            "spec": self.__produce_k8s_job_spec(job_wrapper)}
+            "spec": self.__get_k8s_job_spec(job_wrapper)
+        }
 
 
         # wrapper.get_id_tag() instead of job_id for compatibility with TaskWrappers.
