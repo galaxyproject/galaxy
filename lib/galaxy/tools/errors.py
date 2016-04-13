@@ -3,7 +3,6 @@ Functionality for dealing with tool errors.
 """
 import string
 from galaxy import model, util, web
-from galaxy.util.sanitize_html import sanitize_html
 import cgi
 
 error_report_template = """
