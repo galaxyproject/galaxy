@@ -39,7 +39,7 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
         # Check if pykube was importable, fail if not
         assert operator is not None, K8S_IMPORT_MESSAGE
         """Start the job runner parent object """
-        super( KubernetesJobRunner, self ).__init__( app, nworkers )
+        super(KubernetesJobRunner, self).__init__(app, nworkers)
 
         # self.cli_interface = CliInterface()
 
@@ -51,12 +51,13 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
         # self._init_monitor_thread()
         # self._init_worker_threads()
 
-    def get_cli_plugins( self, shell_params, job_params ):
+    def get_cli_plugins(self, shell_params, job_params ):
         return self.cli_interface.get_plugins( shell_params, job_params )
 
     def url_to_destination( self, url ):
+        # TODO apparently needs to be implemented for pykube-k8s
         params = {}
-        shell_params, job_params = url.split( '/' )[ 2:4 ]
+        shell_params, job_params = url.split('/')[2:4]
         # split 'foo=bar&baz=quux' into { 'foo' : 'bar', 'baz' : 'quux' }
         shell_params = dict( [ ( 'shell_' + k, v ) for k, v in [ kv.split( '=', 1 ) for kv in shell_params.split( '&' ) ] ] )
         job_params = dict( [ ( 'job_' + k, v ) for k, v in [ kv.split( '=', 1 ) for kv in job_params.split( '&' ) ] ] )
@@ -67,13 +68,14 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
         return JobDestination( runner='cli', params=params )
 
     def parse_destination_params( self, params ):
+        # TODO apparently no need to re-implement, can be deleted.
         return split_params( params )
 
     def queue_job( self, job_wrapper ):
         """Create job script and submit it to Kubernetes cluster"""
         # prepare the job
-        # TODO understand weather we need include_metadata and include_work_dir_outputs
-        if not self.prepare_job( job_wrapper, include_metadata=True ):
+        # TODO understand whether we need to include_metadata and include_work_dir_outputs
+        if not self.prepare_job(job_wrapper, include_metadata=True ):
             return
 
         # Get shell and job execution interface
