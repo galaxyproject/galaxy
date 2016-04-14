@@ -90,9 +90,7 @@ class RemoteFilesAPIController( BaseAPIController ):
             if user_ftp_base_dir is None:
                 raise exceptions.ConfigDoesNotAllowException( 'The configuration of this Galaxy instance does not allow upload from FTP directories.' )
             try:
-                user_ftp_dir = None
-                identifier = trans.app.config.ftp_upload_dir_identifier
-                user_ftp_dir = os.path.join( user_ftp_base_dir, getattr(trans.user, identifier) )
+                user_ftp_dir = trans.user_ftp_dir
                 if user_ftp_dir is not None:
                     response = self.__load_all_filenames( user_ftp_dir )
                 else:
