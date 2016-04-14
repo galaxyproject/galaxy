@@ -767,9 +767,12 @@ use_interactive = True
 # Log to statsd
 # Statsd is an external statistics aggregator (https://github.com/etsy/statsd)
 # Enabling the following options will cause galaxy to log request timing and
-# other statistics to the configured statsd instance.
+# other statistics to the configured statsd instance.  The statsd_prefix is
+# useful if you are running multiple Galaxy instances and want to segment
+# statistics between them within the same aggregator.
 #statsd_host=
 #statsd_port=8125
+#statsd_prefix=galaxy
 
 # -- Data Libraries
 
