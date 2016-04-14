@@ -21,12 +21,13 @@ class StatsdMiddleware(object):
     def __init__(self,
                  application,
                  statsd_host,
-                 statsd_port):
+                 statsd_port,
+                 statsd_prefix):
         if not statsd:
             raise ImportError( "Statsd middleware configured, but no statsd python module found. "
                            "Please install the python statsd module to use this functionality." )
         self.application = application
-        self.statsd_client = statsd.StatsClient(statsd_host, statsd_port, prefix='galaxy')
+        self.statsd_client = statsd.StatsClient(statsd_host, statsd_port, prefix=statsd_prefix)
 
     def __call__(self, environ, start_response):
         start_time = time.time()
