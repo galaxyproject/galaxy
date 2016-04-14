@@ -22,6 +22,8 @@ from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisu
 from galaxy.web.framework.helpers import grids, time_ago
 
 from .library import LibraryListGrid
+import os
+import yaml
 
 log = logging.getLogger( __name__ )
 
@@ -1012,6 +1014,45 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
                 'saved_visualization' : False
             }
         return trans.fill_template_mako( "visualization/phyloviz.mako", data=data, config=config )
+
+    @web.expose
+    @web.require_login( "run Galaxy Interactive Environments" )
+    def gie_list( self, trans, **kwargs ):
+        if not hasattr( self, 'gie_image_map' ):
+            self.gie_image_map = {}
+
+            for gie_dir in self.app.config.gie_dirs:
+                gie_list = os.listdir( gie_dir )
+                for gie in gie_list:
+                    gie_path = os.path.join(gie_dir, gie)
+
+                    if not os.path.isdir(gie_path):
+                        continue
+
+                    if not os.path.exists(self._gie_config_dir(gie_path)):
+                        continue
+
+                    if os.path.exists( self._gie_config_dir( gie_path, 'allowed_images.yml' ) ):
+                        image_file = self._gie_config_dir( gie_path, 'allowed_images.yml' )
+                    elif os.path.exists( self._gie_config_dir( gie_path, 'allowed_images.yml.sample' ) ):
+                        image_file = self._gie_config_dir( gie_path, 'allowed_images.yml.sample' )
+                    else:
+                        continue
+
+                    with open( image_file, 'r' ) as handle:
+                        self.gie_image_map[gie] = yaml.load( handle )
+
+        return trans.fill_template_mako(
+            "visualization/gie.mako",
+            gie_image_map=self.gie_image_map,
+            history=trans.get_history(),
+        )
+
+    def _gie_config_dir(self, gie_path, *args):
+        nargs = [gie_path, 'config']
+        if len(args) > 0:
+            nargs += args
+        return os.path.join(*nargs)
 
     @web.json
     def bookmarks_from_dataset( self, trans, hda_id=None, ldda_id=None ):

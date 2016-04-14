@@ -191,7 +191,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Pass debug flag to conda commands.
 #conda_debug = False
 # conda channels to enable by default (http://conda.pydata.org/docs/custom-channels.html)
-#conda_ensure_channels = r,bioconda
+#conda_ensure_channels = r,bioconda,iuc
 # Set to True to instruct Galaxy to look for and install missing tool
 # dependencies before each job runs.
 #conda_auto_install = False
@@ -273,14 +273,14 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # environment plugins.  By default none will be loaded.  Set to
 # config/plugins/interactive_environments to load Galaxy's stock plugins
 # (currently just IPython).  These will require Docker to be configured and
-# have security considerations, so proceed with caution. The path is relative to the 
+# have security considerations, so proceed with caution. The path is relative to the
 # Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a comma
 # separated list.
 #interactive_environment_plugins_directory =
 
 # Interactive tour directory: where to store interactive tour definition files.
 # Galaxy ships with several basic interface tours enabled, though a different
-# directory with custom tours can be specified here. The path is relative to the 
+# directory with custom tours can be specified here. The path is relative to the
 # Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a comma
 # separated list.
 #tour_config_dir = config/plugins/tours
@@ -610,8 +610,13 @@ nglims_config_file = tool-data/nglims.yaml
 # launch the proxy if it is actually going to be used (e.g. for IPython).
 #dynamic_proxy_manage=True
 
-# Dynamic proxy can use an SQLite database or a JSON file for IPC, set that
-# here.
+# As of 16.04 Galaxy supports multiple proxy types. The original NodeJS
+# implementation, alongside a new Golang single-binary-no-dependencies
+# version. Valid values are (node, golang)
+#dynamic_proxy=node
+#
+# The NodeJS dynamic proxy can use an SQLite database or a JSON file for IPC,
+# set that here.
 #dynamic_proxy_session_map=database/session_map.sqlite
 
 # Set the port and IP for the the dynamic proxy to bind to, this must match
@@ -631,6 +636,29 @@ nglims_config_file = tool-data/nglims.yaml
 # same path that your cookies are under. This will result in a url like
 # https://FQDN/galaxy-prefix/gie_proxy for proxying
 #dynamic_proxy_prefix=gie_proxy
+
+# The Golang proxy also manages the docker containers more closely than the
+# NodeJS proxy, so is able to expose more container management related options
+
+# This attribute governs the minimum length of time between consecutive HTTP/WS
+# requests through the proxy, before the proxy considers a container as being
+# inactive and kills it.
+#dynamic_proxy_golang_noaccess = 60
+
+# In order to kill containers, the golang proxy has to check at some interval
+# for possibly dead containers. This is exposed as a configurable parameter,
+# but the default value is probably fine.
+#dynamic_proxy_golang_clean_interval = 10
+
+# The golang proxy needs to know how to talk to your docker daemon. Currently
+# TLS is not supported, that will come in an update.
+#dynamic_proxy_golang_docker_address = unix:///var/run/docker.sock
+
+# The golang proxy uses a RESTful HTTP API for communication with Galaxy
+# instead of a JSON or SQLite file for IPC. If you do not specify this, it will
+# be set randomly for you. You should set this if you are managing the proxy
+# manually.
+#dynamic_proxy_golang_api_key = None
 
 # -- Logging and Debugging
 
@@ -909,6 +937,10 @@ use_interactive = True
 # Despite the name, this feature is enabled by default
 # in 16.01 and the option will go away in the future.
 #enable_beta_tool_command_isolation = True
+
+# Enable the new interface for installing tools from Tool Shed
+# via the API. Admin menu will list both if enabled.
+#enable_beta_ts_api_install = False
 
 
 # Set the following to a number of threads greater than 1 to spawn

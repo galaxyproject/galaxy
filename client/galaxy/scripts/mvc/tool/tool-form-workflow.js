@@ -49,7 +49,7 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
                 if ( input.type ) {
                     if ( [ 'data', 'data_collection' ].indexOf( input.type ) != -1 ) {
                         input.type = 'hidden';
-                        input.info = 'Data input \'' + input.name + '\' (' + Utils.textify( input.extensions && input.extensions.toString() ) + ')';
+                        input.info = 'Data input \'' + input.name + '\' (' + Utils.textify( input.extensions ) + ')';
                         input.value = { '__class__': 'RuntimeValue' };
                     } else {
                         input.collapsible_value = { '__class__': 'RuntimeValue' };

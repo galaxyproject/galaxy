@@ -4,6 +4,7 @@ More infromation on Pulsar can be found at http://pulsar.readthedocs.org/.
 """
 from __future__ import absolute_import  # Need to import pulsar_client absolutely.
 
+from distutils.version import LooseVersion
 import errno
 import logging
 import os
@@ -31,7 +32,7 @@ from galaxy.tools.deps import dependencies
 from galaxy.util import string_as_bool_or_none
 from galaxy.util.bunch import Bunch
 from galaxy.util import specs
-
+from galaxy.util import galaxy_directory
 
 log = logging.getLogger( __name__ )
 
@@ -42,11 +43,15 @@ __all__ = [
     'PulsarEmbeddedJobRunner',
 ]
 
+MINIMUM_PULSAR_VERSION = LooseVersion("0.7.0.dev3")
+
 NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE = "Pulsar misconfiguration - Pulsar client configured to set metadata remotely, but remote Pulsar isn't properly configured with a galaxy_home directory."
 NO_REMOTE_DATATYPES_CONFIG = "Pulsar client is configured to use remote datatypes configuration when setting metadata externally, but Pulsar is not configured with this information. Defaulting to datatypes_conf.xml."
 GENERIC_REMOTE_ERROR = "Failed to communicate with remote job server."
 FAILED_REMOTE_ERROR = "Remote job server indicated a problem running or monitoring this job."
 LOST_REMOTE_ERROR = "Remote job server could not determine this job's state."
+
+UPGRADE_PULSAR_ERROR = "Galaxy is misconfigured, please contact administrator. The target Pulsar server is unsupported, this version of Galaxy requires Pulsar version %s or newer." % MINIMUM_PULSAR_VERSION
 
 # Is there a good way to infer some default for this? Can only use
 # url_for from web threads. https://gist.github.com/jmchilton/9098762
@@ -173,18 +178,14 @@ class PulsarJobRunner( AsynchronousJobRunner ):
         self._init_monitor_thread()
 
     def __init_client_manager( self ):
-        pulsar_conf = self.runner_params.get('pulsar_conf', None)
+        pulsar_conf = self.runner_params.get('pulsar_config', None)
         self.__init_pulsar_app(pulsar_conf)
 
         client_manager_kwargs = {}
         for kwd in 'manager', 'cache', 'transport', 'persistence_directory':
             client_manager_kwargs[ kwd ] = self.runner_params[ kwd ]
         if self.pulsar_app is not None:
-            # TODO: Make this more generic and configurable - client_manager
-            # should define an app and client (destination) should reference
-            # a job manager.
-            job_manager = self.pulsar_app.only_manager
-            client_manager_kwargs[ "job_manager" ] = job_manager
+            client_manager_kwargs[ "pulsar_app" ] = self.pulsar_app
             # TODO: Hack remove this following line pulsar lib update
             # that includes https://github.com/galaxyproject/pulsar/commit/ce0636a5b64fae52d165bcad77b2caa3f0e9c232
             client_manager_kwargs[ "file_cache" ] = None
@@ -205,6 +206,14 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             log.info("Loading Pulsar app configuration from %s" % pulsar_conf_path)
             with open(pulsar_conf_path, "r") as f:
                 conf.update(yaml.load(f) or {})
+        if "job_metrics_config_file" not in conf:
+            conf["job_metrics"] = self.app.job_metrics
+        if "staging_directory" not in conf:
+            conf["staging_directory"] = "database/pulsar_staging"
+        if "persistence_directory" not in conf:
+            conf["persistence_directory"] = "database/pulsar_persisted_data"
+        if "galaxy_home" not in conf:
+            conf["galaxy_home"] = galaxy_directory()
         self.pulsar_app = pulsar.core.PulsarApp(**conf)
 
     def url_to_destination( self, url ):
@@ -261,6 +270,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
                 input_files=self.get_input_files(job_wrapper),
                 client_outputs=self.__client_outputs(client, job_wrapper),
                 working_directory=job_wrapper.tool_working_directory,
+                metadata_directory=job_wrapper.working_directory,
                 tool=job_wrapper.tool,
                 config_files=job_wrapper.extra_filenames,
                 dependencies_description=dependencies_description,
@@ -295,6 +305,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             client = self.get_client_from_wrapper(job_wrapper)
             tool = job_wrapper.tool
             remote_job_config = client.setup(tool.id, tool.version)
+            PulsarJobRunner.check_job_config(remote_job_config)
             rewrite_parameters = PulsarJobRunner.__rewrite_parameters( client )
             prepare_kwds = {}
             if rewrite_parameters:
@@ -306,7 +317,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             dependency_resolution = PulsarJobRunner.__dependency_resolution( client )
             metadata_kwds = self.__build_metadata_configuration(client, job_wrapper, remote_metadata, remote_job_config)
             remote_command_params = dict(
-                working_directory=remote_job_config['working_directory'],
+                working_directory=remote_job_config['metadata_directory'],
                 metadata_kwds=metadata_kwds,
                 dependency_resolution=dependency_resolution,
             )
@@ -322,14 +333,22 @@ class PulsarJobRunner( AsynchronousJobRunner ):
                 compute_job_directory=remote_job_directory,
             )
             job_wrapper.disable_commands_in_new_shell()
+            metadata_directory = None
+            if remote_metadata:
+                metadata_directory = remote_job_config['metadata_directory']
+
             command_line = build_command(
                 self,
                 job_wrapper=job_wrapper,
                 container=container,
                 include_metadata=remote_metadata,
+                metadata_directory=metadata_directory,
                 include_work_dir_outputs=False,
                 remote_command_params=remote_command_params,
             )
+        except UnsupportedPulsarException as e:
+            job_wrapper.fail( e.message, exception=False )
+            log.exception("failure running job %d" % job_wrapper.job_id)
         except Exception:
             job_wrapper.fail( "failure preparing job", exception=True )
             log.exception("failure running job %d" % job_wrapper.job_id)
@@ -545,12 +564,21 @@ class PulsarJobRunner( AsynchronousJobRunner ):
         work_dir_outputs = self.get_work_dir_outputs( job_wrapper )
         output_files = self.get_output_files( job_wrapper )
         client_outputs = ClientOutputs(
-            working_directory=job_wrapper.working_directory,
+            working_directory=job_wrapper.tool_working_directory,
+            metadata_directory=job_wrapper.working_directory,
             work_dir_outputs=work_dir_outputs,
             output_files=output_files,
             version_file=job_wrapper.get_version_string_path(),
         )
         return client_outputs
+
+    @staticmethod
+    def check_job_config(remote_job_config):
+        # 0.6.0 was newest Pulsar version that did not report it's version.
+        pulsar_version = LooseVersion(remote_job_config.get('pulsar_version', "0.6.0"))
+        log.info("pulsar_version is %s" % pulsar_version)
+        if pulsar_version < MINIMUM_PULSAR_VERSION:
+            raise UnsupportedPulsarException()
 
     @staticmethod
     def __dependencies_description( pulsar_client, job_wrapper ):
@@ -610,6 +638,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             outputs_directory = remote_job_config['outputs_directory']
             configs_directory = remote_job_config['configs_directory']
             working_directory = remote_job_config['working_directory']
+            metadata_directory = remote_job_config['metadata_directory']
             # For metadata calculation, we need to build a list of of output
             # file objects with real path indicating location on Galaxy server
             # and false path indicating location on compute server. Since the
@@ -626,7 +655,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
                     if real_path == output.real_path:
                         output.false_path = pulsar_workdir_path
             metadata_kwds['output_fnames'] = outputs
-            metadata_kwds['compute_tmp_dir'] = working_directory
+            metadata_kwds['compute_tmp_dir'] = metadata_directory
             metadata_kwds['config_root'] = remote_galaxy_home
             default_config_file = os.path.join(remote_galaxy_home, 'config/galaxy.ini')
             metadata_kwds['config_file'] = remote_system_properties.get('galaxy_config_file', default_config_file)
@@ -801,3 +830,9 @@ class PulsarComputeEnvironment( ComputeEnvironment ):
 
     def tool_directory( self ):
         return self._tool_dir
+
+
+class UnsupportedPulsarException(Exception):
+
+    def __init__(self):
+        super(UnsupportedPulsarException, self).__init__(UPGRADE_PULSAR_ERROR)

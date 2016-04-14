@@ -7,7 +7,7 @@ import re
 import sys
 import optparse
 
-sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir ) )
+sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir, 'lib' ) )
 sys.path.insert(1, os.path.join( os.path.dirname( __file__ ) ) )
 
 import galaxy.webapps.tool_shed.config as tool_shed_config

@@ -28,7 +28,7 @@ from os.path import normpath, relpath
 from xml.etree import ElementInclude, ElementTree
 
 from six import binary_type, iteritems, PY3, string_types, text_type
-from six.moves import email_mime_text, xrange, zip
+from six.moves import email_mime_text, email_mime_multipart, xrange, zip
 from six.moves.urllib import parse as urlparse
 from six.moves.urllib import request as urlrequest
 
@@ -1205,19 +1205,51 @@ def size_to_bytes( size ):
         return int( size )
 
 
-def send_mail( frm, to, subject, body, config ):
+def send_mail( frm, to, subject, body, config, html=None ):
     """
     Sends an email.
+
+    :type  frm: str
+    :param frm: from address
+
+    :type  to: str
+    :param to: to address
+
+    :type  subject: str
+    :param subject: Subject line
+
+    :type  body: str
+    :param body: Body text (should be plain text)
+
+    :type  config: object
+    :param config: Galaxy configuration object
+
+    :type  html: str
+    :param html: Alternative HTML representation of the body content. If
+                 provided will convert the message to a MIMEMultipart. (Default 'None')
     """
+
     to = listify( to )
-    msg = email_mime_text.MIMEText(  body.encode( 'ascii', 'replace' ) )
+    if html:
+        msg = email_mime_multipart.MIMEMultipart('alternative')
+    else:
+        msg = email_mime_text.MIMEText(  body.encode( 'ascii', 'replace' ) )
+
     msg[ 'To' ] = ', '.join( to )
     msg[ 'From' ] = frm
     msg[ 'Subject' ] = subject
+
     if config.smtp_server is None:
         log.error( "Mail is not configured for this Galaxy instance." )
         log.info( msg )
         return
+
+    if html:
+        mp_text = email_mime_text.MIMEText( body.encode( 'ascii', 'replace' ), 'plain' )
+        mp_html = email_mime_text.MIMEText( html.encode( 'ascii', 'replace' ), 'html' )
+        msg.attach(mp_text)
+        msg.attach(mp_html)
+
     smtp_ssl = asbool( getattr(config, 'smtp_ssl', False ) )
     if smtp_ssl:
         s = smtplib.SMTP_SSL()

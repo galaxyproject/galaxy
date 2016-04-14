@@ -442,7 +442,7 @@ class AdminToolshed( AdminGalaxy ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        return suc.get_repository_file_contents( trans.app, file_path, repository_id )
+        return suc.get_repository_file_contents( trans.app, file_path, repository_id, is_admin=True )
 
     @web.expose
     @web.require_admin
@@ -973,7 +973,7 @@ class AdminToolshed( AdminGalaxy ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        return suc.open_repository_files_folder( trans.app, folder_path, repository_id )
+        return suc.open_repository_files_folder( trans.app, folder_path, repository_id, is_admin=True )
 
     @web.expose
     @web.require_admin

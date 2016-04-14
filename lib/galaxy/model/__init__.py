@@ -1186,9 +1186,13 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         interactions when adding many datasets to history at once.
         """
         all_hdas = all( imap( is_hda, datasets ) )
-        optimize = len( datasets) > 1 and parent_id is None and all_hdas and set_hid and not quota
+        optimize = len( datasets) > 1 and parent_id is None and all_hdas and set_hid
         if optimize:
             self.__add_datasets_optimized( datasets, genome_build=genome_build )
+            if quota and self.user:
+                disk_usage = sum([d.get_total_size() for d in datasets])
+                self.user.adjust_total_disk_usage(disk_usage)
+
             sa_session.add_all( datasets )
             if flush:
                 sa_session.flush()

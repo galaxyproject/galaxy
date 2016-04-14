@@ -52,9 +52,8 @@
       <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
     </datatype>
-    <!-- MSI added Datatypes -->
     <datatype extension="csv" type="galaxy.datatypes.tabular:CSV" display_in_upload="true" />
-    <!-- End MSI added Datatypes -->
+    <datatype extension="tsv" type="galaxy.datatypes.tabular:TSV" display_in_upload="true" />
     <datatype extension="customtrack" type="galaxy.datatypes.interval:CustomTrack"/>
     <datatype extension="bowtie_color_index" type="galaxy.datatypes.ngsindex:BowtieColorIndex" mimetype="text/html" display_in_upload="False"/>
     <datatype extension="bowtie_base_index" type="galaxy.datatypes.ngsindex:BowtieBaseIndex" mimetype="text/html" display_in_upload="False"/>
@@ -440,7 +439,9 @@
     <datatype extension="vtkascii" type="galaxy.datatypes.constructive_solid_geometry:VtkAscii" display_in_upload="true" />
     <datatype extension="vtkbinary" type="galaxy.datatypes.constructive_solid_geometry:VtkBinary" display_in_upload="true" />
     <!-- Metagenomic Datatype -->
-    <datatype extension="biom1" type="galaxy.datatypes.text:Biom1" display_in_upload="True" subclass="True" mimetype="application/json" />
+    <datatype extension="biom1" type="galaxy.datatypes.text:Biom1" display_in_upload="True" subclass="True" mimetype="application/json">
+        <display file="biom/biom_simple.xml" />
+    </datatype>
     <!-- Strand-specific Coordinate Count Datatype used by the Center for Eukaryotic Gene Regulation labs at Penn State -->
     <datatype extension="scidx" type="galaxy.datatypes.interval:ScIdx" display_in_upload="true" />
 
@@ -572,6 +573,7 @@
     <sniffer type="galaxy.datatypes.sequence:DotBracket"/>
     <sniffer type="galaxy.datatypes.tabular:ConnectivityTable"/>
     <sniffer type="galaxy.datatypes.tabular:CSV"/>
+    <sniffer type="galaxy.datatypes.tabular:TSV"/>
     <sniffer type="galaxy.datatypes.msa:Hmmer2" />
     <sniffer type="galaxy.datatypes.msa:Hmmer3" />
     <sniffer type="galaxy.datatypes.msa:Stockholm_1_0" />

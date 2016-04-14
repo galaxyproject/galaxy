@@ -162,12 +162,16 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
       - [ ] Ensure all [blocking milestone PRs](https://github.com/galaxyproject/galaxy/pulls?q=is%3Aopen+is%3Apr+milestone%3A${version}) have been merged, delayed, or closed.
 
             make release-check-blocking-prs RELEASE_CURR=${version}
-      - [ ] Merge the latest release into dev.
+      - [ ] Merge the latest release into dev and push upstream.
 
-            git fetch upstream && git checkout dev && git merge --ff-only upstream dev && git merge upstream release_${previous_version}
+            make release-merge-stable-to-next RELEASE_PREVIOUS=release_${previous_version}
+            make release-push-dev
+
       - [ ] Create and push release branch:
 
             make release-create-rc RELEASE_CURR=${version} RELEASE_NEXT=${next_version}
+
+      - [ ] Open PRs from your fork of branch ``version-${version}`` to upstream ``release_${version}`` and of ``version-${next_version}.dev`` to ``dev``.
 
 - [ ] **Deploy and Test Release**
 
@@ -318,8 +322,10 @@ def check_blocking_issues(argv):
     release_name = argv[2]
     block = 0
     github = _github_client()
-    issues = github.issues.list(
-        state="open",
+    issues = github.issues.list_by_repo(
+        user='galaxyproject',
+        repo='galaxy',
+        state="open"
     )
     for page in issues:
         for issue in page:

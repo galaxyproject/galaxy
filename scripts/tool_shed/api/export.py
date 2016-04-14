@@ -13,7 +13,7 @@ import sys
 import tempfile
 import urllib2
 
-sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir ) )
+sys.path.insert( 1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir, 'lib' ) )
 from tool_shed.util import basic_util
 
 from common import display, submit

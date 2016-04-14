@@ -2,7 +2,7 @@ import argparse
 import os
 import sys
 
-sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
+sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, 'lib' ) )
 
 import boto
 

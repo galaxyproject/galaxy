@@ -30,6 +30,15 @@ open-project: ## open project on github
 lint: ## check style using tox and flake8 for Python 2 and Python 3
 	$(IN_VENV) tox -e py27-lint && tox -e py34-lint
 
+release-ensure-upstream: ## Ensure upstream branch for release commands setup
+	if [ ! `git remote -v | grep -q $(RELEASE_UPSTREAM)` ]; then git remote add $(RELEASE_UPSTREAM) git@github.com:galaxyproject/galaxy.git; fi
+
+release-merge-stable-to-next: release-ensure-upstream ## Merge last release into dev
+	git fetch $(RELEASE_UPSTREAM) && git checkout dev && git merge --ff-only $(RELEASE_UPSTREAM)/dev && git merge $(RELEASE_UPSTREAM)/$(RELEASE_PREVIOUS)
+
+release-push-dev: release-ensure-upstream # Push local dev branch upstream
+	git push $(RELEASE_UPSTREAM) dev
+
 release-issue: ## Create release issue on github
 	$(IN_VENV) python scripts/bootstrap_history.py --create-release-issue $(RELEASE_CURR)
 
@@ -70,13 +79,13 @@ clean-grunt-docker-image: ## Remove grunt docker image
 
 
 # Release Targets
-release-create-rc: ## Create a release-candidate branch 
+release-create-rc: release-ensure-upstream ## Create a release-candidate branch 
 	git checkout dev
-	git pull --ff-only ${RELEASE_UPSTREAM} dev
+	git pull --ff-only $(RELEASE_UPSTREAM) dev
 	git push origin dev
 	git checkout -b release_$(RELEASE_CURR)
 	git push origin release_$(RELEASE_CURR)
-	git push ${RELEASE_UPSTREAM} release_$(RELEASE_CURR)
+	git push $(RELEASE_UPSTREAM) release_$(RELEASE_CURR)
 	git checkout -b version-$(RELEASE_CURR)
 	sed -i "s/^VERSION_MAJOR = .*/VERSION_MAJOR = \"$(RELEASE_CURR)\"/" lib/galaxy/version.py
 	sed -i "s/^VERSION_MINOR = .*/VERSION_MINOR = \"rc1\"/" lib/galaxy/version.py
@@ -97,8 +106,11 @@ release-create-rc: ## Create a release-candidate branch
 	git push origin version-$(RELEASE_NEXT).dev:version-$(RELEASE_NEXT).dev
 	git branch -d version-$(RELEASE_CURR)
 	git branch -d version-$(RELEASE_NEXT).dev
+	# TODO: Use hub to automate these PR creations or push directly.
+	@echo "Open a PR from version-$(RELEASE_CURR) of your fork to release_$(RELEASE_CURR)"
+	@echo "Open a PR from version-$(RELEASE_NEXT).dev of your fork to dev"
 
-create_release: ## Create a release branch
+create_release: release-ensure-upstream ## Create a release branch
 	git pull --ff-only $(RELEASE_UPSTREAM) master
 	git push origin master
 	git checkout release_$(RELEASE_CURR)

@@ -11,10 +11,10 @@ from datetime import datetime, timedelta
 from time import strftime
 from optparse import OptionParser
 
-sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
-
 import sqlalchemy as sa
 from sqlalchemy import and_, distinct, false, not_
+
+sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, 'lib' ) )
 
 import galaxy.webapps.tool_shed.config as tool_shed_config
 import galaxy.webapps.tool_shed.model.mapping

@@ -785,7 +785,7 @@ class JobWrapper( object ):
     def cleanup_job(self):
         """ Remove the job after it is complete, should return "always", "onsuccess", or "never".
         """
-        self.get_destination_configuration("cleanup_job", DEFAULT_CLEANUP_JOB)
+        return self.get_destination_configuration("cleanup_job", DEFAULT_CLEANUP_JOB)
 
     def can_split( self ):
         # Should the job handler split this job up?

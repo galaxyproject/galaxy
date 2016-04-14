@@ -59,8 +59,7 @@ class DefaultGalaxyTestDriver(driver_util.GalaxyTestDriver):
 class FrameworkToolsGalaxyTestDriver(DefaultGalaxyTestDriver):
     """Galaxy-style nose TestDriver for testing framework Galaxy tools."""
 
-    default_tool_conf = driver_util.FRAMEWORK_SAMPLE_TOOLS_CONF
-    datatypes_conf_override = driver_util.FRAMEWORK_DATATYPES_CONF
+    framework_tool_and_types = True
 
 
 class DataManagersGalaxyTestDriver(driver_util.GalaxyTestDriver):

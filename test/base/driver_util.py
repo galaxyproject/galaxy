@@ -97,6 +97,7 @@ def setup_galaxy_config(
     default_install_db_merged=True,
     default_tool_data_table_config_path=None,
     default_shed_tool_data_table_config=None,
+    default_job_config_file=None,
     enable_tool_shed_check=False,
     default_tool_conf=None,
     shed_tool_conf=None,
@@ -126,6 +127,7 @@ def setup_galaxy_config(
     else:
         user_library_import_dir = None
         library_import_dir = None
+    job_config_file = os.environ.get('GALAXY_TEST_JOB_CONFIG_FILE', default_job_config_file)
     tool_path = os.environ.get('GALAXY_TEST_TOOL_PATH', 'tools')
     tool_dependency_dir = os.environ.get('GALAXY_TOOL_DEPENDENCY_DIR', None)
     if tool_dependency_dir is None:
@@ -168,8 +170,9 @@ def setup_galaxy_config(
         file_path=file_path,
         galaxy_data_manager_data_path=galaxy_data_manager_data_path,
         id_secret='changethisinproductiontoo',
-        job_working_directory=job_working_directory,
+        job_config_file=job_config_file,
         job_queue_workers=5,
+        job_working_directory=job_working_directory,
         library_import_dir=library_import_dir,
         log_destination="stdout",
         new_file_path=new_file_path,
@@ -450,7 +453,7 @@ def build_galaxy_app(simple_kwargs):
     Galaxy override variables are respected. Also setup "global" references
     to sqlalchemy database context for Galaxy and install databases.
     """
-    log.info("Galaxy database connection:", simple_kwargs["database_connection"])
+    log.info("Galaxy database connection: %s", simple_kwargs["database_connection"])
     simple_kwargs['global_conf'] = get_webapp_global_conf()
     simple_kwargs['global_conf']['__file__'] = "config/galaxy.ini.sample"
     simple_kwargs = load_app_properties(
@@ -470,7 +473,7 @@ def build_shed_app(simple_kwargs):
     Construct paste style complex dictionary. Also setup "global" reference
     to sqlalchemy database context for tool shed database.
     """
-    log.info("Tool shed database connection:", simple_kwargs["database_connection"])
+    log.info("Tool shed database connection: %s", simple_kwargs["database_connection"])
     # TODO: Simplify global_conf to match Galaxy above...
     simple_kwargs['__file__'] = 'tool_shed_wsgi.ini.sample'
     simple_kwargs['global_conf'] = get_webapp_global_conf()
@@ -581,27 +584,54 @@ class GalaxyTestDriver(TestDriver):
 
     testing_shed_tools = False
 
-    def setup(self):
-        """Setup a Galaxy server for functional test (if needed)."""
+    def setup(self, config_object=None):
+        """Setup a Galaxy server for functional test (if needed).
+
+        Configuration options can be specified as attributes on the supplied
+        ```config_object``` (defaults to self).
+        """
+        if config_object is None:
+            config_object = self
         self.external_galaxy = os.environ.get('GALAXY_TEST_EXTERNAL', None)
         self.galaxy_test_tmp_dir = get_galaxy_test_tmp_dir()
         self.temp_directories.append(self.galaxy_test_tmp_dir)
 
-        testing_shed_tools = getattr(self, "testing_shed_tools", False)
-        default_tool_conf = getattr(self, "default_tool_conf", None)
-        datatypes_conf_override = getattr(self, "datatypes_conf_override", None)
+        testing_shed_tools = getattr(config_object, "testing_shed_tools", False)
+
+        if getattr(config_object, "framework_tool_and_types", False):
+            default_tool_conf = FRAMEWORK_SAMPLE_TOOLS_CONF
+            datatypes_conf_override = FRAMEWORK_DATATYPES_CONF
+        else:
+            default_tool_conf = getattr(config_object, "default_tool_conf", None)
+            datatypes_conf_override = getattr(config_object, "datatypes_conf_override", None)
 
         if self.external_galaxy is None:
             tempdir = tempfile.mkdtemp(dir=self.galaxy_test_tmp_dir)
             # Configure the database path.
             galaxy_db_path = database_files_path(tempdir)
-            galaxy_config = setup_galaxy_config(
-                galaxy_db_path,
-                use_test_file_dir=not testing_shed_tools,
-                default_install_db_merged=True,
-                default_tool_conf=default_tool_conf,
-                datatypes_conf=datatypes_conf_override,
-            )
+            # Allow config object to specify a config dict or a method to produce
+            # one - other just read the properties above and use the default
+            # implementation from this file.
+            galaxy_config = getattr(config_object, "galaxy_config", None)
+            if hasattr(galaxy_config, '__call__'):
+                galaxy_config = galaxy_config()
+            if galaxy_config is None:
+                setup_galaxy_config_kwds = dict(
+                    use_test_file_dir=not testing_shed_tools,
+                    default_install_db_merged=True,
+                    default_tool_conf=default_tool_conf,
+                    datatypes_conf=datatypes_conf_override,
+                )
+                galaxy_config = setup_galaxy_config(
+                    galaxy_db_path,
+                    **setup_galaxy_config_kwds
+                )
+
+                handle_galaxy_config_kwds = getattr(
+                    config_object, "handle_galaxy_config_kwds", None
+                )
+                if handle_galaxy_config_kwds is not None:
+                    handle_galaxy_config_kwds(galaxy_config)
 
             # ---- Build Application --------------------------------------------------
             self.app = build_galaxy_app(galaxy_config)
@@ -623,9 +653,12 @@ class GalaxyTestDriver(TestDriver):
             testing_installed_tools
         )
 
-    def build_tool_tests(self):
+    def build_tool_tests(self, testing_shed_tools=None):
         if self.app is None:
             return
+
+        if testing_shed_tools is None:
+            testing_shed_tools = getattr(self, "testing_shed_tools", False)
 
         # We must make sure that functional.test_toolbox is always imported after
         # database_contexts.galaxy_content is set (which occurs in this method above).
@@ -636,10 +669,24 @@ class GalaxyTestDriver(TestDriver):
         # When testing data managers, do not test toolbox.
         functional.test_toolbox.build_tests(
             app=self.app,
-            testing_shed_tools=self.testing_shed_tools,
+            testing_shed_tools=testing_shed_tools,
             master_api_key=get_master_api_key(),
             user_api_key=get_user_api_key(),
         )
+        return functional.test_toolbox
+
+    def run_tool_test(self, tool_id, index=0):
+        import functional.test_toolbox
+        functional.test_toolbox.toolbox = self.app.toolbox
+        tool = self.app.toolbox.get_tool(tool_id)
+        testdef = tool.tests[index]
+        test_case_cls = functional.test_toolbox.ToolTestCase
+        test_case = test_case_cls(methodName="setUp")  # NO-OP
+        test_case.shed_tool_id = None
+        test_case.master_api_key = get_master_api_key()
+        test_case.user_api_key = get_user_api_key()
+        test_case.setUp()
+        test_case.do_it(testdef)
 
 
 def drive_test(test_driver_class):

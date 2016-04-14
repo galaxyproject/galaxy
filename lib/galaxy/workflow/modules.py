@@ -772,7 +772,7 @@ class ToolModule( WorkflowModule ):
             if tool_id != module.tool_id:
                 message += "The tool (id '%s') specified in this step is not available. Using the tool with id %s instead." % (tool_id, module.tool_id)
             if d.get('tool_version', 'Unspecified') != module.get_tool_version():
-                message += "%s: using version '%s' instead of version '%s' specified in this workflow." % ( tool_id, d.get( 'tool_version', 'Unspecified' ), module.get_tool_version() )
+                message += "%s: using version '%s' instead of version '%s' specified in this workflow." % ( tool_id, module.get_tool_version(), d.get( 'tool_version', 'Unspecified' ) )
             if message:
                 log.debug(message)
                 module.version_changes.append(message)

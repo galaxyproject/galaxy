@@ -341,7 +341,6 @@ class WorkflowProxy(object):
     def runnables(self):
         runnables = []
         for step in self._workflow.steps:
-            print dir(step)
             if "run" in step.tool:
                 runnables.append(step.tool["run"])
         return runnables

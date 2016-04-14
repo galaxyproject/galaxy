@@ -400,6 +400,8 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             # exact tool id match not found, or all versions requested, search for other options, e.g. migrated tools or different versions
             rval = []
             tool_lineage = self._lineage_map.get( tool_id )
+            if not tool_lineage:
+                tool_lineage = self._lineage_map.get_versionless( tool_id )
             if tool_lineage:
                 lineage_tool_versions = tool_lineage.get_versions( )
                 for lineage_tool_version in lineage_tool_versions:
