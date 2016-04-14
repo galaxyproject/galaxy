@@ -1013,12 +1013,22 @@ use_interactive = True
 # database for authentication) and set the following two options.
 
 # This should point to a directory containing subdirectories matching users'
-# email addresses, where Galaxy will look for files.
+# identifer (defaults to e-mail), where Galaxy will look for files.
 #ftp_upload_dir = None
 
 # This should be the hostname of your FTP server, which will be provided to
 # users in the help text.
 #ftp_upload_site = None
+
+# User attribute to use as subdirectory in calculating default ftp_upload_dir 
+# pattern. By default this will be email so a user's FTP upload directory will be
+# ${ftp_upload_dir}/${user.email}. Can set this to other attributes such as id or
+# username though.
+#ftp_upload_dir_identifier = email
+
+# Python string tempalte used to determine an FTP upload directory for a 
+# particular user.
+#ftp_upload_dir_template = ${ftp_upload_dir}/${ftp_upload_dir_identifier}
 
 # Enable enforcement of quotas.  Quotas can be set from the Admin interface.
 #enable_quotas = False
