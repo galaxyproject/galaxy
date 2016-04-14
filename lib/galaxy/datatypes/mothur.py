@@ -298,7 +298,7 @@ class DistanceMatrix(Text):
         for line in headers:
             if not line[0].startswith('@'):
                 try:
-                    dataset.metadata.sequence_count = int(line[0])
+                    dataset.metadata.sequence_count = int(''.join(line))  # seq count sometimes preceded by tab
                     break
                 except Exception, e:
                     log.warn("DistanceMatrix set_meta %s" % e)
@@ -518,11 +518,8 @@ class Group(Tabular):
 
         headers = get_headers(dataset.file_name, sep='\t')
         for line in headers:
-            try:
+            if len(line) > 1:
                 group_names.add(line[1])
-            except IndexError:
-                # Ignore missing 2nd column
-                pass
         dataset.metadata.groups = list(group_names)
 
 
@@ -556,10 +553,10 @@ class Oligos(Text):
         count = 0
         for line in headers:
             if not line[0].startswith('@') and not line[0].startswith('#'):
-                if len(line) == 2 and re.match('forward|reverse', line[0]):
+                if len(line) == 2 and line[0] in ['forward', 'reverse']:
                     count += 1
                     continue
-                elif len(line) == 3 and re.match('barcode', line[0]):
+                elif len(line) == 3 and line[0] == 'barcode':
                     count += 1
                     continue
                 else:
@@ -720,22 +717,18 @@ class CountTable(Tabular):
         self.column_names = ['name', 'total']
 
     def set_meta(self, dataset, overwrite=True, skip=1, max_data_lines=None, **kwd):
-
         data_lines = 0
         headers = get_headers(dataset.file_name, sep='\t', count=-1)
         colnames = headers[0]
+        dataset.metadata.column_types = ['str'] + (['int'] * ( len(headers[0]) - 1))
         if len(colnames) > 1:
             dataset.metadata.columns = len(colnames)
         if len(colnames) > 2:
             dataset.metadata.groups = colnames[2:]
-            column_types = ['str']
-            for i in range(1, len(headers[0])):
-                column_types.append('int')
-            dataset.metadata.column_types = column_types
-            dataset.metadata.comment_lines = 1
         for line in headers[1:]:
             data_lines += 1
 
+        dataset.metadata.comment_lines = 1
         dataset.metadata.data_lines = data_lines
 
 
@@ -774,15 +767,15 @@ class RefTaxonomy(Tabular):
         """
         headers = get_headers(filename, sep='\t', count=300)
         count = 0
-        pat = '^([^ \t\n\r\x0c\x0b;]+([(]\\d+[)])?(;[^ \t\n\r\x0c\x0b;]+([(]\\d+[)])?)*(;)?)$'
+        pat_prog = re.compile('^([^ \t\n\r\x0c\x0b;]+([(]\\d+[)])?(;[^ \t\n\r\x0c\x0b;]+([(]\\d+[)])?)*(;)?)$')
         found_semicolons = False
         for line in headers:
             if not line[0].startswith('@') and not line[0].startswith('#'):
                 if not (2 <= len(line) <= 3):
                     return False
-                if not re.match(pat, line[1]):
+                if not pat_prog.match(line[1]):
                     return False
-                if not found_semicolons and str(line[1]).count(';') > 0:
+                if not found_semicolons and line[1].find(';') > -1:
                     found_semicolons = True
                 if len(line) == 3:
                     try:
@@ -852,28 +845,27 @@ class Axes(Tabular):
         col_cnt = None
         all_integers = True
         for line in headers:
-            if count == 0:
-                pass
-            elif col_cnt is None:
-                col_cnt = len(line)
-                if col_cnt < 2:
-                    return False
-            else:
-                if len(line) != col_cnt:
-                    return False
-                try:
-                    for i in range(1, col_cnt):
-                        check = float(line[i])
-                        # Check abs value is <= 1.0
-                        if abs(check) > 1.0:
-                            return False
-                        # Also test for whether value is an integer
-                        try:
-                            check = int(line[i])
-                        except ValueError:
-                            all_integers = False
-                except ValueError:
-                    return False
+            if count != 0:
+                if col_cnt is None:
+                    col_cnt = len(line)
+                    if col_cnt < 2:
+                        return False
+                else:
+                    if len(line) != col_cnt:
+                        return False
+                    try:
+                        for i in range(1, col_cnt):
+                            check = float(line[i])
+                            # Check abs value is <= 1.0
+                            if abs(check) > 1.0:
+                                return False
+                            # Also test for whether value is an integer
+                            try:
+                                check = int(line[i])
+                            except ValueError:
+                                all_integers = False
+                    except ValueError:
+                        return False
             count += 1
 
         if count > 0:
@@ -909,24 +901,24 @@ class SffFlow(Tabular):
         try:
             flow_values = int(headers[0][0])
             dataset.metadata.flow_values = flow_values
-        except:
-            pass
+        except Exception, e:
+            log.warn("SffFlow set_meta %s" % e)
 
     def make_html_table(self, dataset, skipchars=[]):
         """Create HTML table, used for displaying peek"""
-        out = ['<table cellspacing="0" cellpadding="3">']
         try:
+            out = '<table cellspacing="0" cellpadding="3">'
+
             # Generate column header
-            out.append('<tr>')
-            out.append('<th>%d. Name</th>' % 1)
-            out.append('<th>%d. Flows</th>' % 2)
+            out += '<tr>'
+            out += '<th>%d. Name</th>' % 1
+            out += '<th>%d. Flows</th>' % 2
             for i in range(3, dataset.metadata.columns + 1):
                 base = dataset.metadata.flow_order[(i + 1) % 4]
-                out.append('<th>%d. %d %s</th>' % (i - 2, base))
-            out.append('</tr>')
-            out.append(self.make_html_peek_rows(dataset, skipchars=skipchars))
-            out.append('</table>')
-            out = "".join(out)
+                out += '<th>%d. %d %s</th>' % (i - 2, base)
+            out += '</tr>'
+            out += self.make_html_peek_rows(dataset, skipchars=skipchars)
+            out += '</table>'
         except Exception, exc:
             out = "Can't create peek %s" % str(exc)
         return out
