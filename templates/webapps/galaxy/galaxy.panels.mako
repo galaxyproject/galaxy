@@ -155,7 +155,6 @@
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout
     <script type="text/javascript">
-
         ## configure left panel
         %if self.galaxy_config['left_panel']:
             var lp = new panels.LeftPanel({ el: '#left' });
