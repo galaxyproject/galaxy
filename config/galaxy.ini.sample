@@ -1013,7 +1013,7 @@ use_interactive = True
 # database for authentication) and set the following two options.
 
 # This should point to a directory containing subdirectories matching users'
-# identifer (defaults to e-mail), where Galaxy will look for files.
+# identifier (defaults to e-mail), where Galaxy will look for files.
 #ftp_upload_dir = None
 
 # This should be the hostname of your FTP server, which will be provided to
@@ -1026,7 +1026,7 @@ use_interactive = True
 # username though.
 #ftp_upload_dir_identifier = email
 
-# Python string tempalte used to determine an FTP upload directory for a 
+# Python string template used to determine an FTP upload directory for a 
 # particular user.
 #ftp_upload_dir_template = ${ftp_upload_dir}/${ftp_upload_dir_identifier}
 
