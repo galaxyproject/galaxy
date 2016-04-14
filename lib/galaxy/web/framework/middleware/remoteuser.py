@@ -76,22 +76,12 @@ class RemoteUser( object ):
         # seems improbable that an attacker with access to the server hosting
         # Galaxy would not have access to Galaxy itself, and be attempting to
         # attack the system
-        if self.config_secret_header is not None:
-            if environ.get('HTTP_GX_SECRET') is None:
-                title = "Access to Galaxy is denied"
-                message = """
-                Galaxy is configured to authenticate users via an external
-                method (such as HTTP authentication in Apache), but
-                no shared secret key was provided by the
-                upstream (proxy) server.</p>
-                <p>Please contact your local Galaxy administrator.  The
-                variable <code>remote_user_secret</code> and
-                <code>GX_SECRET</code> header must be set before you may
-                access Galaxy.
-                """
-                return self.error( start_response, title, message )
-
-            if not safe_str_cmp(environ.get('HTTP_GX_SECRET'), self.config_secret_header):
+        if path_info.startswith( '/api/' ):
+            # The API handles its own authentication via keys
+            # Check for API key before checking for header
+            return self.app( environ, start_response )
+        elif self.config_secret_header is not None:
+            if not safe_str_cmp(environ.get('HTTP_GX_SECRET', ''), self.config_secret_header):
                 title = "Access to Galaxy is denied"
                 message = """
                 Galaxy is configured to authenticate users via an external
@@ -160,9 +150,6 @@ class RemoteUser( object ):
                     for external authentication.
                 """
                 return self.error( start_response, title, message )
-            return self.app( environ, start_response )
-        elif path_info.startswith( '/api/' ):
-            # The API handles its own authentication via keys
             return self.app( environ, start_response )
         else:
             log.debug("Unable to identify user.  %s not found" % self.remote_user_header)
