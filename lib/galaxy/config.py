@@ -293,6 +293,7 @@ class Configuration( object ):
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
         self.ftp_upload_dir_identifier = kwargs.get( 'ftp_upload_dir_identifier', 'email' )  # attribute on user - email, username, id, etc...
         self.ftp_upload_dir_template = kwargs.get( 'ftp_upload_dir_template', '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep )
+        self.ftp_upload_purge = string_as_bool(  kwargs.get( 'ftp_upload_purge', 'True' ) )
         self.ftp_upload_site = kwargs.get( 'ftp_upload_site', None )
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )

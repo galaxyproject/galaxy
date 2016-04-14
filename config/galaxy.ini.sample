@@ -1030,6 +1030,10 @@ use_interactive = True
 # particular user.
 #ftp_upload_dir_template = ${ftp_upload_dir}/${ftp_upload_dir_identifier}
 
+# This should be set to False to prevent Galaxy from deleting uploaded FTP files
+# as it imports them.
+#ftp_upload_purge = True
+
 # Enable enforcement of quotas.  Quotas can be set from the Admin interface.
 #enable_quotas = False
 
