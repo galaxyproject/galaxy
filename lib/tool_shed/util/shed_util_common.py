@@ -397,7 +397,7 @@ def get_next_downloadable_changeset_revision( repository, repo, after_changeset_
     if len( changeset_revisions ) == 1:
         changeset_revision = changeset_revisions[ 0 ]
         if changeset_revision == after_changeset_revision:
-            return None
+            return after_changeset_revision
     found_after_changeset_revision = False
     for changeset in repo.changelog:
         changeset_revision = str( repo.changectx( changeset ) )
