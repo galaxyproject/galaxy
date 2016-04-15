@@ -45,9 +45,9 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     },
 
     /** @type {Number} limit used for the first fetch (or a reset) */
-    limitOnFirstFetch   : 100,
+    limitOnFirstFetch   : 200,
     /** @type {Number} limit used for each subsequent fetch */
-    limitPerFetch       : 50,
+    limitPerFetch       : 100,
 
     /** @type {String} order used here and when fetching from server */
     order : 'create_time',
@@ -239,13 +239,16 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return queue.deferred;
     },
 
+    /** @type {Integer} how many contents per call to fetch when using progressivelyFetchDetails */
+    limitPerProgressiveFetch : 500,
+
     /** fetch contents' details in batches of limitPerCall - note: only get searchable details here */
     progressivelyFetchDetails : function( options ){
         // console.log( 'progressivelyFetchDetails:', options );
         options = options || {};
         var deferred = jQuery.Deferred();
         var self = this;
-        var limit = options.limitPerCall || 50;
+        var limit = options.limitPerCall || self.limitPerProgressiveFetch;
         // TODO: only fetch tags and annotations if specifically requested
         var searchAttributes = HDA_MODEL.HistoryDatasetAssociation.prototype.searchAttributes;
         var detailKeys = searchAttributes.join( ',' );

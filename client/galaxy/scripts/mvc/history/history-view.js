@@ -308,7 +308,7 @@ var HistoryView = _super.extend(
     /** @type {Number} ms to debounce scroll handler for infinite scrolling */
     INFINITE_SCROLL_DEBOUNCE_MS : 40,
     /** @type {Number} number of px (or less) from the bottom the scrollbar should be before fetching */
-    INFINITE_SCROLL_FETCH_THRESHOLD_PX : 128,
+    INFINITE_SCROLL_FETCH_THRESHOLD_PX : 512,
 
     /** override to track the scroll container for this view */
     _setUpBehaviors : function( $where ){
@@ -325,6 +325,7 @@ var HistoryView = _super.extend(
     scrollHandler : function( ev ){
         var self = this;
         var pxToBottom = self._scrollDistanceToBottom();
+        console.log( pxToBottom );
 
         // if the scrollbar is past the trigger point, we're not already fetching,
         // AND we're not displaying some panel OVER this one: fetch more contents
