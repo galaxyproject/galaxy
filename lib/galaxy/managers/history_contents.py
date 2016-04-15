@@ -8,6 +8,8 @@ from sqlalchemy import sql
 from sqlalchemy import asc, desc
 from sqlalchemy import true, false
 from sqlalchemy import func
+from sqlalchemy.orm import eagerload
+from sqlalchemy.orm import undefer
 
 from galaxy import model
 from galaxy import exceptions as glx_exceptions
@@ -207,8 +209,10 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
                 raise TypeError( 'Unknown contents type:', result_type )
 
         # query 2 & 3: use the ids to query each component_class, returning an id->full component model map
-        id_map[ self.contained_class_type_name ] = self._by_ids( self.contained_class, id_map[ self.contained_class_type_name ] )
-        id_map[ self.subcontainer_class_type_name ] = self._by_ids( self.subcontainer_class, id_map[ self.subcontainer_class_type_name ] )
+        contained_ids = id_map[ self.contained_class_type_name ]
+        id_map[ self.contained_class_type_name ] = self._contained_id_map( contained_ids )
+        subcontainer_ids = id_map[ self.subcontainer_class_type_name ]
+        id_map[ self.subcontainer_class_type_name ] = self._subcontainer_id_map( subcontainer_ids )
 
         # cycle back over the union query to create an ordered list of the objects returned in queries 2 & 3 above
         contents = []
@@ -310,10 +314,28 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         """Return the id for this row in the union results"""
         return union[ 2 ]
 
-    def _by_ids( self, component_class, id_list ):
+    def _contained_id_map( self, id_list ):
+        """Return an id to model map of all contained-type models in the id_list."""
         if not id_list:
             return []
-        query = self._session().query( component_class ).filter( component_class.id.in_( id_list ) )
+        component_class = self.contained_class
+        query = ( self._session().query( component_class )
+            .filter( component_class.id.in_( id_list ) )
+            .options( undefer( '_metadata' ) )
+            .options( eagerload( 'tags' ) )
+            .options( eagerload( 'annotations' ) ) )
+        return dict( ( row.id, row ) for row in query.all() )
+
+    def _subcontainer_id_map( self, id_list ):
+        """Return an id to model map of all subcontainer-type models in the id_list."""
+        if not id_list:
+            return []
+        component_class = self.subcontainer_class
+        query = ( self._session().query( component_class )
+            .filter( component_class.id.in_( id_list ) )
+            .options( eagerload( 'collection' ) )
+            .options( eagerload( 'tags' ) )
+            .options( eagerload( 'annotations' ) ) )
         return dict( ( row.id, row ) for row in query.all() )
 
 
