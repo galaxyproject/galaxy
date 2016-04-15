@@ -449,6 +449,7 @@ class Configuration( object ):
         # Statistics and profiling with statsd
         self.statsd_host = kwargs.get( 'statsd_host', '')
         self.statsd_port = int( kwargs.get( 'statsd_port', 8125 ) )
+        self.statsd_prefix = kwargs.get( 'statsd_prefix', 'galaxy' )
         # Logging with fluentd
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
