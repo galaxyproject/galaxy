@@ -86,15 +86,11 @@ var LibraryView = Backbone.View.extend({
     this.$el.html(template({library: this.model, is_admin:is_admin}));
 
     var self = this;
-    if (this.options.fetched_permissions === undefined){
-      $.get( Galaxy.root + "api/libraries/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
-        self.prepareSelectBoxes({fetched_permissions:fetched_permissions});
-      }).fail(function(){
-          mod_toastr.error('An error occurred while attempting to fetch library permissions.');
-      });
-    } else {
-      this.prepareSelectBoxes({});
-    }
+    $.get( Galaxy.root + "api/libraries/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
+      self.prepareSelectBoxes({fetched_permissions:fetched_permissions});
+    }).fail(function(){
+        mod_toastr.error('An error occurred while attempting to fetch library permissions.');
+    });
 
     $("#center [data-toggle]").tooltip();
     //hack to show scrollbars
