@@ -11,6 +11,7 @@
 
 ## Masthead
 <%def name="masthead()">
+    <div id="masthead" class="navbar navbar-fixed-top navbar-inverse">
     ## Tab area, fills entire width
     <div style="position: absolute; top: 0; left: 0; width: 100%; text-align: center">
         <table class="tab-group" border="0" cellspacing="0" style="margin: auto;">
@@ -40,5 +41,6 @@
             <span class='brand'>/ ${app.config.brand}</span>
         %endif
         </a>
+    </div>
     </div>
 </%def>
