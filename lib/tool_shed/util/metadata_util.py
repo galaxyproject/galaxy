@@ -43,7 +43,7 @@ def get_dependencies_for_metadata_revision( app, metadata ):
         updated_changeset = suc.get_next_downloadable_changeset_revision( required_repository, repo, changeset )
         if updated_changeset is None:
             continue
-        metadata_entry = suc.get_repository_metadata_by_changeset_revision( app, app.security.encode_id( required_repository.id ), changeset )
+        metadata_entry = suc.get_repository_metadata_by_changeset_revision( app, app.security.encode_id( required_repository.id ), updated_changeset )
         dependencies.append( metadata_entry )
     return dependencies
 
