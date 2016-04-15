@@ -38,19 +38,20 @@ def main():
     round_val = []
 
     if sys.argv[5] != "None":
-        oldfile = open(inputfile, 'r')
-        oldfilelines = oldfile.readlines()
-        newinputfile = "input_cleaned.tsv"
-        newfile = open(newinputfile, 'w')
-        asciitodelete = sys.argv[5].split(',')
-        for i in range(len(asciitodelete)):
-            asciitodelete[i] = chr(int(asciitodelete[i]))
-        for line in oldfilelines:
-            if line[0] not in asciitodelete:
-                newfile.write(line)
-        oldfile.close()
-        newfile.close()
-        inputfile = newinputfile
+        asciitodelete = sys.argv[5]
+        if asciitodelete:
+            oldfile = open(inputfile, 'r')
+            newinputfile = "input_cleaned.tsv"
+            newfile = open(newinputfile, 'w')
+            asciitodelete = asciitodelete.split(',')
+            for i in range(len(asciitodelete)):
+                asciitodelete[i] = chr(int(asciitodelete[i]))
+            for line in oldfile:
+                if line[0] not in asciitodelete:
+                    newfile.write(line)
+            oldfile.close()
+            newfile.close()
+            inputfile = newinputfile
 
     for var in sys.argv[6:]:
         op, col, do_round = var.split()

@@ -767,9 +767,12 @@ use_interactive = True
 # Log to statsd
 # Statsd is an external statistics aggregator (https://github.com/etsy/statsd)
 # Enabling the following options will cause galaxy to log request timing and
-# other statistics to the configured statsd instance.
+# other statistics to the configured statsd instance.  The statsd_prefix is
+# useful if you are running multiple Galaxy instances and want to segment
+# statistics between them within the same aggregator.
 #statsd_host=
 #statsd_port=8125
+#statsd_prefix=galaxy
 
 # -- Data Libraries
 
@@ -880,6 +883,13 @@ use_interactive = True
 # addresses or user names being passed to Galaxy - set the following option
 # to True to force these to lower case.
 #normalize_remote_user_email = False
+
+# If an e-mail address is specified here, it will hijack remote user mechanics
+# (``use_remote_user``) and have the webapp inject a single fixed user. This
+# has the effect of turning Galaxy into a single user application with no
+# login or external proxy required. Such applications should not be exposed to
+# the world.
+#single_user =
 
 # Administrative users - set this to a comma-separated list of valid Galaxy
 # users (email addresses).  These users will have access to the Admin section
@@ -1013,12 +1023,26 @@ use_interactive = True
 # database for authentication) and set the following two options.
 
 # This should point to a directory containing subdirectories matching users'
-# email addresses, where Galaxy will look for files.
+# identifier (defaults to e-mail), where Galaxy will look for files.
 #ftp_upload_dir = None
 
 # This should be the hostname of your FTP server, which will be provided to
 # users in the help text.
 #ftp_upload_site = None
+
+# User attribute to use as subdirectory in calculating default ftp_upload_dir 
+# pattern. By default this will be email so a user's FTP upload directory will be
+# ${ftp_upload_dir}/${user.email}. Can set this to other attributes such as id or
+# username though.
+#ftp_upload_dir_identifier = email
+
+# Python string template used to determine an FTP upload directory for a 
+# particular user.
+#ftp_upload_dir_template = ${ftp_upload_dir}/${ftp_upload_dir_identifier}
+
+# This should be set to False to prevent Galaxy from deleting uploaded FTP files
+# as it imports them.
+#ftp_upload_purge = True
 
 # Enable enforcement of quotas.  Quotas can be set from the Admin interface.
 #enable_quotas = False

@@ -320,7 +320,7 @@ define(['mvc/workflow/workflow-globals'], function( Globals ) {
                 // FIXME: No idea what to do about case when datatype is 'input'
                 for ( var other_datatype_i in cat_outputs ) {
                     var other_datatype = cat_outputs[other_datatype_i];
-                    if ( other_datatype == "input" || other_datatype == "input_collection" || Globals.app.isSubType( cat_outputs[other_datatype_i], thisDatatype ) ) {
+                    if ( other_datatype == "input" || other_datatype == "_sniff_" || other_datatype == "input_collection" || Globals.app.isSubType( cat_outputs[other_datatype_i], thisDatatype ) ) {
                         return true;
                     }
                 }
