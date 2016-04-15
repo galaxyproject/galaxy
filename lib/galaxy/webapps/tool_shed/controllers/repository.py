@@ -2415,9 +2415,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
         # Get the next installable changeset_revision beyond the received changeset_revision.
-        changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
-        if changeset_revision:
-            return changeset_revision
+        next_changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
+        if next_changeset_revision and next_changeset_revision != changeset_revision:
+            return next_changeset_revision
         return ''
 
     @web.json
@@ -2865,7 +2865,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 # Get updates to the received changeset_revision if any exist.
                 repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
                 upper_bound_changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
-                if upper_bound_changeset_revision:
+                if upper_bound_changeset_revision and upper_bound_changeset_revision != changeset_revision:
                     changeset_revision = upper_bound_changeset_revision
                     repository_metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans.app,
                                                                                                                      repository_id,
@@ -2914,12 +2914,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             else:
                 next_installable_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
                 if repository_metadata is None:
-                    if next_installable_revision:
+                    if next_installable_revision and next_installable_revision != changeset_revision:
                         tool_shed_status_dict[ 'latest_installable_revision' ] = 'True'
                     else:
                         tool_shed_status_dict[ 'latest_installable_revision' ] = 'False'
                 else:
-                    if next_installable_revision:
+                    if next_installable_revision and next_installable_revision != changeset_revision:
                         tool_shed_status_dict[ 'latest_installable_revision' ] = 'False'
                     else:
                         tool_shed_status_dict[ 'latest_installable_revision' ] = 'True'

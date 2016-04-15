@@ -318,7 +318,7 @@ def get_current_repository_metadata_for_changeset_revision( app, repository, cha
     updated_changeset_revision = get_next_downloadable_changeset_revision( repository,
                                                                            repo,
                                                                            after_changeset_revision=changeset_revision )
-    if updated_changeset_revision:
+    if updated_changeset_revision and updated_changeset_revision != changeset_revision:
         repository_metadata = get_repository_metadata_by_changeset_revision( app,
                                                                              encoded_repository_id,
                                                                              updated_changeset_revision )

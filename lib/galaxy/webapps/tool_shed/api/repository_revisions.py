@@ -170,11 +170,12 @@ class RepositoryRevisionsController( BaseAPIController ):
                     new_changeset_revision = suc.get_next_downloadable_changeset_revision( repository_dependency,
                                                                                            repo,
                                                                                            changeset_revision )
-                    repository_dependency_repository_metadata = \
-                        suc.get_repository_metadata_by_changeset_revision( trans.app,
-                                                                           repository_dependency_id,
-                                                                           new_changeset_revision )
-                    if repository_dependency_repository_metadata is None:
+                    if new_changeset_revision != changeset_revision:
+                        repository_dependency_repository_metadata = \
+                            suc.get_repository_metadata_by_changeset_revision( trans.app,
+                                                                               repository_dependency_id,
+                                                                               new_changeset_revision )
+                    else:
                         decoded_repository_dependency_id = trans.security.decode_id( repository_dependency_id )
                         debug_msg = 'Cannot locate repository_metadata with id %d for repository dependency %s owned by %s ' % \
                             ( decoded_repository_dependency_id, str( name ), str( owner ) )
