@@ -16,9 +16,10 @@ try:
     from pykube.config import KubeConfig
     from pykube.http import HTTPClient
     from pykube.objects import Job
+    from pykube.objects import Pod
 except ImportError as exc:
     operator = None
-    K8S_IMPORT_MESSAGE = ('The Python pbs-python package is required to use '
+    K8S_IMPORT_MESSAGE = ('The Python pykube package is required to use '
                           'this feature, please install it or correct the '
                           'following error:\nImportError %s' % str(exc))
 
