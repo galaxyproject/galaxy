@@ -391,7 +391,8 @@ def get_metadata_changeset_revisions( repository, repo ):
 def get_next_downloadable_changeset_revision( repository, repo, after_changeset_revision ):
     """
     Return the installable changeset_revision in the repository changelog after the changeset to which
-    after_changeset_revision refers.  If there isn't one, return None.
+    after_changeset_revision refers.  If there isn't one, return None. If there is only one installable
+    changeset, and that matches the requested revision, return it.
     """
     changeset_revisions = [ revision[ 1 ] for revision in get_metadata_revisions( repository, repo ) ]
     if len( changeset_revisions ) == 1:
