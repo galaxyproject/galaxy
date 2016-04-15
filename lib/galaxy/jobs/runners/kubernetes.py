@@ -267,6 +267,7 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
 
     def stop_job( self, job ):
         """Attempts to delete a dispatched job to the k8s cluster"""
+        # TODO rescale instead of delete the job, as in kubectl scale --replicas=0 jobs/myjob
         try:
             jobs = Job.objects(self._pykube_api).filter(selector="app="+job.job_runner_external_id)
             if jobs.response['items'].len() >= 0:
@@ -280,6 +281,7 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
 
     def recover( self, job, job_wrapper ):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
+        # TODO this needs to be implemented to override unimplemented base method
         job_id = job.get_job_runner_external_id()
         if job_id is None:
             self.put( job_wrapper )
