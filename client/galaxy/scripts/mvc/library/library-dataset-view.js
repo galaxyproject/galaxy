@@ -208,7 +208,7 @@ var LibraryDatasetView = Backbone.View.extend({
     if (new_history_name !== ''){
       $.post( Galaxy.root + 'api/histories', {name: new_history_name})
         .done(function( new_history ) {
-          that.processImportToHistory(new_history.id, new_history.name);
+          that.processImportToHistory(new_history.id);
         })
         .fail(function( xhr, status, error ) {
           mod_toastr.error('An error ocurred.');
@@ -218,7 +218,7 @@ var LibraryDatasetView = Backbone.View.extend({
         });
     } else {
       var history_id = $(this.modal.$el).find('select[name=dataset_import_single] option:selected').val();
-      this.processImportToHistory( history_id );
+      this.processImportToHistory(history_id);
       this.modal.enableButton('Import');
     }
   },
@@ -1055,7 +1055,7 @@ var LibraryDatasetView = Backbone.View.extend({
     ].join(''));
   },
 
-  templateBulkImportInModal : function(){
+  templateBulkImportInModal: function(){
     return _.template([
     '<div>',
       '<div class="library-modal-item">',
