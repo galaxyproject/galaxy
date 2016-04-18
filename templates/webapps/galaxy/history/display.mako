@@ -13,28 +13,6 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     <style type="text/css">
-/*        #center,
-        .unified-panel-header,
-        div.unified-panel-body {
-            position: static;
-            top: auto;
-            bottom: auto;
-            width: 100%;
-            height: auto;
-            margin: 0;
-            padding 0;
-            overflow: auto;
-        }
-        #center {
-            margin-top: 34px;
-            margin-right: 250px;
-        }
-        .unified-panel-header {
-        }
-        .unified-panel-header-inner {
-        }
-        div.unified-panel-body {
-        }*/
     </style>
 </%def>
 
