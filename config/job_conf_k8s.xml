@@ -11,6 +11,8 @@
             -->
             <param id="k8s_persistent_volume_claim_mount_path">/mnt/glusterfs</param>
             <param id="k8s_namespace">galaxy-instanceA</param>
+            <!-- Allows pods to retry up to this number of times, before marking the Job as failed -->
+            <param id="k8s_pod_retrials">4</param>
         </plugin>
     </plugins>
     <handlers>
@@ -24,6 +26,7 @@
             <param id="image">blankfilter</param>
             <param id="tag">latest</param>
             <param id="container_port_80">8080</param>
+            <param id="max_pod_retrials">3</param>
         </destination>
     </destinations>
     <tools>
