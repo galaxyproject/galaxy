@@ -238,29 +238,6 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
             self.mark_as_failed(job_state)
             return job_state
 
-
-    def __get_job_states(self):
-        """Get the states of all jobs submitted by this Galaxy runner
-        to the Kubernetes cluster"""
-        job_destinations = {}
-        job_states = {}
-        # unique the list of destinations
-        for ajs in self.watched:
-            if ajs.job_destination.id not in job_destinations:
-                job_destinations[ajs.job_destination.id] = dict( job_destination=ajs.job_destination, job_ids=[ ajs.job_id ] )
-            else:
-                job_destinations[ajs.job_destination.id]['job_ids'].append( ajs.job_id )
-        # check each destination for the listed job ids
-        for job_destination_id, v in job_destinations.items():
-            job_destination = v['job_destination']
-            job_ids = v['job_ids']
-            shell_params, job_params = self.parse_destination_params(job_destination.params)
-            shell, job_interface = self.get_cli_plugins(shell_params, job_params)
-            cmd_out = shell.execute(job_interface.get_status(job_ids))
-            assert cmd_out.returncode == 0, cmd_out.stderr
-            job_states.update(job_interface.parse_status(cmd_out.stdout, job_ids))
-        return job_states
-
     def stop_job( self, job ):
         """Attempts to delete a dispatched job to the k8s cluster"""
         try:
