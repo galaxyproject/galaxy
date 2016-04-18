@@ -73,7 +73,7 @@
                 if (!Galaxy.masthead) {
                     Galaxy.masthead = new Masthead.View(${ h.dumps( masthead_config ) });
                     Galaxy.modal = new Modal.View();
-                    $('body').append( Galaxy.masthead.render().$el );
+                    $('#masthead').replaceWith( Galaxy.masthead.render().$el );
                 }
             });
         });
