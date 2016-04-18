@@ -1055,19 +1055,6 @@ var LibraryDatasetView = Backbone.View.extend({
     ].join(''));
   },
 
-  // templateBulkImportInModal: function(){
-  //   return _.template([
-  //   '<span class="library-modal-item">',
-  //     'Select history: ',
-  //     '<select id="dataset_import_single" name="dataset_import_single" style="width:50%; margin-bottom: 1em; "> ',
-  //       '<% _.each(histories, function(history) { %>', //history select btn
-  //         '<option value="<%= _.escape(history.get("id")) %>"><%= _.escape(history.get("name")) %></option>',
-  //       '<% }); %>',
-  //     '</select>',
-  //   '</span>'
-  //   ].join(''));
-  // },
-
   templateBulkImportInModal : function(){
     return _.template([
     '<div>',
