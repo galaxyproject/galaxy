@@ -261,14 +261,13 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
 
     def stop_job( self, job ):
         """Attempts to delete a dispatched job to the k8s cluster"""
-        # TODO rescale instead of delete the job, as in kubectl scale --replicas=0 jobs/myjob
         try:
             jobs = Job.objects(self._pykube_api).filter(selector="app="+job.job_runner_external_id)
             if jobs.response['items'].len() >= 0:
                 job_to_delete = Job(self._pykube_api, jobs.response['items'][0])
-                if job_to_delete.exists():
-                    job_to_delete.delete()
-            assert not job_to_delete.exists(), "Could not delete job,"+job.job_runner_external_id+" it still exists"
+                job_to_delete.scale(replicas=0)
+            # TODO assert whether job parallelism == 0
+            # assert not job_to_delete.exists(), "Could not delete job,"+job.job_runner_external_id+" it still exists"
             log.debug( "(%s/%s) Terminated at user's request" % ( job.id, job.job_runner_external_id ) )
         except Exception as e:
             log.debug( "(%s/%s) User killed running job, but error encountered during termination: %s" % ( job.id, job.job_runner_external_id, e ) )
