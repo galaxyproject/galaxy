@@ -231,15 +231,11 @@ var LibraryDatasetView = Backbone.View.extend({
     this.$el.html(template({item: this.model, is_admin: is_admin}));
 
     var self = this;
-    if (this.options.fetched_permissions === undefined){
-      $.get( Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
-        self.prepareSelectBoxes({fetched_permissions:fetched_permissions, is_admin:is_admin});
-      }).fail(function(){
-          mod_toastr.error('An error occurred while attempting to fetch dataset permissions.');
-      });
-    } else {
-      this.prepareSelectBoxes({is_admin:is_admin});
-    }
+    $.get( Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
+      self.prepareSelectBoxes({fetched_permissions:fetched_permissions, is_admin:is_admin});
+    }).fail(function(){
+        mod_toastr.error('An error occurred while attempting to fetch dataset permissions.');
+    });
 
     $("#center [data-toggle]").tooltip();
     //hack to show scrollbars
