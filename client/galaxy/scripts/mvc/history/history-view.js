@@ -2,11 +2,12 @@ define([
     "mvc/list/list-view",
     "mvc/history/history-model",
     "mvc/history/history-contents",
+    "mvc/history/history-preferences",
     "mvc/history/hda-li",
     "mvc/history/hdca-li",
     "mvc/user/user-model",
+    "mvc/ui/error-modal",
     "ui/fa-icon-button",
-    "mvc/ui/popup-menu",
     "mvc/base-mvc",
     "utils/localization",
     "ui/search-input"
@@ -14,71 +15,16 @@ define([
     LIST_VIEW,
     HISTORY_MODEL,
     HISTORY_CONTENTS,
+    HISTORY_PREFS,
     HDA_LI,
     HDCA_LI,
     USER,
+    ERROR_MODAL,
     faIconButton,
-    PopupMenu,
     BASE_MVC,
     _l
 ){
-
 'use strict';
-
-var logNamespace = 'history';
-
-// ============================================================================
-/** session storage for individual history preferences */
-var HistoryPrefs = BASE_MVC.SessionStorageModel.extend(
-/** @lends HistoryPrefs.prototype */{
-//TODO:?? possibly mark as current T/F - have History.currId() (a class method) return that value
-    defaults : {
-//TODO:?? expandedIds to array?
-        expandedIds : {},
-        //TODO:?? move to user?
-        show_deleted : false,
-        show_hidden  : false
-        //TODO: add scroll position?
-    },
-    /** add an hda id to the hash of expanded hdas */
-    addExpanded : function( model ){
-        var key = 'expandedIds';
-//TODO:?? is this right anymore?
-        this.save( key, _.extend( this.get( key ), _.object([ model.id ], [ model.get( 'id' ) ]) ) );
-    },
-    /** remove an hda id from the hash of expanded hdas */
-    removeExpanded : function( model ){
-        var key = 'expandedIds';
-        this.save( key, _.omit( this.get( key ), model.id ) );
-    },
-    toString : function(){
-        return 'HistoryPrefs(' + this.id + ')';
-    }
-});
-// class lvl for access w/o instantiation
-HistoryPrefs.storageKeyPrefix = 'history:';
-
-/** key string to store each histories settings under */
-HistoryPrefs.historyStorageKey = function historyStorageKey( historyId ){
-    if( !historyId ){
-        throw new Error( 'HistoryPrefs.historyStorageKey needs valid id: ' + historyId );
-    }
-    // single point of change
-    return ( HistoryPrefs.storageKeyPrefix + historyId );
-};
-/** return the existing storage for the history with the given id (or create one if it doesn't exist) */
-HistoryPrefs.get = function get( historyId ){
-    return new HistoryPrefs({ id: HistoryPrefs.historyStorageKey( historyId ) });
-};
-/** clear all history related items in sessionStorage */
-HistoryPrefs.clearAll = function clearAll( historyId ){
-    for( var key in sessionStorage ){
-        if( key.indexOf( HistoryPrefs.storageKeyPrefix ) === 0 ){
-            sessionStorage.removeItem( key );
-        }
-    }
-};
-
 
 /* =============================================================================
 TODO:
@@ -95,7 +41,7 @@ TODO:
 var _super = LIST_VIEW.ModelListPanel;
 var HistoryView = _super.extend(
 /** @lends HistoryView.prototype */{
-    _logNamespace : logNamespace,
+    _logNamespace : 'history',
 
     /** class to use for constructing the HDA views */
     HDAViewClass        : HDA_LI.HDAListItemView,
@@ -132,7 +78,6 @@ var HistoryView = _super.extend(
     freeModel : function(){
         _super.prototype.freeModel.call( this );
         if( this.model ){
-//TODO: move to History.free()
             this.model.clearUpdateTimeout();
         }
         return this;
@@ -149,7 +94,7 @@ var HistoryView = _super.extend(
                 this.errorHandler( model, xhr, options, msg, details );
             },
             'loading-done' : function(){
-                //TODO:?? if( this.collection.length ){
+                this.render();
                 if( !this.views.length ){
                     this.trigger( 'empty-history', this );
                 }
@@ -162,62 +107,19 @@ var HistoryView = _super.extend(
     },
 
     // ------------------------------------------------------------------------ loading history/hda models
-    //NOTE: all the following fns replace the existing history model with a new model
-    // (in the following 'details' refers to the full set of contents api data (urls, display_apps, misc_info, etc.)
-    //  - contents w/o details will have summary data only (name, hid, deleted, visible, state, etc.))
-//TODO: too tangled...
+    /** load the history with the given id then it's contents, sending ajax options to both */
+    loadHistory : function( historyId, options, contentsOptions ){
+        this.info( 'loadHistory:', historyId, options, contentsOptions );
+        var self = this;
+        self.setModel( new HISTORY_MODEL.History({ id : historyId }) );
+        //TODO:?? cache histories?
 
-    /** loads a history & contents, getting details of any contents whose ids are stored in sessionStorage
-     *      (but does not make them the current history)
-     */
-    loadHistoryWithDetails : function( historyId, attributes, historyFn, contentsFn ){
-        this.info( 'loadHistoryWithDetails:', historyId, attributes, historyFn, contentsFn );
-        var detailIdsFn = function( historyData ){
-                // will be called to get content ids that need details from the api
-//TODO:! non-visible contents are getting details loaded... either stop loading them at all or filter ids thru isVisible
-                return _.values( HistoryPrefs.get( historyData.id ).get( 'expandedIds' ) );
-            };
-        return this.loadHistory( historyId, attributes, historyFn, contentsFn, detailIdsFn );
-    },
-
-    /** loads a history & contents (but does not make them the current history) */
-    loadHistory : function( historyId, attributes, historyFn, contentsFn, detailIdsFn ){
-        this.info( 'loadHistory:', historyId, attributes, historyFn, contentsFn, detailIdsFn );
-        var panel = this;
-        attributes = attributes || {};
-
-        panel.trigger( 'loading', panel );
-        //this.info( 'loadHistory:', historyId, attributes, historyFn, contentsFn, detailIdsFn );
-        var xhr = HISTORY_MODEL.History.getHistoryData( historyId, {
-                historyFn       : historyFn,
-                contentsFn      : contentsFn,
-                detailIdsFn     : attributes.initiallyExpanded || detailIdsFn
-            });
-
-        return panel._loadHistoryFromXHR( xhr, attributes )
-            .fail( function( xhr, where, history ){
-                // throw an error up for the error handler
-                panel.trigger( 'error', panel, xhr, attributes, _l( 'An error was encountered while ' + where ),
-                    { historyId: historyId, history: history || {} });
-            })
+        self.trigger( 'loading' );
+        return self.model
+            .fetchWithContents( options, contentsOptions )
             .always( function(){
-                // bc _hideLoadingIndicator relies on this firing
-                panel.trigger( 'loading-done', panel );
+                self.trigger( 'loading-done' );
             });
-    },
-
-    /** given an xhr that will provide both history and contents data, pass data to set model or handle xhr errors */
-    _loadHistoryFromXHR : function( xhr, attributes ){
-        var panel = this;
-        xhr.then( function( historyJSON, contentsJSON ){
-            panel.JSONToModel( historyJSON, contentsJSON, attributes );
-            panel.render();
-        });
-        xhr.fail( function( xhr, where ){
-            // render anyways - whether we get a model or not
-            panel.render();
-        });
-        return xhr;
     },
 
     /** convenience alias to the model. Updates the item list only (not the history) */
@@ -229,20 +131,6 @@ var HistoryView = _super.extend(
         return $.when();
     },
 
-//TODO:?? seems unneccesary
-//TODO: Maybe better in History?
-    /** create a new history model from JSON and call setModel on it */
-    JSONToModel : function( newHistoryJSON, newHdaJSON, attributes ){
-        this.log( 'JSONToModel:', newHistoryJSON, newHdaJSON, attributes );
-        attributes = attributes || {};
-        //this.log( 'JSONToModel:', newHistoryJSON, newHdaJSON.length, attributes );
-
-        var model = new HISTORY_MODEL.History( newHistoryJSON, newHdaJSON, attributes );
-//TODO:?? here?
-        this.setModel( model );
-        return model;
-    },
-
     /** release/free/shutdown old models and set up panel for new models
      *  @fires new-model with the panel as parameter
      */
@@ -250,47 +138,46 @@ var HistoryView = _super.extend(
         attributes = attributes || {};
         _super.prototype.setModel.call( this, model, attributes );
         if( this.model ){
-            this._setUpWebStorage( attributes.initiallyExpanded, attributes.show_deleted, attributes.show_hidden );
+            this._setUpWebStorage();
         }
+    },
+
+    /** Override to reset web storage when the id changes (since it needs the id) */
+    _setUpModelListeners : function(){
+        _super.prototype._setUpModelListeners.call( this );
+        return this.listenTo( this.model, {
+            'change:id' : this._setUpWebStorage,
+        });
+    },
+
+    /** Override to reset web storage when the id changes (since it needs the id) */
+    _setUpCollectionListeners : function(){
+        _super.prototype._setUpCollectionListeners.call( this );
+        return this.listenTo( this.collection, {
+            // 'all' : function(){ console.log( this.collection + ':', arguments ); },
+            'fetching-more'     : this.showContentsLoadingIndicator,
+            'fetching-more-done': this.hideContentsLoadingIndicator,
+        });
     },
 
     // ------------------------------------------------------------------------ browser stored prefs
     /** Set up client side storage. Currently PersistanStorage keyed under 'history:<id>'
-     *  @param {Object} initiallyExpanded
-     *  @param {Boolean} show_deleted whether to show deleted contents (overrides stored)
-     *  @param {Boolean} show_hidden
      *  @see PersistentStorage
      */
-    _setUpWebStorage : function( initiallyExpanded, show_deleted, show_hidden ){
-        //if( !this.model ){ return this; }
+    _setUpWebStorage : function(){
+        if( !this.model || !this.model.id ){ return this; }
         //this.log( '_setUpWebStorage', initiallyExpanded, show_deleted, show_hidden );
         if( this.storage ){
             this.stopListening( this.storage );
         }
 
-        this.storage = new HistoryPrefs({
-            id: HistoryPrefs.historyStorageKey( this.model.get( 'id' ) )
+        this.storage = new HISTORY_PREFS.HistoryPrefs({
+            id: HISTORY_PREFS.HistoryPrefs.historyStorageKey( this.model.get( 'id' ) )
         });
-
-        // expandedIds is a map of content.ids -> a boolean repr'ing whether that item's body is already expanded
-        // store any pre-expanded ids passed in
-        if( _.isObject( initiallyExpanded ) ){
-            this.storage.set( 'expandedIds', initiallyExpanded );
-        }
-
-        // get the show_deleted/hidden settings giving priority to values passed in, using web storage otherwise
-        // if the page has specifically requested show_deleted/hidden, these will be either true or false
-        //  (as opposed to undefined, null) - and we give priority to that setting
-        if( _.isBoolean( show_deleted ) ){
-            this.storage.set( 'show_deleted', show_deleted );
-        }
-        if( _.isBoolean( show_hidden ) ){
-            this.storage.set( 'show_hidden', show_hidden );
-        }
-
         this.trigger( 'new-storage', this.storage, this );
         this.log( this + ' (init\'d) storage:', this.storage.get() );
 
+// TODO: reverse this - have storage reflect what's used in the view and not visversa
         this.listenTo( this.storage, {
             'change:show_deleted' : function( view, newVal ){
                 this.showDeleted = newVal;
@@ -299,8 +186,8 @@ var HistoryView = _super.extend(
                 this.showHidden = newVal;
             }
         }, this );
-        this.showDeleted = ( show_deleted !== undefined )? show_deleted : this.storage.get( 'show_deleted' );
-        this.showHidden  = ( show_hidden  !== undefined )? show_hidden  : this.storage.get( 'show_hidden' );
+        this.showDeleted = this.storage.get( 'show_deleted' ) || false;
+        this.showHidden  = this.storage.get( 'show_hidden' ) || false;
 
         return this;
     },
@@ -311,6 +198,21 @@ var HistoryView = _super.extend(
         var $newRender = _super.prototype._buildNewRender.call( this );
         this._renderSelectButton( $newRender );
         return $newRender;
+    },
+
+    /** override to avoid showing intial empty message using contents_active */
+    _renderEmptyMessage : function( $whereTo ){
+        var self = this;
+        var empty = !self.model.get( 'contents_active' ).active;
+        var $emptyMsg = self.$emptyMessage( $whereTo );
+
+        if( empty ){
+            return $emptyMsg.empty().append( self.emptyMsg ).show();
+
+        } else if( self.searchFor && self.model.contents.haveSearchDetails() && !self.views.length ){
+            return $emptyMsg.empty().append( self.noneFoundMsg ).show();
+        }
+        return $();
     },
 
     /** button for starting select mode */
@@ -376,10 +278,9 @@ var HistoryView = _super.extend(
     _setUpItemViewListeners : function( view ){
         var panel = this;
         _super.prototype._setUpItemViewListeners.call( panel, view );
-
         //TODO:?? could use 'view:expanded' here?
         // maintain a list of items whose bodies are expanded
-        panel.listenTo( view, {
+        return panel.listenTo( view, {
             'expanded': function( v ){
                 panel.storage.addExpanded( v.model );
             },
@@ -387,7 +288,12 @@ var HistoryView = _super.extend(
                 panel.storage.removeExpanded( v.model );
             }
         });
-        return this;
+    },
+
+    /** override to remove expandedIds from webstorage */
+    collapseAll : function(){
+        this.storage.set( 'expandedIds', {} );
+        _super.prototype.collapseAll.call( this );
     },
 
     // ------------------------------------------------------------------------ selection
@@ -396,6 +302,76 @@ var HistoryView = _super.extend(
         var collection = _super.prototype.getSelectedModels.call( this );
         collection.historyId = this.collection.historyId;
         return collection;
+    },
+
+    // ------------------------------------------------------------------------ inf. scrolling
+    /** @type {Number} ms to debounce scroll handler for infinite scrolling */
+    INFINITE_SCROLL_DEBOUNCE_MS : 40,
+    /** @type {Number} number of px (or less) from the bottom the scrollbar should be before fetching */
+    INFINITE_SCROLL_FETCH_THRESHOLD_PX : 512,
+
+    /** override to track the scroll container for this view */
+    _setUpBehaviors : function( $where ){
+        var self = this,
+            $newRender = _super.prototype._setUpBehaviors.call( this, $where );
+        // this needs to be handled outside the events hash since we're accessing the scollContainer
+        // (rebind and debounce the method so we can cache for any later removal)
+        self.scrollHandler = _.debounce( _.bind( this.scrollHandler, self ), self.INFINITE_SCROLL_DEBOUNCE_MS );
+        self.$scrollContainer( $where ).on( 'scroll', self.scrollHandler );
+        return self;
+    },
+
+    /** when the view is scrolled, check how close the scroll is to the bottom, then fetch more if close to ending */
+    scrollHandler : function( ev ){
+        var self = this;
+        var pxToBottom = self._scrollDistanceToBottom();
+        console.log( pxToBottom );
+
+        // if the scrollbar is past the trigger point, we're not already fetching,
+        // AND we're not displaying some panel OVER this one: fetch more contents
+        // note: is( :visible ) won't work here - it's still visible when this is covered with other panels
+        if( pxToBottom < self.INFINITE_SCROLL_FETCH_THRESHOLD_PX && !self._fetching && _.isEmpty( self.panelStack ) ){
+            self.listenToOnce( self.model.contents, 'sync', self.bulkAppendItemViews );
+            // TODO: gotta be a better way than a _fetching flag
+            self._fetching = true;
+            self.model.contents.fetchMore({ silent : true, useSync: true })
+                .always( function(){ delete self._fetching; });
+        }
+    },
+
+    /** return the number of px the scrollbar has until it bottoms out */
+    _scrollDistanceToBottom : function(){
+        var $container = this.$scrollContainer();
+        var pxToBottom = this.$el.outerHeight() - ( $container.scrollTop() + $container.innerHeight() );
+        return pxToBottom;
+    },
+
+    /** show the user that the contents are loading/contacting the server */
+    showContentsLoadingIndicator : function( speed ){
+        speed = _.isNumber( speed )? speed : this.fxSpeed;
+        if( this.$emptyMessage().is( ':visible' ) ){
+            this.$emptyMessage().hide();
+        }
+        // look for an existing indicator and stop all animations on it, otherwise make one
+        var $indicator = this.$( '.contents-loading-indicator' );
+        if( $indicator.size() ){
+            return $indicator.stop().clearQueue();
+        }
+
+        // move it to the bottom and fade it in
+        // $indicator = $( '<div class="contents-loading-indicator">' + _l( 'Loading...' ) + '</div>' ).hide();
+        $indicator = $( this.templates.contentsLoadingIndicator( {}, this )).hide();
+        return $indicator
+            .insertAfter( this.$( '> .list-items' ) )
+            .slideDown( speed );
+    },
+
+    /** show the user we're done loading */
+    hideContentsLoadingIndicator : function( speed ){
+        speed = _.isNumber( speed )? speed : this.fxSpeed;
+        this.$( '> .contents-loading-indicator' ).slideUp({ duration: 100, complete: function _complete(){
+            $( this ).remove();
+        }});
     },
 
     // ------------------------------------------------------------------------ panel events
@@ -407,195 +383,125 @@ var HistoryView = _super.extend(
         'click .messages [class$=message]'  : 'clearMessages'
     }),
 
-    /** Handle the user toggling the deleted visibility by:
-     *      (1) storing the new value in the persistent storage
-     *      (2) re-rendering the history
+    /** Toggle and store the deleted visibility and re-render items
      * @returns {Boolean} new show_deleted setting
      */
     toggleShowDeleted : function( show, store ){
         show = ( show !== undefined )?( show ):( !this.showDeleted );
         store = ( store !== undefined )?( store ):( true );
-        this.showDeleted = show;
-        if( store ){
-            this.storage.set( 'show_deleted', show );
+        var self = this;
+
+        self.showDeleted = show;
+        //TODO: at this point deleted/hidden makes more sense (simpler) in the collection
+        self.model.contents.includeDeleted = show;
+        self.trigger( 'show-deleted', show );
+        if( store ){ self.storage.set( 'show_deleted', show ); }
+
+        // this seems brittle or at least not cohesive with the other non-hid approaches
+        var last = self.collection.last();
+        var lastHid = last? last.get( 'hid' ) : 0;
+        var fetch = jQuery.when();
+        if( show ){
+            fetch = self.model.contents.fetchDeleted({
+                silent  : true,
+                filters : { 'hid-ge' : lastHid }
+            });
         }
-        //TODO:?? to events on storage('change:show_deleted')
-        this.renderItems();
-        this.trigger( 'show-deleted', show );
-        return this.showDeleted;
+        fetch.done( function(){ self.renderItems(); });
+
+        return self.showDeleted;
     },
 
-    /** Handle the user toggling the hidden visibility by:
-     *      (1) storing the new value in the persistent storage
-     *      (2) re-rendering the history
+    /** Toggle and store whether to render explicity hidden contents
      * @returns {Boolean} new show_hidden setting
      */
     toggleShowHidden : function( show, store ){
         show = ( show !== undefined )?( show ):( !this.showHidden );
         store = ( store !== undefined )?( store ):( true );
-        this.showHidden = show;
+        var self = this;
+
+        self.showHidden = show;
+        self.model.contents.includeHidden = show;
+        self.trigger( 'show-hidden', show );
         if( store ){
-            this.storage.set( 'show_hidden', show );
+            self.storage.set( 'show_hidden', show );
         }
-        //TODO:?? to events on storage('change:show_deleted')
-        this.renderItems();
-        this.trigger( 'show-hidden', show );
-        return this.showHidden;
+        var fetch = jQuery.when();
+        if( show ){
+            fetch = self.model.contents.fetchHidden({
+                silent  : true,
+            });
+        }
+        fetch.done( function(){ self.renderItems(); });
+
+        return self.showHidden;
     },
 
     /** On the first search, if there are no details - load them, then search */
     _firstSearch : function( searchFor ){
-        var panel = this,
-            inputSelector = '.history-search-input';
+        var self = this;
+        var inputSelector = '> .controls .search-input';
+        var initialContentsLength = self.model.contents.length;
         this.log( 'onFirstSearch', searchFor );
 
-        if( panel.model.contents.haveDetails() ){
-            panel.searchItems( searchFor );
+        // if the contents already have enough details to search, search and return now
+        if( self.model.contents.haveSearchDetails() ){
+            self.searchItems( searchFor );
             return;
         }
 
-        panel.$el.find( inputSelector ).searchInput( 'toggle-loading' );
-        panel.model.contents.fetchAllDetails({ silent: true })
+        // otherwise, load the details progressively here
+        self.$( inputSelector ).searchInput( 'toggle-loading' );
+        // TODO?: self.$( inputSelector + ' input' ).prop( 'disabled', true ) ?? not disabling could cause trouble here
+        self.model.contents.progressivelyFetchDetails({ silent: true })
+            .progress( function( response, limit, offset ){
+                // if we're still only merging new attrs to what the contents already have,
+                // just render what's there again
+                if( offset + response.length <= initialContentsLength ){
+                    self.renderItems();
+                // if we're adding new items, then listen for sync'ing and bulk add those views
+                } else {
+                    self.listenToOnce( self.model.contents, 'sync', self.bulkAppendItemViews );
+                }
+            })
             .always( function(){
-                panel.$el.find( inputSelector ).searchInput( 'toggle-loading' );
+                self.$el.find( inputSelector ).searchInput( 'toggle-loading' );
             })
             .done( function(){
-                panel.searchItems( panel.searchFor );
+                self.searchItems( self.searchFor );
             });
     },
 
-//TODO: break this out
     // ........................................................................ error handling
     /** Event handler for errors (from the panel, the history, or the history's contents)
+     *  Alternately use two strings for model and xhr to use custom message and title (respectively)
      *  @param {Model or View} model    the (Backbone) source of the error
      *  @param {XMLHTTPRequest} xhr     any ajax obj. assoc. with the error
      *  @param {Object} options         the options map commonly used with bbone ajax
-     *  @param {String} msg             optional message passed to ease error location
-     *  @param {Object} msg             optional object containing error details
      */
-    errorHandler : function( model, xhr, options, msg, details ){
-        this.error( model, xhr, options, msg, details );
-
-        // interrupted ajax
+    errorHandler : function( model, xhr, options ){
+        //TODO: to mixin or base model
+        // interrupted ajax or no connection
         if( xhr && xhr.status === 0 && xhr.readyState === 0 ){
-            //TODO: gmail style 'retrying in Ns'
-
+            // return ERROR_MODAL.offlineErrorModal();
+            // fail silently
+            return;
+        }
+        // otherwise, leave something to report in the console
+        this.error( model, xhr, options );
+        // and feedback to a modal
+        // if sent two strings (and possibly details as 'options'), use those as message and title
+        if( _.isString( model ) && _.isString( xhr ) ){
+            var message = model;
+            var title = xhr;
+            return ERROR_MODAL.errorModal( message, title, options );
+        }
         // bad gateway
-        } else if( xhr && xhr.status === 502 ){
-            //TODO: gmail style 'retrying in Ns'
-
-        // otherwise, show an error message inside the panel
-        } else {
-            // if sentry is available, attempt to get the event id
-            var parsed = this._parseErrorMessage( model, xhr, options, msg, details );
-            // it's possible to have a triggered error before the message container is rendered - wait for it to show
-            if( !this.$messages().is( ':visible' ) ){
-                this.once( 'rendered', function(){
-                    this.displayMessage( 'error', parsed.message, parsed.details );
-                });
-            } else {
-                this.displayMessage( 'error', parsed.message, parsed.details );
-            }
+        // TODO: possibly to global handler
+        if( xhr && xhr.status === 502 ){
+            return ERROR_MODAL.badGatewayErrorModal();
         }
-    },
-
-    /** Parse an error event into an Object usable by displayMessage based on the parameters
-     *      note: see errorHandler for more info on params
-     */
-    _parseErrorMessage : function( model, xhr, options, msg, details, sentryId ){
-        //if( xhr.responseText ){
-        //    xhr.responseText = _.escape( xhr.responseText );
-        //}
-        var user = Galaxy.user,
-            // add the args (w/ some extra info) into an obj
-            parsed = {
-                message : this._bePolite( msg ),
-                details : {
-                    message : msg,
-                    raven   : ( window.Raven && _.isFunction( Raven.lastEventId) )?
-                                    ( Raven.lastEventId() ):( undefined ),
-                    agent   : navigator.userAgent,
-                    // add ajax data from Galaxy object cache
-                    url     : ( window.Galaxy )?( Galaxy.lastAjax.url ):( undefined ),
-                    data    : ( window.Galaxy )?( Galaxy.lastAjax.data ):( undefined ),
-                    options : ( xhr )?( _.omit( options, 'xhr' ) ):( options ),
-                    xhr     : xhr,
-                    source  : ( _.isFunction( model.toJSON ) )?( model.toJSON() ):( model + '' ),
-                    user    : ( user instanceof USER.User )?( user.toJSON() ):( user + '' )
-                }
-            };
-
-        // add any extra details passed in
-        _.extend( parsed.details, details || {} );
-        // fancy xhr.header parsing (--> obj)
-        if( xhr &&  _.isFunction( xhr.getAllResponseHeaders ) ){
-            var responseHeaders = xhr.getAllResponseHeaders();
-            responseHeaders = _.compact( responseHeaders.split( '\n' ) );
-            responseHeaders = _.map( responseHeaders, function( header ){
-                return header.split( ': ' );
-            });
-            parsed.details.xhr.responseHeaders = _.object( responseHeaders );
-        }
-        return parsed;
-    },
-
-    /** Modify an error message to be fancy and wear a monocle. */
-    _bePolite : function( msg ){
-        msg = msg || _l( 'An error occurred while getting updates from the server' );
-        return msg + '. ' + _l( 'Please contact a Galaxy administrator if the problem persists' ) + '.';
-    },
-
-    // ........................................................................ (error) messages
-    /** Display a message in the top of the panel.
-     *  @param {String} type    type of message ('done', 'error', 'warning')
-     *  @param {String} msg     the message to display
-     *  @param {Object or HTML} modal contents displayed when the user clicks 'details' in the message
-     */
-    displayMessage : function( type, msg, details ){
-        //precondition: msgContainer must have been rendered even if there's no model
-        var panel = this;
-        //this.log( 'displayMessage', type, msg, details );
-
-        this.scrollToTop();
-        var $msgContainer = this.$messages(),
-            $msg = $( '<div/>' ).addClass( type + 'message' ).html( msg );
-        //this.log( '  ', $msgContainer );
-
-        if( !_.isEmpty( details ) ){
-            var $detailsLink = $( '<a href="javascript:void(0)">Details</a>' )
-                .click( function(){
-                    Galaxy.modal.show( panel._messageToModalOptions( type, msg, details ) );
-                    return false;
-                });
-            $msg.append( ' ', $detailsLink );
-        }
-        return $msgContainer.append( $msg );
-    },
-
-    /** convert msg and details into modal options usable by Galaxy.modal */
-    _messageToModalOptions : function( type, msg, details ){
-        // only error is fleshed out here
-        var panel = this,
-            options = { title: 'Details' };
-        if( _.isObject( details ) ){
-
-            details = _.omit( details, _.functions( details ) );
-            var text = JSON.stringify( details, null, '  ' ),
-                pre = $( '<pre/>' ).text( text );
-            options.body = $( '<div/>' ).append( pre );
-
-        } else {
-            options.body = $( '<div/>' ).html( details );
-        }
-
-        options.buttons = {
-            'Ok': function(){
-                Galaxy.modal.hide();
-                panel.clearMessages();
-            }
-            //TODO: if( type === 'error' ){ options.buttons[ 'Report this error' ] = function(){} }
-        };
-        return options;
+        return ERROR_MODAL.ajaxErrorModal( model, xhr, options );
     },
 
     /** Remove all messages from the panel. */
@@ -639,21 +545,21 @@ HistoryView.prototype.templates = (function(){
 
             '<div class="actions"></div>',
 
-            '<div class="messages">',
-                '<% if( history.deleted && history.purged ){ %>',
-                    '<div class="deleted-msg warningmessagesmall">',
-                        _l( 'This history has been purged and deleted' ),
-                    '</div>',
-                '<% } else if( history.deleted ){ %>',
-                    '<div class="deleted-msg warningmessagesmall">',
-                        _l( 'This history has been deleted' ),
-                    '</div>',
-                '<% } else if( history.purged ){ %>',
-                    '<div class="deleted-msg warningmessagesmall">',
-                        _l( 'This history has been purged' ),
-                    '</div>',
-                '<% } %>',
+            '<% if( history.deleted && history.purged ){ %>',
+                '<div class="deleted-msg warningmessagesmall">',
+                    _l( 'This history has been purged and deleted' ),
+                '</div>',
+            '<% } else if( history.deleted ){ %>',
+                '<div class="deleted-msg warningmessagesmall">',
+                    _l( 'This history has been deleted' ),
+                '</div>',
+            '<% } else if( history.purged ){ %>',
+                '<div class="deleted-msg warningmessagesmall">',
+                    _l( 'This history has been purged' ),
+                '</div>',
+            '<% } %>',
 
+            '<div class="messages">',
                 '<% if( history.message ){ %>',
                     // should already be localized
                     '<div class="<%= history.message.level || "info" %>messagesmall">',
@@ -683,8 +589,15 @@ HistoryView.prototype.templates = (function(){
         '</div>'
     ], 'history' );
 
+    var contentsLoadingIndicatorTemplate = BASE_MVC.wrapTemplate([
+        '<div class="contents-loading-indicator">',
+            '<span class="fa fa-2x fa-spin fa-spinner">',
+        '</span></div>'
+    ], 'history' );
+
     return _.extend( _.clone( _super.prototype.templates ), {
-        controls : controlsTemplate
+        controls                : controlsTemplate,
+        contentsLoadingIndicator: contentsLoadingIndicatorTemplate
     });
 }());
 

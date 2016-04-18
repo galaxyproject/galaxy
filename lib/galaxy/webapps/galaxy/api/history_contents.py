@@ -261,9 +261,6 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             self.history_manager.error_unless_accessible( original.history, trans.user, current_history=trans.history )
             hda = self.hda_manager.copy( original, history=history )
 
-            # data_copy = original.copy( copy_children=True )
-            # hda = history.add_dataset( data_copy )
-
         trans.sa_session.flush()
         if not hda:
             return None
@@ -305,7 +302,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             for ld in traverse( folder ):
                 hda = ld.library_dataset_dataset_association.to_history_dataset_association( history, add_to_history=True )
                 hda_dict = self.hda_serializer.serialize_to_view( hda,
-            user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+                    user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
                 rval.append( hda_dict )
         else:
             message = "Invalid 'source' parameter in request %s" % source
@@ -337,6 +334,12 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         else:
             message = "Invalid 'source' parameter in request %s" % source
             raise exceptions.RequestParameterInvalidException(message)
+
+        # if the consumer specified keys or view, use the secondary serializer
+        if 'view' in kwd or 'keys' in kwd:
+            return self.hdca_serializer.serialize_to_view( dataset_collection_instance,
+                user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+
         return self.__collection_dict( trans, dataset_collection_instance, view="element" )
 
     @expose_api_anonymous

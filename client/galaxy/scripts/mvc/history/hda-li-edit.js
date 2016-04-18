@@ -54,7 +54,6 @@ var HDAListItemEdit = _super.extend(
 // ............................................................................ TEMPLATES
 /** underscore templates */
 HDAListItemEdit.prototype.templates = (function(){
-//TODO: move to require text! plugin
 
     var warnings = _.extend( {}, _super.prototype.templates.warnings, {
         hidden : BASE_MVC.wrapTemplate([

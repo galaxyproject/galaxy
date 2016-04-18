@@ -6,6 +6,18 @@ import logging
 log = logging.getLogger( __name__ )
 
 
+# needed to extract this for use in manager *and* serializer, ideally, would use self.manager.annotation
+# from serializer, but history_contents has no self.manager
+# TODO: fix
+def _match_by_user( item, user ):
+    if not user:
+        return None
+    for annotation in item.annotations:
+        if annotation.user_id == user.id:
+            return annotation.annotation
+    return None
+
+
 class AnnotatableManagerMixin( object ):
     #: class of AnnotationAssociation (e.g. HistoryAnnotationAssociation)
     annotation_assoc = None
@@ -36,7 +48,7 @@ class AnnotatableManagerMixin( object ):
         return annotation_obj
 
     def _user_annotation( self, item, user ):
-        return item.get_item_annotation_str( self.session(), user, item )
+        return _match_by_user( item, user )
 
     def _delete_annotation( self, item, user, flush=True ):
         returned = item.delete_item_annotation( self.session(), user, item )
@@ -54,10 +66,8 @@ class AnnotatableSerializerMixin( object ):
         """
         Get and serialize an `item`'s annotation.
         """
-        # user = item.user
-        sa_session = self.app.model.context
-        returned = item.get_item_annotation_str( sa_session, user, item )
-        return returned
+        annotation = _match_by_user( item, user )
+        return annotation.strip() if annotation else None
 
 
 class AnnotatableDeserializerMixin( object ):
@@ -81,12 +91,7 @@ class AnnotatableFilterMixin( object ):
         """
         Get the annotation by the item's owner.
         """
-        if not item.user:
-            return None
-        for annotation in item.annotations:
-            if annotation.user == item.user:
-                return annotation.annotation
-        return None
+        return _match_by_user( item, item.user )
 
     def filter_annotation_contains( self, item, val ):
         """

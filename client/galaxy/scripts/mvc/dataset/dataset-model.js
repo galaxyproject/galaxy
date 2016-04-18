@@ -130,8 +130,7 @@ var DatasetAssociation = Backbone.Model
 
     /** Does this model already contain detailed data (as opposed to just summary level data)? */
     hasDetails : function(){
-        //?? this may not be reliable
-        return _.has( this.attributes, 'genome_build' );
+        return this.has( 'annotation' );
     },
 
     /** Convenience function to match dataset.has_data. */
@@ -146,6 +145,18 @@ var DatasetAssociation = Backbone.Model
             .always( function(){
                 dataset._generateUrls();
             });
+    },
+
+    /** override to use actual Dates objects for create/update times */
+    parse : function( response, options ){
+        var parsed = Backbone.Model.prototype.parse.call( this, response, options );
+        if( parsed.create_time ){
+            parsed.create_time = new Date( parsed.create_time );
+        }
+        if( parsed.update_time ){
+            parsed.update_time = new Date( parsed.update_time );
+        }
+        return parsed;
     },
 
     //NOTE: subclasses of DA's will need to implement url and urlRoot in order to have these work properly

@@ -251,15 +251,16 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
 
         self.default_view = 'summary'
         self.add_view( 'summary', [
-            'id', 'name',
+            'id',
             'type_id',
+            'name',
             'history_id', 'hid',
-            # why include if model_class is there?
             'history_content_type',
             'dataset_id',
             'state', 'extension',
             'deleted', 'purged', 'visible',
-            'type', 'url'
+            'type', 'url',
+            'create_time', 'update_time',
         ])
         self.add_view( 'detailed', [
             'model_class',
@@ -273,7 +274,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'genome_build', 'misc_info', 'misc_blurb',
             'file_ext', 'file_size',
 
-            'create_time', 'update_time',
             'resubmitted',
             'metadata', 'meta_files', 'data_type',
             'peek',

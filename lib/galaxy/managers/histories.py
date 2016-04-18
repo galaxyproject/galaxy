@@ -5,8 +5,7 @@ Histories are containers for datasets or dataset collections
 created (or copied) by users over the course of an analysis.
 """
 
-from sqlalchemy import desc
-from sqlalchemy import asc
+from sqlalchemy import desc, asc
 
 from galaxy import model
 from galaxy import exceptions as glx_exceptions
@@ -15,7 +14,6 @@ from galaxy.managers import deletable
 from galaxy.managers import hdas
 # from galaxy.managers import hdcas
 from galaxy.managers import history_contents
-from galaxy.managers import collections_util
 
 
 import logging
@@ -179,6 +177,7 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
         self.history_manager = self.manager
         self.hda_manager = hdas.HDAManager( app )
         self.hda_serializer = hdas.HDASerializer( app )
+        self.history_contents_serializer = history_contents.HistoryContentsSerializer( app )
 
         self.default_view = 'summary'
         self.add_view( 'summary', [
@@ -196,13 +195,14 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
         ])
         self.add_view( 'detailed', [
             'contents_url',
-            # 'hdas',
             'empty',
             'size',
-            # 'nice_size',
             'user_id',
-            'create_time', 'update_time',
-            'importable', 'slug', 'username_and_slug',
+            'create_time',
+            'update_time',
+            'importable',
+            'slug',
+            'username_and_slug',
             'genome_build',
             # TODO: remove the next three - instead getting the same info from the 'hdas' list
             'state',
@@ -212,6 +212,22 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             # 'user_rating',
         ], include_keys_from='summary' )
         # in the Historys' case, each of these views includes the keys from the previous
+
+        #: ..note: this is a custom view for newer (2016/3) UI and should be considered volatile
+        self.add_view( 'dev-detailed', [
+            'contents_url',
+            'size',
+            'user_id',
+            'create_time',
+            'update_time',
+            'importable',
+            'slug',
+            'username_and_slug',
+            'genome_build',
+            # 'contents_states',
+            'contents_active',
+            'hid_counter',
+        ], include_keys_from='summary' )
 
     # assumes: outgoing to json.dumps and sanitized
     def add_serializers( self ):
@@ -236,6 +252,9 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             'contents'      : self.serialize_contents,
             'non_ready_jobs': lambda i, k, **c: [ self.app.security.encode_id( job.id ) for job
                                                   in self.manager.non_ready_jobs( i ) ],
+
+            'contents_states': self.serialize_contents_states,
+            'contents_active': self.serialize_contents_active,
         })
 
     # remove this
@@ -307,34 +326,32 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
 
         return state
 
-    def serialize_contents( self, history, key, trans=None, **context ):
-        contents_dictionaries = []
-        for content in history.contents_iter( types=[ 'dataset', 'dataset_collection' ] ):
-            contents_dict = {}
+    def serialize_contents( self, history, key, trans=None, user=None, **context ):
+        returned = []
+        for content in self.manager.contents_manager._union_of_contents_query( history ).all():
+            serialized = self.history_contents_serializer.serialize_to_view( content,
+                view='summary', trans=trans, user=user )
+            returned.append( serialized )
+        return returned
 
-            if isinstance( content, model.HistoryDatasetAssociation ):
-                contents_dict = self.hda_serializer.serialize_to_view( content,
-                    view='detailed', trans=trans, **context )
-                # TODO: work out: shouldn't history annotations *always* use user=history.user? why anything else?
-                hda_annotation = self.hda_serializer.serialize_annotation( content, 'annotation', user=history.user )
-                contents_dict[ 'annotation' ] = hda_annotation
+    def serialize_contents_states( self, history, key, trans=None, **context ):
+        """
+        Return a dictionary containing the counts of all contents in each state
+        keyed by the distinct states.
 
-            elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
-                contents_dict = self._serialize_collection( trans, content )
+        Note: does not include deleted/hidden contents.
+        """
+        return self.manager.contents_manager.state_counts( history )
 
-            contents_dictionaries.append( contents_dict )
-        return contents_dictionaries
+    def serialize_contents_active( self, history, key, **context ):
+        """
+        Return a dictionary keyed with 'deleted', 'hidden', and 'active' with values
+        for each representing the count of contents in each state.
 
-    # TODO: remove trans
-    def _serialize_collection( self, trans, collection ):
-        service = self.app.dataset_collections_service
-        dataset_collection_instance = service.get_dataset_collection_instance(
-            trans=trans,
-            instance_type='history',
-            id=self.app.security.encode_id( collection.id ),
-        )
-        return collections_util.dictify_dataset_collection_instance( dataset_collection_instance,
-            security=self.app.security, parent=dataset_collection_instance.history, view="element" )
+        Note: counts for deleted and hidden overlap; In other words, a dataset that's
+        both deleted and hidden will be added to both totals.
+        """
+        return self.manager.contents_manager.active_counts( history )
 
 
 class HistoryDeserializer( sharable.SharableModelDeserializer, deletable.PurgableDeserializerMixin ):

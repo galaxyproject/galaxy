@@ -14,7 +14,7 @@ var logNamespace = 'list';
 var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
     _logNamespace : logNamespace,
 
-//TODO: Although the reasoning behind them is different, this shares a lot with HiddenUntilActivated above: combine them
+    //TODO: Although the reasoning behind them is different, this shares a lot with HiddenUntilActivated above: combine them
     //PRECONDITION: model must have method hasDetails
     //PRECONDITION: subclasses must have templates.el and templates.details
 
@@ -60,14 +60,18 @@ var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
         var view = this;
 
         $( view ).queue( 'fx', [
-            function( next ){ this.$el.fadeOut( speed, next ); },
+            function( next ){
+                this.$el.fadeOut( speed, '', next );
+            },
             function( next ){
                 view._swapNewRender( $newRender );
                 next();
             },
-            function( next ){ this.$el.fadeIn( speed, next ); },
             function( next ){
-                this.trigger( 'rendered', view );
+                this.$el.fadeIn( speed, '', next );
+            },
+            function( next ){
+                view.trigger( 'rendered', view );
                 next();
             }
         ]);

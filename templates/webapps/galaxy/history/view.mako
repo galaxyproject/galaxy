@@ -47,14 +47,10 @@ ${parent.stylesheets()}
 #history-view-controls {
     margin: 10px 10px 10px 10px;
 }
-.history-panel {
-    /* this and the height of #header above are way too tweaky */
-    margin-top: 18px;
-}
-.history-title {
+.history-panel > .controls .title {
     font-size: 120%;
 }
-.history-title input {
+.history-panel > .controls .title input {
     font-size: 100%;
 }
 a.btn {
@@ -144,7 +140,6 @@ a.btn {
         userIsOwner  = ${ 'true' if user_is_owner else 'false' },
         isCurrent    = ${ 'true' if history_is_current else 'false' },
         historyJSON  = ${ h.dumps( history ) },
-        contentsJSON = ${ h.dumps( contents ) },
         viewToUse   = ( userIsOwner )?
 //TODO: change class names
             ({ location: 'mvc/history/history-view-edit',  className: 'HistoryViewEdit' }):
@@ -173,7 +168,7 @@ a.btn {
             var viewClass = viewMod[ viewToUse.className ],
                 // history module is already in the dpn chain from the view. We can re-scope it here.
                 HISTORY = require( 'mvc/history/history-model' ),
-                historyModel = new HISTORY.History( historyJSON, contentsJSON );
+                historyModel = new HISTORY.History( historyJSON );
 
             // attach the copy dialog to the import button now that we have a history
             $( '#import' ).click( function( ev ){
@@ -197,7 +192,10 @@ a.btn {
                 el              : $( "#history-" + historyJSON.id ),
                 $scrollContainer: hasMasthead? function(){ return this.$el.parent(); } : undefined,
                 model           : historyModel
-            }).render();
+            });
+            historyModel.fetchContents()
+                .fail( function(){ alert( 'Galaxy history failed to load' ); })
+                .done( function(){ historyView.render(); })
 
             $( '#toggle-deleted' ).on( 'click', function(){
                 historyView.toggleShowDeleted();

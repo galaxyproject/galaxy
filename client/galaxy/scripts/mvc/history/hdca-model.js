@@ -47,17 +47,12 @@ var HistoryListDatasetCollection = ListDC.extend( hcontentMixin ).extend(
         model_class         : 'HistoryDatasetCollectionAssociation'
     }),
 
-    initialize : function( model, options ){
-        ListDC.prototype.initialize.call( this, model, options );
-        hcontentMixin.initialize.call( this, model, options );
-    },
-
     /** Override to post to contents route w/o id. */
     save : buildHDCASave( ListDC.prototype.save ),
 
     /** String representation. */
     toString : function(){
-         return ([ 'HistoryListDatasetCollection(', this.get( 'name' ), ')' ].join( '' ));
+        return 'History' + ListDC.prototype.toString.call( this );
     }
 });
 
@@ -75,17 +70,12 @@ var HistoryPairDatasetCollection = PairDC.extend( hcontentMixin ).extend(
         model_class         : 'HistoryDatasetCollectionAssociation'
     }),
 
-    initialize : function( model, options ){
-        PairDC.prototype.initialize.call( this, model, options );
-        hcontentMixin.initialize.call( this, model, options );
-    },
-
     /** Override to post to contents route w/o id. */
     save : buildHDCASave( PairDC.prototype.save ),
 
     /** String representation. */
     toString : function(){
-         return ([ 'HistoryPairDatasetCollection(', this.get( 'name' ), ')' ].join( '' ));
+        return 'History' + PairDC.prototype.toString.call( this );
     }
 });
 
@@ -103,17 +93,12 @@ var HistoryListPairedDatasetCollection = ListPairedDC.extend( hcontentMixin ).ex
         model_class         : 'HistoryDatasetCollectionAssociation'
     }),
 
-    initialize : function( model, options ){
-        ListPairedDC.prototype.initialize.call( this, model, options );
-        hcontentMixin.initialize.call( this, model, options );
-    },
-
     /** Override to post to contents route w/o id. */
     save : buildHDCASave( ListPairedDC.prototype.save ),
 
     /** String representation. */
     toString : function(){
-         return ([ 'HistoryListPairedDatasetCollection(', this.get( 'name' ), ')' ].join( '' ));
+        return 'History' + ListPairedDC.prototype.toString.call( this );
     }
 });
 

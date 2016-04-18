@@ -45,8 +45,7 @@
 <div id="history-${ history_dict[ 'id' ] }" class="history-panel">
 </div>
 <script type="text/javascript">
-    var historyJSON  = ${h.dumps( history_dict )},
-        contentsJSON = ${h.dumps( content_dicts )};
+    var historyJSON  = ${h.dumps( history_dict )};
 
     require.config({
         baseUrl : "${h.url_for( '/static/scripts' )}",
@@ -56,11 +55,13 @@
         'mvc/history/copy-dialog',
     ], function( panelMod, historyCopyDialog ){
         // history module is already in the dpn chain from the panel. We can re-scope it here.
-        var historyModel = require( 'mvc/history/history-model' ),
-            history = new historyModel.History( historyJSON, contentsJSON, {});
+        var HISTORY = require( 'mvc/history/history-model' ),
+            historyModel = new HISTORY.History( historyJSON, null, {
+                order   : 'create_time-asc'
+            });
 
         $( '.history-copy-link' ).click( function( ev ){
-            historyCopyDialog( history, { useImport: true, allowAll: false })
+            historyCopyDialog( historyModel, { useImport: true, allowAll: false })
                 .done( function(){
                     var mainWindow = ( window && ( window !== window.parent ) )? window.top : window;
                     mainWindow.location.href = Galaxy.root;
@@ -71,8 +72,11 @@
             show_deleted    : false,
             show_hidden     : false,
             el              : $( "#history-" + historyJSON.id ),
-            model           : history
-        }).render();
+            model           : historyModel
+        });
+        historyModel.fetchContents()
+            .fail( function(){ alert( 'Galaxy history failed to load' ); })
+            .done( function(){ historyView.render(); })
     });
 </script>
 </%def>

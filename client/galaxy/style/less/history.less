@@ -12,6 +12,9 @@
         font-size   : 1.2em;
 
         padding: 0px;
+        &:not(:last-child) {
+            margin-right: 2px;
+        }
     }
 }
 
@@ -376,6 +379,9 @@
         .subtitle:not(:empty){
             margin-top: -4px;
             margin-bottom: 6px;
+            span+span:before {
+                content: ', '
+            }
         }
         .history-size {
             display: inline-block;
@@ -446,6 +452,20 @@
         }
     }
 
+    // the help text that appears above the drop target
+    .history-drop-target-help {
+        margin        : 10px 10px 4px 10px;
+        color         : grey;
+        font-size     : 80%;
+        font-style    : italic;
+    }
+    .history-drop-target {
+        height: 64px;
+        margin: 0px 10px 10px 10px;
+        border: 1px dashed black;
+        border-radius : 3px;
+    }
+
     // display only a top border on all
     .list-item.history-content {
         border-width: 1px 0px 0px 0px;
@@ -457,6 +477,12 @@
 
     .empty-message {
         margin: 0px 10px 0px 10px;
+    }
+
+    .contents-loading-indicator {
+        margin-top: 4px;
+        text-align: center;
+        color: grey;
     }
 }
 

@@ -1,16 +1,15 @@
 define([
-    "mvc/history/history-content-model",
+    "mvc/base/controlled-fetch-collection",
     "mvc/history/hda-model",
     "mvc/history/hdca-model",
-    "mvc/dataset/states",
+    "mvc/history/history-preferences",
     "mvc/base-mvc",
-    "utils/localization"
-], function( HISTORY_CONTENT, HDA_MODEL, HDCA_MODEL, STATES, BASE_MVC, _l ){
-
+    "utils/ajax-queue"
+], function( CONTROLLED_FETCH_COLLECTION, HDA_MODEL, HDCA_MODEL, HISTORY_PREFS, BASE_MVC, AJAX_QUEUE ){
 'use strict';
 
-var logNamespace = 'history';
 //==============================================================================
+var _super = CONTROLLED_FETCH_COLLECTION.PaginatedCollection;
 /** @class Backbone collection for history content.
  *      NOTE: history content seems like a dataset collection, but differs in that it is mixed:
  *          each element can be either an HDA (dataset) or a DatasetCollection and co-exist on
@@ -19,20 +18,11 @@ var logNamespace = 'history';
  *          HDAs or child dataset collections on one level.
  *      This is why this does not inherit from any of the DatasetCollections (currently).
  */
-var HistoryContents = Backbone.Collection
-        .extend( BASE_MVC.LoggableMixin )
-        .extend(/** @lends HistoryContents.prototype */{
-//TODO:?? may want to inherit from some MixedModelCollection
-//TODO:?? also consider inheriting from a 'DatasetList'
-//TODO: can we decorate the mixed models using the model fn below (instead of having them build their own type_id)?
-
-    _logNamespace : logNamespace,
+var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
+    _logNamespace : 'history',
 
     /** since history content is a mix, override model fn into a factory, creating based on history_content_type */
     model : function( attrs, options ) {
-//TODO: can we move the type_id stuff here?
-        //attrs.type_id = typeIdStr( attrs );
-
         if( attrs.history_content_type === "dataset" ) {
             return new HDA_MODEL.HistoryDatasetAssociation( attrs, options );
 
@@ -54,50 +44,41 @@ var HistoryContents = Backbone.Collection
         return { validationError : 'Unknown history_content_type: ' + attrs.history_content_type };
     },
 
-    /** Set up.
-     *  @see Backbone.Collection#initialize
-     */
+    /** @type {Number} limit used for the first fetch (or a reset) */
+    limitOnFirstFetch   : 200,
+    /** @type {Number} limit used for each subsequent fetch */
+    limitPerFetch       : 100,
+
+    /** @type {String} order used here and when fetching from server */
+    order : 'create_time',
+
+    /** Set up */
     initialize : function( models, options ){
         options = options || {};
-//TODO: could probably use the contents.history_id instead
-        this.historyId = options.historyId;
-        //this._setUpListeners();
+        this.historyId = options.historyId || null;
 
         // backbonejs uses collection.model.prototype.idAttribute to determine if a model is *already* in a collection
         //  and either merged or replaced. In this case, our 'model' is a function so we need to add idAttribute
         //  manually here - if we don't, contents will not merge but be replaced/swapped.
         this.model.prototype.idAttribute = 'type_id';
 
-        this.on( 'all', function(){
-            this.debug( this + '.event:', arguments );
-        });
+        /** @type {Boolean} does this collection contain and fetch deleted elements */
+        this.includeDeleted = options.includeDeleted || false;
+        /** @type {Boolean} does this collection contain and fetch non-visible elements */
+        this.includeHidden = options.includeHidden || false;
+
+        return _super.prototype.initialize.call( this, models, options );
     },
 
     /** root api url */
     urlRoot : Galaxy.root + 'api/histories',
+
     /** complete api url */
     url : function(){
         return this.urlRoot + '/' + this.historyId + '/contents';
     },
 
     // ........................................................................ common queries
-    /** Get the ids of every item in this collection
-     *  @returns array of encoded ids
-     */
-    ids : function(){
-//TODO: is this still useful since type_id
-        return this.map( function( item ){ return item.get('id'); });
-    },
-
-    /** Get contents that are not ready
-     *  @returns array of content models
-     */
-    notReady : function(){
-        return this.filter( function( content ){
-            return !content.inReadyState();
-        });
-    },
-
     /** Get the id of every model in this collection not in a 'ready' state (running).
      *  @returns an array of model ids
      *  @see HistoryDatasetAssociation#inReadyState
@@ -115,29 +96,12 @@ var HistoryContents = Backbone.Collection
         return _.first( this.filter( function( content ){ return content.get( 'hid' ) === hid; }) );
     },
 
-    //TODO:?? this may belong in the containing view
-    /** Get every 'shown' model in this collection based on show_deleted/hidden
-     *  @param {Boolean} show_deleted are we showing deleted content?
-     *  @param {Boolean} show_hidden are we showing hidden content?
-     *  @returns array of content models
-     *  @see HistoryDatasetAssociation#isVisible
-     */
-    getVisible : function( show_deleted, show_hidden, filters ){
-        filters = filters || [];
-        //this.debug( 'filters:', filters );
-        // always filter by show deleted/hidden first
-        this.debug( 'checking isVisible' );
-        var filteredHdas = new HistoryContents( this.filter( function( item ){
-            return item.isVisible( show_deleted, show_hidden );
-        }));
-
-        _.each( filters, function( filterFn ){
-            if( !_.isFunction( filterFn ) ){ return; }
-            filteredHdas = new HistoryContents( filteredHdas.filter( filterFn ) );
-        });
-        return filteredHdas;
+    /** return true if all contents have details */
+    haveDetails : function(){
+        return this.all( function( content ){ return content.hasDetails(); });
     },
 
+    // .................... hidden / deleted
     /** return a new contents collection of only hidden items */
     hidden : function(){
         function filterFn( c ){ return c.hidden(); }
@@ -156,92 +120,174 @@ var HistoryContents = Backbone.Collection
         return new HistoryContents( this.filter( filterFn ) );
     },
 
-    /** return true if any contents don't have details */
-    haveDetails : function(){
-        return this.all( function( content ){ return content.hasDetails(); });
+    /** create a setter in order to publish the change */
+    setIncludeDeleted : function( setting ){
+        if( _.isBoolean( setting ) && setting !== this.includeDeleted ){
+            this.includeDeleted = setting;
+            this.trigger( 'change:include-deleted', setting, this );
+        }
+    },
+
+    /** create a setter in order to publish the change */
+    setIncludeHidden : function( setting ){
+        if( _.isBoolean( setting ) && setting !== this.includeHidden ){
+            this.includeHidden = setting;
+            this.trigger( 'change:include-hidden', setting, this );
+        }
     },
 
     // ........................................................................ ajax
-    /** override to use newest (versioned) api */
+    /** override to get expanded ids from sessionStorage and pass to API as details */
     fetch : function( options ){
         options = options || {};
-        options.data = _.defaults( options.data || {}, {
-            v : 'dev'
-        });
-        return Backbone.Collection.prototype.fetch.call( this, options );
+        if( this.historyId && !options.details ){
+            var prefs = HISTORY_PREFS.HistoryPrefs.get( this.historyId ).toJSON();
+            options.details = _.values( prefs.expandedIds ).join( ',' );
+        }
+        return _super.prototype.fetch.call( this, options );
     },
 
-    /** override to use newest (versioned) api */
-    fetchUpdated : function( since, options ){
-        options = options || {};
-        options.traditional = true;
-        // TODO: this is painful - simplify here or move q/qv to named/mappable params
-        options.data = [{ name: 'v', value: 'dev' }];
-        if( since ){
-            options.data = options.data.concat( this._filtersFromMap({
-                'update_time-ge' : since.toISOString(),
-            }));
+    // ............. ControlledFetch stuff
+    /** override to include the API versioning flag */
+    _buildFetchData : function( options ){
+        return _.extend( _super.prototype._buildFetchData.call( this, options ), {
+            v : 'dev'
+        });
+    },
+
+    /** Extend to include details and version */
+    _fetchParams : _super.prototype._fetchParams.concat([
+        // TODO: remove (the need for) both
+        /** version */
+        'v',
+        /** dataset ids to get full details of */
+        'details',
+    ]),
+
+    /** override to add deleted/hidden filters */
+    _buildFetchFilters : function( options ){
+        var superFilters = _super.prototype._buildFetchFilters.call( this, options ) || {};
+        var filters = {};
+        if( !this.includeDeleted ){
+            filters.deleted = false;
+            filters.purged = false;
         }
-        options.merge = true;
-        options.remove = false;
+        if( !this.includeHidden ){
+            filters.visible = true;
+        }
+        return _.defaults( superFilters, filters );
+    },
+
+    /** override to filter requested contents to those updated after the Date 'since' */
+    fetchUpdated : function( since, options ){
+        if( since ){
+            options = options || { filters: {} };
+            options.filters = {
+                'update_time-ge' : since.toISOString(),
+                // workflows will produce hidden datasets (non-output datasets) that still
+                // need to be updated in the collection or they'll update forever
+                // we can remove the default visible filter by using an 'empty' value
+                visible          : ''
+            };
+        }
         return this.fetch( options );
     },
 
-    _filtersFromMap : function( filterMap ){
-        var filters = [];
-        // TODO: this seems unnecessary
-        _.each( filterMap, function( val, key ){
-            filters.push({ name: 'q',  value: key });
-            filters.push({ name: 'qv', value: val });
+    /** fetch all the deleted==true contents of this collection */
+    fetchDeleted : function( options ){
+        options = options || {};
+        var self = this;
+        options.filters = _.extend( options.filters, {
+            // all deleted, purged or not
+            deleted : true,
+            purged  : undefined
         });
-        return filters;
+
+        self.trigger( 'fetching-deleted', self );
+        return self.fetch( options )
+            .always( function(){ self.trigger( 'fetching-deleted-done', self ); });
+    },
+
+    /** fetch all the visible==false contents of this collection */
+    fetchHidden : function( options ){
+        options = options || {};
+        var self = this;
+        options.filters = _.extend( options.filters, {
+            visible : false
+        });
+
+        self.trigger( 'fetching-hidden', self );
+        return self.fetch( options )
+            .always( function(){ self.trigger( 'fetching-hidden-done', self ); });
     },
 
     /** fetch detailed model data for all contents in this collection */
     fetchAllDetails : function( options ){
         options = options || {};
         var detailsFlag = { details: 'all' };
-        options.data = ( options.data )?( _.extend( options.data, detailsFlag ) ):( detailsFlag );
+        options.data = _.extend( options.data || {}, detailsFlag );
         return this.fetch( options );
     },
 
+    // ............. quasi-batch ops
     /** using a queue, perform ajaxFn on each of the models in this collection */
     ajaxQueue : function( ajaxFn, options ){
-        var deferred = jQuery.Deferred(),
-            startingLength = this.length,
-            responses = [];
+        var queue = new AJAX_QUEUE.AjaxQueue(this.chain().reverse().map( function( content, i ){
+            return function(){ ajaxFn.call( content, options ); };
+        }));
+        queue.start();
+        return queue.deferred;
+    },
 
-        if( !startingLength ){
-            deferred.resolve([]);
-            return deferred;
+    /** @type {Integer} how many contents per call to fetch when using progressivelyFetchDetails */
+    limitPerProgressiveFetch : 500,
+
+    /** fetch contents' details in batches of limitPerCall - note: only get searchable details here */
+    progressivelyFetchDetails : function( options ){
+        // console.log( 'progressivelyFetchDetails:', options );
+        options = options || {};
+        var deferred = jQuery.Deferred();
+        var self = this;
+        var limit = options.limitPerCall || self.limitPerProgressiveFetch;
+        // TODO: only fetch tags and annotations if specifically requested
+        var searchAttributes = HDA_MODEL.HistoryDatasetAssociation.prototype.searchAttributes;
+        var detailKeys = searchAttributes.join( ',' );
+
+        // TODO: remove the need to maintain allFetched/lastFetched here
+        // by using fetchFirst/More here
+        function _notifyAndContinue( response, offset ){
+            // console.log( 'rcvd:', response.length );
+            deferred.notify( response, limit, offset );
+            if( self.allFetched ){
+                deferred.resolve( response, limit, offset );
+                return;
+            }
+            _recursivelyFetch( offset + limit );
         }
 
-        // use reverse order (stylistic choice)
-        var ajaxFns = this.chain().reverse().map( function( content, i ){
-            return function(){
-                var xhr = ajaxFn.call( content, options );
-                // if successful, notify using the deferred to allow tracking progress
-                xhr.done( function( response ){
-                    deferred.notify({ curr: i, total: startingLength, response: response, model: content });
-                });
-                // (regardless of previous error or success) if not last ajax call, shift and call the next
-                //  if last fn, resolve deferred
-                xhr.always( function( response ){
-                    responses.push( response );
-                    if( ajaxFns.length ){
-                        ajaxFns.shift()();
-                    } else {
-                        deferred.resolve( responses );
-                    }
-                });
-            };
-        }).value();
-        // start the queue
-        ajaxFns.shift()();
-
+        function _recursivelyFetch( offset ){
+            offset = offset || 0;
+            // console.log( '_recursivelyFetch:', offset );
+            var _options = _.extend( _.clone( options ), {
+                view    : 'summary',
+                keys    : detailKeys,
+                limit   : limit,
+                offset  : offset,
+                reset   : offset === 0
+            });
+            var fetchFn = offset === 0? self.fetchFirst : self.fetchMore;
+            // console.log( 'fetching:', _options.limit, _options.offset );
+            _.defer( function(){
+                fetchFn.call( self, _options )
+                    .fail( deferred.reject )
+                    .done( function( r ){ _notifyAndContinue( r, offset ); });
+            });
+        }
+        _recursivelyFetch();
         return deferred;
     },
 
+    /** does some bit of JSON represent something that can be copied into this contents collection */
     isCopyable : function( contentsJSON ){
         var copyableModelClasses = [
             'HistoryDatasetAssociation',
@@ -253,6 +299,7 @@ var HistoryContents = Backbone.Collection
 
     /** copy an existing, accessible hda into this collection */
     copy : function( json ){
+        // TODO: somehow showhorn all this into 'save'
         var id, type, contentType;
         if( _.isString( json ) ){
             id = json;
@@ -271,10 +318,12 @@ var HistoryContents = Backbone.Collection
             xhr = jQuery.post( this.url(), {
                 content : id,
                 source  : contentType,
-                type    : type
+                type    : type,
+                view    : 'detailed',
+                keys    : 'create_time,update_time'
             })
             .done( function( response ){
-                collection.add([ response ]);
+                collection.add([ response ], { parse: true });
             })
             .fail( function( error, status, message ){
                 collection.trigger( 'error', collection, xhr, {},
@@ -283,7 +332,32 @@ var HistoryContents = Backbone.Collection
         return xhr;
     },
 
-    // ........................................................................ sorting/filtering
+    /** create a new HDCA in this collection */
+    createHDCA : function( elementIdentifiers, collectionType, name, options ){
+        //precondition: elementIdentifiers is an array of plain js objects
+        //  in the proper form to create the collectionType
+        return hdca.create({
+                history_id          : this.historyId,
+                collection_type     : collectionType,
+                name                : name,
+                // should probably be able to just send in a bunch of json here and restruct per class
+                // note: element_identifiers is now (incorrectly) an attribute
+                element_identifiers : elementIdentifiers
+            // do not create the model on the client until the ajax returns
+            }, { wait: true });
+    },
+
+    // ........................................................................ searching
+    /** return true if all contents have the searchable attributes */
+    haveSearchDetails : function(){
+        return this.allFetched && this.all( function( content ){
+            // null (which is a valid returned annotation value)
+            // will return false when using content.has( 'annotation' )
+            //TODO: a bit hacky - formalize
+            return _.has( content.attributes, 'annotation' );
+        });
+    },
+
     /** return a new collection of contents whose attributes contain the substring matchesWhat */
     matches : function( matchesWhat ){
         return this.filter( function( content ){
@@ -292,58 +366,11 @@ var HistoryContents = Backbone.Collection
     },
 
     // ........................................................................ misc
-    /** override to ensure type id is set */
-    set : function( models, options ){
-        models = _.isArray( models )? models : [ models ];
-        _.each( models, function( model ){
-            if( !model.type_id || !model.get || !model.get( 'type_id' ) ){
-                model.type_id = HISTORY_CONTENT.typeIdStr( model.history_content_type, model.id );
-            }
-        });
-        Backbone.Collection.prototype.set.call( this, models, options );
-    },
-
-    /** */
-    createHDCA : function( elementIdentifiers, collectionType, name, options ){
-        //precondition: elementIdentifiers is an array of plain js objects
-        //  in the proper form to create the collectionType
-        var contents = this,
-            typeToModel = {
-                list    : HDCA_MODEL.HistoryListDatasetCollection,
-                paired  : HDCA_MODEL.HistoryPairDatasetCollection
-            },
-            hdca = new (typeToModel[ collectionType ])({
-                history_id          : this.historyId,
-                name                : name,
-                // should probably be able to just send in a bunch of json here and restruct per class
-                element_identifiers : elementIdentifiers
-            });
-        // do I even need to use new above, can I just pass the attrs here
-        return hdca.save()
-            .done( function( response ){
-                contents.add( hdca );
-            })
-            .fail( function( xhr, status, message ){
-                contents.trigger( 'error', xhr, status, message );
-            });
-    },
-
     /** In this override, copy the historyId to the clone */
     clone : function(){
         var clone = Backbone.Collection.prototype.clone.call( this );
         clone.historyId = this.historyId;
         return clone;
-    },
-
-    /** debugging */
-    print : function(){
-        var contents = this;
-        contents.each( function( c ){
-            contents.debug( c );
-            if( c.elements ){
-                contents.debug( '\t elements:', c.elements );
-            }
-        });
     },
 
     /** String representation. */

@@ -21,17 +21,12 @@ var _super = HISTORY_VIEW.HistoryView;
  *      datasets displayed in a table:
  *          datasets in left cells, dataset annotations in the right
  */
-var AnnotatedHistoryView = _super.extend(
-/** @lends AnnotatedHistoryView.prototype */{
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
+var AnnotatedHistoryView = _super.extend(/** @lends AnnotatedHistoryView.prototype */{
 
     className    : _super.prototype.className + ' annotated-history-panel',
 
     // ------------------------------------------------------------------------ panel rendering
-    /** In this override, add the history annotation
-     */
+    /** In this override, add the history annotation */
     _buildNewRender : function(){
         //TODO: shouldn't this display regardless (on all non-current panels)?
         var $newRender = _super.prototype._buildNewRender.call( this );
@@ -70,27 +65,24 @@ var AnnotatedHistoryView = _super.extend(
     /** In this override, wrap the content view in a table row
      *      with the content in the left td and annotation/extra-info in the right
      */
-    _attachItems : function( $whereTo ){
-        this.$list( $whereTo ).append( this.views.map( function( view ){
-            //TODO:?? possibly make this more flexible: instead of annotation use this._additionalInfo()
-            // build a row around the dataset with the std itemView in the first cell and the annotation in the next
-            var stateClass = _.find( view.el.classList, function( c ){ return ( /^state\-/ ).test( c ); }),
-                annotation = view.model.get( 'annotation' ) || '',
-                $tr = $( '<tr/>' ).append([
-                    $( '<td/>' ).addClass( 'contents-container' ).append( view.$el )
-                        // visually match the cell bg to the dataset at runtime (prevents the empty space)
-                        // (getting bg via jq on hidden elem doesn't work on chrome/webkit - so use states)
-                        //.css( 'background-color', view.$el.css( 'background-color' ) ),
-                        .addClass( stateClass? stateClass.replace( '-', '-color-' ): '' ),
-                    $( '<td/>' ).addClass( 'additional-info' ).text( annotation )
-                ]);
-            return $tr;
-        }));
-        return this;
+
+    /** override to wrap each subview in a row */
+    _renderItemView$el : function( view ){
+        //TODO:?? possibly make this more flexible: instead of annotation use this._additionalInfo()
+        // build a row around the dataset with the std itemView in the first cell and the annotation in the next
+        var stateClass = _.find( view.el.classList, function( c ){ return ( /^state\-/ ).test( c ); });
+        var annotation = view.model.get( 'annotation' ) || '';
+        return $( '<tr/>' ).append([
+                $( '<td/>' ).addClass( 'contents-container' ).append( view.render(0).$el )
+                    // visually match the cell bg to the dataset at runtime (prevents the empty space)
+                    // (getting bg via jq on hidden elem doesn't work on chrome/webkit - so use states)
+                    //.css( 'background-color', view.$el.css( 'background-color' ) ),
+                    .addClass( stateClass? stateClass.replace( '-', '-color-' ): '' ),
+                $( '<td/>' ).addClass( 'additional-info' ).text( annotation )
+            ]);
     },
 
     // ------------------------------------------------------------------------ panel events
-    /** event map */
     events : _.extend( _.clone( _super.prototype.events ), {
         // clicking on any part of the row will expand the items
         'click tr' : function( ev ){
