@@ -121,7 +121,7 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
         return k8s_job_spec
 
     def __get_k8s_job_spec_template(self, job_wrapper):
-        """The spec template is nothing but a Pod spec, except that it is nested and does not have an apiversion
+        """The k8s spec template is nothing but a Pod spec, except that it is nested and does not have an apiversion
         nor kind. In addition to required fields for a Pod, a pod template in a job must specify appropriate labels
         (see pod selector) and an appropriate restart policy."""
         k8s_spec_template = {
@@ -240,6 +240,8 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
 
 
     def __get_job_states(self):
+        """Get the states of all jobs submitted by this Galaxy runner
+        to the Kubernetes cluster"""
         job_destinations = {}
         job_states = {}
         # unique the list of destinations
