@@ -177,7 +177,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return job_wrapper.job_destination.id
 
     def check_watched_item(self, job_state):
-        """Checks the state of a job already submitted on k8s"""
+        """Checks the state of a job already submitted on k8s. Job state is a AsynchronousJobState"""
         jobs = Job.objects(self._pykube_api).filter(selector="app=" + job_state.job_id)
         if len(jobs.response['items']) == 1:
             job = Job(self._pykube_api, jobs.response['items'][0])
@@ -195,23 +195,24 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             if succeeded > 0:
                 logs_file_path = self.__produce_log_file(job_state)
                 job_state.output_file = logs_file_path
-
+                job_state.running = False
                 self.mark_as_finished(job_state)
 
             elif active > 0 or succeeded + active + failed == 0:
                 self.mark_as_queued(job_state)
+                job_state.running = True
             elif failed > job_state.job_destination.params['max_pod_retrials']:
                 self.mark_as_failed(job_state)
                 job.scale(replicas=0)
 
         elif len(jobs.response['items']) == 0:
             # there is no job responding to this job_id, it is either lost or something happened.
+            log.error("No Jobs are available under expected selector app="+job_state.job_id)
             self.mark_as_failed(job_state)
             return job_state
         else:
-            # TODO: possibly some warning or message should be provided here to stderr
-            # TODO: of the job
             # there is more than one job associated to the expected unique job id used as selector.
+            log.error("There is more than one Kubernetes Job associated to job id "+job_state.job_id)
             job_state.error_file = self.__produce_log_file(job_state)
             self.mark_as_failed(job_state)
             return job_state
