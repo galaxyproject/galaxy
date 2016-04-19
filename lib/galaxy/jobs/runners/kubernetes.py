@@ -51,19 +51,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # self._init_monitor_thread()
         # self._init_worker_threads()
 
-    def url_to_destination(self, url):
-        # TODO apparently needs to be implemented for pykube-k8s
-        params = {}
-        shell_params, job_params = url.split('/')[2:4]
-        # split 'foo=bar&baz=quux' into { 'foo' : 'bar', 'baz' : 'quux' }
-        shell_params = dict([('shell_' + k, v) for k, v in [kv.split('=', 1) for kv in shell_params.split('&')]])
-        job_params = dict([('job_' + k, v) for k, v in [kv.split('=', 1) for kv in job_params.split('&')]])
-        params.update(shell_params)
-        params.update(job_params)
-        log.debug("Converted URL '%s' to destination runner=cli, params=%s" % (url, params))
-        # Create a dynamic JobDestination
-        return JobDestination(runner='cli', params=params)
-
     def queue_job(self, job_wrapper):
         """Create job script and submit it to Kubernetes cluster"""
         # prepare the job
