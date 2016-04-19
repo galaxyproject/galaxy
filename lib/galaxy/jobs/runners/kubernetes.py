@@ -24,20 +24,18 @@ except ImportError as exc:
                           'this feature, please install it or correct the '
                           'following error:\nImportError %s' % str(exc))
 
+log = logging.getLogger(__name__)
+
+__all__ = ['KubernetesJobRunner']
 
 
-log = logging.getLogger( __name__ )
-
-__all__ = [ 'KubernetesJobRunner' ]
-
-
-class KubernetesJobRunner( AsynchronousJobRunner ):
+class KubernetesJobRunner(AsynchronousJobRunner):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
     runner_name = "KubernetesRunner"
 
-    def __init__( self, app, nworkers ):
+    def __init__(self, app, nworkers):
         # Check if pykube was importable, fail if not
         assert operator is not None, K8S_IMPORT_MESSAGE
         """Start the job runner parent object """
@@ -53,28 +51,28 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
         # self._init_monitor_thread()
         # self._init_worker_threads()
 
-    def url_to_destination( self, url ):
+    def url_to_destination(self, url):
         # TODO apparently needs to be implemented for pykube-k8s
         params = {}
         shell_params, job_params = url.split('/')[2:4]
         # split 'foo=bar&baz=quux' into { 'foo' : 'bar', 'baz' : 'quux' }
-        shell_params = dict( [ ( 'shell_' + k, v ) for k, v in [ kv.split( '=', 1 ) for kv in shell_params.split( '&' ) ] ] )
-        job_params = dict( [ ( 'job_' + k, v ) for k, v in [ kv.split( '=', 1 ) for kv in job_params.split( '&' ) ] ] )
-        params.update( shell_params )
-        params.update( job_params )
-        log.debug( "Converted URL '%s' to destination runner=cli, params=%s" % ( url, params ) )
+        shell_params = dict([('shell_' + k, v) for k, v in [kv.split('=', 1) for kv in shell_params.split('&')]])
+        job_params = dict([('job_' + k, v) for k, v in [kv.split('=', 1) for kv in job_params.split('&')]])
+        params.update(shell_params)
+        params.update(job_params)
+        log.debug("Converted URL '%s' to destination runner=cli, params=%s" % (url, params))
         # Create a dynamic JobDestination
-        return JobDestination( runner='cli', params=params )
+        return JobDestination(runner='cli', params=params)
 
-    def parse_destination_params( self, params ):
+    def parse_destination_params(self, params):
         # TODO apparently no need to re-implement, can be deleted.
-        return split_params( params )
+        return split_params(params)
 
-    def queue_job( self, job_wrapper ):
+    def queue_job(self, job_wrapper):
         """Create job script and submit it to Kubernetes cluster"""
         # prepare the job
         # TODO understand whether we need to include_metadata and include_work_dir_outputs
-        if not self.prepare_job(job_wrapper, include_metadata=True ):
+        if not self.prepare_job(job_wrapper, include_metadata=True):
             return
 
         # Get shell and job execution interface
@@ -88,19 +86,17 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
             "apiVersion": "batch/v1",
             "kind": "Job",
             "metadata":
-                 # metadata.name is the name of the pod resource created, and must be unique
-                 # http://kubernetes.io/docs/user-guide/configuring-containers/
-                 {"name": k8s_job_name}
+            # metadata.name is the name of the pod resource created, and must be unique
+            # http://kubernetes.io/docs/user-guide/configuring-containers/
+                {"name": k8s_job_name}
             ,
             "spec": self.__get_k8s_job_spec(job_wrapper)
         }
-
 
         # wrapper.get_id_tag() instead of job_id for compatibility with TaskWrappers.
         galaxy_id_tag = job_wrapper.get_id_tag()
 
         k8s_job = Job(self._pykube_api, k8s_job_obj).create()
-
 
         # define job attributes in the AsyncronousJobState for follow-up
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper,
@@ -126,7 +122,7 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
             "volumes": self.__get_k8s_mountable_volumes(self, job_wrapper),
             "containers": self.__get_k8s_containers(self, job_wrapper),
             "restartPolicy": self.__get_k8s_restart_policy(self, job_wrapper)
-                            }
+        }
         # TODO include other relevant elements that people might want to use from
         # TODO http://kubernetes.io/docs/api-reference/v1/definitions/#_v1_podspec
 
@@ -159,19 +155,19 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
             # command line execution, separated by ;, which is what Galaxy does
             # to assemble the command.
             # TODO possibly shell needs to be set by job_wrapper
-            "command": "[\"/bin/bash\",\"-c\",\""+job_wrapper.runner_command_line+"\"]",
+            "command": "[\"/bin/bash\",\"-c\",\"" + job_wrapper.runner_command_line + "\"]",
             "volumeMounts": {
                 "mountPath": self.runner_params['k8s_persistent_volume_claim_mount_path'],
                 "name": self._galaxy_vol_name
             }
         }
 
-        #if self.__requires_ports(job_wrapper):
+        # if self.__requires_ports(job_wrapper):
         #    k8s_container['ports'] = self.__get_k8s_containers_ports(job_wrapper)
 
         return k8s_container
 
-    #def __get_k8s_containers_ports(self, job_wrapper):
+    # def __get_k8s_containers_ports(self, job_wrapper):
 
     #    for k,v self.runner_params:
     #        if k.startswith("container_port_"):
@@ -185,9 +181,9 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
         repo = ""
         owner = ""
         if 'repo' in job_destination.params:
-            repo = job_destination.params['repo']+"/"
+            repo = job_destination.params['repo'] + "/"
         if 'owner' in job_destination.params:
-            owner = job_destination.params['owner']+"/"
+            owner = job_destination.params['owner'] + "/"
 
         k8s_cont_image = repo + owner + job_destination.params['image']
 
@@ -200,10 +196,9 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
         # TODO check if this is correct
         return job_wrapper.job_destination.id
 
-
     def check_watched_item(self, job_state):
         """Checks the state of a job already submitted on k8s"""
-        jobs = Job.objects(self._pykube_api).filter(selector="app="+job_state.job_id)
+        jobs = Job.objects(self._pykube_api).filter(selector="app=" + job_state.job_id)
         if len(jobs.response['items']) == 1:
             job = Job(self._pykube_api, jobs.response['items'][0])
             succeeded = 0
@@ -255,38 +250,41 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
         logs_file.close()
         return logs_file_path
 
-    def stop_job( self, job ):
+    def stop_job(self, job):
         """Attempts to delete a dispatched job to the k8s cluster"""
         try:
-            jobs = Job.objects(self._pykube_api).filter(selector="app="+job.job_runner_external_id)
+            jobs = Job.objects(self._pykube_api).filter(selector="app=" + job.job_runner_external_id)
             if jobs.response['items'].len() >= 0:
                 job_to_delete = Job(self._pykube_api, jobs.response['items'][0])
                 job_to_delete.scale(replicas=0)
             # TODO assert whether job parallelism == 0
             # assert not job_to_delete.exists(), "Could not delete job,"+job.job_runner_external_id+" it still exists"
-            log.debug( "(%s/%s) Terminated at user's request" % ( job.id, job.job_runner_external_id ) )
+            log.debug("(%s/%s) Terminated at user's request" % (job.id, job.job_runner_external_id))
         except Exception as e:
-            log.debug( "(%s/%s) User killed running job, but error encountered during termination: %s" % ( job.id, job.job_runner_external_id, e ) )
+            log.debug("(%s/%s) User killed running job, but error encountered during termination: %s" % (
+            job.id, job.job_runner_external_id, e))
 
-    def recover( self, job, job_wrapper ):
+    def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         # TODO this needs to be implemented to override unimplemented base method
         job_id = job.get_job_runner_external_id()
         if job_id is None:
-            self.put( job_wrapper )
+            self.put(job_wrapper)
             return
-        ajs = AsynchronousJobState( files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper )
-        ajs.job_id = str( job_id )
+        ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
+        ajs.job_id = str(job_id)
         ajs.command_line = job.command_line
         ajs.job_wrapper = job_wrapper
         ajs.job_destination = job_wrapper.job_destination
         if job.state == model.Job.states.RUNNING:
-            log.debug( "(%s/%s) is still in running state, adding to the runner monitor queue" % ( job.id, job.job_runner_external_id ) )
+            log.debug("(%s/%s) is still in running state, adding to the runner monitor queue" % (
+            job.id, job.job_runner_external_id))
             ajs.old_state = model.Job.states.RUNNING
             ajs.running = True
-            self.monitor_queue.put( ajs )
+            self.monitor_queue.put(ajs)
         elif job.state == model.Job.states.QUEUED:
-            log.debug( "(%s/%s) is still in queued state, adding to the runner monitor queue" % ( job.id, job.job_runner_external_id ) )
+            log.debug("(%s/%s) is still in queued state, adding to the runner monitor queue" % (
+            job.id, job.job_runner_external_id))
             ajs.old_state = model.Job.states.QUEUED
             ajs.running = False
-            self.monitor_queue.put( ajs )
+            self.monitor_queue.put(ajs)
