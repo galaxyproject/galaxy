@@ -64,10 +64,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # Create a dynamic JobDestination
         return JobDestination(runner='cli', params=params)
 
-    def parse_destination_params(self, params):
-        # TODO apparently no need to re-implement, can be deleted.
-        return split_params(params)
-
     def queue_job(self, job_wrapper):
         """Create job script and submit it to Kubernetes cluster"""
         # prepare the job
