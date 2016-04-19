@@ -202,29 +202,47 @@ var LibraryDatasetView = Backbone.View.extend({
   },
 
   importCurrentIntoHistory: function(){
-      // var self = this;
-      var history_id = $(this.modal.elMain).find('select[name=dataset_import_single] option:selected').val();
-      var historyItem = new mod_library_model.HistoryItem();
-      historyItem.url = historyItem.urlRoot + history_id + '/contents';
-
-      // set the used history as current so user will see the last one
-      // that he imported into in the history panel on the 'analysis' page
-      jQuery.getJSON( Galaxy.root + 'history/set_as_current?id=' + history_id  );
-
-      // save the dataset into selected history
-      historyItem.save({ content : this.id, source : 'library' }, {
-        success : function(){
-            Galaxy.modal.hide();
-          mod_toastr.success('Dataset imported. Click this to start analyzing it.', '', {onclick: function() {window.location='/';}});
-        },
-        error : function(model, response){
-          if (typeof response.responseJSON !== "undefined"){
-            mod_toastr.error('Dataset not imported. ' + response.responseJSON.err_msg);
-          } else {
-            mod_toastr.error('An error occured. Dataset not imported. Please try again.');
-          }
-        }
+    this.modal.disableButton('Import');
+    var new_history_name = this.modal.$('input[name=history_name]').val();
+    var that = this;
+    if (new_history_name !== ''){
+      $.post( Galaxy.root + 'api/histories', {name: new_history_name})
+        .done(function( new_history ) {
+          that.processImportToHistory(new_history.id);
+        })
+        .fail(function( xhr, status, error ) {
+          mod_toastr.error('An error ocurred.');
+        })
+        .always(function() {
+          that.modal.enableButton('Import');
         });
+    } else {
+      var history_id = $(this.modal.$el).find('select[name=dataset_import_single] option:selected').val();
+      this.processImportToHistory(history_id);
+      this.modal.enableButton('Import');
+    }
+  },
+
+  processImportToHistory: function( history_id ){
+    var historyItem = new mod_library_model.HistoryItem();
+    historyItem.url = historyItem.urlRoot + history_id + '/contents';
+    // set the used history as current so user will see the last one
+    // that he imported into in the history panel on the 'analysis' page
+    jQuery.getJSON( Galaxy.root + 'history/set_as_current?id=' + history_id  );
+    // save the dataset into selected history
+    historyItem.save({ content : this.id, source : 'library' }, {
+      success : function(){
+        Galaxy.modal.hide();
+        mod_toastr.success('Dataset imported. Click this to start analyzing it.', '', {onclick: function() {window.location='/';}});
+      },
+      error : function(model, response){
+        if (typeof response.responseJSON !== "undefined"){
+          mod_toastr.error('Dataset not imported. ' + response.responseJSON.err_msg);
+        } else {
+          mod_toastr.error('An error occured. Dataset not imported. Please try again.');
+        }
+      }
+      });
   },
 
   shareDataset: function(){
@@ -1039,16 +1057,24 @@ var LibraryDatasetView = Backbone.View.extend({
 
   templateBulkImportInModal: function(){
     return _.template([
-    '<span class="library-modal-item">',
-      'Select history: ',
-      '<select id="dataset_import_single" name="dataset_import_single" style="width:50%; margin-bottom: 1em; "> ',
-        '<% _.each(histories, function(history) { %>', //history select btn
-          '<option value="<%= _.escape(history.get("id")) %>"><%= _.escape(history.get("name")) %></option>',
-        '<% }); %>',
-      '</select>',
-    '</span>'
+    '<div>',
+      '<div class="library-modal-item">',
+        'Select history: ',
+        '<select id="dataset_import_single" name="dataset_import_single" style="width:50%; margin-bottom: 1em; " autofocus>',
+          '<% _.each(histories, function(history) { %>',
+            '<option value="<%= _.escape(history.get("id")) %>"><%= _.escape(history.get("name")) %></option>',
+          '<% }); %>',
+        '</select>',
+      '</div>',
+      '<div class="library-modal-item">',
+        'or create new: ',
+        '<input type="text" name="history_name" value="" placeholder="name of the new history" style="width:50%;">',
+        '</input>',
+      '</div>',
+    '</div>'
     ].join(''));
   },
+
 
   templateAccessSelect: function(){
     return _.template([
