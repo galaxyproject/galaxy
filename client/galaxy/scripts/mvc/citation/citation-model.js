@@ -17,10 +17,18 @@ var logNamespace = 'citation';
 var Citation = Backbone.Model.extend( baseMVC.LoggableMixin ).extend({
     _logNamespace : logNamespace,
 
-    initialize: function() {
+    defaults : {
+        content: ''
+    },
 
-        var bibtex = this.attributes.content;
-        var parsed = BibtexParser( bibtex );
+    initialize: function() {
+        var parsed;
+        try {
+            // TODO: to model.parse/.validate
+            parsed = parseBibtex( this.attributes.content );
+        } catch( err ){
+            return;
+        }
         // bibtex returns successfully parsed in .entries and any parsing errors in .errors
         if( parsed.errors.length ){
             // the gen. form of these errors seems to be [ line, col, char, error message ]
@@ -78,10 +86,12 @@ var ToolCitationCollection = BaseCitationCollection.extend( {
 
 
 //==============================================================================
+
 return {
     Citation : Citation,
     HistoryCitationCollection  : HistoryCitationCollection,
     ToolCitationCollection: ToolCitationCollection
 };
+
 
 });
