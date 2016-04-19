@@ -53,9 +53,6 @@ class KubernetesJobRunner( AsynchronousJobRunner ):
         # self._init_monitor_thread()
         # self._init_worker_threads()
 
-    def get_cli_plugins(self, shell_params, job_params ):
-        return self.cli_interface.get_plugins( shell_params, job_params )
-
     def url_to_destination( self, url ):
         # TODO apparently needs to be implemented for pykube-k8s
         params = {}
