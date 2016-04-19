@@ -71,14 +71,12 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     def queue_job(self, job_wrapper):
         """Create job script and submit it to Kubernetes cluster"""
         # prepare the job
-        # TODO understand whether we need to include_metadata and include_work_dir_outputs
-        if not self.prepare_job(job_wrapper, include_metadata=True):
+        # We currently don't need to include_metadata or include_work_dir_outputs, as working directory is the same
+        # were galaxy will expect results.
+        if not self.prepare_job(job_wrapper, include_metadata=False, include_work_dir_outputs=False):
             return
 
-        # Get shell and job execution interface
         job_destination = job_wrapper.job_destination
-
-        # Determine the job's Kubernetes destination (context, namespace) and options from the job destination definition
 
         # Construction of the Kubernetes Job object follows: http://kubernetes.io/docs/user-guide/persistent-volumes/
         k8s_job_name = self.__produce_unique_k8s_job_name(job_wrapper)
@@ -93,8 +91,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             "spec": self.__get_k8s_job_spec(job_wrapper)
         }
 
-        # wrapper.get_id_tag() instead of job_id for compatibility with TaskWrappers.
-        galaxy_id_tag = job_wrapper.get_id_tag()
 
         k8s_job = Job(self._pykube_api, k8s_job_obj).create()
 
@@ -107,6 +103,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         external_runjob_script = None
 
     def __produce_unique_k8s_job_name(self, job_wrapper):
+        # wrapper.get_id_tag() instead of job_id for compatibility with TaskWrappers.
         return "galaxy-" + job_wrapper.get_id_tag()
 
     def __get_k8s_job_spec(self, job_wrapper):
