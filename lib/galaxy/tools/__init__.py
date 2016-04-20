@@ -1693,7 +1693,10 @@ class Tool( object, Dictifiable ):
             'job_id'        : trans.security.encode_id( job.id ) if job else None,
             'job_remap'     : self._get_job_remap( job ),
             'history_id'    : trans.security.encode_id( history.id ),
-            'display'       : self.display_interface
+            'display'       : self.display_interface,
+            'action'        : url_for( self.action ),
+            'method'        : self.method,
+            'enctype'       : self.enctype
         })
         return tool_model
 
