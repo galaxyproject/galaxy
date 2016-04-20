@@ -3,6 +3,7 @@
 TODO: Refactor BaseController references to similar methods to use this module.
 """
 from galaxy import exceptions
+from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
 
 from six import string_types, text_type
@@ -12,7 +13,7 @@ def validate_and_sanitize_basestring( key, val ):
     if not isinstance( val, string_types ):
         raise exceptions.RequestParameterInvalidException( '%s must be a string or unicode: %s'
                                                            % ( key, str( type( val ) ) ) )
-    return text_type( sanitize_html( val, 'utf-8', 'text/html' ), 'utf-8' )
+    return unicodify( sanitize_html( val, 'utf-8', 'text/html' ), 'utf-8' )
 
 
 def validate_and_sanitize_basestring_list( key, val ):
