@@ -596,7 +596,7 @@ class ImportRepositoryManager( object ):
                                                 suc.get_next_downloadable_changeset_revision( defined_repository,
                                                                                               defined_repo,
                                                                                               changeset_revision )
-                                            if updated_changeset_revision == rm_changeset_revision:
+                                            if updated_changeset_revision == rm_changeset_revision and updated_changeset_revision != changeset_revision:
                                                 dependent_downloadable_revisions.append( downloadable_revision )
         return dependent_downloadable_revisions
 

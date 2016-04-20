@@ -318,7 +318,7 @@ def get_current_repository_metadata_for_changeset_revision( app, repository, cha
     updated_changeset_revision = get_next_downloadable_changeset_revision( repository,
                                                                            repo,
                                                                            after_changeset_revision=changeset_revision )
-    if updated_changeset_revision:
+    if updated_changeset_revision and updated_changeset_revision != changeset_revision:
         repository_metadata = get_repository_metadata_by_changeset_revision( app,
                                                                              encoded_repository_id,
                                                                              updated_changeset_revision )
@@ -391,13 +391,14 @@ def get_metadata_changeset_revisions( repository, repo ):
 def get_next_downloadable_changeset_revision( repository, repo, after_changeset_revision ):
     """
     Return the installable changeset_revision in the repository changelog after the changeset to which
-    after_changeset_revision refers.  If there isn't one, return None.
+    after_changeset_revision refers.  If there isn't one, return None. If there is only one installable
+    changeset, and that matches the requested revision, return it.
     """
     changeset_revisions = [ revision[ 1 ] for revision in get_metadata_revisions( repository, repo ) ]
     if len( changeset_revisions ) == 1:
         changeset_revision = changeset_revisions[ 0 ]
         if changeset_revision == after_changeset_revision:
-            return None
+            return after_changeset_revision
     found_after_changeset_revision = False
     for changeset in repo.changelog:
         changeset_revision = str( repo.changectx( changeset ) )
