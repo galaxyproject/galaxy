@@ -1673,13 +1673,16 @@ class BaseDataToolParameter( ToolParameter ):
     def to_json( self, value, app ):
         def single_to_json( value ):
             src = None
-            if isinstance( value, galaxy.model.DatasetCollectionElement ):
+            if isinstance( value, dict ) and 'src' in value and 'id' in value:
+                return value
+            elif isinstance( value, galaxy.model.DatasetCollectionElement ):
                 src = 'dce'
             elif isinstance( value, app.model.HistoryDatasetCollectionAssociation ):
                 src = 'hdca'
-            else:
+            elif hasattr( value, 'id' ):
                 src = 'hda'
-            return { 'id' : app.security.encode_id( value.id ), 'src' : src }
+            if src is not None:
+                return { 'id' : app.security.encode_id( value.id ), 'src' : src }
 
         if value not in [ None, '', 'None' ]:
             if isinstance( value, list ) and len( value ) > 0:
