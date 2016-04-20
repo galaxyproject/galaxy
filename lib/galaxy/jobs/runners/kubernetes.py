@@ -8,7 +8,7 @@ from galaxy import model
 from galaxy.jobs import JobDestination
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 from .util.cli import CliInterface, split_params
-from os import sep as os_sep
+from os import sep as os_sep, environ as os_environ
 
 # pykube imports:
 try:
@@ -35,11 +35,22 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     """
     runner_name = "KubernetesRunner"
 
-    def __init__(self, app, nworkers):
+    def __init__(self, app, nworkers, **kwargs):
         # Check if pykube was importable, fail if not
         assert operator is not None, K8S_IMPORT_MESSAGE
+        runner_param_specs = dict(
+            k8s_config_path=dict(map=str, default=os_environ.get('KUBECONFIG', None)),
+            k8s_persistent_volume_claim_name=dict(map=str),
+            k8s_persistent_volume_claim_mount_path=dict(map=str),
+            k8s_namespace=dict(map=str, default="default"),
+            k8s_pod_retrials=dict(map=int, valid=lambda x: int > 0, default=3))
+
+        if 'runner_param_specs' not in kwargs:
+            kwargs['runner_param_specs'] = dict()
+        kwargs['runner_param_specs'].update(runner_param_specs)
+
         """Start the job runner parent object """
-        super(KubernetesJobRunner, self).__init__(app, nworkers)
+        super(KubernetesJobRunner, self).__init__(app, nworkers, **kwargs)
 
         # self.cli_interface = CliInterface()
 
