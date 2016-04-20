@@ -598,13 +598,13 @@ def get_repository_for_dependency_relationship( app, tool_shed, name, owner, cha
     return repository
 
 
-def get_repository_file_contents( app, file_path, repository_id ):
+def get_repository_file_contents( app, file_path, repository_id, is_admin=False ):
     """Return the display-safe contents of a repository file for display in a browser."""
     safe_str = ''
-    if not is_path_within_repo( app, file_path, repository_id ):
+    if not is_path_browsable( app, file_path, repository_id, is_admin ):
         log.warning( 'Request tries to access a file outside of the repository location. File path: %s', file_path )
         return 'Invalid file path'
-    # Symlink targets are checked by is_path_within_repo
+    # Symlink targets are checked by is_path_browsable
     if os.path.islink( file_path ):
         safe_str = 'link to: ' + basic_util.to_html_string( os.readlink( file_path ) )
         return safe_str
@@ -1112,14 +1112,13 @@ def is_tool_shed_client( app ):
     return hasattr( app, "install_model" )
 
 
-def open_repository_files_folder( app, folder_path, repository_id ):
+def open_repository_files_folder( app, folder_path, repository_id, is_admin=False ):
     """
     Return a list of dictionaries, each of which contains information for a file or directory contained
     within a directory in a repository file hierarchy.
     """
-    # Symlink targets are checked by is_path_within_repo
-    if not is_path_within_repo( app, folder_path, repository_id ):
-        log.warning( 'Request tries to access a folder outside of the repository location. Folder path: %s', folder_path )
+    if not is_path_browsable( app, folder_path, repository_id, is_admin ):
+        log.warning( 'Request tries to access a folder outside of the allowed locations. Folder path: %s', folder_path )
         return []
     try:
         files_list = get_repository_files( folder_path )
@@ -1132,11 +1131,11 @@ def open_repository_files_folder( app, folder_path, repository_id ):
         is_folder = False
         full_path = os.path.join( folder_path, filename )
         is_link = os.path.islink( full_path )
-        path_is_within_repo = is_path_within_repo( app, full_path, repository_id )
-        if is_link and not path_is_within_repo:
+        path_is_browsable = is_path_browsable( app, full_path, repository_id )
+        if is_link and not path_is_browsable:
             log.warning( 'Valid folder contains a symlink outside of the repository location. Link found in: ' + str( full_path ) )
         if filename:
-            if os.path.isdir( full_path ) and path_is_within_repo:
+            if os.path.isdir( full_path ) and path_is_browsable:
                 # Append a '/' character so that our jquery dynatree will function properly.
                 filename = '%s/' % filename
                 full_path = '%s/' % full_path
@@ -1150,14 +1149,39 @@ def open_repository_files_folder( app, folder_path, repository_id ):
     return folder_contents
 
 
+def is_path_browsable( app, path, repository_id, is_admin=False ):
+    """
+    Detects whether the given path is browsable i.e. is within the
+    allowed repository folders. Admins can additionaly browse folders
+    with tool dependencies.
+    """
+    if is_admin and is_path_within_dependency_dir( app, path ):
+        return True
+    return is_path_within_repo( app, path, repository_id)
+
+
 def is_path_within_repo( app, path, repository_id ):
     """
-    Detect whether the given path is within the repository folde ron the disk.
+    Detect whether the given path is within the repository folder on the disk.
     Use to filter malicious symlinks targeting outside paths.
     """
     repo_path = os.path.abspath( get_repository_by_id( app, repository_id ).repo_path( app ) )
     resolved_path = os.path.realpath( path )
     return os.path.commonprefix( [ repo_path, resolved_path ] ) == repo_path
+
+
+def is_path_within_dependency_dir( app, path ):
+    """
+    Detect whether the given path is within the tool_dependency_dir folder on the disk.
+    (Specified by the config option). Use to filter malicious symlinks targeting outside paths.
+    """
+    allowed = False
+    resolved_path = os.path.realpath( path )
+    tool_dependency_dir = app.config.get( 'tool_dependency_dir', None )
+    if tool_dependency_dir:
+        dependency_path = os.path.abspath( tool_dependency_dir )
+        allowed = os.path.commonprefix( [ dependency_path, resolved_path ] ) == dependency_path
+    return allowed
 
 
 def repository_was_previously_installed( app, tool_shed_url, repository_name, repo_info_tuple, from_tip=False ):

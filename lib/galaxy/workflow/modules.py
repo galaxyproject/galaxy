@@ -862,6 +862,8 @@ class ToolModule( WorkflowModule ):
                 old_tool_shed = step.tool_id.split( "/repos/" )[0]
                 if old_tool_shed not in tool_id:  # Only display the following warning if the tool comes from a different tool shed
                     old_tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, old_tool_shed )
+                    if not old_tool_shed_url:  # a tool from a different tool_shed has been found, but the original tool shed has been deactivated
+                        old_tool_shed_url = "http://" + old_tool_shed  # let's just assume it's either http, or a http is forwarded to https.
                     old_url = old_tool_shed_url + "/view/%s/%s/" % (module.tool.repository_owner, module.tool.repository_name)
                     new_url = module.tool.tool_shed_repository.get_sharable_url( module.tool.app ) + '/%s/' % module.tool.tool_shed_repository.changeset_revision
                     new_tool_shed_url = new_url.split( "/view" )[0]

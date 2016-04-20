@@ -131,6 +131,12 @@ var HistoryViewColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
             // assumes panel will take the longest to render
             'rendered': function(){
                 column.trigger( 'rendered', column );
+            },
+            // when a panel's view expands turn off the click handler on the rerun button so that it uses it's href
+            // this allows the button to open the tool rerun form in a new tab (instead of erroring)
+            // TODO: hack
+            'view:expanded view:rendered': function( view ){
+                view.$( '.rerun-btn' ).off();
             }
         }, this );
     },
