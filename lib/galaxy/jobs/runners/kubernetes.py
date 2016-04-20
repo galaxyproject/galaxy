@@ -58,9 +58,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         self._pykube_api = HTTPClient(KubeConfig.from_file(self.runner_params["k8s_config_path"]))
         self._galaxy_vol_name = "pvc_galaxy"
 
-        # TODO do we need these?
-        # self._init_monitor_thread()
-        # self._init_worker_threads()
+
+        self._init_monitor_thread()
+        self._init_worker_threads()
 
     def queue_job(self, job_wrapper):
         """Create job script and submit it to Kubernetes cluster"""
