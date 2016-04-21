@@ -1,16 +1,16 @@
+"""Utilities for loading and reasoning about unparsed tools in directories."""
 import fnmatch
 import glob
+import logging
 import os
 import re
+import sys
 from ..tools import loader
 
 import yaml
 
 from galaxy.util import checkers
 
-import sys
-
-import logging
 log = logging.getLogger(__name__)
 
 PATH_DOES_NOT_EXIST_ERROR = "Could not load tools from path [%s] - this path does not exist."
@@ -24,6 +24,7 @@ CWL_EXTENSIONS = YAML_EXTENSIONS + [".cwl"]
 
 
 def load_exception_handler(path, exc_info):
+    """Default exception handler for use by load_tool_elements_from_path."""
     log.warn(LOAD_FAILURE_ERROR % path, exc_info=exc_info)
 
 
@@ -32,8 +33,9 @@ def find_possible_tools_from_path(
     recursive=False,
     enable_beta_formats=False,
 ):
+    """Walk a directory and find potential tool files."""
     possible_tool_files = []
-    for possible_tool_file in __find_tool_files(
+    for possible_tool_file in _find_tool_files(
         path, recursive=recursive,
         enable_beta_formats=enable_beta_formats
     ):
@@ -55,6 +57,7 @@ def load_tool_elements_from_path(
     recursive=False,
     register_load_errors=False,
 ):
+    """Walk a directory and load tool XML elements."""
     tool_elements = []
     for possible_tool_file in find_possible_tools_from_path(
         path,
@@ -72,11 +75,14 @@ def load_tool_elements_from_path(
 
 
 def is_tool_load_error(obj):
+    """Predicate to determine if object loaded for tool is a tool error."""
     return obj is TOOL_LOAD_ERROR
 
 
 def looks_like_a_tool(path, invalid_names=[], enable_beta_formats=False):
-    """ Whether true in a strict sense or not, lets say the intention and
+    """Quick check to see if a file looks like it may be a tool file.
+
+    Whether true in a strict sense or not, lets say the intention and
     purpose of this procedure is to serve as a filter - all valid tools must
     "looks_like_a_tool" but not everything that looks like a tool is actually
     a valid tool.
@@ -102,6 +108,7 @@ def looks_like_a_tool(path, invalid_names=[], enable_beta_formats=False):
 
 
 def looks_like_a_tool_xml(path):
+    """Quick check to see if a file looks like it may be a Galaxy XML tool file."""
     full_path = os.path.abspath(path)
 
     if not full_path.endswith(".xml"):
@@ -125,7 +132,8 @@ def looks_like_a_tool_xml(path):
     return False
 
 
-def looks_like_a_tool_yaml(path):
+def is_a_yaml_with_class(path, classes):
+    """Determine if a file is a valid YAML with a supplied ``class`` entry."""
     if not _has_extension(path, YAML_EXTENSIONS):
         return False
 
@@ -139,11 +147,18 @@ def looks_like_a_tool_yaml(path):
         return False
 
     file_class = as_dict.get("class", None)
-    return file_class == "GalaxyTool"
+    return file_class in classes
 
 
-def looks_like_a_tool_cwl(path):
-    if _has_extension(path, CWL_EXTENSIONS):
+def looks_like_a_tool_yaml(path):
+    """Quick check to see if a file looks like it may be a Galaxy YAML tool file."""
+    return is_a_yaml_with_class(path, ["GalaxyTool"])
+
+
+def looks_like_a_cwl_artifact(path, classes=None):
+    """Quick check to see if a file looks like it may be a CWL aritifact."""
+
+    if not _has_extension(path, CWL_EXTENSIONS):
         return False
 
     with open(path, "r") as f:
@@ -156,11 +171,19 @@ def looks_like_a_tool_cwl(path):
         return False
 
     file_class = as_dict.get("class", None)
+    if classes is not None and file_class not in classes:
+        return False
+
     file_cwl_version = as_dict.get("cwlVersion", None)
-    return file_class == "CommandLineTool" and file_cwl_version
+    return file_cwl_version is not None
 
 
-def __find_tool_files(path, recursive, enable_beta_formats):
+def looks_like_a_tool_cwl(path):
+    """Quick check to see if a file looks like it may be a CWL tool."""
+    return looks_like_a_cwl_artifact(path, classes=["CommandLineTool"])
+
+
+def _find_tool_files(path, recursive, enable_beta_formats):
     is_file = not os.path.isdir(path)
     if not os.path.exists(path):
         raise Exception(PATH_DOES_NOT_EXIST_ERROR)
@@ -203,3 +226,14 @@ BETA_TOOL_CHECKERS = {
     'yaml': looks_like_a_tool_yaml,
     'cwl': looks_like_a_tool_cwl,
 }
+
+__all__ = [
+    "find_possible_tools_from_path",
+    "is_a_yaml_with_class",
+    "is_tool_load_error",
+    "load_tool_elements_from_path",
+    "looks_like_a_cwl_artifact",
+    "looks_like_a_tool_cwl",
+    "looks_like_a_tool_xml",
+    "looks_like_a_tool_yaml",
+]
