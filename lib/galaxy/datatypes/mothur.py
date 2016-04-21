@@ -29,7 +29,7 @@ class Otu(Text):
 
             headers = get_headers(dataset.file_name, sep='\t', count=-1)
             for line in headers:
-                if len(line) >= 2:
+                if len(line) >= 2 and not line[0].startswith('@'):
                     data_lines += 1
                     ncols = max(ncols, len(line))
                     label_names.add(line[0])
