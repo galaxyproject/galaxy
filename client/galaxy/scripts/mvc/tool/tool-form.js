@@ -60,6 +60,13 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tool/tool-form-base', 'mvc/tool/to
                 callback && callback();
                 return;
             }
+            if ( options.action !== Galaxy.root + 'tool_runner/index' ) {
+                var $f = $( '<form/>' ).attr( { action: options.action, method: options.method, enctype: options.enctype } );
+                _.each( job_def.inputs, function( value, key ) { $f.append( $( '<input/>' ).attr( { 'name': key, 'value': value } ) ) } );
+                $f.hide().appendTo( 'body' ).submit().remove();
+                callback && callback();
+                return;
+            }
             Galaxy.emit.debug( 'tool-form::submit()', 'Validation complete.', job_def );
             Utils.request({
                 type    : 'POST',
