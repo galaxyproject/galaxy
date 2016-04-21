@@ -10,7 +10,6 @@ import urllib
 
 import twill.commands as tc
 from mercurial import commands, hg, ui
-from mercurial.util import Abort
 
 import galaxy.model.tool_shed_install as galaxy_model
 import galaxy.util
@@ -256,20 +255,17 @@ class ShedTwillTestCase( TwillTestCase ):
     def commit_and_push( self, repository, hgrepo, options, username, password ):
         url = 'http://%s:%s@%s:%s/repos/%s/%s' % ( username, password, self.host, self.port, repository.user.username, repository.name )
         commands.commit( ui.ui(), hgrepo, **options )
-        try:
-            commands.push( ui.ui(), hgrepo, dest=url )
-        except Abort as a:
-            message = a
-            if 'authorization failed' in message:
-                return False
+        #  Try pushing multiple times as it transiently fails on Jenkins.
+        #  TODO: Figure out why that happens
+        for i in range(2):
+            try:
+                commands.push( ui.ui(), hgrepo, dest=url )
+            except Exception as e:
+                if str(e).find('Pushing to Tool Shed is disabled') != -1:
+                    return False
             else:
-                raise
-        except Exception as e:
-            if str(e).find('Pushing to Tool Shed is disabled') != -1:
-                return False
-            else:
-                raise
-        return True
+                return True
+        raise
 
     def create_category( self, **kwd ):
         category = test_db_util.get_category_by_name( kwd[ 'name' ] )
