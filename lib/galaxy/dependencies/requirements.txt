@@ -5,8 +5,7 @@ bx-python
 MarkupSafe
 PyYAML
 SQLAlchemy
-# Mercurial >= 3.5 changed the bundle format, which breaks hg push of TS repositories
-mercurial<3.5
+mercurial
 pycrypto
 
 # Install python_lzo if you want to support indexed access to lzo-compressed
@@ -27,14 +26,19 @@ pytz
 Babel
 Beaker
 dictobj
+nose
+Parsley
+six
 
 # Cheetah and dependencies
 Cheetah
+Markdown
 
 # BioBlend and dependencies
 bioblend
 boto
 requests
+requests-toolbelt
 
 # kombu and dependencies
 kombu
@@ -48,14 +52,16 @@ sqlalchemy-migrate
 decorator
 Tempita
 sqlparse
-six
-Parsley
-nose
+pbr
 
+# svgwrite and dependencies
 svgwrite
+pyparsing
 
 # Fabric and dependencies
 Fabric
+paramiko
+ecdsa
 
 # We still pin these dependencies because of modifications to the upstream packages
 
