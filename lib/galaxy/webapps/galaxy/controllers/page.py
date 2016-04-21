@@ -624,7 +624,6 @@ class PageController( BaseUIController, SharableMixin,
             else:
                 user_item_rating = 0
         ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, page )
-        # Output is string, so convert to unicode for display.
         return trans.fill_template_mako( "page/display.mako", item=page,
                                          item_data=processor.output(),
                                          user_item_rating=user_item_rating,
