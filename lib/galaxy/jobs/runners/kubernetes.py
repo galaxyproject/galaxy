@@ -75,7 +75,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # Construction of the Kubernetes Job object follows: http://kubernetes.io/docs/user-guide/persistent-volumes/
         k8s_job_name = self.__produce_unique_k8s_job_name(job_wrapper)
         k8s_job_obj = {
-            "apiVersion": "batch/v1",
+            "apiVersion": "extensions/v1beta1",
             "kind": "Job",
             "metadata":
             # metadata.name is the name of the pod resource created, and must be unique
