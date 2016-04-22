@@ -98,7 +98,7 @@ def can_eliminate_repository_dependency(metadata_dict, tool_shed_url, name, owne
     return True
 
 
-def can_eliminate_tool_dependency(metadata_dict, name, type, version):
+def can_eliminate_tool_dependency(metadata_dict, name, dependency_type, version):
     """
     Determine if the relationship between a tool_dependency record
     associated with a tool_shed_repository record on the Galaxy side
@@ -106,12 +106,20 @@ def can_eliminate_tool_dependency(metadata_dict, name, type, version):
     """
     td_dict = metadata_dict.get('tool_dependencies', {})
     for td_key, td_val in td_dict.items():
-        n = td_val.get('name', None)
-        t = td_val.get('type', None)
-        v = td_val.get('version', None)
-        if n == name and t == type and v == version:
-            # The tool dependency is current, so keep it.
-            return False
+        if td_key == 'set_environment':
+            for td in td_val:
+                n = td.get('name', None)
+                t = td.get('type', None)
+                if n == name and t == dependency_type:
+                    # The tool dependency is current, so keep it.
+                    return False
+        else:
+            n = td_val.get('name', None)
+            t = td_val.get('type', None)
+            v = td_val.get('version', None)
+            if n == name and t == dependency_type and v == version:
+                # The tool dependency is current, so keep it.
+                return False
     return True
 
 
