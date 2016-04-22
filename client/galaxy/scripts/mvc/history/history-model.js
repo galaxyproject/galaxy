@@ -240,6 +240,7 @@ var History = Backbone.Model
         // console.log( this + '.fetchWithContents' );
         // TODO: push down to a base class
         options.view = 'dev-detailed';
+
         // fetch history then use history data to fetch (paginated) contents
         return this.fetch( options ).pipe( function getContents( history ){
             self.contents.historyId = history.id;
@@ -337,7 +338,7 @@ var History = Backbone.Model
 
 
 //==============================================================================
-var _collectionSuper = CONTROLLED_FETCH_COLLECTION.PaginatedCollection;
+var _collectionSuper = CONTROLLED_FETCH_COLLECTION.InfinitelyScrollingCollection;
 /** @class A collection of histories (per user)
  *      that maintains the current history as the first in the collection.
  *  New or copied histories become the current history.

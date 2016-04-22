@@ -1006,6 +1006,9 @@ var ModelListPanel = ListPanel.extend({
 });
 
 // ............................................................................ TEMPLATES
+
+
+
 /** underscore templates */
 ModelListPanel.prototype.templates = (function(){
 //TODO: move to require text! plugin

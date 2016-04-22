@@ -40,9 +40,6 @@ var ControlledFetchCollection = Backbone.Collection.extend({
         options = _.clone( options ) || {};
         var self = this;
 
-        // options (options for backbone.fetch and jquery.ajax generally)
-        // backbone option; false here to make fetching an addititive process
-        options.remove = options.remove || false;
         // jquery ajax option; allows multiple q/qv for filters (instead of 'q[]')
         options.traditional = true;
 
@@ -156,9 +153,56 @@ var ControlledFetchCollection = Backbone.Collection.extend({
 
 //=============================================================================
 /**
- * A Collection that is paginated when fetching.
+ *
  */
 var PaginatedCollection = ControlledFetchCollection.extend({
+
+    /** @type {Number} limit used for each page's fetch */
+    limitPerPage       : 500,
+
+    initialize : function( models, options ){
+        ControlledFetchCollection.prototype.initialize.call( this, models, options );
+        this.currentPage = options.currentPage || 0;
+        this.setTotal( options.total || 0 );
+    },
+
+    setTotal : function( newTotal ){
+        this.total = newTotal;
+        this._lastPage = Math.ceil( this.total / this.limitPerPage );
+        console.log( 'total:', this.total, '_lastPage:', this._lastPage );
+    },
+
+    /** fetch the next page of data */
+    fetchPage : function( pageNum, options ){
+        pageNum = Math.max( 0, Math.min( pageNum, this._lastPage ) );
+        options = _.defaults( options || {}, {
+            limit : this.limitPerPage,
+            offset: pageNum * this.limitPerPage
+        });
+        options.reset = true;
+        this.currentPage = pageNum;
+        return this.fetch( options );
+    },
+
+    fetchFirst : function( options ){
+        return this.fetchPage( this.currentPage );
+    },
+
+    fetchPrevPage : function( options ){
+        return this.fetchPage( this.currentPage - 1, options );
+    },
+
+    fetchNextPage : function( options ){
+        return this.fetchPage( this.currentPage + 1, options );
+    },
+});
+
+
+//=============================================================================
+/**
+ * A Collection that will load more elements without reseting.
+ */
+var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
 
     /** @type {Number} limit used for the first fetch (or a reset) */
     limitOnFirstFetch   : null,
@@ -175,6 +219,14 @@ var PaginatedCollection = ControlledFetchCollection.extend({
         this.allFetched = false;
         /** @type {Integer} what was the offset of the last content returned */
         this.lastFetched = options.lastFetched || 0;
+    },
+
+    /** build ajax data/parameters from options */
+    _buildFetchOptions : function( options ){
+        // options (options for backbone.fetch and jquery.ajax generally)
+        // backbone option; false here to make fetching an addititive process
+        options.remove = options.remove || false;
+        return ControlledFetchCollection.prototype._buildFetchOptions.call( this, options );
     },
 
     /** fetch the first 'page' of data */
@@ -244,7 +296,8 @@ var PaginatedCollection = ControlledFetchCollection.extend({
 
 //==============================================================================
     return {
-        ControlledFetchCollection   : ControlledFetchCollection,
-        PaginatedCollection         : PaginatedCollection,
+        ControlledFetchCollection     : ControlledFetchCollection,
+        PaginatedCollection           : PaginatedCollection,
+        InfinitelyScrollingCollection : InfinitelyScrollingCollection,
     };
 });

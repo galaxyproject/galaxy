@@ -59,22 +59,28 @@ var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
         speed = ( speed === undefined )?( this.fxSpeed ):( speed );
         var view = this;
 
-        $( view ).queue( 'fx', [
-            function( next ){
-                this.$el.fadeOut( speed, '', next );
-            },
-            function( next ){
-                view._swapNewRender( $newRender );
-                next();
-            },
-            function( next ){
-                this.$el.fadeIn( speed, '', next );
-            },
-            function( next ){
-                view.trigger( 'rendered', view );
-                next();
-            }
-        ]);
+        if( speed === 0 ){
+            view._swapNewRender( $newRender );
+            view.trigger( 'rendered', view );
+
+        } else {
+            $( view ).queue( 'fx', [
+                function( next ){
+                    this.$el.fadeOut( speed, '', next );
+                },
+                function( next ){
+                    view._swapNewRender( $newRender );
+                    next();
+                },
+                function( next ){
+                    this.$el.fadeIn( speed, '', next );
+                },
+                function( next ){
+                    view.trigger( 'rendered', view );
+                    next();
+                }
+            ]);
+        }
     },
 
     /** empty out the current el, move the $newRender's children in */

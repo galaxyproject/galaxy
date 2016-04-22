@@ -9,7 +9,8 @@ define([
 'use strict';
 
 //==============================================================================
-var _super = CONTROLLED_FETCH_COLLECTION.PaginatedCollection;
+// var _super = CONTROLLED_FETCH_COLLECTION.PaginatedCollection;
+var _super = CONTROLLED_FETCH_COLLECTION.InfinitelyScrollingCollection;
 /** @class Backbone collection for history content.
  *      NOTE: history content seems like a dataset collection, but differs in that it is mixed:
  *          each element can be either an HDA (dataset) or a DatasetCollection and co-exist on
@@ -45,9 +46,9 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     },
 
     /** @type {Number} limit used for the first fetch (or a reset) */
-    limitOnFirstFetch   : 200,
+    limitOnFirstFetch   : 500,
     /** @type {Number} limit used for each subsequent fetch */
-    limitPerFetch       : 100,
+    limitPerFetch       : 500,
 
     /** @type {String} order used here and when fetching from server */
     order : 'create_time',
@@ -202,6 +203,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
             deleted : true,
             purged  : undefined
         });
+        options.remove = false;
 
         self.trigger( 'fetching-deleted', self );
         return self.fetch( options )
@@ -215,6 +217,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         options.filters = _.extend( options.filters, {
             visible : false
         });
+        options.remove = false;
 
         self.trigger( 'fetching-hidden', self );
         return self.fetch( options )
@@ -232,8 +235,8 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     // ............. quasi-batch ops
     /** using a queue, perform ajaxFn on each of the models in this collection */
     ajaxQueue : function( ajaxFn, options ){
-        var queue = new AJAX_QUEUE.AjaxQueue(this.chain().reverse().map( function( content, i ){
-            return function(){ ajaxFn.call( content, options ); };
+        var queue = new AJAX_QUEUE.AjaxQueue( this.chain().reverse().map( function( content, i ){
+            return function(){ return ajaxFn.call( content, options ); };
         }));
         queue.start();
         return queue.deferred;

@@ -41,31 +41,18 @@ var AnnotatedHistoryView = _super.extend(/** @lends AnnotatedHistoryView.prototy
         $newRender.find( '.controls .annotation-display' ).text( annotation );
     },
 
-    /** In this override, convert the list-items tag to a table
-     *      and add table header cells to indicate the dataset, annotation columns
-     */
+    /** override to add table header cells to indicate the dataset, annotation columns */
     renderItems : function( $whereTo ){
-        $whereTo = $whereTo || this.$el;
-
-        // convert to table
-        $whereTo.find( '.list-items' )
-            .replaceWith( $( '<table/>' ).addClass( 'list-items' ) );
-
-        // render rows/contents and prepend headers
-        var views = _super.prototype.renderItems.call( this, $whereTo );
+        _super.prototype.renderItems.call( this, $whereTo );
         this.$list( $whereTo )
             .prepend( $( '<tr/>' ).addClass( 'headers' ).append([
                 $( '<th/>' ).text( _l( 'Dataset' ) ),
                 $( '<th/>' ).text( _l( 'Annotation' ) )
             ]));
-        return views;
+        return self.views;
     },
 
     // ------------------------------------------------------------------------ sub-views
-    /** In this override, wrap the content view in a table row
-     *      with the content in the left td and annotation/extra-info in the right
-     */
-
     /** override to wrap each subview in a row */
     _renderItemView$el : function( view ){
         //TODO:?? possibly make this more flexible: instead of annotation use this._additionalInfo()
@@ -106,6 +93,31 @@ var AnnotatedHistoryView = _super.extend(/** @lends AnnotatedHistoryView.prototy
         return 'AnnotatedHistoryView(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });
+
+
+//------------------------------------------------------------------------------ TEMPLATES
+AnnotatedHistoryView.prototype.templates = (function(){
+
+    var mainTemplate = BASE_MVC.wrapTemplate([
+        '<div>',
+            '<div class="controls"></div>',
+            '<table class="list-items"></table>',
+            '<div class="empty-message infomessagesmall"></div>',
+        '</div>'
+    ]);
+
+    var listItemsSectionTemplate = BASE_MVC.wrapTemplate([
+        '<tr class="list-items-section" data-section="<%- section.number %>"><td>',
+            '<a href="javascript:void(0)" data-first-hid="<%- section.first %>" data-last-hid="<%- section.last %>">',
+            '<%- section.first %>  ', _l( "to" ), ' <%- section.last %>',
+        '</a></td></tr>',
+    ], 'section' );
+
+    return _.extend( _.clone( _super.prototype.templates ), {
+        el                      : mainTemplate,
+        listItemsSection        : listItemsSectionTemplate
+    });
+}());
 
 
 //==============================================================================

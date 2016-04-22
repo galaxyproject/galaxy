@@ -466,7 +466,34 @@
         border-radius : 3px;
     }
 
+    .list-items .list-items-section {
+        @section-height: 24px;
+        min-height: @section-height;
+        line-height: @section-height;
+        // font-size: 80%;
+        color: grey;
+        text-align: right;
+        list-style: none;
+        padding: 0px 10px 0px 10px;
+        border: 1px solid lightgrey;
+        a {
+            text-decoration: none;
+        }
+        &:hover {
+            cursor: pointer;
+            background: white;
+            a {
+                text-decoration: underline;
+            }
+        }
+    }
+
+    .list-item.history-content+.list-items-section {
+        border-top-color: @border-default-color;
+    }
+
     // display only a top border on all
+    .list-items .list-items-section,
     .list-item.history-content {
         border-width: 1px 0px 0px 0px;
         // add a bottom border on the last
