@@ -144,7 +144,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 "claimName": self.runner_params['k8s_persistent_volume_claim_name']
             }
         }
-        return k8s_mountable_volume
+        return [ k8s_mountable_volume ]
 
     def __get_k8s_containers(self, job_wrapper):
         """Fills in all required for setting up the docker containers to be used."""
@@ -155,17 +155,17 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # command line execution, separated by ;, which is what Galaxy does
             # to assemble the command.
             # TODO possibly shell needs to be set by job_wrapper
-            "command": "[\"/bin/bash\",\"-c\",\"" + job_wrapper.runner_command_line + "\"]",
-            "volumeMounts": {
+            "command": ["/bin/bash", "-c", job_wrapper.runner_command_line],
+            "volumeMounts": [{
                 "mountPath": self.runner_params['k8s_persistent_volume_claim_mount_path'],
                 "name": self._galaxy_vol_name
-            }
+            }]
         }
 
         # if self.__requires_ports(job_wrapper):
         #    k8s_container['ports'] = self.__get_k8s_containers_ports(job_wrapper)
 
-        return k8s_container
+        return [ k8s_container ]
 
     # def __get_k8s_containers_ports(self, job_wrapper):
 
