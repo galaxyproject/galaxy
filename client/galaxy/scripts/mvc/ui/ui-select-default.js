@@ -256,10 +256,7 @@ var View = Backbone.View.extend({
     */
     _getValue: function() {
         var val = this.$select.val();
-        if (!Utils.validate(val)) {
-            return null;
-        }
-        return val;
+        return Utils.isEmpty( val ) ? null : val;
     },
 
     /** Returns all currently available options

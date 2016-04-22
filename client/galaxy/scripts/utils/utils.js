@@ -44,23 +44,23 @@ function sanitize(content) {
 };
 
 /**
- * Validate atomic values or list of values
+ * Checks if a value or list of values is `empty`
  * usually used for selectable options
  * @param{String}   value - Value or list to be validated
  */
-function validate ( value ) {
+function isEmpty ( value ) {
     if ( !( value instanceof Array ) ) {
         value = [ value ];
     }
     if ( value.length === 0 ) {
-        return false;
+        return true;
     }
     for( var i in value ) {
         if ( [ '__null__', '__undefined__', null, undefined ].indexOf( value[ i ] ) > -1 ) {
-            return false;
+            return true;
         }
     }
-    return true;
+    return false;
 };
 
 /**
@@ -272,7 +272,7 @@ return {
     request: request,
     sanitize: sanitize,
     textify: textify,
-    validate: validate,
+    isEmpty: isEmpty,
     deepeach: deepeach,
     isJSON: isJSON
 };
