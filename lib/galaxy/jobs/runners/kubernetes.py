@@ -56,7 +56,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         # here we need to fetch the default kubeconfig path from the plugin defined in job_conf...
         self._pykube_api = HTTPClient(KubeConfig.from_file(self.runner_params["k8s_config_path"]))
-        self._galaxy_vol_name = "pvc_galaxy"
+        self._galaxy_vol_name = "pvc-galaxy"
 
 
         self._init_monitor_thread()
