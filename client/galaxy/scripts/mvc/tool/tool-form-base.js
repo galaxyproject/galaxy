@@ -11,11 +11,26 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             this.deferred = new Deferred();
             if (options.inputs) {
                 this._buildForm(options);
+                options.needs_update && this.refresh();
             } else {
                 this.deferred.execute(function(process) {
                     self._buildModel(process, options, true);
                 });
             }
+            // Listen to history panel
+            if ( options.listen_to_history && parent.Galaxy && parent.Galaxy.currHistoryPanel ) {
+                this.listenTo( parent.Galaxy.currHistoryPanel.collection, 'change', function() {
+                    this.refresh();
+                });
+            }
+        },
+
+        /** Listen to history panel changes and update the tool form */
+        refresh: function() {
+            var self = this;
+            this.deferred.execute( function (process){
+                self._updateModel( process)
+            });
         },
 
         /** Wait for deferred build processes before removal */
