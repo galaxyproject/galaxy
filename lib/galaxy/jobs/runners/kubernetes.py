@@ -80,7 +80,11 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             "metadata":
             # metadata.name is the name of the pod resource created, and must be unique
             # http://kubernetes.io/docs/user-guide/configuring-containers/
-                {"name": k8s_job_name}
+                {
+                 "name": k8s_job_name,
+                 "namespace": "default", # TODO this should be set
+                 "labels": {"app": k8s_job_name},
+                 }
             ,
             "spec": self.__get_k8s_job_spec(job_wrapper)
         }
@@ -110,9 +114,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         nor kind. In addition to required fields for a Pod, a pod template in a job must specify appropriate labels
         (see pod selector) and an appropriate restart policy."""
         k8s_spec_template = {
-            "volumes": self.__get_k8s_mountable_volumes(self, job_wrapper),
-            "containers": self.__get_k8s_containers(self, job_wrapper),
-            "restartPolicy": self.__get_k8s_restart_policy(self, job_wrapper)
+            "metadata" : {
+                "labels": { "app": self.__produce_unique_k8s_job_name(job_wrapper) }
+            },
+            "spec" : {
+                    "volumes": self.__get_k8s_mountable_volumes(job_wrapper),
+                    "restartPolicy": self.__get_k8s_restart_policy(job_wrapper),
+                    "containers": self.__get_k8s_containers(job_wrapper)
+                }
         }
         # TODO include other relevant elements that people might want to use from
         # TODO http://kubernetes.io/docs/api-reference/v1/definitions/#_v1_podspec
