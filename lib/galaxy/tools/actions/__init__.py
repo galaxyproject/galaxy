@@ -576,7 +576,7 @@ class DefaultToolAction( object ):
                     first_reduction = False
                     incoming[ name ] = []
                 if reduced:
-                    incoming[ name ].append( dataset_collection )
+                    incoming[ name ].append( { 'id': trans.app.security.encode_id( dataset_collection.id ), 'src': 'hdca' } )
                 # Should verify security? We check security of individual
                 # datasets below?
                 # TODO: verify can have multiple with same name, don't want to loose tracability
