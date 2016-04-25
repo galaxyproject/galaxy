@@ -213,27 +213,47 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
             # This assumes jobs dependent on a single pod, single container
             if succeeded > 0:
-                logs_file_path = self.__produce_log_file(job_state)
-                job_state.output_file = logs_file_path
+                self.__produce_log_file(job_state)
+                error_file = open(job_state.error_file, 'w')
+                error_file.write("")
+                error_file.close()
                 job_state.running = False
                 self.mark_as_finished(job_state)
+                return None
 
             elif active > 0 or succeeded + active + failed == 0:
-                self.mark_as_queued(job_state)
                 job_state.running = True
+                return job_state
             elif failed > job_state.job_destination.params['max_pod_retrials']:
+                self.__produce_log_file(job_state)
+                error_file = open(job_state.error_file, 'w')
+                error_file.write("Exceeded max number of Kubernetes pod retrials allowed for job\n")
+                error_file.close()
+                job_state.running = False
                 self.mark_as_failed(job_state)
                 job.scale(replicas=0)
+                return None
+
+            # We should not get here
+            log.debug(
+                "Reaching unexpected point for Kubernetes job, where it is not classified as succ., active nor failed.")
+            return job_state
 
         elif len(jobs.response['items']) == 0:
             # there is no job responding to this job_id, it is either lost or something happened.
-            log.error("No Jobs are available under expected selector app="+job_state.job_id)
+            log.error("No Jobs are available under expected selector app=" + job_state.job_id)
+            error_file = open(job_state.error_file, 'w')
+            error_file.write("No Kubernetes Jobs are available under expected selector app=" + job_state.job_id + "\n")
+            error_file.close()
             self.mark_as_failed(job_state)
             return job_state
         else:
             # there is more than one job associated to the expected unique job id used as selector.
-            log.error("There is more than one Kubernetes Job associated to job id "+job_state.job_id)
-            job_state.error_file = self.__produce_log_file(job_state)
+            log.error("There is more than one Kubernetes Job associated to job id " + job_state.job_id)
+            self.__produce_log_file(job_state)
+            error_file = open(job_state.error_file, 'w')
+            error_file.write("There is more than one Kubernetes Job associated to job id " + job_state.job_id + "\n")
+            error_file.close()
             self.mark_as_failed(job_state)
             return job_state
 
@@ -245,8 +265,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             logs += "\n\n==== Pod " + pod.name + " log start ====\n\n"
             logs += pod.get_logs(timestamps=True)
             logs += "\n\n==== Pod " + pod.name + " log end   ===="
-        logs_file_path = job_state.files_dir + os_sep + pod.name + '.log'
-        logs_file = open(logs_file_path)
+        logs_file_path = job_state.output_file
+        logs_file = open(logs_file_path, mode="w")
         logs_file.write(logs)
         logs_file.close()
         return logs_file_path
