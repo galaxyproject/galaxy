@@ -50,6 +50,7 @@ var History = Backbone.Model
 
         /** HistoryContents collection of the HDAs contained in this history. */
         this.contents = new HISTORY_CONTENTS.HistoryContents( contentsJSON || [], {
+            history     : this,
             historyId   : this.get( 'id' ),
             order       : options.order,
         });
@@ -243,6 +244,7 @@ var History = Backbone.Model
 
         // fetch history then use history data to fetch (paginated) contents
         return this.fetch( options ).pipe( function getContents( history ){
+            self.contents.history = self;
             self.contents.historyId = history.id;
             return self.fetchContents( contentsOptions );
         });

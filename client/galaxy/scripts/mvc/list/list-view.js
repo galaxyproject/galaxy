@@ -89,7 +89,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         /** list item views */
         this.views = [];
         /** list item models */
-        this.collection = attributes.collection || ( new this.collectionClass([]) );
+        this.collection = attributes.collection || this._createDefaultCollection();
 
         /** filter fns run over collection items to see if they should show in the list */
         this.filters = attributes.filters || [];
@@ -152,6 +152,12 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         this._setUpCollectionListeners();
         this._setUpViewListeners();
         return this;
+    },
+
+    /** create and return a collection for when none is initially passed */
+    _createDefaultCollection : function(){
+        // override
+        return new this.collectionClass([]);
     },
 
     /** listening for collection events */
@@ -951,7 +957,7 @@ var ModelListPanel = ListPanel.extend({
             this.collection.off();
             this.collection = ( this.model[ this.modelCollectionKey ] )?
                 this.model[ this.modelCollectionKey ]:
-                ( attributes.collection || ( new this.collectionClass([]) ) );
+                ( attributes.collection || this._createDefaultCollection() );
             this._setUpCollectionListeners();
 
             if( oldModelId && model.get( 'id' ) !== oldModelId  ){

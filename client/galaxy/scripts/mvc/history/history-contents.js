@@ -9,8 +9,9 @@ define([
 'use strict';
 
 //==============================================================================
+var _super = CONTROLLED_FETCH_COLLECTION.ControlledFetchCollection;
 // var _super = CONTROLLED_FETCH_COLLECTION.PaginatedCollection;
-var _super = CONTROLLED_FETCH_COLLECTION.InfinitelyScrollingCollection;
+// var _super = CONTROLLED_FETCH_COLLECTION.InfinitelyScrollingCollection;
 /** @class Backbone collection for history content.
  *      NOTE: history content seems like a dataset collection, but differs in that it is mixed:
  *          each element can be either an HDA (dataset) or a DatasetCollection and co-exist on
@@ -51,11 +52,12 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     limitPerFetch       : 500,
 
     /** @type {String} order used here and when fetching from server */
-    order : 'create_time',
+    order : 'hid',
 
     /** Set up */
     initialize : function( models, options ){
         options = options || {};
+        this.history = options.history || null;
         this.historyId = options.historyId || null;
 
         // backbonejs uses collection.model.prototype.idAttribute to determine if a model is *already* in a collection
@@ -80,6 +82,14 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     },
 
     // ........................................................................ common queries
+    /** @type {Object} map of collection available sorting orders containing comparator fns */
+    comparators : _.extend( _.clone( _super.prototype.comparators ), {
+        'name'       : BASE_MVC.buildComparator( 'name', { ascending: true }),
+        'name-dsc'   : BASE_MVC.buildComparator( 'name', { ascending: false }),
+        'hid'        : BASE_MVC.buildComparator( 'hid',  { ascending: false }),
+        'hid-asc'    : BASE_MVC.buildComparator( 'hid',  { ascending: true }),
+    }),
+
     /** Get the id of every model in this collection not in a 'ready' state (running).
      *  @returns an array of model ids
      *  @see HistoryDatasetAssociation#inReadyState
@@ -178,6 +188,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         }
         return _.defaults( superFilters, filters );
     },
+
 
     /** override to filter requested contents to those updated after the Date 'since' */
     fetchUpdated : function( since, options ){
@@ -384,7 +395,142 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
 
 
 //==============================================================================
+var HidSectionedHistoryContents = HistoryContents.extend({
+    // /** @type {Number} limit used for the first fetch (or a reset) */
+    // limitOnFirstFetch   : 500,
+    // /** @type {Number} limit used for each subsequent fetch */
+    // limitPerFetch       : 500,
+
+    /** @type {String} order used here and when fetching from server */
+    order : 'hid',
+
+    /** Set up */
+    initialize : function( models, options ){
+        console.log( 'this.history:', this.history );
+        HistoryContents.prototype.initialize.call( this, models, options );
+        this.currentSection = null;
+        this.sectionsFetched = [];
+    },
+
+    // ........................................................................ common queries
+    /** @type {Object} restrict to hid ordering only */
+    comparators : {
+        'hid'        : BASE_MVC.buildComparator( 'hid',  { ascending: false }),
+        'hid-asc'    : BASE_MVC.buildComparator( 'hid',  { ascending: true }),
+    },
+
+    /**  */
+    _getLastHid : function(){
+        return ( this.history.get( 'hid_counter' ) || 1 ) - 1;
+    },
+
+    /**  */
+    _mapSectionRanges : function( mapFn ){
+        var self = this;
+        var sectionCount = self._countSections();
+        var sectionNumbers = _.range( sectionCount );
+        if( this.order === 'hid' ){
+            sectionNumbers.reverse();
+        }
+        return sectionNumbers.map( function( sectionNumber ){
+            return mapFn( _.extend( self._getSectionRange( sectionNumber ), {
+                number: sectionNumber,
+            }));
+        });
+    },
+
+    /**  */
+    _countSections : function(){
+        return Math.floor( this._getLastHid() / this.hidsPerSection );
+    },
+
+    /**  */
+    _lastFullSection : function(){
+        var count = this._countSections();
+        var hasNonFullSection = ( this._getLastHid() % this.hidsPerSection > 0 );
+        return hasNonFullSection? ( count - 1 ) : count;
+    },
+
+    /**  */
+    _getSectionRange : function( sectionNumber ){
+        var lastHid = this._getLastHid();
+        var hidsPerSection = this.hidsPerSection;
+        var first = sectionNumber * hidsPerSection;
+        var last  = sectionNumber === this._lastFullSection()? lastHid : ( first + hidsPerSection - 1 );
+        return {
+            first : first,
+            last  : last
+        };
+    },
+
+    /**  */
+    _filterCurrentSectionCollection : function( filterFn ){
+        return this._filterSectionCollection( this.currentSection, filterFn );
+    },
+
+
+    /** Filter the collection to only those models that should be currently viewed */
+    _filterSectionCollection : function( section, filterFn ){
+        // preconditon: assumes collection *has loaded* the range and is sorted
+        var self = this;
+        var range = self._getSectionRange( section );
+        // console.log( 'range:', range );
+        // console.log( 'length:', this.length );
+
+        var subcollection = [];
+        var descending = this.order === 'hid';
+        // console.log( 'descending:', descending );
+        for( var index = 0; index < this.length; index++ ){
+            var content = this.at( index );
+            var hid = content.get( 'hid' );
+            // console.log( index, stop, hid, filterFn( content ), content );
+
+// TODO: binary search skip to, then bail when done (should be sorted already)
+            if( descending ){
+                if( hid > range.last  ){ continue; }
+                if( hid < range.first ){ break; }
+            } else {
+                if( hid < range.first ){ continue; }
+                if( hid > range.last  ){ break; }
+            }
+            if( hid >= range.first && hid <= range.last && filterFn( content ) ){ subcollection.push( content ); }
+        }
+        // console.log( 'subcollection.length:', subcollection.length );
+        return subcollection;
+    },
+
+    // ------------------------------------------------------------------------ sectioned fetching
+    /** @type {Integer} number of contents/hid entries per section/page displayed */
+    hidsPerSection : 500,
+
+    fetchFirst : function( options ){
+        console.log( 'fetchFirst?' );
+        this.currentSection = this.order === 'hid-asc'? 0 : this._lastFullSection();
+        return this.fetchSection( this.currentSection );
+    },
+
+    fetchSection : function( section, options ){
+        var self = this;
+        if( _.contains( self.sectionsFetched, section ) ){ return jQuery.when(); }
+        var range = this._getSectionRange( section );
+        var xhr = self.fetch({
+            silent: true,
+            remove: false,
+            filters: {
+                'hid-ge' : Math.max( range.first - 1, 0 ),
+                'hid-le' : range.last
+            }
+        });
+        return xhr.done( function(){
+            self.sectionsFetched.push( section );
+            self.sectionsFetched.sort();
+        });
+    },
+});
+
+
+//==============================================================================
     return {
-        HistoryContents : HistoryContents
+        HistoryContents : HidSectionedHistoryContents
     };
 });

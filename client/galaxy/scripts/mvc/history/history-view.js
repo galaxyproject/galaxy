@@ -72,8 +72,12 @@ var HistoryView = _super.extend(
         // control contents/behavior based on where (and in what context) the panel is being used
         /** where should pages from links be displayed? (default to new tab/window) */
         this.linkTarget = attributes.linkTarget || '_blank';
+    },
 
-        this.currentSection = null;
+    /** create and return a collection for when none is initially passed */
+    _createDefaultCollection : function(){
+        // override
+        return new this.collectionClass([], { history: history });
     },
 
     /** In this override, clear the update timer on the model */
@@ -137,7 +141,6 @@ var HistoryView = _super.extend(
      *  @fires new-model with the panel as parameter
      */
     setModel : function( model, attributes ){
-        attributes = attributes || {};
         _super.prototype.setModel.call( this, model, attributes );
         if( this.model ){
             this._setUpWebStorage();
@@ -244,82 +247,45 @@ var HistoryView = _super.extend(
     },
 
     // ------------------------------------------------------------------------ client-side pagination
-    /** @type {Integer} number of contents/hid entries per section/page displayed */
-    hidsPerSection : 500,
-
-    /** @type {Integer} number of contents/hid entries per section/page displayed */
-    minContentsBeforeSectioning : 500,
-
     /**   */
     renderItems : function( $whereTo ){
         $whereTo = $whereTo || this.$el;
         var self = this;
-        // if there's less than 500
+        var contents = self.model.contents;
+        var hidsPerSection = contents.hidsPerSection;
+
+        // if there's less than 500 *shown*
         var contents_active = self.model.get( 'contents_active' ) || 0;
-        if( contents_active.active < self.minContentsBeforeSectioning ){
+        if( contents_active.active < hidsPerSection ){
             return _super.prototype.renderItems.call( self, $whereTo );
         }
 
-        var lastHid = ( self.model.get( 'hid_counter' ) || 1 ) - 1;
-        console.log( 'lastHid:', lastHid );
-
-        var sections = _.range( lastHid / self.hidsPerSection ).reverse();
-        if( !_.isNumber( self.currentSection ) ){
-            self.currentSection = _.first( sections );
-        }
-        console.log( 'sections:', sections );
-        sections = sections.map( function( sectionNumber ){
-            var first = sectionNumber * self.hidsPerSection;
-            return self.templates.listItemsSection({
-                first : first,
-                last  : Math.min( lastHid, first + self.hidsPerSection ),
-                number : sectionNumber,
-            });
+        // render sections
+        self.$list( $whereTo ).html( contents._mapSectionRanges( function( section ){
+            return self.templates.listItemsSection( section );
+        }).join( '\n' ));
+        // render views from collection for the current section, replacing that section marker with them
+        // note: shows only one section's worth of views at a time
+        self.views = self._getCurrentSectionCollection().map( function( itemModel ){
+            return self._createItemView( itemModel );
         });
-
-        // for( var hid = lastHid; hid >= 0; hid -= self.hidsPerSection ){
-        //     console.log( )
-        // }
-
-        var $list = self.$list( $whereTo );
-        if( lastHid ){
-            self.$emptyMessage( $whereTo ).hide();
-            $list.html( sections.join( '\n' ) );
-
-            self.views = self._getCollectionSection( self.currentSection ).map( function( itemModel ){
-                return self._createItemView( itemModel );
-            });
-            var $currentSection = self.$currentSection( $whereTo );
-            console.log( '$currentSection:', $currentSection );
-            $currentSection.replaceWith( self.views.map( function( view ){
-                return self._renderItemView$el( view );
-            }));
-
-        } else {
-            self._renderEmptyMessage( $whereTo ).show();
-        }
+        // console.log( self.$currentSection( $whereTo ) );
+        self.$emptyMessage( $whereTo ).hide();
+        self.$currentSection( $whereTo ).replaceWith( self.views.map( function( view ){
+            return self._renderItemView$el( view );
+        }));
 
         self.trigger( 'views:ready', self.views );
         return self.views;
     },
 
-    /** Filter the collection to only those models that should be currently viewed */
-    _getCollectionSection : function( section ){
-        var self = this;
-        var first = section * self.hidsPerSection;
-        var last = first + self.hidsPerSection;
-        console.log( first, last );
-        var filtered = self.collection.filter( _.bind( self._filterItem, self ) );
-        var sectioned = filtered.filter( function( m ){
-            var hid = m.get( 'hid' );
-            return hid >= first && hid < last;
-        });
-        return sectioned;
+    _getCurrentSectionCollection : function(){
+        return this.model.contents._filterCurrentSectionCollection( _.bind( this._filterItem, this ) );
     },
 
     /** list-items: where the subviews are contained in the view's dom */
     $currentSection : function( $where ){
-        var selector = '.list-items-section[data-section="' + this.currentSection + '"]';
+        var selector = '.list-items-section[data-section="' + this.model.contents.currentSection + '"]';
         return this.$list( $where ).find( selector );
     },
 
@@ -422,24 +388,15 @@ var HistoryView = _super.extend(
         // allow (error) messages to be clicked away
         'click .messages [class$=message]'  : 'clearMessages',
         'click .list-items-section' : function( ev ){
-            this._openSection( $( ev.currentTarget ).data( 'section' ) );
+            this.openSection( $( ev.currentTarget ).data( 'section' ) );
         }
     }),
 
     /** loads a section and re-renders items */
-    _openSection : function( section ){
+    openSection : function( section ){
         var self = this;
-        var first = section * this.hidsPerSection;
-        var last = first + this.hidsPerSection - 1;
-        var fetch = this.model.contents.fetch({
-            silent: true,
-            filters: {
-                'hid-ge' : first,
-                'hid-le' : last
-            }
-        });
-        fetch.done( function(){
-            self.currentSection = section;
+        return self.model.contents.fetchSection( section ).done( function(){
+            self.model.contents.currentSection = section;
             self.renderItems();
         });
     },

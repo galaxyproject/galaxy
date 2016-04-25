@@ -57,7 +57,8 @@
         // history module is already in the dpn chain from the panel. We can re-scope it here.
         var HISTORY = require( 'mvc/history/history-model' ),
             historyModel = new HISTORY.History( historyJSON, null, {
-                order   : 'create_time-asc'
+                order   : 'hid-asc'
+                // order   : 'create_time-asc'
             });
 
         $( '.history-copy-link' ).click( function( ev ){
