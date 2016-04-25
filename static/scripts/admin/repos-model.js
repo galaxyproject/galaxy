@@ -1,0 +1,2 @@
+define([],function(){var a=Backbone.Model.extend({urlRoot:Galaxy.root+"api/admin/repos"}),b=Backbone.Collection.extend({url:Galaxy.root+"api/admin/repos",model:a});return{Repo:a,Repos:b}});
+//# sourceMappingURL=../../maps/admin/repos-model.js.map

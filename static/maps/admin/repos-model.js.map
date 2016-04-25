@@ -1,0 +1,1 @@
+{"version":3,"file":"repos-model.js","sources":["../../src/admin/repos-model.js"],"names":["define","Repo","Backbone","Model","extend","urlRoot","Galaxy","root","Repos","Collection","url","model"],"mappings":"AAAAA,UAAW,WAET,GAAIC,GAAOC,SAASC,MAAMC,QACxBC,QAASC,OAAOC,KAAO,oBAGrBC,EAAQN,SAASO,WAAWL,QAC9BM,IAAKJ,OAAOC,KAAO,kBACnBI,MAAOV,GAGX,QACIA,KAAMA,EACNO,MAAOA"}

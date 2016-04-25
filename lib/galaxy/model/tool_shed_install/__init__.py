@@ -11,9 +11,9 @@ log = logging.getLogger( __name__ )
 
 class ToolShedRepository( object ):
     dict_collection_visible_keys = ( 'id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
-                                     'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message' )
+                                     'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message', 'create_time', 'update_time' )
     dict_element_visible_keys = ( 'id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
-                                  'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message' )
+                                  'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message', 'create_time', 'update_time' )
     installation_status = Bunch( NEW='New',
                                  CLONING='Cloning',
                                  SETTING_TOOL_VERSIONS='Setting tool versions',
@@ -32,7 +32,7 @@ class ToolShedRepository( object ):
 
     def __init__( self, id=None, create_time=None, tool_shed=None, name=None, description=None, owner=None, installed_changeset_revision=None,
                   changeset_revision=None, ctx_rev=None, metadata=None, includes_datatypes=False, tool_shed_status=None, deleted=False,
-                  uninstalled=False, dist_to_shed=False, status=None, error_message=None ):
+                  uninstalled=False, dist_to_shed=False, status=None, error_message=None, update_time=None ):
         self.id = id
         self.create_time = create_time
         self.tool_shed = tool_shed
@@ -50,6 +50,7 @@ class ToolShedRepository( object ):
         self.dist_to_shed = dist_to_shed
         self.status = status
         self.error_message = error_message
+        self.update_time = update_time
 
     def as_dict( self, value_mapper=None ):
         return self.to_dict( view='element', value_mapper=value_mapper )
@@ -221,6 +222,12 @@ class ToolShedRepository( object ):
         if self.metadata:
             return 'workflows' in self.metadata
         return False
+
+    @property
+    def provides_only_tool_dependencies( self ):
+        if self.includes_workflows or self.includes_tools or self.includes_data_managers or self.includes_datatypes:
+            return False
+        return self.includes_tool_dependencies
 
     @property
     def installed_repository_dependencies( self ):
