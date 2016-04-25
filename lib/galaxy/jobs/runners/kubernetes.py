@@ -5,10 +5,7 @@ Job control via a command line interface (e.g. qsub/qstat), possibly over a remo
 import logging
 
 from galaxy import model
-from galaxy.jobs import JobDestination
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
-from .util.cli import CliInterface, split_params
-from os import sep as os_sep, environ as os_environ
 
 # pykube imports:
 try:
