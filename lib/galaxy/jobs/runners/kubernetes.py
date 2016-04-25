@@ -81,10 +81,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # metadata.name is the name of the pod resource created, and must be unique
             # http://kubernetes.io/docs/user-guide/configuring-containers/
                 {
-                 "name": k8s_job_name,
-                 "namespace": "default", # TODO this should be set
-                 "labels": {"app": k8s_job_name},
-                 }
+                    "name": k8s_job_name,
+                    "namespace": "default",  # TODO this should be set
+                    "labels": {"app": k8s_job_name},
+                }
             ,
             "spec": self.__get_k8s_job_spec(job_wrapper)
         }
@@ -114,14 +114,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         nor kind. In addition to required fields for a Pod, a pod template in a job must specify appropriate labels
         (see pod selector) and an appropriate restart policy."""
         k8s_spec_template = {
-            "metadata" : {
-                "labels": { "app": self.__produce_unique_k8s_job_name(job_wrapper) }
+            "metadata": {
+                "labels": {"app": self.__produce_unique_k8s_job_name(job_wrapper)}
             },
-            "spec" : {
-                    "volumes": self.__get_k8s_mountable_volumes(job_wrapper),
-                    "restartPolicy": self.__get_k8s_restart_policy(job_wrapper),
-                    "containers": self.__get_k8s_containers(job_wrapper)
-                }
+            "spec": {
+                "volumes": self.__get_k8s_mountable_volumes(job_wrapper),
+                "restartPolicy": self.__get_k8s_restart_policy(job_wrapper),
+                "containers": self.__get_k8s_containers(job_wrapper)
+            }
         }
         # TODO include other relevant elements that people might want to use from
         # TODO http://kubernetes.io/docs/api-reference/v1/definitions/#_v1_podspec
@@ -144,7 +144,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 "claimName": self.runner_params['k8s_persistent_volume_claim_name']
             }
         }
-        return [ k8s_mountable_volume ]
+        return [k8s_mountable_volume]
 
     def __get_k8s_containers(self, job_wrapper):
         """Fills in all required for setting up the docker containers to be used."""
@@ -165,7 +165,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # if self.__requires_ports(job_wrapper):
         #    k8s_container['ports'] = self.__get_k8s_containers_ports(job_wrapper)
 
-        return [ k8s_container ]
+        return [k8s_container]
 
     # def __get_k8s_containers_ports(self, job_wrapper):
 
@@ -263,7 +263,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             log.debug("(%s/%s) Terminated at user's request" % (job.id, job.job_runner_external_id))
         except Exception as e:
             log.debug("(%s/%s) User killed running job, but error encountered during termination: %s" % (
-            job.id, job.job_runner_external_id, e))
+                job.id, job.job_runner_external_id, e))
 
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
@@ -279,13 +279,13 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         ajs.job_destination = job_wrapper.job_destination
         if job.state == model.Job.states.RUNNING:
             log.debug("(%s/%s) is still in running state, adding to the runner monitor queue" % (
-            job.id, job.job_runner_external_id))
+                job.id, job.job_runner_external_id))
             ajs.old_state = model.Job.states.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)
         elif job.state == model.Job.states.QUEUED:
             log.debug("(%s/%s) is still in queued state, adding to the runner monitor queue" % (
-            job.id, job.job_runner_external_id))
+                job.id, job.job_runner_external_id))
             ajs.old_state = model.Job.states.QUEUED
             ajs.running = False
             self.monitor_queue.put(ajs)
