@@ -390,6 +390,8 @@ def pretty_print_time_interval( time=False, precise=False ):
             return str( day_diff / 7 ) + " weeks ago"
         if day_diff < 365:
             return str( day_diff / 30 ) + " months ago"
+        if day_diff < 730:
+            return "1 year ago"
         return str( day_diff / 365 ) + " years ago"
     else:
         if day_diff == 0:

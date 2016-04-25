@@ -169,6 +169,7 @@ def postfork_setup():
 
 def populate_api_routes( webapp, app ):
     webapp.add_api_controllers( 'galaxy.webapps.galaxy.api', app )
+    webapp.add_api_controllers( 'galaxy.webapps.galaxy.api.admin', app )
 
     valid_history_contents_types = [
         'dataset',
@@ -580,6 +581,20 @@ def populate_api_routes( webapp, app ):
                             path_prefix='/api/folders/{folder_id}',
                             parent_resources=dict( member_name='folder', collection_name='folders' ),
                             conditions=dict( method=[ "GET" ] )  )
+
+    # =====================
+    # ===== ADMIN API =====
+    # =====================
+
+    webapp.mapper.connect( 'installed repos',
+                           '/api/admin/repos',
+                           controller='repositories',
+                           action='index',
+                           conditions=dict( method=["GET"] ) )
+
+    # ====================
+    # ===== JOBS API =====
+    # ====================
 
     webapp.mapper.resource( 'job',
                             'jobs',

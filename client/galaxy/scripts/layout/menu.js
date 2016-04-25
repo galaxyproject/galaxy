@@ -112,6 +112,14 @@ var Collection = Backbone.Collection.extend({
             cls             : 'admin-only'
         });
 
+        Galaxy.user.get( 'is_admin' ) && this.add({
+            id              : 'admin_beta',
+            title           : 'Admin Beta',
+            url             : 'admin_beta',
+            tooltip         : 'Administer this Galaxy',
+            cls             : 'admin-only'
+        });
+
         //
         // Help tab.
         //
