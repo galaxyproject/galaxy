@@ -4,12 +4,10 @@ import os
 import string
 import tempfile
 from datetime import date
-from time import gmtime
-from time import strftime
 
 from mercurial import mdiff
 from mercurial import patch
-from sqlalchemy import and_, false, null, true
+from sqlalchemy import and_, false, null
 
 import tool_shed.grids.repository_grids as repository_grids
 import tool_shed.grids.util as grids_util

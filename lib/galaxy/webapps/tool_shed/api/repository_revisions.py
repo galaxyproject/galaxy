@@ -1,7 +1,6 @@
-import datetime
 import logging
 
-from sqlalchemy import and_, not_, select
+from sqlalchemy import and_
 
 import tool_shed.util.shed_util_common as suc
 from galaxy import util
