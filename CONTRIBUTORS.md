@@ -96,7 +96,7 @@ The following individuals have contributed code to Galaxy:
 * Ian Schenck <ian@bx.psu.edu>
 * Nick Semenkovich <semenko@alum.mit.edu>
 * Matthew Shirley <mdshw5@gmail.com>
-* Sourav Singh <souravsingh@users.noreply.github.com> {FIND THIS}
+* Sourav Singh <ssouravsingh12@gmail.com>
 * Clare Sloggett <sloc@unimelb.edu.au>
 * Eteri Sokhoyan @Sokhoyan
 * Nicola Soranzo <nicola.soranzo@tgac.ac.uk> <nsoranzo@tiscali.it> <soranzo@crs4.it>
@@ -118,6 +118,7 @@ The following individuals have contributed code to Galaxy:
 * Andrew Warren <anwarren@vbi.vt.edu>
 * Trevor Wennblom <trevor@well.com>
 * Thomas Wollmann <thomas.s.wollmann@gmail.com> <thomas.wollmann@bioquant.uni-heidelberg.de>
+* Jay Young <xiaojay@gmail.com>
 * Yi Zhang <yizhang@bx.psu.edu>
 * Freek de Bruijn <freek.de.bruijn@nbic.nl>
 * Peter van Heusden <pvh@sanbi.ac.za>
