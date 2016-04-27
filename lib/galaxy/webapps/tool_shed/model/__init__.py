@@ -3,6 +3,7 @@ import operator
 import os
 from datetime import datetime, timedelta
 from galaxy import util
+from galaxy.model.orm.now import now
 from galaxy.util import unique_id
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
@@ -70,7 +71,7 @@ class PasswordResetToken( object ):
         else:
             self.token = unique_id()
         self.user = user
-        self.expiration_time = datetime.now() + timedelta(hours=24)
+        self.expiration_time = now() + timedelta(hours=24)
 
 
 class Group( object, Dictifiable ):
