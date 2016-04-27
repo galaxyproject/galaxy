@@ -11,6 +11,123 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content',
         }
     } );
 
+    test( 'select-content', function() {
+        function _test( options ) {
+            ok( JSON.stringify( select.value() ) == JSON.stringify( options.value ), 'Selected value is ' + options.value );
+            ok( select.text() == options.label, 'Selected label is ' + options.label );
+            ok( select.$el.display === options.visible ? 'block' : 'none', options.visible ? 'Visible' : 'Hidden' );
+            ok( select.$select.find( 'option' ).length === options.count && select.length(), 'Found ' + options.count + ' option' );
+            options.exists && ok( select.$select.find( 'option[value="' + options.exists + '"]' ).length === 1, 'Found value: ' + options.exists );
+            ok( select.$select.prop( 'multiple' ) === Boolean( options.multiple ), 'Multiple state set to: ' + options.multiple );
+            ok( Boolean( select.all_button ) === Boolean( options.multiple ), 'Visiblity of select all button correct.' );
+            options.multiple && ok( select.all_button.$( '.icon' ).hasClass( options.all_icon ), 'All button in correct state: ' + options.all_icon );
+        }
+        var select = new Ui.Select.View({});
+        $( 'body' ).prepend( select.$el );
+        ok( select.first() === '__null__', 'First select is \'__null__\'' );
+        ok( select.$dropdown.hasClass( 'fa-caret-down' ), 'Caret down shown.' );
+        select.model.set( 'data', [ { value: 'value', label: 'label' } ] );
+        _test({
+            value   : 'value',
+            label   : 'label',
+            visible : true,
+            count   : 1
+        });
+        select.model.set( 'data', [ { value: 'valuea', label: 'labela' }, { value: 'valueb', label: 'labelb' } ] );
+        _test({
+            value   : 'valuea',
+            label   : 'labela',
+            visible : true,
+            count   : 2,
+            exists  : 'valueb'
+        });
+        select.value( 'valueb' );
+        _test({
+            value   : 'valueb',
+            label   : 'labelb',
+            visible : true,
+            count   : 2
+        });
+        select.model.set( 'data', [ { value: 'value', label: 'label' } ] );
+        _test({
+            value   : 'value',
+            label   : 'label',
+            visible : true,
+            count   : 1
+        });
+        select.model.set( { visible: false, value: 'unavailable' } );
+        _test({
+            value   : 'value',
+            label   : 'label',
+            visible : false,
+            count   : 1
+        });
+        select.model.set( { visible: true, value: 'valueb', data: [ { value: 'valuea', label: 'labela' }, { value: 'valueb', label: 'labelb' } ] } );
+        _test({
+            value   : 'valueb',
+            label   : 'labelb',
+            visible : true,
+            count   : 2,
+            exists  : 'valuea'
+        });
+        select.model.set( { multiple: true } );
+        _test({
+            value   : [ 'valueb' ],
+            label   : 'labelb',
+            visible : true,
+            count   : 2,
+            exists  : 'valuea',
+            multiple: true,
+            all_icon: 'fa-minus-square-o'
+        });
+        select.model.set( 'value', [ 'valuea', 'valueb' ] );
+        _test({
+            value   : [ 'valuea', 'valueb' ],
+            label   : 'labela',
+            visible : true,
+            count   : 2,
+            exists  : 'valueb',
+            multiple: true,
+            all_icon: 'fa-check-square-o'
+        });
+        select.model.set( 'value', [] );
+        _test({
+            value   : null,
+            label   : '',
+            visible : true,
+            count   : 2,
+            exists  : 'valuea',
+            multiple: true,
+            all_icon: 'fa-square-o'
+        });
+        select.model.set( { multiple: false } );
+        _test({
+            value   : 'valuea',
+            label   : 'labela',
+            visible : true,
+            count   : 2,
+            exists  : 'valuea'
+        });
+        select.model.set( { visible: false } );
+        _test({
+            value   : 'valuea',
+            label   : 'labela',
+            visible : false,
+            count   : 2,
+            exists  : 'valuea'
+        });
+        select.model.set( { multiple: true, visible: true, value: [ 'valueb', 'valuec' ],  data: [ { value: 'valuea', label: 'labela' }, { value: 'valueb', label: 'labelb' }, { value: 'valuec', label: 'labelc' } ] } );
+        _test({
+            value   : [ 'valueb', 'valuec' ],
+            label   : 'labelb',
+            visible : true,
+            count   : 3,
+            exists  : 'valuea',
+            multiple: true,
+            all_icon: 'fa-minus-square-o'
+        });
+    } );
+
     test( 'label', function() {
         var label = new Ui.Label({
             title   : '_title'

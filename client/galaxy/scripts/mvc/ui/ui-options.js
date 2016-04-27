@@ -1,35 +1,23 @@
 // dependencies
-define(['utils/utils', 'mvc/ui/ui-buttons'], function(Utils, Buttons) {
+define([ 'utils/utils', 'mvc/ui/ui-buttons' ], function( Utils, Buttons ) {
 
 /** Base class for options based ui elements **/
 var Base = Backbone.View.extend({
-    // initialize
     initialize: function(options) {
-        // link this
         var self = this;
-
-        // configure options
-        this.options = Utils.merge(options, {
+        this.model = options && options.model || new Backbone.Model({
             visible     : true,
             data        : [],
             id          : Utils.uid(),
             error_text  : 'No options available.',
             wait_text   : 'Please wait...',
             multiple    : false
-        });
-
-        // create new element
-        this.setElement('<div class="ui-options"/>');
-
-        // create elements
-        this.$message   = $('<div/>');
-        this.$options   = $(this._template(options));
-        this.$menu      = $('<div class="ui-options-menu"/>');
-
-        // append
-        this.$el.append(this.$message);
-        this.$el.append(this.$menu);
-        this.$el.append(this.$options);
+        }).set( options );
+        this.setElement( $( '<div/>' ).addClass( 'ui-options' )
+                            .append( this.$message   = $( '<div/>' ) )
+                            .append( this.$menu      = $( '<div/>' ).addClass( 'ui-options-menu' ) )
+                            .append( this.$options   = $( this._template() ) ) );
+        this.options = this.model.attributes;
 
         // add select/unselect all button
         if (this.options.multiple) {
@@ -56,9 +44,7 @@ var Base = Backbone.View.extend({
         }
 
         // add change event. fires on trigger
-        this.on('change', function() {
-            this.options.onchange && this.options.onchange(this.value());
-        });
+        this.on( 'change', function() { self.model.get( 'onchange' ) && self.model.get( 'onchange' )( self.value() ) } );
     },
 
     /** Update options
@@ -129,22 +115,6 @@ var Base = Backbone.View.extend({
             this.all_button.value(value, this._size());
         }
         return current;
-    },
-
-    /** Check if selected value exists (or any if multiple)
-    */
-    exists: function(value) {
-        if (value !== undefined) {
-            if (!(value instanceof Array)) {
-                value = [value];
-            }
-            for (var i in value) {
-                if (this.$('input[value="' + value[i] + '"]').length > 0) {
-                    return true;
-                }
-            }
-        }
-        return false;
     },
 
     /** Return first available option
