@@ -49,8 +49,8 @@ The following individuals have contributed code to Galaxy:
 * fescudie <fescudie@toulouse.inra.fr>
 * Dorine Francheteau <dorine@bx.psu.edu>
 * Jaime Frey <jfrey@cs.wisc.edu>
+* Carrie Ganote <cganote@iu.edu>
 * Ryan Golhar <ngsbioinformatics@gmail.com>
-* Carie Genote <cganote@iu.edu>
 * Jeremy Goecks <jeremy.goecks@emory.edu> <jgoecks@gwu.edu>
 * Nuwan Goonasekera <nuwan.goonasekera@gmail.com>
 * Björn Grüning <bjoern.gruening@gmail.com> <bjoern@gruenings.eu>
