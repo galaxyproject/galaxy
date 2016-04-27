@@ -347,8 +347,10 @@ def pretty_print_time_interval( time=False, precise=False ):
     pretty string like 'an hour ago', 'Yesterday', '3 months ago',
     'just now', etc
     credit: http://stackoverflow.com/questions/1551382/user-friendly-time-format-in-python
+
+    :Warning: Expects the UTC time.
     """
-    now = datetime.now()
+    now = datetime.utcnow()
     if type( time ) is int:
         diff = now - datetime.fromtimestamp( time )
     elif isinstance( time, datetime ):
