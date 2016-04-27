@@ -20,6 +20,7 @@ var AdminRouter = Backbone.Router.extend({
   routes: {
     ""         : "repos",
     "repos"    : "repos",
+    "all"      : "all",
     "packages" : "packages",
   },
 
@@ -46,7 +47,11 @@ var GalaxyAdminApp = Backbone.View.extend({
     this.admin_router = new AdminRouter();
 
     this.admin_router.on( 'route:repos', function() {
-      Galaxy.adminapp.adminReposListView = new mod_repos_list_view.AdminReposListView();
+      if (Galaxy.adminapp.adminReposListView){
+        Galaxy.adminapp.adminReposListView.repaint({filter: 'with_tools'});
+      } else{
+        Galaxy.adminapp.adminReposListView = new mod_repos_list_view.AdminReposListView();
+      }
     });
 
     this.admin_router.on( 'route:packages', function() {
@@ -54,6 +59,14 @@ var GalaxyAdminApp = Backbone.View.extend({
         Galaxy.adminapp.adminReposListView.repaint({filter: 'tool_dependencies'});
       } else{
         Galaxy.adminapp.adminReposListView = new mod_repos_list_view.AdminReposListView({filter: 'tool_dependencies'});
+      }
+    });
+
+    this.admin_router.on( 'route:all', function() {
+      if (Galaxy.adminapp.adminReposListView){
+        Galaxy.adminapp.adminReposListView.repaint({filter: 'all'});
+      } else{
+        Galaxy.adminapp.adminReposListView = new mod_repos_list_view.AdminReposListView({filter: 'all'});
       }
     });
 

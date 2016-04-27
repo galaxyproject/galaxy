@@ -21,6 +21,7 @@ class RepoManager( base.ModelManager ):
         if not trans.user_is_admin():
             raise exceptions.ItemAccessibilityException( 'Only administrators can see repos.' )
         repos = trans.sa_session.query( self.model_class ).all()
+        # TODO collapse repos with the same ID and different versions
         return repos
 
     def get_tools( self, trans ):
@@ -65,11 +66,11 @@ class RepositorySerializer( base.ModelSerializer ):
         super( RepositorySerializer, self ).add_serializers()
 
         self.serializers.update({
-            'id'            : self.serialize_id,
-            'create_time'   : self.serialize_interval,
-            'update_time'   : self.serialize_interval,
+            'id': self.serialize_id,
+            'create_time': self.serialize_interval,
+            'update_time': self.serialize_date,
         })
 
     def serialize_interval( self, item, key, **context ):
         date = getattr( item, key )
-        return pretty_print_time_interval( date, precise=True )
+        return { 'interval': pretty_print_time_interval( date, precise=True ), 'date': self.serialize_date( item, key ) }
