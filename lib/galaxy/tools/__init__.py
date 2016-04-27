@@ -1259,7 +1259,7 @@ class Tool( object, Dictifiable ):
             installed_tool_dependencies=self.installed_tool_dependencies,
             tool_dir=self.tool_dir,
             job_directory=job_directory,
-            metadata=metadata
+            metadata=metadata,
         )
 
     @property
