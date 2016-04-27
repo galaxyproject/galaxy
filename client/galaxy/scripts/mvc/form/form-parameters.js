@@ -138,7 +138,7 @@ define(['utils/utils',
             // field replaces e.g. a select field
             if ( input_def.options ) {
                 input_def.area = input_def.multiple;
-                if ( !Utils.validate( input_def.value ) ) {
+                if ( Utils.isEmpty( input_def.value ) ) {
                     input_def.value = null;
                 } else {
                     if ( $.isArray( input_def.value ) ) {
