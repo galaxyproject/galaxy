@@ -44,7 +44,7 @@ The following individuals have contributed code to Galaxy:
 * Eric Enns <eric.enns@gmail.com>
 * Dorine Francheteau <dorine@bx.psu.edu>
 * Jaime Frey <jfrey@cs.wisc.edu>
-* Carie Genote <cganote@iu.edu>
+* Carrie Ganote <cganote@iu.edu>
 * Jeremy Goecks <jeremy.goecks@emory.edu> <jgoecks@gwu.edu>
 * Nuwan Goonasekera <nuwan.goonasekera@gmail.com>
 * Björn Grüning <bjoern.gruening@gmail.com> <bjoern@gruenings.eu>
