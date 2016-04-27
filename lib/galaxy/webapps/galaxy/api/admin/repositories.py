@@ -33,14 +33,10 @@ class RepositoriesController( BaseAPIController ):
         repos = self.repo_manager.list( trans, view='with_tools' )
         return_dict = []
         for repo in repos:
-            # log.debug(self.repo_serializer.serialize_to_view( repo, view='detailed')
-            # log.debug(str(repo.metadata))
             repo_dict = self.repo_serializer.serialize_to_view( repo, view='summary')
             if repo.includes_tools:
                 repo_dict['type'] = 'with_tools'
             if repo.provides_only_tool_dependencies:
                 repo_dict['type'] = 'tool_dependencies'
-            log.debug(repo_dict)
             return_dict.append( repo_dict )
         return return_dict
-        # return self.repo_serializer.serialize_to_view( repos[0], view='summary')
