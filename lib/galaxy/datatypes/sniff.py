@@ -343,6 +343,9 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
     >>> fname = get_test_fname('5e5z.pdb')
     >>> guess_ext(fname, sniff_order)
     'pdb'
+    >>> fname = get_test_fname('mothur_datatypetest_true.mothur.otu')
+    >>> guess_ext(fname, sniff_order)
+    'mothur.otu'
     """
     for datatype in sniff_order:
         """

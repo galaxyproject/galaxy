@@ -300,7 +300,7 @@ class DistanceMatrix(Text):
                 try:
                     dataset.metadata.sequence_count = int(''.join(line))  # seq count sometimes preceded by tab
                     break
-                except Exception, e:
+                except Exception as e:
                     log.warn("DistanceMatrix set_meta %s" % e)
 
 
@@ -608,7 +608,7 @@ class Frequency(Tabular):
                     try:
                         int(line[0])
                         float(line[1])
-                    except:
+                    except Exception:
                         return False
                 count += 1
         if count > 1:
@@ -658,7 +658,7 @@ class Quantile(Tabular):
                     float(line[4])
                     float(line[5])
                     float(line[6])
-                except:
+                except Exception:
                     return False
                 count += 1
         if count > 0:
@@ -780,7 +780,7 @@ class RefTaxonomy(Tabular):
                 if len(line) == 3:
                     try:
                         int(line[2])
-                    except:
+                    except Exception:
                         return False
                 count += 1
 
@@ -901,7 +901,7 @@ class SffFlow(Tabular):
         try:
             flow_values = int(headers[0][0])
             dataset.metadata.flow_values = flow_values
-        except Exception, e:
+        except Exception as e:
             log.warn("SffFlow set_meta %s" % e)
 
     def make_html_table(self, dataset, skipchars=[]):
@@ -919,7 +919,7 @@ class SffFlow(Tabular):
             out += '</tr>'
             out += self.make_html_peek_rows(dataset, skipchars=skipchars)
             out += '</table>'
-        except Exception, exc:
+        except Exception as exc:
             out = "Can't create peek %s" % str(exc)
         return out
 
