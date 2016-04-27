@@ -130,13 +130,6 @@ use_lint = false
 # Force everyone to log in (disable anonymous access)
 require_login = False
 
-# Enables displaying of test run results on repo pages.
-#display_legacy_test_results = True
-
-# Number of saved tool test results produced by the install and test
-# framework for each repository.
-#num_tool_test_results_saved = 5
-
 # For use by email messages sent from the tool shed
 #smtp_server = smtp.your_tool_shed_server
 #email_from = your_tool_shed_email@server
