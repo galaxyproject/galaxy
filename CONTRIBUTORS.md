@@ -50,6 +50,7 @@ The following individuals have contributed code to Galaxy:
 * Simon Guest <simon.guest@agresearch.co.nz>
 * Jianbin He <jbhe@bx.psu.edu>
 * Morita Hideyuki <h-morita@esm.co.jp>
+* Saskia Hiltemann <zazkia@gmail.com>
 * Rob Hooft <rob.hooft@nbic.nl>
 * Y. Hoogstrate <y.hoogstrate@erasmusmc.nl>
 * Jian-Long Huang <jlh@pyhub.org>
