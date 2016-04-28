@@ -18,6 +18,7 @@ SLURM_MEMORY_LIMIT_EXCEEDED_MSG = 'slurmstepd: error: Exceeded job memory limit'
 
 class SlurmJobRunner( DRMAAJobRunner ):
     runner_name = "SlurmRunner"
+    restrict_job_name_length = False
 
     def _complete_terminal_job( self, ajs, drmaa_state, **kwargs ):
         def __get_jobinfo():
