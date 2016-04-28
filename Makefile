@@ -14,8 +14,11 @@ PROJECT_URL?=https://github.com/galaxyproject/galaxy
 GRUNT_DOCKER_NAME:=galaxy/client-builder:16.01
 GRUNT_EXEC?=node_modules/grunt-cli/bin/grunt
 DOCS_DIR=doc
+DOC_SOURCE_DIR=$(DOCS_DIR)/source
+SLIDESHOW_DIR=$(DOC_SOURCE_DIR)/slideshow
 OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
-
+DOC_SOURCE_DIR=doc/source
+SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /cwd/$$0 /cwd/`dirname $$0`/`basename -s .html $$0`.pdf'
 
 all: help
 	@echo "This makefile is primarily used for building Galaxy's JS client. A sensible all target is not yet implemented."
@@ -23,6 +26,14 @@ all: help
 docs: ## generate Sphinx HTML documentation, including API docs
 	$(IN_VENV) $(MAKE) -C doc clean
 	$(IN_VENV) $(MAKE) -C doc html
+
+docs-slides-ready:
+	test -f plantuml.jar ||  wget http://jaist.dl.sourceforge.net/project/plantuml/plantuml.jar
+	java -jar plantuml.jar -c $(DOC_SOURCE_DIR)/slideshow/architecture/images/plantuml_options.txt -tsvg $(SLIDESHOW_DIR)/architecture/images/ *.plantuml.txt
+	$(IN_VENV) python scripts/slideshow/build_slideshow.py 'Galaxy Architecture' $(SLIDESHOW_DIR)/architecture/galaxy_architecture.md
+
+docs-slides-export: docs-slides-ready
+	$(SLIDESHOW_TO_PDF) $(SLIDESHOW_DIR)/galaxy_architecture/galaxy_architecture.html
 
 docs-schema-ready: ## Build Github-flavored Markdown from Galaxy Tool XSD (expects libxml in environment)
 	python $(DOCS_DIR)/parse_gx_xsd.py > $(DOCS_DIR)/schema.md
@@ -32,6 +43,14 @@ docs-schema-html: docs-schema-ready ## Convert Galaxy Tool XSD Markdown docs int
 
 open-docs-schema: docs-schema-html ## Open HTML generated from Galaxy Tool XSD.
 	$(OPEN_RESOURCE) $(DOCS_DIR)/schema.html
+
+ready-slides:
+	test -f plantuml.jar ||  wget http://jaist.dl.sourceforge.net/project/plantuml/plantuml.jar
+	java -jar plantuml.jar -c $(DOC_SOURCE_DIR)/slideshow/galaxy_architecture_2015/images/plantuml_options.txt -tsvg $(DOC_SOURCE_DIR)/slideshow/galaxy_architecture_2015/images/ *.plantuml.txt
+	./node_modules/mermaid/bin/mermaid.js --svg $(DOC_SOURCE_DIR)/slideshow/galaxy_architecture_2015/images/server_client.mermaid --o $(DOC_SOURCE_DIR)/slideshow/galaxy_architecture_2015/images -t ./node_modules/mermaid/dist/mermaid.forest.css -c $(DOC_SOURCE_DIR)/slideshow/galaxy_architecture_2015/images/sequence.json
+	./node_modules/mermaid/bin/mermaid.js --svg $(DOC_SOURCE_DIR)/slideshow/galaxy_architecture_2015/images/server_client_old.mermaid --o $(DOC_SOURCE_DIR)/slideshow/galaxy_architecture_2015/images -t ./node_modules/mermaid/dist/mermaid.forest.css -c $(DOC_SOURCE_DIR)/slideshow/galaxy_architecture_2015/images/sequence.json
+
+	$(IN_VENV) python scripts/slideshow/build_slideshow.py 'Galaxy Architecture' doc/source/slideshow/galaxy_architecture_2015/galaxy_architecture_2015.md
 
 _open-docs:
 	$(OPEN_RESOURCE) $(DOCS_DIR)/_build/html/index.html
@@ -102,7 +121,7 @@ grunt-watch-develop: npm-deps ## Execute watching grunt builder for dev purposes
 	cd client && $(GRUNT_EXEC) watch --develop
 
 webpack-watch: npm-deps ## Execute watching webpack for dev purposes
-	cd client && ./node_modules/webpack/bin/webpack.js --watch	
+	cd client && ./node_modules/webpack/bin/webpack.js --watch
 
 client-develop: grunt-watch-style grunt-watch-develop webpack-watch  ## A useful target for parallel development building.
 	@echo "Remember to rerun `make client` before committing!"
