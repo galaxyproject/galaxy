@@ -1020,9 +1020,9 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                                                                             repo_path=None,
                                                                             create=False )
                                     updated_changeset_revision = \
-                                        suc.get_next_downloadable_changeset_revision( required_repository,
-                                                                                      repo,
-                                                                                      changeset_revision )
+                                        metadata_util.get_next_downloadable_changeset_revision( required_repository,
+                                                                                                repo,
+                                                                                                changeset_revision )
                                     required_repository_metadata = \
                                         metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans.app,
                                                                                                                    required_repository_id,

@@ -6,7 +6,6 @@ import shutil
 import socket
 import string
 from urllib2 import HTTPError
-from operator import itemgetter
 
 import sqlalchemy.orm.exc
 from sqlalchemy import and_, false, or_, true
@@ -313,28 +312,6 @@ def get_ctx_rev( app, tool_shed_url, name, owner, changeset_revision ):
     return ctx_rev
 
 
-def get_current_repository_metadata_for_changeset_revision( app, repository, changeset_revision ):
-    encoded_repository_id = app.security.encode_id( repository.id )
-    repository_metadata = get_repository_metadata_by_changeset_revision( app,
-                                                                         encoded_repository_id,
-                                                                         changeset_revision )
-    if repository_metadata:
-        return repository_metadata
-    # The installable changeset_revision may have been changed because it was "moved ahead"
-    # in the repository changelog.
-    repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
-    updated_changeset_revision = get_next_downloadable_changeset_revision( repository,
-                                                                           repo,
-                                                                           after_changeset_revision=changeset_revision )
-    if updated_changeset_revision and updated_changeset_revision != changeset_revision:
-        repository_metadata = get_repository_metadata_by_changeset_revision( app,
-                                                                             encoded_repository_id,
-                                                                             updated_changeset_revision )
-        if repository_metadata:
-            return repository_metadata
-    return None
-
-
 def get_ids_of_tool_shed_repositories_being_installed( app, as_string=False ):
     installing_repository_ids = []
     new_status = app.install_model.ToolShedRepository.installation_status.NEW
@@ -355,19 +332,6 @@ def get_ids_of_tool_shed_repositories_being_installed( app, as_string=False ):
     return installing_repository_ids
 
 
-def get_latest_downloadable_changeset_revision( app, repository, repo=None ):
-    if repo is None:
-        repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
-    repository_tip = repository.tip( app )
-    repository_metadata = get_repository_metadata_by_changeset_revision( app, app.security.encode_id( repository.id ), repository_tip )
-    if repository_metadata and repository_metadata.downloadable:
-        return repository_tip
-    changeset_revisions = [ revision[ 1 ] for revision in get_metadata_revisions( repository, repo ) ]
-    if changeset_revisions:
-        return changeset_revisions[ -1 ]
-    return hg_util.INITIAL_CHANGELOG_HASH
-
-
 def get_tool_dependency_definition_metadata_from_tool_shed( app, tool_shed_url, name, owner ):
     """
     Send a request to the tool shed to retrieve the current metadata for a
@@ -379,44 +343,6 @@ def get_tool_dependency_definition_metadata_from_tool_shed( app, tool_shed_url, 
     pathspec = [ 'repository', 'get_tool_dependency_definition_metadata' ]
     metadata = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
     return metadata
-
-
-def get_metadata_changeset_revisions( repository, repo ):
-    """
-    Return an unordered list of changeset_revisions and changeset numbers that are defined as installable.
-    """
-    changeset_tups = []
-    for repository_metadata in repository.downloadable_revisions:
-        ctx = hg_util.get_changectx_for_changeset( repo, repository_metadata.changeset_revision )
-        if ctx:
-            rev = ctx.rev()
-        else:
-            rev = -1
-        changeset_tups.append( ( rev, repository_metadata.changeset_revision ) )
-    return sorted( changeset_tups )
-
-
-def get_next_downloadable_changeset_revision( repository, repo, after_changeset_revision ):
-    """
-    Return the installable changeset_revision in the repository changelog after the changeset to which
-    after_changeset_revision refers.  If there isn't one, return None. If there is only one installable
-    changeset, and that matches the requested revision, return it.
-    """
-    changeset_revisions = [ revision[ 1 ] for revision in get_metadata_revisions( repository, repo ) ]
-    if len( changeset_revisions ) == 1:
-        changeset_revision = changeset_revisions[ 0 ]
-        if changeset_revision == after_changeset_revision:
-            return after_changeset_revision
-    found_after_changeset_revision = False
-    for changeset in repo.changelog:
-        changeset_revision = str( repo.changectx( changeset ) )
-        if found_after_changeset_revision:
-            if changeset_revision in changeset_revisions:
-                return changeset_revision
-        elif not found_after_changeset_revision and changeset_revision == after_changeset_revision:
-            # We've found the changeset in the changelog for which we need to get the next downloadable changeset.
-            found_after_changeset_revision = True
-    return None
 
 
 def get_next_prior_import_or_install_required_dict_entry( prior_required_dict, processed_tsr_ids ):
@@ -451,27 +377,6 @@ def get_next_prior_import_or_install_required_dict_entry( prior_required_dict, p
         if key in processed_tsr_ids:
             continue
         return key
-
-
-def get_metadata_revisions( repository, repo, sort_revisions=True, reverse=False, downloadable=True ):
-    """
-    Return a list of changesets for the provided repository.
-    """
-    if downloadable:
-        metadata_revisions = repository.downloadable_revisions
-    else:
-        metadata_revisions = repository.metadata_revisions
-    changeset_tups = []
-    for repository_metadata in metadata_revisions:
-        ctx = hg_util.get_changectx_for_changeset( repo, repository_metadata.changeset_revision )
-        if ctx:
-            rev = '%04d' % ctx.rev()
-        else:
-            rev = -1
-        changeset_tups.append( ( rev, repository_metadata.changeset_revision ) )
-    if sort_revisions:
-        changeset_tups.sort( key=itemgetter( 0 ), reverse=reverse )
-    return changeset_tups
 
 
 def get_prior_import_or_install_required_dict( app, tsr_ids, repo_info_dicts ):
@@ -519,7 +424,7 @@ def get_repositories_by_category( app, category_id ):
         repository_dict[ 'metadata' ] = {}
         for changeset, changehash in row.repository.installable_revisions( app ):
             encoded_id = app.security.encode_id( row.repository.id )
-            metadata = get_repository_metadata_by_changeset_revision( app, encoded_id, changehash )
+            metadata = metadata_util.get_repository_metadata_by_changeset_revision( app, encoded_id, changehash )
             repository_dict[ 'metadata' ][ '%s:%s' % ( changeset, changehash ) ] = metadata.to_dict( value_mapper=default_value_mapper )
         repositories.append( repository_dict )
     return repositories
@@ -784,28 +689,6 @@ def get_repository_categories( app, id ):
         .filter(app.model.RepositoryCategoryAssociation.table.c.repository_id == app.security.decode_id( id ))
 
 
-def get_repository_metadata_by_changeset_revision( app, id, changeset_revision ):
-    """Get metadata for a specified repository change set from the database."""
-    # Make sure there are no duplicate records, and return the single unique record for the changeset_revision.
-    # Duplicate records were somehow created in the past.  The cause of this issue has been resolved, but we'll
-    # leave this method as is for a while longer to ensure all duplicate records are removed.
-    sa_session = app.model.context.current
-    all_metadata_records = sa_session.query( app.model.RepositoryMetadata ) \
-                                     .filter( and_( app.model.RepositoryMetadata.table.c.repository_id == app.security.decode_id( id ),
-                                                    app.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \
-                                     .order_by( app.model.RepositoryMetadata.table.c.update_time.desc() ) \
-                                     .all()
-    if len( all_metadata_records ) > 1:
-        # Delete all records older than the last one updated.
-        for repository_metadata in all_metadata_records[ 1: ]:
-            sa_session.delete( repository_metadata )
-            sa_session.flush()
-        return all_metadata_records[ 0 ]
-    elif all_metadata_records:
-        return all_metadata_records[ 0 ]
-    return None
-
-
 def get_repository_owner( cleaned_repository_url ):
     """Gvien a "cleaned" repository clone URL, return the owner of the repository."""
     items = cleaned_repository_url.split( '/repos/' )
@@ -993,28 +876,6 @@ def get_tool_shed_repository_status_label( app, tool_shed_repository=None, name=
         bgcolor = app.install_model.ToolShedRepository.states.WARNING
         status_label = 'unknown status'
     return '<div class="count-box state-color-%s">%s</div>' % ( bgcolor, status_label )
-
-
-def get_updated_changeset_revisions( app, name, owner, changeset_revision ):
-    """
-    Return a string of comma-separated changeset revision hashes for all available updates to the received changeset
-    revision for the repository defined by the received name and owner.
-    """
-    repository = get_repository_by_name_and_owner( app, name, owner )
-    repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
-    # Get the upper bound changeset revision.
-    upper_bound_changeset_revision = get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
-    # Build the list of changeset revision hashes defining each available update up to, but excluding
-    # upper_bound_changeset_revision.
-    changeset_hashes = []
-    for changeset in hg_util.reversed_lower_upper_bounded_changelog( repo, changeset_revision, upper_bound_changeset_revision ):
-        # Make sure to exclude upper_bound_changeset_revision.
-        if changeset != upper_bound_changeset_revision:
-            changeset_hashes.append( str( repo.changectx( changeset ) ) )
-    if changeset_hashes:
-        changeset_hashes_str = ','.join( changeset_hashes )
-        return changeset_hashes_str
-    return ''
 
 
 def get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url, name, owner, changeset_revision ):

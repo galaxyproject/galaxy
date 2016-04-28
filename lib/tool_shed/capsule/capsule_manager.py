@@ -26,6 +26,7 @@ from tool_shed.util import commit_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
+from tool_shed.util import metadata_util
 from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import xml_util
@@ -67,9 +68,9 @@ class ExportRepositoryManager( object ):
             ordered_changeset_revisions = []
             if self.repository:
                 repository_metadata = \
-                    suc.get_current_repository_metadata_for_changeset_revision( self.app,
-                                                                                self.repository,
-                                                                                self.changeset_revision )
+                    metadata_util.get_current_repository_metadata_for_changeset_revision( self.app,
+                                                                                          self.repository,
+                                                                                          self.changeset_revision )
                 if repository_metadata:
                     ordered_repository_ids = [ self.repository_id ]
                     ordered_repositories = [ self.repository ]
@@ -216,9 +217,9 @@ class ExportRepositoryManager( object ):
                 repository_owner, repository_dependencies, tool_dependencies = \
                 suc.get_repo_info_tuple_contents( repo_info_tup )
             repository = suc.get_repository_by_name_and_owner( self.app, repository_name, repository_owner )
-            repository_metadata = suc.get_current_repository_metadata_for_changeset_revision( self.app,
-                                                                                              repository,
-                                                                                              changeset_revision )
+            repository_metadata = metadata_util.get_current_repository_metadata_for_changeset_revision( self.app,
+                                                                                                        repository,
+                                                                                                        changeset_revision )
             if repository_metadata:
                 return repository, repository_metadata.changeset_revision
         return None, None
@@ -243,9 +244,9 @@ class ExportRepositoryManager( object ):
         """
         rdim = RepositoryDependencyInstallManager( self.app )
         repository = suc.get_repository_in_tool_shed( self.app, self.repository_id )
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( self.app,
-                                                                                 self.repository_id,
-                                                                                 self.changeset_revision )
+        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( self.app,
+                                                                                           self.repository_id,
+                                                                                           self.changeset_revision )
         # Get a dictionary of all repositories upon which the contents of the current
         # repository_metadata record depend.
         toolshed_base_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
@@ -399,9 +400,9 @@ class ImportRepositoryManager( object ):
                 if repository is not None:
                     # Do not allow the repository to be automatically installed if population resulted in errors.
                     tip_changeset_revision = repository.tip( self.app )
-                    repository_metadata = suc.get_repository_metadata_by_changeset_revision( self.app,
-                                                                                             self.app.security.encode_id( repository.id ),
-                                                                                             tip_changeset_revision )
+                    repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( self.app,
+                                                                                                       self.app.security.encode_id( repository.id ),
+                                                                                                       tip_changeset_revision )
                     if repository_metadata:
                         if repository_metadata.downloadable:
                             repository_metadata.downloadable = False
@@ -593,9 +594,9 @@ class ImportRepositoryManager( object ):
                                                                                             repo_path=None,
                                                                                             create=False )
                                             updated_changeset_revision = \
-                                                suc.get_next_downloadable_changeset_revision( defined_repository,
-                                                                                              defined_repo,
-                                                                                              changeset_revision )
+                                                metadata_util.get_next_downloadable_changeset_revision( defined_repository,
+                                                                                                        defined_repo,
+                                                                                                        changeset_revision )
                                             if updated_changeset_revision == rm_changeset_revision and updated_changeset_revision != changeset_revision:
                                                 dependent_downloadable_revisions.append( downloadable_revision )
         return dependent_downloadable_revisions

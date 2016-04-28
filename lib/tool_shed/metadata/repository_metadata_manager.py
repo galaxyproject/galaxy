@@ -356,9 +356,9 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             downloadable = True
         else:
             downloadable = False
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( self.app,
-                                                                                 self.app.security.encode_id( self.repository.id ),
-                                                                                 changeset_revision )
+        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( self.app,
+                                                                                           self.app.security.encode_id( self.repository.id ),
+                                                                                           changeset_revision )
         if repository_metadata:
             repository_metadata.metadata = metadata_dict
             repository_metadata.downloadable = downloadable
@@ -410,7 +410,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         # Compare from most recent to oldest.
         changeset_revisions.reverse()
         for changeset_revision in changeset_revisions:
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( self.app, id, changeset_revision )
+            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( self.app, id, changeset_revision )
             metadata = repository_metadata.metadata
             tools_dicts = metadata.get( 'tools', [] )
             for tool_dict in tools_dicts:
@@ -823,9 +823,9 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         changeset_revisions_that_contain_tools = []
         for changeset in repo.changelog:
             changeset_revision = str( repo.changectx( changeset ) )
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( self.app,
-                                                                                     encoded_repository_id,
-                                                                                     changeset_revision )
+            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( self.app,
+                                                                                               encoded_repository_id,
+                                                                                               changeset_revision )
             if repository_metadata:
                 metadata = repository_metadata.metadata
                 if metadata:
@@ -836,9 +836,9 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         # { 'tool id' : 'parent tool id' } pairs for each tool in each changeset revision.
         for index, changeset_revision in enumerate( changeset_revisions_that_contain_tools ):
             tool_versions_dict = {}
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( self.app,
-                                                                                     encoded_repository_id,
-                                                                                     changeset_revision )
+            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( self.app,
+                                                                                               encoded_repository_id,
+                                                                                               changeset_revision )
             metadata = repository_metadata.metadata
             tool_dicts = metadata[ 'tools' ]
             if index == 0:
@@ -980,7 +980,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                 changeset_revisions = []
                 for changeset in repo.changelog:
                     changeset_revision = str( repo.changectx( changeset ) )
-                    if suc.get_repository_metadata_by_changeset_revision( self.app, encoded_id, changeset_revision ):
+                    if metadata_util.get_repository_metadata_by_changeset_revision( self.app, encoded_id, changeset_revision ):
                         changeset_revisions.append( changeset_revision )
                 self.add_tool_versions( encoded_id, repository_metadata, changeset_revisions )
         elif len( repo ) == 1 and not self.invalid_file_tups:

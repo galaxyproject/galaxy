@@ -612,9 +612,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 return no_update
             # Return the same value for changeset_revision and latest_changeset_revision.
         else:
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
-                                                                                     trans.security.encode_id( repository.id ),
-                                                                                     changeset_revision )
+            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app,
+                                                                                               trans.security.encode_id( repository.id ),
+                                                                                               changeset_revision )
             if repository_metadata:
                 # If changeset_revision is in the repository_metadata table for this repository, there are no
                 # additional updates.
@@ -635,9 +635,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                             latest_changeset_revision = changeset_hash
                             break
                         else:
-                            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
-                                                                                                     trans.security.encode_id( repository.id ),
-                                                                                                     changeset_hash )
+                            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app,
+                                                                                                               trans.security.encode_id( repository.id ),
+                                                                                                               changeset_hash )
                             if repository_metadata:
                                 # We found a RepositoryMetadata record.
                                 update_to_ctx = hg_util.get_changectx_for_changeset( repo, changeset_hash )
@@ -945,7 +945,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 repositories_archive_path, file_name = os.path.split( repositories_archive.name )
                 basic_util.remove_dir( repositories_archive_path )
                 return opened_archive
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
+        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
         metadata = repository_metadata.metadata
         toolshed_base_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
         # Initialize the repository dependency RelationBuilder.
@@ -1216,9 +1216,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         owner = kwd.get( 'owner', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
-                                                                                 trans.security.encode_id( repository.id ),
-                                                                                 changeset_revision )
+        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app,
+                                                                                           trans.security.encode_id( repository.id ),
+                                                                                           changeset_revision )
         has_galaxy_utilities_dict = has_galaxy_utilities( repository_metadata )
         includes_data_managers = has_galaxy_utilities_dict[ 'includes_data_managers' ]
         includes_datatypes = has_galaxy_utilities_dict[ 'includes_datatypes' ]
@@ -1262,9 +1262,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     changeset_hash = str( repo.changectx( changeset ) )
                     hg_util.get_changectx_for_changeset( repo, changeset_hash )
                     if update_to_changeset_hash:
-                        update_to_repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
-                                                                                                           trans.security.encode_id( repository.id ),
-                                                                                                           changeset_hash )
+                        update_to_repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app,
+                                                                                                                     trans.security.encode_id( repository.id ),
+                                                                                                                     changeset_hash )
                         if update_to_repository_metadata:
                             has_galaxy_utilities_dict = has_galaxy_utilities( repository_metadata )
                             includes_data_managers = has_galaxy_utilities_dict[ 'includes_data_managers' ]
@@ -1333,7 +1333,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             repository = suc.get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
             if repository:
                 repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
-                return suc.get_latest_downloadable_changeset_revision( trans.app, repository, repo )
+                return metadata_util.get_latest_downloadable_changeset_revision( trans.app, repository, repo )
         return hg_util.INITIAL_CHANGELOG_HASH
 
     @web.json
@@ -1349,9 +1349,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             repository = suc.get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
             if repository:
                 repository_metadata = \
-                    suc.get_repository_metadata_by_changeset_revision( trans.app,
-                                                                       trans.security.encode_id( repository.id ),
-                                                                       changeset_revision )
+                    metadata_util.get_repository_metadata_by_changeset_revision( trans.app,
+                                                                                 trans.security.encode_id( repository.id ),
+                                                                                 changeset_revision )
                 if repository_metadata:
                     metadata = repository_metadata.metadata
                     if metadata:
@@ -1504,9 +1504,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repository = suc.get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
         encoded_id = trans.app.security.encode_id( repository.id )
         repository_tip = repository.tip( trans.app )
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
-                                                                                 encoded_id,
-                                                                                 repository_tip )
+        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app,
+                                                                                           encoded_id,
+                                                                                           repository_tip )
         return repository_metadata.metadata
 
     @web.expose
@@ -1523,9 +1523,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         tool_version_dicts = []
         for changeset in repo.changelog:
             current_changeset_revision = str( repo.changectx( changeset ) )
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
-                                                                                     trans.security.encode_id( repository.id ),
-                                                                                     current_changeset_revision )
+            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app,
+                                                                                               trans.security.encode_id( repository.id ),
+                                                                                               current_changeset_revision )
             if repository_metadata and repository_metadata.tool_versions:
                 tool_version_dicts.append( repository_metadata.tool_versions )
                 if current_changeset_revision == changeset_revision:
@@ -1544,14 +1544,14 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repository_id = trans.security.encode_id( repository.id )
         repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( trans.user, repository )
         repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
+        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
         if not repository_metadata:
             # The received changeset_revision is no longer associated with metadata, so get the next changeset_revision in the repository
             # changelog that is associated with metadata.
-            changeset_revision = suc.get_next_downloadable_changeset_revision( repository,
-                                                                               repo,
-                                                                               after_changeset_revision=changeset_revision )
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
+            changeset_revision = metadata_util.get_next_downloadable_changeset_revision( repository,
+                                                                                         repo,
+                                                                                         after_changeset_revision=changeset_revision )
+            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
         ctx = hg_util.get_changectx_for_changeset( repo, changeset_revision )
         repo_info_dict = repository_util.create_repo_info_dict( app=trans.app,
                                                                 repository_clone_url=repository_clone_url,
@@ -1939,7 +1939,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         is_malicious = False
         repository_dependencies = None
         if changeset_revision != hg_util.INITIAL_CHANGELOG_HASH:
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, id, changeset_revision )
+            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app, id, changeset_revision )
             if repository_metadata:
                 revision_label = hg_util.get_revision_label( trans.app, repository, changeset_revision, include_date=False )
                 metadata = repository_metadata.metadata
@@ -1950,7 +1950,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 previous_changeset_revision = \
                     metadata_util.get_previous_metadata_changeset_revision( repository, repo, changeset_revision, downloadable=False )
                 if previous_changeset_revision != hg_util.INITIAL_CHANGELOG_HASH:
-                    repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, id, previous_changeset_revision )
+                    repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app, id, previous_changeset_revision )
                     if repository_metadata:
                         revision_label = hg_util.get_revision_label( trans.app, repository, previous_changeset_revision, include_date=False )
                         metadata = repository_metadata.metadata
@@ -2041,7 +2041,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         changeset_revision = kwd.get( 'changeset_revision', repository.tip( trans.app ) )
         metadata = None
         if changeset_revision != hg_util.INITIAL_CHANGELOG_HASH:
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, id, changeset_revision )
+            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app, id, changeset_revision )
             if repository_metadata:
                 metadata = repository_metadata.metadata
             else:
@@ -2054,9 +2054,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                             changeset_revision,
                                                                             downloadable=False )
                 if previous_changeset_revision != hg_util.INITIAL_CHANGELOG_HASH:
-                    repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
-                                                                                             id,
-                                                                                             previous_changeset_revision )
+                    repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app,
+                                                                                                       id,
+                                                                                                       previous_changeset_revision )
                     if repository_metadata:
                         metadata = repository_metadata.metadata
         role = repository.admin_role
@@ -2126,7 +2126,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
         # Get the next installable changeset_revision beyond the received changeset_revision.
-        next_changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
+        next_changeset_revision = metadata_util.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
         if next_changeset_revision and next_changeset_revision != changeset_revision:
             return next_changeset_revision
         return ''
@@ -2145,7 +2145,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         status = kwd.get( 'status', 'done' )
         repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
         changeset_revision = kwd.get( 'changeset_revision', repository.tip( trans.app ) )
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
+        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
         if repository_metadata:
             repository_metadata_id = trans.security.encode_id( repository_metadata.id ),
             metadata = repository_metadata.metadata
@@ -2496,7 +2496,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     def set_malicious( self, trans, id, ctx_str, **kwd ):
         malicious = kwd.get( 'malicious', '' )
         if kwd.get( 'malicious_button', False ):
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, id, ctx_str )
+            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app, id, ctx_str )
             malicious_checked = CheckboxField.is_checked( malicious )
             repository_metadata.malicious = malicious_checked
             trans.sa_session.add( repository_metadata )
@@ -2575,7 +2575,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             if not repository_metadata:
                 # Get updates to the received changeset_revision if any exist.
                 repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
-                upper_bound_changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
+                upper_bound_changeset_revision = metadata_util.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
                 if upper_bound_changeset_revision and upper_bound_changeset_revision != changeset_revision:
                     changeset_revision = upper_bound_changeset_revision
                     repository_metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans.app,
@@ -2612,9 +2612,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         changeset_revision = kwd.get( 'changeset_revision', None )
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         if repository:
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
-                                                                                     trans.security.encode_id( repository.id ),
-                                                                                     changeset_revision )
+            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app,
+                                                                                               trans.security.encode_id( repository.id ),
+                                                                                               changeset_revision )
             repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
             tool_shed_status_dict = {}
             # Handle repository deprecation.
@@ -2623,7 +2623,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             if changeset_revision == repository.tip( trans.app ):
                 tool_shed_status_dict[ 'latest_installable_revision' ] = 'True'
             else:
-                next_installable_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
+                next_installable_revision = metadata_util.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
                 if repository_metadata is None:
                     if next_installable_revision and next_installable_revision != changeset_revision:
                         tool_shed_status_dict[ 'latest_installable_revision' ] = 'True'
@@ -2643,7 +2643,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 else:
                     tool_shed_status_dict[ 'revision_update' ] = 'False'
             # Handle revision upgrades.
-            metadata_revisions = [ revision[ 1 ] for revision in suc.get_metadata_revisions( repository, repo ) ]
+            metadata_revisions = [ revision[ 1 ] for revision in metadata_util.get_metadata_revisions( repository, repo ) ]
             num_metadata_revisions = len( metadata_revisions )
             for index, metadata_revision in enumerate( metadata_revisions ):
                 if index == num_metadata_revisions:
@@ -2673,7 +2673,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         owner = kwd.get( 'owner', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
         if name and owner and changeset_revision:
-            return suc.get_updated_changeset_revisions( trans.app, name, owner, changeset_revision )
+            return metadata_util.get_updated_changeset_revisions( trans.app, name, owner, changeset_revision )
         return ''
 
     @web.expose
@@ -2715,7 +2715,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         changesets = []
         for changeset in repo.changelog:
             ctx = repo.changectx( changeset )
-            if suc.get_repository_metadata_by_changeset_revision( trans.app, id, str( ctx ) ):
+            if metadata_util.get_repository_metadata_by_changeset_revision( trans.app, id, str( ctx ) ):
                 has_metadata = True
             else:
                 has_metadata = False
@@ -2875,7 +2875,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                             add_id_to_name=False,
                                                                                             downloadable=False )
         revision_label = hg_util.get_revision_label( trans.app, repository, changeset_revision, include_date=False )
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, id, changeset_revision )
+        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app, id, changeset_revision )
         if repository_metadata:
             metadata = repository_metadata.metadata
             # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
@@ -2937,7 +2937,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         guid = None
         original_tool_data_path = trans.app.config.tool_data_path
         revision_label = hg_util.get_revision_label( trans.app, repository, changeset_revision, include_date=False )
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
+        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
         if repository_metadata:
             repository_metadata_id = trans.security.encode_id( repository_metadata.id )
             metadata = repository_metadata.metadata

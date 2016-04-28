@@ -12,6 +12,7 @@ from galaxy.webapps.tool_shed.model import directory_hash_id
 from tool_shed.dependencies.repository import relation_builder
 from tool_shed.util import common_util
 from tool_shed.util import hg_util
+from tool_shed.util import metadata_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util.web_util import escape
 
@@ -87,7 +88,7 @@ def create_repo_info_dict( app, repository_clone_url, changeset_revision, ctx_re
     repository = suc.get_repository_by_name_and_owner( app, repository_name, repository_owner )
     if app.name == 'tool_shed':
         # We're in the tool shed.
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( app,
+        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( app,
                                                                                  app.security.encode_id( repository.id ),
                                                                                  changeset_revision )
         if repository_metadata:
@@ -290,19 +291,19 @@ def get_repo_info_dict( app, user, repository_id, changeset_revision ):
     repository = suc.get_repository_in_tool_shed( app, repository_id )
     repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
     repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( user, repository )
-    repository_metadata = suc.get_repository_metadata_by_changeset_revision( app,
-                                                                             repository_id,
-                                                                             changeset_revision )
+    repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( app,
+                                                                                       repository_id,
+                                                                                       changeset_revision )
     if not repository_metadata:
         # The received changeset_revision is no longer installable, so get the next changeset_revision
         # in the repository's changelog.  This generally occurs only with repositories of type
         # repository_suite_definition or tool_dependency_definition.
         next_downloadable_changeset_revision = \
-            suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
+            metadata_util.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
         if next_downloadable_changeset_revision and next_downloadable_changeset_revision != changeset_revision:
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( app,
-                                                                                     repository_id,
-                                                                                     next_downloadable_changeset_revision )
+            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( app,
+                                                                                               repository_id,
+                                                                                               next_downloadable_changeset_revision )
     if repository_metadata:
         # For now, we'll always assume that we'll get repository_metadata, but if we discover our assumption
         # is not valid we'll have to enhance the callers to handle repository_metadata values of None in the

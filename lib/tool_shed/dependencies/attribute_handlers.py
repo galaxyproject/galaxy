@@ -9,6 +9,7 @@ from tool_shed.dependencies.tool import tag_attribute_handler
 from tool_shed.repository_types.util import REPOSITORY_DEPENDENCY_DEFINITION_FILENAME
 from tool_shed.repository_types.util import TOOL_DEPENDENCY_DEFINITION_FILENAME
 from tool_shed.util import hg_util
+from tool_shed.util import metadata_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import xml_util
 log = logging.getLogger( __name__ )
@@ -113,7 +114,7 @@ class RepositoryDependencyAttributeHandler( object ):
                                                         repo_path=None,
                                                         create=False )
                 lastest_installable_changeset_revision = \
-                    suc.get_latest_downloadable_changeset_revision( self.app, repository, repo )
+                    metadata_util.get_latest_downloadable_changeset_revision( self.app, repository, repo )
                 if lastest_installable_changeset_revision != hg_util.INITIAL_CHANGELOG_HASH:
                     elem.attrib[ 'changeset_revision' ] = lastest_installable_changeset_revision
                     altered = True

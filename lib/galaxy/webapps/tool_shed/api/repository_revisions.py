@@ -137,7 +137,7 @@ class RepositoryRevisionsController( BaseAPIController ):
                     continue
                 repository_dependency_id = trans.security.encode_id( repository_dependency.id )
                 repository_dependency_repository_metadata = \
-                    suc.get_repository_metadata_by_changeset_revision( trans.app, repository_dependency_id, changeset_revision )
+                    metadata_util.get_repository_metadata_by_changeset_revision( trans.app, repository_dependency_id, changeset_revision )
                 if repository_dependency_repository_metadata is None:
                     # The changeset_revision column in the repository_metadata table has been updated with a new
                     # value value, so find the changeset_revision to which we need to update.
@@ -145,14 +145,14 @@ class RepositoryRevisionsController( BaseAPIController ):
                                                             repository=repository_dependency,
                                                             repo_path=None,
                                                             create=False )
-                    new_changeset_revision = suc.get_next_downloadable_changeset_revision( repository_dependency,
-                                                                                           repo,
-                                                                                           changeset_revision )
+                    new_changeset_revision = metadata_util.get_next_downloadable_changeset_revision( repository_dependency,
+                                                                                                     repo,
+                                                                                                     changeset_revision )
                     if new_changeset_revision != changeset_revision:
                         repository_dependency_repository_metadata = \
-                            suc.get_repository_metadata_by_changeset_revision( trans.app,
-                                                                               repository_dependency_id,
-                                                                               new_changeset_revision )
+                            metadata_util.get_repository_metadata_by_changeset_revision( trans.app,
+                                                                                         repository_dependency_id,
+                                                                                         new_changeset_revision )
                         changeset_revision = new_changeset_revision
                     else:
                         decoded_repository_dependency_id = trans.security.decode_id( repository_dependency_id )

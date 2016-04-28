@@ -12,6 +12,7 @@ from galaxy.web.form_builder import CheckboxField
 from galaxy.webapps.tool_shed.util import ratings_util
 from tool_shed.util import hg_util
 from tool_shed.util import review_util
+from tool_shed.util import metadata_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util.container_util import STRSEP
 from tool_shed.util.web_util import escape
@@ -156,7 +157,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
                                                                           **kwd ) )
                     # A review can be initially performed only on an installable revision of a repository, so make sure we have metadata associated
                     # with the received changeset_revision.
-                    repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
+                    repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
                     if repository_metadata:
                         metadata = repository_metadata.metadata
                         if metadata:
@@ -489,7 +490,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
                                                                                          changeset_revision )
                         # Determine if the current user can add a review to this revision.
                         can_add_review = trans.user not in [ repository_review.user for repository_review in repository_reviews ]
-                        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
+                        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
                         if repository_metadata:
                             repository_metadata_reviews = util.listify( repository_metadata.reviews )
                         else:

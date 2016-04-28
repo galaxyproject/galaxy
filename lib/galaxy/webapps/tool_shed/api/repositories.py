@@ -201,17 +201,17 @@ class RepositoriesController( BaseAPIController ):
                                                     action='show',
                                                     id=encoded_repository_id )
             # Get the repository_metadata information.
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( self.app,
-                                                                                     encoded_repository_id,
-                                                                                     changeset_revision )
+            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( self.app,
+                                                                                               encoded_repository_id,
+                                                                                               changeset_revision )
             if repository_metadata is None:
                 # The changeset_revision column in the repository_metadata table has been updated with a new
                 # value value, so find the changeset_revision to which we need to update.
                 repo = hg_util.get_repo_for_repository( self.app, repository=repository, repo_path=None, create=False )
-                new_changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
-                repository_metadata = suc.get_repository_metadata_by_changeset_revision( self.app,
-                                                                                         encoded_repository_id,
-                                                                                         new_changeset_revision )
+                new_changeset_revision = metadata_util.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
+                repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( self.app,
+                                                                                                   encoded_repository_id,
+                                                                                                   new_changeset_revision )
                 changeset_revision = new_changeset_revision
             if repository_metadata is not None:
                 encoded_repository_metadata_id = trans.security.encode_id( repository_metadata.id )
@@ -720,9 +720,9 @@ class RepositoriesController( BaseAPIController ):
 
     @expose_api_anonymous_and_sessionless
     def show_tools( self, trans, id, changeset, **kwd ):
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( self.app,
-                                                                                 id,
-                                                                                 changeset )
+        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( self.app,
+                                                                                           id,
+                                                                                           changeset )
         if repository_metadata is not None:
             encoded_repository_metadata_id = trans.security.encode_id( repository_metadata.id )
             repository_metadata_dict = repository_metadata.to_dict( view='collection',
@@ -772,7 +772,7 @@ class RepositoriesController( BaseAPIController ):
         all_metadata = {}
         repository = suc.get_repository_in_tool_shed( self.app, id )
         for changeset, changehash in repository.installable_revisions( self.app ):
-            metadata = suc.get_current_repository_metadata_for_changeset_revision( self.app, repository, changehash )
+            metadata = metadata_util.get_current_repository_metadata_for_changeset_revision( self.app, repository, changehash )
             if metadata is None:
                 continue
             metadata_dict = metadata.to_dict( value_mapper={ 'id': self.app.security.encode_id, 'repository_id': self.app.security.encode_id } )

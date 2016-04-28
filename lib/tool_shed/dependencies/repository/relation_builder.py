@@ -80,10 +80,10 @@ class RelationBuilder( object ):
             current_changeset_revision = str( self.repository_metadata.changeset_revision )
             # Get the changeset revision to which the current value of required_repository_changeset_revision
             # should be updated if it's not current.
-            text = suc.get_updated_changeset_revisions( self.app,
-                                                        name=str( self.repository.name ),
-                                                        owner=str( self.repository.user.username ),
-                                                        changeset_revision=current_changeset_revision )
+            text = metadata_util.get_updated_changeset_revisions( self.app,
+                                                                  name=str( self.repository.name ),
+                                                                  owner=str( self.repository.user.username ),
+                                                                  changeset_revision=current_changeset_revision )
             if text:
                 valid_changeset_revisions = listify( text )
                 if current_changeset_revision not in valid_changeset_revisions:
@@ -196,7 +196,7 @@ class RelationBuilder( object ):
                     else:
                         # The repository changeset_revision is no longer installable, so see if there's been an update.
                         repo = hg_util.get_repo_for_repository( self.app, repository=repository, repo_path=None, create=False )
-                        changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, rd_changeset_revision )
+                        changeset_revision = metadata_util.get_next_downloadable_changeset_revision( repository, repo, rd_changeset_revision )
                         if changeset_revision != rd_changeset_revision:
                             repository_metadata = \
                                 metadata_util.get_repository_metadata_by_repository_id_changeset_revision( self.app,
