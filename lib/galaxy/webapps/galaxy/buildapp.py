@@ -779,8 +779,8 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         from galaxy.web.framework.middleware.statsd import StatsdMiddleware
         app = StatsdMiddleware( app,
                                 statsd_host,
-                                conf.get('statsd_port'),
-                                conf.get('statsd_prefix') )
+                                conf.get('statsd_port', 8125),
+                                conf.get('statsd_prefix', 'galaxy') )
         log.debug( "Enabling 'statsd' middleware" )
 
     # X-Forwarded-Host handling
