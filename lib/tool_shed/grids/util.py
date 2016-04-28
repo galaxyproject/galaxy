@@ -1,7 +1,7 @@
 import logging
 
 from galaxy.web.form_builder import SelectField
-from tool_shed.util import hg_util, metadata_util, shed_util_common as suc
+from tool_shed.util import hg_util, metadata_util
 
 log = logging.getLogger( __name__ )
 

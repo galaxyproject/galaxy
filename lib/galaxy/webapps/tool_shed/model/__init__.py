@@ -11,7 +11,6 @@ from galaxy.util.dictifiable import Dictifiable
 import tool_shed.repository_types.util as rt_util
 from tool_shed.dependencies.repository import relation_builder
 from tool_shed.util import metadata_util
-from tool_shed.util import shed_util_common as suc
 
 from mercurial import hg
 from mercurial import ui

@@ -348,6 +348,22 @@ def get_repository_admin_role_name( repository_name, repository_owner ):
     return '%s_%s_admin' % ( str( repository_name ), str( repository_owner ) )
 
 
+def get_repositories_by_category( app, category_id ):
+    sa_session = app.model.context.current
+    resultset = sa_session.query( app.model.Category ).get( category_id )
+    repositories = []
+    default_value_mapper = { 'id': app.security.encode_id, 'user_id': app.security.encode_id }
+    for row in resultset.repositories:
+        repository_dict = row.repository.to_dict( value_mapper=default_value_mapper )
+        repository_dict[ 'metadata' ] = {}
+        for changeset, changehash in row.repository.installable_revisions( app ):
+            encoded_id = app.security.encode_id( row.repository.id )
+            metadata = metadata_util.get_repository_metadata_by_changeset_revision( app, encoded_id, changehash )
+            repository_dict[ 'metadata' ][ '%s:%s' % ( changeset, changehash ) ] = metadata.to_dict( value_mapper=default_value_mapper )
+        repositories.append( repository_dict )
+    return repositories
+
+
 def get_role_by_id( app, role_id ):
     """Get a Role from the database by id."""
     sa_session = app.model.context.current
