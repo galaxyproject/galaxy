@@ -20,6 +20,8 @@ from .cwltool_deps import (
     workflow,
 )
 
+from .schema import schema_loader
+
 log = logging.getLogger(__name__)
 
 JOB_JSON_FILE = ".cwl_job.json"
@@ -68,8 +70,7 @@ def load_job_proxy(job_directory):
 def to_cwl_tool_object(tool_path):
     proxy_class = None
     cwl_tool = None
-    make_tool = workflow.defaultMakeTool
-    cwl_tool = main.load_tool(tool_path, False, False, make_tool, False)
+    cwl_tool = schema_loader.tool(path=tool_path)
     if isinstance(cwl_tool, int):
         raise Exception("Failed to load tool.")
 
@@ -230,6 +231,7 @@ class JobProxy(object):
     def is_command_line_job(self):
         self._ensure_cwl_job_initialized()
         assert self._is_command_line_job is not None
+        return self._is_command_line_job
 
     def _ensure_cwl_job_initialized(self):
         if self._cwl_job is None:

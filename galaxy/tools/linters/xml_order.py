@@ -1,3 +1,8 @@
+"""This module contains a linting functions for tool XML block order.
+
+For more information on the IUC standard for XML block order see -
+https://github.com/galaxy-iuc/standards.
+"""
 # https://github.com/galaxy-iuc/standards
 # https://github.com/galaxy-iuc/standards/pull/7/files
 TAG_ORDER = [
@@ -9,6 +14,7 @@ TAG_ORDER = [
     'stdio',
     'version_command',
     'command',
+    'environment_variables',
     'configfiles',
     'inputs',
     'outputs',
