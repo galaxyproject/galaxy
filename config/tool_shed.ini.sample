@@ -54,7 +54,7 @@ new_file_path = database/tmp
 # - $locale (complete format string for the server locale),
 # - $iso8601 (complete format string as specified by ISO 8601 international
 #   standard).
-# pretty_datetime_format = $locale (UTC)
+#pretty_datetime_format = $locale (UTC)
 
 # Session support (beaker)
 use_beaker_session = True
@@ -118,17 +118,22 @@ id_secret = changethisinproductiontoo
 #remote_user_secret = changethisinproductiontoo
 
 # Configuration for debugging middleware
-debug = true
-use_lint = false
+#debug = False
+
+# Check for WSGI compliance.
+#use_lint = False
+
+# Intercept print statements and show them on the returned page.
+#use_printdebug = True
 
 # NEVER enable this on a public site (even test or QA)
-# use_interactive = true
+#use_interactive = true
 
 # this should be a comma-separated list of valid Galaxy users
 #admin_users = user1@example.org,user2@example.org
 
 # Force everyone to log in (disable anonymous access)
-require_login = False
+#require_login = False
 
 # For use by email messages sent from the tool shed
 #smtp_server = smtp.your_tool_shed_server
@@ -141,11 +146,13 @@ require_login = False
 #smtp_password = None
 
 # If your SMTP server requires SSL from the beginning of the connection
-# smtp_ssl = False
-
+#smtp_ssl = False
 
 # The URL linked by the "Support" link in the "Help" menu.
 #support_url = https://wiki.galaxyproject.org/Support
+
+# Address to join mailing list
+#mailing_join_addr = galaxy-announce-join@bx.psu.edu
 
 # Write thread status periodically to 'heartbeat.log' (careful, uses disk
 #  space rapidly!)
@@ -156,9 +163,6 @@ require_login = False
 
 # Enable creation of Galaxy flavor Docker Image
 #enable_galaxy_flavor_docker_image = False
-
-# Use the new iframe / javascript based layout
-use_new_layout = true
 
 # Show a message box under the masthead.
 #message_box_visible = False
