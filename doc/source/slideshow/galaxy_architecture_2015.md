@@ -90,35 +90,35 @@ github.com/galaxyproject/**bioblend**
 
 ---
 
-
-
----
-
-
+## 2. Galaxy app architecture
 
 ---
 
-
-
----
-
-
+<!-- Image to fetch and add -->
 
 ---
 
-
-
----
-
-
+<!-- Image to fetch and add -->
 
 ---
 
-
+<!-- Image to fetch and add -->
 
 ---
 
+<!-- Image to fetch and add -->
 
+---
+
+<!-- Image to fetch and add -->
+
+---
+
+<!-- Image to fetch and add -->
+
+---
+
+## 3. Galaxy components and object model
 
 ---
 
