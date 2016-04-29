@@ -832,6 +832,8 @@ use_interactive = True
 # tool_name_boost = 9
 # tool_section_boost = 3
 # tool_description_boost = 2
+# tool_label_boost = 1
+# tool_stub_boost = 5
 # tool_help_boost = 0.5
 
 # Limits the number of results in toolbox search.  Can be used to tweak how many
@@ -1030,13 +1032,13 @@ use_interactive = True
 # users in the help text.
 #ftp_upload_site = None
 
-# User attribute to use as subdirectory in calculating default ftp_upload_dir 
+# User attribute to use as subdirectory in calculating default ftp_upload_dir
 # pattern. By default this will be email so a user's FTP upload directory will be
 # ${ftp_upload_dir}/${user.email}. Can set this to other attributes such as id or
 # username though.
 #ftp_upload_dir_identifier = email
 
-# Python string template used to determine an FTP upload directory for a 
+# Python string template used to determine an FTP upload directory for a
 # particular user.
 #ftp_upload_dir_template = ${ftp_upload_dir}/${ftp_upload_dir_identifier}
 
