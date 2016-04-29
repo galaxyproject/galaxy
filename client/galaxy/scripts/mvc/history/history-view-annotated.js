@@ -89,6 +89,11 @@ var AnnotatedHistoryView = _super.extend(/** @lends AnnotatedHistoryView.prototy
         }
     }),
 
+    _clickSectionLink : function( ev ){
+        var sectionNumber = $( ev.currentTarget ).parent().parent().data( 'section' );
+        this.openSection( sectionNumber );
+    },
+
     // ........................................................................ misc
     /** Return a string rep of the history */
     toString    : function(){
@@ -113,9 +118,12 @@ AnnotatedHistoryView.prototype.templates = (function(){
             '<tbody class="list-items-section current-section" data-section="<%- section.number %>"></tbody>',
         '<% } else { %>',
             '<tbody class="list-items-section" data-section="<%- section.number %>">',
-                '<tr><td><a class="list-items-section-link" href="javascript:void(0)">',
-                    '<%- section.first %>  ', _l( "to" ), ' <%- section.last %>',
-                '</a></td></tr>',
+                // HACK: the repeat of data-section allows the same
+                '<tr data-section="<%- section.number %>">',
+                    '<td><a class="list-items-section-link" href="javascript:void(0)">',
+                        '<%- section.first %>  ', _l( "to" ), ' <%- section.last %>',
+                    '</a></td>',
+                '</tr>',
             '</tbody>',
         '<% } %>',
     ], 'section' );

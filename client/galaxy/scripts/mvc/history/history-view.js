@@ -494,11 +494,13 @@ var HistoryView = _super.extend(
         'click .show-selectors-btn'         : 'toggleSelectors',
         // allow (error) messages to be clicked away
         'click .messages [class$=message]'  : 'clearMessages',
-        'click .list-items-section-link' : function( ev ){
-            var sectionNumber = $( ev.currentTarget ).parents( '[data-section]' ).data( 'section' );
-            this.openSection( sectionNumber );
-        }
+        'click .list-items-section-link'    : '_clickSectionLink',
     }),
+
+    _clickSectionLink : function( ev ){
+        var sectionNumber = $( ev.currentTarget ).parent().data( 'section' );
+        this.openSection( sectionNumber );
+    },
 
     /** loads a section and re-renders items */
     openSection : function( section ){

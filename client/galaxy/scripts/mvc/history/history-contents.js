@@ -652,6 +652,18 @@ silent: true,
         return self.fetchSection( section, options )
             .always( function(){ self.trigger( 'fetching-deleted-done', self ); });
     },
+
+    fetchHiddenInSection : function( section, options ){
+        options = options || {};
+        var self = this;
+        options.filters = _.extend( options.filters, {
+            visible : false
+        });
+        options.bypassCache = true;
+        self.trigger( 'fetching-deleted', self );
+        return self.fetchSection( section, options )
+            .always( function(){ self.trigger( 'fetching-deleted-done', self ); });
+    },
 });
 
 
