@@ -156,14 +156,8 @@ var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
         view.$details().replaceWith( $newDetails );
         // needs to be set after the above or the slide will not show
         view.expanded = true;
-        view.$details().slideDown({
-            duration : view.fxSpeed,
-            step: function(){
-                view.trigger( 'expanding', view );
-            },
-            complete: function(){
-                view.trigger( 'expanded', view );
-            }
+        view.$details().slideDown( view.fxSpeed, function(){
+            view.trigger( 'expanded', view );
         });
     },
 

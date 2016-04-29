@@ -175,5 +175,11 @@ window.app = function app( options, bootstrapped ){
             root        : Galaxy.root,
             pushState   : true,
         });
+
+        window.HDA = require( 'mvc/history/hda-model' ).HistoryDatasetAssociation;
+        window.h = analysisPage.right.historyView;
+        window.c = h.model.contents;
+        window.sect = function(s){ return c.fetchSection( s ).done( function(){ console.log( c._sectionCollection( s ).map( function( m ){ return m.get( 'hid' ); }).join( ' ' ) ); }) }
+        window.hid = function(i){ return c.at(i).get( 'hid' ); };
     });
 };

@@ -49,6 +49,7 @@ var History = Backbone.Model
         this.log( this + ".initialize:", historyJSON, contentsJSON, options );
 
         /** HistoryContents collection of the HDAs contained in this history. */
+        console.log( this + ', init\'ing contents:' );
         this.contents = new HISTORY_CONTENTS.HistoryContents( contentsJSON || [], {
             history     : this,
             historyId   : this.get( 'id' ),
@@ -151,8 +152,9 @@ var History = Backbone.Model
     },
 
     // ........................................................................ updates
-    _getSizeAndRunning : function(){
-        return this.fetch({ data : $.param({ keys : 'size,non_ready_jobs' }) });
+    _fetchContentRelatedAttributes : function(){
+        var contentRelatedAttrs = [ 'size', 'non_ready_jobs', 'contents_active', 'hid_counter' ];
+        return this.fetch({ data : $.param({ keys : contentRelatedAttrs.join( ',' ) }) });
     },
 
     /** check for any changes since the last time we updated (or fetch all if ) */
@@ -197,7 +199,7 @@ var History = Backbone.Model
             // no datasets are running, but currently runnning jobs may still produce new datasets
             // see if the history has any running jobs and continue to update if so
             // (also update the size for the user in either case)
-            self._getSizeAndRunning()
+            self._fetchContentRelatedAttributes()
                 .done( function( historyData ){
                     // console.log( 'non_ready_jobs:', historyData.non_ready_jobs );
                     if( self.numOfUnfinishedJobs() > 0 ){

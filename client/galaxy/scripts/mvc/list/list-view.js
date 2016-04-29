@@ -145,7 +145,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         // debugging
         if( this.logger ){
             this.on( 'all', function( event ){
-                this.log( this + '', arguments );
+                this.log( this + '', event, arguments );
             });
         }
 
@@ -157,6 +157,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
     /** create and return a collection for when none is initially passed */
     _createDefaultCollection : function(){
         // override
+        console.log( '(_createDefaultCollection)' );
         return new this.collectionClass([]);
     },
 
@@ -180,7 +181,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         // debugging
         if( this.logger ){
             this.listenTo( this.collection, 'all', function( event ){
-                this.info( this + '(collection)', arguments );
+                this.info( this + '(collection)', event, arguments );
             });
         }
         return this;
@@ -380,11 +381,8 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         if( panel.views.length ){
             panel._attachItems( $whereTo );
             // console.log( 'items attached' );
-            panel.$emptyMessage( $whereTo ).hide();
-
-        } else {
-            panel._renderEmptyMessage( $whereTo ).show();
         }
+        panel._renderEmptyMessage( $whereTo ).toggle( !panel.views.length );
         panel.trigger( 'views:ready', panel.views );
 
         // console.log( '------------------------------------------- rendering items' );
@@ -504,9 +502,17 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
     },
 
     // ------------------------------------------------------------------------ collection/views syncing
+    _resortViews : function( models ){
+        var self = this;
+        var viewMap = _.indexBy( self.views, function( v ){ return v.model.id; });
+        return models.map( function( m ){
+            return viewMap[ m.id ] || self._createItemView( m );
+        });
+    },
+
     /** Add a view (if the model should be viewable) to the panel */
     addItemView : function( model, collection, options ){
-        // console.log( this + '.addItemView:', model );
+        console.log( this + '.addItemView:', model );
         var panel = this;
         // get the index of the model in the list of filtered models shown by this list
         // in order to insert the view in the proper place
@@ -542,7 +548,6 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         // use the modelIndex to splice into views and insert at the proper index in the DOM
         panel.views.splice( modelIndex, 0, view );
         panel._insertIntoListAt( modelIndex, panel._renderItemView$el( view ).hide() );
-
 
         panel.trigger( 'view:attached', view );
         if( useFx ){
@@ -787,6 +792,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
 
     /** return a collection of the models of all currenly selected items */
     getSelectedModels : function(){
+        console.log( '(getSelectedModels)' );
         return new this.collection.constructor( _.map( this.getSelectedViews(), function( view ){
             return view.model;
         }));
@@ -955,9 +961,10 @@ var ModelListPanel = ListPanel.extend({
             // free the collection, and assign the new collection to either
             //  the model[ modelCollectionKey ], attributes.collection, or an empty vanilla collection
             this.collection.off();
-            this.collection = ( this.model[ this.modelCollectionKey ] )?
-                this.model[ this.modelCollectionKey ]:
-                ( attributes.collection || this._createDefaultCollection() );
+            // console.log( this + '(ModelListPanel) creating collection:', this.modelCollectionKey, this.model[ this.modelCollectionKey ] );
+            this.collection = this.model[ this.modelCollectionKey ]
+                || attributes.collection
+                || this._createDefaultCollection();
             this._setUpCollectionListeners();
 
             if( oldModelId && model.get( 'id' ) !== oldModelId  ){
@@ -991,13 +998,20 @@ var ModelListPanel = ListPanel.extend({
             args.unshift( 'error' );
             this.trigger.apply( this, args );
         }, this );
+
+        // debugging
+        if( this.logger ){
+            this.listenTo( this.model, 'all', function( event ){
+                this.info( this + '(model)', event, arguments );
+            });
+        }
         return this;
     },
 
     /** Build a temp div containing the new children for the view's $el.
      */
     _renderControls : function( $newRender ){
-        this.debug( this + '(ListPanel)._renderControls' );
+        this.debug( this + '(ModelListPanel)._renderControls' );
         var json = this.model? this.model.toJSON() : {},
             $controls = $( this.templates.controls( json, this ) );
         $newRender.find( '.controls' ).replaceWith( $controls );

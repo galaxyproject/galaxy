@@ -57,6 +57,8 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     /** Set up */
     initialize : function( models, options ){
         options = options || {};
+        _super.prototype.initialize.call( this, models, options );
+
         this.history = options.history || null;
         this.historyId = options.historyId || null;
 
@@ -70,7 +72,8 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         /** @type {Boolean} does this collection contain and fetch non-visible elements */
         this.includeHidden = options.includeHidden || false;
 
-        return _super.prototype.initialize.call( this, models, options );
+        // console.log( '----------------------------------------------------------' );
+        this.on( 'all', console.log, console );
     },
 
     /** root api url */
@@ -96,6 +99,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
      */
     running : function(){
         function filterFn( c ){ return !c.inReadyState(); }
+        // console.log( '(running)' );
         return new HistoryContents( this.filter( filterFn ) );
     },
 
@@ -116,18 +120,21 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     /** return a new contents collection of only hidden items */
     hidden : function(){
         function filterFn( c ){ return c.hidden(); }
+        // console.log( '(hidden)' );
         return new HistoryContents( this.filter( filterFn ) );
     },
 
     /** return a new contents collection of only hidden items */
     deleted : function(){
         function filterFn( c ){ return c.get( 'deleted' ); }
+        // console.log( '(deleted)' );
         return new HistoryContents( this.filter( filterFn ) );
     },
 
     /** return a new contents collection of only hidden items */
     visibleAndUndeleted : function(){
         function filterFn( c ){ return c.get( 'visible' ) && !c.get( 'deleted' ); }
+        // console.log( '(visibleAndUndeleted)' );
         return new HistoryContents( this.filter( filterFn ) );
     },
 
@@ -189,11 +196,11 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return _.defaults( superFilters, filters );
     },
 
-
     /** override to filter requested contents to those updated after the Date 'since' */
     fetchUpdated : function( since, options ){
         if( since ){
             options = options || { filters: {} };
+            options.remove = false;
             options.filters = {
                 'update_time-ge' : since.toISOString(),
                 // workflows will produce hidden datasets (non-output datasets) that still
@@ -406,9 +413,9 @@ var HidSectionedHistoryContents = HistoryContents.extend({
 
     /** Set up */
     initialize : function( models, options ){
-        console.log( 'this.history:', this.history );
         HistoryContents.prototype.initialize.call( this, models, options );
-        this.currentSection = null;
+        // this.currentSection = null;
+        this.currentSection = 0;
         this.sectionsFetched = [];
     },
 
@@ -432,6 +439,7 @@ var HidSectionedHistoryContents = HistoryContents.extend({
         if( this.order === 'hid' ){
             sectionNumbers.reverse();
         }
+        // console.log( '_mapSectionRanges:', sectionCount, sectionNumbers );
         return sectionNumbers.map( function( sectionNumber ){
             return mapFn( _.extend( self._getSectionRange( sectionNumber ), {
                 number: sectionNumber,
@@ -441,26 +449,144 @@ var HidSectionedHistoryContents = HistoryContents.extend({
 
     /**  */
     _countSections : function(){
-        return Math.floor( this._getLastHid() / this.hidsPerSection );
+        // always have at least one section
+        return Math.max( 1, Math.floor( this._getLastHid() / this.hidsPerSection ) );
+    },
+
+    _lastSection : function(){
+        return Math.max( 0, this._countSections() - 1 );
     },
 
     /**  */
     _lastFullSection : function(){
+        // console.log( '_lastFullSection:' );
         var count = this._countSections();
-        var hasNonFullSection = ( this._getLastHid() % this.hidsPerSection > 0 );
+        console.log( '_lastFullSection, count:', count );
+        console.log( '_lastFullSection, hid:', this._getLastHid(), this.hidsPerSection, ( this._getLastHid() % this.hidsPerSection ) );
+        var hasNonFullSection = ( this._getLastHid() % this.hidsPerSection ) > 0;
+        console.log( '_lastFullSection, hasNonFullSection:', hasNonFullSection );
+        console.log( '_lastFullSection:', hasNonFullSection? ( count - 1 ) : count );
         return hasNonFullSection? ( count - 1 ) : count;
     },
 
     /**  */
     _getSectionRange : function( sectionNumber ){
+        // note: ranges are both first and last inclusive
         var lastHid = this._getLastHid();
         var hidsPerSection = this.hidsPerSection;
         var first = sectionNumber * hidsPerSection;
-        var last  = sectionNumber === this._lastFullSection()? lastHid : ( first + hidsPerSection - 1 );
+        var last  = sectionNumber === this._lastSection()? lastHid : ( first + hidsPerSection - 1 );
         return {
             first : first,
             last  : last
         };
+    },
+
+    /** Filter the collection to only those models that should be currently viewed */
+    _filterSectionCollection : function( section, filterFn ){
+//         // preconditon: assumes collection *has loaded* the range and is sorted
+//         var self = this;
+//         var range = self._getSectionRange( section );
+//         // console.log( 'range:', range );
+//         // console.log( 'length:', this.length );
+
+//         var subcollection = [];
+//         var descending = this.order === 'hid';
+//         // console.log( 'descending:', descending );
+//         for( var index = 0; index < this.length; index++ ){
+//             var content = this.at( index );
+//             var hid = content.get( 'hid' );
+//             // console.log( index, stop, hid, filterFn( content ), content );
+
+// // TODO: binary search skip to, then bail when done (should be sorted already)
+//             if( descending ){
+//                 if( hid > range.last  ){ continue; }
+//                 if( hid < range.first ){ break; }
+//             } else {
+//                 if( hid < range.first ){ continue; }
+//                 if( hid > range.last  ){ break; }
+//             }
+//             if( hid >= range.first && hid <= range.last && filterFn( content ) ){ subcollection.push( content ); }
+//         }
+//         // console.log( 'subcollection.length:', subcollection.length );
+//         return subcollection;
+
+        return this._sectionCollection( section ).filter( filterFn );
+    },
+
+    /**  */
+    _sectionCollection : function( section ){
+        // preconditon: assumes collection *has loaded* the range and is sorted
+        var self = this;
+        var range = self._getSectionRange( section );
+        // console.log( 'range:', range );
+        var descending = this.order === 'hid';
+        // console.log( 'descending:', descending );
+
+        var subcollection = [];
+        var startingIndex = self._indexOfHid( descending? range.last : range.first );
+        // console.log( 'startingIndex:', startingIndex );
+        for( var index = startingIndex; index < this.length; index++ ){
+            var content = this.at( index );
+            var hid = content.get( 'hid' );
+
+            if( descending ){
+                if( hid < range.first ){ console.log( '< first' ); break; }
+            } else {
+                if( hid > range.last  ){ console.log( '> last' ); break; }
+            }
+            subcollection.push( content );
+        }
+        return subcollection;
+    },
+
+    _indexOfHid : function( hid ){
+        return this._indexOfHidInModelArray( hid, this.models, { descending: this.order === 'hid' });
+    },
+
+    _indexOfHidInModelArray : function( hid, modelArray, options ){
+        var descending = _.result( options, 'descending', true );
+        function test( index ){
+            var otherHid = modelArray[ index ].get( 'hid' );
+            return descending? ( otherHid > hid ):( otherHid < hid );
+        }
+        return this._binarySearch({
+            low     : 0,
+            high    : modelArray.length,
+            testFn  : test
+        });
+    },
+
+    _binarySearch : function( options ){
+        // preconditon: assumes collection is sorted
+        var low = options.low, high = options.high;
+        while( low < high ){
+            var mid = Math.floor( ( low + high ) / 2 );
+            if( options.testFn( mid ) ){
+                low = mid + 1;
+            } else {
+                high = mid;
+            }
+        }
+        return low;
+    },
+
+    /**  */
+    _indexOfHidInSection : function( hid, section ){
+        // preconditon: assumes section has been loaded and that collection is sorted
+        var self = this;
+        var range = self._getSectionRange( section );
+        var lastSection = section === self._lastSection();
+        var descending = this.order === 'hid';
+        console.log( '_indexOfHidInSection:', hid, section, range, lastSection, descending );
+        var pastEndOfClosedSection = !lastSection && hid > range.last;
+        if( pastEndOfClosedSection || hid < range.first ){ return null; }
+        return self._indexOfHid( hid );
+    },
+
+    /**  */
+    _getCurrentSectionRange : function(){
+        return this._getSectionRange( this.currentSection );
     },
 
     /**  */
@@ -468,63 +594,63 @@ var HidSectionedHistoryContents = HistoryContents.extend({
         return this._filterSectionCollection( this.currentSection, filterFn );
     },
 
-
-    /** Filter the collection to only those models that should be currently viewed */
-    _filterSectionCollection : function( section, filterFn ){
-        // preconditon: assumes collection *has loaded* the range and is sorted
-        var self = this;
-        var range = self._getSectionRange( section );
-        // console.log( 'range:', range );
-        // console.log( 'length:', this.length );
-
-        var subcollection = [];
-        var descending = this.order === 'hid';
-        // console.log( 'descending:', descending );
-        for( var index = 0; index < this.length; index++ ){
-            var content = this.at( index );
-            var hid = content.get( 'hid' );
-            // console.log( index, stop, hid, filterFn( content ), content );
-
-// TODO: binary search skip to, then bail when done (should be sorted already)
-            if( descending ){
-                if( hid > range.last  ){ continue; }
-                if( hid < range.first ){ break; }
-            } else {
-                if( hid < range.first ){ continue; }
-                if( hid > range.last  ){ break; }
-            }
-            if( hid >= range.first && hid <= range.last && filterFn( content ) ){ subcollection.push( content ); }
-        }
-        // console.log( 'subcollection.length:', subcollection.length );
-        return subcollection;
-    },
-
     // ------------------------------------------------------------------------ sectioned fetching
     /** @type {Integer} number of contents/hid entries per section/page displayed */
-    hidsPerSection : 500,
+    hidsPerSection : 100,
 
     fetchFirst : function( options ){
-        console.log( 'fetchFirst?' );
-        this.currentSection = this.order === 'hid-asc'? 0 : this._lastFullSection();
-        return this.fetchSection( this.currentSection );
+_.extend( options || {}, { silent: true });
+        // console.log( 'fetchFirst?' );
+        this.currentSection = 0;
+        if( this.order === 'hid' && this._countSections() > 1 ){
+            this.currentSection = this._lastFullSection();
+        }
+        // console.log( 'currentSection', this.currentSection );
+        return this.fetchSection( this.currentSection, options );
     },
 
     fetchSection : function( section, options ){
+        options = options || {};
+        // console.log( this + '.fetchSection:', section, options );
+        if( !options.bypassCache && _.contains( this.sectionsFetched, section, this ) ){
+            this.trigger( 'fetching-section-done', section, this );
+            return jQuery.when();
+        }
+
         var self = this;
-        if( _.contains( self.sectionsFetched, section ) ){ return jQuery.when(); }
-        var range = this._getSectionRange( section );
-        var xhr = self.fetch({
-            silent: true,
+        self.trigger( 'fetching-section', section, self );
+
+        var range = self._getSectionRange( section );
+        // console.log( this + '.fetchSection:', range );
+        return self.fetch( _.extend( options, {
+silent: true,
             remove: false,
-            filters: {
+            filters: _.extend( options.filters || {}, {
                 'hid-ge' : Math.max( range.first - 1, 0 ),
                 'hid-le' : range.last
-            }
-        });
-        return xhr.done( function(){
+            })
+
+        })).always( function(){
+            self.trigger( 'fetching-section-done', section, self );
+
+        }).done( function(){
             self.sectionsFetched.push( section );
             self.sectionsFetched.sort();
         });
+    },
+
+    fetchDeletedInSection : function( section, options ){
+        options = options || {};
+        var self = this;
+        options.filters = _.extend( options.filters, {
+            // all deleted, purged or not
+            deleted : true,
+            purged  : undefined
+        });
+        options.bypassCache = true;
+        self.trigger( 'fetching-deleted', self );
+        return self.fetchSection( section, options )
+            .always( function(){ self.trigger( 'fetching-deleted-done', self ); });
     },
 });
 

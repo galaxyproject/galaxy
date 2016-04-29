@@ -43,16 +43,18 @@ var AnnotatedHistoryView = _super.extend(/** @lends AnnotatedHistoryView.prototy
 
     /** override to add table header cells to indicate the dataset, annotation columns */
     renderItems : function( $whereTo ){
+        $whereTo = $whereTo || this.$el;
         _super.prototype.renderItems.call( this, $whereTo );
-        this.$list( $whereTo )
-            .prepend( $( '<tr/>' ).addClass( 'headers' ).append([
+        var $headers = $( '<tr/>' ).addClass( 'headers' ).append([
                 $( '<th/>' ).text( _l( 'Dataset' ) ),
                 $( '<th/>' ).text( _l( 'Annotation' ) )
-            ]));
+            ]);
+        $headers = $( '<tbody/>' ).html( $headers );
+        $whereTo.find( '> .list-items' ).prepend( $headers );
         return self.views;
     },
 
-    // ------------------------------------------------------------------------ sub-views
+    // // ------------------------------------------------------------------------ sub-views
     /** override to wrap each subview in a row */
     _renderItemView$el : function( view ){
         //TODO:?? possibly make this more flexible: instead of annotation use this._additionalInfo()
@@ -107,10 +109,15 @@ AnnotatedHistoryView.prototype.templates = (function(){
     ]);
 
     var listItemsSectionTemplate = BASE_MVC.wrapTemplate([
-        '<tr class="list-items-section" data-section="<%- section.number %>"><td>',
-            '<a href="javascript:void(0)" data-first-hid="<%- section.first %>" data-last-hid="<%- section.last %>">',
-            '<%- section.first %>  ', _l( "to" ), ' <%- section.last %>',
-        '</a></td></tr>',
+        '<% if( section.number === view.model.contents.currentSection ){ %>',
+            '<tbody class="list-items-section current-section" data-section="<%- section.number %>"></tbody>',
+        '<% } else { %>',
+            '<tbody class="list-items-section" data-section="<%- section.number %>">',
+                '<tr><td><a class="list-items-section-link" href="javascript:void(0)">',
+                    '<%- section.first %>  ', _l( "to" ), ' <%- section.last %>',
+                '</a></td></tr>',
+            '</tbody>',
+        '<% } %>',
     ], 'section' );
 
     return _.extend( _.clone( _super.prototype.templates ), {

@@ -77,7 +77,8 @@ var HistoryView = _super.extend(
     /** create and return a collection for when none is initially passed */
     _createDefaultCollection : function(){
         // override
-        return new this.collectionClass([], { history: history });
+        console.log( '((history-view)_createDefaultCollection)' );
+        return new this.collectionClass([], { history: this.model });
     },
 
     /** In this override, clear the update timer on the model */
@@ -115,10 +116,10 @@ var HistoryView = _super.extend(
     // ------------------------------------------------------------------------ loading history/hda models
     /** load the history with the given id then it's contents, sending ajax options to both */
     loadHistory : function( historyId, options, contentsOptions ){
+        contentsOptions = _.extend( contentsOptions || { silent: true });
         this.info( 'loadHistory:', historyId, options, contentsOptions );
         var self = this;
         self.setModel( new HISTORY_MODEL.History({ id : historyId }) );
-        //TODO:?? cache histories?
 
         self.trigger( 'loading' );
         return self.model
@@ -208,9 +209,9 @@ var HistoryView = _super.extend(
     /** override to avoid showing intial empty message using contents_active */
     _renderEmptyMessage : function( $whereTo ){
         var self = this;
-        var empty = !self.model.get( 'contents_active' ).active;
         var $emptyMsg = self.$emptyMessage( $whereTo );
 
+        var empty = self.model.get( 'contents_active' ).active <= 0;
         if( empty ){
             return $emptyMsg.empty().append( self.emptyMsg ).show();
 
@@ -249,47 +250,62 @@ var HistoryView = _super.extend(
     // ------------------------------------------------------------------------ client-side pagination
     /**   */
     renderItems : function( $whereTo ){
+        console.log( 'renderItems -----------------------------------------------------------' );
         $whereTo = $whereTo || this.$el;
         var self = this;
         var contents = self.model.contents;
         var hidsPerSection = contents.hidsPerSection;
 
-        // if there's less than 500 *shown*
-        var contents_active = self.model.get( 'contents_active' ) || 0;
-        if( contents_active.active < hidsPerSection ){
-            return _super.prototype.renderItems.call( self, $whereTo );
-        }
-
+        self.freeViews();
         // render sections
+        console.log( 'renderItems:', self.$list( $whereTo ) );
         self.$list( $whereTo ).html( contents._mapSectionRanges( function( section ){
-            return self.templates.listItemsSection( section );
+            console.log( 'renderItems:', section );
+            return self.templates.listItemsSection( section, self );
         }).join( '\n' ));
-        // render views from collection for the current section, replacing that section marker with them
-        // note: shows only one section's worth of views at a time
-        self.views = self._getCurrentSectionCollection().map( function( itemModel ){
-            return self._createItemView( itemModel );
-        });
-        // console.log( self.$currentSection( $whereTo ) );
-        self.$emptyMessage( $whereTo ).hide();
-        self.$currentSection( $whereTo ).replaceWith( self.views.map( function( view ){
-            return self._renderItemView$el( view );
-        }));
+        // render content views into (only) the current section
+        self.views = self._renderSection( this.model.contents.currentSection, $whereTo );
+        self._renderEmptyMessage( $whereTo ).toggle( !self.views.length );
 
         self.trigger( 'views:ready', self.views );
+        console.log( '----------------------------------------------------------- renderItems' );
         return self.views;
     },
 
-    _getCurrentSectionCollection : function(){
-        return this.model.contents._filterCurrentSectionCollection( _.bind( this._filterItem, this ) );
+    _renderSection : function( section, $whereTo ){
+        console.debug( this + '._renderSection', section, $whereTo );
+        var self = this;
+        // render views from collection for the current section, replacing that section marker with them
+        // note: shows only one section's worth of views at a time
+        var views = [];
+        var sectionModels = self.model.contents._filterSectionCollection( section, _.bind( this._filterItem, this ) );
+        self.$section( section, $whereTo ).append( sectionModels.map( function( itemModel ){
+            var view = self._createItemView( itemModel );
+            views.push( view );
+            return self._renderItemView$el( view );
+        }));
+        return views;
     },
 
-    /** list-items: where the subviews are contained in the view's dom */
+    /**  */
+    $section : function( section, $where ){
+        return this.$list( $where ).find( '.list-items-section[data-section="' + section + '"]' );
+    },
+
+    /**  */
     $currentSection : function( $where ){
-        var selector = '.list-items-section[data-section="' + this.model.contents.currentSection + '"]';
-        return this.$list( $where ).find( selector );
+        return this.$list( $where ).find( '.list-items-section.current-section' );
     },
 
     // ------------------------------------------------------------------------ sub-views
+    /** in this override, check if the contents would also display based on show_deleted/hidden */
+    _filterItem : function( model ){
+        var panel = this;
+        return ( _super.prototype._filterItem.call( panel, model )
+            && ( !model.hidden() || panel.showHidden )
+            && ( !model.isDeletedOrPurged() || panel.showDeleted ) );
+    },
+
     /** In this override, since history contents are mixed,
      *      get the appropo view class based on history_content_type
      */
@@ -302,14 +318,6 @@ var HistoryView = _super.extend(
                 return this.HDCAViewClass;
         }
         throw new TypeError( 'Unknown history_content_type: ' + contentType );
-    },
-
-    /** in this override, check if the contents would also display based on show_deleted/hidden */
-    _filterItem : function( model ){
-        var panel = this;
-        return ( _super.prototype._filterItem.call( panel, model )
-            && ( !model.hidden() || panel.showHidden )
-            && ( !model.isDeletedOrPurged() || panel.showDeleted ) );
     },
 
     /** in this override, add a linktarget, and expand if id is in web storage */
@@ -343,6 +351,105 @@ var HistoryView = _super.extend(
         this.storage.set( 'expandedIds', {} );
         _super.prototype.collapseAll.call( this );
     },
+
+// TODO: should we try to make the distinction between new contents and old that haven't been added yet?
+
+    /**  */
+    addItemView : function( model, collection, options ){
+        console.log( this + '(historyView).addItemView:', model, collection, options );
+        var self = this;
+        var contents = self.model.contents;
+        var lastSection = contents._lastSection();
+        var isNotLastSection = contents.currentSection !== lastSection;
+
+        // open and show the most recent section before adding anything there
+        if( isNotLastSection ){
+            // we need to set this now (instead of after the fetch) so that the
+            // if statement above isn't triggered more than once
+            self.model.contents.currentSection = lastSection;
+            self.model.contents.fetchSection( lastSection, { silent: true })
+                .done( function(){
+                    self.renderItems();
+                    self.addItemView( model, collection, options );
+                });
+            return;
+        }
+        self.scrollTo( 0 );
+
+        console.log( 'contains?', contents.contains( model ) );
+        console.log( 'get:', contents.get( model.id ) + '' );
+        console.log( contents.length );
+        // contents.on( 'all', console.info, console );
+
+        console.log( '^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^' );
+        var hid = model.get( 'hid' );
+        var insertionIndex = contents._indexOfHidInSection( hid, contents.currentSection );
+        console.log( hid, insertionIndex, contents.at( insertionIndex ) + '' );
+        console.log( contents.at( insertionIndex - 1 ) + '', contents.at( insertionIndex + 1 ) + '' );
+        if( insertionIndex === null ){ return null; }
+
+//TODO: this should happen elsewhere
+        // have to manually update the hid_counter
+        self.model.set( 'hid_counter', self.model.get( 'hid_counter' ) + 1 );
+        console.log( 'hid_counter:', self.model.get( 'hid_counter' ) );
+
+        console.log( 'at index', insertionIndex, 'adding: ' + model );
+        var view = self._createItemView( model );
+        self.$emptyMessage().fadeOut( self.fxSpeed );
+        self._attachView( view, insertionIndex );
+        console.log( '^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^' );
+
+        return view;
+    },
+
+    /**  */
+    _attachView : function( view, modelIndex, useFx ){
+        console.log( '_attachView:', view, modelIndex, useFx );
+        useFx = _.isUndefined( useFx )? true : useFx;
+        var self = this;
+        var $el = self._renderItemView$el( view ).hide();
+
+// Im not sure any of this shit is needed - (it prob. isn't *when adding to the last section*)
+        var viewIndex = 0;
+        var prevModel = self.model.contents.at( modelIndex - 1 );
+        window.prevModel = prevModel;
+        console.log( 'prevModel: ' + prevModel, prevModel );
+        if( prevModel ){
+            var found = _.findIndex( self.views, function( v ){
+                console.log( '       ', v + '', v.model + '' );
+                console.log( '       ', v.model === prevModel );
+                return v.model === prevModel;
+            });
+            console.log( 'found:', found );
+            if( found !== -1 ){ viewIndex = found + 1; }
+        }
+        // var viewIndex = Math.max( 0, _.findIndex( self.views, function( v ){ return v.model === prevModel; }) );
+        console.log( 'viewIndex:', viewIndex );
+
+        self.views.splice( viewIndex, 0, view );
+        if( viewIndex === 0 ){
+            self.$currentSection().prepend( $el );
+
+        } else {
+            var prevView = self.views[ viewIndex ];
+            console.log( 'prevView:', prevView + '', prevView.$el.get(0) );
+            console.log( prevView.$el.parent().get(0) );
+            // $el.insertAfter( prevView.$el );
+            self.$currentSection().children( '.history-content' ).eq( viewIndex - 1 ).after( $el );
+        }
+        console.log( 'self.views[ viewIndex ]:', self.views[ viewIndex ] );
+        self.trigger( 'view:attached', view );
+
+        if( useFx ){
+            view.$el.slideDown( self.fxSpeed, function(){
+                self.trigger( 'view:attached:rendered' );
+            });
+        } else {
+            self.trigger( 'view:attached:rendered' );
+        }
+        return view;
+    },
+
 
     // ------------------------------------------------------------------------ selection
     /** Override to correctly set the historyId of the new collection */
@@ -387,18 +494,22 @@ var HistoryView = _super.extend(
         'click .show-selectors-btn'         : 'toggleSelectors',
         // allow (error) messages to be clicked away
         'click .messages [class$=message]'  : 'clearMessages',
-        'click .list-items-section' : function( ev ){
-            this.openSection( $( ev.currentTarget ).data( 'section' ) );
+        'click .list-items-section-link' : function( ev ){
+            var sectionNumber = $( ev.currentTarget ).parents( '[data-section]' ).data( 'section' );
+            this.openSection( sectionNumber );
         }
     }),
 
     /** loads a section and re-renders items */
     openSection : function( section ){
+        console.log( this + '.openSection:', section );
         var self = this;
-        return self.model.contents.fetchSection( section ).done( function(){
-            self.model.contents.currentSection = section;
-            self.renderItems();
-        });
+        return self.model.contents.fetchSection( section, { silent: true })
+            .done( function(){
+                self.model.contents.currentSection = section;
+                self.renderItems();
+                self.scrollTo( self.$section( section ).get(0).offsetTop );
+            });
     },
 
     /** Toggle and store the deleted visibility and re-render items
@@ -407,26 +518,16 @@ var HistoryView = _super.extend(
     toggleShowDeleted : function( show, store ){
         show = ( show !== undefined )?( show ):( !this.showDeleted );
         store = ( store !== undefined )?( store ):( true );
-        var self = this;
 
+        var self = this;
         self.showDeleted = show;
         //TODO: at this point deleted/hidden makes more sense (simpler) in the collection
         self.model.contents.includeDeleted = show;
         self.trigger( 'show-deleted', show );
         if( store ){ self.storage.set( 'show_deleted', show ); }
 
-        // this seems brittle or at least not cohesive with the other non-hid approaches
-        var last = self.collection.last();
-        var lastHid = last? last.get( 'hid' ) : 0;
-        var fetch = jQuery.when();
-        if( show ){
-            fetch = self.model.contents.fetchDeleted({
-                silent  : true,
-                filters : { 'hid-ge' : lastHid }
-            });
-        }
+        var fetch = show? fetchDeletedInSection( self.model.contents.currentSection ) : jQuery.when();
         fetch.done( function(){ self.renderItems(); });
-
         return self.showDeleted;
     },
 
@@ -436,23 +537,18 @@ var HistoryView = _super.extend(
     toggleShowHidden : function( show, store ){
         show = ( show !== undefined )?( show ):( !this.showHidden );
         store = ( store !== undefined )?( store ):( true );
-        var self = this;
 
+        var self = this;
         self.showHidden = show;
         self.model.contents.includeHidden = show;
         self.trigger( 'show-hidden', show );
         if( store ){
             self.storage.set( 'show_hidden', show );
         }
-        var fetch = jQuery.when();
-        if( show ){
-            fetch = self.model.contents.fetchHidden({
-                silent  : true,
-            });
-        }
-        fetch.done( function(){ self.renderItems(); });
 
-        return self.showHidden;
+        var fetch = show? fetchHiddenInSection( self.model.contents.currentSection ) : jQuery.when();
+        fetch.done( function(){ self.renderItems(); });
+        return self.showDeleted;
     },
 
     /** On the first search, if there are no details - load them, then search */
@@ -632,10 +728,15 @@ HistoryView.prototype.templates = (function(){
     ], 'history' );
 
     var listItemsSectionTemplate = BASE_MVC.wrapTemplate([
-        '<li class="list-items-section" data-section="<%- section.number %>">',
-            '<a href="javascript:void(0)" data-first-hid="<%- section.first %>" data-last-hid="<%- section.last %>">',
-            '<%- section.first %>  ', _l( "to" ), ' <%- section.last %>',
-        '</a></li>',
+        '<% if( section.number === view.model.contents.currentSection ){ %>',
+            '<li class="list-items-section current-section" data-section="<%- section.number %>"></li>',
+        '<% } else { %>',
+            '<li class="list-items-section" data-section="<%- section.number %>">',
+                '<a class="list-items-section-link" href="javascript:void(0)">',
+                    '<%- section.first %>  ', _l( "to" ), ' <%- section.last %>',
+                '</a>',
+            '</li>',
+        '<% } %>',
     ], 'section' );
 
     return _.extend( _.clone( _super.prototype.templates ), {
