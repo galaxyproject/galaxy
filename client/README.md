@@ -91,6 +91,7 @@ Grunt can also do an automatic, partial rebuild of any files you change *as you 
 
 1. opening a new terminal session
 2. `cd client`
+3. Watch with:
     1. `grunt watch` to watch the *scripts/* folder
     2. `grunt watch-style` to watch the *style/* folder
 
