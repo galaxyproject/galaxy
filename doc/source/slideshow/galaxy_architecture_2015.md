@@ -268,103 +268,164 @@ unwiedly, how do you get a handle on them?
 
 ---
 
-
-
----
-
-
+### Pre-startup
+<!-- Image to fetch and add -->
 
 ---
 
-
-
----
-
-
+### First run: Initialize configs
+<!-- Image to fetch and add -->
 
 ---
 
-
-
----
-
-
+### First run: Fetch eggs
+<!-- Image to fetch and add -->
 
 ---
 
-
-
----
-
-
+### Every run: Load the application
+<!-- Image to fetch and add -->
 
 ---
 
-
-
----
-
-
+### Every run: Load database migrations
+<!-- Image to fetch and add -->
 
 ---
 
-
-
----
-
-
+### First run: Initialize database
+<!-- Image to fetch and add -->
 
 ---
 
-
-
----
-
-
+Everything after here happens every time
 
 ---
 
-
-
----
-
-
+### Load tool migrations
+<!-- Image to fetch and add -->
 
 ---
 
-
-
----
-
-
+### Load datatypes
+<!-- Image to fetch and add -->
 
 ---
 
-
-
----
-
-
+### Load datatypes sniffers
+<!-- Image to fetch and add -->
 
 ---
 
-
-
----
-
-
+### Load build (display) sites
+<!-- Image to fetch and add -->
 
 ---
 
-
-
----
-
-
+### Load data tables
+<!-- Image to fetch and add -->
 
 ---
 
+### Read job configuration file
+<!-- Image to fetch and add -->
+* config/job_conf.xml will automatically be read if created, see
+<br />
+job_conf_xml.sample_advanced for fully documented examples of all
+<br />
+possible configurations
 
+---
+
+### Load tools
+<!-- Image to fetch and add -->
+* shed_tool_conf.xml is empty on the first run so
+<br />
+only tools provided with Galaxy are loaded, but
+<br />
+after tools are installed from the Tool Shed, they
+<br />
+will load here
+
+---
+
+### Associate display apps with datatypes
+<!-- Image to fetch and add -->
+
+---
+
+### Load implicit datatype converters
+<!-- Image to fetch and add -->
+* A few internal operations are defined as tools to allow them to run via Galaxy'
+<br />
+s job system, and are loaded here as well
+
+---
+
+### Load visualization plugins
+<!-- Image to fetch and add -->
+
+---
+
+### Initialize job handlers
+<!-- Image to fetch and add -->
+
+---
+
+### Initialize web controllers
+<!-- Image to fetch and add -->
+
+---
+
+### Load WSGI middleware
+<!-- Image to fetch and add -->
+
+---
+
+serving on http://127.0.0.1:8080
+
+---
+
+## 5. A Galaxy request
+
+---
+
+### Beginning of request
+- TCP connection from client on port 80
+- WSGI server is responsible for picking up the
+<br />
+connection, parsing HTTP headers, and
+<br />
+reformatting them into a dictionary according
+<br />
+to the WSGI spec, this dict is called "environ"
+- In a default Galaxy install this is *currently*
+Paste#http
+
+---
+
+### Middleware
+- The WSGI interface is based around function
+<br />
+calls: def app( environ, start_response ): ...
+- Middleware act as filters, modify the environ
+<br />
+and then pass through to the next webapp
+- Galaxy uses several middleware components
+galaxy.webapps.galaxy.buildapp#wrap_in_middleware
+<br />
+error handling, logging, proxy hostname, debug, static, ...
+
+---
+
+### WebApplication (galaxy.web.framework.base#WebApplication)
+- Galaxy's custom web framework, shares a lot
+<br />
+of ideas with Pylons
+- __call__ method supports the WSGI spec
+    - Takes environ and creates a wrapper object
+    <br />
+    GalaxyWebTransaction -- ** this is the ubiquitous trans! **
 
 ---
 
