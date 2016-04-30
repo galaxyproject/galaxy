@@ -373,7 +373,10 @@ class Data( object ):
                 # We cannot currently trust imported datasets for rendering.
                 if not data.creating_job.imported and data.creating_job.tool_id in trans.app.config.sanitize_whitelist:
                     return open(data.file_name).read()
-                return sanitize_html(open( data.file_name ).read())
+                # This is returning to the browser, it needs to be encoded.
+                # TODO Ideally this happens a layer higher, but this is a bad
+                # issue affecting many tools
+                return sanitize_html(open( data.file_name ).read()).encode('utf-8')
             return open( data.file_name )
         else:
             trans.response.set_content_type( "text/html" )
