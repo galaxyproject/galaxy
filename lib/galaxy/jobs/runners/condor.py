@@ -57,6 +57,19 @@ class CondorJobRunner( AsynchronousJobRunner ):
 
         # get destination params
         query_params = submission_params(prefix="", **job_destination.params)
+        container = None
+        universe = query_params.get('universe', False)
+        if universe.strip().lower() == 'docker':
+            if job_wrapper.tool.containers:
+                # Try to extract the container (1) from the Tool, (2) from 'docker_image'
+                # and (3) from 'docker_default_container_id'. The last two can be specified in job_conf.xml
+                container = job_wrapper.tool.containers[0].identifier or \
+                    query_params.get('docker_image', False) or \
+                    query_params.get('docker_default_container_id', False)
+            if container:
+                # HTCondor needs the image as 'docker_image'
+                query_params.update({'docker_image': container})
+
         galaxy_slots = query_params.get('request_cpus', None)
         if galaxy_slots:
             galaxy_slots_statement = 'GALAXY_SLOTS="%s"; export GALAXY_SLOTS_CONFIGURED="1"' % galaxy_slots
