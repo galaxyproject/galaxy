@@ -434,6 +434,25 @@
                  <param> tags.
             -->
             <param id="request_cpus">8</param>
+
+            <!-- Recent version of HTCondor do have a `docker` universe to handle containers.
+                 Activate this feature by explicitly specifying the `docker` universe.
+            -->
+            <!-- <param id="universe">docker</param> -->
+
+            <!-- If the tool has a container specified this one is used.
+
+                <requirements>
+                    <container type="docker">bgruening/galaxy-stable</container>
+                </requirements>
+
+                If not the container specified with id="docker_image" is used and as last resort
+                id="docker_default_container_id" is considered.
+            -->
+
+            <!-- <param id="docker_image">busybox:ubuntu-14.04</param> -->
+            <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
+
         </destination>
 
         <!-- Jobs that hit the walltime on one destination can be automatically
