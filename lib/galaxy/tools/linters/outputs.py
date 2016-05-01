@@ -1,6 +1,8 @@
+"""This module contains a linting functions for tool outputs."""
 
 
 def lint_output(tool_xml, lint_ctx):
+    """Check output elements, ensure there is at least one and check attributes."""
     outputs = tool_xml.findall("./outputs")
     if len(outputs) == 0:
         lint_ctx.warn("Tool contains no outputs section, most tools should produce outputs.")
