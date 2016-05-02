@@ -13242,7 +13242,7 @@ webpackJsonp([0,1],[
   \*****************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, $, Backbone, jQuery) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(_, $, jQuery) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! mvc/history/history-model */ 66),
 	    __webpack_require__(/*! mvc/history/history-view-edit */ 77),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
@@ -13658,24 +13658,15 @@ webpackJsonp([0,1],[
 	
 	    // ........................................................................ options menu
 	    //TODO: remove to batch
-	    /** helper that fetches using filterParams then calls save on each fetched using updateWhat as the save params */
-	    _filterAndUpdate : function( filterParams, updateWhat ){
-	        var self = this;
-	        return self.model.contents.fetch({ filters: filterParams })
-	            .then( function(){
-	                // TODO: could probably re-use the response json from the fetch here
-	                var hidden = self.model.contents.hidden();
-	                hidden.ajaxQueue( Backbone.Model.prototype.save, updateWhat )
-	                    .done( function(){ Galaxy.currHistoryPanel.renderItems(); });
-	            });
-	    },
-	
 	    /** unhide any hidden datasets */
 	    unhideHidden : function() {
 	        var self = this;
 	        if( confirm( _l( 'Really unhide all hidden datasets?' ) ) ){
 	            // get all hidden, regardless of deleted/purged
-	            return self._filterAndUpdate({ visible: false, deleted: '', purged: '' }, { visible : true });
+	            return self.model.contents._filterAndUpdate(
+	                { visible: false, deleted: '', purged: '' },
+	                { visible : true }
+	            );
 	        }
 	        return jQuery.when();
 	    },
@@ -13684,7 +13675,7 @@ webpackJsonp([0,1],[
 	    deleteHidden : function() {
 	        var self = this;
 	        if( confirm( _l( 'Really delete all hidden datasets?' ) ) ){
-	            return self._filterAndUpdate(
+	            return self.model.contents._filterAndUpdate(
 	                // get all hidden, regardless of deleted/purged
 	                { visible: false, deleted: '', purged: '' },
 	                // both delete *and* unhide them
@@ -13695,7 +13686,7 @@ webpackJsonp([0,1],[
 	    },
 	
 	    /** Return a string rep of the history */
-	    toString    : function(){
+	    toString : function(){
 	        return 'CurrentHistoryView(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
 	    }
 	});
@@ -13723,7 +13714,7 @@ webpackJsonp([0,1],[
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! libs/backbone */ 2), __webpack_require__(/*! jquery */ 3)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! underscore */ 1), __webpack_require__(/*! jquery */ 3), __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
 /* 66 */
@@ -13783,7 +13774,6 @@ webpackJsonp([0,1],[
 	        this.log( this + ".initialize:", historyJSON, contentsJSON, options );
 	
 	        /** HistoryContents collection of the HDAs contained in this history. */
-	        console.log( this + ', init\'ing contents:' );
 	        this.contents = new HISTORY_CONTENTS.HistoryContents( contentsJSON || [], {
 	            history     : this,
 	            historyId   : this.get( 'id' ),
@@ -13870,7 +13860,7 @@ webpackJsonp([0,1],[
 	
 	    /** Return the number of running hda/hdcas in this history (note: unknown === 0) */
 	    numOfUnfinishedShownContents : function(){
-	        return this.contents.running().visibleAndUndeleted().length || 0;
+	        return this.contents.runningAndActive().length || 0;
 	    },
 	
 	    // ........................................................................ search
@@ -14299,8 +14289,11 @@ webpackJsonp([0,1],[
 	        /** @type {Boolean} does this collection contain and fetch non-visible elements */
 	        this.includeHidden = options.includeHidden || false;
 	
-	        // console.log( '----------------------------------------------------------' );
-	        this.on( 'all', console.log, console );
+	        this.on( 'all', function(){
+	            var args = _.toArray( arguments );
+	            if( /^change:*/.test( args[0] ) ){ return; }
+	            console.log.apply( console, [ this + '' ].concat( args ) );
+	        });
 	    },
 	
 	    /** root api url */
@@ -14320,14 +14313,19 @@ webpackJsonp([0,1],[
 	        'hid-asc'    : BASE_MVC.buildComparator( 'hid',  { ascending: true }),
 	    }),
 	
-	    /** Get the id of every model in this collection not in a 'ready' state (running).
-	     *  @returns an array of model ids
-	     *  @see HistoryDatasetAssociation#inReadyState
-	     */
+	    /** Get every model in this collection not in a 'ready' state (running). */
 	    running : function(){
-	        function filterFn( c ){ return !c.inReadyState(); }
-	        // console.log( '(running)' );
-	        return new HistoryContents( this.filter( filterFn ) );
+	        return this.filter( function( c ){ return !c.inReadyState(); });
+	    },
+	
+	    /**  */
+	    runningAndActive : function(){
+	        return this.filter( function( c ){
+	            return ( !c.inReadyState() )
+	                && (  c.get( 'visible' ) )
+	                // TODO: deletedOrPurged?
+	                && ( !c.get( 'deleted' ) );
+	        });
 	    },
 	
 	    /** Get the model with the given hid
@@ -14335,34 +14333,32 @@ webpackJsonp([0,1],[
 	     *  @returns {HistoryDatasetAssociation} the model with the given hid or undefined if not found
 	     */
 	    getByHid : function( hid ){
-	        return _.first( this.filter( function( content ){ return content.get( 'hid' ) === hid; }) );
+	        return _.first( this.filter( function( c ){ return c.get( 'hid' ) === hid; }) );
 	    },
 	
 	    /** return true if all contents have details */
 	    haveDetails : function(){
-	        return this.all( function( content ){ return content.hasDetails(); });
+	        return this.all( function( c ){ return c.hasDetails(); });
 	    },
 	
-	    // .................... hidden / deleted
+	    // ........................................................................ hidden / deleted
 	    /** return a new contents collection of only hidden items */
 	    hidden : function(){
-	        function filterFn( c ){ return c.hidden(); }
-	        // console.log( '(hidden)' );
-	        return new HistoryContents( this.filter( filterFn ) );
+	        return this.filter( function( c ){ return c.hidden(); });
 	    },
 	
 	    /** return a new contents collection of only hidden items */
 	    deleted : function(){
-	        function filterFn( c ){ return c.get( 'deleted' ); }
-	        // console.log( '(deleted)' );
-	        return new HistoryContents( this.filter( filterFn ) );
+	        return this.filter( function( c ){ return c.get( 'deleted' ); });
 	    },
 	
 	    /** return a new contents collection of only hidden items */
 	    visibleAndUndeleted : function(){
-	        function filterFn( c ){ return c.get( 'visible' ) && !c.get( 'deleted' ); }
-	        // console.log( '(visibleAndUndeleted)' );
-	        return new HistoryContents( this.filter( filterFn ) );
+	        return this.filter( function( c ){
+	            return (  c.get( 'visible' ) )
+	                // TODO: deletedOrPurged?
+	                && ( !c.get( 'deleted' ) );
+	        });
 	    },
 	
 	    /** create a setter in order to publish the change */
@@ -14478,13 +14474,31 @@ webpackJsonp([0,1],[
 	    },
 	
 	    // ............. quasi-batch ops
+	    // TODO: to batch
+	    /** helper that fetches using filterParams then calls save on each fetched using updateWhat as the save params */
+	    _filterAndUpdate : function( filterParams, updateWhat ){
+	        var self = this;
+	        var idAttribute = self.model.prototype.idAttribute;
+	        var updateArgs = [ updateWhat ];
+	
+	        return self.fetch({ filters: filterParams, remove: false })
+	            .then( function( fetched ){
+	                // convert filtered json array to model array
+	                fetched = fetched.reduce( function( modelArray, currJson, i ){
+	                    var model = self.get( currJson[ idAttribute ] );
+	                    return model? modelArray.concat( model ) : modelArray;
+	                }, []);
+	                return self.ajaxQueue( 'save', updateArgs, fetched );
+	            });
+	    },
+	
 	    /** using a queue, perform ajaxFn on each of the models in this collection */
-	    ajaxQueue : function( ajaxFn, options ){
-	        var queue = new AJAX_QUEUE.AjaxQueue( this.chain().reverse().map( function( content, i ){
-	            return function(){ return ajaxFn.call( content, options ); };
-	        }));
-	        queue.start();
-	        return queue.deferred;
+	    ajaxQueue : function( ajaxFn, args, collection ){
+	        collection = collection || this.models;
+	        return new AJAX_QUEUE.AjaxQueue( collection.slice().reverse().map( function( content, i ){
+	            var fn = _.isString( ajaxFn )? content[ ajaxFn ] : ajaxFn;
+	            return function(){ return fn.apply( content, args ); };
+	        })).start();
 	    },
 	
 	    /** @type {Integer} how many contents per call to fetch when using progressivelyFetchDetails */
@@ -14688,11 +14702,11 @@ webpackJsonp([0,1],[
 	    _lastFullSection : function(){
 	        // console.log( '_lastFullSection:' );
 	        var count = this._countSections();
-	        console.log( '_lastFullSection, count:', count );
-	        console.log( '_lastFullSection, hid:', this._getLastHid(), this.hidsPerSection, ( this._getLastHid() % this.hidsPerSection ) );
+	        // console.log( '_lastFullSection, count:', count );
+	        // console.log( '_lastFullSection, hid:', this._getLastHid(), this.hidsPerSection, ( this._getLastHid() % this.hidsPerSection ) );
 	        var hasNonFullSection = ( this._getLastHid() % this.hidsPerSection ) > 0;
-	        console.log( '_lastFullSection, hasNonFullSection:', hasNonFullSection );
-	        console.log( '_lastFullSection:', hasNonFullSection? ( count - 1 ) : count );
+	        // console.log( '_lastFullSection, hasNonFullSection:', hasNonFullSection );
+	        // console.log( '_lastFullSection:', hasNonFullSection? ( count - 1 ) : count );
 	        return hasNonFullSection? ( count - 1 ) : count;
 	    },
 	
@@ -14711,33 +14725,6 @@ webpackJsonp([0,1],[
 	
 	    /** Filter the collection to only those models that should be currently viewed */
 	    _filterSectionCollection : function( section, filterFn ){
-	//         // preconditon: assumes collection *has loaded* the range and is sorted
-	//         var self = this;
-	//         var range = self._getSectionRange( section );
-	//         // console.log( 'range:', range );
-	//         // console.log( 'length:', this.length );
-	
-	//         var subcollection = [];
-	//         var descending = this.order === 'hid';
-	//         // console.log( 'descending:', descending );
-	//         for( var index = 0; index < this.length; index++ ){
-	//             var content = this.at( index );
-	//             var hid = content.get( 'hid' );
-	//             // console.log( index, stop, hid, filterFn( content ), content );
-	
-	// // TODO: binary search skip to, then bail when done (should be sorted already)
-	//             if( descending ){
-	//                 if( hid > range.last  ){ continue; }
-	//                 if( hid < range.first ){ break; }
-	//             } else {
-	//                 if( hid < range.first ){ continue; }
-	//                 if( hid > range.last  ){ break; }
-	//             }
-	//             if( hid >= range.first && hid <= range.last && filterFn( content ) ){ subcollection.push( content ); }
-	//         }
-	//         // console.log( 'subcollection.length:', subcollection.length );
-	//         return subcollection;
-	
 	        return this._sectionCollection( section ).filter( filterFn );
 	    },
 	
@@ -14805,7 +14792,7 @@ webpackJsonp([0,1],[
 	        var range = self._getSectionRange( section );
 	        var lastSection = section === self._lastSection();
 	        var descending = this.order === 'hid';
-	        console.log( '_indexOfHidInSection:', hid, section, range, lastSection, descending );
+	        // console.log( '_indexOfHidInSection:', hid, section, range, lastSection, descending );
 	        var pastEndOfClosedSection = !lastSection && hid > range.last;
 	        if( pastEndOfClosedSection || hid < range.first ){ return null; }
 	        return self._indexOfHid( hid );
@@ -14909,7 +14896,7 @@ webpackJsonp([0,1],[
   \****************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(jQuery) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
 	    __webpack_require__(/*! libs/underscore */ 1),
 	    __webpack_require__(/*! libs/backbone */ 2),
 	    __webpack_require__(/*! mvc/base-mvc */ 5),
@@ -15059,15 +15046,162 @@ webpackJsonp([0,1],[
 	        }
 	        return collection;
 	    },
+	
+	});
+	
+	
+	//=============================================================================
+	/**
+	 *
+	 */
+	var PaginatedCollection = ControlledFetchCollection.extend({
+	
+	    /** @type {Number} limit used for each page's fetch */
+	    limitPerPage       : 500,
+	
+	    initialize : function( models, options ){
+	        ControlledFetchCollection.prototype.initialize.call( this, models, options );
+	        this.currentPage = options.currentPage || 0;
+	        this.setTotal( options.total || 0 );
+	    },
+	
+	    setTotal : function( newTotal ){
+	        this.total = newTotal;
+	        this._lastPage = Math.ceil( this.total / this.limitPerPage );
+	        // console.log( 'total:', this.total, '_lastPage:', this._lastPage );
+	    },
+	
+	    /** fetch the next page of data */
+	    fetchPage : function( pageNum, options ){
+	        pageNum = Math.max( 0, Math.min( pageNum, this._lastPage ) );
+	        options = _.defaults( options || {}, {
+	            limit : this.limitPerPage,
+	            offset: pageNum * this.limitPerPage
+	        });
+	        options.reset = true;
+	        this.currentPage = pageNum;
+	        return this.fetch( options );
+	    },
+	
+	    fetchFirst : function( options ){
+	        return this.fetchPage( this.currentPage );
+	    },
+	
+	    fetchPrevPage : function( options ){
+	        return this.fetchPage( this.currentPage - 1, options );
+	    },
+	
+	    fetchNextPage : function( options ){
+	        return this.fetchPage( this.currentPage + 1, options );
+	    },
+	});
+	
+	
+	//=============================================================================
+	/**
+	 * A Collection that will load more elements without reseting.
+	 */
+	var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
+	
+	    /** @type {Number} limit used for the first fetch (or a reset) */
+	    limitOnFirstFetch   : null,
+	    /** @type {Number} limit used for each subsequent fetch */
+	    limitPerFetch       : 100,
+	
+	    initialize : function( models, options ){
+	        ControlledFetchCollection.prototype.initialize.call( this, models, options );
+	        /** @type {Integer} number of contents to return from the first fetch */
+	        this.limitOnFirstFetch = options.limitOnFirstFetch || this.limitOnFirstFetch;
+	        /** @type {Integer} limit for every fetch after the first */
+	        this.limitPerFetch = options.limitPerFetch || this.limitPerFetch;
+	        /** @type {Boolean} are all contents fetched? */
+	        this.allFetched = false;
+	        /** @type {Integer} what was the offset of the last content returned */
+	        this.lastFetched = options.lastFetched || 0;
+	    },
+	
+	    /** build ajax data/parameters from options */
+	    _buildFetchOptions : function( options ){
+	        // options (options for backbone.fetch and jquery.ajax generally)
+	        // backbone option; false here to make fetching an addititive process
+	        options.remove = options.remove || false;
+	        return ControlledFetchCollection.prototype._buildFetchOptions.call( this, options );
+	    },
+	
+	    /** fetch the first 'page' of data */
+	    fetchFirst : function( options ){
+	        // console.log( 'ControlledFetchCollection.fetchFirst:', options );
+	        options = options? _.clone( options ) : {};
+	        this.allFetched = false;
+	        this.lastFetched = 0;
+	        return this.fetchMore( _.defaults( options, {
+	            reset : true,
+	            limit : this.limitOnFirstFetch,
+	        }));
+	    },
+	
+	    /** fetch the next page of data */
+	    fetchMore : function( options ){
+	        // console.log( 'ControlledFetchCollection.fetchMore:', options );
+	        options = _.clone( options || {} );
+	        var collection = this;
+	
+	        // console.log( 'fetchMore, options.reset:', options.reset );
+	        if( ( !options.reset && collection.allFetched ) ){
+	            return jQuery.when();
+	        }
+	
+	        // TODO: this fails in the edge case where
+	        //  the first fetch offset === limit (limit 4, offset 4, collection.length 4)
+	        options.offset = options.reset? 0 : collection.lastFetched;
+	        var limit = options.limit = options.limit || collection.limitPerFetch || null;
+	        // console.log( 'fetchMore, limit:', limit, 'offset:', options.offset );
+	
+	        collection.trigger( 'fetching-more' );
+	        return collection.fetch( options )
+	            .always( function(){
+	                collection.trigger( 'fetching-more-done' );
+	            })
+	            // maintain allFetched flag and trigger if all were fetched this time
+	            .done( function _postFetchMore( fetchedData ){
+	                var numFetched = _.isArray( fetchedData )? fetchedData.length : 0;
+	                collection.lastFetched += numFetched;
+	                // console.log( 'fetchMore, lastFetched:', collection.lastFetched );
+	                // anything less than a full page means we got all there is to get
+	                if( !limit || numFetched < limit ){
+	                    collection.allFetched = true;
+	                    collection.trigger( 'all-fetched', this );
+	                }
+	            }
+	        );
+	    },
+	
+	    /** fetch all the collection */
+	    fetchAll : function( options ){
+	        // whitelist options to prevent allowing limit/offset/filters
+	        // (use vanilla fetch instead)
+	        options = options || {};
+	        var self = this;
+	        options = _.pick( options, 'silent' );
+	        //TODO?: this doesn't work?
+	        options.filters = {};
+	        return self.fetch( options ).done( function( fetchData ){
+	            self.allFetched = true;
+	            self.trigger( 'all-fetched', self );
+	        });
+	    },
 	});
 	
 	
 	//==============================================================================
 	    return {
-	        ControlledFetchCollection     : ControlledFetchCollection
+	        ControlledFetchCollection     : ControlledFetchCollection,
+	        PaginatedCollection           : PaginatedCollection,
+	        InfinitelyScrollingCollection : InfinitelyScrollingCollection,
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! jquery */ 3)))
 
 /***/ },
 /* 69 */
@@ -16360,6 +16494,7 @@ webpackJsonp([0,1],[
 	            }
 	        });
 	    });
+	    return this;
 	};
 	
 	/** start processing the queue */
@@ -16368,6 +16503,7 @@ webpackJsonp([0,1],[
 	        this.running = true;
 	        this.queue.shift()();
 	    }
+	    return this;
 	};
 	
 	/** stop the queue
@@ -16448,13 +16584,14 @@ webpackJsonp([0,1],[
 	    }
 	    this.names[ obj.name ] = true;
 	    //console.debug( '\t names: ', this.names )
-	    AjaxQueue.prototype.add.call( this, obj.fn );
+	    return AjaxQueue.prototype.add.call( this, obj.fn );
 	    //console.debug( '\t queue: ', this.queue.length );
 	};
 	
 	/** override to remove names */
 	NamedAjaxQueue.prototype.clear = function clear(){
 	    this.names = {};
+	    return this;
 	};
 	
 	/** shortcut constructor / fire and forget

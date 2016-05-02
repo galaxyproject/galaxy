@@ -49,7 +49,6 @@ var History = Backbone.Model
         this.log( this + ".initialize:", historyJSON, contentsJSON, options );
 
         /** HistoryContents collection of the HDAs contained in this history. */
-        console.log( this + ', init\'ing contents:' );
         this.contents = new HISTORY_CONTENTS.HistoryContents( contentsJSON || [], {
             history     : this,
             historyId   : this.get( 'id' ),
@@ -136,7 +135,7 @@ var History = Backbone.Model
 
     /** Return the number of running hda/hdcas in this history (note: unknown === 0) */
     numOfUnfinishedShownContents : function(){
-        return this.contents.running().visibleAndUndeleted().length || 0;
+        return this.contents.runningAndActive().length || 0;
     },
 
     // ........................................................................ search

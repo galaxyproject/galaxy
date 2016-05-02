@@ -414,24 +414,15 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
 
     // ........................................................................ options menu
     //TODO: remove to batch
-    /** helper that fetches using filterParams then calls save on each fetched using updateWhat as the save params */
-    _filterAndUpdate : function( filterParams, updateWhat ){
-        var self = this;
-        return self.model.contents.fetch({ filters: filterParams })
-            .then( function(){
-                // TODO: could probably re-use the response json from the fetch here
-                var hidden = self.model.contents.hidden();
-                hidden.ajaxQueue( Backbone.Model.prototype.save, updateWhat )
-                    .done( function(){ Galaxy.currHistoryPanel.renderItems(); });
-            });
-    },
-
     /** unhide any hidden datasets */
     unhideHidden : function() {
         var self = this;
         if( confirm( _l( 'Really unhide all hidden datasets?' ) ) ){
             // get all hidden, regardless of deleted/purged
-            return self._filterAndUpdate({ visible: false, deleted: '', purged: '' }, { visible : true });
+            return self.model.contents._filterAndUpdate(
+                { visible: false, deleted: '', purged: '' },
+                { visible : true }
+            );
         }
         return jQuery.when();
     },
@@ -440,7 +431,7 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
     deleteHidden : function() {
         var self = this;
         if( confirm( _l( 'Really delete all hidden datasets?' ) ) ){
-            return self._filterAndUpdate(
+            return self.model.contents._filterAndUpdate(
                 // get all hidden, regardless of deleted/purged
                 { visible: false, deleted: '', purged: '' },
                 // both delete *and* unhide them
@@ -451,7 +442,7 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
     },
 
     /** Return a string rep of the history */
-    toString    : function(){
+    toString : function(){
         return 'CurrentHistoryView(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });

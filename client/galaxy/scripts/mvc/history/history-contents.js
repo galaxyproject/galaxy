@@ -72,8 +72,11 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         /** @type {Boolean} does this collection contain and fetch non-visible elements */
         this.includeHidden = options.includeHidden || false;
 
-        // console.log( '----------------------------------------------------------' );
-        this.on( 'all', console.log, console );
+        this.on( 'all', function(){
+            var args = _.toArray( arguments );
+            if( /^change:*/.test( args[0] ) ){ return; }
+            console.log.apply( console, [ this + '' ].concat( args ) );
+        });
     },
 
     /** root api url */
@@ -93,14 +96,19 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         'hid-asc'    : BASE_MVC.buildComparator( 'hid',  { ascending: true }),
     }),
 
-    /** Get the id of every model in this collection not in a 'ready' state (running).
-     *  @returns an array of model ids
-     *  @see HistoryDatasetAssociation#inReadyState
-     */
+    /** Get every model in this collection not in a 'ready' state (running). */
     running : function(){
-        function filterFn( c ){ return !c.inReadyState(); }
-        // console.log( '(running)' );
-        return new HistoryContents( this.filter( filterFn ) );
+        return this.filter( function( c ){ return !c.inReadyState(); });
+    },
+
+    /**  */
+    runningAndActive : function(){
+        return this.filter( function( c ){
+            return ( !c.inReadyState() )
+                && (  c.get( 'visible' ) )
+                // TODO: deletedOrPurged?
+                && ( !c.get( 'deleted' ) );
+        });
     },
 
     /** Get the model with the given hid
@@ -108,34 +116,32 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
      *  @returns {HistoryDatasetAssociation} the model with the given hid or undefined if not found
      */
     getByHid : function( hid ){
-        return _.first( this.filter( function( content ){ return content.get( 'hid' ) === hid; }) );
+        return _.first( this.filter( function( c ){ return c.get( 'hid' ) === hid; }) );
     },
 
     /** return true if all contents have details */
     haveDetails : function(){
-        return this.all( function( content ){ return content.hasDetails(); });
+        return this.all( function( c ){ return c.hasDetails(); });
     },
 
-    // .................... hidden / deleted
+    // ........................................................................ hidden / deleted
     /** return a new contents collection of only hidden items */
     hidden : function(){
-        function filterFn( c ){ return c.hidden(); }
-        // console.log( '(hidden)' );
-        return new HistoryContents( this.filter( filterFn ) );
+        return this.filter( function( c ){ return c.hidden(); });
     },
 
     /** return a new contents collection of only hidden items */
     deleted : function(){
-        function filterFn( c ){ return c.get( 'deleted' ); }
-        // console.log( '(deleted)' );
-        return new HistoryContents( this.filter( filterFn ) );
+        return this.filter( function( c ){ return c.get( 'deleted' ); });
     },
 
     /** return a new contents collection of only hidden items */
     visibleAndUndeleted : function(){
-        function filterFn( c ){ return c.get( 'visible' ) && !c.get( 'deleted' ); }
-        // console.log( '(visibleAndUndeleted)' );
-        return new HistoryContents( this.filter( filterFn ) );
+        return this.filter( function( c ){
+            return (  c.get( 'visible' ) )
+                // TODO: deletedOrPurged?
+                && ( !c.get( 'deleted' ) );
+        });
     },
 
     /** create a setter in order to publish the change */
@@ -251,13 +257,31 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     },
 
     // ............. quasi-batch ops
+    // TODO: to batch
+    /** helper that fetches using filterParams then calls save on each fetched using updateWhat as the save params */
+    _filterAndUpdate : function( filterParams, updateWhat ){
+        var self = this;
+        var idAttribute = self.model.prototype.idAttribute;
+        var updateArgs = [ updateWhat ];
+
+        return self.fetch({ filters: filterParams, remove: false })
+            .then( function( fetched ){
+                // convert filtered json array to model array
+                fetched = fetched.reduce( function( modelArray, currJson, i ){
+                    var model = self.get( currJson[ idAttribute ] );
+                    return model? modelArray.concat( model ) : modelArray;
+                }, []);
+                return self.ajaxQueue( 'save', updateArgs, fetched );
+            });
+    },
+
     /** using a queue, perform ajaxFn on each of the models in this collection */
-    ajaxQueue : function( ajaxFn, options ){
-        var queue = new AJAX_QUEUE.AjaxQueue( this.chain().reverse().map( function( content, i ){
-            return function(){ return ajaxFn.call( content, options ); };
-        }));
-        queue.start();
-        return queue.deferred;
+    ajaxQueue : function( ajaxFn, args, collection ){
+        collection = collection || this.models;
+        return new AJAX_QUEUE.AjaxQueue( collection.slice().reverse().map( function( content, i ){
+            var fn = _.isString( ajaxFn )? content[ ajaxFn ] : ajaxFn;
+            return function(){ return fn.apply( content, args ); };
+        })).start();
     },
 
     /** @type {Integer} how many contents per call to fetch when using progressivelyFetchDetails */
@@ -461,11 +485,11 @@ var HidSectionedHistoryContents = HistoryContents.extend({
     _lastFullSection : function(){
         // console.log( '_lastFullSection:' );
         var count = this._countSections();
-        console.log( '_lastFullSection, count:', count );
-        console.log( '_lastFullSection, hid:', this._getLastHid(), this.hidsPerSection, ( this._getLastHid() % this.hidsPerSection ) );
+        // console.log( '_lastFullSection, count:', count );
+        // console.log( '_lastFullSection, hid:', this._getLastHid(), this.hidsPerSection, ( this._getLastHid() % this.hidsPerSection ) );
         var hasNonFullSection = ( this._getLastHid() % this.hidsPerSection ) > 0;
-        console.log( '_lastFullSection, hasNonFullSection:', hasNonFullSection );
-        console.log( '_lastFullSection:', hasNonFullSection? ( count - 1 ) : count );
+        // console.log( '_lastFullSection, hasNonFullSection:', hasNonFullSection );
+        // console.log( '_lastFullSection:', hasNonFullSection? ( count - 1 ) : count );
         return hasNonFullSection? ( count - 1 ) : count;
     },
 
@@ -484,33 +508,6 @@ var HidSectionedHistoryContents = HistoryContents.extend({
 
     /** Filter the collection to only those models that should be currently viewed */
     _filterSectionCollection : function( section, filterFn ){
-//         // preconditon: assumes collection *has loaded* the range and is sorted
-//         var self = this;
-//         var range = self._getSectionRange( section );
-//         // console.log( 'range:', range );
-//         // console.log( 'length:', this.length );
-
-//         var subcollection = [];
-//         var descending = this.order === 'hid';
-//         // console.log( 'descending:', descending );
-//         for( var index = 0; index < this.length; index++ ){
-//             var content = this.at( index );
-//             var hid = content.get( 'hid' );
-//             // console.log( index, stop, hid, filterFn( content ), content );
-
-// // TODO: binary search skip to, then bail when done (should be sorted already)
-//             if( descending ){
-//                 if( hid > range.last  ){ continue; }
-//                 if( hid < range.first ){ break; }
-//             } else {
-//                 if( hid < range.first ){ continue; }
-//                 if( hid > range.last  ){ break; }
-//             }
-//             if( hid >= range.first && hid <= range.last && filterFn( content ) ){ subcollection.push( content ); }
-//         }
-//         // console.log( 'subcollection.length:', subcollection.length );
-//         return subcollection;
-
         return this._sectionCollection( section ).filter( filterFn );
     },
 
@@ -578,7 +575,7 @@ var HidSectionedHistoryContents = HistoryContents.extend({
         var range = self._getSectionRange( section );
         var lastSection = section === self._lastSection();
         var descending = this.order === 'hid';
-        console.log( '_indexOfHidInSection:', hid, section, range, lastSection, descending );
+        // console.log( '_indexOfHidInSection:', hid, section, range, lastSection, descending );
         var pastEndOfClosedSection = !lastSection && hid > range.last;
         if( pastEndOfClosedSection || hid < range.first ){ return null; }
         return self._indexOfHid( hid );

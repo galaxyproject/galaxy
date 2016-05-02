@@ -148,11 +148,157 @@ var ControlledFetchCollection = Backbone.Collection.extend({
         }
         return collection;
     },
+
+});
+
+
+//=============================================================================
+/**
+ *
+ */
+var PaginatedCollection = ControlledFetchCollection.extend({
+
+    /** @type {Number} limit used for each page's fetch */
+    limitPerPage       : 500,
+
+    initialize : function( models, options ){
+        ControlledFetchCollection.prototype.initialize.call( this, models, options );
+        this.currentPage = options.currentPage || 0;
+        this.setTotal( options.total || 0 );
+    },
+
+    setTotal : function( newTotal ){
+        this.total = newTotal;
+        this._lastPage = Math.ceil( this.total / this.limitPerPage );
+        // console.log( 'total:', this.total, '_lastPage:', this._lastPage );
+    },
+
+    /** fetch the next page of data */
+    fetchPage : function( pageNum, options ){
+        pageNum = Math.max( 0, Math.min( pageNum, this._lastPage ) );
+        options = _.defaults( options || {}, {
+            limit : this.limitPerPage,
+            offset: pageNum * this.limitPerPage
+        });
+        options.reset = true;
+        this.currentPage = pageNum;
+        return this.fetch( options );
+    },
+
+    fetchFirst : function( options ){
+        return this.fetchPage( this.currentPage );
+    },
+
+    fetchPrevPage : function( options ){
+        return this.fetchPage( this.currentPage - 1, options );
+    },
+
+    fetchNextPage : function( options ){
+        return this.fetchPage( this.currentPage + 1, options );
+    },
+});
+
+
+//=============================================================================
+/**
+ * A Collection that will load more elements without reseting.
+ */
+var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
+
+    /** @type {Number} limit used for the first fetch (or a reset) */
+    limitOnFirstFetch   : null,
+    /** @type {Number} limit used for each subsequent fetch */
+    limitPerFetch       : 100,
+
+    initialize : function( models, options ){
+        ControlledFetchCollection.prototype.initialize.call( this, models, options );
+        /** @type {Integer} number of contents to return from the first fetch */
+        this.limitOnFirstFetch = options.limitOnFirstFetch || this.limitOnFirstFetch;
+        /** @type {Integer} limit for every fetch after the first */
+        this.limitPerFetch = options.limitPerFetch || this.limitPerFetch;
+        /** @type {Boolean} are all contents fetched? */
+        this.allFetched = false;
+        /** @type {Integer} what was the offset of the last content returned */
+        this.lastFetched = options.lastFetched || 0;
+    },
+
+    /** build ajax data/parameters from options */
+    _buildFetchOptions : function( options ){
+        // options (options for backbone.fetch and jquery.ajax generally)
+        // backbone option; false here to make fetching an addititive process
+        options.remove = options.remove || false;
+        return ControlledFetchCollection.prototype._buildFetchOptions.call( this, options );
+    },
+
+    /** fetch the first 'page' of data */
+    fetchFirst : function( options ){
+        // console.log( 'ControlledFetchCollection.fetchFirst:', options );
+        options = options? _.clone( options ) : {};
+        this.allFetched = false;
+        this.lastFetched = 0;
+        return this.fetchMore( _.defaults( options, {
+            reset : true,
+            limit : this.limitOnFirstFetch,
+        }));
+    },
+
+    /** fetch the next page of data */
+    fetchMore : function( options ){
+        // console.log( 'ControlledFetchCollection.fetchMore:', options );
+        options = _.clone( options || {} );
+        var collection = this;
+
+        // console.log( 'fetchMore, options.reset:', options.reset );
+        if( ( !options.reset && collection.allFetched ) ){
+            return jQuery.when();
+        }
+
+        // TODO: this fails in the edge case where
+        //  the first fetch offset === limit (limit 4, offset 4, collection.length 4)
+        options.offset = options.reset? 0 : collection.lastFetched;
+        var limit = options.limit = options.limit || collection.limitPerFetch || null;
+        // console.log( 'fetchMore, limit:', limit, 'offset:', options.offset );
+
+        collection.trigger( 'fetching-more' );
+        return collection.fetch( options )
+            .always( function(){
+                collection.trigger( 'fetching-more-done' );
+            })
+            // maintain allFetched flag and trigger if all were fetched this time
+            .done( function _postFetchMore( fetchedData ){
+                var numFetched = _.isArray( fetchedData )? fetchedData.length : 0;
+                collection.lastFetched += numFetched;
+                // console.log( 'fetchMore, lastFetched:', collection.lastFetched );
+                // anything less than a full page means we got all there is to get
+                if( !limit || numFetched < limit ){
+                    collection.allFetched = true;
+                    collection.trigger( 'all-fetched', this );
+                }
+            }
+        );
+    },
+
+    /** fetch all the collection */
+    fetchAll : function( options ){
+        // whitelist options to prevent allowing limit/offset/filters
+        // (use vanilla fetch instead)
+        options = options || {};
+        var self = this;
+        options = _.pick( options, 'silent' );
+        //TODO?: this doesn't work?
+        options.filters = {};
+        return self.fetch( options ).done( function( fetchData ){
+            self.allFetched = true;
+            self.trigger( 'all-fetched', self );
+        });
+    },
 });
 
 
 //==============================================================================
     return {
-        ControlledFetchCollection     : ControlledFetchCollection
+        ControlledFetchCollection     : ControlledFetchCollection,
+        PaginatedCollection           : PaginatedCollection,
+        InfinitelyScrollingCollection : InfinitelyScrollingCollection,
     };
 });
