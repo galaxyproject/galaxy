@@ -138,24 +138,6 @@ var HistoryView = _super.extend(
         return $.when();
     },
 
-    /** release/free/shutdown old models and set up panel for new models
-     *  @fires new-model with the panel as parameter
-     */
-    setModel : function( model, attributes ){
-        _super.prototype.setModel.call( this, model, attributes );
-        if( this.model ){
-            this._setUpWebStorage();
-        }
-    },
-
-    /** Override to reset web storage when the id changes (since it needs the id) */
-    _setUpModelListeners : function(){
-        _super.prototype._setUpModelListeners.call( this );
-        return this.listenTo( this.model, {
-            'change:id' : this._setUpWebStorage,
-        });
-    },
-
     /** Override to reset web storage when the id changes (since it needs the id) */
     _setUpCollectionListeners : function(){
         _super.prototype._setUpCollectionListeners.call( this );
@@ -164,38 +146,6 @@ var HistoryView = _super.extend(
             'fetching-more'     : this.showContentsLoadingIndicator,
             'fetching-more-done': this.hideContentsLoadingIndicator,
         });
-    },
-
-    // ------------------------------------------------------------------------ browser stored prefs
-    /** Set up client side storage. Currently PersistanStorage keyed under 'history:<id>'
-     *  @see PersistentStorage
-     */
-    _setUpWebStorage : function(){
-        if( !this.model || !this.model.id ){ return this; }
-        //this.log( '_setUpWebStorage', initiallyExpanded, show_deleted, show_hidden );
-        if( this.storage ){
-            this.stopListening( this.storage );
-        }
-
-        this.storage = new HISTORY_PREFS.HistoryPrefs({
-            id: HISTORY_PREFS.HistoryPrefs.historyStorageKey( this.model.get( 'id' ) )
-        });
-        this.trigger( 'new-storage', this.storage, this );
-        this.log( this + ' (init\'d) storage:', this.storage.get() );
-
-// TODO: reverse this - have storage reflect what's used in the view and not visversa
-        this.listenTo( this.storage, {
-            'change:show_deleted' : function( view, newVal ){
-                this.showDeleted = newVal;
-            },
-            'change:show_hidden' : function( view, newVal ){
-                this.showHidden = newVal;
-            }
-        }, this );
-        this.showDeleted = this.storage.get( 'show_deleted' ) || false;
-        this.showHidden  = this.storage.get( 'show_hidden' ) || false;
-
-        return this;
     },
 
     // ------------------------------------------------------------------------ panel rendering
@@ -250,7 +200,7 @@ var HistoryView = _super.extend(
     // ------------------------------------------------------------------------ client-side pagination
     /**   */
     renderItems : function( $whereTo ){
-        console.log( 'renderItems -----------------------------------------------------------' );
+        // console.log( 'renderItems -----------------------------------------------------------' );
         $whereTo = $whereTo || this.$el;
         var self = this;
         var contents = self.model.contents;
@@ -258,9 +208,9 @@ var HistoryView = _super.extend(
 
         self.freeViews();
         // render sections
-        console.log( 'renderItems:', self.$list( $whereTo ) );
+        // console.log( 'renderItems:', self.$list( $whereTo ) );
         self.$list( $whereTo ).html( contents._mapSectionRanges( function( section ){
-            console.log( 'renderItems:', section );
+            // console.log( 'renderItems:', section );
             return self.templates.listItemsSection( section, self );
         }).join( '\n' ));
         // render content views into (only) the current section
@@ -268,12 +218,12 @@ var HistoryView = _super.extend(
         self._renderEmptyMessage( $whereTo ).toggle( !self.views.length );
 
         self.trigger( 'views:ready', self.views );
-        console.log( '----------------------------------------------------------- renderItems' );
+        // console.log( '----------------------------------------------------------- renderItems' );
         return self.views;
     },
 
     _renderSection : function( section, $whereTo ){
-        console.debug( this + '._renderSection', section, $whereTo );
+        // console.debug( this + '._renderSection', section, $whereTo );
         var self = this;
         // render views from collection for the current section, replacing that section marker with them
         // note: shows only one section's worth of views at a time
@@ -298,12 +248,13 @@ var HistoryView = _super.extend(
     },
 
     // ------------------------------------------------------------------------ sub-views
-    /** in this override, check if the contents would also display based on show_deleted/hidden */
+    /** in this override, check if the contents would also display based on includeDeleted/hidden */
     _filterItem : function( model ){
-        var panel = this;
-        return ( _super.prototype._filterItem.call( panel, model )
-            && ( !model.hidden() || panel.showHidden )
-            && ( !model.isDeletedOrPurged() || panel.showDeleted ) );
+        var self = this;
+        var contents = self.model.contents;
+        return ( contents.includeHidden  || !model.hidden() )
+            && ( contents.includeDeleted || !model.isDeletedOrPurged() )
+            && ( _super.prototype._filterItem.call( self, model ) );
     },
 
     /** In this override, since history contents are mixed,
@@ -325,7 +276,7 @@ var HistoryView = _super.extend(
         var options = _super.prototype._getItemViewOptions.call( this, model );
         return _.extend( options, {
             linkTarget      : this.linkTarget,
-            expanded        : !!this.storage.get( 'expandedIds' )[ model.id ],
+            expanded        : this.model.contents.storage.isExpanded( model.id ),
             hasUser         : this.model.ownedByCurrUser()
         });
     },
@@ -334,21 +285,21 @@ var HistoryView = _super.extend(
     _setUpItemViewListeners : function( view ){
         var panel = this;
         _super.prototype._setUpItemViewListeners.call( panel, view );
-        //TODO:?? could use 'view:expanded' here?
+//TODO: send from content view: this.model.collection.storage.addExpanded
         // maintain a list of items whose bodies are expanded
         return panel.listenTo( view, {
             'expanded': function( v ){
-                panel.storage.addExpanded( v.model );
+                panel.model.contents.storage.addExpanded( v.model );
             },
             'collapsed': function( v ){
-                panel.storage.removeExpanded( v.model );
+                panel.model.contents.storage.removeExpanded( v.model );
             }
         });
     },
 
     /** override to remove expandedIds from webstorage */
     collapseAll : function(){
-        this.storage.set( 'expandedIds', {} );
+        this.model.contents.storage.clearExpanded();
         _super.prototype.collapseAll.call( this );
     },
 
@@ -376,35 +327,35 @@ var HistoryView = _super.extend(
         }
         self.scrollTo( 0 );
 
-        console.log( 'contains?', contents.contains( model ) );
-        console.log( 'get:', contents.get( model.id ) + '' );
-        console.log( contents.length );
+        // console.log( 'contains?', contents.contains( model ) );
+        // console.log( 'get:', contents.get( model.id ) + '' );
+        // console.log( contents.length );
         // contents.on( 'all', console.info, console );
 
-        console.log( '^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^' );
+        // console.log( '^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^' );
         var hid = model.get( 'hid' );
         var insertionIndex = contents._indexOfHidInSection( hid, contents.currentSection );
-        console.log( hid, insertionIndex, contents.at( insertionIndex ) + '' );
-        console.log( contents.at( insertionIndex - 1 ) + '', contents.at( insertionIndex + 1 ) + '' );
+        // console.log( hid, insertionIndex, contents.at( insertionIndex ) + '' );
+        // console.log( contents.at( insertionIndex - 1 ) + '', contents.at( insertionIndex + 1 ) + '' );
         if( insertionIndex === null ){ return null; }
 
 //TODO: this should happen elsewhere
         // have to manually update the hid_counter
         self.model.set( 'hid_counter', self.model.get( 'hid_counter' ) + 1 );
-        console.log( 'hid_counter:', self.model.get( 'hid_counter' ) );
+        // console.log( 'hid_counter:', self.model.get( 'hid_counter' ) );
 
-        console.log( 'at index', insertionIndex, 'adding: ' + model );
+        // console.log( 'at index', insertionIndex, 'adding: ' + model );
         var view = self._createItemView( model );
         self.$emptyMessage().fadeOut( self.fxSpeed );
         self._attachView( view, insertionIndex );
-        console.log( '^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^' );
+        // console.log( '^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^' );
 
         return view;
     },
 
     /**  */
     _attachView : function( view, modelIndex, useFx ){
-        console.log( '_attachView:', view, modelIndex, useFx );
+        // console.log( '_attachView:', view, modelIndex, useFx );
         useFx = _.isUndefined( useFx )? true : useFx;
         var self = this;
         var $el = self._renderItemView$el( view ).hide();
@@ -412,19 +363,18 @@ var HistoryView = _super.extend(
 // Im not sure any of this shit is needed - (it prob. isn't *when adding to the last section*)
         var viewIndex = 0;
         var prevModel = self.model.contents.at( modelIndex - 1 );
-        window.prevModel = prevModel;
-        console.log( 'prevModel: ' + prevModel, prevModel );
+        // console.log( 'prevModel: ' + prevModel, prevModel );
         if( prevModel ){
             var found = _.findIndex( self.views, function( v ){
-                console.log( '       ', v + '', v.model + '' );
-                console.log( '       ', v.model === prevModel );
+                // console.log( '       ', v + '', v.model + '' );
+                // console.log( '       ', v.model === prevModel );
                 return v.model === prevModel;
             });
-            console.log( 'found:', found );
+            // console.log( 'found:', found );
             if( found !== -1 ){ viewIndex = found + 1; }
         }
         // var viewIndex = Math.max( 0, _.findIndex( self.views, function( v ){ return v.model === prevModel; }) );
-        console.log( 'viewIndex:', viewIndex );
+        // console.log( 'viewIndex:', viewIndex );
 
         self.views.splice( viewIndex, 0, view );
         if( viewIndex === 0 ){
@@ -432,12 +382,12 @@ var HistoryView = _super.extend(
 
         } else {
             var prevView = self.views[ viewIndex ];
-            console.log( 'prevView:', prevView + '', prevView.$el.get(0) );
-            console.log( prevView.$el.parent().get(0) );
+            // console.log( 'prevView:', prevView + '', prevView.$el.get(0) );
+            // console.log( prevView.$el.parent().get(0) );
             // $el.insertAfter( prevView.$el );
             self.$currentSection().children( '.history-content' ).eq( viewIndex - 1 ).after( $el );
         }
-        console.log( 'self.views[ viewIndex ]:', self.views[ viewIndex ] );
+        // console.log( 'self.views[ viewIndex ]:', self.views[ viewIndex ] );
         self.trigger( 'view:attached', view );
 
         if( useFx ){
@@ -515,42 +465,33 @@ var HistoryView = _super.extend(
     },
 
     /** Toggle and store the deleted visibility and re-render items
-     * @returns {Boolean} new show_deleted setting
+     * @returns {Boolean} new setting
      */
-    toggleShowDeleted : function( show, store ){
-        show = ( show !== undefined )?( show ):( !this.showDeleted );
-        store = ( store !== undefined )?( store ):( true );
-
+    toggleShowDeleted : function( show, options ){
+        show = ( show !== undefined )?( show ):( !this.model.contents.includeDeleted );
         var self = this;
-        self.showDeleted = show;
-        //TODO: at this point deleted/hidden makes more sense (simpler) in the collection
-        self.model.contents.includeDeleted = show;
+        var contents = self.model.contents;
+        contents.setIncludeDeleted( show, options );
         self.trigger( 'show-deleted', show );
-        if( store ){ self.storage.set( 'show_deleted', show ); }
 
-        var fetch = show? fetchDeletedInSection( self.model.contents.currentSection ) : jQuery.when();
+        var fetch = show? contents.fetchDeletedInSection( contents.currentSection ) : jQuery.when();
         fetch.done( function(){ self.renderItems(); });
-        return self.showDeleted;
+        return contents.includeDeleted;
     },
 
     /** Toggle and store whether to render explicity hidden contents
-     * @returns {Boolean} new show_hidden setting
+     * @returns {Boolean} new setting
      */
-    toggleShowHidden : function( show, store ){
-        show = ( show !== undefined )?( show ):( !this.showHidden );
-        store = ( store !== undefined )?( store ):( true );
-
+    toggleShowHidden : function( show, store, options ){
+        show = ( show !== undefined )?( show ):( !this.model.contents.includeHidden );
         var self = this;
-        self.showHidden = show;
-        self.model.contents.includeHidden = show;
+        var contents = self.model.contents;
+        contents.setIncludeHidden( show, options );
         self.trigger( 'show-hidden', show );
-        if( store ){
-            self.storage.set( 'show_hidden', show );
-        }
 
-        var fetch = show? fetchHiddenInSection( self.model.contents.currentSection ) : jQuery.when();
+        var fetch = show? contents.fetchHiddenInSection( contents.currentSection ) : jQuery.when();
         fetch.done( function(){ self.renderItems(); });
-        return self.showDeleted;
+        return contents.includeHidden;
     },
 
     /** On the first search, if there are no details - load them, then search */

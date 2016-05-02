@@ -141,12 +141,12 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
     /** listening for collection events */
     _setUpCollectionListeners : function(){
         _super.prototype._setUpCollectionListeners.call( this );
-        //TODO:?? may not be needed? see history-view-edit, 369
+//TODO:?? may not be needed? see history-view-edit, _handleItemVisibleChange
         // if a hidden item is created (gen. by a workflow), moves thru the updater to the ready state,
         //  then: remove it from the collection if the panel is set to NOT show hidden datasets
         this.listenTo( this.collection, 'state:ready', function( model, newState, oldState ){
             if( ( !model.get( 'visible' ) )
-            &&  ( !this.storage.get( 'show_hidden' ) ) ){
+            &&  ( !this.collection.storage.includeHidden() ) ){
                 this.removeItemView( model );
             }
         });

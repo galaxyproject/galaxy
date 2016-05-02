@@ -28,31 +28,25 @@ var HistoryContentMixin = {
     // Instead, use type_id which prefixes the history_content_type so the bbone collection can differentiate
     idAttribute : 'type_id',
 
-    /** override because backbone tests boolean( idAttribute ), but it's not an empty string even for new models
-     *  due to our use of type_id.
-     */
-    // isNew : function(){
-    //     return !this.get( 'id' );
-    // },
-
     // ........................................................................ common queries
     /** the more common alias of visible */
     hidden : function(){
         return !this.get( 'visible' );
     },
 
-    /** based on show_deleted, show_hidden (gen. from the container control),
+//TODO: remove
+    /** based on includeDeleted, includeHidden (gen. from the container control),
      *      would this ds show in the list of ds's?
-     *  @param {Boolean} show_deleted are we showing deleted hdas?
-     *  @param {Boolean} show_hidden are we showing hidden hdas?
+     *  @param {Boolean} includeDeleted are we showing deleted hdas?
+     *  @param {Boolean} includeHidden are we showing hidden hdas?
      */
-    isVisible : function( show_deleted, show_hidden ){
+    isVisible : function( includeDeleted, includeHidden ){
         var isVisible = true;
-        if( ( !show_deleted )
+        if( ( !includeDeleted )
         &&  ( this.get( 'deleted' ) || this.get( 'purged' ) ) ){
             isVisible = false;
         }
-        if( ( !show_hidden )
+        if( ( !includeHidden )
         &&  ( !this.get( 'visible' ) ) ){
             isVisible = false;
         }

@@ -316,17 +316,18 @@ var HistoryViewEdit = _super.extend(
      *  @param {Model} the item model to check
      */
     _handleItemDeletionChange : function( itemModel ){
-        // console.log( '_handleItemDeletionChange:', contentsShown, itemModel.get( 'deleted' ), this.showDeleted );
+        var contents = this.model.contents;
         var contentsShown = this.model.get( 'contents_active' );
+        // console.log( '_handleItemDeletionChange:', contentsShown, itemModel.get( 'deleted' ), contents.includeDeleted );
         if( itemModel.get( 'deleted' ) ){
             contentsShown.deleted += 1;
-            if( !this.showDeleted ){
+            if( !contents.includeDeleted ){
                 this.removeItemView( itemModel );
             }
             contentsShown.active -= 1;
         } else {
             contentsShown.deleted -= 1;
-            if( !this.showDeleted ){
+            if( !contents.includeDeleted ){
                 contentsShown.active -= 1;
             }
         }
@@ -339,17 +340,18 @@ var HistoryViewEdit = _super.extend(
      *  @param {Model} the item model to check
      */
     _handleItemVisibleChange : function( itemModel ){
+        var contents = this.model.contents;
         var contentsShown = this.model.get( 'contents_active' );
-        // console.log( '_handleHdaVisibleChange:', contentsShown, itemModel.hidden(), this.showHidden );
+        // console.log( '_handleItemDeletionChange:', contentsShown, itemModel.get( 'deleted' ), contents.includeHidden );
         if( itemModel.hidden() ){
             contentsShown.hidden += 1;
-            if( !this.showHidden ){
+            if( !contents.includeHidden ){
                 this.removeItemView( itemModel );
             }
             contentsShown.active -= 1;
         } else {
             contentsShown.hidden -= 1;
-            if( !this.showHidden ){
+            if( !contents.includeHidden ){
                 contentsShown.active -= 1;
             }
         }
@@ -519,7 +521,7 @@ HistoryViewEdit.prototype.templates = (function(){
 
         '<% if( history.contents_active.deleted ){ %>',
             '<span class="deleted-count">',
-            '<% if( view.showDeleted ){ %>',
+            '<% if( view.model.contents.includeDeleted ){ %>',
                 '<a class="toggle-deleted-link" href="javascript:void(0);">',
                     _l( 'hide deleted' ),
                 '</a>',
@@ -534,7 +536,7 @@ HistoryViewEdit.prototype.templates = (function(){
 
         '<% if( history.contents_active.hidden ){ %>',
             '<span class="hidden-count">',
-            '<% if( view.showHidden ){ %>',
+            '<% if( view.model.contents.includeHidden ){ %>',
                 '<a class="toggle-hidden-link" href="javascript:void(0);">',
                     _l( 'hide hidden' ),
                 '</a>',

@@ -20,14 +20,42 @@ var HistoryPrefs = BASE_MVC.SessionStorageModel.extend(
 
     /** add an hda id to the hash of expanded hdas */
     addExpanded : function( model ){
-        var key = 'expandedIds';
-        this.save( key, _.extend( this.get( key ), _.object([ model.id ], [ model.get( 'id' ) ]) ) );
+//TODO: use type_id and not model
+        var current = this.get( 'expandedIds' );
+        current[ model.id ] = model.get( 'id' );
+        this.save( 'expandedIds', current );
     },
 
     /** remove an hda id from the hash of expanded hdas */
     removeExpanded : function( model ){
-        var key = 'expandedIds';
-        this.save( key, _.omit( this.get( key ), model.id ) );
+        var current = this.get( 'expandedIds' );
+        delete current[ model.id ];
+        this.save( 'expandedIds', current );
+    },
+
+    isExpanded : function( contentId ){
+        return _.result( this.get( 'expandedIds' ), contentId, false );
+    },
+
+    allExpanded : function(){
+        return _.values( this.get( 'expandedIds' ) );
+    },
+
+    clearExpanded : function(){
+        this.set( 'expandedIds', {} );
+    },
+
+    includeDeleted : function( val ){
+        // moving the invocation here so other components don't need to know the key
+        // TODO: change this key later
+        if( !_.isUndefined( val ) ){ this.set( 'show_deleted', val ); }
+        return this.get( 'show_deleted' );
+    },
+
+    includeHidden : function( val ){
+        // TODO: change this key later
+        if( !_.isUndefined( val ) ){ this.set( 'show_hidden', val ); }
+        return this.get( 'show_hidden' );
     },
 
     toString : function(){

@@ -40,16 +40,15 @@ var History = Backbone.Model
     // ........................................................................ set up/tear down
     /** Set up the model
      *  @param {Object} historyJSON model data for this History
-     *  @param {Object[]} contentsJSON   array of model data for this History's contents (hdas or collections)
      *  @param {Object} options     any extra settings including logger
      */
-    initialize : function( historyJSON, contentsJSON, options ){
+    initialize : function( historyJSON, options ){
         options = options || {};
         this.logger = options.logger || null;
-        this.log( this + ".initialize:", historyJSON, contentsJSON, options );
+        this.log( this + ".initialize:", historyJSON, options );
 
         /** HistoryContents collection of the HDAs contained in this history. */
-        this.contents = new HISTORY_CONTENTS.HistoryContents( contentsJSON || [], {
+        this.contents = new HISTORY_CONTENTS.HistoryContents( [], {
             history     : this,
             historyId   : this.get( 'id' ),
             order       : options.order,
@@ -91,6 +90,15 @@ var History = Backbone.Model
     },
 
     // ........................................................................ derived attributes
+    /**  */
+    contentsShown : function(){
+        var contentsActive = this.get( 'contents_active' );
+        var shown = contentsActive.active || 0;
+        shown += this.contents.includeDeleted? contentsActive.deleted : 0;
+        shown += this.contents.includeHidden?  contentsActive.hidden  : 0;
+        return shown;
+    },
+
     /** convert size in bytes to a more human readable version */
     nice_size : function(){
         return UTILS.bytesToString( this.get( 'size' ), true, 2 );
@@ -246,7 +254,7 @@ var History = Backbone.Model
         // fetch history then use history data to fetch (paginated) contents
         return this.fetch( options ).pipe( function getContents( history ){
             self.contents.history = self;
-            self.contents.historyId = history.id;
+            self.contents.setHistoryId( history.id );
             return self.fetchContents( contentsOptions );
         });
     },
@@ -255,11 +263,6 @@ var History = Backbone.Model
     fetchContents : function( options ){
         options = options || {};
         var self = this;
-        // now that we have a history id, we can read the prefs
-        // and make the contents fetch based on those
-        var prefs = HISTORY_PREFS.HistoryPrefs.get( self.id ).toJSON();
-        self.contents.includeDeleted = prefs.show_deleted;
-        self.contents.includeHidden = prefs.show_hidden;
 
         // we're updating, reset the update time
         self.lastUpdateTime = new Date();

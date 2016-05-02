@@ -157,14 +157,14 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
     /** create and return a collection for when none is initially passed */
     _createDefaultCollection : function(){
         // override
-        console.log( '(_createDefaultCollection)' );
+// console.log( '(_createDefaultCollection)' );
         return new this.collectionClass([]);
     },
 
     /** listening for collection events */
     _setUpCollectionListeners : function(){
         this.log( this + '._setUpCollectionListeners', this.collection );
-        this.collection.off();
+        this.stopListening( this.collection );
 
         // bubble up error events
         this.listenTo( this.collection, {
@@ -960,8 +960,8 @@ var ModelListPanel = ListPanel.extend({
             //TODO: relation btwn model, collection becoming tangled here
             // free the collection, and assign the new collection to either
             //  the model[ modelCollectionKey ], attributes.collection, or an empty vanilla collection
-            this.collection.off();
             // console.log( this + '(ModelListPanel) creating collection:', this.modelCollectionKey, this.model[ this.modelCollectionKey ] );
+            this.stopListening( this.collection );
             this.collection = this.model[ this.modelCollectionKey ]
                 || attributes.collection
                 || this._createDefaultCollection();

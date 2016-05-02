@@ -682,18 +682,20 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
      *      queueing the ajax call and using a named queue to prevent the call being sent twice
      */
     queueHdaFetch : function queueHdaFetch( column ){
+        // console.log( column.model + '.contentsShown:', column.model.contentsShown() );
+        var contents = column.model.contents;
         // console.log( 'queueHdaFetch:', column, column.model.get( 'contents_active' ) );
         // if the history model says it has hdas but none are present, queue an ajax req for them
-        if( column.model.contents.length === 0 && column.model.get( 'contents_active' ).active ){
-            // console.log( 'fetch needed: ' + column );
+        if( contents.length === 0 && column.model.contentsShown() ){
+            console.log( 'fetch needed: ' + column );
             var fetchOptions = { silent: true };
-            var ids = _.values( column.panel.storage.get( 'expandedIds' ) ).join();
+            var ids = _.values( contents.storage.allExpanded() ).join();
             if( ids ){ fetchOptions.details = ids; }
             // this uses a 'named' queue so that duplicate requests are ignored
             this.hdaQueue.add({
                 name : column.model.id,
                 fn : function(){
-                    return column.model.contents.fetchFirst( fetchOptions )
+                    return contents.fetchFirst( fetchOptions )
                         .done( function(){ column.panel.renderItems(); });
                 }
             });
@@ -704,13 +706,14 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
     /** Get the *detailed* json for *all* of a column's history's contents - req'd for searching */
     queueHdaFetchDetails : function( column ){
-        if( ( column.model.contents.length === 0 && column.model.get( 'contents_active' ).active )
-         || ( !column.model.contents.haveDetails() ) ){
+        var contents = column.model.contents;
+        var needsContentsLoaded = contents.length === 0 && column.model.contentsShown();
+        if( needsContentsLoaded || !contents.haveDetails() ){
             // this uses a 'named' queue so that duplicate requests are ignored
             this.hdaQueue.add({
                 name : column.model.id,
                 fn : function(){
-                    return column.model.contents.progressivelyFetchDetails()
+                    return contents.progressivelyFetchDetails()
                         .done( function(){ column.panel._renderEmptyMessage(); });
                 }
             });

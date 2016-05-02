@@ -23,6 +23,7 @@ var _super = CONTROLLED_FETCH_COLLECTION.ControlledFetchCollection;
 var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     _logNamespace : 'history',
 
+    // ........................................................................ composite collection
     /** since history content is a mix, override model fn into a factory, creating based on history_content_type */
     model : function( attrs, options ) {
         if( attrs.history_content_type === "dataset" ) {
@@ -46,6 +47,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return { validationError : 'Unknown history_content_type: ' + attrs.history_content_type };
     },
 
+    // ........................................................................ set up
     /** @type {Number} limit used for the first fetch (or a reset) */
     limitOnFirstFetch   : 500,
     /** @type {Number} limit used for each subsequent fetch */
@@ -54,37 +56,64 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     /** @type {String} order used here and when fetching from server */
     order : 'hid',
 
-    /** Set up */
-    initialize : function( models, options ){
-        options = options || {};
-        _super.prototype.initialize.call( this, models, options );
-
-        this.history = options.history || null;
-        this.historyId = options.historyId || null;
-
-        // backbonejs uses collection.model.prototype.idAttribute to determine if a model is *already* in a collection
-        //  and either merged or replaced. In this case, our 'model' is a function so we need to add idAttribute
-        //  manually here - if we don't, contents will not merge but be replaced/swapped.
-        this.model.prototype.idAttribute = 'type_id';
-
-        /** @type {Boolean} does this collection contain and fetch deleted elements */
-        this.includeDeleted = options.includeDeleted || false;
-        /** @type {Boolean} does this collection contain and fetch non-visible elements */
-        this.includeHidden = options.includeHidden || false;
-
-        this.on( 'all', function(){
-            var args = _.toArray( arguments );
-            if( /^change:*/.test( args[0] ) ){ return; }
-            console.log.apply( console, [ this + '' ].concat( args ) );
-        });
-    },
-
     /** root api url */
     urlRoot : Galaxy.root + 'api/histories',
 
     /** complete api url */
     url : function(){
         return this.urlRoot + '/' + this.historyId + '/contents';
+    },
+
+    /** Set up */
+    initialize : function( models, options ){
+        options = options || {};
+        _super.prototype.initialize.call( this, models, options );
+
+        this.history = options.history || null;
+        this.setHistoryId( options.historyId || null );
+        /** @type {Boolean} does this collection contain and fetch deleted elements */
+        this.includeDeleted = options.includeDeleted || this.includeDeleted;
+        /** @type {Boolean} does this collection contain and fetch non-visible elements */
+        this.includeHidden = options.includeHidden || this.includeHidden;
+
+        // backbonejs uses collection.model.prototype.idAttribute to determine if a model is *already* in a collection
+        //  and either merged or replaced. In this case, our 'model' is a function so we need to add idAttribute
+        //  manually here - if we don't, contents will not merge but be replaced/swapped.
+        this.model.prototype.idAttribute = 'type_id';
+
+        // this.on( 'all', function(){
+        //     var args = _.toArray( arguments );
+        //     if( /^change:*/.test( args[0] ) ){ return; }
+        //     console.log.apply( console, [ this + '' ].concat( args ) );
+        // });
+    },
+
+    setHistoryId : function( newId ){
+        this.historyId = newId;
+        this._setUpWebStorage();
+    },
+
+    /** Set up client side storage. Currently PersistanStorage keyed under 'history:<id>' */
+    _setUpWebStorage : function( initialSettings ){
+// TODO: use initialSettings
+        if( !this.historyId ){ return; }
+        this.storage = new HISTORY_PREFS.HistoryPrefs({
+            id: HISTORY_PREFS.HistoryPrefs.historyStorageKey( this.historyId )
+        });
+        this.trigger( 'new-storage', this.storage, this );
+
+        this.on({
+            'change:include-deleted' : function( newVal ){
+                this.storage.includeDeleted( newVal );
+            },
+            'change:include-hidden' : function( newVal ){
+                this.storage.includeHidden( newVal );
+            }
+        });
+
+        this.includeDeleted = this.storage.includeDeleted() || false;
+        this.includeHidden  = this.storage.includeHidden()  || false;
+        return this;
     },
 
     // ........................................................................ common queries
@@ -145,17 +174,22 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     },
 
     /** create a setter in order to publish the change */
-    setIncludeDeleted : function( setting ){
+    setIncludeDeleted : function( setting, options ){
         if( _.isBoolean( setting ) && setting !== this.includeDeleted ){
             this.includeDeleted = setting;
+            if( _.result( options, 'silent' ) ){ return; }
+// TODO: change from change:
             this.trigger( 'change:include-deleted', setting, this );
         }
     },
 
     /** create a setter in order to publish the change */
-    setIncludeHidden : function( setting ){
+    setIncludeHidden : function( setting, options ){
         if( _.isBoolean( setting ) && setting !== this.includeHidden ){
             this.includeHidden = setting;
+            options = options || {};
+            if( _.result( options, 'silent' ) ){ return; }
+// TODO: change from change:
             this.trigger( 'change:include-hidden', setting, this );
         }
     },
@@ -531,9 +565,9 @@ var HidSectionedHistoryContents = HistoryContents.extend({
             var hid = content.get( 'hid' );
 
             if( descending ){
-                if( hid < range.first ){ console.log( '< first' ); break; }
+                if( hid < range.first ){ break; }
             } else {
-                if( hid > range.last  ){ console.log( '> last' ); break; }
+                if( hid > range.last  ){ break; }
             }
             subcollection.push( content );
         }
@@ -600,7 +634,7 @@ var HidSectionedHistoryContents = HistoryContents.extend({
 
     fetchFirst : function( options ){
 _.extend( options || {}, { silent: true });
-        // console.log( 'fetchFirst?' );
+        // console.log( 'fetchFirst?', options );
         this.currentSection = 0;
         if( this.order === 'hid' && this._countSections() > 1 ){
             this.currentSection = this._lastFullSection();
