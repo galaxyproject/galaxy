@@ -108,7 +108,7 @@ class ToolBox( BaseGalaxyToolBox ):
 
     def create_tool( self, config_file, repository_id=None, guid=None, **kwds ):
         try:
-            tool_source = get_tool_source( config_file, getattr( self.app.config, "enable_beta_tool_formats", False ) )
+            tool_source = get_tool_source( config_file, enable_beta_formats=getattr( self.app.config, "enable_beta_tool_formats", False ) )
         except Exception, e:
             # capture and log parsing errors
             global_tool_errors.add_error(config_file, "Tool XML parsing", e)
