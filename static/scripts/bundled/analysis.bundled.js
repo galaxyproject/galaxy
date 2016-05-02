@@ -14596,17 +14596,20 @@ webpackJsonp([0,1],[
 	
 	    /** create a new HDCA in this collection */
 	    createHDCA : function( elementIdentifiers, collectionType, name, options ){
+	        // normally collection.create returns the new model, but we need the promise from the ajax, so we fake create
 	        //precondition: elementIdentifiers is an array of plain js objects
 	        //  in the proper form to create the collectionType
-	        return hdca.create({
-	                history_id          : this.historyId,
-	                collection_type     : collectionType,
-	                name                : name,
-	                // should probably be able to just send in a bunch of json here and restruct per class
-	                // note: element_identifiers is now (incorrectly) an attribute
-	                element_identifiers : elementIdentifiers
-	            // do not create the model on the client until the ajax returns
-	            }, { wait: true });
+	        var hdca = this.model({
+	            history_content_type: 'dataset_collection',
+	            collection_type     : collectionType,
+	            history_id          : this.historyId,
+	            name                : name,
+	            // should probably be able to just send in a bunch of json here and restruct per class
+	            // note: element_identifiers is now (incorrectly) an attribute
+	            element_identifiers : elementIdentifiers
+	        // do not create the model on the client until the ajax returns
+	        });
+	        return hdca.save( options );
 	    },
 	
 	    // ........................................................................ searching
