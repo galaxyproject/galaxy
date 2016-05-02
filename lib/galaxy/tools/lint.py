@@ -52,7 +52,7 @@ def lint_xml_with(lint_context, tool_xml, extra_modules=[]):
     return lint_tool_source_with(lint_context, tool_source, extra_modules=extra_modules)
 
 
-# TODO: Nothing inheriently tool-y about LintContext and in fact
+# TODO: Nothing inherently tool-y about LintContext and in fact
 # it is reused for repositories in planemo. Therefore, it should probably
 # be move to galaxy.util.lint.
 class LintContext(object):

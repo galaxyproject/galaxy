@@ -62,4 +62,4 @@ def _validate_for_tags(root, lint_ctx, tag_ordering):
             last_tag = tag
             last_key = key
         else:
-            lint_ctx.info("Unknown tag [%s] encoutered, this may result in a warning in the future." % tag)
+            lint_ctx.info("Unknown tag [%s] encountered, this may result in a warning in the future." % tag)
