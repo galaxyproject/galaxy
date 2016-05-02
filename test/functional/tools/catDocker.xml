@@ -1,9 +1,9 @@
 <tool id="catdc" name="Concatenate datasets (in docker)">
     <description>tail-to-head</description>
     <requirements>
-      <container type="docker">bgruening/busybox-bash:0.1</container>
+      <container type="docker">busybox:ubuntu-14.04</container>
     </requirements>
-    <command detect_errors="exit_code">
+    <command>
       echo "Galaxy slots passed through contain as \$GALAXY_SLOTS";
       cat $input1
       #for $q in $queries
