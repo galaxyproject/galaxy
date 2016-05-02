@@ -15,9 +15,10 @@ var View = Backbone.View.extend({
             multiple    : false,
             searchable  : true,
             optional    : false,
-            disabled    : false
+            disabled    : false,
+            onchange    : function(){}
         }).set( options );
-        this.on( 'change', function() { self.model.get( 'onchange' ) && self.model.get( 'onchange' )( self.value() ) } );
+        this.on( 'change', function() { self.model.get( 'onchange' )( self.value() ) } );
         this.listenTo( this.model, 'change:data', this._changeData, this );
         this.listenTo( this.model, 'change:disabled', this._changeDisabled, this );
         this.listenTo( this.model, 'change:wait', this._changeWait, this );
@@ -42,7 +43,10 @@ var View = Backbone.View.extend({
         this.$select.addClass( 'select' )
                     .attr( 'id', this.model.get( 'id' ) + '_select' )
                     .prop( 'multiple', this.model.get( 'multiple' ) )
-                    .on( 'change', function() { self.trigger( 'change' ) } );
+                    .on( 'change', function() {
+                        self.value( self._getValue() );
+                        self.trigger( 'change' );
+                    });
 
         // render drop down
         this.$dropdown.hide();
@@ -140,7 +144,8 @@ var View = Backbone.View.extend({
         if ( this._getValue() === null && !this.model.get( 'multiple' ) && !this.model.get( 'optional' ) ) {
             this._setValue( this.first() );
         }
-        this.all_button && this.all_button.value( $.isArray( this._getValue() ) ? this._getValue().length : 0, this.length() );
+        var value = this._getValue();
+        this.all_button && this.all_button.value( $.isArray( value ) ? value.length : 0, this.length() );
     },
 
     /** Return/Set current selection */
@@ -153,6 +158,11 @@ var View = Backbone.View.extend({
     first: function() {
         var options = this.$select.find( 'option' ).first();
         return options.length > 0 ? options.val() : null;
+    },
+
+    /** Check if a value is an existing option */
+    exists: function( value ) {
+        return this.$select.find( 'option[value="' + value + '"]' ).length > 0;
     },
 
     /** Return the label/text of the current selection */

@@ -125,6 +125,7 @@ define(['utils/utils',
                 id          : 'field-' + input_def.id,
                 data        : input_def.options,
                 display     : input_def.display,
+                optional    : input_def.optional,
                 onchange    : function() {
                     self.app.trigger( 'change' );
                 }
