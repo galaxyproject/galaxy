@@ -64,7 +64,7 @@ def ordered_load(stream):
 def get_input_source(content):
     """Wrap an XML element in a XmlInputSource if needed.
 
-    If the supplied content is already an InputSource objct,
+    If the supplied content is already an InputSource object,
     it is simply returned. This allow Galaxy to uniformly
     consume using the tool input source interface.
     """

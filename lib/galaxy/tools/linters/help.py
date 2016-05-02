@@ -3,7 +3,7 @@ from galaxy.util import rst_to_html
 
 
 def lint_help(tool_xml, lint_ctx):
-    """Ensure tool contains exactly one vaid RST help block."""
+    """Ensure tool contains exactly one valid RST help block."""
     root = tool_xml.getroot()
     helps = root.findall("help")
     if len(helps) > 1:
@@ -32,9 +32,9 @@ def lint_help(tool_xml, lint_ctx):
 
 
 def rst_invalid(text):
-    """Predicate to determine if text is invalid ReStructuredText.
+    """Predicate to determine if text is invalid reStructuredText.
 
-    Return False if the supplied text is valid ReStructuredText or
+    Return False if the supplied text is valid reStructuredText or
     a string indicating the problem.
     """
     invalid_rst = False
