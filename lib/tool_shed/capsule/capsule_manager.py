@@ -79,7 +79,7 @@ class ExportRepositoryManager( object ):
         error_messages = ''
         lock = threading.Lock()
         lock.acquire( True )
-        with self.__tempdir( 'tmp-toolshed-export-er' ) as work_dir:
+        with self.__tempdir( prefix='tmp-toolshed-export-er' ) as work_dir:
             try:
                 repositories_archive = tarfile.open( repositories_archive_filename, "w:%s" % self.file_type )
                 exported_repository_registry = ExportedRepositoryRegistry()
