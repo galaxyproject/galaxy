@@ -9,7 +9,7 @@ History
 16.7.1.dev0
 ---------------------
 
-    
+* Update against the latest development branch of Galaxy.
 
 ---------------------
 16.7.0 (2016-04-21)
