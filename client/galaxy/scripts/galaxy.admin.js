@@ -48,6 +48,7 @@ var GalaxyAdminApp = Backbone.View.extend({
 
     this.admin_router.on( 'route:repos', function() {
       if (Galaxy.adminapp.adminReposListView){
+        console.log('entering with tools')
         Galaxy.adminapp.adminReposListView.repaint({filter: 'with_tools'});
       } else{
         Galaxy.adminapp.adminReposListView = new mod_repos_list_view.AdminReposListView();
@@ -56,14 +57,15 @@ var GalaxyAdminApp = Backbone.View.extend({
 
     this.admin_router.on( 'route:packages', function() {
       if (Galaxy.adminapp.adminReposListView){
-        Galaxy.adminapp.adminReposListView.repaint({filter: 'tool_dependencies'});
+        Galaxy.adminapp.adminReposListView.repaint({filter: 'packages'});
       } else{
-        Galaxy.adminapp.adminReposListView = new mod_repos_list_view.AdminReposListView({filter: 'tool_dependencies'});
+        Galaxy.adminapp.adminReposListView = new mod_repos_list_view.AdminReposListView({filter: 'packages'});
       }
     });
 
     this.admin_router.on( 'route:all', function() {
       if (Galaxy.adminapp.adminReposListView){
+        console.log('entering all')
         Galaxy.adminapp.adminReposListView.repaint({filter: 'all'});
       } else{
         Galaxy.adminapp.adminReposListView = new mod_repos_list_view.AdminReposListView({filter: 'all'});

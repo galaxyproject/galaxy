@@ -64,12 +64,10 @@ var AdminReposRowView = Backbone.View.extend({
 
   turnDark: function(){
     this.$el.removeClass('light').addClass('dark');
-    this.$el.find('a').removeClass('light').addClass('dark');
   },
 
   turnLight: function(){
     this.$el.removeClass('dark').addClass('light');
-    this.$el.find('a').removeClass('dark').addClass('light');
   },
 
   templateRepoRow: function(){
