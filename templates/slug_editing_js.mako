@@ -1,5 +1,6 @@
-<%def name="javascripts()">
-    ${parent.javascripts()}
+<%namespace file="/display_common.mako" import="get_controller_name" />
+
+<%def name="slug_editing_js(item)">
     <script type="text/javascript">
     $(document).ready( function() {
         //

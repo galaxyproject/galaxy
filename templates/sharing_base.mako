@@ -41,6 +41,11 @@
     Sharing and Publishing ${get_class_display_name( item.__class__ )} '${get_item_name( item ) | h}'
 </%def>
 
+<%def name="javascripts()">
+    ${parent.javascripts()}
+    ${slug_editing_js(item)}
+</%def>
+
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     <style>

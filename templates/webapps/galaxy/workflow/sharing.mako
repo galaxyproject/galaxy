@@ -46,6 +46,10 @@
 %>
 </%def>
 
+<%def name="javascripts()">
+    ${parent.javascripts()}
+    ${slug_editing_js(item)}
+</%def>
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
