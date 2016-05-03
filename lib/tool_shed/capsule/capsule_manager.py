@@ -97,7 +97,6 @@ class ExportRepositoryManager( object ):
                                                                                                 archive_name )
                     elem = xml_util.create_element( 'repository', attributes=attributes, sub_elements=sub_elements )
                     exported_repository_registry.exported_repository_elems.append( elem )
-                basic_util.remove_dir( work_dir )
             # Keep information about the export in a file named export_info.xml in the archive.
             sub_elements = self.generate_export_elem()
             export_elem = xml_util.create_element( 'export_info', attributes=None, sub_elements=sub_elements )
@@ -112,6 +111,7 @@ class ExportRepositoryManager( object ):
         except Exception, e:
             log.exception( str( e ) )
         finally:
+            basic_util.remove_dir( work_dir )
             if os.path.exists( tmp_export_info ):
                 os.remove( tmp_export_info )
             if os.path.exists( tmp_manifest ):
