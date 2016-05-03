@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import os
 import shutil
@@ -84,20 +85,19 @@ class ExportRepositoryManager( object ):
             for repository_id, ordered_repository, ordered_changeset_revision in zip( ordered_repository_ids,
                                                                                       ordered_repositories,
                                                                                       ordered_changeset_revisions ):
-                work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-export-er" )
-                repository_archive, error_message = self.generate_repository_archive( ordered_repository,
-                                                                                      ordered_changeset_revision,
-                                                                                      work_dir )
-                if error_message:
-                    error_messages = '%s  %s' % ( error_messages, error_message )
-                else:
-                    archive_name = str( os.path.basename( repository_archive.name ) )
-                    repositories_archive.add( repository_archive.name, arcname=archive_name )
-                    attributes, sub_elements = self.get_repository_attributes_and_sub_elements( ordered_repository,
-                                                                                                archive_name )
-                    elem = xml_util.create_element( 'repository', attributes=attributes, sub_elements=sub_elements )
-                    exported_repository_registry.exported_repository_elems.append( elem )
-                basic_util.remove_dir( work_dir )
+                with self.__tempdir( prefix='tmp-toolshed-export-er' ) as work_dir:
+                    repository_archive, error_message = self.generate_repository_archive( ordered_repository,
+                                                                                          ordered_changeset_revision,
+                                                                                          work_dir )
+                    if error_message:
+                        error_messages = '%s  %s' % ( error_messages, error_message )
+                    else:
+                        archive_name = str( os.path.basename( repository_archive.name ) )
+                        repositories_archive.add( repository_archive.name, arcname=archive_name )
+                        attributes, sub_elements = self.get_repository_attributes_and_sub_elements( ordered_repository,
+                                                                                                    archive_name )
+                        elem = xml_util.create_element( 'repository', attributes=attributes, sub_elements=sub_elements )
+                        exported_repository_registry.exported_repository_elems.append( elem )
             # Keep information about the export in a file named export_info.xml in the archive.
             sub_elements = self.generate_export_elem()
             export_elem = xml_util.create_element( 'export_info', attributes=None, sub_elements=sub_elements )
@@ -377,6 +377,15 @@ class ExportRepositoryManager( object ):
         base = base.replace( ':', '_colon_' )
         base = base.rstrip( '/' )
         return base
+
+    @contextlib.contextmanager
+    def __tempdir( self, prefix=None ):
+        td = tempfile.mkdtemp( prefix=prefix )
+        try:
+            yield td
+        finally:
+            shutil.rmtree( td )
+
 
 
 class ImportRepositoryManager( object ):
