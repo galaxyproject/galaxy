@@ -85,7 +85,6 @@ class ExportRepositoryManager( object ):
             for repository_id, ordered_repository, ordered_changeset_revision in zip( ordered_repository_ids,
                                                                                       ordered_repositories,
                                                                                       ordered_changeset_revisions ):
-
                 with self.__tempdir( prefix='tmp-toolshed-export-er' ) as work_dir:
                     repository_archive, error_message = self.generate_repository_archive( ordered_repository,
                                                                                           ordered_changeset_revision,
