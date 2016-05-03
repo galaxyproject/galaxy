@@ -37,6 +37,6 @@ class RepositoriesController( BaseAPIController ):
             if repo.includes_tools:
                 repo_dict['type'] = 'with_tools'
             if repo.provides_only_tool_dependencies:
-                repo_dict['type'] = 'tool_dependencies'
+                repo_dict['type'] = 'packages'
             return_dict.append( repo_dict )
         return return_dict

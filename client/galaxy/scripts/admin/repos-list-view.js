@@ -15,11 +15,14 @@ var AdminReposListView = Backbone.View.extend({
   rowViews: {},
 
   defaults: {
-    filter: 'with_tools'
+    filter: 'with_tools',
+    sort_by: 'date',
+    sort_order: 'asc',
   },
 
   events: {
-    'click #select-all-checkboxes'  : 'selectAll',
+    'click #select-all-checkboxes': 'selectAll',
+    'click th > a'                : 'sortClicked',
   },
 
   initialize: function( options ){
@@ -27,11 +30,12 @@ var AdminReposListView = Backbone.View.extend({
     this.collection = new mod_repos_model.Repos();
 
     // start to listen if someone modifies the collection
-    this.listenTo( this.collection, 'add', this.renderOne );
-    // this.listenTo( this.collection, 'change', this.renderOne );
+    // this.listenTo( this.collection, 'add', this.renderOne );
+    // this.listenTo( this.collection, 'change', this.renderAll );
     // this.listenTo( this.collection, 'reset', this.renderAll );
-    // this.listenTo( this.collection, 'sync', this.renderAll );
+    this.listenTo( this.collection, 'sync', this.renderAll );
     // this.listenTo( this.collection, 'remove', this.removeOne );
+    this.collection.switchComparator(this.options.sort_by);
     this.render();
     this.fetchRepos();
     this.repaint();
@@ -46,6 +50,7 @@ var AdminReposListView = Backbone.View.extend({
   },
 
   fetchRepos: function(){
+    var that = this;
     this.collection.fetch({
       success: function(collection, response, options){
 
@@ -84,13 +89,12 @@ var AdminReposListView = Backbone.View.extend({
    */
   renderAll: function(options){
     this.options = _.extend( this.options, options );
+    this.collection.switchComparator(this.options.sort_by);
+    this.collection.sort();
+    var models = this.options.sort_order === 'desc' ? this.collection.models.reverse() : this.collection.models;
     var that = this;
-    _.each( this.collection.models.reverse(), function( repo ) {
-      if (that.options.filter === 'all'){
-        that.renderOne( repo );
-      } else if (that.options.filter === repo.get('type')){
-        that.renderOne( repo );
-      }
+    _.each( models, function( repo ) {
+      that.renderOne( repo );
     });
   },
 
@@ -99,14 +103,20 @@ var AdminReposListView = Backbone.View.extend({
    * @param {Repo} model of the view that will be rendered
    */
   renderOne: function(repo){
-      var repoView = new mod_repo_row_view.AdminReposRowView({repo: repo});
-      // console.log(this.rowViews);
-      // console.log(Object.keys(this.rowViews).length);
-      // console.log(repoView);
-      // console.log(repo.get('id'));
-
-      this.rowViews[repo.get('id')] = repoView;
+    var repoView = null;
+    if (this.options.filter === 'all' || this.options.filter === repo.get('type')){
+      if (this.rowViews[repo.get('id')]){
+        repoView = this.rowViews[repo.get('id')].render();
+      } else {
+        repoView = new mod_repo_row_view.AdminReposRowView({repo: repo});
+        this.rowViews[repo.get('id')] = repoView;
+      }
       this.$el.find('#repos_list_body').append(repoView.el);
+    } else {
+      // do not create view for repo that is not visible yet
+      return
+    }
+    this.$el.find('[data-toggle]').tooltip();
   },
 
   removeOne: function(){
@@ -143,6 +153,22 @@ var AdminReposListView = Backbone.View.extend({
     });
    },
 
+   sortClicked: function(event){
+    this.adjustHeading(event);
+    this.removeAllRows();
+    this.renderAll();
+   },
+
+   adjustHeading: function(event){
+    var source_class = $(event.target).attr('class').split('-')[2];
+    if (source_class === this.options.sort_by){
+      this.options.sort_order = this.options.sort_order === 'asc' ? 'desc' : 'asc';
+    }
+    this.options.sort_by = source_class;
+    this.$el.find('span[class^="sort-icon"]').hide().removeClass('fa-sort-asc').removeClass('fa-sort-desc');
+    this.$el.find('.sort-icon-' + source_class).addClass('fa-sort-' + this.options.sort_order).show();
+   },
+
   templateRepoList: function(){
     return _.template([
       '<div class="library_style_container">',
@@ -167,10 +193,10 @@ var AdminReposListView = Backbone.View.extend({
           '<ul class="nav nav-tabs repos-nav">',
             '<li role="presentation" class="tab_all"><a href="#all">All</a></li>',
             '<li role="presentation" class="tab_with_tools"><a href="#repos">With Tools</a></li>',
-            '<li role="presentation" class="tab_tool_dependencies"><a href="#packages">Packages</a></li>',
-            '<li role="presentation" class="tab_suites"><a href="#packages">Suites</a></li>',
-            '<li role="presentation" class="tab_with_dm"><a href="#packages">Data Managers</a></li>',
-            '<li role="presentation" class="tab_with_datatypes"><a href="#packages">Datatypes</a></li>',
+            '<li role="presentation" class="tab_packages"><a href="#packages">Packages</a></li>',
+            '<li role="presentation" class="tab_suites"><a href="#">Suites</a></li>',
+            '<li role="presentation" class="tab_with_dm"><a href="#">Data Managers</a></li>',
+            '<li role="presentation" class="tab_with_datatypes"><a href="#">Datatypes</a></li>',
           '</ul>',
         '</div>',
         '<div id="repositories_list">',
@@ -179,15 +205,41 @@ var AdminReposListView = Backbone.View.extend({
               '<thead>',
                 '<th style="text-align: center; width: 20px; " title="Check to select all repositories"><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>',
                 '<th>',
-                  '<a class="sort-repos-link" title="Click to reverse order" href="#">',
+                  '<a class="sort-repos-name" data-toggle="tooltip" data-placement="top" title="alphabetically" href="#">',
                     'Name',
                   '</a>',
+                  '<span class="sort-icon-name fa fa-sort-asc" style="display: none;"/>',
                 '</th>',
-                '<th>Owner</th>',
-                '<th>Installation</th> ',
-                '<th>Category</th>',
-                '<th>Version</th>',
-                '<th>Date Installed</th>',
+                '<th>',
+                  '<a class="sort-repos-owner" data-toggle="tooltip" data-placement="top" title="alphabetically" href="#">',
+                    'Owner',
+                  '</a>',
+                  '<span class="sort-icon-owner fa fa-sort-asc" style="display: none;"/>',
+                '</th>',
+                '<th>',
+                  '<a class="sort-repos-installation" data-toggle="tooltip" data-placement="top" title="erroneous first" href="#">',
+                    'Installation',
+                  '</a>',
+                  '<span class="sort-icon-installation fa fa-sort-asc" style="display: none;"/>',
+                '</th>',
+                '<th>',
+                  '<a class="sort-repos-category" data-toggle="tooltip" data-placement="top" title="alphabetically" href="#">',
+                    'Category',
+                  '</a>',
+                  '<span class="sort-icon-category fa fa-sort-asc" style="display: none;"/>',
+                '</th>',
+                '<th>',
+                  '<a class="sort-repos-version" data-toggle="tooltip" data-placement="top" title="outdated first" href="#">',
+                    'Version',
+                  '</a>',
+                  '<span class="sort-icon-version fa fa-sort-asc" style="display: none;"/>',
+                '</th>',
+                '<th>',
+                  '<a class="sort-repos-date" data-toggle="tooltip" data-placement="top" title="newest first" href="#">',
+                    'Date Installed',
+                  '</a>',
+                  '<span class="sort-icon-date fa fa-sort-asc"/>',
+                '</th>',
               '</thead>',
               '<tbody id="repos_list_body">',
               // repo item views will attach here
