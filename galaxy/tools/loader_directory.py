@@ -127,7 +127,7 @@ def looks_like_a_tool(path, invalid_names=[], enable_beta_formats=False):
     "looks_like_a_tool" but not everything that looks like a tool is actually
     a valid tool.
 
-    invalid_names may be supplid in the context of the tool shed to quickly
+    invalid_names may be supplied in the context of the tool shed to quickly
     rule common tool shed XML files.
     """
     looks = False
@@ -196,7 +196,7 @@ def looks_like_a_tool_yaml(path):
 
 
 def looks_like_a_cwl_artifact(path, classes=None):
-    """Quick check to see if a file looks like it may be a CWL aritifact."""
+    """Quick check to see if a file looks like it may be a CWL artifact."""
     if not _has_extension(path, CWL_EXTENSIONS):
         return False
 

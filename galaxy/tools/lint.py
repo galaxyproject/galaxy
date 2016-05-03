@@ -1,4 +1,4 @@
-"""This modules contains the functions that driving the tool linting framework."""
+"""This modules contains the functions that drive the tool linting framework."""
 from __future__ import print_function
 import inspect
 
@@ -52,9 +52,9 @@ def lint_xml_with(lint_context, tool_xml, extra_modules=[]):
     return lint_tool_source_with(lint_context, tool_source, extra_modules=extra_modules)
 
 
-# TODO: Nothing inheriently tool-y about LintContext and in fact
+# TODO: Nothing inherently tool-y about LintContext and in fact
 # it is reused for repositories in planemo. Therefore, it should probably
-# be move to galaxy.util.lint.
+# be moved to galaxy.util.lint.
 class LintContext(object):
 
     def __init__(self, level, skip_types=[]):
