@@ -134,7 +134,6 @@
 
         # Get item name.
         item_name = get_item_name(item)
-        print item_name
     %>
     ## Require that user have a public username before sharing or publishing an item.
     %if trans.get_user().username is None or trans.get_user().username is "":
