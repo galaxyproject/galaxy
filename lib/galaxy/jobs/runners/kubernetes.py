@@ -6,6 +6,7 @@ import logging
 
 from galaxy import model
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
+from os import environ as os_environ
 
 # pykube imports:
 try:
