@@ -111,7 +111,7 @@
 // buttons
 .ui-button {
     i {
-        font-size: 1.2em;
+        font-size: 1.1em;
     }
 }
 .ui-button-icon {
@@ -263,14 +263,22 @@
             top: 0px;
             width: 100%;
             height: 100%;
-            opacity: 0.2;
             background: @white;
+        }
+        .ui-form-backdrop-default {
+            display: block;
+            opacity: 0.2;
             cursor: not-allowed;
+        }
+        .ui-form-backdrop-silent {
+            display: block;
+            opacity: 0.0;
+            cursor: default;
         }
     }
     .ui-form-preview {
         &:extend(.ui-input);
-        margin-top: 5px;
+        margin-top: @ui-margin-vertical;
         border-color: transparent !important;
         box-shadow: none !important;
     }
@@ -286,8 +294,12 @@
 }
 
 .ui-form-info {
-        &:extend(.toolParamHelp);
-        clear: both !important;
+    &:extend(.toolParamHelp);
+    clear: both !important;
+    i {
+        font-size: 1.2em;
+        padding: 2px 5px;
+    }
 }
 
 .ui-form-footer-info {
@@ -579,6 +591,7 @@
     
     i {
         padding-right: @ui-margin-horizontal;
+        font-size: 1.1em;
     }
 }
 
@@ -670,7 +683,7 @@
     position: relative;
     .icon-dropdown {
         position: absolute;
-        top: 8px;
+        top: 7px;
         right: 8px;
         cursor: pointer;
     }

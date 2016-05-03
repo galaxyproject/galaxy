@@ -133,6 +133,12 @@ var HistoryViewColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
             // assumes panel will take the longest to render
             'rendered': function(){
                 column.trigger( 'rendered', column );
+            },
+            // when a panel's view expands turn off the click handler on the rerun button so that it uses it's href
+            // this allows the button to open the tool rerun form in a new tab (instead of erroring)
+            // TODO: hack
+            'view:expanded view:rendered': function( view ){
+                view.$( '.rerun-btn' ).off();
             }
         }, this );
     },
@@ -453,7 +459,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     handleDeletedHistory : function handleDeletedHistory( history ){
         if( history.get( 'deleted' ) || history.get( 'purged' ) ){
             this.log( 'handleDeletedHistory', this.collection.includeDeleted, history );
-            var multipanel = this;
+            var multipanel = this,
                 column = multipanel.columnMap[ history.id ];
             if( !column ){ return; }
 
@@ -723,7 +729,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
             var xhrData = {},
                 ids = _.values( column.panel.storage.get( 'expandedIds' ) ).join();
             if( ids ){
-                xhrData.dataset_details = ids;
+                xhrData.details = ids;
             }
             // this uses a 'named' queue so that duplicate requests are ignored
             this.hdaQueue.add({

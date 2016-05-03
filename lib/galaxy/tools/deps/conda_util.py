@@ -260,10 +260,9 @@ def hash_conda_packages(conda_packages, conda_target=None):
 # these commands as Python
 def install_conda(conda_context=None):
     conda_context = _ensure_conda_context(conda_context)
-    download_cmd = " ".join(commands.download_command(conda_link(), quote_url=True))
     f, script_path = tempfile.mkstemp(suffix=".bash", prefix="conda_install")
     os.close(f)
-    download_cmd = "%s >> '%s'" % (download_cmd, script_path)
+    download_cmd = " ".join(commands.download_command(conda_link(), to=script_path, quote_url=True))
     install_cmd = "bash '%s' -b -p '%s'" % (script_path, conda_context.conda_prefix)
     full_command = "%s; %s" % (download_cmd, install_cmd)
     try:

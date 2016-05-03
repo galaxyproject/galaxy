@@ -1,0 +1,3 @@
+# Table used for listing simple BIOM display servers
+#<unique_id>	<display_name>	<url>
+phinch_dan	Phinch	http://www.bx.psu.edu/~dan/Phinch/index.html?biomURL=%(biom_file_url_qp)s

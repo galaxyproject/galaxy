@@ -12,16 +12,23 @@ try:
         main,
         workflow,
         job,
+        process,
     )
 except ImportError:
     main = None
     workflow = None
     job = None
+    process = None
 
 try:
     import shellescape
 except ImportError:
     shellescape = None
+
+try:
+    import schema_salad
+except ImportError:
+    schema_salad = None
 
 import re
 
@@ -35,13 +42,17 @@ def ensure_cwltool_available():
             message += " Library 'requests' unavailable."
         if shellescape is None:
             message += " Library 'shellescape' unavailable."
+        if schema_salad is None:
+            message += " Library 'schema_salad' unavailable."
         raise ImportError(message)
 
 
 __all__ = [
     'main',
     'workflow',
+    'process',
     'ensure_cwltool_available',
+    'schema_salad',
     'shellescape',
     'needs_shell_quoting',
 ]

@@ -10,5 +10,4 @@ lib
    log_tempfile
    mimeparse
    psyco_full
-   pulsar
    tool_shed

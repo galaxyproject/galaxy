@@ -28,8 +28,9 @@ from os.path import normpath, relpath
 from xml.etree import ElementInclude, ElementTree
 
 from six import binary_type, iteritems, PY3, string_types, text_type
-from six.moves import email_mime_text, xrange, zip
+from six.moves import email_mime_text, email_mime_multipart, xrange, zip
 from six.moves.urllib import parse as urlparse
+from six.moves.urllib import request as urlrequest
 
 try:
     import docutils.core as docutils_core
@@ -1204,19 +1205,51 @@ def size_to_bytes( size ):
         return int( size )
 
 
-def send_mail( frm, to, subject, body, config ):
+def send_mail( frm, to, subject, body, config, html=None ):
     """
     Sends an email.
+
+    :type  frm: str
+    :param frm: from address
+
+    :type  to: str
+    :param to: to address
+
+    :type  subject: str
+    :param subject: Subject line
+
+    :type  body: str
+    :param body: Body text (should be plain text)
+
+    :type  config: object
+    :param config: Galaxy configuration object
+
+    :type  html: str
+    :param html: Alternative HTML representation of the body content. If
+                 provided will convert the message to a MIMEMultipart. (Default 'None')
     """
+
     to = listify( to )
-    msg = email_mime_text.MIMEText(  body.encode( 'ascii', 'replace' ) )
+    if html:
+        msg = email_mime_multipart.MIMEMultipart('alternative')
+    else:
+        msg = email_mime_text.MIMEText(  body.encode( 'ascii', 'replace' ) )
+
     msg[ 'To' ] = ', '.join( to )
     msg[ 'From' ] = frm
     msg[ 'Subject' ] = subject
+
     if config.smtp_server is None:
         log.error( "Mail is not configured for this Galaxy instance." )
         log.info( msg )
         return
+
+    if html:
+        mp_text = email_mime_text.MIMEText( body.encode( 'ascii', 'replace' ), 'plain' )
+        mp_html = email_mime_text.MIMEText( html.encode( 'ascii', 'replace' ), 'html' )
+        msg.attach(mp_text)
+        msg.attach(mp_html)
+
     smtp_ssl = asbool( getattr(config, 'smtp_ssl', False ) )
     if smtp_ssl:
         s = smtplib.SMTP_SSL()
@@ -1340,6 +1373,46 @@ def parse_int(value, min_val=None, max_val=None, default=None, allow_none=False)
             return default
         else:
             raise
+
+
+def build_url( base_url, port=80, scheme='http', pathspec=None, params=None, doseq=False ):
+    if params is None:
+        params = dict()
+    if pathspec is None:
+        pathspec = []
+    parsed_url = urlparse.urlparse( base_url )
+    if scheme != 'http':
+        parsed_url.scheme = scheme
+    if port != 80:
+        url = '%s://%s:%d/%s' % ( parsed_url.scheme, parsed_url.netloc.rstrip( '/' ), int( port ), parsed_url.path )
+    else:
+        url = '%s://%s/%s' % ( parsed_url.scheme, parsed_url.netloc.rstrip( '/' ), parsed_url.path.lstrip( '/' ) )
+    if len( pathspec ) > 0:
+        url = '%s/%s' % ( url.rstrip( '/' ), '/'.join( pathspec ) )
+    if parsed_url.query:
+        for query_parameter in parsed_url.query.split( '&' ):
+            key, value = query_parameter.split( '=' )
+            params[ key ] = value
+    if params:
+        url += '?%s' % urlparse.urlencode( params, doseq=doseq )
+    return url
+
+
+def url_get( base_url, password_mgr=None, pathspec=None, params=None ):
+    """Make contact with the uri provided and return any contents."""
+    # Uses system proxy settings if they exist.
+    proxy = urlrequest.ProxyHandler()
+    if password_mgr is not None:
+        auth = urlrequest.HTTPDigestAuthHandler( password_mgr )
+        urlopener = urlrequest.build_opener( proxy, auth )
+    else:
+        urlopener = urlrequest.build_opener( proxy )
+    urlrequest.install_opener( urlopener )
+    full_url = build_url( base_url, pathspec=pathspec, params=params )
+    response = urlopener.open( full_url )
+    content = response.read()
+    response.close()
+    return content
 
 
 def safe_relpath(path):

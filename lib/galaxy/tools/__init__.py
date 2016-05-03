@@ -108,7 +108,7 @@ class ToolBox( BaseGalaxyToolBox ):
 
     def create_tool( self, config_file, repository_id=None, guid=None, **kwds ):
         try:
-            tool_source = get_tool_source( config_file, getattr( self.app.config, "enable_beta_tool_formats", False ) )
+            tool_source = get_tool_source( config_file, enable_beta_formats=getattr( self.app.config, "enable_beta_tool_formats", False ) )
         except Exception, e:
             # capture and log parsing errors
             global_tool_errors.add_error(config_file, "Tool XML parsing", e)
@@ -407,6 +407,8 @@ class Tool( object, Dictifiable ):
         """
         :returns: bool -- Whether the user is allowed to access the tool.
         """
+        if self.require_login and user is None:
+            return False
         return True
 
     def parse( self, tool_source, guid=None ):
@@ -1097,6 +1099,8 @@ class Tool( object, Dictifiable ):
         for expanded_incoming in expanded_incomings:
             params = {}
             errors = {}
+            if self.input_translator:
+                self.input_translator.translate( expanded_incoming )
             if not self.check_values:
                 # If `self.check_values` is false we don't do any checking or
                 # processing on input  This is used to pass raw values
@@ -1116,7 +1120,7 @@ class Tool( object, Dictifiable ):
         log.debug( 'Validated and populated state for tool request %s' % validation_timer )
         # If there were errors, we stay on the same page and display them
         if any( all_errors ):
-            raise exceptions.MessageException( err_data=all_errors[ 0 ] )
+            raise exceptions.MessageException( ', '.join( [ msg for msg in all_errors[ 0 ].itervalues() ] ), err_data=all_errors[ 0 ] )
         else:
             execution_tracker = execute_job( trans, self, all_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info )
             if execution_tracker.successful_jobs:
@@ -1248,13 +1252,14 @@ class Tool( object, Dictifiable ):
         visit_input_values( self.inputs, values, validate_inputs )
         return messages
 
-    def build_dependency_shell_commands( self, job_directory=None ):
+    def build_dependency_shell_commands( self, job_directory=None, metadata=False ):
         """Return a list of commands to be run to populate the current environment to include this tools requirements."""
         return self.app.toolbox.dependency_manager.dependency_shell_commands(
             self.requirements,
             installed_tool_dependencies=self.installed_tool_dependencies,
             tool_dir=self.tool_dir,
             job_directory=job_directory,
+            metadata=metadata,
         )
 
     @property
@@ -1426,7 +1431,7 @@ class Tool( object, Dictifiable ):
         return output_collect.collect_dynamic_collections( self, output, **kwds )
 
     def to_archive(self):
-        tool = self.tool
+        tool = self
         tarball_files = []
         temp_files = []
         tool_xml = open( os.path.abspath( tool.config_file ), 'r' ).read()
@@ -1603,68 +1608,6 @@ class Tool( object, Dictifiable ):
         # create parameter object
         params = galaxy.util.Params( kwd, sanitize=False )
 
-        # convert value to jsonifiable value
-        def jsonify(v):
-            # check if value is numeric
-            isnumber = False
-            try:
-                float(v)
-                isnumber = True
-            except Exception:
-                pass
-
-            # fix hda parsing
-            if isinstance(v, self.app.model.HistoryDatasetAssociation):
-                return {
-                    'id'  : trans.security.encode_id(v.id),
-                    'src' : 'hda'
-                }
-            elif isinstance(v, self.app.model.HistoryDatasetCollectionAssociation):
-                return {
-                    'id'  : trans.security.encode_id(v.id),
-                    'src' : 'hdca'
-                }
-            elif isinstance(v, self.app.model.LibraryDatasetDatasetAssociation):
-                return {
-                    'id'  : trans.security.encode_id(v.id),
-                    'name': v.name,
-                    'src' : 'ldda'
-                }
-            elif isinstance(v, bool):
-                if v is True:
-                    return 'true'
-                else:
-                    return 'false'
-            elif isinstance(v, string_types) or isnumber:
-                return v
-            elif isinstance(v, dict) and hasattr(v, '__class__'):
-                return v
-            else:
-                return None
-
-        # ensures that input dictionary is jsonifiable
-        def sanitize( dict, key='value' ):
-            # get current value
-            value = dict[key] if key in dict else None
-
-            # jsonify by type
-            if dict['type'] in ['data']:
-                if isinstance(value, list):
-                    value = [ jsonify(v) for v in value ]
-                else:
-                    value = [ jsonify(value) ]
-                if None in value:
-                    value = None
-                else:
-                    value = { 'values': value }
-            elif isinstance(value, list):
-                value = [ jsonify(v) for v in value ]
-            else:
-                value = jsonify(value)
-
-            # update and return
-            dict[key] = value
-
         # populates model from state
         def populate_model( inputs, state_inputs, group_inputs, other_values=None ):
             other_values = ExpressionContext( state_inputs, other_values )
@@ -1681,7 +1624,7 @@ class Tool( object, Dictifiable ):
                     tool_dict = input.to_dict( request_context )
                     if 'test_param' in tool_dict:
                         test_param = tool_dict[ 'test_param' ]
-                        test_param[ 'value' ] = jsonify( group_state.get( test_param[ 'name' ], input.test_param.get_initial_value( request_context, other_values ) ) )
+                        test_param[ 'value' ] = input.test_param.value_to_basic( group_state.get( test_param[ 'name' ], input.test_param.get_initial_value( request_context, other_values ) ), self.app )
                         test_param[ 'text_value' ] = input.test_param.value_to_display_text( test_param[ 'value' ], self.app )
                         for i in range( len( tool_dict['cases'] ) ):
                             current_state = {}
@@ -1694,33 +1637,19 @@ class Tool( object, Dictifiable ):
                 else:
                     try:
                         tool_dict = input.to_dict( request_context, other_values=other_values )
-                        tool_dict[ 'value' ] = state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) )
+                        tool_dict[ 'value' ] = input.value_to_basic( state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) ), self.app )
                         tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ], self.app )
                     except Exception as e:
                         tool_dict = input.to_dict( request_context )
                         log.exception('tools::to_json() - Skipping parameter expansion \'%s\': %s.' % ( input.name, e ) )
                         pass
-                    sanitize( tool_dict, 'value' )
                 group_inputs[ input_index ] = tool_dict
-
-        # sanatizes tool state
-        def sanitize_state( state ):
-            keys = None
-            if isinstance( state, dict ):
-                keys = state
-            elif isinstance( state, list ):
-                keys = range( len( state ) )
-            if keys:
-                for k in keys:
-                    if isinstance( state[ k ], dict ) or isinstance( state[ k ], list ):
-                        sanitize_state( state[ k ] )
-                    else:
-                        state[ k ] = jsonify( state[ k ] )
 
         # expand incoming parameters (parameters might trigger multiple tool executions,
         # here we select the first execution only in order to resolve dynamic parameters)
         expanded_incomings, _ = expand_meta_parameters( trans, self, params.__dict__ )
-        params.__dict__ = expanded_incomings[ 0 ]
+        if expanded_incomings:
+            params.__dict__ = expanded_incomings[ 0 ]
 
         # do param translation here, used by datasource tools
         if self.input_translator:
@@ -1735,9 +1664,6 @@ class Tool( object, Dictifiable ):
         tool_model = self.to_dict( request_context )
         tool_model[ 'inputs' ] = {}
         populate_model( self.inputs, state_inputs, tool_model[ 'inputs' ] )
-
-        # sanitize tool state
-        sanitize_state( state_inputs )
 
         # create tool help
         tool_help = ''
@@ -1764,10 +1690,14 @@ class Tool( object, Dictifiable ):
             'versions'      : tool_versions,
             'requirements'  : [ { 'name' : r.name, 'version' : r.version } for r in self.requirements ],
             'errors'        : state_errors,
-            'state_inputs'  : state_inputs,
+            'state_inputs'  : params_to_strings( self.inputs, state_inputs, self.app ),
             'job_id'        : trans.security.encode_id( job.id ) if job else None,
             'job_remap'     : self._get_job_remap( job ),
-            'history_id'    : trans.security.encode_id( history.id )
+            'history_id'    : trans.security.encode_id( history.id ),
+            'display'       : self.display_interface,
+            'action'        : url_for( self.action ),
+            'method'        : self.method,
+            'enctype'       : self.enctype
         })
         return tool_model
 
@@ -1827,11 +1757,25 @@ class Tool( object, Dictifiable ):
                     rep_prefix = '%s_%d|' % ( key, rep_index )
                     self.populate_state( request_context, input.inputs, incoming, rep_state, errors, prefix=rep_prefix, context=context )
             else:
-                param_value = incoming.get( key, state.get( input.name ) )
+                param_value = self._get_incoming_value( incoming, key, state.get( input.name ) )
                 value, error = check_param( request_context, input, param_value, context )
                 if error:
                     errors[ key ] = error
                 state[ input.name ] = value
+
+    def _get_incoming_value( self, incoming, key, default ):
+        """
+        Fetch value from incoming dict directly or check special nginx upload
+        created variants of this key.
+        """
+        if '__' + key + '__is_composite' in incoming:
+            composite_keys = incoming[ '__' + key + '__keys' ].split()
+            value = dict()
+            for composite_key in composite_keys:
+                value[ composite_key ] = incoming[ key + '_' + composite_key ]
+            return value
+        else:
+            return incoming.get( key, default )
 
     def _get_job_remap( self, job):
         if job:

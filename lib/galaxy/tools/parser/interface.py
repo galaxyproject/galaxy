@@ -347,10 +347,11 @@ class TestCollectionDef( object ):
 
 
 class TestCollectionOutputDef( object ):
-    # TODO: do not require XML directly here.
 
     def __init__( self, name, attrib, element_tests ):
         self.name = name
         self.collection_type = attrib.get( "type", None )
+        count = attrib.get("count", None)
+        self.count = int(count) if count is not None else None
         self.attrib = attrib
         self.element_tests = element_tests

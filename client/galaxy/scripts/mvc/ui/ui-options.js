@@ -193,7 +193,7 @@ var Base = Backbone.View.extend({
         });
 
         // get selected elements
-        if (!Utils.validate(selected)) {
+        if (Utils.isEmpty(selected)) {
             return null;
         }
 

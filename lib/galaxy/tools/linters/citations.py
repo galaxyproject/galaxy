@@ -1,6 +1,12 @@
+"""This module contains a citation lint function.
+
+Citations describe references that should be used when consumers
+of the tool publish results.
+"""
 
 
 def lint_citations(tool_xml, lint_ctx):
+    """Ensure tool contains at least one valid citation."""
     root = tool_xml.getroot()
     citations = root.findall("citations")
     if len(citations) > 1:

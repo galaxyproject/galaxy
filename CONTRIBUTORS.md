@@ -11,6 +11,7 @@ The following individuals have contributed code to Galaxy:
 * Finn Bacall <finn.bacall@cs.man.ac.uk>
 * Dannon Baker <dannon.baker@gmail.com>
 * Christopher Bare <christopherbare@gmail.com>
+* Marius van den Beek <m.vandenbeek@gmail.com>
 * Dan Blanchard <dan.blanchard@gmail.com>
 * Daniel Blankenberg <dan.blankenberg@gmail.com> <dan@bx.psu.edu>
 * James Boocock <sfk2001@gmail.com>
@@ -19,6 +20,7 @@ The following individuals have contributed code to Galaxy:
 * Dave Bouvier <dave@bx.psu.edu>
 * Adam Brenner <aebrenne@uci.edu>
 * Anthony Bretaudeau <anthony.bretaudeau@rennes.inra.fr> <abretaud@irisa.fr>
+* Freek de Bruijn <freek.de.bruijn@nbic.nl>
 * Richard Burhans <burhans@bx.psu.edu>
 * Jennifer Cabral <jencabral@gmail.com>
 * Martin Čech <marten@bx.psu.edu>
@@ -42,14 +44,16 @@ The following individuals have contributed code to Galaxy:
 * Eric Enns <eric.enns@gmail.com>
 * Dorine Francheteau <dorine@bx.psu.edu>
 * Jaime Frey <jfrey@cs.wisc.edu>
-* Carie Genote <cganote@iu.edu>
+* Carrie Ganote <cganote@iu.edu>
 * Jeremy Goecks <jeremy.goecks@emory.edu> <jgoecks@gwu.edu>
 * Nuwan Goonasekera <nuwan.goonasekera@gmail.com>
 * Björn Grüning <bjoern.gruening@gmail.com> <bjoern@gruenings.eu>
 * Aysam Guerler <aysam.guerler@gmail.com>
 * Simon Guest <simon.guest@agresearch.co.nz>
 * Jianbin He <jbhe@bx.psu.edu>
+* Peter van Heusden <pvh@sanbi.ac.za>
 * Morita Hideyuki <h-morita@esm.co.jp>
+* Saskia Hiltemann <zazkia@gmail.com>
 * Rob Hooft <rob.hooft@nbic.nl>
 * Y. Hoogstrate <y.hoogstrate@erasmusmc.nl>
 * Jian-Long Huang <jlh@pyhub.org>
@@ -101,9 +105,6 @@ The following individuals have contributed code to Galaxy:
 * Andrew Warren <anwarren@vbi.vt.edu>
 * Trevor Wennblom <trevor@well.com>
 * Yi Zhang <yizhang@bx.psu.edu>
-* Freek de Bruijn <freek.de.bruijn@nbic.nl>
-* Peter van Heusden <pvh@sanbi.ac.za>
-* Marius van den Beek <m.vandenbeek@gmail.com>
 
 # Institutional sponsors
 

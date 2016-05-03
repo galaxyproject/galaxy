@@ -191,7 +191,7 @@ var View = Backbone.View.extend({
         _.each( this.model.get( 'options' ), function( v ) {
             !_.findWhere( options, v ) && options.push( v );
         });
-        sorter && options.sort( sorter );
+        sorter && options && options.sort( sorter );
         this.update( options );
     },
     update: function(options) {
@@ -256,10 +256,7 @@ var View = Backbone.View.extend({
     */
     _getValue: function() {
         var val = this.$select.val();
-        if (!Utils.validate(val)) {
-            return null;
-        }
-        return val;
+        return Utils.isEmpty( val ) ? null : val;
     },
 
     /** Returns all currently available options

@@ -73,6 +73,7 @@ class WorkflowSchedulingManager( object ):
         workflow_invocation.state = model.WorkflowInvocation.states.NEW
         scheduler = request_params.get( "scheduler", None ) or self.default_scheduler_id
         handler = self._get_handler()
+        log.info("Queueing workflow invocation for handler [%s]" % handler)
 
         workflow_invocation.scheduler = scheduler
         workflow_invocation.handler = handler

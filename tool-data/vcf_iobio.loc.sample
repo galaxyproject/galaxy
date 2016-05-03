@@ -1,0 +1,3 @@
+# Table used for listing vcf.iobio servers
+#<unique_id>	<display_name>	<url>
+vcf_iobio	vcf.iobio.io	http://vcf.iobio.io/

@@ -39,7 +39,11 @@ def get_dependencies_for_metadata_revision( app, metadata ):
     dependencies = []
     for shed, name, owner, changeset, prior, _ in metadata[ 'repository_dependencies' ]:
         required_repository = suc.get_repository_by_name_and_owner( app, name, owner )
-        metadata_entry = suc.get_repository_metadata_by_changeset_revision( app, app.security.encode_id( required_repository.id ), changeset )
+        repo = hg_util.get_repo_for_repository( app, repository=required_repository, repo_path=None, create=False )
+        updated_changeset = suc.get_next_downloadable_changeset_revision( required_repository, repo, changeset )
+        if updated_changeset is None:
+            continue
+        metadata_entry = suc.get_repository_metadata_by_changeset_revision( app, app.security.encode_id( required_repository.id ), updated_changeset )
         dependencies.append( metadata_entry )
     return dependencies
 

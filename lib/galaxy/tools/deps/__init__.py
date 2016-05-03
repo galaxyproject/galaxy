@@ -20,7 +20,7 @@ EXTRA_CONFIG_KWDS = {
     'conda_prefix': None,
     'conda_exec': None,
     'conda_debug': None,
-    'conda_channels': 'r,bioconda',
+    'conda_ensure_channels': 'r,bioconda',
     'conda_auto_install': False,
     'conda_auto_init': False,
 }
@@ -113,10 +113,7 @@ class DependencyManager( object ):
         for i, resolver in enumerate(self.dependency_resolvers):
             if index is not None and i != index:
                 continue
-
             dependency = resolver.resolve( name, version, type, **kwds )
-            log.debug('Resolver %s returned %s (isnull? %s)' % (resolver.resolver_type, dependency,
-                                                                dependency == INDETERMINATE_DEPENDENCY))
             if require_exact and not dependency.exact:
                 dependency = INDETERMINATE_DEPENDENCY
             if dependency != INDETERMINATE_DEPENDENCY:
