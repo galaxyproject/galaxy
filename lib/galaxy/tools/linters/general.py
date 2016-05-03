@@ -29,7 +29,7 @@ def lint_general(tool_source, lint_ctx):
     if not tool_id:
         lint_ctx.error(ERROR_ID_MSG)
     else:
-        lint_ctx.valid(VALID_ID_MSG % id)
+        lint_ctx.valid(VALID_ID_MSG % tool_id)
 
     if re.search(r"\s", tool_id):
         lint_ctx.warn("Tool id contains a space - this is discouraged.")
