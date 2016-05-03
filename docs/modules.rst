@@ -1,5 +1,5 @@
-planemo
-=======
+galaxy
+======
 
 .. toctree::
    :maxdepth: 4

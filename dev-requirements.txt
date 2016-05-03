@@ -3,8 +3,10 @@ tox
 nose
 coverage
 
-# For dev
+#Building Docs
 sphinx
+sphinx_rtd_theme
+recommonmark
 
 # Used to check readme.
 readme
