@@ -117,6 +117,83 @@
           -->
           <!-- <param id="pulsar_config">path/to/pulsar/app.yml</param> -->
         </plugin>
+        <plugin id="k8s" type="runner" load="galaxy.jobs.runners.kubernetes:kubernetes">
+            <!-- The Kubernetes (k8s) plugin allows to send jobs to a k8s cluster which shares filesystem with Galaxy.
+                 The shared file system needs to be exposed to k8s through a Persistent Volume (rw) and a Persistent
+                 Volume Claim. An example of a Persistent Volume could be, in yaml (access modes, reclaim policy and
+                 path are relevant) (persistent_volume.yaml):
+
+                    kind: PersistentVolume
+                    apiVersion: v1
+                    metadata:
+                      name: pv-galaxy-nfs
+                      labels:
+                        type: nfs
+                    spec:
+                      capacity:
+                        storage: 10Gi
+                      accessModes:
+                        - ReadWriteMany
+                      persistentVolumeReclaimPolicy: Retained
+                      nfs:
+                        path: /scratch1/galaxy_data
+                        server: 192.168.64.1
+
+                 The path (nfs:path: in the example) set needs to be a parent directory of the directories used for
+                 variables “file_path” and “new_file_path” on the galaxy.ini files. Clearly, for this particular example
+                 to work, there needs to be a NFS server serving that directory on that ip. Please make sure that you
+                 use reasonable storage size for your set up (possibly larger that the 10Gi written).
+                 An example of the volume claim should be (this needs to be followed more closely) (pv_claim.yaml):
+
+                    kind: PersistentVolumeClaim
+                    apiVersion: v1
+                    metadata:
+                      name: galaxy-pvc
+                    spec:
+                      accessModes:
+                        - ReadWriteMany
+                      volumeName: pv-galaxy-nfs
+                      resources:
+                        requests:
+                          storage: 2Gi
+
+                 The volume claim needs to reference the name of the volume in spec:volumeName. The name of the claim
+                 (metadat:name) is referenced in the plugin definition (see below), through param
+                 "k8s_persistent_volume_claim_name". These two k8s object need to be created before galaxy can use them:
+
+                 kubectl create -f <path/to/persistent_volume.yaml>
+                 kubectl create -f <path/to/pv_claim.yaml>
+
+                 pointing of course to the same Kubernetes cluster that you intend to use.
+            -->
+
+            <param id="k8s_config_path">/path/to/kubeconfig</param>
+            <--- This is the path to the kube config file, which is normally on ~/.kube/config, but that will depend on
+                 your installation. This is the file that tells the plugin where the k8s cluster is, access credentials,
+                 etc. -->
+
+            <param id="k8s_persistent_volume_claim_name">galaxy_pvc</param>
+            <!-- The name of the Persisten Volume Claim (PVC) to be used, details above, needs to match the PVC's
+                 metadata:name -->
+
+            <param id="k8s_persistent_volume_claim_mount_path">/scratch1/galaxy_data</param>
+            <!-- The mount path needs to be parent directory of the "file_path" and "new_file_path" paths
+                 set in universe_wsgi.ini (or equivalent general galaxy config file). This is the mount path of the
+                 PVC within the docker container that will be actually running the tool -->
+
+            <param id="k8s_namespace">galaxy-instanceA</param>
+            <!-- The namespace to be used on the Kubernetes cluster, if different from default, this needs to be set
+                 accordingly in the PV and PVC detailed above -->
+
+            <param id="k8s_pod_retrials">4</param>
+            <!-- Allows pods to retry up to this number of times, before marking the galaxy job failed. k8s is a state
+                 setter essentially, so by default it will try to take a job submitted to successful completion. A job
+                 submits pods, until the number of successes (1 in this use case) is achieved, assuming that whatever is
+                 making the pods fail will be fixed (such as a stale disk or a dead node that it is being restarted).
+                 This option sets a limit of retrials, so that after that number of failed pods, the job is re-scaled to
+                 zero (no execution) and the stderr/stdout of the k8s job is reported in galaxy (and the galaxy job set
+                 to failed) -->
+        </plugin>
 
     </plugins>
     <handlers default="handlers">
@@ -475,6 +552,31 @@
             <param id="docker_enabled" from_config="use_docker">false</param>
         </destination>
 
+        <destination id="my-tool-container" runner="k8s">
+            <!-- For the kubernetes runner, each container is a destination
+            -->
+
+            <!-- The following four fields assemble the container's full name:
+                 docker pull <repo>/<owner>/<image>:tag
+            -->
+            <param id="repo">my-docker-registry.org</param>
+            <param id="owner">superbioinfo</param>
+            <param id="image">my-tool</param>
+            <param id="tag">latest</param>
+            <param id="max_pod_retrials">3</param>
+            <!-- Allows pods to retry up to this number of times, before marking the galaxy job failed. k8s is a state
+                 setter essentially, so by default it will try to take a job submitted to successful completion. A job
+                 submits pods, until the number of successes (1 in this use case) is achieved, assuming that whatever is
+                 making the pods fail will be fixed (such as a stale disk or a dead node that it is being restarted).
+                 This option sets a limit of retrials, so that after that number of failed pods, the job is re-scaled to
+                 zero (no execution) and the stderr/stdout of the k8s job is reported in galaxy (and the galaxy job set
+                 to failed).
+
+                 Overrides the runner config. (Not implemented yet)
+            -->
+        </destination>
+
+
         <!-- Templatized destinations - macros can be used to create templated
         destinations with reduced XML duplication. Here we are creating 4 destinations in 4 lines instead of 28 using the macros defined below.
         -->
@@ -506,6 +608,11 @@
              and pass to dynamic destination (as resource_params argument). -->
         <tool id="longbar" destination="dynamic" resources="all" />
         <tool id="baz" handler="special_handlers" destination="bigmem"/>
+
+        <!-- Finally for Kubernetes runner, the following connects a particular tool to be executed with
+             the container of choice in Kubernetes.
+        --->
+        <tool id="my-tool" destination="my-tool-container"/>
     </tools>
     <limits>
         <!-- Certain limits can be defined. The 'concurrent_jobs' limits all
