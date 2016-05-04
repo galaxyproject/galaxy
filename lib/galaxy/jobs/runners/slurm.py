@@ -85,7 +85,7 @@ class SlurmJobRunner( DRMAAJobRunner ):
             except Exception as e:
                 log.exception( '(%s/%s) Unable to inspect failed slurm job using scontrol, job will be unconditionally failed: %s', ajs.job_wrapper.get_id_tag(), ajs.job_id, e )
                 super( SlurmJobRunner, self )._complete_terminal_job( ajs, drmaa_state=drmaa_state )
-        elif drmaa_state == self.drmaa_job_states.DONE:
+        if drmaa_state == self.drmaa_job_states.DONE:
             with open(ajs.error_file, 'r+') as f:
                 lines = f.readlines()
                 f.seek(0)
