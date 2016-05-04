@@ -3,7 +3,7 @@
 */
 define(['utils/utils',
         'mvc/ui/ui-misc',
-        'mvc/form/form-select-content',
+        'mvc/ui/ui-select-content',
         'mvc/ui/ui-select-library',
         'mvc/ui/ui-select-ftp',
         'mvc/ui/ui-color-picker'],
@@ -54,7 +54,7 @@ define(['utils/utils',
         */
         _fieldData: function( input_def ) {
             var self = this;
-            return new SelectContent.View( this.app, {
+            return new SelectContent.View({
                 id          : 'field-' + input_def.id,
                 extensions  : input_def.extensions,
                 optional    : input_def.optional,
@@ -138,7 +138,7 @@ define(['utils/utils',
             // field replaces e.g. a select field
             if ( input_def.options ) {
                 input_def.area = input_def.multiple;
-                if ( !Utils.validate( input_def.value ) ) {
+                if ( Utils.isEmpty( input_def.value ) ) {
                     input_def.value = null;
                 } else {
                     if ( $.isArray( input_def.value ) ) {

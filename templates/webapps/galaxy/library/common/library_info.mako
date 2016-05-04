@@ -7,7 +7,7 @@
 </%def>
 
 <%
-    from cgi import escape
+    from galaxy import util
     if trans.user_is_admin() and cntrller == 'library_admin':
         can_add = can_modify = can_manage = True
     elif cntrller in [ 'library', 'requests' ]:
@@ -16,9 +16,9 @@
         can_manage = trans.app.security_agent.can_manage_library_item( current_user_roles, library )
     else:
         can_add = can_modify = can_manage = False
-    library_name = escape( str( library.name ), quote=True )
-    library_description = escape( str( library.description ), quote=True )
-    library_synopsis = escape( str( library.synopsis ), quote=True )
+    library_name = util.unicodify( library.name )
+    library_description = util.unicodify(library.description)
+    library_synopsis = util.unicodify(library.synopsis)
 %>
 
 <br/><br/>
@@ -63,14 +63,14 @@
                 <div class="form-row">
                     <label>Name:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="text" name="name" value="${library_name}" size="40"/>
+                        <input type="text" name="name" value="${library_name | h}" size="40"/>
                     </div>
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
                     <label>Description:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="text" name="description" value="${library_description}" size="40"/>
+                        <input type="text" name="description" value="${library_description | h}" size="40"/>
                     </div>
                     <div class="toolParamHelp" style="clear: both;">
                         Displayed when browsing all libraries
@@ -80,7 +80,7 @@
                 <div class="form-row">
                     <label>Synopsis:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="text" name="synopsis" value="${library_synopsis}" size="40"/>
+                        <input type="text" name="synopsis" value="${library_synopsis | h}" size="40"/>
                     </div>
                     <div class="toolParamHelp" style="clear: both;">
                         Displayed when browsing this library
@@ -94,17 +94,17 @@
         %else:
             <div class="form-row">
                 <label>Name:</label>
-                ${library_name}
+                ${library_name | h}
             </div>
             <div style="clear: both"></div>
             <div class="form-row">
                 <label>Description:</label>
-                ${library_description}
+                ${library_description | h}
             </div>
             <div style="clear: both"></div>
             <div class="form-row">
                 <label>Synopsis:</label>
-                ${library_synopsis}
+                ${library_synopsis | h}
             </div>
             <div style="clear: both"></div>
         %endif

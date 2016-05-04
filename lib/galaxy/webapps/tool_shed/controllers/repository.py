@@ -4,12 +4,10 @@ import os
 import string
 import tempfile
 from datetime import date
-from time import gmtime
-from time import strftime
 
 from mercurial import mdiff
 from mercurial import patch
-from sqlalchemy import and_, false, null, true
+from sqlalchemy import and_, false, null
 
 import tool_shed.grids.repository_grids as repository_grids
 import tool_shed.grids.util as grids_util
@@ -58,21 +56,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     matched_repository_grid = repository_grids.MatchedRepositoryGrid()
     my_writable_repositories_grid = repository_grids.MyWritableRepositoriesGrid()
     my_writable_repositories_missing_tool_test_components_grid = repository_grids.MyWritableRepositoriesMissingToolTestComponentsGrid()
-    my_writable_repositories_with_failing_tool_tests_grid = repository_grids.MyWritableRepositoriesWithFailingToolTestsGrid()
-    my_writable_repositories_with_invalid_tools_grid = repository_grids.MyWritableRepositoriesWithInvalidToolsGrid()
-    my_writable_repositories_with_no_failing_tool_tests_grid = repository_grids.MyWritableRepositoriesWithNoFailingToolTestsGrid()
-    my_writable_repositories_with_skip_tests_checked_grid = repository_grids.MyWritableRepositoriesWithSkipTestsCheckedGrid()
-    my_writable_repositories_with_test_install_errors_grid = repository_grids.MyWritableRepositoriesWithTestInstallErrorsGrid()
     repositories_by_user_grid = repository_grids.RepositoriesByUserGrid()
     repositories_i_own_grid = repository_grids.RepositoriesIOwnGrid()
     repositories_i_can_administer_grid = repository_grids.RepositoriesICanAdministerGrid()
     repositories_in_category_grid = repository_grids.RepositoriesInCategoryGrid()
     repositories_missing_tool_test_components_grid = repository_grids.RepositoriesMissingToolTestComponentsGrid()
-    repositories_with_failing_tool_tests_grid = repository_grids.RepositoriesWithFailingToolTestsGrid()
     repositories_with_invalid_tools_grid = repository_grids.RepositoriesWithInvalidToolsGrid()
-    repositories_with_no_failing_tool_tests_grid = repository_grids.RepositoriesWithNoFailingToolTestsGrid()
-    repositories_with_skip_tests_checked_grid = repository_grids.RepositoriesWithSkipTestsCheckedGrid()
-    repositories_with_test_install_errors_grid = repository_grids.RepositoriesWithTestInstallErrorsGrid()
     repository_dependencies_grid = repository_grids.RepositoryDependenciesGrid()
     repository_grid = repository_grids.RepositoryGrid()
     # The repository_metadata_grid is not currently displayed, but is sub-classed by several grids.
@@ -202,25 +191,6 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         return self.my_writable_repositories_missing_tool_test_components_grid( trans, **kwd )
 
     @web.expose
-    def browse_my_writable_repositories_with_failing_tool_tests( self, trans, **kwd ):
-        _redir = self._redirect_if_necessary( trans, **kwd )
-        if _redir is not None:
-            return _redir
-
-        if 'message' not in kwd:
-            message = 'This list contains repositories that match the following criteria:<br>'
-            message += '<ul>'
-            message += '<li>you are authorized to update them</li>'
-            message += '<li>the latest installable revision contains at least 1 tool</li>'
-            message += '<li>the latest installable revision is not missing any tool test components</li>'
-            message += '<li>the latest installable revision has no installation errors</li>'
-            message += '<li>the latest installable revision has at least 1 tool test that fails</li>'
-            message += '</ul>'
-            kwd[ 'message' ] = message
-            kwd[ 'status' ] = 'warning'
-        return self.my_writable_repositories_with_failing_tool_tests_grid( trans, **kwd )
-
-    @web.expose
     def browse_my_writable_repositories_with_invalid_tools( self, trans, **kwd ):
         _redir = self._redirect_if_necessary( trans, **kwd )
         if _redir is not None:
@@ -236,61 +206,6 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             kwd[ 'message' ] = message
             kwd[ 'status' ] = 'warning'
         return self.my_writable_repositories_with_invalid_tools_grid( trans, **kwd )
-
-    @web.expose
-    def browse_my_writable_repositories_with_no_failing_tool_tests( self, trans, **kwd ):
-        _redir = self._redirect_if_necessary( trans, **kwd )
-        if _redir is not None:
-            return _redir
-
-        if 'message' not in kwd:
-            message = 'This list contains repositories that match the following criteria:<br>'
-            message += '<ul>'
-            message += '<li>you are authorized to update them</li>'
-            message += '<li>the latest installable revision contains at least 1 tool</li>'
-            message += '<li>the latest installable revision is not missing any tool test components</li>'
-            message += '<li>the latest installable revision has no tool tests that fail</li>'
-            message += '</ul>'
-            kwd[ 'message' ] = message
-            kwd[ 'status' ] = 'warning'
-        return self.my_writable_repositories_with_no_failing_tool_tests_grid( trans, **kwd )
-
-    @web.expose
-    def browse_my_writable_repositories_with_install_errors( self, trans, **kwd ):
-        _redir = self._redirect_if_necessary( trans, **kwd )
-        if _redir is not None:
-            return _redir
-
-        if 'message' not in kwd:
-            message = 'This list contains repositories that match the following criteria:<br>'
-            message += '<ul>'
-            message += '<li>you are authorized to update them</li>'
-            message += '<li>the latest installable revision is not missing any tool test components</li>'
-            message += '<li>the latest installable revision has installation errors (the repository itself, '
-            message += 'repository dependencies or tool dependencies)</li>'
-            message += '</ul>'
-            kwd[ 'message' ] = message
-            kwd[ 'status' ] = 'warning'
-        return self.my_writable_repositories_with_test_install_errors_grid( trans, **kwd )
-
-    @web.expose
-    def browse_my_writable_repositories_with_skip_tool_test_checked( self, trans, **kwd ):
-        _redir = self._redirect_if_necessary( trans, **kwd )
-        if _redir is not None:
-            return _redir
-
-        if 'message' not in kwd:
-            message = 'This list contains repositories that match the following criteria:<br>'
-            message += '<ul>'
-            message += '<li>you are authorized to update them</li>'
-            message += '<li>the latest installable revision has <b>Skip automated testing of tools in this '
-            message += 'revision</b> checked if the repository type is <b>Unrestricted</b> or <b>Skip '
-            message += 'automated testing of this tool dependency recipe</b> checked if the repository '
-            message += 'type is <b>Tool dependency definition</b></li>'
-            message += '</ul>'
-            kwd[ 'message' ] = message
-            kwd[ 'status' ] = 'warning'
-        return self.my_writable_repositories_with_skip_tests_checked_grid( trans, **kwd )
 
     @web.expose
     def browse_repositories( self, trans, **kwd ):
@@ -478,40 +393,6 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         return self.repositories_missing_tool_test_components_grid( trans, **kwd )
 
     @web.expose
-    def browse_repositories_with_failing_tool_tests( self, trans, **kwd ):
-        _redir = self._redirect_if_necessary( trans, **kwd )
-        if _redir is not None:
-            return _redir
-
-        if 'message' not in kwd:
-            message = 'This list contains repositories that match the following criteria:<br>'
-            message += '<ul>'
-            message += '<li>the latest installable revision contains at least 1 tool</li>'
-            message += '<li>the latest installable revision is not missing any tool test components</li>'
-            message += '<li>the latest installable revision has at least 1 tool test that fails</li>'
-            message += '</ul>'
-            kwd[ 'message' ] = message
-            kwd[ 'status' ] = 'warning'
-        return self.repositories_with_failing_tool_tests_grid( trans, **kwd )
-
-    @web.expose
-    def browse_repositories_with_install_errors( self, trans, **kwd ):
-        _redir = self._redirect_if_necessary( trans, **kwd )
-        if _redir is not None:
-            return _redir
-
-        if 'message' not in kwd:
-            message = 'This list contains repositories that match the following criteria:<br>'
-            message += '<ul>'
-            message += '<li>the latest installable revision is not missing any tool test components</li>'
-            message += '<li>the latest installable revision has installation errors (the repository itself, '
-            message += 'repository dependencies or tool dependencies)</li>'
-            message += '</ul>'
-            kwd[ 'message' ] = message
-            kwd[ 'status' ] = 'warning'
-        return self.repositories_with_test_install_errors_grid( trans, **kwd )
-
-    @web.expose
     def browse_repositories_with_invalid_tools( self, trans, **kwd ):
         _redir = self._redirect_if_necessary( trans, **kwd )
         if _redir is not None:
@@ -526,41 +407,6 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             kwd[ 'message' ] = message
             kwd[ 'status' ] = 'warning'
         return self.repositories_with_invalid_tools_grid( trans, **kwd )
-
-    @web.expose
-    def browse_repositories_with_no_failing_tool_tests( self, trans, **kwd ):
-        _redir = self._redirect_if_necessary( trans, **kwd )
-        if _redir is not None:
-            return _redir
-
-        if 'message' not in kwd:
-            message = 'This list contains repositories that match the following criteria:<br>'
-            message += '<ul>'
-            message += '<li>the latest installable revision contains at least 1 tool</li>'
-            message += '<li>the latest installable revision is not missing any tool test components</li>'
-            message += '<li>the latest installable revision has no tool tests that fail</li>'
-            message += '</ul>'
-            kwd[ 'message' ] = message
-            kwd[ 'status' ] = 'warning'
-        return self.repositories_with_no_failing_tool_tests_grid( trans, **kwd )
-
-    @web.expose
-    def browse_repositories_with_skip_tool_test_checked( self, trans, **kwd ):
-        _redir = self._redirect_if_necessary( trans, **kwd )
-        if _redir is not None:
-            return _redir
-
-        if 'message' not in kwd:
-            message = 'This list contains repositories that match the following criteria:<br>'
-            message += '<ul>'
-            message += '<li>the latest installable revision has <b>Skip automated testing of tools in this '
-            message += 'revision</b> checked if the repository type is <b>Unrestricted</b> or <b>Skip '
-            message += 'automated testing of this tool dependency recipe</b> checked if the repository '
-            message += 'type is <b>Tool dependency definition</b></li>'
-            message += '</ul>'
-            kwd[ 'message' ] = message
-            kwd[ 'status' ] = 'warning'
-        return self.repositories_with_skip_tests_checked_grid( trans, **kwd )
 
     @web.expose
     def browse_repository( self, trans, id, **kwd ):
@@ -809,7 +655,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     return update
         params['latest_changeset_revision'] = str( latest_changeset_revision )
         params['latest_ctx_rev'] = str( update_to_ctx.rev() )
-        url = common_util.url_join( galaxy_url, pathspec=pathspec, params=params )
+        url = util.build_url( galaxy_url, pathspec=pathspec, params=params )
         return trans.response.send_redirect( url )
 
     @web.expose
@@ -1065,7 +911,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         trans.sa_session.flush()
         tool_shed_url = web.url_for( '/', qualified=True )
         pathspec = [ 'repos', str( repository.user.username ), str( repository.name ), 'archive', file_type_str ]
-        download_url = common_util.url_join( tool_shed_url, pathspec=pathspec )
+        download_url = util.build_url( tool_shed_url, pathspec=pathspec )
         return trans.response.send_redirect( download_url )
 
     @web.expose
@@ -1112,7 +958,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         if repository_dependencies:
             # Only display repository dependencies if they exist.
             exclude = [ 'datatypes', 'invalid_repository_dependencies', 'invalid_tool_dependencies', 'invalid_tools',
-                        'readme_files', 'tool_dependencies', 'tools', 'tool_test_results', 'workflows', 'data_manager' ]
+                        'readme_files', 'tool_dependencies', 'tools', 'workflows', 'data_manager' ]
             tsucm = ToolShedUtilityContainerManager( trans.app )
             containers_dict = tsucm.build_repository_containers( repository,
                                                                  changeset_revision,
@@ -1471,101 +1317,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        return suc.get_repository_file_contents( trans.app, file_path, repository_id )
-
-    @web.expose
-    def get_functional_test_rss( self, trans, **kwd ):
-        '''Return an RSS feed of the functional test results for the provided user, optionally filtered by the 'status' parameter.'''
-        owner = kwd.get( 'owner', None )
-        status = kwd.get( 'status', 'all' )
-        if owner:
-            user = suc.get_user_by_username( trans.app, owner )
-        else:
-            trans.response.status = 404
-            return 'Missing owner parameter.'
-        if user is None:
-            trans.response.status = 404
-            return 'No user found with username %s.' % owner
-        if status == 'passed':
-            # Return only metadata revisions where tools_functionally_correct is set to True.
-            metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == true(),
-                                    trans.model.RepositoryMetadata.table.c.tools_functionally_correct == true(),
-                                    trans.model.RepositoryMetadata.table.c.time_last_tested != null() )
-        elif status == 'failed':
-            # Return only metadata revisions where tools_functionally_correct is set to False.
-            metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == true(),
-                                    trans.model.RepositoryMetadata.table.c.tools_functionally_correct == false(),
-                                    trans.model.RepositoryMetadata.table.c.time_last_tested != null() )
-        else:
-            # Return all metadata entries for this user's repositories.
-            metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == true(),
-                                    trans.model.RepositoryMetadata.table.c.time_last_tested != null() )
-
-        tool_shed_url = web.url_for( '/', qualified=True )
-        functional_test_results = []
-        for repository_metadata in trans.sa_session.query( trans.model.RepositoryMetadata ) \
-                .filter( metadata_filter ) \
-                .join( trans.model.Repository ) \
-                .filter( and_( trans.model.Repository.table.c.deleted == false(),
-                    trans.model.Repository.table.c.private == false(),
-                    trans.model.Repository.table.c.deprecated == false(),
-                    trans.model.Repository.table.c.user_id == user.id ) ):
-            repository = repository_metadata.repository
-            repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
-            latest_downloadable_changeset_revsion = suc.get_latest_downloadable_changeset_revision( trans.app, repository, repo )
-            if repository_metadata.changeset_revision == latest_downloadable_changeset_revsion:
-                # We'll display only the test run for the latest installable revision in the rss feed.
-                tool_test_results = repository_metadata.tool_test_results
-                if tool_test_results is not None:
-                    # The tool_test_results column used to contain a single dictionary, but was recently enhanced to contain
-                    # a list of dictionaries, one for each install and test run.  We'll display only the latest run in the rss
-                    # feed for nwo.
-                    if isinstance( tool_test_results, list ):
-                        tool_test_results = tool_test_results[ 0 ]
-                    current_repository_errors = []
-                    tool_dependency_errors = []
-                    repository_dependency_errors = []
-                    description_lines = []
-                    # Per the RSS 2.0 specification, all dates in RSS feeds must be formatted as specified in RFC 822
-                    # section 5.1, e.g. Sat, 07 Sep 2002 00:00:01 UT
-                    if repository_metadata.time_last_tested is None:
-                        time_tested = 'Thu, 01 Jan 1970 00:00:00 UT'
-                    else:
-                        time_tested = repository_metadata.time_last_tested.strftime( '%a, %d %b %Y %H:%M:%S UT' )
-                    # Generate a citable URL for this repository with owner and changeset revision.
-                    pathspec = [ 'view', str( user.username ), str( repository.name ), str( repository_metadata.changeset_revision ) ]
-                    repository_citable_url = common_util.url_join( tool_shed_url, pathspec=pathspec )
-                    passed_tests = len( tool_test_results.get( 'passed_tests', [] ) )
-                    failed_tests = len( tool_test_results.get( 'failed_tests', [] ) )
-                    missing_test_components = len( tool_test_results.get( 'missing_test_components', [] ) )
-                    installation_errors = tool_test_results.get( 'installation_errors', [] )
-                    if installation_errors:
-                        tool_dependency_errors = installation_errors.get( 'tool_dependencies', [] )
-                        repository_dependency_errors = installation_errors.get( 'repository_dependencies', [] )
-                        current_repository_errors = installation_errors.get( 'current_repository', [] )
-                    description_lines.append( '%d tests passed, %d tests failed, %d tests missing test components.' %
-                                              ( passed_tests, failed_tests, missing_test_components ) )
-                    if current_repository_errors:
-                        description_lines.append( '\nThis repository did not install correctly. ' )
-                    if tool_dependency_errors or repository_dependency_errors:
-                        description_lines.append( '\n%d tool dependencies and %d repository dependencies failed to install. ' %
-                                                  ( len( tool_dependency_errors ), len( repository_dependency_errors ) ) )
-                    title = 'Revision %s of %s' % ( repository_metadata.changeset_revision, repository.name )
-                    # The guid attribute in an RSS feed's list of items allows a feed reader to choose not to show an item as updated
-                    # if the guid is unchanged. For functional test results, the citable URL is sufficiently unique to enable
-                    # that behavior.
-                    functional_test_results.append( dict( title=title,
-                                                          guid=repository_citable_url,
-                                                          link=repository_citable_url,
-                                                          description='\n'.join( description_lines ),
-                                                          pubdate=time_tested ) )
-        trans.response.set_content_type( 'application/rss+xml' )
-        return trans.fill_template( '/rss.mako',
-                                    title='Tool functional test results',
-                                    link=tool_shed_url,
-                                    description='Functional test results for repositories owned by %s.' % user.username,
-                                    pubdate=strftime( '%a, %d %b %Y %H:%M:%S UT', gmtime() ),
-                                    items=functional_test_results )
+        is_admin = trans.user_is_admin()
+        return suc.get_repository_file_contents( trans.app, file_path, repository_id, is_admin )
 
     @web.json
     def get_latest_downloadable_changeset_revision( self, trans, **kwd ):
@@ -1982,7 +1735,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                            repository_ids=','.join( util.listify( repository_ids ) ),
                            changeset_revisions=','.join( util.listify( changeset_revisions ) ) )
             pathspec = [ 'admin_toolshed', 'prepare_for_install' ]
-            url = common_util.url_join( galaxy_url, pathspec=pathspec, params=params )
+            url = util.build_url( galaxy_url, pathspec=pathspec, params=params )
             return trans.response.send_redirect( url )
         else:
             message = 'Repository installation is not possible due to an invalid Galaxy URL: <b>%s</b>.  ' % galaxy_url
@@ -2095,9 +1848,6 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         display_reviews = util.string_as_bool( kwd.get( 'display_reviews', False ) )
         alerts = kwd.get( 'alerts', '' )
         alerts_checked = CheckboxField.is_checked( alerts )
-        skip_tool_tests = kwd.get( 'skip_tool_tests', '' )
-        skip_tool_tests_checked = CheckboxField.is_checked( skip_tool_tests )
-        skip_tool_tests_comment = kwd.get( 'skip_tool_tests_comment', '' )
         category_ids = util.listify( kwd.get( 'category_id', '' ) )
         if repository.email_alerts:
             email_alerts = json.loads( repository.email_alerts )
@@ -2124,35 +1874,6 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                   message=message,
                                                                   status='error' ) )
 
-        elif kwd.get( 'skip_tool_tests_button', False ):
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, id, changeset_revision )
-            skip_tool_test = repository_metadata.skip_tool_tests
-            if skip_tool_test:
-                # Handle the mapper behavior.
-                skip_tool_test = skip_tool_test[ 0 ]
-            if skip_tool_tests_checked:
-                if repository_metadata.tool_test_results:
-                    repository_metadata.tool_test_results = None
-                    trans.sa_session.add( repository_metadata )
-                    trans.sa_session.flush()
-                if skip_tool_test:
-                    comment = skip_tool_test.comment
-                    if comment != skip_tool_tests_comment:
-                        skip_tool_test.comment = skip_tool_tests_comment
-                        trans.sa_session.add( skip_tool_test )
-                        trans.sa_session.flush()
-                else:
-                    skip_tool_test = trans.model.SkipToolTest( repository_metadata_id=repository_metadata.id,
-                                                               initial_changeset_revision=changeset_revision,
-                                                               comment=skip_tool_tests_comment )
-                    trans.sa_session.add( skip_tool_test )
-                    trans.sa_session.flush()
-                message = "Tools in this revision will not be tested by the automated test framework."
-            else:
-                if skip_tool_test:
-                    trans.sa_session.delete( skip_tool_test )
-                    trans.sa_session.flush()
-                message = "Tools in this revision will be tested by the automated test framework."
         elif kwd.get( 'manage_categories_button', False ):
             flush_needed = False
             # Delete all currently existing categories.
@@ -2216,7 +1937,6 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repository_metadata = None
         metadata = None
         is_malicious = False
-        skip_tool_test = None
         repository_dependencies = None
         if changeset_revision != hg_util.INITIAL_CHANGELOG_HASH:
             repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, id, changeset_revision )
@@ -2237,11 +1957,6 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                         is_malicious = repository_metadata.malicious
                         changeset_revision = previous_changeset_revision
             if repository_metadata:
-                skip_tool_test = repository_metadata.skip_tool_tests
-                if skip_tool_test:
-                    # Handle the mapper behavior.
-                    skip_tool_test = skip_tool_test[ 0 ]
-                    skip_tool_tests_checked = True
                 metadata = repository_metadata.metadata
                 # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
                 toolshed_base_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
@@ -2276,7 +1991,6 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             status = 'error'
         repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
         malicious_check_box = CheckboxField( 'malicious', checked=is_malicious )
-        skip_tool_tests_check_box = CheckboxField( 'skip_tool_tests', checked=skip_tool_tests_checked )
         categories = suc.get_categories( trans.app )
         selected_categories = [ _rca.category_id for _rca in repository.categories ]
         tsucm = ToolShedUtilityContainerManager( trans.app )
@@ -2313,8 +2027,6 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
                                     alerts_check_box=alerts_check_box,
-                                    skip_tool_tests_check_box=skip_tool_tests_check_box,
-                                    skip_tool_test=skip_tool_test,
                                     malicious_check_box=malicious_check_box,
                                     repository_type_select_field=repository_type_select_field,
                                     message=message,
@@ -2414,9 +2126,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
         # Get the next installable changeset_revision beyond the received changeset_revision.
-        changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
-        if changeset_revision:
-            return changeset_revision
+        next_changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
+        if next_changeset_revision and next_changeset_revision != changeset_revision:
+            return next_changeset_revision
         return ''
 
     @web.json
@@ -2424,7 +2136,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        return suc.open_repository_files_folder( trans.app, folder_path, repository_id )
+        is_admin = trans.user_is_admin()
+        return suc.open_repository_files_folder( trans.app, folder_path, repository_id, is_admin )
 
     @web.expose
     def preview_tools_in_changeset( self, trans, repository_id, **kwd ):
@@ -2863,7 +2576,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 # Get updates to the received changeset_revision if any exist.
                 repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
                 upper_bound_changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
-                if upper_bound_changeset_revision:
+                if upper_bound_changeset_revision and upper_bound_changeset_revision != changeset_revision:
                     changeset_revision = upper_bound_changeset_revision
                     repository_metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans.app,
                                                                                                                      repository_id,
@@ -2912,12 +2625,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             else:
                 next_installable_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
                 if repository_metadata is None:
-                    if next_installable_revision:
+                    if next_installable_revision and next_installable_revision != changeset_revision:
                         tool_shed_status_dict[ 'latest_installable_revision' ] = 'True'
                     else:
                         tool_shed_status_dict[ 'latest_installable_revision' ] = 'False'
                 else:
-                    if next_installable_revision:
+                    if next_installable_revision and next_installable_revision != changeset_revision:
                         tool_shed_status_dict[ 'latest_installable_revision' ] = 'False'
                     else:
                         tool_shed_status_dict[ 'latest_installable_revision' ] = 'True'

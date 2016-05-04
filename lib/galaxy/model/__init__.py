@@ -368,6 +368,15 @@ class Job( object, JobLike, Dictifiable ):
     terminal_states = [ states.OK,
                         states.ERROR,
                         states.DELETED ]
+    #: job states where the job hasn't finished and the model may still change
+    non_ready_states = [
+        states.NEW,
+        states.RESUBMITTED,
+        states.UPLOAD,
+        states.WAITING,
+        states.QUEUED,
+        states.RUNNING,
+    ]
 
     # Please include an accessor (get/set pair) for any new columns/members.
     def __init__( self ):
@@ -952,8 +961,13 @@ class PostJobAction( object ):
 
 
 class PostJobActionAssociation( object ):
-    def __init__(self, pja, job):
-        self.job = job
+    def __init__(self, pja, job=None, job_id=None ):
+        if job is not None:
+            self.job = job
+        elif job_id is not None:
+            self.job_id = job_id
+        else:
+            raise Exception("PostJobActionAssociation must be created with a job or a job_id.")
         self.post_job_action = pja
 
 
@@ -1164,7 +1178,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         dataset.history = self
         if genome_build not in [None, '?']:
             self.genome_build = genome_build
-        self.datasets.append( dataset )
+        dataset.history_id = self.id
         return dataset
 
     def add_datasets( self, sa_session, datasets, parent_id=None, genome_build=None, set_hid=True, quota=True, flush=False ):
@@ -1172,9 +1186,13 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         interactions when adding many datasets to history at once.
         """
         all_hdas = all( imap( is_hda, datasets ) )
-        optimize = len( datasets) > 1 and parent_id is None and all_hdas and set_hid and not quota
+        optimize = len( datasets) > 1 and parent_id is None and all_hdas and set_hid
         if optimize:
             self.__add_datasets_optimized( datasets, genome_build=genome_build )
+            if quota and self.user:
+                disk_usage = sum([d.get_total_size() for d in datasets])
+                self.user.adjust_total_disk_usage(disk_usage)
+
             sa_session.add_all( datasets )
             if flush:
                 sa_session.flush()
@@ -1199,7 +1217,8 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             dataset.history = self
             if set_genome:
                 self.genome_build = genome_build
-        self.datasets.extend( datasets )
+        for dataset in datasets:
+            dataset.history_id = self.id
         return datasets
 
     def add_dataset_collection( self, history_dataset_collection, set_hid=True ):
@@ -1622,6 +1641,7 @@ class Dataset( StorableObject ):
     # failed_metadata is only valid as DatasetInstance state currently
 
     non_ready_states = (
+        states.NEW,
         states.UPLOAD,
         states.QUEUED,
         states.RUNNING,

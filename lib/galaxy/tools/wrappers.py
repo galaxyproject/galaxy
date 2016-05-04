@@ -81,6 +81,9 @@ class InputValueWrapper( ToolParameterValueWrapper ):
         else:
             return super( InputValueWrapper, self ) == other
 
+    def __ne__( self, other ):
+        return not self == other
+
     def __str__( self ):
         to_param_dict_string = self.input.to_param_dict_string( self.value, self._other_values )
         if isinstance( to_param_dict_string, list ):
@@ -145,6 +148,9 @@ class SelectToolParameterWrapper( ToolParameterValueWrapper ):
             return str( self ) == other
         else:
             return super( SelectToolParameterWrapper, self ) == other
+
+    def __ne__( self, other ):
+        return not self == other
 
     def __str__( self ):
         # Assuming value is never a path - otherwise would need to pass

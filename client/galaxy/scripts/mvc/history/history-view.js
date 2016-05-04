@@ -131,8 +131,8 @@ var HistoryView = _super.extend(
     /** In this override, clear the update timer on the model */
     freeModel : function(){
         _super.prototype.freeModel.call( this );
-//TODO: move to History.free()
         if( this.model ){
+//TODO: move to History.free()
             this.model.clearUpdateTimeout();
         }
         return this;
@@ -221,9 +221,9 @@ var HistoryView = _super.extend(
     },
 
     /** convenience alias to the model. Updates the item list only (not the history) */
-    refreshContents : function( detailIds, options ){
+    refreshContents : function( options ){
         if( this.model ){
-            return this.model.refresh( detailIds, options );
+            return this.model.refresh( options );
         }
         // may have callbacks - so return an empty promise
         return $.when();

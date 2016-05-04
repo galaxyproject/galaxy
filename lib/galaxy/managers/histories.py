@@ -5,13 +5,16 @@ Histories are containers for datasets or dataset collections
 created (or copied) by users over the course of an analysis.
 """
 
-from sqlalchemy import desc, asc
+from sqlalchemy import desc
+from sqlalchemy import asc
 
 from galaxy import model
 from galaxy import exceptions as glx_exceptions
 from galaxy.managers import sharable
 from galaxy.managers import deletable
 from galaxy.managers import hdas
+# from galaxy.managers import hdcas
+from galaxy.managers import history_contents
 from galaxy.managers import collections_util
 
 
@@ -34,6 +37,8 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
     def __init__( self, app, *args, **kwargs ):
         super( HistoryManager, self ).__init__( app, *args, **kwargs )
         self.hda_manager = hdas.HDAManager( app )
+        self.contents_manager = history_contents.HistoryContentsManager( app )
+        self.contents_filters = history_contents.HistoryContentsFilters( app )
 
     def copy( self, history, user, **kwargs ):
         """
@@ -147,6 +152,19 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
         raise glx_exceptions.RequestParameterInvalidException( 'Unkown order_by', order_by=order_by_string,
             available=[ 'create_time', 'update_time', 'name', 'size' ])
 
+    def non_ready_jobs( self, history ):
+        """Return the currently running job objects associated with this history.
+
+        Where running is defined as new, waiting, queued, running, resubmitted,
+        and upload.
+        """
+        # TODO: defer to jobModelManager (if there was one)
+        # TODO: genericize the params to allow other filters
+        jobs = ( self.session().query( model.Job )
+            .filter( model.Job.history == history )
+            .filter( model.Job.state.in_( model.Job.non_ready_states ) ) )
+        return jobs
+
 
 class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSerializerMixin ):
     """
@@ -215,7 +233,9 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             'hdas'          : lambda i, k, **c: [ self.app.security.encode_id( hda.id ) for hda in i.datasets ],
             'state_details' : self.serialize_state_counts,
             'state_ids'     : self.serialize_state_ids,
-            'contents'      : self.serialize_contents
+            'contents'      : self.serialize_contents,
+            'non_ready_jobs': lambda i, k, **c: [ self.app.security.encode_id( job.id ) for job
+                                                  in self.manager.non_ready_jobs( i ) ],
         })
 
     # remove this

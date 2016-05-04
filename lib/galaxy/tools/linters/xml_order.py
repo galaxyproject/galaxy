@@ -1,3 +1,8 @@
+"""This module contains a linting functions for tool XML block order.
+
+For more information on the IUC standard for XML block order see -
+https://github.com/galaxy-iuc/standards.
+"""
 # https://github.com/galaxy-iuc/standards
 # https://github.com/galaxy-iuc/standards/pull/7/files
 TAG_ORDER = [
@@ -9,6 +14,7 @@ TAG_ORDER = [
     'stdio',
     'version_command',
     'command',
+    'environment_variables',
     'configfiles',
     'inputs',
     'outputs',
@@ -56,4 +62,4 @@ def _validate_for_tags(root, lint_ctx, tag_ordering):
             last_tag = tag
             last_key = key
         else:
-            lint_ctx.info("Unknown tag [%s] encoutered, this may result in a warning in the future." % tag)
+            lint_ctx.info("Unknown tag [%s] encountered, this may result in a warning in the future." % tag)

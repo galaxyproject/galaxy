@@ -2,13 +2,14 @@ import ConfigParser
 
 import os
 import json
+import yaml
 import stat
 import random
 import tempfile
 from subprocess import Popen, PIPE
 
 from galaxy.util.bunch import Bunch
-from galaxy import web
+from galaxy import web, model
 from galaxy.managers import api_keys
 from galaxy.tools.deps.docker_util import DockerVolume
 
@@ -39,6 +40,7 @@ class InteractiveEnvironmentRequest(object):
         self.attr.HOST = trans.request.host.rsplit(':', 1)[0]
 
         self.load_deploy_config()
+        self.load_allowed_images()
         self.attr.docker_hostname = self.attr.viz_config.get("docker", "docker_hostname")
 
         # Generate per-request passwords the IE plugin can use to configure
@@ -59,15 +61,39 @@ class InteractiveEnvironmentRequest(object):
 
         # This duplicates the logic in the proxy manager
         if self.attr.galaxy_config.dynamic_proxy_external_proxy:
-            slash = '/'
-            if self.attr.galaxy_config.cookie_path.endswith('/'):
-                slash = ''
-            self.attr.proxy_prefix = '%s%s%s' % (
-                self.attr.galaxy_config.cookie_path,
-                slash,
-                self.attr.galaxy_config.dynamic_proxy_prefix)
+            self.attr.proxy_prefix = '/'.join(
+                (
+                    '',
+                    self.attr.galaxy_config.cookie_path.strip('/'),
+                    self.attr.galaxy_config.dynamic_proxy_prefix.strip('/'),
+                    self.attr.viz_id,
+                )
+            )
         else:
             self.attr.proxy_prefix = ''
+
+    def load_allowed_images(self):
+        if os.path.exists(os.path.join(self.attr.our_config_dir, 'allowed_images.yml')):
+            fn = os.path.join(self.attr.our_config_dir, 'allowed_images.yml')
+        elif os.path.exists(os.path.join(self.attr.our_config_dir, 'allowed_images.yml.sample')):
+            fn = os.path.join(self.attr.our_config_dir, 'allowed_images.yml.sample')
+        else:
+            # If we don't have an allowed images, then we fall back to image
+            # name specified in the .ini file
+            try:
+                self.allowed_images = [self.attr.viz_config.image]
+                self.default_image = self.attr.viz_config.image
+                return
+            except AttributeError:
+                raise Exception("[{0}] Could not find allowed_images.yml, or image tag in {0}.ini file for ".format(self.attr.viz_id))
+
+        with open(fn, 'r') as handle:
+            self.allowed_images = [x['image'] for x in yaml.load(handle)]
+
+            if len(self.allowed_images) == 0:
+                raise Exception("No allowed images specified for " + self.attr.viz_id)
+
+            self.default_image = self.allowed_images[0]
 
     def load_deploy_config(self, default_dict={}):
         # For backwards compat, any new variables added to the base .ini file
@@ -178,7 +204,7 @@ class InteractiveEnvironmentRequest(object):
     def volume(self, host_path, container_path, **kwds):
         return DockerVolume(host_path, container_path, **kwds)
 
-    def docker_cmd(self, env_override={}, volumes=[]):
+    def docker_cmd(self, image, env_override={}, volumes=[]):
         """
             Generate and return the docker command to execute
         """
@@ -201,13 +227,64 @@ class InteractiveEnvironmentRequest(object):
             environment=env_str,
             import_volume_str=import_volume_str,
             volume_str=volume_str,
-            image=self.attr.viz_config.get("docker", "image")
+            image=image,
         )
         return command
 
-    def launch(self, raw_cmd=None, env_override={}, volumes=[]):
+    def _idsToVolumes(self, ids):
+        if len(ids.strip()) == 0:
+            return []
+
+        # They come as a comma separated list
+        ids = ids.split(',')
+
+        # Next we need to turn these into volumes
+        volumes = []
+        for id in ids:
+            decoded_id = self.trans.security.decode_id(id)
+            dataset = self.trans.sa_session.query(model.HistoryDatasetAssociation).get(decoded_id)
+            # TODO: do we need to check if the user has access?
+            volumes.append(self.volume(dataset.get_file_name(), '/import/[{0}] {1}.{2}'.format(dataset.id, dataset.name, dataset.ext)))
+        return volumes
+
+    def launch(self, image=None, additional_ids=None, raw_cmd=None, env_override={}, volumes=[]):
+        """Launch a docker image.
+
+        :type image: str
+        :param image: Optional image name. If not provided, self.default_image
+                      is used, which is the first image listed in the
+                      allowed_images.yml{,.sample} file.
+
+        :type additional_ids: str
+        :param additional_ids: comma separated list of encoded HDA IDs. These
+                               are transformed into Volumes and added to that
+                               argument
+
+        :type raw_cmd: str
+        :param raw_cmd: raw docker command. Usually generated with self.docker_cmd()
+
+        :type env_override: dict
+        :param env_override: dictionary of environment variables to add.
+
+        :type volumes: list of galaxy.tools.deps.docker_util.DockerVolume
+        :param volumes: dictionary of docker volume mounts
+
+        """
+        if image is None:
+            image = self.default_image
+
+        if image not in self.allowed_images:
+            # Now that we're allowing users to specify images, we need to ensure that they aren't
+            # requesting images we have not specifically allowed.
+            raise Exception("Attempting to launch disallowed image! %s not in list of allowed images [%s]"
+                            % (image, ', '.join(self.allowed_images)))
+
+        if additional_ids is not None:
+            volumes += self._idsToVolumes(additional_ids)
+
         if raw_cmd is None:
-            raw_cmd = self.docker_cmd(env_override=env_override, volumes=volumes)
+            raw_cmd = self.docker_cmd(image, env_override=env_override, volumes=volumes)
+
         log.info("Starting docker container for IE {0} with command [{1}]".format(
             self.attr.viz_id,
             raw_cmd
@@ -218,7 +295,7 @@ class InteractiveEnvironmentRequest(object):
             log.error( "%s\n%s" % (stdout, stderr) )
             return None
         else:
-            container_id = stdout
+            container_id = stdout.strip()
             log.debug( "Container id: %s" % container_id)
             inspect_data = self.inspect_container(container_id)
             port_mappings = self.get_container_port_mapping(inspect_data)
@@ -239,6 +316,8 @@ class InteractiveEnvironmentRequest(object):
                 host=self.attr.docker_hostname,
                 port=host_port,
                 proxy_prefix=self.attr.proxy_prefix,
+                route_name=self.attr.viz_id,
+                container_ids=[container_id],
             )
             # These variables then become available for use in templating URLs
             self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]

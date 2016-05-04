@@ -88,7 +88,7 @@ class RepositoriesController( BaseAPIController ):
         return response_dict
 
     @web.expose_api_anonymous
-    def get_ordered_installable_revisions( self, trans, **kwd ):
+    def get_ordered_installable_revisions( self, trans, name=None, owner=None, **kwd ):
         """
         GET /api/repositories/get_ordered_installable_revisions
 
@@ -99,20 +99,25 @@ class RepositoriesController( BaseAPIController ):
         As in the changelog, the list is ordered oldest to newest.
         """
         # Example URL: http://localhost:9009/api/repositories/get_ordered_installable_revisions?name=add_column&owner=test
-        name = kwd.get( 'name', None )
-        owner = kwd.get( 'owner', None )
+        if name is None:
+            name = kwd.get( 'name', None )
+        if owner is None:
+            owner = kwd.get( 'owner', None )
         tsr_id = kwd.get( 'tsr_id', None )
         if None not in [ name, owner ]:
             # Get the repository information.
             repository = suc.get_repository_by_name_and_owner( self.app, name, owner )
+            if repository is None:
+                trans.response.status = 404
+                return { 'status': 'error', 'message': 'No repository named %s found with owner %s' % ( name, owner ) }
         elif tsr_id is not None:
             repository = suc.get_repository_in_tool_shed( self.app, tsr_id )
         else:
             error_message = "Error in the Tool Shed repositories API in get_ordered_installable_revisions: "
-            error_message += "invalid parameters received." % ( str( name ), str( owner ) )
+            error_message += "invalid parameters received."
             log.debug( error_message )
             return []
-        return repository.ordered_installable_revisions( self.app )
+        return [ revision[ 1 ] for revision in repository.installable_revisions( self.app, sort_revisions=True ) ]
 
     @web.expose_api_anonymous
     def get_repository_revision_install_info( self, trans, name, owner, changeset_revision, **kwd ):
@@ -780,6 +785,8 @@ class RepositoriesController( BaseAPIController ):
                 metadata_dict[ 'tool_dependencies' ] = repository.get_tool_dependencies( changehash )
             else:
                 metadata_dict[ 'tool_dependencies' ] = {}
+            if metadata.includes_tools:
+                metadata_dict[ 'tools' ] = metadata.metadata[ 'tools' ]
             all_metadata[ '%s:%s' % ( int( changeset ), changehash ) ] = metadata_dict
         return all_metadata
 

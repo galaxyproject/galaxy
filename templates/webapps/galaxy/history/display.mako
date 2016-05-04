@@ -13,9 +13,6 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     <style type="text/css">
-        .history-panel {
-            margin-top: 8px;
-        }
     </style>
 </%def>
 
@@ -41,9 +38,7 @@
 </%def>
 
 <%def name="render_item( history, datasets )">
-
-<div id="history-${ history_dict[ 'id' ] }" class="history-panel">
-</div>
+<div id="history-${ history_dict[ 'id' ] }" class="history-panel"></div>
 <script type="text/javascript">
     var historyJSON  = ${h.dumps( history_dict )},
         contentsJSON = ${h.dumps( content_dicts )};

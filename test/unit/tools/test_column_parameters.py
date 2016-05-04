@@ -25,22 +25,22 @@ class DataColumnParameterTestCase( BaseParameterTestCase ):
         # TODO: don't break abstraction, try setting null value instead
         return self.param.optional
 
-    def test_from_html(self):
-        value = self.param.from_html("3", self.trans, { "input_tsv": self.build_ready_hda()  } )
+    def test_from_json(self):
+        value = self.param.from_json("3", self.trans, { "input_tsv": self.build_ready_hda()  } )
         assert value == "3"
 
-    def test_from_html_strips_c(self):
-        value = self.param.from_html("c1", self.trans, { "input_tsv": self.build_ready_hda()  } )
+    def test_from_json_strips_c(self):
+        value = self.param.from_json("c1", self.trans, { "input_tsv": self.build_ready_hda()  } )
         assert value == "1"
 
-    def test_multiple_from_html(self):
+    def test_multiple_from_json(self):
         self.multiple = True
-        value = self.param.from_html("1,2,3", self.trans, { "input_tsv": self.build_ready_hda()  } )
+        value = self.param.from_json("1,2,3", self.trans, { "input_tsv": self.build_ready_hda()  } )
         assert value == ["1", "2", "3"]
 
-    def test_multiple_from_html_with_c(self):
+    def test_multiple_from_json_with_c(self):
         self.multiple = True
-        value = self.param.from_html("c1,c2,c3", self.trans, { "input_tsv": self.build_ready_hda()  } )
+        value = self.param.from_json("c1,c2,c3", self.trans, { "input_tsv": self.build_ready_hda()  } )
         assert value == ["1", "2", "3"]
 
     def test_get_initial_value_default(self):

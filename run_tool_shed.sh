@@ -2,13 +2,28 @@
 
 cd `dirname $0`
 
+: ${GALAXY_VIRTUAL_ENV:=.venv}
+
+if [ -d "$GALAXY_VIRTUAL_ENV" ];
+then
+    . "$GALAXY_VIRTUAL_ENV/bin/activate"
+fi
+
 ./scripts/common_startup.sh
 
-tool_shed=`./lib/tool_shed/scripts/bootstrap_tool_shed/parse_run_sh_args.sh $@`
+: ${GALAXY_VIRTUAL_ENV:=.venv}
+
+if [ -d "$GALAXY_VIRTUAL_ENV" ];
+then
+    . "$GALAXY_VIRTUAL_ENV/bin/activate"
+fi
+
+
+tool_shed=`./scripts/tool_shed/bootstrap_tool_shed/parse_run_sh_args.sh $@`
 args=$@
 
 if [ $? -eq 0 ] ; then
-	bash ./lib/tool_shed/scripts/bootstrap_tool_shed/bootstrap_tool_shed.sh $@
+	bash ./scripts/tool_shed/bootstrap_tool_shed/parse_run_sh_args.sh $@
 	args=`echo $@ | sed "s#-\?-bootstrap_from_tool_shed $tool_shed##"`
 fi
 

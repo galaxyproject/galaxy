@@ -17,7 +17,7 @@ class WorkflowTestCase( TwillTestCase ):
     Kind of a shell of a test case for running workflow tests. Probably
     needs to look more like test_toolbox.
     """
-    workflow_test_file = None
+    workflow_test_file = os.environ.get("GALAXY_TEST_WORKFLOW_FILE", None)
     user_api_key = None
     master_api_key = None
 

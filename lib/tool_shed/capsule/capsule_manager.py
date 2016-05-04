@@ -15,6 +15,7 @@ from galaxy import web
 from galaxy.util import asbool
 from galaxy.util import CHUNK_SIZE
 from galaxy.util import safe_relpath
+from galaxy.util import build_url
 from galaxy.util.odict import odict
 from tool_shed.dependencies.repository.relation_builder import RelationBuilder
 from tool_shed.dependencies import attribute_handlers
@@ -123,7 +124,7 @@ class ExportRepositoryManager( object ):
             params = dict( encoded_repositories_archive_name=encoded_repositories_archive_name )
             pathspec = [ 'repository', 'export_via_api' ]
             tool_shed_url = web.url_for( '/', qualified=True )
-            download_url = common_util.url_join( tool_shed_url, pathspec=pathspec, params=params )
+            download_url = build_url( tool_shed_url, pathspec=pathspec, params=params )
             return dict( download_url=download_url, error_messages=error_messages )
         return repositories_archive, error_messages
 
@@ -595,7 +596,7 @@ class ImportRepositoryManager( object ):
                                                 suc.get_next_downloadable_changeset_revision( defined_repository,
                                                                                               defined_repo,
                                                                                               changeset_revision )
-                                            if updated_changeset_revision == rm_changeset_revision:
+                                            if updated_changeset_revision == rm_changeset_revision and updated_changeset_revision != changeset_revision:
                                                 dependent_downloadable_revisions.append( downloadable_revision )
         return dependent_downloadable_revisions
 

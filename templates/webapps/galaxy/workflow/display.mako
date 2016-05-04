@@ -4,6 +4,7 @@
 <%!
     from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue
     from galaxy.web import form_builder
+    import cgi
 %>
 
 <%def name="stylesheets()">
@@ -30,6 +31,15 @@
       <% new_prefix = prefix + input.name + "|" %>
       ${row_for_param( input.test_param, group_values[ input.test_param.name ], other_values, prefix, step )}
       ${do_inputs( input.cases[ current_case ].inputs, group_values, new_prefix, step, other_values )}
+    %elif input.type == "section":
+      <% new_prefix = prefix + input.name + "|" %>
+      <% group_values = values[input.name] %>
+      <div class="form-title-row"><b>${input.title}:</b></div>
+      <div class="repeat-group">
+        <div class="repeat-group-item">
+          ${do_inputs( input.inputs, group_values, new_prefix, step, other_values )}
+        </div>
+      </div>
     %else:
       ${row_for_param( input, values[ input.name ], other_values, prefix, step )}
     %endif
@@ -54,7 +64,7 @@
                     <i>select at runtime</i>
                 %endif
             %else:
-                ${param.value_to_display_text( value, app )}
+                ${cgi.escape( param.value_to_display_text( value, app ) )}
             %endif
         </div>
         %if hasattr( step, 'upgrade_messages' ) and step.upgrade_messages and param.name in step.upgrade_messages:
