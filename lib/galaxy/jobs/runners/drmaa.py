@@ -285,8 +285,11 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 ajs.running = True
                 ajs.job_wrapper.change_state( model.Job.states.RUNNING )
             if state in ( drmaa.JobState.FAILED, drmaa.JobState.DONE ):
-                self._complete_terminal_job( ajs, drmaa_state=state )
-                continue
+                if self._complete_terminal_job( ajs, drmaa_state=state ) is not None:
+                    # job was not actually terminal
+                    state = ajs.old_state
+                else:
+                    continue
             if ajs.check_limits():
                 self.work_queue.put( ( self.fail_job, ajs ) )
                 continue

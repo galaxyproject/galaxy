@@ -73,6 +73,9 @@ class SlurmJobRunner( DRMAAJobRunner ):
                     else:
                         log.info( '(%s/%s) Job was cancelled via slurm (e.g. with scancel(1))', ajs.job_wrapper.get_id_tag(), ajs.job_id )
                         ajs.fail_message = "This job failed because it was cancelled by an administrator."
+                elif job_info['JobState'] in ('PENDING', 'RUNNING'):
+                    log.warning( '(%s/%s) Job was reported by drmaa as terminal but scontrol(1) JobState is: %s, returning to monitor queue', ajs.job_wrapper.get_id_tag(), ajs.job_id, job_info['JobState'] )
+                    return True
                 else:
                     log.warning( '(%s/%s) Job failed due to unknown reasons, JobState was: %s', ajs.job_wrapper.get_id_tag(), ajs.job_id, job_info['JobState'] )
                     ajs.fail_message = "This job failed for reasons that could not be determined."
