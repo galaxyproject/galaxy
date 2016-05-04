@@ -700,6 +700,12 @@ class ShedTwillTestCase( TwillTestCase ):
             last_review = None
         return last_review
 
+    def get_repositories_category_api( self, categories, strings_displayed=None, strings_not_displayed=None ):
+        for category in categories:
+            url = '/api/categories/%s/repositories' % self.security.encode_id( category.id )
+            self.visit_url( url )
+            self.check_for_strings( strings_displayed, strings_not_displayed )
+
     def get_tool_dependency_path( self, tool_dependency_name, tool_dependency_version, repository ):
         '''Return the absolute path for an installed tool dependency.'''
         return os.path.join( self.galaxy_tool_dependency_dir,
