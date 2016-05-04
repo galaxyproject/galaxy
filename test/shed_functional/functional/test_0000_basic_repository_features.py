@@ -356,4 +356,3 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         categories.append( self.test_db_util.get_category_by_name( 'Test 0000 Basic Repository Features 1' ) )
         categories.append( self.test_db_util.get_category_by_name( 'Test 0000 Basic Repository Features 2' ) )
         self.get_repositories_category_api( categories )
-
