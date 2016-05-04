@@ -13,7 +13,8 @@ log = logging.getLogger( __name__ )
 
 __all__ = [ 'SlurmJobRunner' ]
 
-SLURM_MEMORY_LIMIT_EXCEEDED_MSG = 'slurmstepd: error: Exceeded job memory limit'
+SLURM_MEMORY_LIMIT_EXCEEDED_MSGS = ['slurmstepd: error: Exceeded job memory limit at some point. Job may have been partially swapped out to disk.',
+                                    'slurmstepd: error: Exceeded step memory limit at some point. Step may have been partially swapped out to disk.']
 
 
 class SlurmJobRunner( DRMAAJobRunner ):
@@ -83,6 +84,18 @@ class SlurmJobRunner( DRMAAJobRunner ):
             except Exception as e:
                 log.exception( '(%s/%s) Unable to inspect failed slurm job using scontrol, job will be unconditionally failed: %s', ajs.job_wrapper.get_id_tag(), ajs.job_id, e )
                 super( SlurmJobRunner, self )._complete_terminal_job( ajs, drmaa_state=drmaa_state )
+        elif drmaa_state == self.drmaa_job_states.DONE:
+            log.debug( '(%s/%s) Job completed, checking for SLURM Exceeded memory warnings', ajs.job_wrapper.get_id_tag(), ajs.job_id )
+            f = open(ajs.error_file,"r+")
+            d = f.readlines()
+            f.seek(0)
+            for i in d:
+                if i.strip() not in SLURM_MEMORY_LIMIT_EXCEEDED_MSGS:
+                    f.write(i)
+                else:
+                    log.debug( '(%s/%s) Job completed, removing SLURM exceeded memory warning: (%s)', ajs.job_wrapper.get_id_tag(), ajs.job_id, i )
+            f.truncate()
+            f.close()
         # by default, finish as if the job was successful.
         super( SlurmJobRunner, self )._complete_terminal_job( ajs, drmaa_state=drmaa_state )
 
@@ -104,7 +117,7 @@ class SlurmJobRunner( DRMAAJobRunner ):
                         f.seek(-pos + 1, 2)
                         bof = True
 
-                    if (bof or f.read(1) == '\n') and f.readline().strip() == SLURM_MEMORY_LIMIT_EXCEEDED_MSG:
+                    if (bof or f.read(1) == '\n') and f.readline().strip() in SLURM_MEMORY_LIMIT_EXCEEDED_MSGS:
                         return True
 
                     if bof:
