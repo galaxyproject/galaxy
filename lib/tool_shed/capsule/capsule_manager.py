@@ -387,7 +387,6 @@ class ExportRepositoryManager( object ):
             shutil.rmtree( td )
 
 
-
 class ImportRepositoryManager( object ):
 
     def __init__( self, app, host, user, user_is_admin ):
