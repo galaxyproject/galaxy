@@ -1,5 +1,5 @@
 """
-Job control via a command line interface (e.g. qsub/qstat), possibly over a remote connection (e.g. ssh).
+Offload jobs to a Kubernetes cluster.
 """
 
 import logging
@@ -54,8 +54,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         # here we need to fetch the default kubeconfig path from the plugin defined in job_conf...
         self._pykube_api = HTTPClient(KubeConfig.from_file(self.runner_params["k8s_config_path"]))
-        self._galaxy_vol_name = "pvc-galaxy"
-
+        self._galaxy_vol_name = "pvc-galaxy" # TODO this needs to be read from params!!
 
         self._init_monitor_thread()
         self._init_worker_threads()
@@ -87,8 +86,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             "spec": self.__get_k8s_job_spec(job_wrapper)
         }
 
-
-        k8s_job = Job(self._pykube_api, k8s_job_obj).create()
+        # Creates the Kubernetes Job
+        Job(self._pykube_api, k8s_job_obj).create()
 
         # define job attributes in the AsyncronousJobState for follow-up
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper,
@@ -97,6 +96,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         # external_runJob_script can be None, in which case it's not used.
         external_runjob_script = None
+        return external_runjob_script
 
     def __produce_unique_k8s_job_name(self, job_wrapper):
         # wrapper.get_id_tag() instead of job_id for compatibility with TaskWrappers.
