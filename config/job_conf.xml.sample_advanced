@@ -553,7 +553,20 @@
         </destination>
 
         <destination id="my-tool-container" runner="k8s">
-            <!-- For the kubernetes runner, each container is a destination
+            <!-- For the kubernetes (k8s) runner, each container is a destination.
+
+                 Make sure that the container is able to execute the calls that will be passed by the galaxy built
+                 command. Most notably, containers that execute scripts through an interpreter in the form
+                 Rscript my-script.R <arguments>
+                 should have this wrapped as the container set working directory won't be the one actually used by
+                 galaxy (galaxy creates a new working director and moves to it). Recommendation is hence to wrap this
+                 type of calls on a shell script, and leave that script with execution privileges on the PATH of the
+                 container:
+
+                 RUN echo '#!/bin/bash' > /usr/local/bin/myScriptExec
+                 RUN echo 'Rscript /path/to/my-script.r "$@"' >> /usr/local/bin/myScriptExec
+                 RUN chmod a+x /usr/local/bin/myScriptExec
+
             -->
 
             <!-- The following four fields assemble the container's full name:
