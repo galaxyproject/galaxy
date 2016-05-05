@@ -149,32 +149,6 @@ def clean_dependency_relationships(trans, metadata_dict, tool_shed_repository, t
             trans.install_model.context.flush()
 
 
-def extract_components_from_tuple( repository_components_tuple ):
-    '''Extract the repository components from the provided tuple in a backward-compatible manner.'''
-    toolshed = repository_components_tuple[ 0 ]
-    name = repository_components_tuple[ 1 ]
-    owner = repository_components_tuple[ 2 ]
-    changeset_revision = repository_components_tuple[ 3 ]
-    components_list = [ toolshed, name, owner, changeset_revision ]
-    if len( repository_components_tuple ) == 5:
-        toolshed, name, owner, changeset_revision, prior_installation_required = repository_components_tuple
-        components_list = [ toolshed, name, owner, changeset_revision, prior_installation_required ]
-    elif len( repository_components_tuple ) == 6:
-        toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = repository_components_tuple
-        components_list = [ toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td ]
-    return components_list
-
-
-def generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=None ):
-    """Generate the URL for sharing a repository that is in the tool shed."""
-    base_url = url_for( '/', qualified=True ).rstrip( '/' )
-    protocol, base = base_url.split( '://' )
-    sharable_url = '%s://%s/view/%s/%s' % ( protocol, base, repository.user.username, repository.name )
-    if changeset_revision:
-        sharable_url += '/%s' % changeset_revision
-    return sharable_url
-
-
 def generate_tool_guid( repository_clone_url, tool ):
     """
     Generate a guid for the installed tool.  It is critical that this guid matches the guid for
@@ -219,26 +193,6 @@ def get_ctx_rev( app, tool_shed_url, name, owner, changeset_revision ):
     pathspec = [ 'repository', 'get_ctx_rev' ]
     ctx_rev = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
     return ctx_rev
-
-
-def get_ids_of_tool_shed_repositories_being_installed( app, as_string=False ):
-    installing_repository_ids = []
-    new_status = app.install_model.ToolShedRepository.installation_status.NEW
-    cloning_status = app.install_model.ToolShedRepository.installation_status.CLONING
-    setting_tool_versions_status = app.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS
-    installing_dependencies_status = app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES
-    loading_datatypes_status = app.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
-    for tool_shed_repository in \
-        app.install_model.context.query( app.install_model.ToolShedRepository ) \
-                                 .filter( or_( app.install_model.ToolShedRepository.status == new_status,
-                                               app.install_model.ToolShedRepository.status == cloning_status,
-                                               app.install_model.ToolShedRepository.status == setting_tool_versions_status,
-                                               app.install_model.ToolShedRepository.status == installing_dependencies_status,
-                                               app.install_model.ToolShedRepository.status == loading_datatypes_status ) ):
-        installing_repository_ids.append( app.security.encode_id( tool_shed_repository.id ) )
-    if as_string:
-        return ','.join( installing_repository_ids )
-    return installing_repository_ids
 
 
 def get_tool_dependency_definition_metadata_from_tool_shed( app, tool_shed_url, name, owner ):
@@ -313,22 +267,12 @@ def get_prior_import_or_install_required_dict( app, tsr_ids, repo_info_dicts ):
     return prior_import_or_install_required_dict
 
 
-def get_repo_info_tuple_contents( repo_info_tuple ):
-    """Take care in handling the repo_info_tuple as it evolves over time as new tool shed features are introduced."""
-    if len( repo_info_tuple ) == 6:
-        description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, tool_dependencies = repo_info_tuple
-        repository_dependencies = None
-    elif len( repo_info_tuple ) == 7:
-        description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
-    return description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies
-
-
 def get_repository_and_repository_dependencies_from_repo_info_dict( app, repo_info_dict ):
     """Return a tool_shed_repository or repository record defined by the information in the received repo_info_dict."""
     repository_name = repo_info_dict.keys()[ 0 ]
     repo_info_tuple = repo_info_dict[ repository_name ]
     description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
-        get_repo_info_tuple_contents( repo_info_tuple )
+        repository_util.get_repo_info_tuple_contents( repo_info_tuple )
     if hasattr( app, "install_model" ):
         # In a tool shed client (Galaxy, or something install repositories like Galaxy)
         tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
@@ -790,7 +734,7 @@ def handle_email_alerts( app, host, repository, content_alert_str='', new_repo_a
     """
     sa_session = app.model.context.current
     repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
-    sharable_link = generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=None )
+    sharable_link = repository_util.generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=None )
     smtp_server = app.config.smtp_server
     if smtp_server and ( new_repo_alert or repository.email_alerts ):
         # Send email alert to users that want them.
@@ -955,7 +899,7 @@ def repository_was_previously_installed( app, tool_shed_url, repository_name, re
     """
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
     description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
-        get_repo_info_tuple_contents( repo_info_tuple )
+        repository_util.get_repo_info_tuple_contents( repo_info_tuple )
     tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
     # See if we can locate the repository using the value of changeset_revision.
     tool_shed_repository = get_installed_repository( app,

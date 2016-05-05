@@ -963,7 +963,7 @@ class AdminToolshed( AdminGalaxy ):
     def monitor_repository_installation( self, trans, **kwd ):
         tsridslist = common_util.get_tool_shed_repository_ids( **kwd )
         if not tsridslist:
-            tsridslist = suc.get_ids_of_tool_shed_repositories_being_installed( trans.app, as_string=False )
+            tsridslist = repository_util.get_ids_of_tool_shed_repositories_being_installed( trans.app, as_string=False )
         kwd[ 'tool_shed_repository_ids' ] = tsridslist
         return self.repository_installation_grid( trans, **kwd )
 

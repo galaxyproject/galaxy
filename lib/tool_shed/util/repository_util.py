@@ -243,6 +243,32 @@ def create_repository( app, name, type, description, long_description, user_id, 
     return repository, message
 
 
+def extract_components_from_tuple( repository_components_tuple ):
+    '''Extract the repository components from the provided tuple in a backward-compatible manner.'''
+    toolshed = repository_components_tuple[ 0 ]
+    name = repository_components_tuple[ 1 ]
+    owner = repository_components_tuple[ 2 ]
+    changeset_revision = repository_components_tuple[ 3 ]
+    components_list = [ toolshed, name, owner, changeset_revision ]
+    if len( repository_components_tuple ) == 5:
+        toolshed, name, owner, changeset_revision, prior_installation_required = repository_components_tuple
+        components_list = [ toolshed, name, owner, changeset_revision, prior_installation_required ]
+    elif len( repository_components_tuple ) == 6:
+        toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = repository_components_tuple
+        components_list = [ toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td ]
+    return components_list
+
+
+def generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=None ):
+    """Generate the URL for sharing a repository that is in the tool shed."""
+    base_url = url_for( '/', qualified=True ).rstrip( '/' )
+    protocol, base = base_url.split( '://' )
+    sharable_url = '%s://%s/view/%s/%s' % ( protocol, base, repository.user.username, repository.name )
+    if changeset_revision:
+        sharable_url += '/%s' % changeset_revision
+    return sharable_url
+
+
 def generate_tool_shed_repository_install_dir( repository_clone_url, changeset_revision ):
     """
     Generate a repository installation directory that guarantees repositories with the same
@@ -268,6 +294,36 @@ def get_absolute_path_to_file_in_repository( repo_files_dir, file_name ):
                 if name == stripped_file_name:
                     return os.path.abspath( os.path.join( root, name ) )
     return file_path
+
+
+def get_ids_of_tool_shed_repositories_being_installed( app, as_string=False ):
+    installing_repository_ids = []
+    new_status = app.install_model.ToolShedRepository.installation_status.NEW
+    cloning_status = app.install_model.ToolShedRepository.installation_status.CLONING
+    setting_tool_versions_status = app.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS
+    installing_dependencies_status = app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES
+    loading_datatypes_status = app.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
+    for tool_shed_repository in \
+        app.install_model.context.query( app.install_model.ToolShedRepository ) \
+                                 .filter( or_( app.install_model.ToolShedRepository.status == new_status,
+                                               app.install_model.ToolShedRepository.status == cloning_status,
+                                               app.install_model.ToolShedRepository.status == setting_tool_versions_status,
+                                               app.install_model.ToolShedRepository.status == installing_dependencies_status,
+                                               app.install_model.ToolShedRepository.status == loading_datatypes_status ) ):
+        installing_repository_ids.append( app.security.encode_id( tool_shed_repository.id ) )
+    if as_string:
+        return ','.join( installing_repository_ids )
+    return installing_repository_ids
+
+
+def get_repo_info_tuple_contents( repo_info_tuple ):
+    """Take care in handling the repo_info_tuple as it evolves over time as new tool shed features are introduced."""
+    if len( repo_info_tuple ) == 6:
+        description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, tool_dependencies = repo_info_tuple
+        repository_dependencies = None
+    elif len( repo_info_tuple ) == 7:
+        description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
+    return description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies
 
 
 def get_repository_by_id( app, id ):

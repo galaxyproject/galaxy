@@ -215,7 +215,7 @@ class ExportRepositoryManager( object ):
             # There should only be one entry in the received repo_info_dict.
             description, repository_clone_url, changeset_revision, ctx_rev, \
                 repository_owner, repository_dependencies, tool_dependencies = \
-                suc.get_repo_info_tuple_contents( repo_info_tup )
+                repository_util.get_repo_info_tuple_contents( repo_info_tup )
             repository = repository_util.get_repository_by_name_and_owner( self.app, repository_name, repository_owner )
             repository_metadata = metadata_util.get_current_repository_metadata_for_changeset_revision( self.app,
                                                                                                         repository,
@@ -306,7 +306,7 @@ class ExportRepositoryManager( object ):
                 description, repository_clone_url, changeset_revision, \
                     ctx_rev, repository_owner, repository_dependencies, \
                     tool_dependencies = \
-                    suc.get_repo_info_tuple_contents( repo_info_tup )
+                    repository_util.get_repo_info_tuple_contents( repo_info_tup )
                 repository = repository_util.get_repository_by_name_and_owner( self.app, repository_name, repository_owner )
                 repository_ids.append( self.app.security.encode_id( repository.id ) )
         return repository_ids

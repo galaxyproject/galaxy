@@ -12,6 +12,7 @@ from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
+from tool_shed.util import repository_util
 
 log = logging.getLogger( __name__ )
 
@@ -95,7 +96,7 @@ def get_readme_files_dict_for_display( app, tool_shed_url, repo_info_dict ):
     name = repo_info_dict.keys()[ 0 ]
     repo_info_tuple = repo_info_dict[ name ]
     description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, installed_td = \
-        suc.get_repo_info_tuple_contents( repo_info_tuple )
+        repository_util.get_repo_info_tuple_contents( repo_info_tuple )
     # Handle changing HTTP protocols over time.
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
     params = dict( name=name, owner=repository_owner, changeset_revision=changeset_revision )

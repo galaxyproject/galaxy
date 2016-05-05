@@ -10,6 +10,7 @@ from sqlalchemy import and_, false, true
 from galaxy import util
 from tool_shed.util import common_util
 from tool_shed.util import container_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import xml_util
@@ -244,7 +245,7 @@ class InstalledRepositoryManager( object ):
         name = repo_info_dict.keys()[ 0 ]
         repo_info_tuple = repo_info_dict[ name ]
         description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
-            suc.get_repo_info_tuple_contents( repo_info_tuple )
+            repository_util.get_repo_info_tuple_contents( repo_info_tuple )
         if tool_dependencies:
             if not includes_tool_dependencies:
                 includes_tool_dependencies = True
@@ -282,7 +283,7 @@ class InstalledRepositoryManager( object ):
                     for name, repo_info_tuple in rid.items():
                         description, repository_clone_url, changeset_revision, ctx_rev, \
                             repository_owner, rid_repository_dependencies, rid_tool_dependencies = \
-                            suc.get_repo_info_tuple_contents( repo_info_tuple )
+                            repository_util.get_repo_info_tuple_contents( repo_info_tuple )
                         if rid_tool_dependencies:
                             for td_key, td_dict in rid_tool_dependencies.items():
                                 if td_key not in required_tool_dependencies:
@@ -403,7 +404,7 @@ class InstalledRepositoryManager( object ):
         missing_rd_tups = []
         installed_rd_tups = []
         ( description, repository_clone_url, changeset_revision, ctx_rev,
-          repository_owner, repository_dependencies, tool_dependencies ) = suc.get_repo_info_tuple_contents( repo_info_tuple )
+          repository_owner, repository_dependencies, tool_dependencies ) = repository_util.get_repo_info_tuple_contents( repo_info_tuple )
         if repository_dependencies:
             description = repository_dependencies[ 'description' ]
             root_key = repository_dependencies[ 'root_key' ]

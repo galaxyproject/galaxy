@@ -5,7 +5,7 @@ import threading
 
 from galaxy import util
 from tool_shed.galaxy_install.utility_containers import GalaxyUtilityContainerManager
-from tool_shed.util import common_util, container_util, readme_util
+from tool_shed.util import common_util, container_util, readme_util, repository_util
 from tool_shed.util import shed_util_common as suc, tool_dependency_util
 from tool_shed.utility_containers import utility_container_manager
 
@@ -286,7 +286,7 @@ class DependencyDisplayer( object ):
                         folder_id += 1
                         repository_components_tuple = \
                             container_util.get_components_from_key( old_container_repository_dependencies_folder.key )
-                        components_list = suc.extract_components_from_tuple( repository_components_tuple )
+                        components_list = repository_util.extract_components_from_tuple( repository_components_tuple )
                         name = components_list[ 1 ]
                         # Generate the label by retrieving the repository name.
                         old_container_repository_dependencies_folder.label = str( name )
@@ -553,7 +553,7 @@ class DependencyDisplayer( object ):
                     description, repository_clone_url, changeset_revision, \
                         ctx_rev, repository_owner, repository_dependencies, \
                         tool_dependencies = \
-                        suc.get_repo_info_tuple_contents( repo_info_tuple )
+                        repository_util.get_repo_info_tuple_contents( repo_info_tuple )
                     if tool_dependencies:
                         # Add the install_dir attribute to the tool_dependencies.
                         tool_dependencies = self.add_installation_directories_to_tool_dependencies( tool_dependencies )

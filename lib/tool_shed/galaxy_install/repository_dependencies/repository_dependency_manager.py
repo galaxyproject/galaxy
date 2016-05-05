@@ -45,14 +45,14 @@ class RepositoryDependencyInstallManager( object ):
                     repository_owner, \
                     repository_dependencies, \
                     tool_dependencies = \
-                    suc.get_repo_info_tuple_contents( repo_info_tuple )
+                    repository_util.get_repo_info_tuple_contents( repo_info_tuple )
                 if repository_dependencies:
                     for key, val in repository_dependencies.items():
                         if key in [ 'root_key', 'description' ]:
                             continue
                         d_repository = None
                         repository_components_tuple = container_util.get_components_from_key( key )
-                        components_list = suc.extract_components_from_tuple( repository_components_tuple )
+                        components_list = repository_util.extract_components_from_tuple( repository_components_tuple )
                         d_toolshed, d_name, d_owner, d_changeset_revision = components_list[ 0:4 ]
                         for tsr in tool_shed_repositories:
                             # Get the the tool_shed_repository defined by name, owner and changeset_revision.  This is
@@ -166,7 +166,7 @@ class RepositoryDependencyInstallManager( object ):
                         repository_owner, \
                         repository_dependencies, \
                         tool_dependencies = \
-                        suc.get_repo_info_tuple_contents( repo_info_tuple )
+                        repository_util.get_repo_info_tuple_contents( repo_info_tuple )
                     # See if the repository has an existing record in the database.
                     repository_db_record, installed_changeset_revision = \
                         suc.repository_was_previously_installed( self.app, tool_shed_url, name, repo_info_tuple, from_tip=False )
@@ -332,13 +332,13 @@ class RepositoryDependencyInstallManager( object ):
                         repository_owner, \
                         repository_dependencies, \
                         tool_dependencies = \
-                        suc.get_repo_info_tuple_contents( repo_info_tup )
+                        repository_util.get_repo_info_tuple_contents( repo_info_tup )
                     if repository_dependencies:
                         for key, val in repository_dependencies.items():
                             if key in [ 'root_key', 'description' ]:
                                 continue
                             repository_components_tuple = container_util.get_components_from_key( key )
-                            components_list = suc.extract_components_from_tuple( repository_components_tuple )
+                            components_list = repository_util.extract_components_from_tuple( repository_components_tuple )
                             # Skip listing a repository dependency if it is required only to compile a tool dependency
                             # defined for the dependent repository since in this case, the repository dependency is really
                             # a dependency of the dependent repository's contained tool dependency, and only if that

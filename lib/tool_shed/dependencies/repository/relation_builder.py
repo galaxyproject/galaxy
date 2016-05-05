@@ -215,7 +215,7 @@ class RelationBuilder( object ):
                             updated_key_rd_dicts.append( new_key_rd_dict )
                         else:
                             repository_components_tuple = container_util.get_components_from_key( key )
-                            components_list = suc.extract_components_from_tuple( repository_components_tuple )
+                            components_list = repository_util.extract_components_from_tuple( repository_components_tuple )
                             toolshed, repository_name, repository_owner, repository_changeset_revision = components_list[ 0:4 ]
                             # For backward compatibility to the 12/20/12 Galaxy release.
                             if len( components_list ) in (4, 5):
@@ -226,7 +226,7 @@ class RelationBuilder( object ):
                             log.debug( message )
                 else:
                     repository_components_tuple = container_util.get_components_from_key( key )
-                    components_list = suc.extract_components_from_tuple( repository_components_tuple )
+                    components_list = repository_util.extract_components_from_tuple( repository_components_tuple )
                     toolshed, repository_name, repository_owner, repository_changeset_revision = components_list[ 0:4 ]
                     message = "The revision %s defined for repository %s owned by %s is invalid, so repository " % \
                         ( str( rd_changeset_revision ), str( rd_name ), str( rd_owner ) )

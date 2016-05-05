@@ -1592,8 +1592,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         includes_tool_dependencies = False
         for name, repo_info_tuple in repo_info_dict.items():
             if not has_repository_dependencies or not has_repository_dependencies_only_if_compiling_contained_td or not includes_tool_dependencies:
-                description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
-                    suc.get_repo_info_tuple_contents( repo_info_tuple )
+                description, reposectory_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
+                    repository_util.get_repo_info_tuple_contents( repo_info_tuple )
                 for rd_key, rd_tups in repository_dependencies.items():
                     if rd_key in [ 'root_key', 'description' ]:
                         continue
@@ -1838,7 +1838,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_dir, create=False )
         repo_name = kwd.get( 'repo_name', repository.name )
         changeset_revision = kwd.get( 'changeset_revision', repository.tip( trans.app ) )
-        repository.share_url = suc.generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=changeset_revision )
+        repository.share_url = repository_util.generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=changeset_revision )
         repository.clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( trans.user, repository )
         remote_repository_url = kwd.get( 'remote_repository_url', repository.remote_repository_url )
         homepage_url = kwd.get( 'homepage_url', repository.homepage_url )
@@ -2841,7 +2841,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
         changeset_revision = kwd.get( 'changeset_revision', repository.tip( trans.app ) )
-        repository.share_url = suc.generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=changeset_revision )
+        repository.share_url = repository_util.generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=changeset_revision )
         repository.clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( trans.user, repository )
         display_reviews = kwd.get( 'display_reviews', False )
         alerts = kwd.get( 'alerts', '' )

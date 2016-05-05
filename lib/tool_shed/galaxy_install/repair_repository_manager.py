@@ -30,7 +30,7 @@ class RepairRepositoryManager():
                 # rd_key is something like: 'http://localhost:9009__ESEP__package_rdkit_2012_12__ESEP__test__ESEP__d635ffb9c665__ESEP__True'
                 # rd_val is something like: [['http://localhost:9009', 'package_numpy_1_7', 'test', 'cddd64ecd985', 'True']]
                 repository_components_tuple = container_util.get_components_from_key( rd_key )
-                components_list = suc.extract_components_from_tuple( repository_components_tuple )
+                components_list = repository_util.extract_components_from_tuple( repository_components_tuple )
                 tool_shed, name, owner, changeset_revision = components_list[ 0:4 ]
                 installed_repository = suc.get_installed_repository( self.app,
                                                                      tool_shed=tool_shed,
