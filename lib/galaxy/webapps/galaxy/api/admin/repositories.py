@@ -30,12 +30,12 @@ class RepositoriesController( BaseAPIController ):
         :rtype:     list
 
         """
-        repos = self.repo_manager.list( trans, view='with_tools' )
+        repos = self.repo_manager.list( trans, view='tools' )
         return_dict = []
         for repo in repos:
             repo_dict = self.repo_serializer.serialize_to_view( repo, view='summary')
             if repo.includes_tools:
-                repo_dict['type'] = 'with_tools'
+                repo_dict['type'] = 'tools'
             if repo.provides_only_tool_dependencies:
                 repo_dict['type'] = 'packages'
             return_dict.append( repo_dict )
