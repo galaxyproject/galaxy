@@ -115,9 +115,15 @@ var Collection = Backbone.Collection.extend({
         Galaxy.user.get( 'is_admin' ) && this.add({
             id              : 'admin_beta',
             title           : 'Admin Beta',
-            url             : 'admin_beta',
             tooltip         : 'Administer this Galaxy',
-            cls             : 'admin-only'
+            cls             : 'admin-only',
+            menu            : [
+                {
+                    title   : 'Installed Repositories',
+                    url     : 'admin_beta#repos?view=all',
+                    target  : '_frame'
+                }
+            ]
         });
 
         //

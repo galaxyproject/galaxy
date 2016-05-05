@@ -18,10 +18,10 @@ var AdminRouter = Backbone.Router.extend({
   },
 
   routes: {
-    ""         : "repos",
-    "repos"    : "repos",
-    "all"      : "all",
-    "packages" : "packages",
+    ""                    : "repolist",
+    "repos?view=:view"    : "repolist",
+    // "repos/:id"           : "repos",
+
   },
 
   /**
@@ -46,29 +46,15 @@ var GalaxyAdminApp = Backbone.View.extend({
     Galaxy.adminapp = this;
     this.admin_router = new AdminRouter();
 
-    this.admin_router.on( 'route:repos', function() {
-      if (Galaxy.adminapp.adminReposListView){
-        console.log('entering with tools')
-        Galaxy.adminapp.adminReposListView.repaint({filter: 'with_tools'});
-      } else{
-        Galaxy.adminapp.adminReposListView = new mod_repos_list_view.AdminReposListView();
+    this.admin_router.on('route:repolist', function(view) {
+      var show_view = 'all'
+      if (typeof view !== 'undefined') {
+        show_view = view;
       }
-    });
-
-    this.admin_router.on( 'route:packages', function() {
       if (Galaxy.adminapp.adminReposListView){
-        Galaxy.adminapp.adminReposListView.repaint({filter: 'packages'});
+        Galaxy.adminapp.adminReposListView.repaint({filter: show_view});
       } else{
-        Galaxy.adminapp.adminReposListView = new mod_repos_list_view.AdminReposListView({filter: 'packages'});
-      }
-    });
-
-    this.admin_router.on( 'route:all', function() {
-      if (Galaxy.adminapp.adminReposListView){
-        console.log('entering all')
-        Galaxy.adminapp.adminReposListView.repaint({filter: 'all'});
-      } else{
-        Galaxy.adminapp.adminReposListView = new mod_repos_list_view.AdminReposListView({filter: 'all'});
+        Galaxy.adminapp.adminReposListView = new mod_repos_list_view.AdminReposListView({filter: show_view});
       }
     });
 

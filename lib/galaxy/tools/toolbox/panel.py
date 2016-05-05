@@ -130,6 +130,9 @@ class ToolPanelElements( HasPanelItems, odict ):
         del self[ previous_key ]
         self.insert( index, new_key, tool )
 
+
+
+
     def index_of_tool_id( self, tool_id ):
         query_key = 'tool_%s' % tool_id
         for index, target_key in enumerate( self.keys() ):
