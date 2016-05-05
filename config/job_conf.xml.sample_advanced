@@ -168,7 +168,7 @@
             -->
 
             <param id="k8s_config_path">/path/to/kubeconfig</param>
-            <--- This is the path to the kube config file, which is normally on ~/.kube/config, but that will depend on
+            <!--- This is the path to the kube config file, which is normally on ~/.kube/config, but that will depend on
                  your installation. This is the file that tells the plugin where the k8s cluster is, access credentials,
                  etc. -->
 
