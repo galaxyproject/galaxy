@@ -69,7 +69,6 @@ def load_job_proxy(job_directory):
 
 def to_cwl_tool_object(tool_path):
     proxy_class = None
-    cwl_tool = None
     cwl_tool = schema_loader.tool(path=tool_path)
     if isinstance(cwl_tool, int):
         raise Exception("Failed to load tool.")
@@ -154,13 +153,18 @@ class ToolProxy( object ):
     def description(self):
         """ Return description to tool. """
 
+    @abstractmethod
+    def label(self):
+        """ Return label for tool. """
+
 
 class CommandLineToolProxy(ToolProxy):
 
     def description(self):
-        # Feels like I should be getting some abstract namespaced thing
-        # not actually description, is this correct?
         return self._tool.tool.get('description')
+
+    def label(self):
+        return self._tool.tool.get('label')
 
     def input_instances(self):
         return self._find_inputs(self._tool.inputs_record_schema)
