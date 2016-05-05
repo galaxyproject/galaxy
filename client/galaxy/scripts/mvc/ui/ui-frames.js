@@ -25,6 +25,12 @@ var View = Backbone.View.extend({
     frame_shadow    : null,
     visible         : false,
     event           : {},
+    idle_counter    : 0,
+    idle_timer	    : null,
+    interval        : 1000, // interval to increment idle counter
+    idle_interval   : 7, // frame idle interval
+    skip_datatypes  : ['bigwig', 'bigbed', 'bam', 'rdata', 'sff', 'bcf'], // skip these items
+    data_target_frame : 'data-target-frame',
 
     initialize : function( options ) {
         var self = this;
@@ -93,6 +99,13 @@ var View = Backbone.View.extend({
 
                 // configure content
                 if ( options.url ) {
+                    // adds slider icons
+                    $frame_content.append(                
+                         "<a class='f-scroll-left' href='#' data-target-frame=" + frame_id + "> < </a>"
+                    );
+	            $frame_content.append(
+	                 "<a class='f-scroll-right' href='#' data-target-frame=" + frame_id + "> > </a>"
+                    );
                     $frame_content.append(
                         $ ( '<iframe/>' ).addClass( 'f-iframe' )
                                          .attr( 'scrolling', 'auto' )
@@ -179,7 +192,11 @@ var View = Backbone.View.extend({
         'mousedown .frame-scroll-up'        : '_eventPanelScroll_up',
         'mousedown .frame-scroll-down'      : '_eventPanelScroll_down',
         'mousedown .f-close'                : '_eventFrameClose',
-        'mousedown .f-pin'                  : '_eventFrameLock'
+        'mousedown .f-pin'                  : '_eventFrameLock',
+        'mousedown .f-scroll-left'          : '_eventItemScroll_left',
+        'mousedown .f-scroll-right'         : '_eventItemScroll_right',
+        'mouseenter .f-content'             : '_eventShowItemSlider',
+        'mouseleave .f-content'             : '_eventHideItemSlider',
     },
 
     /** Start drag/resize event */
@@ -567,7 +584,216 @@ var View = Backbone.View.extend({
                     '</div>' +
                     '<span class="f-resize f-icon corner fa fa-expand"/>' +
                 '</div>';
-    }
+    },
+
+    /** Slides to previous or next item */
+    _slideItem: function( direction, selector, frame_data_attribute, frame_css_class, event ) {
+        var item_counter = 0,
+            all_items = $(selector)[0],
+            frame_id = event.srcElement.attributes[frame_data_attribute].value,
+            all_items_count = all_items.childElementCount,
+            displayed_item_id = $( frame_id + ' .' + frame_css_class ).attr( 'src' ).split( '/' )[2],
+            current_item_id = null,
+            item_id = null,
+            element = null,
+            element_id = null,
+            item_element = null;
+            // if previous icon ('<') is clicked
+            if( direction === 'left' ) {
+                item_counter = all_items_count - 1;
+                while( item_counter >= 0 ) {
+                    item_element = all_items.children[ item_counter ];
+                    current_item_id = ( item_element.id ).split('-')[1];
+                    // matches the displayed item in the item list
+                    if( displayed_item_id === current_item_id ) {
+                        // gets the previous element
+                        element = ( $(item_element) ).prev();
+                        element_id = element.attr( 'id' );
+                        if( element_id ) {
+                            item_id = element_id.split( '-' )[1];
+                            // jQuery fadeOut effect
+                            $( frame_id + ' iframe' ).contents().find( 'div' ).fadeOut( 'slow' );
+                            // fecthes the previous item
+                            this._fecthData( item_id, frame_id, element, 'left' );
+                            break;
+                        }           
+                     }
+                     item_counter--;
+                }
+            }
+            else {
+                // if next icon ('>') is clicked
+                while( item_counter < all_items_count ) {
+                    item_element = all_items.children[item_counter];
+                    current_item_id = ( item_element.id ).split( '-' )[1];
+                    // matches the displayed item in the item list
+                    if( displayed_item_id === current_item_id ) {
+                        // gets the next element
+                        element = ( $( item_element ) ).next();
+                        element_id = element.attr( 'id' );
+                        if( element_id ) {
+                            item_id = element_id.split( '-' )[1];
+                            // jQuery fadeOut effect
+                            $( frame_id + ' iframe' ).contents().find( 'div' ).fadeOut( 'slow' );
+                            // fecthes the next item
+                            this._fecthData( item_id, frame_id, element, 'right' );
+                            break;
+                        }           
+                     }
+                     item_counter++;
+                }
+            }
+    },
+
+     /** Scrolls to previous item */
+    _eventItemScroll_left: function( event ) { 
+       var self = this;
+       event.stopPropagation();
+       self._mergeSlideEvents( 'left', self, event );
+    },
+
+     /** Scrolls to next item */
+    _eventItemScroll_right: function( event ) {
+        var self = this;
+        event.stopPropagation();
+        self._mergeSlideEvents( 'right', self, event );
+    },
+
+    /** Merges the left or right click events on sliders */
+    _mergeSlideEvents: function( direction, self, event ) {
+ 	// clears and sets timeout intervals
+        var selector = null;
+        if( $('.list-items').css('display') === "none" ) {
+        	selector = $('.list-panel .list-items')[1];
+        } 
+        else {
+		selector = ".list-items";
+	}
+        self._clearsInterval( self.idle_timer );
+        self.idle_timer = self._setTimeout( self );
+        // slides to previous or next item
+        self._slideItem( direction, selector, this.data_target_frame, 'f-iframe', event );   
+    },
+   
+    /** Fetches the next item */
+    _fecthData: function ( dataset_id, frame_id, current_element, direction ) {
+        var self = this,
+            dataset,
+            frame_config;
+        require([ 'mvc/dataset/data' ], function( DATA ) {
+        	dataset = new DATA.Dataset( { id : dataset_id } );   
+            	// fetches the dataset       
+            	$.when( dataset.fetch() ).then( function() {
+                	frame_config = {
+				title: dataset.get( 'name' ),
+                        	url: Galaxy.root + 'datasets/' + dataset.id + '/display/?preview=True'
+		};
+                // updates the iframe with new dataset
+		self._changeData( frame_config, frame_id, dataset.get( 'data_type' ), current_element, direction );
+            });
+        });
+    },
+  
+    // Skips some data types
+    _skipDatatypes: function( datatype ) {
+	// skip_datatypes
+        return _.contains( this.skip_datatypes, datatype );
+    },
+    
+    /** Updates iframe with the new item */
+    _changeData: function ( options, frame_id, data_type, curr_element, direction ) {
+            // loads data into the iframe
+            var datatype = data_type.split('.')[3].toLowerCase(),
+                is_present = this._skipDatatypes( datatype ),
+                element = null,
+                element_id = null,
+                item_id = null;
+            // if the datatype is to be skipped from displaying into iframe
+            // move to next or previous item
+            if( is_present ) {
+		if(direction === 'left') {
+                        // finds the previous element
+			element = ( $( curr_element ) ).prev();
+                        element_id = element.attr( 'id' );
+                        if( element_id ) {
+                            item_id = element_id.split( '-' )[1];	
+                        }	
+		}
+                else {
+                        // finds the next element
+			element = ( $( curr_element ) ).next();
+                        element_id = element.attr( 'id' );
+                        if( element_id ) {
+                            item_id = element_id.split( '-' )[1];
+                        }
+		}
+                // fetches the desired item
+                this._fecthData(item_id, frame_id, element, direction);
+	    }
+            else {
+                // loads the item if it can be loaded in the iframe
+		$( frame_id + ' iframe' ).attr( 'src', options.url );
+	   	$( frame_id + ' .f-title' ).text( options.title );
+            }
+    },
+    
+    /** Fades in the item slider when mouse is over the frame's content */
+    _eventShowItemSlider: function( event ) {
+        var self = this, 
+	    frame_id = $( event.srcElement ).prev().attr( self.data_target_frame );
+        // clears and sets timeout intervals
+        self._clearsInterval( self.idle_timer );
+        self.idle_timer = self._setTimeout( self );
+        self._fadeInSlider( frame_id );
+        self.idle_counter = 0;
+    },
+    
+    /** Fades out the item slider when mouse leaves the frame content */
+     _eventHideItemSlider: function( event ) {
+        var self = this,
+	    frame_id = $( event.srcElement ).prev().attr( self.data_target_frame ) ;
+        self._fadeOutSlider( frame_id );
+        self._clearsInterval( self.idle_timer );
+        self.idle_counter = 0;
+    },
+    
+    /** Fades out the item slider - jQuery fadeOut*/
+    _fadeOutSlider: function( frame_id ) {
+        $( frame_id + ' .f-scroll-left' ).fadeOut( 'slow' );
+        $( frame_id + ' .f-scroll-right' ).fadeOut( 'slow' );
+    },
+    
+    /** Fades in the item slider - jQuery fadeIn*/
+    _fadeInSlider: function( frame_id ) {
+        $( frame_id + ' .f-scroll-left' ).fadeIn( 'slow' );
+        $( frame_id + ' .f-scroll-right' ).fadeIn( 'slow' );
+    },
+
+    /** Increments the counter to when the user is idle */
+    _frameIdle: function( this_var ) {
+        var self = this_var;
+        // increments the idle counter
+        self.idle_counter++;
+        // checks if the idle counter is greater than a threshold
+        if( self.idle_counter > self.idle_interval ) {
+                // fades out the sliders and clears timeout interval
+                $( '.f-scroll-left' ).fadeOut( 'slow' );
+        	$( '.f-scroll-right' ).fadeOut( 'slow' );
+                self._clearsInterval( self.idle_timer );
+	}
+    },
+
+    /** Clear timeout interval */
+    _clearsInterval: function( id ) {
+        if( id !== null) {
+		clearInterval( id );
+        }
+    },
+
+    /** Sets timeout*/
+    _setTimeout: function( self ) {
+	return setInterval( function() { self._frameIdle(self); }, self.interval ); 
+    },
 });
 
 return {
