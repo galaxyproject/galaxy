@@ -4,6 +4,7 @@ from sqlalchemy import and_, or_
 
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 
 log = logging.getLogger( __name__ )
@@ -37,7 +38,7 @@ class ToolVersionManager( object ):
         guid contained in the received repsitory_metadata.tool_versions.  This function
         is called only from the Tool Shed.
         """
-        repository = suc.get_repository_by_id( self.app, repository_id )
+        repository = repository_util.get_repository_by_id( self.app, repository_id )
         repo = hg_util.get_repo_for_repository( self.app, repository=repository, repo_path=None, create=False )
         # Initialize the tool lineage
         version_lineage = [ guid ]

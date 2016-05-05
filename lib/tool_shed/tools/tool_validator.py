@@ -11,6 +11,7 @@ from tool_shed.tools import data_table_manager
 
 from tool_shed.util import basic_util
 from tool_shed.util import hg_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
@@ -250,7 +251,7 @@ class ToolValidator( object ):
         message = ''
         tool = None
         can_use_disk_file = False
-        tool_config_filepath = suc.get_absolute_path_to_file_in_repository( repo_files_dir, tool_config_filename )
+        tool_config_filepath = repository_util.get_absolute_path_to_file_in_repository( repo_files_dir, tool_config_filename )
         work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-ltfcr" )
         can_use_disk_file = self.can_use_tool_config_disk_file( repository,
                                                                 repo,

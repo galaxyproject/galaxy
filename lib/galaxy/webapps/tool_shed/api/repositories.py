@@ -73,7 +73,7 @@ class RepositoriesController( BaseAPIController ):
         owner = payload.get( 'owner', '' )
         if not owner:
             raise HTTPBadRequest( detail="Missing required parameter 'owner'." )
-        repository = suc.get_repository_by_name_and_owner( self.app, name, owner )
+        repository = repository_util.get_repository_by_name_and_owner( self.app, name, owner )
         if repository is None:
             error_message = 'Cannot locate repository with name %s and owner %s,' % ( str( name ), str( owner ) )
             log.debug( error_message )
@@ -106,7 +106,7 @@ class RepositoriesController( BaseAPIController ):
         tsr_id = kwd.get( 'tsr_id', None )
         if None not in [ name, owner ]:
             # Get the repository information.
-            repository = suc.get_repository_by_name_and_owner( self.app, name, owner )
+            repository = repository_util.get_repository_by_name_and_owner( self.app, name, owner )
             if repository is None:
                 trans.response.status = 404
                 return { 'status': 'error', 'message': 'No repository named %s found with owner %s' % ( name, owner ) }
@@ -190,7 +190,7 @@ class RepositoriesController( BaseAPIController ):
         # http://<xyz>/api/repositories/get_repository_revision_install_info?name=<n>&owner=<o>&changeset_revision=<cr>
         if name and owner and changeset_revision:
             # Get the repository information.
-            repository = suc.get_repository_by_name_and_owner( self.app, name, owner )
+            repository = repository_util.get_repository_by_name_and_owner( self.app, name, owner )
             if repository is None:
                 log.debug( 'Cannot locate repository %s owned by %s' % ( str( name ), str( owner ) ) )
                 return {}, {}, {}
@@ -494,7 +494,7 @@ class RepositoriesController( BaseAPIController ):
         owner = payload.get( 'owner', '' )
         if not owner:
             raise HTTPBadRequest( detail="Missing required parameter 'owner'." )
-        repository = suc.get_repository_by_name_and_owner( self.app, name, owner )
+        repository = repository_util.get_repository_by_name_and_owner( self.app, name, owner )
         if repository is None:
             error_message = 'Cannot locate repository with name %s and owner %s,' % ( str( name ), str( owner ) )
             log.debug( error_message )

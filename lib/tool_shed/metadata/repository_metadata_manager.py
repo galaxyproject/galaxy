@@ -14,6 +14,7 @@ from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
 
@@ -400,7 +401,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             cleaned_tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
             if cleaned_rd_tool_shed == cleaned_tool_shed and rd_name == name and rd_owner == owner:
                 # Determine if the repository represented by the dependency tuple is an instance of the repository type TipOnly.
-                required_repository = suc.get_repository_by_name_and_owner( self.app, name, owner )
+                required_repository = repository_util.get_repository_by_name_and_owner( self.app, name, owner )
                 repository_type_class = self.app.repository_types_registry.get_class_by_label( required_repository.type )
                 return isinstance( repository_type_class, TipOnly )
         return False

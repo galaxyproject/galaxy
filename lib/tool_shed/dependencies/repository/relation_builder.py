@@ -2,7 +2,7 @@ import logging
 
 from galaxy.util import asbool, listify
 
-from tool_shed.util import common_util, container_util, hg_util, metadata_util
+from tool_shed.util import common_util, container_util, hg_util, metadata_util, repository_util
 from tool_shed.util import shed_util_common as suc
 
 log = logging.getLogger( __name__ )
@@ -181,7 +181,7 @@ class RelationBuilder( object ):
                 rd_only_if_compiling_contained_td = \
                 common_util.parse_repository_dependency_tuple( repository_dependency )
             if suc.tool_shed_is_this_tool_shed( rd_toolshed ):
-                repository = suc.get_repository_by_name_and_owner( self.app, rd_name, rd_owner )
+                repository = repository_util.get_repository_by_name_and_owner( self.app, rd_name, rd_owner )
                 if repository:
                     repository_id = self.app.security.encode_id( repository.id )
                     repository_metadata = \
@@ -260,7 +260,7 @@ class RelationBuilder( object ):
         toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
             common_util.parse_repository_dependency_tuple( repository_dependency )
         if suc.tool_shed_is_this_tool_shed( toolshed ):
-            required_repository = suc.get_repository_by_name_and_owner( self.app, name, owner )
+            required_repository = repository_util.get_repository_by_name_and_owner( self.app, name, owner )
             self.repository = required_repository
             repository_id = self.app.security.encode_id( required_repository.id )
             required_repository_metadata = \

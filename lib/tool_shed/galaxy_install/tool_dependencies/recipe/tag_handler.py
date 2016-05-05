@@ -6,6 +6,7 @@ from galaxy.tools.deps.resolvers import INDETERMINATE_DEPENDENCY
 from galaxy.util import listify, url_get
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import xml_util
@@ -436,7 +437,7 @@ class Repository( RecipeTag, SyncDatabase ):
                         message = "Unable to locate the repository directory for revision %s of installed repository %s owned by %s." % \
                             ( str( required_repository.changeset_revision ), str( required_repository.name ), str( required_repository.owner ) )
                         raise Exception( message )
-                    tool_dependencies_config = suc.get_absolute_path_to_file_in_repository( repo_files_dir, 'tool_dependencies.xml' )
+                    tool_dependencies_config = repository_util.get_absolute_path_to_file_in_repository( repo_files_dir, 'tool_dependencies.xml' )
                     if tool_dependencies_config:
                         config_to_use = tool_dependencies_config
                     else:

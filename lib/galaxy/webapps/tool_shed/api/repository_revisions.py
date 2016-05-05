@@ -9,6 +9,7 @@ from galaxy.web.base.controller import BaseAPIController, HTTPBadRequest
 from tool_shed.capsule import capsule_manager
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
+from tool_shed.util import repository_util
 
 log = logging.getLogger( __name__ )
 
@@ -47,7 +48,7 @@ class RepositoryRevisionsController( BaseAPIController ):
         # We'll currently support only gzip-compressed tar archives.
         export_repository_dependencies = util.asbool( export_repository_dependencies )
         # Get the repository information.
-        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+        repository = repository_util.get_repository_by_name_and_owner( trans.app, name, owner )
         if repository is None:
             error_message = 'Cannot locate repository with name %s and owner %s,' % ( str( name ), str( owner ) )
             log.debug( error_message )
@@ -131,7 +132,7 @@ class RepositoryRevisionsController( BaseAPIController ):
             rd_tups = metadata[ 'repository_dependencies' ][ 'repository_dependencies' ]
             for rd_tup in rd_tups:
                 tool_shed, name, owner, changeset_revision = rd_tup[ 0:4 ]
-                repository_dependency = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+                repository_dependency = repository_util.get_repository_by_name_and_owner( trans.app, name, owner )
                 if repository_dependency is None:
                     log.dbug( 'Cannot locate repository dependency %s owned by %s.' % ( name, owner ) )
                     continue

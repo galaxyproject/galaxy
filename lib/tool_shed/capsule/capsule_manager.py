@@ -216,7 +216,7 @@ class ExportRepositoryManager( object ):
             description, repository_clone_url, changeset_revision, ctx_rev, \
                 repository_owner, repository_dependencies, tool_dependencies = \
                 suc.get_repo_info_tuple_contents( repo_info_tup )
-            repository = suc.get_repository_by_name_and_owner( self.app, repository_name, repository_owner )
+            repository = repository_util.get_repository_by_name_and_owner( self.app, repository_name, repository_owner )
             repository_metadata = metadata_util.get_current_repository_metadata_for_changeset_revision( self.app,
                                                                                                         repository,
                                                                                                         changeset_revision )
@@ -307,7 +307,7 @@ class ExportRepositoryManager( object ):
                     ctx_rev, repository_owner, repository_dependencies, \
                     tool_dependencies = \
                     suc.get_repo_info_tuple_contents( repo_info_tup )
-                repository = suc.get_repository_by_name_and_owner( self.app, repository_name, repository_owner )
+                repository = repository_util.get_repository_by_name_and_owner( self.app, repository_name, repository_owner )
                 repository_ids.append( self.app.security.encode_id( repository.id ) )
         return repository_ids
 
@@ -396,7 +396,7 @@ class ImportRepositoryManager( object ):
             ok, name_owner, message = import_results_tup
             name, owner = name_owner
             if not ok:
-                repository = suc.get_repository_by_name_and_owner( self.app, name, owner )
+                repository = repository_util.get_repository_by_name_and_owner( self.app, name, owner )
                 if repository is not None:
                     # Do not allow the repository to be automatically installed if population resulted in errors.
                     tip_changeset_revision = repository.tip( self.app )
@@ -588,7 +588,7 @@ class ImportRepositoryManager( object ):
                                         if defined_repository_metadata is None:
                                             # The defined changeset_revision is not associated with a repository_metadata
                                             # record, so updates must be necessary.
-                                            defined_repository = suc.get_repository_by_name_and_owner( self.app, name, owner )
+                                            defined_repository = repository_util.get_repository_by_name_and_owner( self.app, name, owner )
                                             defined_repo = hg_util.get_repo_for_repository( self.app,
                                                                                             repository=defined_repository,
                                                                                             repo_path=None,
@@ -684,9 +684,9 @@ class ImportRepositoryManager( object ):
         """
         repository_status_info_dicts = []
         for repository_info_dict in repository_info_dicts:
-            repository = suc.get_repository_by_name_and_owner( self.app,
-                                                               repository_info_dict[ 'name' ],
-                                                               repository_info_dict[ 'owner' ] )
+            repository = repository_util.get_repository_by_name_and_owner( self.app,
+                                                                           repository_info_dict[ 'name' ],
+                                                                           repository_info_dict[ 'owner' ] )
             if repository:
                 if repository.deleted:
                     repository_info_dict[ 'status' ] = 'Exists, deleted'

@@ -398,7 +398,7 @@ class AdminToolshed( AdminGalaxy ):
             if repository:
                 repo_files_dir = repository.repo_files_directory( trans.app )
                 # The following line sometimes returns None.  TODO: Figure out why.
-                path_to_file = suc.get_absolute_path_to_file_in_repository( repo_files_dir, relative_path_to_image_file )
+                path_to_file = repository_util.get_absolute_path_to_file_in_repository( repo_files_dir, relative_path_to_image_file )
                 if path_to_file and os.path.exists( path_to_file ):
                     file_name = os.path.basename( relative_path_to_image_file )
                     try:
@@ -1379,17 +1379,17 @@ class AdminToolshed( AdminGalaxy ):
                 suc.clean_dependency_relationships(trans, new_meta, tool_shed_repository, tool_shed_url)
             # The repository's status must be updated from 'Uninstalled' to 'New' when initiating reinstall
             # so the repository_installation_updater will function.
-            tool_shed_repository = suc.create_or_update_tool_shed_repository( trans.app,
-                                                                              tool_shed_repository.name,
-                                                                              tool_shed_repository.description,
-                                                                              tool_shed_repository.installed_changeset_revision,
-                                                                              tool_shed_repository.ctx_rev,
-                                                                              repository_clone_url,
-                                                                              metadata,
-                                                                              trans.install_model.ToolShedRepository.installation_status.NEW,
-                                                                              tool_shed_repository.changeset_revision,
-                                                                              tool_shed_repository.owner,
-                                                                              tool_shed_repository.dist_to_shed )
+            tool_shed_repository = repository_util.create_or_update_tool_shed_repository( trans.app,
+                                                                                          tool_shed_repository.name,
+                                                                                          tool_shed_repository.description,
+                                                                                          tool_shed_repository.installed_changeset_revision,
+                                                                                          tool_shed_repository.ctx_rev,
+                                                                                          repository_clone_url,
+                                                                                          metadata,
+                                                                                          trans.install_model.ToolShedRepository.installation_status.NEW,
+                                                                                          tool_shed_repository.changeset_revision,
+                                                                                          tool_shed_repository.owner,
+                                                                                          tool_shed_repository.dist_to_shed )
         ctx_rev = suc.get_ctx_rev( trans.app,
                                    tool_shed_url,
                                    tool_shed_repository.name,

@@ -17,6 +17,7 @@ from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
+from tool_shed.util import repository_util
 
 log = logging.getLogger( __name__ )
 
@@ -148,71 +149,6 @@ def clean_dependency_relationships(trans, metadata_dict, tool_shed_repository, t
             trans.install_model.context.flush()
 
 
-def create_or_update_tool_shed_repository( app, name, description, installed_changeset_revision, ctx_rev, repository_clone_url,
-                                           metadata_dict, status, current_changeset_revision=None, owner='', dist_to_shed=False ):
-    """
-    Update a tool shed repository record in the Galaxy database with the new information received.
-    If a record defined by the received tool shed, repository name and owner does not exist, create
-    a new record with the received information.
-    """
-    # The received value for dist_to_shed will be True if the ToolMigrationManager is installing a repository
-    # that contains tools or datatypes that used to be in the Galaxy distribution, but have been moved
-    # to the main Galaxy tool shed.
-    if current_changeset_revision is None:
-        # The current_changeset_revision is not passed if a repository is being installed for the first
-        # time.  If a previously installed repository was later uninstalled, this value should be received
-        # as the value of that change set to which the repository had been updated just prior to it being
-        # uninstalled.
-        current_changeset_revision = installed_changeset_revision
-    context = app.install_model.context
-    tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
-    if not owner:
-        owner = get_repository_owner_from_clone_url( repository_clone_url )
-    includes_datatypes = 'datatypes' in metadata_dict
-    if status in [ app.install_model.ToolShedRepository.installation_status.DEACTIVATED ]:
-        deleted = True
-        uninstalled = False
-    elif status in [ app.install_model.ToolShedRepository.installation_status.UNINSTALLED ]:
-        deleted = True
-        uninstalled = True
-    else:
-        deleted = False
-        uninstalled = False
-    tool_shed_repository = \
-        get_installed_repository( app, tool_shed=tool_shed, name=name, owner=owner, installed_changeset_revision=installed_changeset_revision )
-    if tool_shed_repository:
-        log.debug( "Updating an existing row for repository '%s' in the tool_shed_repository table, status set to '%s'." %
-                   ( str( name ), str( status ) ) )
-        tool_shed_repository.description = description
-        tool_shed_repository.changeset_revision = current_changeset_revision
-        tool_shed_repository.ctx_rev = ctx_rev
-        tool_shed_repository.metadata = metadata_dict
-        tool_shed_repository.includes_datatypes = includes_datatypes
-        tool_shed_repository.deleted = deleted
-        tool_shed_repository.uninstalled = uninstalled
-        tool_shed_repository.status = status
-    else:
-        log.debug( "Adding new row for repository '%s' in the tool_shed_repository table, status set to '%s'." %
-                   ( str( name ), str( status ) ) )
-        tool_shed_repository = \
-            app.install_model.ToolShedRepository( tool_shed=tool_shed,
-                                                  name=name,
-                                                  description=description,
-                                                  owner=owner,
-                                                  installed_changeset_revision=installed_changeset_revision,
-                                                  changeset_revision=current_changeset_revision,
-                                                  ctx_rev=ctx_rev,
-                                                  metadata=metadata_dict,
-                                                  includes_datatypes=includes_datatypes,
-                                                  dist_to_shed=dist_to_shed,
-                                                  deleted=deleted,
-                                                  uninstalled=uninstalled,
-                                                  status=status )
-    context.add( tool_shed_repository )
-    context.flush()
-    return tool_shed_repository
-
-
 def extract_components_from_tuple( repository_components_tuple ):
     '''Extract the repository components from the provided tuple in a backward-compatible manner.'''
     toolshed = repository_components_tuple[ 0 ]
@@ -247,33 +183,6 @@ def generate_tool_guid( repository_clone_url, tool ):
     """
     tmp_url = common_util.remove_protocol_and_user_from_clone_url( repository_clone_url )
     return '%s/%s/%s' % ( tmp_url, tool.id, tool.version )
-
-
-def generate_tool_shed_repository_install_dir( repository_clone_url, changeset_revision ):
-    """
-    Generate a repository installation directory that guarantees repositories with the same
-    name will always be installed in different directories.  The tool path will be of the form:
-    <tool shed url>/repos/<repository owner>/<repository name>/<installed changeset revision>
-    """
-    tmp_url = common_util.remove_protocol_and_user_from_clone_url( repository_clone_url )
-    # Now tmp_url is something like: bx.psu.edu:9009/repos/some_username/column
-    items = tmp_url.split( '/repos/' )
-    tool_shed_url = items[ 0 ]
-    repo_path = items[ 1 ]
-    tool_shed_url = common_util.remove_port_from_tool_shed_url( tool_shed_url )
-    return '/'.join( [ tool_shed_url, 'repos', repo_path, changeset_revision ] )
-
-
-def get_absolute_path_to_file_in_repository( repo_files_dir, file_name ):
-    """Return the absolute path to a specified disk file contained in a repository."""
-    stripped_file_name = basic_util.strip_path( file_name )
-    file_path = None
-    for root, dirs, files in os.walk( repo_files_dir ):
-        if root.find( '.hg' ) < 0:
-            for name in files:
-                if name == stripped_file_name:
-                    return os.path.abspath( os.path.join( root, name ) )
-    return file_path
 
 
 def get_categories( app ):
@@ -428,39 +337,6 @@ def get_repository_and_repository_dependencies_from_repo_info_dict( app, repo_in
         # We're in the tool shed.
         repository = get_repository_by_name_and_owner( app, repository_name, repository_owner )
     return repository, repository_dependencies
-
-
-def get_repository_by_id( app, id ):
-    """Get a repository from the database via id."""
-    if is_tool_shed_client( app ):
-        return app.install_model.context.query( app.install_model.ToolShedRepository ).get( app.security.decode_id( id ) )
-    else:
-        sa_session = app.model.context.current
-        return sa_session.query( app.model.Repository ).get( app.security.decode_id( id ) )
-
-
-def get_repository_by_name( app, name ):
-    """Get a repository from the database via name."""
-    repository_query = get_repository_query( app )
-    return repository_query.filter_by( name=name ).first()
-
-
-def get_repository_by_name_and_owner( app, name, owner ):
-    """Get a repository from the database via name and owner"""
-    repository_query = get_repository_query( app )
-    if is_tool_shed_client( app ):
-        return repository_query \
-            .filter( and_( app.install_model.ToolShedRepository.table.c.name == name,
-                           app.install_model.ToolShedRepository.table.c.owner == owner ) ) \
-            .first()
-    # We're in the tool shed.
-    user = get_user_by_username( app, owner )
-    if user:
-        return repository_query \
-            .filter( and_( app.model.Repository.table.c.name == name,
-                           app.model.Repository.table.c.user_id == user.id ) ) \
-            .first()
-    return None
 
 
 def get_repository_dependency_types( repository_dependencies ):
@@ -686,14 +562,6 @@ def get_repository_owner_from_clone_url( repository_clone_url ):
     """Given a repository clone URL, return the owner of the repository."""
     tmp_url = common_util.remove_protocol_and_user_from_clone_url( repository_clone_url )
     return get_repository_owner( tmp_url )
-
-
-def get_repository_query( app ):
-    if is_tool_shed_client( app ):
-        query = app.install_model.context.query( app.install_model.ToolShedRepository )
-    else:
-        query = app.model.context.query( app.model.Repository )
-    return query
 
 
 def get_repository_type_from_tool_shed( app, tool_shed_url, name, owner ):
@@ -1057,7 +925,7 @@ def is_path_within_repo( app, path, repository_id ):
     Detect whether the given path is within the repository folder on the disk.
     Use to filter malicious symlinks targeting outside paths.
     """
-    repo_path = os.path.abspath( get_repository_by_id( app, repository_id ).repo_path( app ) )
+    repo_path = os.path.abspath( repository_util.get_repository_by_id( app, repository_id ).repo_path( app ) )
     resolved_path = os.path.realpath( path )
     return os.path.commonprefix( [ repo_path, resolved_path ] ) == repo_path
 

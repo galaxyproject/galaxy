@@ -10,7 +10,7 @@ from six import string_types
 from sqlalchemy import or_
 
 from galaxy import exceptions, util
-from tool_shed.util import basic_util, common_util, encoding_util, hg_util
+from tool_shed.util import basic_util, common_util, encoding_util, hg_util, repository_util
 from tool_shed.util import shed_util_common as suc, tool_dependency_util
 from tool_shed.util import tool_util, xml_util
 
@@ -864,8 +864,8 @@ class InstallRepositoryManager( object ):
                                                  self.install_model.ToolShedRepository.installation_status.CLONING )
         repo_info_tuple = repo_info_dict[ tool_shed_repository.name ]
         description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
-        relative_clone_dir = suc.generate_tool_shed_repository_install_dir( repository_clone_url,
-                                                                            tool_shed_repository.installed_changeset_revision )
+        relative_clone_dir = repository_util.generate_tool_shed_repository_install_dir( repository_clone_url,
+                                                                                        tool_shed_repository.installed_changeset_revision )
         relative_install_dir = os.path.join( relative_clone_dir, tool_shed_repository.name )
         install_dir = os.path.join( tool_path, relative_install_dir )
         cloned_ok, error_message = hg_util.clone_repository( repository_clone_url, os.path.abspath( install_dir ), ctx_rev )

@@ -9,7 +9,7 @@ import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
 from galaxy.web.framework.helpers import grids
 from galaxy.webapps.tool_shed import model
-from tool_shed.util import hg_util, metadata_util
+from tool_shed.util import hg_util, metadata_util, repository_util
 
 log = logging.getLogger( __name__ )
 
@@ -1007,7 +1007,7 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                         for rd_tup in sorted_rd_tups:
                             name, owner, changeset_revision = rd_tup[1:4]
                             rd_line = ''
-                            required_repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+                            required_repository = repository_util.get_repository_by_name_and_owner( trans.app, name, owner )
                             if required_repository and not required_repository.deleted:
                                 required_repository_id = trans.security.encode_id( required_repository.id )
                                 required_repository_metadata = \
