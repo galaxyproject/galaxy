@@ -624,7 +624,7 @@
 
         <!-- Finally for Kubernetes runner, the following connects a particular tool to be executed with
              the container of choice in Kubernetes.
-        --->
+        -->
         <tool id="my-tool" destination="my-tool-container"/>
     </tools>
     <limits>
