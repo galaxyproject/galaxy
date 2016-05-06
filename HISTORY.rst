@@ -9,7 +9,7 @@ History
 16.7.2.dev0
 ---------------------
 
-    
+* Updates to tool parsing and linting for Planemo.
 
 ---------------------
 16.7.1 (2016-05-02)
