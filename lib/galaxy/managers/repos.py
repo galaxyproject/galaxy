@@ -20,13 +20,9 @@ class RepoManager( base.ModelManager ):
     def list( self, trans, view='all' ):
         if not trans.user_is_admin():
             raise exceptions.ItemAccessibilityException( 'Only administrators can see repos.' )
+        # TODO respect `view` that is requested
         repos = trans.sa_session.query( self.model_class ).all()
-        # TODO collapse repos with the same ID and different versions
         return repos
-
-    def get_tools( self, trans ):
-        if not trans.user_is_admin():
-            raise exceptions.ItemAccessibilityException( 'Only administrators can see repos.' )
 
 
 class RepositorySerializer( base.ModelSerializer ):
@@ -46,12 +42,12 @@ class RepositorySerializer( base.ModelSerializer ):
             'owner',
             'status',
             'create_time',
+            'tool_shed',
 
         ])
         self.add_view( 'detailed', [
             'changeset_revision',
             'ctx_rev',
-            'tool_shed',
             'tool_shed_status',
             'deleted',
             'uninstalled',

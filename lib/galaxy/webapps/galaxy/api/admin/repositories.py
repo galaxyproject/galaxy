@@ -24,7 +24,7 @@ class RepositoriesController( BaseAPIController ):
     def index( self, trans, **kwd ):
         """
         * GET /api/admin/repositories:
-            Returns a list of all installed repositories on this instance.
+            Return a list of all installed repositories on this instance.
 
         :returns:   list of repos
         :rtype:     list
@@ -39,4 +39,39 @@ class RepositoriesController( BaseAPIController ):
             if repo.provides_only_tool_dependencies:
                 repo_dict['type'] = 'packages'
             return_dict.append( repo_dict )
-        return return_dict
+        unique_dict = self._list_unique_repos( return_dict )
+        return unique_dict
+
+    def _list_unique_repos( self, all_repos ):
+        """
+        Given the list of serialized ToolShedRepository objects
+        this method will identify those that differ only in revision
+        (i.e. have same name, owner and tool_shed) and collapses
+        the additional revisions into new attribute 'collapsed_repos'.
+        """
+        unique_repos = []
+        repos_to_collapse = []
+        collapsed_trios = set()
+        for repo_a in all_repos:
+            if ( repo_a['name'] + repo_a['owner'] + repo_a['tool_shed'] ) in collapsed_trios:
+                # the repository is already collapsed, continue
+                continue
+            collapsed_repos = []
+            for repo_b in all_repos:
+                if repo_a['id'] == repo_b['id']:
+                    # we found identity, ignore
+                    continue
+                if repo_a['name'] == repo_b['name'] and repo_a['owner'] == repo_b['owner'] and repo_a['tool_shed'] == repo_b['tool_shed']:
+                    # we found another revision of repo_a, store
+                    collapsed_repos.append( repo_b.copy() )
+                    continue
+            if collapsed_repos:
+                # if other revision of repo were found, save them within the first repo
+                repo_a['collapsed_repos'] = collapsed_repos
+                repos_to_collapse.append( repo_a )
+                # store the trio identifying the already collapsed repo
+                collapsed_trios.add( repo_a['name'] + repo_a['owner'] + repo_a['tool_shed'] )
+            else:
+                unique_repos.append( repo_a )
+        repos_to_collapse.extend(unique_repos)
+        return repos_to_collapse
