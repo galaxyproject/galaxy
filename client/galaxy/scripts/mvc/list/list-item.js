@@ -288,6 +288,7 @@ var ListItemView = ExpandableView.extend(
 
     /** expand when the title bar is clicked */
     _clickTitleBar : function( event ){
+        console.log( '_clickTitleBar' );
         event.stopPropagation();
         if( event.altKey ){
             this.toggleSelect( event );

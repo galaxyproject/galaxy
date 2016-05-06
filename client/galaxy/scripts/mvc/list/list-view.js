@@ -105,17 +105,6 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         this._setUpListeners();
     },
 
-    /** free any sub-views the list has */
-    freeViews : function(){
-        var self = this;
-        _.each( self.views, function( view ){
-            self.stopListening( view );
-            view.off();
-        });
-        self.views = [];
-        return self;
-    },
-
     // ------------------------------------------------------------------------ listeners
     /** create any event listeners for the list */
     _setUpListeners : function(){
@@ -414,7 +403,30 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         });
         var view = new ViewClass( options );
         this._setUpItemViewListeners( view );
+        this.viewMap[ model.id ] = view;
         return view;
+    },
+
+    /** Free a view for a model. Note: does not remove it from the DOM */
+    _destroyItemView : function( view ){
+        this.stopListening( view );
+        this.views = _.without( this.views, view );
+        delete this.viewMap[ view.model.id ];
+    },
+
+    _destroyItemViews : function( view ){
+        var self = this;
+        self.views.forEach( function( v ){
+            self.stopListening( v );
+        });
+        self.views = [];
+        self.viewMap = {};
+        return self;
+    },
+
+    /** free any sub-views the list has */
+    freeViews : function(){
+        return this._destroyItemViews();
     },
 
     /** Get the bbone view class based on the model */
@@ -502,12 +514,16 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
     },
 
     // ------------------------------------------------------------------------ collection/views syncing
-    _resortViews : function( models ){
+    _modelsToViews : function( models ){
         var self = this;
-        var viewMap = _.indexBy( self.views, function( v ){ return v.model.id; });
-        return models.map( function( m ){
-            return viewMap[ m.id ] || self._createItemView( m );
+        var reused = 0;
+        // var viewMap = _.indexBy( self.views, function( v ){ return v.model.id; });
+        var views = _.map( models, function( m ){
+            reused += self.viewMap[ m.id ]? 1 : 0;
+            return self.viewMap[ m.id ] || self._createItemView( m );
         });
+        // console.log( reused, 'reused', views.length - reused, 'created' );
+        return views;
     },
 
     /** Add a view (if the model should be viewable) to the panel */

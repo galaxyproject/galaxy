@@ -145,7 +145,8 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
      *  @returns {HistoryDatasetAssociation} the model with the given hid or undefined if not found
      */
     getByHid : function( hid ){
-        return _.first( this.filter( function( c ){ return c.get( 'hid' ) === hid; }) );
+        // note: there *can* be more than one content with a given hid, this finds the first based on order
+        return this.findWhere({ hid: hid });
     },
 
     /** return true if all contents have details */
@@ -335,7 +336,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         // TODO: remove the need to maintain allFetched/lastFetched here
         // by using fetchFirst/More here
         function _notifyAndContinue( response, offset ){
-            // console.log( 'rcvd:', response.length );
+            console.log( 'rcvd:', response.length );
             deferred.notify( response, limit, offset );
             if( self.allFetched ){
                 deferred.resolve( response, limit, offset );
@@ -358,6 +359,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
             // console.log( 'fetching:', _options.limit, _options.offset );
             _.defer( function(){
                 fetchFn.call( self, _options )
+                    .always( function(){ console.log( 'always:', arguments ); })
                     .fail( deferred.reject )
                     .done( function( r ){ _notifyAndContinue( r, offset ); });
             });
@@ -628,6 +630,11 @@ var HidSectionedHistoryContents = HistoryContents.extend({
         return this._filterSectionCollection( this.currentSection, filterFn );
     },
 
+    /**  */
+    setCurrentSection : function( section ){
+        this.currentSection = section;
+    },
+
     // ------------------------------------------------------------------------ sectioned fetching
     /** @type {Integer} number of contents/hid entries per section/page displayed */
     hidsPerSection : 100,
@@ -698,6 +705,48 @@ silent: true,
         return self.fetchSection( section, options )
             .always( function(){ self.trigger( 'fetching-deleted-done', self ); });
     },
+
+    /** fetch contents' details in batches of limitPerCall - note: only get searchable details here */
+    progressivelyFetchDetails : function( options ){
+        // console.log( 'progressivelyFetchDetails:', options );
+        options = options || {};
+        var deferred = jQuery.Deferred();
+        var self = this;
+        var startingSection = this._countSections();
+        var searchAttributes = HDA_MODEL.HistoryDatasetAssociation.prototype.searchAttributes;
+        var detailKeys = searchAttributes.join( ',' );
+
+        // TODO: remove the need to maintain allFetched/lastFetched here
+        // by using fetchFirst/More here
+        function _notifyAndContinue( response, section ){
+            deferred.notify( response, section );
+            if( section === 0 ){
+                deferred.resolve( response );
+                return;
+            }
+            _recursivelyFetch( section - 1 );
+        }
+
+        function _recursivelyFetch( section ){
+            // console.log( '_recursivelyFetch:', offset );
+            var _options = _.extend( _.clone( options ), {
+                view    : 'summary',
+                keys    : detailKeys,
+                reset   : section === 0,
+                bypassCache : true
+            });
+            _.defer( function(){
+                return self.fetchSection( section, _options )
+                    .fail( deferred.reject )
+                    .done( function( r ){
+                        _notifyAndContinue( r, section );
+                    });
+            });
+        }
+        _recursivelyFetch( startingSection );
+        return deferred;
+    },
+
 });
 
 

@@ -200,13 +200,16 @@ var HistoryView = _super.extend(
     // ------------------------------------------------------------------------ client-side pagination
     /**   */
     renderItems : function( $whereTo ){
+        $( '.tooltip' ).remove();
+
         // console.log( 'renderItems -----------------------------------------------------------' );
         $whereTo = $whereTo || this.$el;
         var self = this;
         var contents = self.model.contents;
         var hidsPerSection = contents.hidsPerSection;
 
-        self.freeViews();
+        // self.freeViews();
+        self.views = [];
         // render sections
         // console.log( 'renderItems:', self.$list( $whereTo ) );
         self.$list( $whereTo ).html( contents._mapSectionRanges( function( section ){
@@ -223,16 +226,28 @@ var HistoryView = _super.extend(
     },
 
     _renderSection : function( section, $whereTo ){
+        // // console.debug( this + '._renderSection', section, $whereTo );
+        // var self = this;
+        // // render views from collection for the current section, replacing that section marker with them
+        // // note: shows only one section's worth of views at a time
+        // var views = [];
+        // var sectionModels = self.model.contents._filterSectionCollection( section, _.bind( this._filterItem, this ) );
+        // self.$section( section, $whereTo ).append( sectionModels.map( function( itemModel ){
+        //     var view = self._createItemView( itemModel );
+        //     views.push( view );
+        //     return self._renderItemView$el( view );
+        // }));
+        // return views;
+
         // console.debug( this + '._renderSection', section, $whereTo );
         var self = this;
         // render views from collection for the current section, replacing that section marker with them
         // note: shows only one section's worth of views at a time
-        var views = [];
         var sectionModels = self.model.contents._filterSectionCollection( section, _.bind( this._filterItem, this ) );
-        self.$section( section, $whereTo ).append( sectionModels.map( function( itemModel ){
-            var view = self._createItemView( itemModel );
-            views.push( view );
-            return self._renderItemView$el( view );
+        var views = self._modelsToViews( sectionModels );
+        self.$section( section, $whereTo ).append( views.map( function( view ){
+            // console.log( 'view.$el.children()', view.el.children.length );
+            return view.delegateEvents().el.children.length? view.$el : self._renderItemView$el( view );
         }));
         return views;
     },
@@ -317,7 +332,7 @@ var HistoryView = _super.extend(
         if( isNotLastSection ){
             // we need to set this now (instead of after the fetch) so that the
             // if statement above isn't triggered more than once
-            self.model.contents.currentSection = lastSection;
+            self.model.contents.setCurrentSection( lastSection );
             self.model.contents.fetchSection( lastSection, { silent: true })
                 .done( function(){
                     self.renderItems();
@@ -453,14 +468,25 @@ var HistoryView = _super.extend(
     },
 
     /** loads a section and re-renders items */
-    openSection : function( section ){
-        console.log( this + '.openSection:', section );
+    openSection : function( section, options ){
+        options = options || {};
         var self = this;
-        return self.model.contents.fetchSection( section, { silent: true })
+        var contents = self.model.contents;
+        var isLastSection = section === contents._lastSection();
+        return contents.fetchSection( section, { silent: true })
             .done( function(){
-                self.model.contents.currentSection = section;
+                contents.setCurrentSection( section );
                 self.renderItems();
-                self.scrollTo( self.$section( section ).get(0).offsetTop );
+
+                var sectionElement = self.$section( section ).get(0);
+                var sectionTop = sectionElement.offsetTop;
+                var sectionBottom = sectionElement.offsetTop + sectionElement.offsetHeight;
+                if( options.startAtBottom ){
+                    // place bottom of scroll container at bottom of section
+                    self.scrollTo( sectionBottom - self.$scrollContainer().height() );
+                } else {
+                    self.scrollTo( isLastSection? 0 : sectionElement.offsetTop );
+                }
             });
     },
 
@@ -579,6 +605,100 @@ var HistoryView = _super.extend(
      */
     scrollToHid : function( hid ){
         return this.scrollToItem( _.first( this.viewsWhereModel({ hid: hid }) ) );
+    },
+
+    /** @type {Number} ms to debounce scroll handler (some browsers fire *much* more often than others) */
+    SCROLL_HANDLER_DEBOUNCE_MS : 10,
+
+    /** override to track the scroll container for this view */
+    _setUpBehaviors : function( $where ){
+        var self = this,
+            $newRender = _super.prototype._setUpBehaviors.call( this, $where );
+        // this needs to be handled outside the events hash since we're accessing the scollContainer
+        // (rebind and debounce the method so we can cache for any later removal)
+
+        // window.cursor = $( '<div/>' ).attr( 'id', 'cursor' ).css({
+        //     position: 'absolute',
+        //     height: '1px',
+        //     width: '100%',
+        //     background: 'red',
+        // }).prependTo( $where );
+
+        self.scrollHandler = _.debounce( _.bind( this.scrollHandler, self ), self.SCROLL_HANDLER_DEBOUNCE_MS );
+        self.$scrollContainer( $where ).on( 'scroll', self.scrollHandler );
+        return self;
+    },
+
+    FOCUSED_SECTION_OPEN_DELAY : 700,
+
+    /**  */
+    scrollHandler : function( ev ){
+        var self = this;
+        if( !self.model.contents._countSections() ){ return; }
+        var FOCUS_CLASS = 'fisheye-focus';
+        var prevCursor = self._getScrollCursor();
+        var $section = self._getScrollFocusedSection( prevCursor );
+        var sectionNumber = $section.data( 'section' );
+        // if we're still on the old section: do nothing and bail early
+        if( sectionNumber === self._previouslyFocusedSection ){ return; }
+
+        // if we've moved to a new section, clear the previous opening timer, set the focused class
+        clearTimeout( self._focusedSectionOpenTimeoutId );
+        self.$( '.' + FOCUS_CLASS ).removeClass( FOCUS_CLASS );
+        $section.addClass( FOCUS_CLASS );
+        self._previouslyFocusedSection = sectionNumber;
+
+        // if this section hasn't been opened, delay a bit - then open it
+        if( sectionNumber === self.model.contents.currentSection ){ return; }
+        self._focusedSectionOpenTimeoutId = _.delay( function(){
+            var newCursor = self._getScrollCursor();
+            var currentSection = self._getScrollFocusedSection( newCursor ).data( 'section' );
+            var stillThere = currentSection === self._previouslyFocusedSection;
+            if( stillThere ){
+                // start at the bottom or top of the newly opened section based on the previous cursor position
+                // if moving down or if cursor is inside header: start at top; moving up: start at bottom
+                var topOfList = Galaxy.currHistoryPanel.$list().get(0).offsetTop;
+                var startAtBottom = newCursor > topOfList && newCursor < prevCursor;
+                self.openSection( currentSection, { startAtBottom: startAtBottom });
+            }
+        }, this.FOCUSED_SECTION_OPEN_DELAY );
+    },
+
+    _getScrollFocusedSection : function( cursor ){
+        cursor = cursor || this._getScrollCursor();
+        // console.log( cursor );
+        // this.$( '#cursor' ).css( 'top', cursor );
+
+        var $sections = this.$list().children( '.list-items-section' );
+        var scrollTop = this.$scrollContainer().scrollTop();
+        // return the first section if the cursor is there *or* in the header
+        var topOfFirst = scrollTop + $sections.eq(0).position().top;
+        var bottomOfFirst = topOfFirst + $sections.eq(0).get(0).offsetHeight;
+        if( cursor < bottomOfFirst ){
+            return $sections.eq(0);
+        }
+        // cycle remaining sections checking cursor v. their dimensions
+        for( var i=1; i<$sections.size(); i++ ){
+            // TODO:?? tops are actually static* (*for the most part)
+            var $section = $sections.eq(i);
+            var sectionTop = scrollTop + $section.position().top;
+            var sectionBottom = sectionTop + $section.get(0).offsetHeight;
+            if( cursor > sectionTop && cursor < sectionBottom ){
+                return $section;
+            }
+        }
+    },
+
+    _getScrollCursor : function(){
+        var UNOPENED_SECTION_HEIGHT = 24;
+        var $scrolled = this.$scrollContainer();
+        var viewportHeight = $scrolled.height();
+        var scrollTop = $scrolled.scrollTop();
+        var percScrolled = scrollTop / ( this.el.scrollHeight - viewportHeight );
+        // this bumps the cursor at the two ends a bit closer to the middle (at the cost of some math)
+        var fromMid = ( percScrolled / 0.5 ) - 1;
+        var adj = ( Math.pow( fromMid, 3 ) * -UNOPENED_SECTION_HEIGHT ) - 1;
+        return scrollTop + ( $scrolled.height() * percScrolled ) + adj;
     },
 
     // ........................................................................ misc

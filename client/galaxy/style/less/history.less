@@ -482,11 +482,15 @@
             text-align: right;
             text-decoration: none;
             &:hover {
-                // cursor: pointer;
                 background: white;
-                // a {
                 text-decoration: underline;
-                // }
+                color: black;
+            }
+        }
+        &.fisheye-focus {
+            background: @brand-primary;
+            & > a {
+                color: white;
             }
         }
     }
