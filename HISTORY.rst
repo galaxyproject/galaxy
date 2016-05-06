@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-16.7.2.dev0
+16.7.2 (2016-05-06)
 ---------------------
 
 * Updates to tool parsing and linting for Planemo.
