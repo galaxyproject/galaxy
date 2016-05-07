@@ -1,5 +1,7 @@
-class: inverse, center, middle, special
-
+layout: true
+class: inverse, center, middle
+---
+class: special
 # Galaxy Architecture 2015
 
 Nate, James
@@ -7,6 +9,8 @@ Nate, James
 <!--- Add the logo and the Twitter / IRC  mentions --->
 
 ---
+
+class: inverse, center, middle
 
 ### Please Interrupt!
 
