@@ -3,11 +3,10 @@
 @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
 
 body {
-    font-family: 'Droid Serif';
+    font-family: 'PT Sans';
 }
 h1, h2, h3 {
-    font-family: 'Yanone Kaffeesatz';
-    font-weight: 400;
+    font-weight: bold;
     margin-bottom: 0;
 }
 .remark-slide-content h1 { font-size: 3em; }
