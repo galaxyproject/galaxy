@@ -1,3 +1,5 @@
+class: inverse, center, middle, special
+
 # Galaxy Architecture 2015
 
 Nate, James
@@ -40,7 +42,8 @@ New official contribution guidelines:  https://github.git com/galaxyproject/gala
 
 ---
 
-<!--- TODO: Insert Galaxy Project Github Image -->
+<!-- TODO: Work again on the image -->
+![Default-aligned image](images/family/team.png)
 
 ---
 
@@ -94,7 +97,11 @@ github.com/galaxyproject/**bioblend**
 
 ---
 
-<!-- Image to fetch and add -->
+<!-- TODO: Work again on the image -->
+background-image: url(images/app_architecture/client_server.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
