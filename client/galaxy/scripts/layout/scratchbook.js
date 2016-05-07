@@ -76,7 +76,8 @@ return Backbone.View.extend({
                 }
                 else {
                     _.extend( frame_config, {
-                        url: Galaxy.root + 'datasets/' + dataset.id + '/display/?preview=True'
+                        url: Galaxy.root + 'datasets/' + dataset.id + '/display/?preview=True',
+                        data_type: (dataset.get( 'data_type' ).split('.')[3]).toLowerCase()
                     });
                 }
                 self.add( frame_config );
