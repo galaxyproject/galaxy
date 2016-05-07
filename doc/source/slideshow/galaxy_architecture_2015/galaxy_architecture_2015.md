@@ -24,7 +24,7 @@ We're here to answer your question about Galaxy architecture!
 
 **IRC**: irc.freenode.net#galaxyproject
 <br />
-**GitHub**: github.com/galaxyproject
+.emphasis_2_galaxy[**GitHub**].special[:] github.com/galaxyproject
 <br />
 **Trello**: https://trello.com/b/75c1kASa/
 <br />

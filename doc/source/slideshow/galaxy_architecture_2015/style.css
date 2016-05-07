@@ -117,3 +117,12 @@ code {
 .special p {
     color: #cbcbcb;
 }
+
+.special {
+    color: #ff8800;
+}
+
+/* Emphasis 2 */
+.emphasis_2_galaxy {
+    color: #00f900;
+}
