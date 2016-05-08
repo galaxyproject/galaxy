@@ -299,56 +299,32 @@ unwiedly, how do you get a handle on them?
 ---
 
 ### Pre-startup
-<!-- Image to fetch and add -->
-background-image: url(images/galaxy_components/DataModel2.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
+![Default-aligned image](images/galaxy_components/object_store2.png)
 
 ---
 
 ### First run: Initialize configs
-<!-- Image to fetch and add -->
-background-image: url(images/galaxy_components/DataModel2.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
+![Default-aligned image](images/galaxy_components/object_store2.png)
 
 ---
 
 ### First run: Fetch eggs
-<!-- Image to fetch and add -->
-background-image: url(images/galaxy_components/DataModel2.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
+![Default-aligned image](images/galaxy_components/object_store2.png)
 
 ---
 
 ### Every run: Load the application
-<!-- Image to fetch and add -->
-background-image: url(images/galaxy_components/DataModel2.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
+![Default-aligned image](images/galaxy_components/object_store2.png)
 
 ---
 
 ### Every run: Load database migrations
-<!-- Image to fetch and add -->
-background-image: url(images/galaxy_components/DataModel2.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
+![Default-aligned image](images/galaxy_components/object_store2.png)
 
 ---
 
 ### First run: Initialize database
-<!-- Image to fetch and add -->
-background-image: url(images/galaxy_components/DataModel2.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
+![Default-aligned image](images/galaxy_components/object_store2.png)
 
 ---
 
@@ -357,56 +333,32 @@ Everything after here happens every time
 ---
 
 ### Load tool migrations
-<!-- Image to fetch and add -->
-background-image: url(images/galaxy_components/DataModel2.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
+![Default-aligned image](images/galaxy_components/object_store2.png)
 
 ---
 
 ### Load datatypes
-<!-- Image to fetch and add -->
-background-image: url(images/galaxy_components/DataModel2.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
+![Default-aligned image](images/galaxy_components/object_store2.png)
 
 ---
 
 ### Load datatypes sniffers
-<!-- Image to fetch and add -->
-background-image: url(images/galaxy_components/DataModel2.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
+![Default-aligned image](images/galaxy_components/object_store2.png)
 
 ---
 
 ### Load build (display) sites
-<!-- Image to fetch and add -->
-background-image: url(images/galaxy_components/DataModel2.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
+![Default-aligned image](images/galaxy_components/object_store2.png)
 
 ---
 
 ### Load data tables
-<!-- Image to fetch and add -->
-background-image: url(images/galaxy_components/DataModel2.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
+![Default-aligned image](images/galaxy_components/object_store2.png)
 
 ---
 
 ### Read job configuration file
-<!-- Image to fetch and add -->
-background-image: url(images/galaxy_components/DataModel2.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
+![Default-aligned image](images/galaxy_components/object_store2.png)
 * config/job_conf.xml will automatically be read if created, see
 <br />
 job_conf_xml.sample_advanced for fully documented examples of all
@@ -416,11 +368,7 @@ possible configurations
 ---
 
 ### Load tools
-<!-- Image to fetch and add -->
-background-image: url(images/galaxy_components/DataModel2.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
+![Default-aligned image](images/galaxy_components/object_store2.png)
 * shed_tool_conf.xml is empty on the first run so
 <br />
 only tools provided with Galaxy are loaded, but
@@ -432,20 +380,12 @@ will load here
 ---
 
 ### Associate display apps with datatypes
-<!-- Image to fetch and add -->
-background-image: url(images/galaxy_components/DataModel2.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
+![Default-aligned image](images/galaxy_components/object_store2.png)
 
 ---
 
 ### Load implicit datatype converters
-<!-- Image to fetch and add -->
-background-image: url(images/galaxy_components/DataModel2.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
+![Default-aligned image](images/galaxy_components/object_store2.png)
 * A few internal operations are defined as tools to allow them to run via Galaxy'
 <br />
 s job system, and are loaded here as well
@@ -453,38 +393,22 @@ s job system, and are loaded here as well
 ---
 
 ### Load visualization plugins
-<!-- Image to fetch and add -->
-background-image: url(images/galaxy_components/DataModel2.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
+![Default-aligned image](images/galaxy_components/object_store2.png)
 
 ---
 
 ### Initialize job handlers
-<!-- Image to fetch and add -->
-background-image: url(images/galaxy_components/DataModel2.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
+![Default-aligned image](images/galaxy_components/object_store2.png)
 
 ---
 
 ### Initialize web controllers
-<!-- Image to fetch and add -->
-background-image: url(images/galaxy_components/DataModel2.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
+![Default-aligned image](images/galaxy_components/object_store2.png)
 
 ---
 
 ### Load WSGI middleware
-<!-- Image to fetch and add -->
-background-image: url(images/galaxy_components/DataModel2.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
+![Default-aligned image](images/galaxy_components/object_store2.png)
 
 ---
 
