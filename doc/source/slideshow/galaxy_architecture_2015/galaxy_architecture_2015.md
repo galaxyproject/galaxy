@@ -24,7 +24,7 @@ We're here to answer your question about Galaxy architecture!
 
 **IRC**: irc.freenode.net#galaxyproject
 <br />
-.emphasis_2_galaxy[**GitHub**].special[:] github.com/galaxyproject
+.special2[**GitHub**].special[:] github.com/galaxyproject
 <br />
 **Trello**: https://trello.com/b/75c1kASa/
 <br />
@@ -109,23 +109,38 @@ background-size: contain;
 
 ---
 
-<!-- Image to fetch and add -->
+background-image: url(images/app_architecture/front_management.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
-<!-- Image to fetch and add -->
+background-image: url(images/app_architecture/chunks.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
-<!-- Image to fetch and add -->
+background-image: url(images/app_architecture/chunks_2.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
-<!-- Image to fetch and add -->
+background-image: url(images/app_architecture/engine.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
-<!-- Image to fetch and add -->
+background-image: url(images/app_architecture/job_management.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
@@ -145,26 +160,28 @@ parts - a table definition and a mapping between
 <br />
 objects and table including relationships
 
-Migrations allow the schema to be migrated forward automatically
+Migrations allow the schema to be migrated forward
+<br />
+automatically
 
 ---
 
-<!-- Image to fetch and add -->
+![Default-aligned image](images/galaxy_components/data_model.png)
 https://wiki.galaxyproject.org/Admin/Internals/DataModel
 
 ---
 
-<!-- Image to fetch and add -->
+![Default-aligned image](images/galaxy_components/data_model2.png)
 
 ---
 
 ### Core components
-<!-- Image to fetch and add -->
+![Default-aligned image](images/galaxy_components/core_components.png)
 
 ---
 
 ### Core components: run analysis
-<!-- Image to fetch and add -->
+![Default-aligned image](images/galaxy_components/run_analysis.png)
 
 ---
 
@@ -173,36 +190,38 @@ Structured data
 
 Different keys/types for different datatypes
 
-Can be used by tools to dynamically control the tool form
+Can be used by tools to dynamically control the
+<br />
+tool form
 
 ---
 
 ### Core components: workflow
-<!-- Image to fetch and add -->
+![Default-aligned image](images/galaxy_components/workflow.png)
 
 ---
 
 ### Core components: workflow run
-<!-- Image to fetch and add -->
+![Default-aligned image](images/galaxy_components/workflow_run.png)
 
 ---
 
 ### Data Libraries
-<!-- Image to fetch and add -->
+![Default-aligned image](images/galaxy_components/data_libraries.png)
 
 ---
 
 ### Data Libraries: Permissions
-<!-- Image to fetch and add -->
+![Default-aligned image](images/galaxy_components/permissions.png)
 
 ---
 
 ### Reference data "cache"
-<!-- Image to fetch and add -->
+![Default-aligned image](images/galaxy_components/data_cache.png)
 
 ---
 
-### **Visualization Plugins**
+### .special2[Visualization Plugins]
 
 Adding new visualizatons to a Galaxy instance:
 - Configuration file (XML)
@@ -211,12 +230,12 @@ Adding new visualizatons to a Galaxy instance:
 
 ---
 
-### Visualization Plugins: Charts
-<!-- Image to fetch and add -->
+### .special2[Visualization Plugins: Charts]
+![Default-aligned image](images/galaxy_components/viz_plugin_charts.png)
 
 ---
 
-### Visualization Plugins: Data
+### .special2[Visualization Plugins: Data]
 
 How do I *efficiently* access data for my viz?
 - Framework provides direct link to read the raw dataset
@@ -226,7 +245,7 @@ How do I *efficiently* access data for my viz?
 
 ---
 
-### **Interactive Environments**
+### .special2[Interactive Environments]
 Galaxy side is identical to interactive
 <br />
 environments: config and base template
@@ -235,8 +254,8 @@ environments: config and base template
 
 ---
 
-### Dataset Collections
-Hundreds or thousands of similar datasets are
+### .special2[Dataset Collections]
+Hundreds or **thousands** of similar datasets are
 <br />
 unwiedly, how do you get a handle on them?
 - Group datasets into a single unit
@@ -246,32 +265,32 @@ unwiedly, how do you get a handle on them?
 
 ---
 
-<!-- Image to fetch and add -->
+![Default-aligned image](images/galaxy_components/dataset_collections.png)
 
 ---
 
 ### Map/reduce in workflows
-<!-- Image to fetch and add -->
+![Default-aligned image](images/galaxy_components/map_workflow.png)
 
 ---
 
 ### Histories
-<!-- Image to fetch and add -->
+![Default-aligned image](images/galaxy_components/histories.png)
 
 ---
 
-### Dataset Collections
-<!-- Image to fetch and add -->
-
----
-
-### Object Store
-<!-- Image to fetch and add -->
+### .special2[Dataset Collections]
+![Default-aligned image](images/galaxy_components/dataset_collections_history.png)
 
 ---
 
 ### Object Store
-<!-- Image to fetch and add -->
+![Default-aligned image](images/galaxy_components/object_store1.png)
+
+---
+
+### Object Store
+![Default-aligned image](images/galaxy_components/object_store2.png)
 
 ---
 
@@ -281,31 +300,55 @@ unwiedly, how do you get a handle on them?
 
 ### Pre-startup
 <!-- Image to fetch and add -->
+background-image: url(images/galaxy_components/DataModel2.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
 ### First run: Initialize configs
 <!-- Image to fetch and add -->
+background-image: url(images/galaxy_components/DataModel2.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
 ### First run: Fetch eggs
 <!-- Image to fetch and add -->
+background-image: url(images/galaxy_components/DataModel2.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
 ### Every run: Load the application
 <!-- Image to fetch and add -->
+background-image: url(images/galaxy_components/DataModel2.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
 ### Every run: Load database migrations
 <!-- Image to fetch and add -->
+background-image: url(images/galaxy_components/DataModel2.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
 ### First run: Initialize database
 <!-- Image to fetch and add -->
+background-image: url(images/galaxy_components/DataModel2.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
@@ -315,31 +358,55 @@ Everything after here happens every time
 
 ### Load tool migrations
 <!-- Image to fetch and add -->
+background-image: url(images/galaxy_components/DataModel2.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
 ### Load datatypes
 <!-- Image to fetch and add -->
+background-image: url(images/galaxy_components/DataModel2.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
 ### Load datatypes sniffers
 <!-- Image to fetch and add -->
+background-image: url(images/galaxy_components/DataModel2.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
 ### Load build (display) sites
 <!-- Image to fetch and add -->
+background-image: url(images/galaxy_components/DataModel2.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
 ### Load data tables
 <!-- Image to fetch and add -->
+background-image: url(images/galaxy_components/DataModel2.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
 ### Read job configuration file
 <!-- Image to fetch and add -->
+background-image: url(images/galaxy_components/DataModel2.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 * config/job_conf.xml will automatically be read if created, see
 <br />
 job_conf_xml.sample_advanced for fully documented examples of all
@@ -350,6 +417,10 @@ possible configurations
 
 ### Load tools
 <!-- Image to fetch and add -->
+background-image: url(images/galaxy_components/DataModel2.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 * shed_tool_conf.xml is empty on the first run so
 <br />
 only tools provided with Galaxy are loaded, but
@@ -362,11 +433,19 @@ will load here
 
 ### Associate display apps with datatypes
 <!-- Image to fetch and add -->
+background-image: url(images/galaxy_components/DataModel2.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
 ### Load implicit datatype converters
 <!-- Image to fetch and add -->
+background-image: url(images/galaxy_components/DataModel2.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 * A few internal operations are defined as tools to allow them to run via Galaxy'
 <br />
 s job system, and are loaded here as well
@@ -375,21 +454,37 @@ s job system, and are loaded here as well
 
 ### Load visualization plugins
 <!-- Image to fetch and add -->
+background-image: url(images/galaxy_components/DataModel2.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
 ### Initialize job handlers
 <!-- Image to fetch and add -->
+background-image: url(images/galaxy_components/DataModel2.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
 ### Initialize web controllers
 <!-- Image to fetch and add -->
+background-image: url(images/galaxy_components/DataModel2.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
 ### Load WSGI middleware
 <!-- Image to fetch and add -->
+background-image: url(images/galaxy_components/DataModel2.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
