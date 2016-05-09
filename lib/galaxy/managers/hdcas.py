@@ -197,7 +197,6 @@ class HDCASerializer(
             'populated',
             'populated_state',
             'populated_state_message',
-            'element_count',
 
             'name',
             'type_id',
