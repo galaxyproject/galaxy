@@ -1,4 +1,4 @@
-/*! Raven.js 1.1.19 (b51bc89) | github.com/getsentry/raven-js */
+/*! Raven.js 1.1.22 (6278810) | github.com/getsentry/raven-js */
 
 /*
  * Includes TraceKit
@@ -21,7 +21,8 @@ var TraceKit = {
     remoteFetching: false,
     collectWindowErrors: true,
     // 3 lines before, the offending line, 3 lines after
-    linesOfContext: 7
+    linesOfContext: 7,
+    debug: false
 };
 
 // global reference to slice
@@ -319,8 +320,7 @@ TraceKit.report = (function reportModuleWrapper() {
  *
  */
 TraceKit.computeStackTrace = (function computeStackTraceWrapper() {
-    var debug = false,
-        sourceCache = {};
+    var sourceCache = {};
 
     /**
      * Attempts to retrieve source code via XMLHttpRequest, which is used
@@ -362,7 +362,9 @@ TraceKit.computeStackTrace = (function computeStackTraceWrapper() {
             // URL needs to be able to fetched within the acceptable domain.  Otherwise,
             // cross-domain errors will be triggered.
             var source = '';
-            if (url.indexOf(document.domain) !== -1) {
+            var domain = '';
+            try { domain = document.domain; } catch (e) {}
+            if (url.indexOf(domain) !== -1) {
                 source = loadSource(url);
             }
             sourceCache[url] = source ? source.split('\n') : [];
@@ -627,12 +629,11 @@ TraceKit.computeStackTrace = (function computeStackTraceWrapper() {
      * @return {?Object.<string, *>} Stack trace information.
      */
     function computeStackTraceFromStackProp(ex) {
-        if (!ex.stack) {
-            return null;
-        }
+        if (isUndefined(ex.stack) || !ex.stack) return;
 
-        var chrome = /^\s*at (.*?) ?\(?((?:file|https?|chrome-extension):.*?):(\d+)(?::(\d+))?\)?\s*$/i,
+        var chrome = /^\s*at (.*?) ?\(?((?:(?:file|https?|chrome-extension):.*?)|<anonymous>):(\d+)(?::(\d+))?\)?\s*$/i,
             gecko = /^\s*(.*?)(?:\((.*?)\))?@((?:file|https?|chrome).*?):(\d+)(?::(\d+))?\s*$/i,
+            winjs = /^\s*at (?:((?:\[object object\])?.+) )?\(?((?:ms-appx|http|https):.*?):(\d+)(?::(\d+))?\)?\s*$/i,
             lines = ex.stack.split('\n'),
             stack = [],
             parts,
@@ -649,6 +650,13 @@ TraceKit.computeStackTrace = (function computeStackTraceWrapper() {
                     'column': parts[5] ? +parts[5] : null
                 };
             } else if ((parts = chrome.exec(lines[i]))) {
+                element = {
+                    'url': parts[2],
+                    'func': parts[1] || UNKNOWN_FUNCTION,
+                    'line': +parts[3],
+                    'column': parts[4] ? +parts[4] : null
+                };
+            } else if ((parts = winjs.exec(lines[i]))) {
                 element = {
                     'url': parts[2],
                     'func': parts[1] || UNKNOWN_FUNCTION,
@@ -702,6 +710,7 @@ TraceKit.computeStackTrace = (function computeStackTraceWrapper() {
         // else to it because Opera is not very good at providing it
         // reliably in other circumstances.
         var stacktrace = ex.stacktrace;
+        if (isUndefined(ex.stacktrace) || !ex.stacktrace) return;
 
         var testRE = / line (\d+), column (\d+) in (?:<anonymous function: ([^>]+)>|([^\)]+))\((.*)\) in (.*):\s*$/i,
             lines = stacktrace.split('\n'),
@@ -951,6 +960,12 @@ TraceKit.computeStackTrace = (function computeStackTraceWrapper() {
                 item.func = parts[1];
             }
 
+            if (typeof item.func === 'undefined') {
+              try {
+                item.func = parts.input.substring(0, parts.input.indexOf('{'));
+              } catch (e) { }
+            }
+
             if ((source = findSourceByFunctionBody(curr))) {
                 item.url = source.url;
                 item.line = source.line;
@@ -1008,7 +1023,7 @@ TraceKit.computeStackTrace = (function computeStackTraceWrapper() {
                 return stack;
             }
         } catch (e) {
-            if (debug) {
+            if (TraceKit.debug) {
                 throw e;
             }
         }
@@ -1019,7 +1034,7 @@ TraceKit.computeStackTrace = (function computeStackTraceWrapper() {
                 return stack;
             }
         } catch (e) {
-            if (debug) {
+            if (TraceKit.debug) {
                 throw e;
             }
         }
@@ -1030,7 +1045,7 @@ TraceKit.computeStackTrace = (function computeStackTraceWrapper() {
                 return stack;
             }
         } catch (e) {
-            if (debug) {
+            if (TraceKit.debug) {
                 throw e;
             }
         }
@@ -1041,12 +1056,16 @@ TraceKit.computeStackTrace = (function computeStackTraceWrapper() {
                 return stack;
             }
         } catch (e) {
-            if (debug) {
+            if (TraceKit.debug) {
                 throw e;
             }
         }
 
-        return {};
+        return {
+            'name': ex.name,
+            'message': ex.message,
+            'url': document.location.href,
+        };
     }
 
     computeStackTrace.augmentStackTraceWithInitialElement = augmentStackTraceWithInitialElement;
@@ -1076,24 +1095,30 @@ var _Raven = window.Raven,
         ignoreUrls: [],
         whitelistUrls: [],
         includePaths: [],
+        crossOrigin: 'anonymous',
         collectWindowErrors: true,
         tags: {},
         maxMessageLength: 100,
         extra: {}
     },
-    authQueryString,
     isRavenInstalled = false,
-
     objectPrototype = Object.prototype,
+    // capture references to window.console *and* all its methods first
+    // before the console plugin has a chance to monkey patch
+    originalConsole = window.console || {},
+    originalConsoleMethods = {},
     startTime = now();
 
+for (var method in originalConsole) {
+  originalConsoleMethods[method] = originalConsole[method];
+}
 /*
  * The core Raven singleton
  *
  * @this {Raven}
  */
 var Raven = {
-    VERSION: '1.1.19',
+    VERSION: '1.1.22',
 
     debug: true,
 
@@ -1165,8 +1190,6 @@ var Raven = {
         }
 
         TraceKit.collectWindowErrors = !!globalOptions.collectWindowErrors;
-
-        setAuthQueryString();
 
         // return for chaining
         return Raven;
@@ -1302,7 +1325,8 @@ var Raven = {
         // raises an exception different from the one we asked to
         // report on.
         try {
-            TraceKit.report(ex, options);
+            var stack = TraceKit.computeStackTrace(ex);
+            handleStackInfo(stack, options);
         } catch(ex1) {
             if(ex !== ex1) {
                 throw ex1;
@@ -1473,7 +1497,7 @@ function triggerEvent(eventType, options) {
 }
 
 var dsnKeys = 'source protocol user pass host port path'.split(' '),
-    dsnPattern = /^(?:(\w+):)?\/\/(\w+)(:\w+)?@([\w\.-]+)(?::(\d+))?(\/.*)/;
+    dsnPattern = /^(?:(\w+):)?\/\/(?:(\w+)(:\w+)?@)?([\w\.-]+)(?::(\d+))?(\/.*)/;
 
 function RavenConfigError(message) {
     this.name = 'RavenConfigError';
@@ -1559,15 +1583,6 @@ function each(obj, callback) {
     }
 }
 
-
-function setAuthQueryString() {
-    authQueryString =
-        '?sentry_version=4' +
-        '&sentry_client=raven-js/' + Raven.VERSION +
-        '&sentry_key=' + globalKey;
-}
-
-
 function handleStackInfo(stackInfo, options) {
     var frames = [];
 
@@ -1614,7 +1629,7 @@ function normalizeFrame(frame) {
 
     normalized.in_app = !( // determine if an exception came from outside of our app
         // first we check the global includePaths list.
-        !globalOptions.includePaths.test(normalized.filename) ||
+        (!!globalOptions.includePaths.test && !globalOptions.includePaths.test(normalized.filename)) ||
         // Now we check for fun, if the function name is Raven or TraceKit
         /(Raven|TraceKit)\./.test(normalized['function']) ||
         // finally, we do a last ditch effort and check for raven.min.js
@@ -1664,20 +1679,15 @@ function extractContextFromFrame(frame) {
 }
 
 function processException(type, message, fileurl, lineno, frames, options) {
-    var stacktrace, label, i;
+    var stacktrace, i, fullMessage;
 
-    // In some instances message is not actually a string, no idea why,
-    // so we want to always coerce it to one.
+    if (!!globalOptions.ignoreErrors.test && globalOptions.ignoreErrors.test(message)) return;
+
     message += '';
+    message = truncate(message, globalOptions.maxMessageLength);
 
-    // Sometimes an exception is getting logged in Sentry as
-    // <no message value>
-    // This can only mean that the message was falsey since this value
-    // is hardcoded into Sentry itself.
-    // At this point, if the message is falsey, we bail since it's useless
-    if (type === 'Error' && !message) return;
-
-    if (globalOptions.ignoreErrors.test(message)) return;
+    fullMessage = type + ': ' + message;
+    fullMessage = truncate(fullMessage, globalOptions.maxMessageLength);
 
     if (frames && frames.length) {
         fileurl = frames[0].filename || fileurl;
@@ -1695,13 +1705,8 @@ function processException(type, message, fileurl, lineno, frames, options) {
         };
     }
 
-    // Truncate the message to a max of characters
-    message = truncate(message, globalOptions.maxMessageLength);
-
-    if (globalOptions.ignoreUrls && globalOptions.ignoreUrls.test(fileurl)) return;
-    if (globalOptions.whitelistUrls && !globalOptions.whitelistUrls.test(fileurl)) return;
-
-    label = lineno ? message + ' at ' + lineno : message;
+    if (!!globalOptions.ignoreUrls.test && globalOptions.ignoreUrls.test(fileurl)) return;
+    if (!!globalOptions.whitelistUrls.test && !globalOptions.whitelistUrls.test(fileurl)) return;
 
     // Fire away!
     send(
@@ -1714,7 +1719,7 @@ function processException(type, message, fileurl, lineno, frames, options) {
             // sentry.interfaces.Stacktrace
             stacktrace: stacktrace,
             culprit: fileurl,
-            message: label
+            message: fullMessage
         }, options)
     );
 }
@@ -1738,12 +1743,17 @@ function now() {
 }
 
 function getHttpData() {
+    if (!document.location || !document.location.href) {
+        return;
+    }
+
     var http = {
-        url: document.location.href,
         headers: {
             'User-Agent': navigator.userAgent
         }
     };
+
+    http.url = document.location.href;
 
     if (document.referrer) {
         http.headers.Referer = document.referrer;
@@ -1753,15 +1763,17 @@ function getHttpData() {
 }
 
 function send(data) {
-    if (!isSetup()) return;
-
-    data = objectMerge({
+    var baseData = {
         project: globalProject,
         logger: globalOptions.logger,
-        platform: 'javascript',
-        // sentry.interfaces.Http
-        request: getHttpData()
-    }, data);
+        platform: 'javascript'
+    };
+    var http = getHttpData();
+    if (http) {
+        baseData.request = http;
+    }
+
+    data = objectMerge(baseData, data);
 
     // Merge in the tags and extra separately since objectMerge doesn't handle a deep merge
     data.tags = objectMerge(objectMerge({}, globalOptions.tags), data.tags);
@@ -1780,7 +1792,7 @@ function send(data) {
         data.user = globalUser;
     }
 
-    // Include the release iff it's defined in globalOptions
+    // Include the release if it's defined in globalOptions
     if (globalOptions.release) data.release = globalOptions.release;
 
     if (isFunction(globalOptions.dataCallback)) {
@@ -1802,27 +1814,46 @@ function send(data) {
     // Set lastEventId after we know the error should actually be sent
     lastEventId = data.event_id || (data.event_id = uuid4());
 
-    makeRequest(data);
+    logDebug('debug', 'Raven about to send:', data);
+
+    if (!isSetup()) return;
+
+    (globalOptions.transport || makeRequest)({
+        url: globalServer,
+        auth: {
+            sentry_version: '4',
+            sentry_client: 'raven-js/' + Raven.VERSION,
+            sentry_key: globalKey
+        },
+        data: data,
+        options: globalOptions,
+        onSuccess: function success() {
+            triggerEvent('success', {
+                data: data,
+                src: globalServer
+            });
+        },
+        onError: function failure() {
+            triggerEvent('failure', {
+                data: data,
+                src: globalServer
+            });
+        }
+    });
 }
 
+function makeRequest(opts) {
+    // Tack on sentry_data to auth options, which get urlencoded
+    opts.auth.sentry_data = JSON.stringify(opts.data);
 
-function makeRequest(data) {
     var img = newImage(),
-        src = globalServer + authQueryString + '&sentry_data=' + encodeURIComponent(JSON.stringify(data));
+        src = opts.url + '?' + urlencode(opts.auth);
 
-    img.crossOrigin = 'anonymous';
-    img.onload = function success() {
-        triggerEvent('success', {
-            data: data,
-            src: src
-        });
-    };
-    img.onerror = img.onabort = function failure() {
-        triggerEvent('failure', {
-            data: data,
-            src: src
-        });
-    };
+    if (opts.options.crossOrigin || opts.options.crossOrigin === '') {
+        img.crossOrigin = opts.options.crossOrigin;
+    }
+    img.onload = opts.onSuccess;
+    img.onerror = img.onabort = opts.onError;
     img.src = src;
 }
 
@@ -1833,10 +1864,14 @@ function newImage() {
     return document.createElement('img');
 }
 
+var ravenNotConfiguredError;
+
 function isSetup() {
     if (!hasJSON) return false;  // needs JSON support
     if (!globalServer) {
-        logDebug('error', 'Error: Raven has not been configured.');
+        if (!ravenNotConfiguredError)
+          logDebug('error', 'Error: Raven has not been configured.');
+        ravenNotConfiguredError = true;
         return false;
     }
     return true;
@@ -1864,18 +1899,44 @@ function joinRegExp(patterns) {
     return new RegExp(sources.join('|'), 'i');
 }
 
-// http://stackoverflow.com/questions/105034/how-to-create-a-guid-uuid-in-javascript/2117523#2117523
 function uuid4() {
-    return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random()*16|0,
-            v = c == 'x' ? r : (r&0x3|0x8);
-        return v.toString(16);
-    });
+    var crypto = window.crypto || window.msCrypto;
+
+    if (!isUndefined(crypto) && crypto.getRandomValues) {
+        // Use window.crypto API if available
+        var arr = new Uint16Array(8);
+        crypto.getRandomValues(arr);
+
+        // set 4 in byte 7
+        arr[3] = arr[3] & 0xFFF | 0x4000;
+        // set 2 most significant bits of byte 9 to '10'
+        arr[4] = arr[4] & 0x3FFF | 0x8000;
+
+        var pad = function(num) {
+            var v = num.toString(16);
+            while (v.length < 4) {
+                v = '0' + v;
+            }
+            return v;
+        };
+
+        return (pad(arr[0]) + pad(arr[1]) + pad(arr[2]) + pad(arr[3]) + pad(arr[4]) +
+        pad(arr[5]) + pad(arr[6]) + pad(arr[7]));
+    } else {
+        // http://stackoverflow.com/questions/105034/how-to-create-a-guid-uuid-in-javascript/2117523#2117523
+        return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random()*16|0,
+                v = c == 'x' ? r : (r&0x3|0x8);
+            return v.toString(16);
+        });
+    }
 }
 
-function logDebug(level, message) {
-    if (window.console && console[level] && Raven.debug) {
-        console[level](message);
+function logDebug(level) {
+    if (originalConsoleMethods[level] && Raven.debug) {
+        // _slice is coming from vendor/TraceKit/tracekit.js
+        // so it's accessible globally
+        originalConsoleMethods[level].apply(originalConsole, _slice.call(arguments, 1));
     }
 }
 
@@ -1886,6 +1947,15 @@ function afterLoad() {
         Raven.config(RavenConfig.dsn, RavenConfig.config).install();
     }
 }
+
+function urlencode(o) {
+    var pairs = [];
+    each(o, function(key, value) {
+        pairs.push(encodeURIComponent(key) + '=' + encodeURIComponent(value));
+    });
+    return pairs.join('&');
+}
+
 afterLoad();
 
 // Expose Raven to the world
