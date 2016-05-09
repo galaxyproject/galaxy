@@ -205,7 +205,7 @@ var HistoryContents = Backbone.Collection
         return this.fetch( options );
     },
 
-    /**  */
+    /** specialty fetch method for retrieving the element_counts of all hdcas in the history */
     fetchCollectionCounts : function( options ){
         options = options || {};
         options.data = _.defaults({
