@@ -16,6 +16,7 @@ from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import hg_util
 from tool_shed.util import readme_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
@@ -903,11 +904,11 @@ class MetadataGenerator( object ):
             # the changeset_revision defined in the repository_elem (it may be outdated).  If
             # we're successful in locating an installed repository with the attributes defined
             # in the repository_elem, we know it is valid.
-            repository = suc.get_repository_for_dependency_relationship( self.app,
-                                                                         toolshed,
-                                                                         name,
-                                                                         owner,
-                                                                         changeset_revision )
+            repository = repository_util.get_repository_for_dependency_relationship( self.app,
+                                                                                     toolshed,
+                                                                                     name,
+                                                                                     owner,
+                                                                                     changeset_revision )
             if repository:
                 return repository_dependency_tup, is_valid, error_message
             else:
@@ -922,11 +923,11 @@ class MetadataGenerator( object ):
                 if text:
                     updated_changeset_revisions = util.listify( text )
                     for updated_changeset_revision in updated_changeset_revisions:
-                        repository = suc.get_repository_for_dependency_relationship( self.app,
-                                                                                     toolshed,
-                                                                                     name,
-                                                                                     owner,
-                                                                                     updated_changeset_revision )
+                        repository = repository_util.get_repository_for_dependency_relationship( self.app,
+                                                                                                 toolshed,
+                                                                                                 name,
+                                                                                                 owner,
+                                                                                                 updated_changeset_revision )
                         if repository:
                             return repository_dependency_tup, is_valid, error_message
                         if self.updating_installed_repository:

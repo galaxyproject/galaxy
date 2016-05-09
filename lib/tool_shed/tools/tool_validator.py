@@ -245,7 +245,7 @@ class ToolValidator( object ):
         searching backwards.
         """
         original_tool_data_path = self.app.config.tool_data_path
-        repository = suc.get_repository_in_tool_shed( self.app, repository_id )
+        repository = repository_util.get_repository_in_tool_shed( self.app, repository_id )
         repo_files_dir = repository.repo_path( self.app )
         repo = hg_util.get_repo_for_repository( self.app, repository=None, repo_path=repo_files_dir, create=False )
         message = ''

@@ -2,7 +2,8 @@ import logging
 
 from galaxy.util import asbool, listify
 
-from tool_shed.util import common_util, container_util, hg_util, metadata_util, repository_util
+import tool_shed.util.repository_util
+from tool_shed.util import common_util, container_util, hg_util, metadata_util
 from tool_shed.util import shed_util_common as suc
 
 log = logging.getLogger( __name__ )
@@ -181,7 +182,7 @@ class RelationBuilder( object ):
                 rd_only_if_compiling_contained_td = \
                 common_util.parse_repository_dependency_tuple( repository_dependency )
             if suc.tool_shed_is_this_tool_shed( rd_toolshed ):
-                repository = repository_util.get_repository_by_name_and_owner( self.app, rd_name, rd_owner )
+                repository = tool_shed.util.repository_util.get_repository_by_name_and_owner( self.app, rd_name, rd_owner )
                 if repository:
                     repository_id = self.app.security.encode_id( repository.id )
                     repository_metadata = \
@@ -215,7 +216,7 @@ class RelationBuilder( object ):
                             updated_key_rd_dicts.append( new_key_rd_dict )
                         else:
                             repository_components_tuple = container_util.get_components_from_key( key )
-                            components_list = repository_util.extract_components_from_tuple( repository_components_tuple )
+                            components_list = tool_shed.util.repository_util.extract_components_from_tuple( repository_components_tuple )
                             toolshed, repository_name, repository_owner, repository_changeset_revision = components_list[ 0:4 ]
                             # For backward compatibility to the 12/20/12 Galaxy release.
                             if len( components_list ) in (4, 5):
@@ -226,7 +227,7 @@ class RelationBuilder( object ):
                             log.debug( message )
                 else:
                     repository_components_tuple = container_util.get_components_from_key( key )
-                    components_list = repository_util.extract_components_from_tuple( repository_components_tuple )
+                    components_list = tool_shed.util.repository_util.extract_components_from_tuple( repository_components_tuple )
                     toolshed, repository_name, repository_owner, repository_changeset_revision = components_list[ 0:4 ]
                     message = "The revision %s defined for repository %s owned by %s is invalid, so repository " % \
                         ( str( rd_changeset_revision ), str( rd_name ), str( rd_owner ) )
@@ -260,7 +261,7 @@ class RelationBuilder( object ):
         toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
             common_util.parse_repository_dependency_tuple( repository_dependency )
         if suc.tool_shed_is_this_tool_shed( toolshed ):
-            required_repository = repository_util.get_repository_by_name_and_owner( self.app, name, owner )
+            required_repository = tool_shed.util.repository_util.get_repository_by_name_and_owner( self.app, name, owner )
             self.repository = required_repository
             repository_id = self.app.security.encode_id( required_repository.id )
             required_repository_metadata = \

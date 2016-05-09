@@ -341,7 +341,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             repository_dependencies_dict = metadata_dict.get( 'repository_dependencies', {} )
             repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
             has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td = \
-                suc.get_repository_dependency_types( repository_dependencies )
+                repository_util.get_repository_dependency_types( repository_dependencies )
             if 'datatypes' in metadata_dict:
                 includes_datatypes = True
             if 'tools' in metadata_dict:
@@ -874,7 +874,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             unsuccessful_count = 0
             for repository_id in repository_ids:
                 try:
-                    repository = suc.get_repository_in_tool_shed( self.app, repository_id )
+                    repository = repository_util.get_repository_in_tool_shed( self.app, repository_id )
                     self.set_repository( repository )
                     self.resetting_all_metadata_on_repository = True
                     self.reset_all_metadata_on_repository_in_tool_shed()
@@ -954,7 +954,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                     repository_dependencies_dict = self.metadata_dict.get( 'repository_dependencies', {} )
                     repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
                     has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td = \
-                        suc.get_repository_dependency_types( repository_dependencies )
+                        repository_util.get_repository_dependency_types( repository_dependencies )
                     repository_metadata.has_repository_dependencies = has_repository_dependencies
                     if 'tool_dependencies' in self.metadata_dict:
                         repository_metadata.includes_tool_dependencies = True

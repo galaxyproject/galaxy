@@ -111,7 +111,7 @@ class RepositoriesController( BaseAPIController ):
                 trans.response.status = 404
                 return { 'status': 'error', 'message': 'No repository named %s found with owner %s' % ( name, owner ) }
         elif tsr_id is not None:
-            repository = suc.get_repository_in_tool_shed( self.app, tsr_id )
+            repository = repository_util.get_repository_in_tool_shed( self.app, tsr_id )
         else:
             error_message = "Error in the Tool Shed repositories API in get_ordered_installable_revisions: "
             error_message += "invalid parameters received."
@@ -257,7 +257,7 @@ class RepositoriesController( BaseAPIController ):
         # Example URL: http://localhost:9009/api/repositories/get_installable_revisions?tsr_id=9d37e53072ff9fa4
         tsr_id = kwd.get( 'tsr_id', None )
         if tsr_id is not None:
-            repository = suc.get_repository_in_tool_shed( self.app, tsr_id )
+            repository = repository_util.get_repository_in_tool_shed( self.app, tsr_id )
         else:
             error_message = "Error in the Tool Shed repositories API in get_ordered_installable_revisions: "
             error_message += "missing or invalid parameter received."
@@ -679,7 +679,7 @@ class RepositoriesController( BaseAPIController ):
 
         repository_id = payload.get( 'repository_id', None )
         if repository_id is not None:
-            repository = suc.get_repository_in_tool_shed( self.app, repository_id )
+            repository = repository_util.get_repository_in_tool_shed( self.app, repository_id )
             start_time = strftime( "%Y-%m-%d %H:%M:%S" )
             log.debug( "%s...resetting metadata on repository %s" % ( start_time, str( repository.name ) ) )
             results = handle_repository( trans, start_time, repository )
@@ -708,7 +708,7 @@ class RepositoriesController( BaseAPIController ):
         except Exception:
             raise MalformedId( 'The given id is invalid.' )
 
-        repository = suc.get_repository_in_tool_shed( self.app, id )
+        repository = repository_util.get_repository_in_tool_shed( self.app, id )
         if repository is None:
             raise ObjectNotFound( 'Unable to locate repository for the given id.' )
         repository_dict = repository.to_dict( view='element',
@@ -770,7 +770,7 @@ class RepositoriesController( BaseAPIController ):
             raise MalformedId( 'The given id is invalid.' )
         recursive = util.asbool( kwd.get( 'recursive', 'True' ) )
         all_metadata = {}
-        repository = suc.get_repository_in_tool_shed( self.app, id )
+        repository = repository_util.get_repository_in_tool_shed( self.app, id )
         for changeset, changehash in repository.installable_revisions( self.app ):
             metadata = metadata_util.get_current_repository_metadata_for_changeset_revision( self.app, repository, changehash )
             if metadata is None:
@@ -931,7 +931,7 @@ class RepositoriesController( BaseAPIController ):
         rdah = attribute_handlers.RepositoryDependencyAttributeHandler( self.app, unpopulate=False )
         tdah = attribute_handlers.ToolDependencyAttributeHandler( self.app, unpopulate=False )
 
-        repository = suc.get_repository_in_tool_shed( self.app, id )
+        repository = repository_util.get_repository_in_tool_shed( self.app, id )
 
         if not ( trans.user_is_admin() or
                  self.app.security_agent.user_can_administer_repository( trans.user, repository ) or

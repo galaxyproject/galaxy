@@ -517,7 +517,7 @@ class InstallRepositoryManager( object ):
         irmm_metadata_dict = irmm.get_metadata_dict()
         tool_shed_repository.metadata = irmm_metadata_dict
         # Update the tool_shed_repository.tool_shed_status column in the database.
-        tool_shed_status_dict = suc.get_tool_shed_status_for_installed_repository( self.app, tool_shed_repository )
+        tool_shed_status_dict = repository_util.get_tool_shed_status_for_installed_repository( self.app, tool_shed_repository )
         if tool_shed_status_dict:
             tool_shed_repository.tool_shed_status = tool_shed_status_dict
         self.install_model.context.add( tool_shed_repository )
@@ -927,13 +927,13 @@ class InstallRepositoryManager( object ):
                 self.app.installed_repository_manager.handle_repository_install( tool_shed_repository )
         else:
             # An error occurred while cloning the repository, so reset everything necessary to enable another attempt.
-            suc.set_repository_attributes( self.app,
-                                           tool_shed_repository,
-                                           status=self.install_model.ToolShedRepository.installation_status.ERROR,
-                                           error_message=error_message,
-                                           deleted=False,
-                                           uninstalled=False,
-                                           remove_from_disk=True )
+            repository_util.set_repository_attributes( self.app,
+                                                       tool_shed_repository,
+                                                       status=self.install_model.ToolShedRepository.installation_status.ERROR,
+                                                       error_message=error_message,
+                                                       deleted=False,
+                                                       uninstalled=False,
+                                                       remove_from_disk=True )
 
     def order_components_for_installation( self, tsr_ids, repo_info_dicts, tool_panel_section_keys ):
         """
@@ -952,9 +952,9 @@ class InstallRepositoryManager( object ):
         # Create a dictionary whose keys are the received tsr_ids and whose values are a list of
         # tsr_ids, each of which is contained in the received list of tsr_ids and whose associated
         # repository must be installed prior to the repository associated with the tsr_id key.
-        prior_install_required_dict = suc.get_prior_import_or_install_required_dict( self.app,
-                                                                                     tsr_ids,
-                                                                                     repo_info_dicts )
+        prior_install_required_dict = repository_util.get_prior_import_or_install_required_dict( self.app,
+                                                                                                 tsr_ids,
+                                                                                                 repo_info_dicts )
         processed_tsr_ids = []
         while len( processed_tsr_ids ) != len( prior_install_required_dict.keys() ):
             tsr_id = suc.get_next_prior_import_or_install_required_dict_entry( prior_install_required_dict,

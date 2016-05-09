@@ -2,10 +2,9 @@ import logging
 
 from tool_shed.util import common_util
 from tool_shed.util import hg_util
-from tool_shed.util import shed_util_common as suc
-from tool_shed.util.repository_util import get_repository_by_name_and_owner
 from sqlalchemy import and_
 from operator import itemgetter
+import tool_shed.util.repository_util
 
 log = logging.getLogger( __name__ )
 
@@ -65,7 +64,7 @@ def get_current_repository_metadata_for_changeset_revision( app, repository, cha
 def get_dependencies_for_metadata_revision( app, metadata ):
     dependencies = []
     for shed, name, owner, changeset, prior, _ in metadata[ 'repository_dependencies' ]:
-        required_repository = get_repository_by_name_and_owner( app, name, owner )
+        required_repository = tool_shed.util.repository_util.get_repository_by_name_and_owner( app, name, owner )
         repo = hg_util.get_repo_for_repository( app, repository=required_repository, repo_path=None, create=False )
         updated_changeset = get_next_downloadable_changeset_revision( required_repository, repo, changeset )
         if updated_changeset is None:
@@ -227,7 +226,7 @@ def get_repository_dependency_tups_from_repository_metadata( app, repository_met
                     for repository_dependency_tup in repository_dependency_tups:
                         toolshed, name, owner, changeset_revision, pir, oicct = \
                             common_util.parse_repository_dependency_tuple( repository_dependency_tup )
-                        repository = get_repository_by_name_and_owner( app, name, owner )
+                        repository = tool_shed.util.repository_util.get_repository_by_name_and_owner( app, name, owner )
                         if repository:
                             if deprecated_only:
                                 if repository.deprecated:
@@ -304,7 +303,7 @@ def get_updated_changeset_revisions( app, name, owner, changeset_revision ):
     Return a string of comma-separated changeset revision hashes for all available updates to the received changeset
     revision for the repository defined by the received name and owner.
     """
-    repository = suc.get_repository_by_name_and_owner( app, name, owner )
+    repository = tool_shed.util.repository_util.get_repository_by_name_and_owner( app, name, owner )
     repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
     # Get the upper bound changeset revision.
     upper_bound_changeset_revision = get_next_downloadable_changeset_revision( repository, repo, changeset_revision )

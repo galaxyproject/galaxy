@@ -702,8 +702,8 @@ class UtilityContainerManager( object ):
             tool_shed_repository_id = None
             installation_status = 'unknown'
         if tool_shed_repository_id:
-            tool_shed_repository = suc.get_tool_shed_repository_by_id( self.app,
-                                                                       self.app.security.encode_id( tool_shed_repository_id ) )
+            tool_shed_repository = repository_util.get_tool_shed_repository_by_id( self.app,
+                                                                                   self.app.security.encode_id( tool_shed_repository_id ) )
             if tool_shed_repository:
                 if tool_shed_repository.missing_repository_dependencies:
                     installation_status = '%s, missing repository dependencies' % installation_status

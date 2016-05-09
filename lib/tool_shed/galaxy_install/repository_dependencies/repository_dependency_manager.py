@@ -169,7 +169,7 @@ class RepositoryDependencyInstallManager( object ):
                         repository_util.get_repo_info_tuple_contents( repo_info_tuple )
                     # See if the repository has an existing record in the database.
                     repository_db_record, installed_changeset_revision = \
-                        suc.repository_was_previously_installed( self.app, tool_shed_url, name, repo_info_tuple, from_tip=False )
+                        repository_util.repository_was_previously_installed( self.app, tool_shed_url, name, repo_info_tuple, from_tip=False )
                     if repository_db_record:
                         if repository_db_record.status in [ install_model.ToolShedRepository.installation_status.INSTALLED,
                                                             install_model.ToolShedRepository.installation_status.CLONING,
@@ -263,7 +263,7 @@ class RepositoryDependencyInstallManager( object ):
         # We store the port in the database.
         tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
         # This method is used only in Galaxy, not the tool shed.
-        repository = suc.get_repository_for_dependency_relationship( self.app, tool_shed, name, owner, changeset_revision )
+        repository = repository_util.get_repository_for_dependency_relationship( self.app, tool_shed, name, owner, changeset_revision )
         if not repository:
             tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, tool_shed )
             repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
@@ -375,7 +375,7 @@ class RepositoryDependencyInstallManager( object ):
                         encoded_required_repository_tups.append( encoding_util.encoding_sep.join( required_repository_tup ) )
                     encoded_required_repository_str = encoding_util.encoding_sep2.join( encoded_required_repository_tups )
                     encoded_required_repository_str = encoding_util.tool_shed_encode( encoded_required_repository_str )
-                    if suc.is_tool_shed_client( self.app ):
+                    if repository_util.is_tool_shed_client( self.app ):
                         # Handle secure / insecure Tool Shed URL protocol changes and port changes.
                         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, tool_shed_url )
                     pathspec = [ 'repository', 'get_required_repo_info_dict' ]

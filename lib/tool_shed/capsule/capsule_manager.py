@@ -11,6 +11,7 @@ from time import strftime
 from sqlalchemy import and_, false
 
 import tool_shed.repository_types.util as rt_util
+import tool_shed.util.repository_util
 from galaxy import web
 from galaxy.util import asbool
 from galaxy.util import CHUNK_SIZE
@@ -243,7 +244,7 @@ class ExportRepositoryManager( object ):
         associated with self.repository_id.
         """
         rdim = RepositoryDependencyInstallManager( self.app )
-        repository = suc.get_repository_in_tool_shed( self.app, self.repository_id )
+        repository = repository_util.get_repository_in_tool_shed( self.app, self.repository_id )
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( self.app,
                                                                                            self.repository_id,
                                                                                            self.changeset_revision )
@@ -329,9 +330,9 @@ class ExportRepositoryManager( object ):
         # Create a dictionary whose keys are the received repository_ids and whose values are a list of
         # repository_ids, each of which is contained in the received list of repository_ids and whose associated
         # repository must be imported prior to the repository associated with the repository_id key.
-        prior_import_required_dict = suc.get_prior_import_or_install_required_dict( self.app,
-                                                                                    repository_ids,
-                                                                                    repo_info_dicts )
+        prior_import_required_dict = repository_util.get_prior_import_or_install_required_dict( self.app,
+                                                                                                repository_ids,
+                                                                                                repo_info_dicts )
         processed_repository_ids = []
         # Process the list of repository dependencies defined for the primary exported repository.
         while len( processed_repository_ids ) != len( prior_import_required_dict.keys() ):
@@ -444,7 +445,7 @@ class ImportRepositoryManager( object ):
                 long_description = repository_archive_dict.get( 'long_description', '' )
                 # The owner entry in the repository_archive_dict is the public username of the user associated with
                 # the exported repository archive.
-                user = suc.get_user_by_username( self.app, username )
+                user = common_util.get_user_by_username( self.app, username )
                 if user is None:
                     ok = False
                     results_message += 'Import failed: repository owner <b>%s</b> does not have an account in this Tool Shed.' % \

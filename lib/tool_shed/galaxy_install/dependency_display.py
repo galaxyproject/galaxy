@@ -6,7 +6,7 @@ import threading
 from galaxy import util
 from tool_shed.galaxy_install.utility_containers import GalaxyUtilityContainerManager
 from tool_shed.util import common_util, container_util, readme_util, repository_util
-from tool_shed.util import shed_util_common as suc, tool_dependency_util
+from tool_shed.util import shed_util_common as suc, tool_dependency_util, repository_util
 from tool_shed.utility_containers import utility_container_manager
 
 log = logging.getLogger( __name__ )
@@ -559,11 +559,11 @@ class DependencyDisplayer( object ):
                         tool_dependencies = self.add_installation_directories_to_tool_dependencies( tool_dependencies )
                         # The required_repository may have been installed with a different changeset revision.
                         required_repository, installed_changeset_revision = \
-                            suc.repository_was_previously_installed( self.app,
-                                                                     tool_shed_url,
-                                                                     name,
-                                                                     repo_info_tuple,
-                                                                     from_tip=False )
+                            repository_util.repository_was_previously_installed( self.app,
+                                                                                 tool_shed_url,
+                                                                                 name,
+                                                                                 repo_info_tuple,
+                                                                                 from_tip=False )
                         if required_repository:
                             required_repository_installed_tool_dependencies, required_repository_missing_tool_dependencies = \
                                 self.get_installed_and_missing_tool_dependencies_for_installed_repository( required_repository,

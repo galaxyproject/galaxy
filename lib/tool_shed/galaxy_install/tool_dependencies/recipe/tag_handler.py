@@ -373,10 +373,10 @@ class Repository( RecipeTag, SyncDatabase ):
         required_repository_name = elem.attrib[ 'name' ]
         required_repository_owner = elem.attrib[ 'owner' ]
         default_required_repository_changeset_revision = elem.attrib[ 'changeset_revision' ]
-        required_repository = suc.get_repository_for_dependency_relationship( self.app, tool_shed_url,
-                                                                              required_repository_name,
-                                                                              required_repository_owner,
-                                                                              default_required_repository_changeset_revision )
+        required_repository = repository_util.get_repository_for_dependency_relationship( self.app, tool_shed_url,
+                                                                                          required_repository_name,
+                                                                                          required_repository_owner,
+                                                                                          default_required_repository_changeset_revision )
         tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed_url )
         tmp_filename = None
         if required_repository:

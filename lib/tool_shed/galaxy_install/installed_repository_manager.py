@@ -257,11 +257,11 @@ class InstalledRepositoryManager( object ):
         if repository_dependencies:
             # We have a repository with one or more defined repository dependencies.
             if not repository:
-                repository = suc.get_repository_for_dependency_relationship( self.app,
-                                                                             tool_shed_url,
-                                                                             name,
-                                                                             repository_owner,
-                                                                             changeset_revision )
+                repository = repository_util.get_repository_for_dependency_relationship( self.app,
+                                                                                         tool_shed_url,
+                                                                                         name,
+                                                                                         repository_owner,
+                                                                                         changeset_revision )
             if not updating and repository and repository.metadata:
                 installed_rd, missing_rd = self.get_installed_and_missing_repository_dependencies( repository )
             else:
@@ -423,11 +423,11 @@ class InstalledRepositoryManager( object ):
                     #                     repository_dependencies, installed_td )
                     tmp_clone_url = common_util.generate_clone_url_from_repo_info_tup( self.app, rd_tup )
                     tmp_repo_info_tuple = ( None, tmp_clone_url, changeset_revision, None, owner, None, None )
-                    repository, installed_changeset_revision = suc.repository_was_previously_installed( self.app,
-                                                                                                        tool_shed,
-                                                                                                        name,
-                                                                                                        tmp_repo_info_tuple,
-                                                                                                        from_tip=False )
+                    repository, installed_changeset_revision = repository_util.repository_was_previously_installed( self.app,
+                                                                                                                    tool_shed,
+                                                                                                                    name,
+                                                                                                                    tmp_repo_info_tuple,
+                                                                                                                    from_tip=False )
                     if repository:
                         new_rd_tup = [ tool_shed,
                                        name,

@@ -55,6 +55,8 @@ from galaxy.web.form_builder import SelectField
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.work.context import WorkRequestContext
 from tool_shed.util import common_util
+import tool_shed.util.repository_util as repository_util
+import tool_shed.util.metadata_util as metadata_util
 from tool_shed.util import shed_util_common as suc
 
 from .loader import template_macro_params, raw_tool_xml_tree, imported_macro_paths
@@ -164,7 +166,7 @@ class ToolBox( BaseGalaxyToolBox ):
         # Abstract toolbox doesn't have a dependency on the the database, so
         # override _get_tool_shed_repository here to provide this information.
 
-        return suc.get_installed_repository(
+        return repository_util.get_installed_repository(
             self.app,
             tool_shed=tool_shed,
             name=name,
@@ -323,11 +325,11 @@ class Tool( object, Dictifiable ):
     def tool_shed_repository( self ):
         # If this tool is included in an installed tool shed repository, return it.
         if self.tool_shed:
-            return suc.get_installed_repository( self.app,
-                                                 tool_shed=self.tool_shed,
-                                                 name=self.repository_name,
-                                                 owner=self.repository_owner,
-                                                 installed_changeset_revision=self.installed_changeset_revision )
+            return repository_util.get_installed_repository( self.app,
+                                                             tool_shed=self.tool_shed,
+                                                             name=self.repository_name,
+                                                             owner=self.repository_owner,
+                                                             installed_changeset_revision=self.installed_changeset_revision )
         return None
 
     @property

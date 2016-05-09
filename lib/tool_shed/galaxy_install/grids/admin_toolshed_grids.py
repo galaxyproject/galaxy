@@ -8,6 +8,7 @@ from galaxy.model import tool_shed_install
 from galaxy.web import url_for
 from galaxy.web.framework.helpers import iff, grids
 from tool_shed.util import tool_dependency_util
+from tool_shed.util import repository_util
 
 log = logging.getLogger( __name__ )
 
@@ -104,7 +105,7 @@ class InstalledRepositoryGrid( grids.Grid ):
     class StatusColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, tool_shed_repository ):
-            return suc.get_tool_shed_repository_status_label( trans.app, tool_shed_repository )
+            return repository_util.get_tool_shed_repository_status_label( trans.app, tool_shed_repository )
 
     class ToolShedColumn( grids.TextColumn ):
 
