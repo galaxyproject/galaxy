@@ -22,10 +22,10 @@ define([
             window.Galaxy.currHistoryPanel = { model: new Backbone.Model() };
             window.Galaxy.emit = {
                 debug : function(){},
-                error : function(){}
+                error : function( v ){ window.console.error( v ) }
             };
-            window.fakeserver = sinon.fakeServer.create();
             window.WAIT_FADE_FAST = 300;
+            window.fakeserver = sinon.fakeServer.create();
             for (var route in serverdata) {
                 window.fakeserver.respondWith('GET', Galaxy.root + route, [ 200, { 'Content-Type': 'application/json' }, serverdata[ route ].data ]);
             }

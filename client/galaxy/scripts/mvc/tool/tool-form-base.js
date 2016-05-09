@@ -105,7 +105,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                             large       : true
                         })).$el);
                     } else {
-                        Galaxy.modal.show({
+                        Galaxy.modal && Galaxy.modal.show({
                             title   : 'Tool request failed',
                             body    : error_message,
                             buttons : {
