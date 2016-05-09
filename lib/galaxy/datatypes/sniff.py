@@ -297,6 +297,10 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
     >>> guess_ext(fname, sniff_order)
     'gff3'
     >>> fname = get_test_fname('temp.txt')
+    >>> file(fname, 'wt').write("a\\t2")
+    >>> guess_ext(fname, sniff_order)
+    'txt'
+    >>> fname = get_test_fname('temp.txt')
     >>> file(fname, 'wt').write("a\\t2\\nc\\t1\\nd\\t0")
     >>> guess_ext(fname, sniff_order)
     'tabular'
