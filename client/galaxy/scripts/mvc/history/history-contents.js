@@ -205,6 +205,19 @@ var HistoryContents = Backbone.Collection
         return this.fetch( options );
     },
 
+    /**  */
+    fetchCollectionCounts : function( options ){
+        options = options || {};
+        options.data = _.defaults({
+            keys : [ 'type_id', 'element_count' ].join( ',' ),
+            q    : 'history_content_type',
+            qv   : 'dataset_collection',
+        }, options.data || {} );
+        options.merge = true;
+        options.remove = false;
+        return this.fetch( options );
+    },
+
     /** using a queue, perform ajaxFn on each of the models in this collection */
     ajaxQueue : function( ajaxFn, options ){
         var deferred = jQuery.Deferred(),
@@ -292,17 +305,6 @@ var HistoryContents = Backbone.Collection
     },
 
     // ........................................................................ misc
-    /** override to ensure type id is set */
-    set : function( models, options ){
-        models = _.isArray( models )? models : [ models ];
-        _.each( models, function( model ){
-            if( !model.type_id || !model.get || !model.get( 'type_id' ) ){
-                model.type_id = HISTORY_CONTENT.typeIdStr( model.history_content_type, model.id );
-            }
-        });
-        Backbone.Collection.prototype.set.call( this, models, options );
-    },
-
     /** */
     createHDCA : function( elementIdentifiers, collectionType, name, options ){
         //precondition: elementIdentifiers is an array of plain js objects

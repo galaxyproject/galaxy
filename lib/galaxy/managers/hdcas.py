@@ -192,14 +192,18 @@ class HDCASerializer(
 
         self.default_view = 'summary'
         self.add_view( 'summary', [
-            'id', 'name',
-            'type_id',
-            'history_id', 'hid',
-            'history_content_type',
+            'id',
             'collection_type',
             'populated',
             'populated_state',
             'populated_state_message',
+            'element_count',
+
+            'name',
+            'type_id',
+            'history_id',
+            'hid',
+            'history_content_type',
             'deleted',
             # 'purged',
             'visible',
@@ -217,6 +221,7 @@ class HDCASerializer(
 
         self.serializers.update({
             'model_class'               : lambda *a, **c: self.hdca_manager.model_class.__class__.__name__,
+            # TODO: remove
             'type'                      : lambda *a, **c: 'collection',
             # part of a history and container
             'history_id'                : self.serialize_id,
