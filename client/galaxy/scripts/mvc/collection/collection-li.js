@@ -33,10 +33,13 @@ var DCListItemView = FoldoutListItemView.extend(
     /** event listeners */
     _setUpListeners : function(){
         FoldoutListItemView.prototype._setUpListeners.call( this );
-        // re-rendering on deletion
         this.listenTo( this.model, 'change', function( model, options ){
+            // if the model has changed deletion status render it entirely
             if( _.has( model.changed, 'deleted' ) ){
                 this.render();
+
+            // if the model has been decorated after the fact with the element count,
+            // render the subtitle where the count is displayed
             } else if( _.has( model.changed, 'element_count' ) ){
                 this.$( '> .title-bar .subtitle' ).replaceWith( this._renderSubtitle() );
             }

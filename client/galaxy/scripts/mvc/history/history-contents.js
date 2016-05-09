@@ -205,6 +205,19 @@ var HistoryContents = Backbone.Collection
         return this.fetch( options );
     },
 
+    /** specialty fetch method for retrieving the element_counts of all hdcas in the history */
+    fetchCollectionCounts : function( options ){
+        options = options || {};
+        options.data = _.defaults({
+            keys : [ 'type_id', 'element_count' ].join( ',' ),
+            q    : 'history_content_type',
+            qv   : 'dataset_collection',
+        }, options.data || {} );
+        options.merge = true;
+        options.remove = false;
+        return this.fetch( options );
+    },
+
     /** using a queue, perform ajaxFn on each of the models in this collection */
     ajaxQueue : function( ajaxFn, options ){
         var deferred = jQuery.Deferred(),
