@@ -764,7 +764,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     _adjUnpairedOnScrollbar : function(){
         var $unpairedColumns = this.$( '.unpaired-columns' ).last(),
             $firstDataset = this.$( '.unpaired-columns .reverse-column .dataset' ).first();
-        if( !$firstDataset.size() ){ return; }
+        if( !$firstDataset.length ){ return; }
         var ucRight = $unpairedColumns.offset().left + $unpairedColumns.outerWidth(),
             dsRight = $firstDataset.offset().left + $firstDataset.outerWidth(),
             rightDiff = Math.floor( ucRight ) - Math.floor( dsRight );
@@ -1105,7 +1105,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         var dataset = $dataset.data( 'dataset' ),
             select = options.force !== undefined? options.force: !$dataset.hasClass( 'selected' );
         //this.debug( id, options.force, $dataset, dataset );
-        if( !$dataset.size() || dataset === undefined ){ return $dataset; }
+        if( !$dataset.length || dataset === undefined ){ return $dataset; }
 
         if( select ){
             $dataset.addClass( 'selected' );
@@ -1321,7 +1321,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
 
         $( '.element-drop-placeholder' ).remove();
         var $placeholder = $( '<div class="element-drop-placeholder"></div>' );
-        if( !$nearest.size() ){
+        if( !$nearest.length ){
             $list.append( $placeholder );
         } else {
             $nearest.before( $placeholder );
@@ -1367,7 +1367,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         ev.dataTransfer.dropEffect = 'move';
 
         var $nearest = this._getNearestPairedDatasetLi( ev.originalEvent.clientY );
-        if( $nearest.size() ){
+        if( $nearest.length ){
             this.$dragging.insertBefore( $nearest );
 
         } else {
