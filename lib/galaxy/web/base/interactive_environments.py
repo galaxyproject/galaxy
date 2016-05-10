@@ -71,6 +71,11 @@ class InteractiveEnvironmentRequest(object):
             )
         else:
             self.attr.proxy_prefix = ''
+        # If cookie_path is unset (thus '/'), the proxy prefix ends up with
+        # multiple leading '/' characters, which will cause the client to
+        # request resources from http://dynamic_proxy_prefix
+        if self.attr.proxy_prefix.startswith('/'):
+            self.attr.proxy_prefix = '/' + self.attr.proxy_prefix.lstrip('/')
 
     def load_allowed_images(self):
         if os.path.exists(os.path.join(self.attr.our_config_dir, 'allowed_images.yml')):
