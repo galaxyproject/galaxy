@@ -82,6 +82,23 @@
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='history', action='history_and_dataset_type' )}">History and dataset type</a></div>
                     </div>
                 </div>
+                
+                
+                
+                <div class="toolSectionPad"></div>
+                <div class="toolSectionPad"></div>
+                <div class="toolSectionTitle">
+                    <span>Tools</span>
+                </div>
+                <div class="toolSectionBody">
+                    <div class="toolSectionBg">
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='history', action='history_and_dataset_per_user' )}">History and dataset per user</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='history', action='history_and_dataset_type' )}">History and dataset type</a></div>
+                    </div>
+                </div>
+                
+                
+                
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionTitle">
