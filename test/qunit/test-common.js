@@ -10,8 +10,8 @@ require.config({
         "jquery": "libs/jquery/jquery",
         "backbone": "libs/backbone",
         // Custom paths for qunit testing dependencies...
-        "QUnit": qunit_absolute_directory + "test-libs/qunit-1.14.0", // .. because baseUrl is scripts to match Galaxy.
-        "sinon": qunit_absolute_directory + "test-libs/sinon-1.9.1",
+        "QUnit": qunit_absolute_directory + "test-libs/qunit-1.23.1", // .. because baseUrl is scripts to match Galaxy.
+        "sinon": qunit_absolute_directory + "test-libs/sinon-1.17.3",
         "sinon-qunit": qunit_absolute_directory + "test-libs/sinon-qunit-1.0.0",
         // (optional) test data
         "test-data" : qunit_absolute_directory + "test-data/",
@@ -57,7 +57,7 @@ var Galaxy = {
 require( [ "jquery", "QUnit" ], function( $, QUnit ) {
     // Bootstrap HTML for displaying Qunit results.
     $('head').append( $('<link rel="stylesheet" type="text/css"  />')
-        .attr( "href", qunit_absolute_directory + "test-libs/qunit-1.14.0.css") );
+        .attr( "href", qunit_absolute_directory + "test-libs/qunit-1.23.1.css") );
     $('body').append( $('<div id="qunit">') );
     $('body').append( $('<div id="qunit-fixture">') );
 

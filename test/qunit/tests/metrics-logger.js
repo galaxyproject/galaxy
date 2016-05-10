@@ -54,12 +54,12 @@ define([
         self.clear = function(){
             self._storage = {};
         };
-        // property - not worth it
-        //self.length = function(){};
-
         return self;
     };
-    window.localStorage = new MockLocalStorage();
+    var mockStorage = new MockLocalStorage();
+    window.localStorage.__proto__.setItem = mockStorage.setItem;
+    window.localStorage.__proto__.getItem = mockStorage.getItem;
+    window.localStorage.__proto__.removeItem = mockStorage.removeItem;
 
     ( window.bootstrapped = {} ).user = {
         id : 'test'
@@ -235,7 +235,7 @@ define([
         equal( logger.consoleLogger.constructor, MockConsole );
 
         logger.emit( 'debug', 'test', [ 1, 2, { three: 3 }] );
-        equal( logger.cache.length(), 0 );
+        equal( logger.cache.length(), 1 );
         //console.debug( JSON.stringify( mockConsole.lastMessage ) );
         equal( mockConsole.lastMessage.level, 'debug' );
         equal( mockConsole.lastMessage.args.length, 4 );
