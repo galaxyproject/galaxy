@@ -1541,7 +1541,8 @@ class Tool( object, Dictifiable ):
                 'name': self.repository_name,
                 'owner': self.repository_owner,
                 'changeset_revision': self.changeset_revision,
-                'tool_shed': self.tool_shed
+                'tool_shed': self.tool_shed,
+                'id': self.repository_id
             }
 
         # If an admin user, expose the path to the actual tool config XML file.

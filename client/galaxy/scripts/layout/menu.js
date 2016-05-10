@@ -120,7 +120,7 @@ var Collection = Backbone.Collection.extend({
             menu            : [
                 {
                     title   : 'Installed Repositories',
-                    url     : 'admin_beta#repos?view=all',
+                    url     : 'admin_beta#repos/v/all',
                     target  : '_frame'
                 }
             ]
