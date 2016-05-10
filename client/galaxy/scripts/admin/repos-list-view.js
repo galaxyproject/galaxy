@@ -2,11 +2,15 @@ define([
   "libs/toastr",
   "admin/repos-row-view",
   "admin/repos-model",
+  "mvc/ui/ui-select",
+  "utils/utils",
   ],
   function(
     mod_toastr,
     mod_repo_row_view,
-    mod_repos_model
+    mod_repos_model,
+    mod_ui_select,
+    mod_utils
    ) {
 
 var AdminReposListView = Backbone.View.extend({
@@ -24,6 +28,8 @@ var AdminReposListView = Backbone.View.extend({
     'click #select-all-checkboxes': 'selectAll',
     'click th > a'                : 'sortClicked',
   },
+
+  list_sections: [],
 
   initialize: function( options ){
     this.options = _.defaults( this.options || {}, options, this.defaults );
@@ -45,6 +51,7 @@ var AdminReposListView = Backbone.View.extend({
     this.options = _.extend( this.options, options );
     var repo_list_template = this.templateRepoList();
     this.$el.html(repo_list_template());
+    this.fetchSections();
     $( "#center" ).css( 'overflow','auto' );
     this.$el.find('[data-toggle]').tooltip();
   },
@@ -170,6 +177,43 @@ var AdminReposListView = Backbone.View.extend({
     this.$el.find('.sort-icon-' + source_class).addClass('fa-sort-' + this.options.sort_order).show();
    },
 
+  /**
+   * Request all sections from Galaxy toolpanel
+   * and save them in the list for select2 to render.
+   */
+  fetchSections: function(){
+    var that = this;
+    mod_utils.get({
+      url      :  Galaxy.root + "api/toolpanel",
+      success  :  function( sections ) {
+                    that.list_sections = [];
+                    that.list_sections.push({id: '',text: ''})
+                    for (key in sections) {
+                      that.list_sections.push({
+                        id              : sections[key].id,
+                        text            : sections[key].name
+                      });
+                    }
+                  that._renderSelectBox();
+                  },
+      cache    : true
+    });
+  },
+
+  _renderSelectBox: function(){
+    // See this.fetchSections()
+    // TODO switch to common resources:
+    // https://trello.com/c/dIUE9YPl/1933-ui-common-resources-and-data-into-galaxy-object
+    var that = this;
+    this.select_genome = new mod_ui_select.View({
+      css: 'admin-section-select',
+      data: that.list_sections,
+      container: that.$el.find('#admin_section_select'),
+      placeholder: "Section Filter",
+      allowClear: true
+    });
+  },
+
   templateRepoList: function(){
     return _.template([
       '<div class="library_style_container">',
@@ -190,6 +234,8 @@ var AdminReposListView = Backbone.View.extend({
             '<button data-toggle="tooltip" data-placement="top" title="Update selected repositories" class="btn btn-default primary-button toolbar-item" type="button">',
               'Update',
             '</button>',
+            '<span id="admin_section_select" class="admin-section-select toolbar-item" />',
+
           // '</form>',
           '<ul class="nav nav-tabs repos-nav">',
             '<li role="presentation" class="tab_all"><a href="#repos?view=all">All</a></li>',
@@ -225,7 +271,7 @@ var AdminReposListView = Backbone.View.extend({
                 '</th>',
                 '<th>',
                   '<a class="sort-repos-category" data-toggle="tooltip" data-placement="top" title="sort alphabetically" href="#">',
-                    'Category',
+                    'TS Category',
                   '</a>',
                   '<span class="sort-icon-category fa fa-sort-asc" style="display: none;"/>',
                 '</th>',

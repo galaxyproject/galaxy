@@ -10,8 +10,6 @@ class AdminBeta( BaseUIController ):
     @web.expose
     @web.require_admin
     def index( self, trans, **kwd ):
-        log.debug('**************************')
-        log.debug('we are in index')
         # define app configuration for generic mako template
         app = {
             'jscript': "galaxy.admin"
