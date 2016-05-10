@@ -1,15 +1,13 @@
 import collections
-import sqlalchemy as sa
 import logging
+import sqlalchemy as sa
+from markupsafe import escape
+from sqlalchemy import and_
 
 import galaxy.model
-import pkg_resources
 from galaxy import util
-from galaxy.model.orm import and_
 from galaxy.web.base.controller import BaseUIController, web
-from markupsafe import escape
 
-pkg_resources.require( "SQLAlchemy >= 0.4" )
 log = logging.getLogger( __name__ )
 
 
