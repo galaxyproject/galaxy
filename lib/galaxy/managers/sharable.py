@@ -335,7 +335,8 @@ class SharableModelSerializer( base.ModelSerializer,
 
         self.serializers.update({
             'user_id'           : self.serialize_id,
-            'username_and_slug' : self.serialize_username_and_slug
+            'username_and_slug' : self.serialize_username_and_slug,
+            'users_shared_with' : self.serialize_users_shared_with
         })
         # these use the default serializer but must still be white-listed
         self.serializable_keyset.update([
@@ -357,8 +358,11 @@ class SharableModelSerializer( base.ModelSerializer,
 
     # the only ones that needs any fns:
     #   user/user_id
-    #   user_shares?
     #   username_and_slug?
+
+    def serialize_users_shared_with( self, item, key, **context ):
+        share_assocs = self.manager.get_share_assocs( item )
+        return [ self.serialize_id( share, 'user_id' ) for share in share_assocs ]
 
 
 class SharableModelDeserializer( base.ModelDeserializer,

@@ -437,6 +437,14 @@ class HistorySerializerTestCase( BaseTestCase ):
         serialized = self.history_serializer.serialize( history1, sharable_attrs )
         self.assertKeys( serialized, sharable_attrs )
 
+        self.log( 'should return user_id for user with whom it\'s been shared' )
+        non_owner = self.user_manager.create( **user3_data )
+        self.history_manager.share_with( history1, non_owner )
+        serialized = self.history_serializer.serialize( history1, [ 'users_shared_with' ] )
+        self.assertKeys( serialized, [ 'users_shared_with' ] )
+        self.assertIsInstance( serialized[ 'users_shared_with' ], list )
+        self.assertEqual( serialized[ 'users_shared_with' ][0], self.app.security.encode_id( non_owner.id ) )
+
     def test_purgable( self ):
         user2 = self.user_manager.create( **user2_data )
         history1 = self.history_manager.create( name='history1', user=user2 )
