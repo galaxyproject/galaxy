@@ -209,7 +209,8 @@ class ErrorReporter( object ):
 
         # Escape all of the content  for use in the HTML report
         for parameter in report_variables.keys():
-            report_variables[parameter] = cgi.escape(unicodify(report_variables[parameter]))
+            if report_variables[parameter] is not None:
+                report_variables[parameter] = cgi.escape(unicodify(report_variables[parameter]))
 
         self.html_report = string.Template( error_report_template_html ).safe_substitute( report_variables )
 
