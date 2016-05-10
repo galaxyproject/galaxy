@@ -5,7 +5,6 @@ from sqlalchemy import and_, or_
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 from tool_shed.util import repository_util
-from tool_shed.util import shed_util_common as suc
 
 log = logging.getLogger( __name__ )
 

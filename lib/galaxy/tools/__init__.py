@@ -56,7 +56,6 @@ from galaxy.util.dictifiable import Dictifiable
 from galaxy.work.context import WorkRequestContext
 from tool_shed.util import common_util
 import tool_shed.util.repository_util as repository_util
-import tool_shed.util.metadata_util as metadata_util
 from tool_shed.util import shed_util_common as suc
 
 from .loader import template_macro_params, raw_tool_xml_tree, imported_macro_paths

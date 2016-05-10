@@ -10,7 +10,6 @@ import galaxy.queue_worker
 from galaxy import util, web
 from galaxy.util import inflector
 from galaxy.web.form_builder import CheckboxField
-from tool_shed.util import shed_util_common as suc
 from tool_shed.util import repository_util
 from tool_shed.util.web_util import escape
 

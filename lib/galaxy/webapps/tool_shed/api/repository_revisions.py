@@ -2,7 +2,6 @@ import logging
 
 from sqlalchemy import and_
 
-import tool_shed.util.shed_util_common as suc
 from galaxy import util
 from galaxy import web
 from galaxy.web.base.controller import BaseAPIController, HTTPBadRequest

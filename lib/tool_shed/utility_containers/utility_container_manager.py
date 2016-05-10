@@ -4,7 +4,6 @@ from galaxy import util
 from tool_shed.util import common_util
 from tool_shed.util import container_util
 from tool_shed.util import repository_util
-from tool_shed.util import shed_util_common as suc
 
 log = logging.getLogger( __name__ )
 

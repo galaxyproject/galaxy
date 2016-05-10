@@ -2,7 +2,6 @@ import logging
 
 from sqlalchemy import false, or_
 
-import tool_shed.util.shed_util_common as suc
 from galaxy import util
 from galaxy.model import tool_shed_install
 from galaxy.web import url_for

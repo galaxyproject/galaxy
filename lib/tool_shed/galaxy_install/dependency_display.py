@@ -5,8 +5,11 @@ import threading
 
 from galaxy import util
 from tool_shed.galaxy_install.utility_containers import GalaxyUtilityContainerManager
-from tool_shed.util import common_util, container_util, readme_util, repository_util
-from tool_shed.util import shed_util_common as suc, tool_dependency_util, repository_util
+from tool_shed.util import common_util
+from tool_shed.util import container_util
+from tool_shed.util import readme_util
+from tool_shed.util import repository_util
+from tool_shed.util import tool_dependency_util
 from tool_shed.utility_containers import utility_container_manager
 
 log = logging.getLogger( __name__ )

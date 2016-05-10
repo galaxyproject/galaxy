@@ -2,9 +2,10 @@ import ConfigParser
 import logging
 import os
 import re
+import shutil
 from urllib2 import HTTPError
 
-from sqlalchemy import false, and_
+from sqlalchemy import false, and_, or_
 
 from galaxy import util
 from galaxy import web
@@ -543,6 +544,7 @@ def get_repository_by_id( app, id ):
         sa_session = app.model.context.current
         return sa_session.query( app.model.Repository ).get( app.security.decode_id( id ) )
 
+
 def get_repository_by_name_and_owner( app, name, owner ):
     """Get a repository from the database via name and owner"""
     repository_query = get_repository_query( app )
@@ -692,6 +694,15 @@ def get_repository_ids_requiring_prior_import_or_install( app, tsr_ids, reposito
 def get_repository_in_tool_shed( app, id ):
     """Get a repository on the tool shed side from the database via id."""
     return get_repository_query( app ).get( app.security.decode_id( id ) )
+
+
+def get_repository_owner( cleaned_repository_url ):
+    """Gvien a "cleaned" repository clone URL, return the owner of the repository."""
+    items = cleaned_repository_url.split( '/repos/' )
+    repo_path = items[ 1 ]
+    if repo_path.startswith( '/' ):
+        repo_path = repo_path.replace( '/', '', 1 )
+    return repo_path.lstrip( '/' ).split( '/' )[ 0 ]
 
 
 def get_repository_owner_from_clone_url( repository_clone_url ):

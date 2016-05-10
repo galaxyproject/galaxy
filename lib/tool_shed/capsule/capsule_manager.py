@@ -11,7 +11,6 @@ from time import strftime
 from sqlalchemy import and_, false
 
 import tool_shed.repository_types.util as rt_util
-import tool_shed.util.repository_util
 from galaxy import web
 from galaxy.util import asbool
 from galaxy.util import CHUNK_SIZE

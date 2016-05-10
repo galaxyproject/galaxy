@@ -2,13 +2,11 @@ import json
 import logging
 import os
 import re
-import shutil
 import socket
 import string
-from urllib2 import HTTPError
 
 import sqlalchemy.orm.exc
-from sqlalchemy import and_, false, or_, true
+from sqlalchemy import and_, false, true
 
 import tool_shed.util.repository_util
 from galaxy import util
@@ -16,7 +14,6 @@ from galaxy.web import url_for
 from galaxy.util import checkers
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
-from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
 
 log = logging.getLogger( __name__ )
@@ -308,15 +305,6 @@ def get_repository_from_refresh_on_change( app, **kwd ):
                 return v, repository
     # This should never be reached - raise an exception?
     return v, None
-
-
-def get_repository_owner( cleaned_repository_url ):
-    """Gvien a "cleaned" repository clone URL, return the owner of the repository."""
-    items = cleaned_repository_url.split( '/repos/' )
-    repo_path = items[ 1 ]
-    if repo_path.startswith( '/' ):
-        repo_path = repo_path.replace( '/', '', 1 )
-    return repo_path.lstrip( '/' ).split( '/' )[ 0 ]
 
 
 def get_repository_type_from_tool_shed( app, tool_shed_url, name, owner ):

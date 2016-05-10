@@ -36,7 +36,6 @@ from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 from tool_shed.util import repository_content_util
 from tool_shed.util import repository_util
-from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
 
 log = logging.getLogger( __name__ )

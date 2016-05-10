@@ -162,7 +162,7 @@ class InstalledRepositoryMetadataManager( metadata_generator.MetadataGenerator )
         owner = self.repository.owner
         if not owner:
             cleaned_repository_clone_url = common_util.remove_protocol_and_user_from_clone_url( clone_url )
-            owner = suc.get_repository_owner( cleaned_repository_clone_url )
+            owner = repository_util.get_repository_owner( cleaned_repository_clone_url )
         guid_to_tool_elem_dict = {}
         for tool_config_filename, guid, tool in repository_tools_tups:
             guid_to_tool_elem_dict[ guid ] = self.tpm.generate_tool_elem( tool_shed,

@@ -9,7 +9,6 @@ from galaxy.util.template import fill_template
 from galaxy.tools.data import TabularToolDataTable
 from tool_shed.util import common_util
 from tool_shed.util import repository_util
-import tool_shed.util.shed_util_common as suc
 import galaxy.queue_worker
 
 # set up logger
