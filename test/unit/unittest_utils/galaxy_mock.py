@@ -7,6 +7,8 @@ import shutil
 
 from galaxy.web import security
 from galaxy import objectstore
+from galaxy import model
+from galaxy.datatypes import registry
 from galaxy.model import mapping
 from galaxy.util.bunch import Bunch
 
@@ -55,6 +57,7 @@ class MockApp( object ):
         self.name = kwargs.get( 'name', 'galaxy' )
         self.object_store = objectstore.build_object_store_from_config( self.config )
         self.model = mapping.init( "/tmp", "sqlite:///:memory:", create_tables=True, object_store=self.object_store )
+        model.set_datatypes_registry( registry.Registry() )
         self.security_agent = self.model.security_agent
         self.visualizations_registry = MockVisualizationsRegistry()
         self.tag_handler = tags.GalaxyTagManager( self )
