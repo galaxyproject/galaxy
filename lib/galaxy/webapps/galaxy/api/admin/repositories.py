@@ -40,6 +40,12 @@ class RepositoriesController( BaseAPIController ):
                 repo_dict['type'] = 'packages'
             return_dict.append( repo_dict )
         unique_dict = self._list_unique_repos( return_dict )
+        # TODO attach toolpanel section
+        # log.debug(trans.app.toolbox.__dict__)
+        # log.debug(str(trans.app.toolbox.tools))
+        # log.debug([str(tool) for tool in trans.app.toolbox.to_dict(trans)])
+
+        log.debug([str(tool[1].to_dict(trans)) for tool in trans.app.toolbox.tools()])
         return unique_dict
 
     def _list_unique_repos( self, all_repos ):

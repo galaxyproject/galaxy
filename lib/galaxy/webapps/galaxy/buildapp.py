@@ -582,6 +582,16 @@ def populate_api_routes( webapp, app ):
                             parent_resources=dict( member_name='folder', collection_name='folders' ),
                             conditions=dict( method=[ "GET" ] )  )
 
+    # =========================
+    # ===== TOOLPANEL API =====
+    # =========================
+    webapp.mapper.connect( 'toolpanel sections',
+                           '/api/toolpanel',
+                           controller='toolpanel',
+                           action='index',
+                           conditions=dict( method=["GET"] ) )
+
+
     # =====================
     # ===== ADMIN API =====
     # =====================
