@@ -147,6 +147,7 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
         """
         Get or create a share for the given user (or users if `user` is a list).
         """
+        # precondition: user has been validated
         # allow user to be a list and call recursivly
         if isinstance( user, list ):
             return map( lambda user: self.share_with( item, user, flush=False ), user )
@@ -307,19 +308,7 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
             self.session().flush()
         return item
 
-    # def by_slug( self, user, **kwargs ):
-    #    """
-    #    """
-    #    pass
-
-    # .... display
-    # def display_by_username_and_slug( self, username, slug ):
-    #    """ Display item by username and slug. """
-
-    # def set_public_username( self, id, username, **kwargs ):
-    #    """ Set user's public username and delegate to sharing() """
-    # def sharing( self, id, **kwargs ):
-    #    """ Handle item sharing. """
+    # TODO: def by_slug( self, user, **kwargs ):
 
 
 class SharableModelSerializer( base.ModelSerializer,
@@ -348,14 +337,6 @@ class SharableModelSerializer( base.ModelSerializer,
             return None
         return ( '/' ).join(( 'u', item.user.username, self.SINGLE_CHAR_ABBR, item.slug ) )
 
-    # def serialize_username_and_slug( self, item, key, **context ):
-    #    """
-    #    """
-    #     #TODO: replace the above with this
-    #    url = self.url_for(controller='history', action="display_by_username_and_slug",
-    #        username=item.user.username, slug=item.slug )
-    #    return url
-
     # the only ones that needs any fns:
     #   user/user_id
     #   username_and_slug?
@@ -375,8 +356,9 @@ class SharableModelDeserializer( base.ModelDeserializer,
         ratable.RatableDeserializerMixin.add_deserializers( self )
 
         self.deserializers.update({
-            'published'     : self.deserialize_published,
-            'importable'    : self.deserialize_importable,
+            'published'         : self.deserialize_published,
+            'importable'        : self.deserialize_importable,
+            'users_shared_with' : self.deserialize_users_shared_with,
         })
 
     def deserialize_published( self, item, key, val, **context ):
@@ -403,15 +385,32 @@ class SharableModelDeserializer( base.ModelDeserializer,
             self.manager.make_importable( item, flush=False )
         else:
             self.manager.make_non_importable( item, flush=False )
-        return item.published
+        return item.importable
 
-    # def deserialize_slug( self, item, val, **context ):
-    #    """
-    #    """
-    #    #TODO: call manager.set_slug
-    #    pass
+    # TODO: def deserialize_slug( self, item, val, **context ):
 
-    # def deserialize_user_shares():
+    def deserialize_users_shared_with( self, item, key, val, **context ):
+        """
+        Accept a list of encoded user_ids, validate them as users, and then
+        add or remove user shares in order to update the users_shared_with to
+        match the given list finally returning the new list of shares.
+        """
+        unencoded_ids = [ self.app.security.decode_id( id_ ) for id_ in val ]
+        new_users_shared_with = set( self.manager.user_manager.by_ids( unencoded_ids ) )
+        current_shares = self.manager.get_share_assocs( item )
+        currently_shared_with = set([ share.user for share in current_shares ])
+
+        needs_adding = new_users_shared_with - currently_shared_with
+        for user in needs_adding:
+            current_shares.append( self.manager.share_with( item, user, flush=False ) )
+
+        needs_removing = currently_shared_with - new_users_shared_with
+        for user in needs_removing:
+            current_shares.remove( self.manager.unshare_with( item, user, flush=False ) )
+
+        self.manager.session().flush()
+        # TODO: or should this return the list of ids?
+        return current_shares
 
 
 class SharableModelFilters( base.ModelFilterParser,

@@ -603,6 +603,42 @@ class HistoryDeserializerTestCase( BaseTestCase ):
         deserializer.deserialize( item, { 'community_rating' : 4 }, user=user2 )
         self.assertEqual( manager.ratings_count( item ), 1 )
 
+    def test_sharable( self ):
+        manager = self.history_manager
+        deserializer = self.history_deserializer
+
+        user2 = self.user_manager.create( **user2_data )
+        item = manager.create( name='history1', user=user2 )
+        non_owner = self.user_manager.create( **user3_data )
+
+        self.log( 'should allow adding a share by adding a user id to users_shared_with' )
+        non_owner_id = self.app.security.encode_id( non_owner.id )
+        deserializer.deserialize( item, { 'users_shared_with' : [ non_owner_id ] }, user=user2 )
+        user_shares = manager.get_share_assocs( item )
+        self.assertEqual( len( user_shares ), 1 )
+        self.assertEqual( user_shares[0].user_id, non_owner.id )
+
+        self.log( 're-adding an existing user id should do nothing' )
+        deserializer.deserialize( item, { 'users_shared_with' : [ non_owner_id, non_owner_id ] }, user=user2 )
+        user_shares = manager.get_share_assocs( item )
+        self.assertEqual( len( user_shares ), 1 )
+        self.assertEqual( user_shares[0].user_id, non_owner.id )
+
+        self.log( 'should allow removing a share by not having it in users_shared_with' )
+        deserializer.deserialize( item, { 'users_shared_with' : [] }, user=user2 )
+        user_shares = manager.get_share_assocs( item )
+        self.assertEqual( len( user_shares ), 0 )
+
+        self.log( 'adding a bad user id should error' )
+        self.assertRaises( AttributeError,
+            deserializer.deserialize, item, { 'users_shared_with' : [ None ] }, user=user2 )
+
+        self.log( 'adding a non-existing user id should do nothing' )
+        non_user_id = self.app.security.encode_id( 99 )
+        deserializer.deserialize( item, { 'users_shared_with' : [ non_user_id ] }, user=user2 )
+        user_shares = manager.get_share_assocs( item )
+        self.assertEqual( len( user_shares ), 0 )
+
 
 # =============================================================================
 class HistoryFiltersTestCase( BaseTestCase ):
