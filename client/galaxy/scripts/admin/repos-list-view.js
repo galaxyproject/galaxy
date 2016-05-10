@@ -19,7 +19,8 @@ var AdminReposListView = Backbone.View.extend({
   rowViews: {},
 
   defaults: {
-    filter: 'all',
+    view: 'all',
+    filter: null,
     sort_by: 'date',
     sort_order: 'asc',
   },
@@ -78,7 +79,7 @@ var AdminReposListView = Backbone.View.extend({
   adjustMenu: function(options){
     this.options = _.extend( this.options, options );
     this.$el.find('li').removeClass('active');
-    $('.tab_' + this.options.filter).addClass('active');
+    $('.tab_' + this.options.view).addClass('active');
     var that = this;
     // _.filter(this.collection, function(repo){ return repo.type === that.options.filter; });
     // this.updateRepoCounts();
@@ -111,19 +112,20 @@ var AdminReposListView = Backbone.View.extend({
    */
   renderOne: function(repo){
     var repoView = null;
-    if (this.options.filter === 'all' || this.options.filter === repo.get('type')){
-      if (this.rowViews[repo.get('id')]){
-        repoView = this.rowViews[repo.get('id')].render();
-      } else {
-        repoView = new mod_repo_row_view.AdminReposRowView({repo: repo});
-        this.rowViews[repo.get('id')] = repoView;
+    if (this.options.view === 'all' || this.options.view === repo.get('type')){
+      var is_filter_valid = (typeof repo.get('sections') !== 'undefined') && (repo.get('sections').indexOf(this.options.filter) >= 0);
+      if ( !this.options.filter  || is_filter_valid ){
+        if (this.rowViews[repo.get('id')]){
+          repoView = this.rowViews[repo.get('id')].render();
+          this.$el.find('[data-toggle]').tooltip();
+        } else {
+          repoView = new mod_repo_row_view.AdminReposRowView({repo: repo});
+          this.rowViews[repo.get('id')] = repoView;
+          this.$el.find('[data-toggle]').tooltip();
+        }
+        this.$el.find('#repos_list_body').append(repoView.el);
       }
-      this.$el.find('#repos_list_body').append(repoView.el);
-    } else {
-      // do not create view for repo that is not visible yet
-      return
     }
-    this.$el.find('[data-toggle]').tooltip();
   },
 
   removeOne: function(){
@@ -212,6 +214,13 @@ var AdminReposListView = Backbone.View.extend({
       placeholder: "Section Filter",
       allowClear: true
     });
+    this.$el.find('#admin_section_select')
+      .on("select2-selecting", function(e){
+        Galaxy.adminapp.admin_router.navigate('repos/v/' + that.options.view + '/f/' + e.val, {trigger: true});
+      })
+      .on("select2-removed", function(e){
+        Galaxy.adminapp.admin_router.navigate('repos/v/' + that.options.view, {trigger: true});
+      })
   },
 
   templateRepoList: function(){
@@ -238,9 +247,9 @@ var AdminReposListView = Backbone.View.extend({
 
           // '</form>',
           '<ul class="nav nav-tabs repos-nav">',
-            '<li role="presentation" class="tab_all"><a href="#repos?view=all">All</a></li>',
-            '<li role="presentation" class="tab_tools"><a href="#repos?view=tools">With Tools</a></li>',
-            '<li role="presentation" class="tab_packages"><a href="#repos?view=packages">Packages</a></li>',
+            '<li role="presentation" class="tab_all"><a href="#repos/v/all">All</a></li>',
+            '<li role="presentation" class="tab_tools"><a href="#repos/v/tools">With Tools</a></li>',
+            '<li role="presentation" class="tab_packages"><a href="#repos/v/packages">Packages</a></li>',
             // '<li role="presentation" class="tab_suites"><a href="#repos?view=suites">Suites</a></li>',
             // '<li role="presentation" class="tab_with_dm"><a href="#repos?view=dm">Data Managers</a></li>',
             // '<li role="presentation" class="tab_with_datatypes"><a href="#repos?view=datatypes">Datatypes</a></li>',
