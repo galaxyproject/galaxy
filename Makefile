@@ -63,10 +63,7 @@ grunt: npm-deps ## Calls out to Grunt to build client
 style: npm-deps ## Calls the style task of Grunt
 	cd client && node_modules/grunt-cli/bin/grunt style
 
-webpack: npm-deps ## Pack javascript
-	cd client && node_modules/webpack/bin/webpack.js -p
-
-client: grunt style webpack ## Rebuild all client-side artifacts
+client: grunt style ## Rebuild all client-side artifacts
 
 grunt-docker-image: ## Build docker image for running grunt
 	docker build -t ${GRUNT_DOCKER_NAME} client
@@ -79,7 +76,7 @@ clean-grunt-docker-image: ## Remove grunt docker image
 
 
 # Release Targets
-release-create-rc: release-ensure-upstream ## Create a release-candidate branch 
+release-create-rc: release-ensure-upstream ## Create a release-candidate branch
 	git checkout dev
 	git pull --ff-only $(RELEASE_UPSTREAM) dev
 	git push origin dev
