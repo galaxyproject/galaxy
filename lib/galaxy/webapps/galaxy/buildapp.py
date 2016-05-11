@@ -713,6 +713,15 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     # other middleware):
     app = httpexceptions.make_middleware( app, conf )
     log.debug( "Enabling 'httpexceptions' middleware" )
+    # Statsd request timing and profiling
+    statsd_host = conf.get('statsd_host', None)
+    if statsd_host:
+        from galaxy.web.framework.middleware.statsd import StatsdMiddleware
+        app = StatsdMiddleware( app,
+                                statsd_host,
+                                conf.get('statsd_port', 8125),
+                                conf.get('statsd_prefix', 'galaxy') )
+        log.debug( "Enabling 'statsd' middleware" )
     # If we're using remote_user authentication, add middleware that
     # protects Galaxy from improperly configured authentication in the
     # upstream server
@@ -771,13 +780,6 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         from galaxy.web.framework.middleware.translogger import TransLogger
         app = TransLogger( app )
         log.debug( "Enabling 'trans logger' middleware" )
-    # Statsd request timing and profiling
-    statsd_host = conf.get('statsd_host', None)
-    if statsd_host:
-        from galaxy.web.framework.middleware.statsd import StatsdMiddleware
-        app = StatsdMiddleware( app, statsd_host, conf.get('statsd_port'))
-        log.debug( "Enabling 'statsd' middleware" )
-
     # X-Forwarded-Host handling
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = XForwardedHostMiddleware( app )
