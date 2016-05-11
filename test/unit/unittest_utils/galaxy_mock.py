@@ -57,11 +57,16 @@ class MockApp( object ):
         self.name = kwargs.get( 'name', 'galaxy' )
         self.object_store = objectstore.build_object_store_from_config( self.config )
         self.model = mapping.init( "/tmp", "sqlite:///:memory:", create_tables=True, object_store=self.object_store )
-        model.set_datatypes_registry( registry.Registry() )
         self.security_agent = self.model.security_agent
         self.visualizations_registry = MockVisualizationsRegistry()
         self.tag_handler = tags.GalaxyTagManager( self )
         self.quota_agent = quota.QuotaAgent( self.model )
+        self.init_datatypes()
+
+    def init_datatypes( self ):
+        datatypes_registry = registry.Registry()
+        datatypes_registry.load_datatypes()
+        model.set_datatypes_registry( datatypes_registry )
 
 
 class MockAppConfig( Bunch ):
