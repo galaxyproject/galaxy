@@ -172,10 +172,16 @@ var History = Backbone.Model
         var self = this;
 
         var lastUpdateTime = self.lastUpdateTime;
-        self.lastUpdateTime = new Date();
-        // note if there was no previous update time, all summary contents will be fetched
+        // note: if there was no previous update time, all summary contents will be fetched
         return self.contents.fetchUpdated( lastUpdateTime )
-            .done( _.bind( self.checkForUpdates, self ) );
+            .done( function( response, status, xhr ){
+                var serverResponseDatetime;
+                try {
+                    serverResponseDatetime = new Date( xhr.getResponseHeader( 'Date' ) );
+                } catch( err ){}
+                self.lastUpdateTime = serverResponseDatetime || new Date();
+                self.checkForUpdates( options );
+            });
     },
 
     /**  */
@@ -208,7 +214,6 @@ var History = Backbone.Model
                     } else {
                         // otherwise, let listeners know that all updates have stopped
                         self.trigger( 'ready' );
-                        // self.lastUpdateTime = null;
                     }
                 });
         }
