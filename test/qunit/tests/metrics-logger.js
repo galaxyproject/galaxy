@@ -18,48 +18,11 @@ define([
         [ 'log', 'debug', 'info', 'warn', 'error' ].forEach( function( fnName ){
             self[ fnName ] = function(){
                 var args = Array.prototype.slice.call( arguments, 0 );
-                //console.debug( 'MockConsole:', fnName, JSON.stringify( args ) );
                 self.lastMessage = { level: fnName, args: args };
             };
         });
         return self;
     };
-
-    var MockLocalStorage = function(){
-        var self = this;
-        self._storage = {};
-        self.setItem = function( k, v ){
-            self._storage[ k ] = v + '';
-            return undefined;
-        };
-        self.getItem = function( k ){
-            return self._storage.hasOwnProperty( k )? self._storage[ k ]: null;
-        };
-        self.removeItem = function( k ){
-            if( self._storage.hasOwnProperty( k ) ){
-                delete self._storage[ k ];
-            }
-            return undefined;
-        };
-        self.key = function( i ){
-            var index = 0;
-            for( var k in self._storage ){
-                if( self._storage.hasOwnProperty( k ) ){
-                    if( i === index ){ return k; }
-                    index += 1;
-                }
-            }
-            return null;
-        };
-        self.clear = function(){
-            self._storage = {};
-        };
-        return self;
-    };
-    var mockStorage = new MockLocalStorage();
-    window.localStorage.__proto__.setItem = mockStorage.setItem;
-    window.localStorage.__proto__.getItem = mockStorage.getItem;
-    window.localStorage.__proto__.removeItem = mockStorage.removeItem;
 
     ( window.bootstrapped = {} ).user = {
         id : 'test'
