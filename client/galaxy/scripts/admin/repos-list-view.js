@@ -51,7 +51,7 @@ var AdminReposListView = Backbone.View.extend({
   render: function(options){
     this.options = _.extend( this.options, options );
     var repo_list_template = this.templateRepoList();
-    this.$el.html(repo_list_template());
+    this.$el.html(repo_list_template({filter: this.options.filter}));
     this.fetchSections();
     $( "#center" ).css( 'overflow','auto' );
     this.$el.find('[data-toggle]').tooltip();
@@ -72,6 +72,7 @@ var AdminReposListView = Backbone.View.extend({
   repaint: function(options){
     this.options = _.extend( this.options, options );
     this.removeAllRows();
+    this.clearFilter();
     this.adjustMenu();
     this.renderAll();
   },
@@ -207,7 +208,7 @@ var AdminReposListView = Backbone.View.extend({
     // TODO switch to common resources:
     // https://trello.com/c/dIUE9YPl/1933-ui-common-resources-and-data-into-galaxy-object
     var that = this;
-    this.select_genome = new mod_ui_select.View({
+    this.select_section = new mod_ui_select.View({
       css: 'admin-section-select',
       data: that.list_sections,
       container: that.$el.find('#admin_section_select'),
@@ -221,6 +222,13 @@ var AdminReposListView = Backbone.View.extend({
       .on("select2-removed", function(e){
         Galaxy.adminapp.admin_router.navigate('repos/v/' + that.options.view, {trigger: true});
       })
+  },
+
+  clearFilter: function(){
+    console.log('clearing filter');
+    if (this.select_section){
+      this.select_section.clear();
+    }
   },
 
   templateRepoList: function(){
@@ -247,7 +255,10 @@ var AdminReposListView = Backbone.View.extend({
 
           // '</form>',
           '<ul class="nav nav-tabs repos-nav">',
-            '<li role="presentation" class="tab_all"><a href="#repos/v/all">All</a></li>',
+            '<li role="presentation" class="tab_all">',
+              '<a href="#repos/v/all">All</a>',
+              // '<a href="#repos/v/all<% print("/f/" + filter) %>">All</a>',
+            '</li>',
             '<li role="presentation" class="tab_tools"><a href="#repos/v/tools">With Tools</a></li>',
             '<li role="presentation" class="tab_packages"><a href="#repos/v/packages">Packages</a></li>',
             // '<li role="presentation" class="tab_suites"><a href="#repos?view=suites">Suites</a></li>',
@@ -277,12 +288,6 @@ var AdminReposListView = Backbone.View.extend({
                     'Installation',
                   '</a>',
                   '<span class="sort-icon-installation fa fa-sort-asc" style="display: none;"/>',
-                '</th>',
-                '<th>',
-                  '<a class="sort-repos-category" data-toggle="tooltip" data-placement="top" title="sort alphabetically" href="#">',
-                    'TS Category',
-                  '</a>',
-                  '<span class="sort-icon-category fa fa-sort-asc" style="display: none;"/>',
                 '</th>',
                 '<th>',
                   '<a class="sort-repos-version" data-toggle="tooltip" data-placement="top" title="sort by version state" href="#">',
