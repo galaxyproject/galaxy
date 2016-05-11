@@ -1174,7 +1174,7 @@ class ColumnListParameter( SelectToolParameter ):
                 value = ColumnListParameter._strip_c( value )
             else:
                 value = None
-        if not value and not self.get_legal_values( trans, other_values ) and self.accept_default:
+        if not value and self.accept_default:
             value = self.default_value or '1'
             return [ value ] if self.multiple else value
         return super( ColumnListParameter, self ).from_json( value, trans, other_values )
