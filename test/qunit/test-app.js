@@ -20,6 +20,10 @@ define([
         create: function() {
             window.Galaxy = new appBase.GalaxyApp( bootstrapped );
             window.Galaxy.currHistoryPanel = { model: new Backbone.Model() };
+            window.Galaxy.emit = {
+                debug : function(){},
+                error : function(){}
+            };
             window.fakeserver = sinon.fakeServer.create();
             window.WAIT_FADE_FAST = 300;
             for (var route in serverdata) {

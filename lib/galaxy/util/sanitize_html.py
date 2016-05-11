@@ -194,7 +194,7 @@ class _BaseHTMLProcessor(sgmllib.SGMLParser):
 
     def output(self):
         '''Return processed HTML as a single string'''
-        return ''.join([str(p) for p in self.pieces])
+        return ''.join(self.pieces)
 
 
 class _HTMLSanitizer(_BaseHTMLProcessor):

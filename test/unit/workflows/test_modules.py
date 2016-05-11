@@ -61,7 +61,7 @@ def test_data_input_compute_runtime_state_args():
     module = __from_step(
         type="data_input",
     )
-    tool_state = module.encode_runtime_state( module.trans, module.test_step.state )
+    tool_state = module.get_state()
 
     hda = model.HistoryDatasetAssociation()
     with mock.patch('galaxy.workflow.modules.check_param') as check_method:

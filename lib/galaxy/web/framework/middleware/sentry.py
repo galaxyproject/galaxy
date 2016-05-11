@@ -87,6 +87,6 @@ class Sentry(object):
             }
         )
         # Galaxy: store event_id in environment so we can show it to the user
-        environ['sentry_event_id'] = event_id[0]
+        environ['sentry_event_id'] = event_id
 
         return event_id

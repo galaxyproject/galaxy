@@ -1,6 +1,6 @@
 """Test runner for casperjs headless browser tests with the Galaxy distribution.
 
-Allows integration of casperjs tests with buildbot, run_functional_tests.sh
+Allows integration of casperjs tests with run_functional_tests.sh
 
 Tests can be run in any of the following ways:
 * casperjs test mytests.js --url='http://localhost:8080'

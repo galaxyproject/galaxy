@@ -65,8 +65,7 @@
                                 <div popupmenu="wf-${i}-popup">
                                 <a class="action-button" href="${h.url_for( controller='workflow', action='editor', id=trans.security.encode_id( workflow.id ) )}" target="_parent">Edit</a>
                                 <a class="action-button" href="${h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id( workflow.id ) )}" target="_parent">Run</a>
-                                <a class="action-button" href="${h.url_for( controller='workflow', action='sharing', id=trans.security.encode_id( workflow.id ) )}">Share or Publish</a>
-                                <a class="action-button" href="${h.url_for( controller='workflow', action='export', id=trans.security.encode_id( workflow.id ) )}">Download or Export</a>
+                                <a class="action-button" href="${h.url_for( controller='workflow', action='sharing', id=trans.security.encode_id( workflow.id ) )}">Share or Download</a>
                                 <a class="action-button" href="${h.url_for( controller='workflow', action='copy', id=trans.security.encode_id( workflow.id ) )}">Copy</a>
                                 <a class="action-button" href="${h.url_for( controller='workflow', action='rename', id=trans.security.encode_id( workflow.id ) )}">Rename</a>
                                 <a class="action-button" href="${h.url_for( controller='workflow', action='display_by_id', id=trans.security.encode_id( workflow.id ) )}" target="_top">View</a>

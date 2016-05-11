@@ -263,8 +263,9 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
 
     >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
     >>> from galaxy.datatypes import registry
+    >>> sample_conf = os.path.join(util.galaxy_directory(), "config", "datatypes_conf.xml.sample")
     >>> datatypes_registry = registry.Registry()
-    >>> datatypes_registry.load_datatypes()
+    >>> datatypes_registry.load_datatypes(root_dir=util.galaxy_directory(), config=sample_conf)
     >>> sniff_order = datatypes_registry.sniff_order
     >>> guess_ext(fname, sniff_order)
     'xml'
@@ -296,6 +297,10 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
     >>> guess_ext(fname, sniff_order)
     'gff3'
     >>> fname = get_test_fname('temp.txt')
+    >>> file(fname, 'wt').write("a\\t2")
+    >>> guess_ext(fname, sniff_order)
+    'txt'
+    >>> fname = get_test_fname('temp.txt')
     >>> file(fname, 'wt').write("a\\t2\\nc\\t1\\nd\\t0")
     >>> guess_ext(fname, sniff_order)
     'tabular'
@@ -324,7 +329,32 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
     >>> fname = get_test_fname('test.mz5')
     >>> guess_ext(fname, sniff_order)
     'h5'
+    >>> fname = get_test_fname('issue1818.tabular')
+    >>> guess_ext(fname, sniff_order)
+    'tabular'
+    >>> fname = get_test_fname('drugbank_drugs.cml')
+    >>> guess_ext(fname, sniff_order)
+    'cml'
+    >>> fname = get_test_fname('q.fps')
+    >>> guess_ext(fname, sniff_order)
+    'fps'
+    >>> fname = get_test_fname('drugbank_drugs.inchi')
+    >>> guess_ext(fname, sniff_order)
+    'inchi'
+    >>> fname = get_test_fname('drugbank_drugs.mol2')
+    >>> guess_ext(fname, sniff_order)
+    'mol2'
+    >>> fname = get_test_fname('drugbank_drugs.sdf')
+    >>> guess_ext(fname, sniff_order)
+    'sdf'
+    >>> fname = get_test_fname('5e5z.pdb')
+    >>> guess_ext(fname, sniff_order)
+    'pdb'
+    >>> fname = get_test_fname('mothur_datatypetest_true.mothur.otu')
+    >>> guess_ext(fname, sniff_order)
+    'mothur.otu'
     """
+    file_ext = None
     for datatype in sniff_order:
         """
         Some classes may not have a sniff function, which is ok.  In fact, the
@@ -336,9 +366,19 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
         """
         try:
             if datatype.sniff( fname ):
-                return datatype.file_ext
+                file_ext = datatype.file_ext
+                break
         except:
             pass
+    # Ugly hack for tsv vs tabular sniffing, we want to prefer tabular
+    # to tsv but it doesn't have a sniffer - is TSV was sniffed just check
+    # if it is an okay tabular and use that instead.
+    if file_ext == 'tsv':
+        if is_column_based( fname, '\t', 1, is_multi_byte=is_multi_byte ):
+            file_ext = 'tabular'
+    if file_ext is not None:
+        return file_ext
+
     headers = get_headers( fname, None )
     is_binary = False
     if is_multi_byte:

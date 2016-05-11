@@ -153,6 +153,7 @@ class WorkflowInvoker( object ):
         remaining_steps = self.progress.remaining_steps()
         delayed_steps = False
         for step in remaining_steps:
+            step_delayed = False
             step_timer = ExecutionTimer()
             jobs = None
             try:
@@ -165,9 +166,12 @@ class WorkflowInvoker( object ):
                     workflow_invocation_step = model.WorkflowInvocationStep()
                     workflow_invocation_step.workflow_invocation = workflow_invocation
                     workflow_invocation_step.workflow_step = step
-                    workflow_invocation_step.job = job
+                    # Job may not be generated in this thread if bursting is enabled
+                    # https://github.com/galaxyproject/galaxy/issues/2259
+                    if job:
+                        workflow_invocation_step.job_id = job.id
             except modules.DelayedWorkflowEvaluation:
-                delayed_steps = True
+                step_delayed = delayed_steps = True
                 self.progress.mark_step_outputs_delayed( step )
             except Exception:
                 log.exception(
@@ -177,7 +181,8 @@ class WorkflowInvoker( object ):
                 )
                 raise
 
-            log.debug("Workflow step %s of invocation %s invoked %s" % (step.id, workflow_invocation.id, step_timer))
+            step_verb = "invoked" if not step_delayed else "delayed"
+            log.debug("Workflow step %s of invocation %s %s %s" % (step.id, workflow_invocation.id, step_verb, step_timer))
 
         if delayed_steps:
             state = model.WorkflowInvocation.states.READY

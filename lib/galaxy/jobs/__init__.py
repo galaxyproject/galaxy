@@ -785,7 +785,7 @@ class JobWrapper( object ):
     def cleanup_job(self):
         """ Remove the job after it is complete, should return "always", "onsuccess", or "never".
         """
-        self.get_destination_configuration("cleanup_job", DEFAULT_CLEANUP_JOB)
+        return self.get_destination_configuration("cleanup_job", DEFAULT_CLEANUP_JOB)
 
     def can_split( self ):
         # Should the job handler split this job up?
@@ -1029,6 +1029,7 @@ class JobWrapper( object ):
 
             self.sa_session.add( job )
             self.sa_session.flush()
+        self._report_error_to_sentry()
         # Perform email action even on failure.
         for pja in [pjaa.post_job_action for pjaa in job.post_job_actions if pjaa.post_job_action.action_type == "EmailAction"]:
             ActionBox.execute(self.app, self.sa_session, pja, job)
@@ -1397,6 +1398,8 @@ class JobWrapper( object ):
             self._collect_metrics( job )
         self.sa_session.flush()
         log.debug( 'job %d ended (finish() executed in %s)' % (self.job_id, finish_timer) )
+        if job.state == job.states.ERROR:
+            self._report_error_to_sentry()
         cleanup_job = self.cleanup_job
         delete_files = cleanup_job == 'always' or ( job.state == job.states.OK and cleanup_job == 'onsuccess' )
         self.cleanup( delete_files=delete_files )
@@ -1659,10 +1662,13 @@ class JobWrapper( object ):
                                                                          **kwds )
         if resolve_metadata_dependencies:
             metadata_tool = self.app.toolbox.get_tool("__SET_METADATA__")
-            dependency_shell_commands = metadata_tool.build_dependency_shell_commands(job_directory=self.working_directory)
-            if dependency_shell_commands:
-                dependency_shell_commands = "; ".join(dependency_shell_commands)
-                command = "%s; %s" % (dependency_shell_commands, command)
+            if metadata_tool is not None:
+                # Due to tool shed hacks for migrate and installed tool tests...
+                # see (``setup_shed_tools_for_test`` in test/base/driver_util.py).
+                dependency_shell_commands = metadata_tool.build_dependency_shell_commands(job_directory=self.working_directory, metadata=True)
+                if dependency_shell_commands:
+                    dependency_shell_commands = "; ".join(dependency_shell_commands)
+                    command = "%s; %s" % (dependency_shell_commands, command)
         return command
 
     @property
@@ -1745,6 +1751,28 @@ class JobWrapper( object ):
         if self.tool:
             return self.tool.requires_setting_metadata
         return False
+
+    def _report_error_to_sentry( self ):
+        job = self.get_job()
+        tool = self.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
+        if self.app.sentry_client and job.state == job.states.ERROR:
+            self.app.sentry_client.capture(
+                'raven.events.Message',
+                message="Galaxy Job Error: %s  v.%s" % (job.tool_id, job.tool_version),
+                extra={
+                    'info' : job.info,
+                    'id' : job.id,
+                    'command_line' : job.command_line,
+                    'stderr' : job.stderr,
+                    'traceback': job.traceback,
+                    'exit_code': job.exit_code,
+                    'stdout': job.stdout,
+                    'handler': job.handler,
+                    'user': self.user,
+                    'tool_version': job.tool_version,
+                    'tool_xml': tool.config_file if tool else None
+                }
+            )
 
 
 class TaskWrapper(JobWrapper):

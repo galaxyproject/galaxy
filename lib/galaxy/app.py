@@ -160,6 +160,11 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
                     self.heartbeat.start()
                 if not config.process_is_uwsgi:
                     _start()
+        if self.config.sentry_dsn:
+            import raven
+            self.sentry_client = raven.Client(self.config.sentry_dsn)
+        else:
+            self.sentry_client = None
         # Transfer manager client
         if self.config.get_bool( 'enable_beta_job_managers', False ):
             from galaxy.jobs import transfer_manager

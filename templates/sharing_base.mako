@@ -19,6 +19,7 @@
 
 <%namespace file="/display_common.mako" import="*" />
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/slug_editing_js.mako" import="*" />
 
 ##
 ## Page methods.
@@ -42,38 +43,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    <script type="text/javascript">
-    $(document).ready( function() {
-        //
-        // Set up slug-editing functionality.
-        //
-        var on_start = function( text_elt ) {
-            // Replace URL with URL text.
-            $('#item-url').hide();
-            $('#item-url-text').show();
-            
-            // Allow only lowercase alphanumeric and '-' characters in slug.
-            text_elt.keyup(function(){
-                text_elt.val( $(this).val().replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() )
-            });
-        };
-        
-        var on_finish = function( text_elt ) {
-            // Replace URL text with URL.
-            $('#item-url-text').hide();
-            $('#item-url').show();
-            
-            // Set URL to new value.
-            var new_url = $('#item-url-text').text();
-            var item_url_obj = $('#item-url');
-            item_url_obj.attr( "href", new_url );
-            item_url_obj.text( new_url );
-        };
-        
-        <% controller_name = get_controller_name( item ) %>
-        async_save_text("edit-identifier", "item-identifier", "${h.url_for( controller=controller_name, action='set_slug_async', id=trans.security.encode_id( item.id ) )}", "new_slug", null, false, 0, on_start, on_finish); 
-    });
-    </script>
+    ${slug_editing_js(item)}
 </%def>
 
 <%def name="stylesheets()">
@@ -113,13 +83,13 @@
         #
         # Setup and variables needed for page.
         #
-    
+
         # Get class name strings.
-        item_class_name = get_class_display_name( item.__class__ ) 
+        item_class_name = get_class_display_name( item.__class__ )
         item_class_name_lc = item_class_name.lower()
         item_class_plural_name = get_class_plural_display_name( item.__class__ )
         item_class_plural_name_lc = item_class_plural_name.lower()
-        
+
         # Get item name.
         item_name = get_item_name(item)
     %>
@@ -129,8 +99,8 @@
     ## Require that user have a public username before sharing or publishing an item.
     %if trans.get_user().username is None or trans.get_user().username is "":
         <p>To make a ${item_class_name_lc} accessible via link or publish it, you must create a public username:</p>
-        
-        <form action="${h.url_for( controller=controller_name, action='set_public_username', id=trans.security.encode_id( item.id ) )}"     
+
+        <form action="${h.url_for( controller=controller_name, action='set_public_username', id=trans.security.encode_id( item.id ) )}"
                 method="POST">
             <div class="form-row">
                 <label>Public Username:</label>
@@ -146,36 +116,36 @@
     %else:
         ## User has a public username, so private sharing and publishing options.
         <h3>Make ${item_class_name} Accessible via Link and Publish It</h3>
-    
+
             <div>
                 %if item.importable:
-                    <% 
-                        item_status = "accessible via link" 
+                    <%
+                        item_status = "accessible via link"
                         if item.published:
-                            item_status = item_status + " and published"    
+                            item_status = item_status + " and published"
                     %>
-                    This ${item_class_name_lc} is currently <strong>${item_status}</strong>. 
+                    This ${item_class_name_lc} is currently <strong>${item_status}</strong>.
                     <div>
                         <p>Anyone can view and import this ${item_class_name_lc} by visiting the following URL:
 
                         <blockquote>
-                            <% 
-                                url = h.url_for( controller=controller_name, action='display_by_username_and_slug', username=trans.get_user().username, slug=item.slug, qualified=True ) 
+                            <%
+                                url = h.url_for( controller=controller_name, action='display_by_username_and_slug', username=trans.get_user().username, slug=item.slug, qualified=True )
                                 url_parts = url.split("/")
                             %>
                             <a id="item-url" href="${url}" target="_top">${url}</a>
                             <span id="item-url-text" style="display: none">
                                 ${"/".join( url_parts[:-1] )}/<span id='item-identifier'>${url_parts[-1]}</span>
                             </span>
-                            
+
                             <a href="#" id="edit-identifier"><img src="${h.url_for('/static/images/fugue/pencil.png')}"/></a>
                         </blockquote>
-        
+
                         %if item.published:
                             This ${item_class_name_lc} is publicly listed and searchable in Galaxy's <a href='${h.url_for( controller=controller_name, action='list_published' )}' target="_top">Published ${item_class_plural_name}</a> section.
                         %endif
                     </div>
-        
+
                     <p>You can:
                     <div>
                     <form action="${h.url_for( controller=controller_name, action='sharing', id=trans.security.encode_id( item.id ) )}" method="POST">
@@ -198,20 +168,20 @@
                         %endif
                     </form>
                     </div>
-   
+
                 %else:
-   
+
                     <p>This ${item_class_name_lc} is currently restricted so that only you and the users listed below can access it. You can:</p>
-                    
+
                     <form action="${h.url_for(controller=controller_name, action='sharing', id=trans.security.encode_id(item.id) )}" method="POST">
                         <input class="action-button" type="submit" name="make_accessible_via_link" value="Make ${item_class_name} Accessible via Link">
                         <div class="toolParamHelp">Generates a web link that you can share with other people so that they can view and import the ${item_class_name_lc}.</div>
-        
+
                         <br />
                         <input class="action-button" type="submit" name="make_accessible_and_publish" value="Make ${item_class_name} Accessible and Publish" method="POST">
                         <div class="toolParamHelp">Makes the ${item_class_name_lc} accessible via link (see above) and publishes the ${item_class_name_lc} to Galaxy's <a href='${h.url_for(controller=controller_name, action='list_published' )}' target='_top'>Published ${item_class_plural_name}</a> section, where it is publicly listed and searchable.</div>
                     </form>
-       
+
                 %endif
 
         ##
@@ -226,7 +196,7 @@
                         The following users will see this ${item_class_name_lc} in their ${item_class_name_lc} list and will be
                         able to view, import, and run it.
                     </p>
-            
+
                     <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
                         <tr class="header">
                             <th>Email</th>
@@ -243,12 +213,12 @@
                                     <a class="action-button" href="${h.url_for(controller=controller_name, action='sharing', id=trans.security.encode_id( item.id ), unshare_user=trans.security.encode_id( user.id ), use_panels=use_panels )}">Unshare</a>
                                     </div>
                                 </td>
-                            </tr>    
+                            </tr>
                         %endfor
                     </table>
-    
+
                     <p>
-                    <a class="action-button" 
+                    <a class="action-button"
                        href="${h.url_for(controller=controller_name, action='share', id=trans.security.encode_id(item.id), use_panels=use_panels )}">
                         <span>Share with another user</span>
                     </a>
@@ -256,13 +226,13 @@
                 %else:
 
                     <p>You have not shared this ${item_class_name_lc} with any users.</p>
-    
-                    <a class="action-button" 
+
+                    <a class="action-button"
                        href="${h.url_for(controller=controller_name, action='share', id=trans.security.encode_id(item.id), use_panels=use_panels )}">
                         <span>Share with a user</span>
                     </a>
                     <br />
-    
+
                 %endif
             </div>
         </div>

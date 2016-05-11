@@ -9,6 +9,7 @@ import socket
 import tarfile
 import tempfile
 import types
+import time
 
 import routes
 import webob
@@ -23,6 +24,9 @@ from paste.response import HeaderDict
 
 
 log = logging.getLogger( __name__ )
+
+#: time of the most recent server startup
+server_starttime = int( time.time() )
 
 
 def __resource_with_deleted( self, member_name, collection_name, **kwargs ):
@@ -95,7 +99,7 @@ class WebApplication( object ):
         self.mapper.connect( route, **kwargs )
 
     def add_client_route( self, route ):
-        self.add_route(route, controller='root', action='index')
+        self.add_route(route, controller='root', action='client')
 
     def set_transaction_factory( self, transaction_factory ):
         """
@@ -180,6 +184,7 @@ class WebApplication( object ):
         # Is the method callable
         if not callable( method ):
             raise httpexceptions.HTTPNotFound( "Action not callable for " + path_info )
+        environ['controller_action_key'] = "%s.%s.%s" % ('api' if environ['is_api_request'] else 'web', controller_name, action or 'default')
         # Combine mapper args and query string / form args and call
         kwargs = trans.request.params.mixed()
         kwargs.update( map )

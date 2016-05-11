@@ -271,11 +271,7 @@ class WorkflowContentsManager(UsesAnnotations):
         return workflow, errors
 
     def _workflow_from_dict(self, trans, data, name):
-        # If coming from the editor it will be a flat a string,
-        # we need parse it and handle tool start differently.
-        from_editor = isinstance(data, string_types)
-        if from_editor:
-            # If coming from the editor...
+        if isinstance(data, string_types):
             data = json.loads(data)
 
         # Create new workflow from source data
@@ -297,7 +293,7 @@ class WorkflowContentsManager(UsesAnnotations):
         missing_tool_tups = []
 
         for step_dict in self.__walk_step_dicts( data ):
-            module, step = self.__track_module_from_dict( trans, steps, steps_by_external_id, step_dict, secure=from_editor )
+            module, step = self.__track_module_from_dict( trans, steps, steps_by_external_id, step_dict )
             is_tool = is_tool_module_type( module.type )
             if is_tool and module.tool is None:
                 # A required tool is not available in the local Galaxy instance.
@@ -529,7 +525,7 @@ class WorkflowContentsManager(UsesAnnotations):
                                         # eliminate after a few years...
                 'tool_version': step.tool_version,
                 'name': module.get_name(),
-                'tool_state': module.get_state( secure=False ),
+                'tool_state': module.get_state(),
                 'tool_errors': module.get_errors(),
                 'uuid': str(step.uuid),
                 'label': step.label or None,
@@ -759,8 +755,8 @@ class WorkflowContentsManager(UsesAnnotations):
 
             yield step_dict
 
-    def __track_module_from_dict( self, trans, steps, steps_by_external_id, step_dict, secure ):
-        module, step = self.__module_from_dict( trans, step_dict, secure=secure )
+    def __track_module_from_dict( self, trans, steps, steps_by_external_id, step_dict ):
+        module, step = self.__module_from_dict( trans, step_dict )
         # Create the model class for the step
         steps.append( step )
         steps_by_external_id[ step_dict['id' ] ] = step
@@ -787,7 +783,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 trans.sa_session.add(m)
         return module, step
 
-    def __module_from_dict( self, trans, step_dict, secure ):
+    def __module_from_dict( self, trans, step_dict ):
         """ Create a WorkflowStep model object and corresponding module
         representing type-specific functionality from the incoming dictionary.
         """
@@ -806,7 +802,7 @@ class WorkflowContentsManager(UsesAnnotations):
             )
             step_dict["subworkflow"] = subworkflow
 
-        module = module_factory.from_dict( trans, step_dict, secure=secure )
+        module = module_factory.from_dict( trans, step_dict )
         module.save_to_step( step )
 
         annotation = step_dict[ 'annotation' ]

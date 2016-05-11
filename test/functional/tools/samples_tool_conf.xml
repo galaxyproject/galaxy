@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<toolbox tool_path="${tool_conf_dir}">
+<toolbox tool_path="${tool_conf_dir}" is_shed_conf="false">
   <tool file="upload.xml"/>
   <tool file="simple_constructs.xml" />
   <tool file="inheritance_simple.xml" />
@@ -46,6 +46,7 @@
   <tool file="parallelism_optional.xml" />
   <tool file="implicit_default_conds.xml" />
   <tool file="multi_data_param.xml" />
+  <tool file="multi_data_repeat.xml" />
   <tool file="paths_as_file.xml" />
   <tool file="column_param.xml" />
   <tool file="column_multi_param.xml" />
@@ -96,6 +97,8 @@
   <tool file="for_workflows/cat_interleave.xml" />
   <tool file="for_workflows/pileup.xml" />
   <tool file="for_workflows/mapper.xml" />
+  <tool file="for_workflows/split.xml" />
+  <tool file="for_workflows/create_input_collection.xml" />
 
   <tool file="simple_constructs.yml" />
 

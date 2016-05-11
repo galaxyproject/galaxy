@@ -30,9 +30,7 @@ var LibraryDatasetView = Backbone.View.extend({
     "click .btn-make-private"             :   "makeDatasetPrivate",
     "click .btn-remove-restrictions"      :   "removeDatasetRestrictions",
     "click .toolbtn_save_permissions"     :   "savePermissions",
-
     "click .toolbtn_save_modifications"   :   "comingSoon",
-    // "click .btn-share-dataset"            :   "comingSoon"
 
   },
 
@@ -204,29 +202,47 @@ var LibraryDatasetView = Backbone.View.extend({
   },
 
   importCurrentIntoHistory: function(){
-      // var self = this;
-      var history_id = $(this.modal.elMain).find('select[name=dataset_import_single] option:selected').val();
-      var historyItem = new mod_library_model.HistoryItem();
-      historyItem.url = historyItem.urlRoot + history_id + '/contents';
-
-      // set the used history as current so user will see the last one
-      // that he imported into in the history panel on the 'analysis' page
-      jQuery.getJSON( Galaxy.root + 'history/set_as_current?id=' + history_id  );
-
-      // save the dataset into selected history
-      historyItem.save({ content : this.id, source : 'library' }, {
-        success : function(){
-            Galaxy.modal.hide();
-          mod_toastr.success('Dataset imported. Click this to start analysing it.', '', {onclick: function() {window.location='/';}});
-        },
-        error : function(model, response){
-          if (typeof response.responseJSON !== "undefined"){
-            mod_toastr.error('Dataset not imported. ' + response.responseJSON.err_msg);
-          } else {
-            mod_toastr.error('An error occured. Dataset not imported. Please try again.');
-          }
-        }
+    this.modal.disableButton('Import');
+    var new_history_name = this.modal.$('input[name=history_name]').val();
+    var that = this;
+    if (new_history_name !== ''){
+      $.post( Galaxy.root + 'api/histories', {name: new_history_name})
+        .done(function( new_history ) {
+          that.processImportToHistory(new_history.id);
+        })
+        .fail(function( xhr, status, error ) {
+          mod_toastr.error('An error ocurred.');
+        })
+        .always(function() {
+          that.modal.enableButton('Import');
         });
+    } else {
+      var history_id = $(this.modal.$el).find('select[name=dataset_import_single] option:selected').val();
+      this.processImportToHistory(history_id);
+      this.modal.enableButton('Import');
+    }
+  },
+
+  processImportToHistory: function( history_id ){
+    var historyItem = new mod_library_model.HistoryItem();
+    historyItem.url = historyItem.urlRoot + history_id + '/contents';
+    // set the used history as current so user will see the last one
+    // that he imported into in the history panel on the 'analysis' page
+    jQuery.getJSON( Galaxy.root + 'history/set_as_current?id=' + history_id  );
+    // save the dataset into selected history
+    historyItem.save({ content : this.id, source : 'library' }, {
+      success : function(){
+        Galaxy.modal.hide();
+        mod_toastr.success('Dataset imported. Click this to start analyzing it.', '', {onclick: function() {window.location='/';}});
+      },
+      error : function(model, response){
+        if (typeof response.responseJSON !== "undefined"){
+          mod_toastr.error('Dataset not imported. ' + response.responseJSON.err_msg);
+        } else {
+          mod_toastr.error('An error occured. Dataset not imported. Please try again.');
+        }
+      }
+      });
   },
 
   shareDataset: function(){
@@ -255,15 +271,11 @@ var LibraryDatasetView = Backbone.View.extend({
     var template = this.templateDatasetPermissions();
     this.$el.html(template({item: this.model, is_admin: is_admin}));
     var self = this;
-    if (this.options.fetched_permissions === undefined){
-      $.get( Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
-        self.prepareSelectBoxes({fetched_permissions: fetched_permissions, is_admin: is_admin});
-      }).fail(function(){
-          mod_toastr.error('An error occurred while attempting to fetch dataset permissions.');
-      });
-    } else {
-      this.prepareSelectBoxes({is_admin: is_admin});
-    }
+    $.get( Galaxy.root + "api/libraries/datasets/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
+      self.prepareSelectBoxes({fetched_permissions: fetched_permissions, is_admin: is_admin});
+    }).fail(function(){
+        mod_toastr.error('An error occurred while attempting to fetch dataset permissions.');
+    });
     $("#center [data-toggle]").tooltip();
     $("#center").css('overflow','auto');
   },
@@ -585,15 +597,26 @@ var LibraryDatasetView = Backbone.View.extend({
     '<div class="library_style_container">',
       '<div id="library_toolbar">',
         '<button data-toggle="tooltip" data-placement="top" title="Download dataset" class="btn btn-default toolbtn-download-dataset primary-button toolbar-item" type="button">',
-          '<span class="fa fa-download"> Download</span>',
+          '<span class="fa fa-download"></span>',
+          '&nbsp;Download',
         '</button>',
-        '<button data-toggle="tooltip" data-placement="top" title="Import dataset into history" class="btn btn-default toolbtn-import-dataset primary-button toolbar-item" type="button"><span class="fa fa-book"> to History</span></button>',
+        '<button data-toggle="tooltip" data-placement="top" title="Import dataset into history" class="btn btn-default toolbtn-import-dataset primary-button toolbar-item" type="button">',
+          '<span class="fa fa-book"></span>',
+          '&nbsp;to History',
+        '</button>',
         '<% if (item.get("can_user_modify")) { %>',
-          '<button data-toggle="tooltip" data-placement="top" title="Modify library item" class="btn btn-default toolbtn_modify_dataset primary-button toolbar-item" type="button"><span class="fa fa-pencil"> Modify</span></button>',
+          '<button data-toggle="tooltip" data-placement="top" title="Modify library item" class="btn btn-default toolbtn_modify_dataset primary-button toolbar-item" type="button">',
+            '<span class="fa fa-pencil"></span>',
+            '&nbsp;Modify',
+          '</button>',
         '<% } %>',
         '<% if (item.get("can_user_manage")) { %>',
-          '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>/permissions"><button data-toggle="tooltip" data-placement="top" title="Manage permissions" class="btn btn-default toolbtn_change_permissions primary-button toolbar-item" type="button"><span class="fa fa-group"></span> Permissions</span></button></a>',
-          // '<button data-toggle="tooltip" data-placement="top" title="Share dataset" class="btn btn-default toolbtn-share-dataset primary-button toolbar-item" type="button"><span class="fa fa-share"> Share</span></button>',
+          '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>/permissions">',
+            '<button data-toggle="tooltip" data-placement="top" title="Manage permissions" class="btn btn-default toolbtn_change_permissions primary-button toolbar-item" type="button">',
+              '<span class="fa fa-group"></span>',
+              '&nbsp;Permissions',
+            '</button>',
+          '</a>',
         '<% } %>',
       '</div>',
 
@@ -613,7 +636,8 @@ var LibraryDatasetView = Backbone.View.extend({
       '<div class="alert alert-info">',
         'This dataset is unrestricted so everybody can access it. Just share the URL of this page. ',
         '<button data-toggle="tooltip" data-placement="top" title="Copy to clipboard" class="btn btn-default btn-copy-link-to-clipboard primary-button" type="button">',
-          '<span class="fa fa-clipboard"> To Clipboard</span>',
+          '<span class="fa fa-clipboard"></span>',
+          '&nbsp;To Clipboard',
         '</button> ',
       '</div>',
     '<% } %>',
@@ -726,7 +750,12 @@ var LibraryDatasetView = Backbone.View.extend({
     // CONTAINER START
     '<div class="library_style_container">',
       '<div id="library_toolbar">',
-        '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>"><button data-toggle="tooltip" data-placement="top" title="Go to latest dataset" class="btn btn-default primary-button toolbar-item" type="button"><span class="fa fa-caret-left fa-lg"> Latest dataset</span></button><a>',
+        '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>">',
+          '<button data-toggle="tooltip" data-placement="top" title="Go to latest dataset" class="btn btn-default primary-button toolbar-item" type="button">',
+            '<span class="fa fa-caret-left fa-lg"></span>',
+            '&nbsp;Latest dataset',
+          '</button>',
+        '<a>',
       '</div>',
 
       // BREADCRUMBS
@@ -838,8 +867,14 @@ var LibraryDatasetView = Backbone.View.extend({
     // CONTAINER START
     '<div class="library_style_container">',
       '<div id="library_toolbar">',
-        '<button data-toggle="tooltip" data-placement="top" title="Cancel modifications" class="btn btn-default toolbtn_cancel_modifications primary-button toolbar-item" type="button"><span class="fa fa-times"> Cancel</span></button>',
-        '<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-default toolbtn_save_modifications primary-button toolbar-item" type="button"><span class="fa fa-floppy-o"> Save</span></button>',
+        '<button data-toggle="tooltip" data-placement="top" title="Cancel modifications" class="btn btn-default toolbtn_cancel_modifications primary-button toolbar-item" type="button">',
+          '<span class="fa fa-times"></span>',
+          '&nbsp;Cancel',
+        '</button>',
+        '<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-default toolbtn_save_modifications primary-button toolbar-item" type="button">',
+          '<span class="fa fa-floppy-o"></span>',
+          '&nbsp;Save',
+        '</button>',
       '</div>',
 
       // BREADCRUMBS
@@ -932,8 +967,18 @@ var LibraryDatasetView = Backbone.View.extend({
     // CONTAINER START
     '<div class="library_style_container">',
       '<div id="library_toolbar">',
-        '<a href="#folders/<%- item.get("folder_id") %>"><button data-toggle="tooltip" data-placement="top" title="Go back to containing folder" class="btn btn-default primary-button toolbar-item" type="button"><span class="fa fa-folder-open-o"> Containing Folder</span></button></a>',
-        '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>"><button data-toggle="tooltip" data-placement="top" title="Go back to dataset" class="btn btn-default primary-button toolbar-item" type="button"><span class="fa fa-file-o"> Dataset Details</span></button><a>',
+        '<a href="#folders/<%- item.get("folder_id") %>">',
+          '<button data-toggle="tooltip" data-placement="top" title="Go back to containing folder" class="btn btn-default primary-button toolbar-item" type="button">',
+            '<span class="fa fa-folder-open-o"></span>',
+            '&nbsp;Containing Folder',
+          '</button>',
+        '</a>',
+        '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>">',
+          '<button data-toggle="tooltip" data-placement="top" title="Go back to dataset" class="btn btn-default primary-button toolbar-item" type="button">',
+            '<span class="fa fa-file-o"></span>',
+            '&nbsp;Dataset Details',
+          '</button>',
+        '<a>',
       '</div>',
 
       // BREADCRUMBS
@@ -964,30 +1009,42 @@ var LibraryDatasetView = Backbone.View.extend({
         '<hr/>',
         '<h2>Dataset-related permissions</h2>',
         '<div class="alert alert-warning">Changes made below will affect <strong>every</strong> library item that was created from this dataset and also every history this dataset is part of.</div>',
-
         '<% if (!item.get("is_unrestricted")) { %>',
           '<p>You can remove all access restrictions on this dataset. ',
-          '<button data-toggle="tooltip" data-placement="top" title="Everybody will be able to access the dataset." class="btn btn-default btn-remove-restrictions primary-button" type="button">',
-            '<span class="fa fa-globe"> Remove restrictions</span>',
-          '</button>',
-        '</p>',
+            '<button data-toggle="tooltip" data-placement="top" title="Everybody will be able to access the dataset." class="btn btn-default btn-remove-restrictions primary-button" type="button">',
+              '<span class="fa fa-globe"></span>',
+              '&nbsp;Remove restrictions',
+            '</button>',
+          '</p>',
         '<% } else { %>',
           'This dataset is unrestricted so everybody can access it. Just share the URL of this page.',
-          '<button data-toggle="tooltip" data-placement="top" title="Copy to clipboard" class="btn btn-default btn-copy-link-to-clipboard primary-button" type="button"><span class="fa fa-clipboard"> To Clipboard</span></button> ',
+          '<button data-toggle="tooltip" data-placement="top" title="Copy to clipboard" class="btn btn-default btn-copy-link-to-clipboard primary-button" type="button">',
+            '<span class="fa fa-clipboard"></span>',
+            '&nbsp;To Clipboard',
+            '</button>',
           '<p>You can make this dataset private to you. ',
-            '<button data-toggle="tooltip" data-placement="top" title="Only you will be able to access the dataset." class="btn btn-default btn-make-private primary-button" type="button"><span class="fa fa-key"> Make Private</span></button>',
+            '<button data-toggle="tooltip" data-placement="top" title="Only you will be able to access the dataset." class="btn btn-default btn-make-private primary-button" type="button">',
+              '<span class="fa fa-key"></span>',
+              '&nbsp;Make Private',
+            '</button>',
           '</p>',
-          // '<p>You can share this dataset privately with other Galaxy users. ',
-          // '<button data-toggle="tooltip" data-placement="top" title="Only you and the suers you choose will be able to access the dataset." class="btn btn-default btn-share-dataset primary-button" type="button"><span class="fa fa-share"> Share Privately</span></button>',
-          // '</p>',
         '<% } %>',
         '<h4>Roles that can access the dataset</h4>',
         '<div id="access_perm" class="access_perm roles-selection"></div>',
-        '<div class="alert alert-info roles-selection">User has to have <strong>all these roles</strong> in order to access this dataset. Users without access permission <strong>cannot</strong> have other permissions on this dataset. If there are no access roles set on the dataset it is considered <strong>unrestricted</strong>.</div>',
+        '<div class="alert alert-info roles-selection">',
+          'User has to have <strong>all these roles</strong> in order to access this dataset.',
+          ' Users without access permission <strong>cannot</strong> have other permissions on this dataset.',
+          ' If there are no access roles set on the dataset it is considered <strong>unrestricted</strong>.',
+        '</div>',
         '<h4>Roles that can manage permissions on the dataset</h4>',
         '<div id="manage_perm" class="manage_perm roles-selection"></div>',
-        '<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can manage permissions of this dataset. If you remove yourself you will loose the ability manage this dataset unless you are an admin.</div>',
-        '<button data-toggle="tooltip" data-placement="top" title="Save modifications made on this page" class="btn btn-default toolbtn_save_permissions primary-button" type="button"><span class="fa fa-floppy-o"> Save</span></button>',
+        '<div class="alert alert-info roles-selection">',
+          'User with <strong>any</strong> of these roles can manage permissions of this dataset. If you remove yourself you will loose the ability manage this dataset unless you are an admin.',
+        '</div>',
+        '<button data-toggle="tooltip" data-placement="top" title="Save modifications made on this page" class="btn btn-default toolbtn_save_permissions primary-button" type="button">',
+          '<span class="fa fa-floppy-o"></span>',
+          '&nbsp;Save',
+        '</button>',
       '</div>',
     // CONTAINER END
     '</div>'
@@ -996,16 +1053,24 @@ var LibraryDatasetView = Backbone.View.extend({
 
   templateBulkImportInModal: function(){
     return _.template([
-    '<span id="history_modal_combo_bulk" style="width:90%; margin-left: 1em; margin-right: 1em; ">',
-      'Select history: ',
-      '<select id="dataset_import_single" name="dataset_import_single" style="width:50%; margin-bottom: 1em; "> ',
-        '<% _.each(histories, function(history) { %>', //history select btn
-          '<option value="<%= _.escape(history.get("id")) %>"><%= _.escape(history.get("name")) %></option>',
-        '<% }); %>',
-      '</select>',
-    '</span>'
+    '<div>',
+      '<div class="library-modal-item">',
+        'Select history: ',
+        '<select id="dataset_import_single" name="dataset_import_single" style="width:50%; margin-bottom: 1em; " autofocus>',
+          '<% _.each(histories, function(history) { %>',
+            '<option value="<%= _.escape(history.get("id")) %>"><%= _.escape(history.get("name")) %></option>',
+          '<% }); %>',
+        '</select>',
+      '</div>',
+      '<div class="library-modal-item">',
+        'or create new: ',
+        '<input type="text" name="history_name" value="" placeholder="name of the new history" style="width:50%;">',
+        '</input>',
+      '</div>',
+    '</div>'
     ].join(''));
   },
+
 
   templateAccessSelect: function(){
     return _.template([

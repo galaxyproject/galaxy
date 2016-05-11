@@ -1,6 +1,6 @@
 import os
 import copy
-from galaxy.util import dictobj
+import dictobj
 from collections import namedtuple
 
 Path = namedtuple('Path', ('path', 'id', 'options'))
@@ -21,7 +21,7 @@ class Node(dictobj.DictionaryObject):
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-   
+
   Helper class written by William Grim - grimwm
   Original repo: https://github.com/grimwm/py-jstree
   Code adjusted according to the idea of Frank Blechschmidt - FraBle
@@ -132,7 +132,7 @@ class JSTree(dictobj.DictionaryObject):
             opt.update(path.options) if path.options is not None else None
           else:
             oid = None
-          curr.children[subpath] = Node(subpath, oid, **opt)          
+          curr.children[subpath] = Node(subpath, oid, **opt)
           # oid = path.id if len(subpaths) - 1 == i else None
           # curr.children[subpath] = Node(subpath, oid, **kwargs)
         curr = curr.children[subpath]

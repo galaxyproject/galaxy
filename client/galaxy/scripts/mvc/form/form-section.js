@@ -73,7 +73,7 @@ define(['utils/utils',
             var field = this._addRow( input_def.test_param );
 
             // set onchange event for test parameter
-            field.options.onchange = function(value) {
+            field.model && field.model.set( 'onchange', function( value ) {
                 var selectedCase = self.app.data.matchCase(input_def, value);
                 for (var i in input_def.cases) {
                     var case_def = input_def.cases[i];
@@ -93,7 +93,7 @@ define(['utils/utils',
                     }
                 }
                 self.app.trigger('change');
-            };
+            });
 
             // add conditional sub sections
             for (var i in input_def.cases) {

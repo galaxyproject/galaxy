@@ -2,10 +2,8 @@ import logging
 import os
 import tempfile
 
-from sqlalchemy import and_
-
 from galaxy.tools.deps.resolvers import INDETERMINATE_DEPENDENCY
-from galaxy.util import listify
+from galaxy.util import listify, url_get
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import shed_util_common as suc
@@ -251,7 +249,7 @@ class Repository( RecipeTag, SyncDatabase ):
                        owner=owner,
                        changeset_revision=changeset_revision )
         pathspec = [ 'repository', 'get_tool_dependencies_config_contents' ]
-        text = common_util.tool_shed_get( self.app, tool_shed_url, pathspec=pathspec, params=params )
+        text = url_get( tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
         if text:
             # Write the contents to a temporary file on disk so it can be reloaded and parsed.
             fh = tempfile.NamedTemporaryFile( 'wb', prefix="tmp-toolshed-cttdc"  )
@@ -360,34 +358,6 @@ class Repository( RecipeTag, SyncDatabase ):
         env_sh_file_path = os.path.join( env_sh_file_dir, 'env.sh' )
         return env_sh_file_path
 
-    def get_tool_shed_repository_by_tool_shed_name_owner_changeset_revision( self, tool_shed_url, name, owner, changeset_revision ):
-        sa_session = self.app.install_model.context
-        # The protocol is not stored, but the port is if it exists.
-        tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed_url )
-        tool_shed_repository = sa_session.query( self.app.install_model.ToolShedRepository ) \
-                                         .filter( and_( self.app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
-                                                        self.app.install_model.ToolShedRepository.table.c.name == name,
-                                                        self.app.install_model.ToolShedRepository.table.c.owner == owner,
-                                                        self.app.install_model.ToolShedRepository.table.c.changeset_revision == changeset_revision ) ) \
-                                         .first()
-        if tool_shed_repository:
-            return tool_shed_repository
-        # The tool_shed_repository must have been updated to a newer changeset revision than the one defined in the repository_dependencies.xml file,
-        # so call the tool shed to get all appropriate newer changeset revisions.
-        text = suc.get_updated_changeset_revisions_from_tool_shed( self.app, tool_shed_url, name, owner, changeset_revision )
-        if text:
-            changeset_revisions = listify( text )
-            for changeset_revision in changeset_revisions:
-                tool_shed_repository = sa_session.query( self.app.install_model.ToolShedRepository ) \
-                                                 .filter( and_( self.app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
-                                                                self.app.install_model.ToolShedRepository.table.c.name == name,
-                                                                self.app.install_model.ToolShedRepository.table.c.owner == owner,
-                                                                self.app.install_model.ToolShedRepository.table.c.changeset_revision == changeset_revision ) ) \
-                                                 .first()
-                if tool_shed_repository:
-                    return tool_shed_repository
-        return None
-
     def handle_complex_repository_dependency_for_package( self, elem, package_name, package_version, tool_shed_repository,
                                                           from_tool_migration_manager=False ):
         """
@@ -398,17 +368,15 @@ class Repository( RecipeTag, SyncDatabase ):
         and package_version is being installed.
         """
         handled_tool_dependencies = []
-        tool_shed = elem.attrib[ 'toolshed' ]
-        # The protocol is not stored, but the port is if it exists.
-        tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
+        tool_shed_url = elem.attrib[ 'toolshed' ]
         required_repository_name = elem.attrib[ 'name' ]
         required_repository_owner = elem.attrib[ 'owner' ]
         default_required_repository_changeset_revision = elem.attrib[ 'changeset_revision' ]
-        required_repository = \
-            self.get_tool_shed_repository_by_tool_shed_name_owner_changeset_revision( tool_shed,
-                                                                                      required_repository_name,
-                                                                                      required_repository_owner,
-                                                                                      default_required_repository_changeset_revision )
+        required_repository = suc.get_repository_for_dependency_relationship( self.app, tool_shed_url,
+                                                                              required_repository_name,
+                                                                              required_repository_owner,
+                                                                              default_required_repository_changeset_revision )
+        tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed_url )
         tmp_filename = None
         if required_repository:
             required_repository_changeset_revision = required_repository.installed_changeset_revision

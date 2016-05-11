@@ -14,7 +14,6 @@ from galaxy.managers import base
 from galaxy.managers import deletable
 from galaxy.managers import containers
 from galaxy.managers import hdas
-from galaxy.managers import collections
 
 import logging
 log = logging.getLogger( __name__ )
@@ -31,7 +30,6 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
     contained_class_type_name = 'dataset'
 
     subcontainer_class = model.HistoryDatasetCollectionAssociation
-    # TODO:
     subcontainer_class_manager_class = None
     subcontainer_class_type_name = 'dataset_collection'
 
@@ -59,7 +57,6 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
     def __init__( self, app ):
         self.app = app
         self.contained_manager = self.contained_class_manager_class( app )
-        self.subcontainer_manager = collections.DatasetCollectionManager( app )
 
     # ---- interface
     def contained( self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs ):
@@ -136,15 +133,14 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
     def _get_filter_for_contained( self, container, content_class ):
         return content_class.history == container
 
-    def _union_of_contents( self, container, **kwargs ):
+    def _union_of_contents( self, container, expand_models=True, **kwargs ):
         """
         Returns a limited and offset list of both types of contents, filtered
         and in some order.
         """
         contents_results = self._union_of_contents_query( container, **kwargs ).all()
-        # import pprint
-        # for result in contents_results:
-        #     pprint.pprint( result )
+        if not expand_models:
+            return contents_results
 
         # partition ids into a map of { component_class names -> list of ids } from the above union query
         id_map = dict( (( self.contained_class_type_name, [] ), ( self.subcontainer_class_type_name, [] )) )

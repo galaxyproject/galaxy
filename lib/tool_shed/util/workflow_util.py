@@ -59,7 +59,7 @@ class RepoToolModule( ToolModule ):
         module = Class( trans, repository_id, changeset_revision, tools_metadata, tool_id )
         module.state = galaxy.tools.DefaultToolState()
         if module.tool is not None:
-            module.state.decode( step_dict[ "tool_state" ], module.tool, module.trans.app, secure=secure )
+            module.state.decode( step_dict[ "tool_state" ], module.tool, module.trans.app )
         module.errors = step_dict.get( "tool_errors", None )
         return module
 
@@ -270,7 +270,7 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
         step.label = step_dict.get('label', None)
         step.name = step_dict[ 'name' ]
         step.position = step_dict[ 'position' ]
-        module = module_factory.from_dict( trans, repository_id, changeset_revision, step_dict, tools_metadata=tools_metadata, secure=False )
+        module = module_factory.from_dict( trans, repository_id, changeset_revision, step_dict, tools_metadata=tools_metadata )
         if module.type == 'tool' and module.tool is None:
             # A required tool is not available in the current repository.
             step.tool_errors = 'unavailable'

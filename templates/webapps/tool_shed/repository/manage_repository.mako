@@ -74,21 +74,11 @@
         sharable_link_label = 'Sharable link to this repository revision:'
         sharable_link_changeset_revision = changeset_revision
 
-    if repository_metadata is None:
-        can_render_skip_tool_test_section = False
-    else:
-        if repository_metadata.changeset_revision is None:
-            can_render_skip_tool_test_section = False
-        else:
-            if includes_tools or repository.type == TOOL_DEPENDENCY_DEFINITION:
-                can_render_skip_tool_test_section = True
-            else:
-                can_render_skip_tool_test_section = False
     if heads:
         multiple_heads = len( heads ) > 1
     else:
         multiple_heads = False
-    
+
     if repository_metadata is None:
         revision_installable = False
     else:
@@ -254,48 +244,6 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
     </div>
 </div>
 ${render_repository_items( metadata, containers_dict, can_set_metadata=True, render_repository_actions_for='tool_shed' )}
-%if can_render_skip_tool_test_section:
-    <p/>
-    <div class="toolForm">
-        %if repository.type == TOOL_DEPENDENCY_DEFINITION:
-            <div class="toolFormTitle">Automated tool dependency test</div>
-        %else:
-            <div class="toolFormTitle">Automated tool tests</div>
-        %endif
-        <div class="toolFormBody">
-            <form name="skip_tool_tests" id="skip_tool_tests" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=str( repository_metadata.changeset_revision ) )}" method="post" >
-                <div class="form-row">
-                    %if repository.type == TOOL_DEPENDENCY_DEFINITION:
-                        <label>Skip automated testing of this tool dependency recipe</label>
-                    %else:
-                        <label>Skip automated testing of tools in this revision:</label>
-                    %endif
-                    ${skip_tool_tests_check_box.get_html()}
-                    <div class="toolParamHelp" style="clear: both;">
-                        %if repository.type == TOOL_DEPENDENCY_DEFINITION:
-                            Check the box and click <b>Save</b> to skip automated testing of this tool dependency recipe.
-                        %else:
-                            Check the box and click <b>Save</b> to skip automated testing of the tools in this revision.
-                        %endif
-                    </div>
-                </div>
-                <div style="clear: both"></div>
-                <div class="form-row">
-                <label>Reason for skipping automated testing:</label>
-                %if skip_tool_test:
-                    <pre><textarea name="skip_tool_tests_comment" rows="3" cols="80">${skip_tool_test.comment | h}</textarea></pre>
-                %else:
-                    <textarea name="skip_tool_tests_comment" rows="3" cols="80"></textarea>
-                %endif
-                </div>
-                <div style="clear: both"></div>
-                <div class="form-row">
-                    <input type="submit" name="skip_tool_tests_button" value="Save"/>
-                </div>
-            </form>
-        </div>
-    </div>
-%endif
 <p/>
 <div class="toolForm">
     <div class="toolFormTitle">Manage categories</div>

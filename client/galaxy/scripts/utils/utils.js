@@ -44,33 +44,35 @@ function sanitize(content) {
 };
 
 /**
- * Validate atomic values or list of values
+ * Checks if a value or list of values is `empty`
  * usually used for selectable options
  * @param{String}   value - Value or list to be validated
  */
-function validate ( value ) {
+function isEmpty ( value ) {
     if ( !( value instanceof Array ) ) {
         value = [ value ];
     }
+    if ( value.length === 0 ) {
+        return true;
+    }
     for( var i in value ) {
         if ( [ '__null__', '__undefined__', null, undefined ].indexOf( value[ i ] ) > -1 ) {
-            return false;
+            return true;
         }
     }
-    return true;
+    return false;
 };
 
 /**
  * Convert list to pretty string
  * @param{String}   lst - List of strings to be converted in human readable list sentence
  */
-function textify(lst) {
-    var lst = lst.toString();
-    if (lst) {
-        lst = lst.replace(/,/g, ', ');
-        var pos = lst.lastIndexOf(', ');
-        if (pos != -1) {
-            lst = lst.substr(0, pos) + ' or ' + lst.substr(pos+1);
+function textify( lst ) {
+    if ( $.isArray( lst ) ) {
+        var lst = lst.toString().replace( /,/g, ', ' );
+        var pos = lst.lastIndexOf( ', ' );
+        if ( pos != -1 ) {
+            lst = lst.substr( 0, pos ) + ' or ' + lst.substr( pos + 2 );
         }
         return lst;
     }
@@ -270,7 +272,7 @@ return {
     request: request,
     sanitize: sanitize,
     textify: textify,
-    validate: validate,
+    isEmpty: isEmpty,
     deepeach: deepeach,
     isJSON: isJSON
 };
