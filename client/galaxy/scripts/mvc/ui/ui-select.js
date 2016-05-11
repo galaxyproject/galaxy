@@ -130,6 +130,11 @@ var View = Backbone.View.extend(
         }
     },
 
+    // Clear the selection
+    clear: function(){
+        this.$el.select2('val', '');
+    },
+
     // remove
     remove: function() {
         this.$el.select2('destroy');
