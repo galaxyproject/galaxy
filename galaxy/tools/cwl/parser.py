@@ -87,10 +87,6 @@ def to_cwl_tool_object(tool_path):
     if "cwlVersion" not in raw_tool:
         raise Exception("File does not declare a CWL version, pre-draft 3 CWL tools are not supported.")
 
-    cwl_version = raw_tool["cwlVersion"]
-    if cwl_version != "https://w3id.org/cwl/cwl#draft-3":
-        raise Exception("Only draft 3 CWL tools are supported by Galaxy.")
-
     proxy = proxy_class(cwl_tool, tool_path)
     return proxy
 

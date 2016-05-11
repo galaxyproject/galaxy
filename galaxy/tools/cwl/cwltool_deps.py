@@ -25,6 +25,11 @@ except (ImportError, SyntaxError):
     process = None
 
 try:
+    from cwltool import load_tool
+except (ImportError, SyntaxError):
+    load_tool = None
+
+try:
     import shellescape
 except ImportError:
     shellescape = None
@@ -47,6 +52,10 @@ def ensure_cwltool_available():
     """
     if main is None or workflow is None or shellescape is None:
         message = "This feature requires cwltool and dependencies to be available, they are not."
+        if main is None:
+            message += " cwltool is not unavailable."
+        elif load_tool is None:
+            message += " cwltool.load_tool is unavailabe - cwltool version is too old."
         if requests is None:
             message += " Library 'requests' unavailable."
         if shellescape is None:
@@ -58,6 +67,7 @@ def ensure_cwltool_available():
 
 __all__ = [
     'main',
+    'load_tool',
     'workflow',
     'process',
     'ensure_cwltool_available',

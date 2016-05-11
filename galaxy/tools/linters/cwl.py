@@ -7,10 +7,10 @@ from galaxy.tools.cwl.schema import schema_loader
 
 def lint_cwl_validation(tool_source, lint_ctx):
     """Determine in CWL tool validates against spec."""
-    raw_object = schema_loader.raw_object(tool_source._source_path)
+    raw_reference = schema_loader.raw_process_reference(tool_source._source_path)
     validation_exception = None
     try:
-        schema_loader.process_definition(raw_object)
+        schema_loader.process_definition(raw_reference)
     except Exception as e:
         validation_exception = e
     if validation_exception:
@@ -21,11 +21,8 @@ def lint_cwl_validation(tool_source, lint_ctx):
 
 def lint_new_draft(tool_source, lint_ctx):
     """Determine in CWL tool is valid, modern draft."""
-    raw_object = schema_loader.raw_object(tool_source._source_path)
-    if isinstance(raw_object, list):
-        lint_ctx.error("CWL file is not a modern CWL draft.")
-        return
-    cwl_version = raw_object.get("cwlVersion", None)
+    raw_reference = schema_loader.raw_process_reference(tool_source._source_path)
+    cwl_version = raw_reference.process_object.get("cwlVersion", None)
     if cwl_version is None:
         lint_ctx.error("CWL file does not contain a 'cwlVersion'")
     if cwl_version not in ["cwl:draft-3", "cwl:draft-4"]:
