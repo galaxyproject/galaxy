@@ -9,7 +9,7 @@ History
 16.7.5.dev0
 ---------------------
 
-    
+* Updates to cwl processing for Planemo.
 
 ---------------------
 16.7.4 (2016-05-10)
