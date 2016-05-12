@@ -50,6 +50,15 @@ See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additio
 
 Deprecation Notices
 ===========================================================
+
+API for history contents, index:
+ * **types**: is no longer a valid parameter but accessible using
+  ``?q=history_content_type&qv=[dataset | dataset_collection]``
+ * **ids**: is no longer a valid url parameter but is accessible using
+  ``?q=type_id-in&qv=<e.g. dataset-abcdef123,dataset_collection-987fedcba, ...>``
+ * **deleted** and **visible**: are no longer parameters but are still accessible using
+  ``q=deleted&qv=[True | False]&q=visible&qv=[True | False]``
+
 API for history contents, show:
   * **api_type**: removed and unavailable (was :code:`file` and constant across HDAs)
   * **display_apps**, **display_types**, **visualization**: removed from the default :code:`detailed` view but still available by calling url with
