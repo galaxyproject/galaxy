@@ -5,6 +5,7 @@ import os
 from six.moves.urllib.parse import urldefrag
 
 from .cwltool_deps import (
+    ensure_cwltool_available,
     schema_salad,
     workflow,
     load_tool,
@@ -18,16 +19,24 @@ class SchemaLoader(object):
 
     def __init__(self, strict=True):
         self._strict = strict
-        self._raw_document_loader = schema_salad.ref_resolver.Loader({"cwl": "https://w3id.org/cwl/cwl#", "id": "@id"})
+        self._raw_document_loader = None
+
+    @property
+    def raw_document_loader(self):
+        if self._raw_document_loader is None:
+            ensure_cwltool_available()
+            self._raw_document_loader = schema_salad.ref_resolver.Loader({"cwl": "https://w3id.org/cwl/cwl#", "id": "@id"})
+
+        return self._raw_document_loader
 
     def raw_process_reference(self, path):
         uri = "file://" + os.path.abspath(path)
         fileuri, _ = urldefrag(uri)
-        return RawProcessReference(self._raw_document_loader.fetch(fileuri), uri)
+        return RawProcessReference(self.raw_document_loader.fetch(fileuri), uri)
 
     def process_definition(self, raw_reference):
         document_loader, avsc_names, process_object, metadata, uri = load_tool.validate_document(
-            self._raw_document_loader,
+            self.raw_document_loader,
             raw_reference.process_object,
             raw_reference.uri,
         )
