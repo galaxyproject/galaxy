@@ -59,6 +59,18 @@ API for history contents, index:
  * **deleted** and **visible**: are no longer parameters but are still accessible using
   ``q=deleted&qv=[True | False]&q=visible&qv=[True | False]``
 
+Security
+===========================================================
+Due to security fixes on the Mercurial_ side we had to update the hg version that
+both Galaxy and TS depend on because the fixes have not been backported to older versions.
+However this has broken the TS's ``hg push`` functionality as Mercurial changed their bundle
+format in a non-compatible manner. Given that we deprecated the ``hg push`` API
+functionality back in in 15.10 we decided to disable it fully from 16.01 (retroactively).
+
+**Only Tool Sheds newer than 16.01 should be deployed form now on.**
+
+.. _Mercurial: https://www.mercurial-scm.org/wiki/WhatsNew#Mercurial_3.7.3_.282016-3-29.29
+
 
 Release Notes
 ===========================================================

@@ -12,12 +12,12 @@ Enhancements
 
 .. major_feature
 
-* Overhaul of Tools and Jobs for 16.04
+* Overhaul of Tools and Jobs
   `Pull Request 1688`_
 * Implement an Embedded Pulsar Job Runner
   `Pull Request 2057`_
 * Use the API to install repositories instead of loading the
-  Tool Shed in an iframe.
+  Tool Shed in an iframe. (Beta)
   `Pull Request 1392`_
 
 .. feature
@@ -25,8 +25,6 @@ Enhancements
 * Phinch interactive environment
   (thanks to `@shiltemann <https://github.com/shiltemann>`__.)
   `Pull Request 1647`_
-* Basic tool error Sentry reporting.
-  `Pull Request 1900`_
 * Add iobio external display applications for BAM and VCF.
   `Pull Request 1926`_
 * add chemical datatypes
@@ -36,6 +34,10 @@ Enhancements
   `Pull Request 1463`_
 * Work toward automating release management.
   `Pull Request 1613`_
+* Basic tool error Sentry reporting.
+  `Pull Request 1900`_
+* disable 'hg push' to TS repositories
+  `Pull Request 2033`_
 
 .. enhancement
 
@@ -214,10 +216,6 @@ Enhancements
 * Better element_identifier handling in repeat sections
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
   `Pull Request 2029`_
-* disable 'hg push' to TS repositories
-  `Pull Request 2033`_
-* Disable repo push for TS repositories
-  `Pull Request 2044`_
 * Pulsar-As-A-Dependency
   `Pull Request 2052`_
 * Simplify Workflow sharing menu
