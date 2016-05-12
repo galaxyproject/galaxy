@@ -297,6 +297,10 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
     >>> guess_ext(fname, sniff_order)
     'gff3'
     >>> fname = get_test_fname('temp.txt')
+    >>> file(fname, 'wt').write("a\\t2")
+    >>> guess_ext(fname, sniff_order)
+    'txt'
+    >>> fname = get_test_fname('temp.txt')
     >>> file(fname, 'wt').write("a\\t2\\nc\\t1\\nd\\t0")
     >>> guess_ext(fname, sniff_order)
     'tabular'
@@ -346,6 +350,9 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
     >>> fname = get_test_fname('5e5z.pdb')
     >>> guess_ext(fname, sniff_order)
     'pdb'
+    >>> fname = get_test_fname('mothur_datatypetest_true.mothur.otu')
+    >>> guess_ext(fname, sniff_order)
+    'mothur.otu'
     """
     file_ext = None
     for datatype in sniff_order:

@@ -1,3 +1,4 @@
+"""Constructors for concrete tool and input source objects."""
 from __future__ import absolute_import
 
 import yaml
@@ -17,11 +18,20 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def get_tool_source(config_file, enable_beta_formats=True):
+def get_tool_source(config_file=None, xml_tree=None, enable_beta_formats=True):
+    """Return a ToolSource object corresponding to supplied source.
+
+    The supplied source may be specified as a file path (using the config_file
+    parameter) or as an XML object loaded with load_tool_xml.
+    """
+    if xml_tree is not None:
+        return XmlToolSource(xml_tree, source_path=config_file)
+    elif config_file is None:
+        raise ValueError("get_tool_source called with invalid config_file None.")
+
     if not enable_beta_formats:
         tree = load_tool_xml(config_file)
-        root = tree.getroot()
-        return XmlToolSource(root, source_path=config_file)
+        return XmlToolSource(tree, source_path=config_file)
 
     if config_file.endswith(".yml"):
         log.info("Loading tool from YAML - this is experimental - tool will not function in future.")
@@ -33,8 +43,7 @@ def get_tool_source(config_file, enable_beta_formats=True):
         return CwlToolSource(config_file)
     else:
         tree = load_tool_xml(config_file)
-        root = tree.getroot()
-        return XmlToolSource(root, source_path=config_file)
+        return XmlToolSource(tree, source_path=config_file)
 
 
 def ordered_load(stream):
@@ -53,9 +62,15 @@ def ordered_load(stream):
 
 
 def get_input_source(content):
-    """ Wraps XML elements in a XmlInputSource until everything
-    is consumed using the tool source interface.
+    """Wrap an XML element in a XmlInputSource if needed.
+
+    If the supplied content is already an InputSource object,
+    it is simply returned. This allow Galaxy to uniformly
+    consume using the tool input source interface.
     """
     if not isinstance(content, InputSource):
         content = XmlInputSource(content)
     return content
+
+
+__all__ = ["get_tool_source", "get_input_source"]

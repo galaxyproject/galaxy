@@ -1,6 +1,12 @@
+"""This module contains a linting function for a tool's command description.
+
+A command description describes how to build the command-line to execute
+from supplied inputs.
+"""
 
 
 def lint_command(tool_xml, lint_ctx):
+    """Ensure tool contains exactly one command and check attributes."""
     root = tool_xml.getroot()
     commands = root.findall("command")
     if len(commands) > 1:
@@ -30,10 +36,13 @@ def lint_command(tool_xml, lint_ctx):
     interpreter_info = ""
     if interpreter_type:
         interpreter_info = " with interpreter of type [%s]" % interpreter_type
+    if interpreter_type:
+        lint_ctx.info("Command uses deprecated 'interpreter' attribute.")
     lint_ctx.info("Tool contains a command%s." % interpreter_info)
 
 
 def get_command(tool_xml):
+    """Get command XML element from supplied XML root."""
     root = tool_xml.getroot()
     commands = root.findall("command")
     command = None

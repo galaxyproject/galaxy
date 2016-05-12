@@ -22,3 +22,6 @@ class EmbeddedPulsarIntegrationTestCase(integration_util.IntegrationTestCase):
 
     def test_multi_data_param(self):
         self._run_tool_test("multi_data_param")
+
+    def test_work_dir_outputs(self):
+        self._run_tool_test("output_filter")

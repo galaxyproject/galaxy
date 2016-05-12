@@ -205,7 +205,6 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
         '</a>'
     ].join(''),
 
-
     /** In this override, get and set current panel preferences when editor is used */
     _renderTags : function( $where ){
         var panel = this;

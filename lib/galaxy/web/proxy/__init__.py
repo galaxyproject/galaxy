@@ -162,7 +162,7 @@ class ProxyRequests(object):
 
 def proxy_ipc(config):
     proxy_session_map = config.proxy_session_map
-    if config.dynamic_proxy == "nodejs":
+    if config.dynamic_proxy == "node":
         if proxy_session_map.endswith(".sqlite"):
             return SqliteProxyIpc(proxy_session_map)
         else:

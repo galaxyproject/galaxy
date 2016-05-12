@@ -143,11 +143,13 @@ class ProvidesUserContext( object ):
         if base_dir is None:
             return None
         else:
-            identifier = self.app.config.ftp_upload_dir_identifier
+            # e.g. 'email' or 'username'
+            identifier_attr = self.app.config.ftp_upload_dir_identifier
+            identifier_value = getattr(self.user, identifier_attr)
             template = self.app.config.ftp_upload_dir_template
             path = string.Template(template).safe_substitute(dict(
                 ftp_upload_dir=base_dir,
-                ftp_upload_dir_identifier=identifier,
+                ftp_upload_dir_identifier=identifier_value,
             ))
             return path
 

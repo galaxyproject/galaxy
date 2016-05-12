@@ -20,7 +20,7 @@ threadpool_workers = 10
 use = egg:PasteDeploy#prefix
 prefix = /reports
 
-# ---- Galaxy Webapps Report Interface -------------------------------------------------
+# ---- Galaxy Reports  ------------------------------------------------------
 
 [app:main]
 
@@ -37,8 +37,6 @@ prefix = /reports
 # cookie so the cookies from each instance will not clobber each other.
 #cookie_path = None
 
-# -- Report 
-
 # Specifies the factory for the universe WSGI application
 paste.app_factory = galaxy.webapps.reports.buildapp:app_factory
 log_level = DEBUG
@@ -46,7 +44,7 @@ log_level = DEBUG
 # Database connection
 # Galaxy reports are intended for production Galaxy instances, so sqlite is not supported.
 # You may use a SQLAlchemy connection string to specify an external database.
-# database_connection = postgres:///galaxy_test?user=postgres&password=postgres 
+#database_connection = postgres:///galaxy_test?user=postgres&password=postgres
 
 # Where dataset files are saved
 #file_path = database/files
@@ -65,27 +63,23 @@ session_key = galaxysessions
 session_secret = changethisinproduction
 
 # Configuration for debugging middleware
-# debug = true
-use_lint = false
+#debug = False
+
+# Check for WSGI compliance.
+#use_lint = False
 
 # NEVER enable this on a public site (even test or QA)
-# use_interactive = true
-
-# Address to join mailing list
-mailing_join_addr = galaxy-user-join@bx.psu.edu
+#use_interactive = true
 
 # Write thread status periodically to 'heartbeat.log' (careful, uses disk space rapidly!)
-## use_heartbeat = True
+#use_heartbeat = True
 
 # Profiling middleware (cProfile based)
-## use_profile = True
+#use_profile = True
 
 # Mail
-# smtp_server = yourserver@yourfacility.edu
-# error_email_to = your_bugs@bx.psu.edu
-
-# Use the new iframe / javascript based layout
-use_new_layout = true
+#smtp_server = yourserver@yourfacility.edu
+#error_email_to = your_bugs@bx.psu.edu
 
 # Serving static files (needed if running standalone)
 # static_enabled = True
@@ -95,3 +89,6 @@ use_new_layout = true
 # static_favicon_dir = %(here)s/static/favicon.ico
 # static_scripts_dir = %(here)s/static/scripts/
 # static_style_dir = %(here)s/static/june_2007_style/blue
+
+# Sentry (getsentry.com) DSN for catching bugs.
+#sentry_dsn = None

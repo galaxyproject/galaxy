@@ -337,12 +337,15 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             if remote_metadata:
                 metadata_directory = remote_job_config['metadata_directory']
 
+            # Pulsar handles ``create_tool_working_directory`` and
+            # ``include_work_dir_outputs`` details.
             command_line = build_command(
                 self,
                 job_wrapper=job_wrapper,
                 container=container,
                 include_metadata=remote_metadata,
                 metadata_directory=metadata_directory,
+                create_tool_working_directory=False,
                 include_work_dir_outputs=False,
                 remote_command_params=remote_command_params,
             )

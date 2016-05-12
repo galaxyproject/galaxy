@@ -186,7 +186,7 @@ var HistoryView = _super.extend(
         }
         // don't bother rendering if there's one already
         var $existing = $where.find( '.controls .actions .show-selectors-btn' );
-        if( $existing.size() ){
+        if( $existing.length ){
             return $existing;
         }
 

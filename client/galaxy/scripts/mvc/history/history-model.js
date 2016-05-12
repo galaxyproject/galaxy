@@ -172,12 +172,18 @@ var History = Backbone.Model
 
         // note if there was no previous update time, all summary contents will be fetched
         var lastUpdateTime = self.lastUpdateTime;
-        self.lastUpdateTime = new Date();
-
         // if we don't flip this, then a fully-fetched list will not be re-checked via fetch
         this.contents.allFetched = false;
+        // note: if there was no previous update time, all summary contents will be fetched
         return self.contents.fetchUpdated( lastUpdateTime )
-            .done( _.bind( self.checkForUpdates, self ) );
+            .done( function( response, status, xhr ){
+                var serverResponseDatetime;
+                try {
+                    serverResponseDatetime = new Date( xhr.getResponseHeader( 'Date' ) );
+                } catch( err ){}
+                self.lastUpdateTime = serverResponseDatetime || new Date();
+                self.checkForUpdates( options );
+            });
     },
 
     /** continuously fetch updated contents every UPDATE_DELAY ms if this history's datasets or jobs are unfinished */
@@ -215,7 +221,6 @@ var History = Backbone.Model
                     } else {
                         // otherwise, let listeners know that all updates have stopped
                         self.trigger( 'ready' );
-                        // self.lastUpdateTime = null;
                     }
                 });
         }

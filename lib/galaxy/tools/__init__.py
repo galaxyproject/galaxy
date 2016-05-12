@@ -108,7 +108,7 @@ class ToolBox( BaseGalaxyToolBox ):
 
     def create_tool( self, config_file, repository_id=None, guid=None, **kwds ):
         try:
-            tool_source = get_tool_source( config_file, getattr( self.app.config, "enable_beta_tool_formats", False ) )
+            tool_source = get_tool_source( config_file, enable_beta_formats=getattr( self.app.config, "enable_beta_tool_formats", False ) )
         except Exception, e:
             # capture and log parsing errors
             global_tool_errors.add_error(config_file, "Tool XML parsing", e)
@@ -1099,6 +1099,8 @@ class Tool( object, Dictifiable ):
         for expanded_incoming in expanded_incomings:
             params = {}
             errors = {}
+            if self.input_translator:
+                self.input_translator.translate( expanded_incoming )
             if not self.check_values:
                 # If `self.check_values` is false we don't do any checking or
                 # processing on input  This is used to pass raw values
@@ -1118,7 +1120,7 @@ class Tool( object, Dictifiable ):
         log.debug( 'Validated and populated state for tool request %s' % validation_timer )
         # If there were errors, we stay on the same page and display them
         if any( all_errors ):
-            raise exceptions.MessageException( err_data=all_errors[ 0 ] )
+            raise exceptions.MessageException( ', '.join( [ msg for msg in all_errors[ 0 ].itervalues() ] ), err_data=all_errors[ 0 ] )
         else:
             execution_tracker = execute_job( trans, self, all_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info )
             if execution_tracker.successful_jobs:
@@ -1250,13 +1252,14 @@ class Tool( object, Dictifiable ):
         visit_input_values( self.inputs, values, validate_inputs )
         return messages
 
-    def build_dependency_shell_commands( self, job_directory=None ):
+    def build_dependency_shell_commands( self, job_directory=None, metadata=False ):
         """Return a list of commands to be run to populate the current environment to include this tools requirements."""
         return self.app.toolbox.dependency_manager.dependency_shell_commands(
             self.requirements,
             installed_tool_dependencies=self.installed_tool_dependencies,
             tool_dir=self.tool_dir,
             job_directory=job_directory,
+            metadata=metadata,
         )
 
     @property
@@ -1691,7 +1694,10 @@ class Tool( object, Dictifiable ):
             'job_id'        : trans.security.encode_id( job.id ) if job else None,
             'job_remap'     : self._get_job_remap( job ),
             'history_id'    : trans.security.encode_id( history.id ),
-            'display'       : self.display_interface
+            'display'       : self.display_interface,
+            'action'        : url_for( self.action ),
+            'method'        : self.method,
+            'enctype'       : self.enctype
         })
         return tool_model
 

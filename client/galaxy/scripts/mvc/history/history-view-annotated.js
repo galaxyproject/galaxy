@@ -83,7 +83,7 @@ var AnnotatedHistoryView = _super.extend(/** @lends AnnotatedHistoryView.prototy
             // stopProp will prevent bootstrap from getting the click needed to open a dropdown
             //  in the case of metafile download buttons - workaround here
             var $currTarget = $( ev.currentTarget );
-            if( $currTarget.size() && $currTarget.attr( 'data-toggle' ) === 'dropdown' ){
+            if( $currTarget.length && $currTarget.attr( 'data-toggle' ) === 'dropdown' ){
                 $currTarget.dropdown( 'toggle' );
             }
         }

@@ -170,44 +170,8 @@ class Registry( object ):
                                                                                      encoded_repository_id,
                                                                                      latest_installable_changeset_revision )
             if repository_metadata:
-                # Filter out repository revisions that have not been tested.
-                if repository_metadata.time_last_tested is not None and repository_metadata.tool_test_results is not None:
-                    if repository.type in [ rt_util.REPOSITORY_SUITE_DEFINITION, rt_util.TOOL_DEPENDENCY_DEFINITION ]:
-                        # Look in the tool_test_results dictionary for installation errors.
-                        try:
-                            tool_test_results_dict = repository_metadata.tool_test_results[ 0 ]
-                        except Exception, e:
-                            message = 'Error attempting to retrieve install and test results for repository %s:\n' % str( repository.name )
-                            message += '%s' % str( e )
-                            log.exception( message )
-                            return ( latest_installable_changeset_revision, False )
-                        if 'installation_errors' in tool_test_results_dict:
-                            return ( latest_installable_changeset_revision, False )
-                        return ( latest_installable_changeset_revision, True )
-                    else:
-                        # We have a repository with type Unrestricted.
-                        if repository_metadata.includes_tools:
-                            if repository_metadata.tools_functionally_correct:
-                                return ( latest_installable_changeset_revision, True )
-                            return ( latest_installable_changeset_revision, False )
-                        else:
-                            # Look in the tool_test_results dictionary for installation errors.
-                            try:
-                                tool_test_results_dict = repository_metadata.tool_test_results[ 0 ]
-                            except Exception, e:
-                                message = 'Error attempting to retrieve install and test results for repository %s:\n' % str( repository.name )
-                                message += '%s' % str( e )
-                                log.exception( message )
-                                return ( latest_installable_changeset_revision, False )
-                            if 'installation_errors' in tool_test_results_dict:
-                                return ( latest_installable_changeset_revision, False )
-                            return ( latest_installable_changeset_revision, True )
-                else:
-                    # No test results.
-                    return ( latest_installable_changeset_revision, False )
-            else:
                 # No repository_metadata.
-                return ( latest_installable_changeset_revision, False )
+                return ( latest_installable_changeset_revision, True )
         else:
             # No installable changeset_revision.
             return ( None, False )

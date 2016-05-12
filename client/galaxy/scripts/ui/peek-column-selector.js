@@ -237,8 +237,8 @@
         var $peek = $( this ).addClass( PEEKCONTROL_CLASS ),
             $peektable = $peek.find( 'table' ),
             // get the size of the tables - width and height, number of comment rows
-            columnCount = $peektable.find( 'th' ).size(),
-            rowCount = $peektable.find( 'tr' ).size(),
+            columnCount = $peektable.find( 'th' ).length,
+            rowCount = $peektable.find( 'tr' ).length,
             // get the rows containing text starting with the comment char (also make them grey)
             $commentRows = $peektable.find( 'td[colspan]' ).map( function( e, i ){
                 var $this = $( this );
@@ -251,7 +251,7 @@
         // should comment rows in the peek be hidden?
         if( options.hideCommentRows ){
             $commentRows.hide();
-            rowCount -= $commentRows.size();
+            rowCount -= $commentRows.length;
         }
         //console.debug( 'rowCount:', rowCount, 'columnCount:', columnCount, '$commentRows:', $commentRows );
 

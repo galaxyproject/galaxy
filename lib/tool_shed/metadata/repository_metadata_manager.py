@@ -360,9 +360,6 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                                                                                  self.app.security.encode_id( self.repository.id ),
                                                                                  changeset_revision )
         if repository_metadata:
-            # A repository metadata record already exists with the received changeset_revision,
-            # so we don't need to check the skip_tool_test table.
-            check_skip_tool_test = False
             repository_metadata.metadata = metadata_dict
             repository_metadata.downloadable = downloadable
             repository_metadata.has_repository_dependencies = has_repository_dependencies
@@ -371,9 +368,6 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             repository_metadata.includes_tool_dependencies = includes_tool_dependencies
             repository_metadata.includes_workflows = includes_workflows
         else:
-            # No repository_metadata record exists for the received changeset_revision, so we may
-            # need to update the skip_tool_test table.
-            check_skip_tool_test = True
             repository_metadata = \
                 self.app.model.RepositoryMetadata( repository_id=self.repository.id,
                                                    changeset_revision=changeset_revision,
@@ -386,47 +380,10 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                                                    includes_workflows=includes_workflows )
         # Always set the default values for the following columns.  When resetting all metadata
         # on a repository this will reset the values.
-        repository_metadata.tools_functionally_correct = False
         repository_metadata.missing_test_components = False
-        repository_metadata.test_install_error = False
-        repository_metadata.do_not_test = False
-        repository_metadata.time_last_tested = None
-        repository_metadata.tool_test_results = None
         self.sa_session.add( repository_metadata )
         self.sa_session.flush()
 
-        if check_skip_tool_test:
-            # Since we created a new repository_metadata record, we may need to update the
-            # skip_tool_test table to point to it.  Inspect each changeset revision in the
-            # received repository's changelog (up to the received changeset revision) to see
-            # if it is contained in the skip_tool_test table.  If it is, but is not associated
-            # with a repository_metadata record, reset that skip_tool_test record to the newly
-            # created repository_metadata record.
-            repo = hg_util.get_repo_for_repository( self.app, repository=self.repository, repo_path=None, create=False )
-            for changeset in repo.changelog:
-                changeset_hash = str( repo.changectx( changeset ) )
-                skip_tool_test = self.get_skip_tool_test_by_changeset_revision( changeset_hash )
-                if skip_tool_test:
-                    # We found a skip_tool_test record associated with the changeset_revision,
-                    # so see if it has a valid repository_revision.
-                    repository_revision = \
-                        metadata_util.get_repository_metadata_by_id( self.app,
-                                                                     self.app.security.encode_id( repository_metadata.id ) )
-                    if repository_revision:
-                        # The skip_tool_test record is associated with a valid repository_metadata
-                        # record, so proceed.
-                        continue
-                    # We found a skip_tool_test record that is associated with an invalid
-                    # repository_metadata record, so update it to point to the newly created
-                    # repository_metadata record.  In some special cases there may be multiple
-                    # skip_tool_test records that require updating, so we won't break here, we'll
-                    # continue to inspect the rest of the changelog up to the received changeset_revision.
-                    skip_tool_test.repository_metadata_id = repository_metadata.id
-                    self.sa_session.add( skip_tool_test )
-                    self.sa_session.flush()
-                if changeset_hash == changeset_revision:
-                    # Proceed no further than the received changeset_revision.
-                    break
         return repository_metadata
 
     def different_revision_defines_tip_only_repository_dependency( self, rd_tup, repository_dependencies ):
@@ -514,16 +471,6 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             else:
                 return self.sa_session.query( self.app.model.Repository ) \
                                       .filter( self.app.model.Repository.table.c.deleted == false() )
-
-    def get_skip_tool_test_by_changeset_revision( self, changeset_revision ):
-        """
-        Return a skip_tool_test record whose initial_changeset_revision is the received
-        changeset_revision.
-        """
-        # There should only be one, but we'll use first() so callers won't have to handle exceptions.
-        return self.sa_session.query( self.app.model.SkipToolTest ) \
-                              .filter( self.app.model.SkipToolTest.table.c.initial_changeset_revision == changeset_revision ) \
-                              .first()
 
     def new_datatypes_metadata_required( self, repository_metadata ):
         """
@@ -1020,11 +967,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                         repository_metadata.includes_workflows = True
                     else:
                         repository_metadata.includes_workflows = False
-                    repository_metadata.do_not_test = False
-                    repository_metadata.time_last_tested = None
-                    repository_metadata.tools_functionally_correct = False
                     repository_metadata.missing_test_components = False
-                    repository_metadata.tool_test_results = None
                     self.sa_session.add( repository_metadata )
                     self.sa_session.flush()
                 else:

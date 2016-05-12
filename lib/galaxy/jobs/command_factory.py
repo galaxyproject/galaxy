@@ -22,6 +22,7 @@ def build_command(
     container=None,
     include_metadata=False,
     include_work_dir_outputs=True,
+    create_tool_working_directory=True,
     remote_command_params={},
     metadata_directory=None,
 ):
@@ -57,7 +58,12 @@ def build_command(
         __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params)
 
     if container or job_wrapper.commands_in_new_shell:
-        externalized_commands = __externalize_commands(job_wrapper, shell, commands_builder, remote_command_params)
+        if container:
+            # Many Docker containers do not have /bin/bash.
+            external_command_shell = "/bin/sh"
+        else:
+            external_command_shell = shell
+        externalized_commands = __externalize_commands(job_wrapper, external_command_shell, commands_builder, remote_command_params)
         if container:
             # Stop now and build command before handling metadata and copying
             # working directory files back. These should always happen outside
@@ -72,9 +78,12 @@ def build_command(
         else:
             commands_builder = CommandsBuilder( externalized_commands )
 
-    # usually working will already exist, but it will not for task
-    # split jobs.
-    commands_builder.prepend_command("mkdir -p working; cd working")
+    # Don't need to create a separate tool working directory for Pulsar
+    # jobs - that is handled by Pulsar.
+    if create_tool_working_directory:
+        # usually working will already exist, but it will not for task
+        # split jobs.
+        commands_builder.prepend_command("mkdir -p working; cd working")
 
     if include_work_dir_outputs:
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)
