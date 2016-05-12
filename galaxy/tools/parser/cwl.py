@@ -39,7 +39,7 @@ class CwlToolSource(ToolSource):
         return self._id
 
     def parse_name(self):
-        return self.tool_proxy.label()
+        return self.tool_proxy.label() or self.parse_id()
 
     def parse_command(self):
         return "$__cwl_command"
