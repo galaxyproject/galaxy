@@ -70,7 +70,10 @@ class ToolRunner( BaseUIController ):
         if tool.input_translator:
             tool.input_translator.translate( params )
         if 'runtool_btn' not in params.__dict__ and 'URL' not in params.__dict__:
-            error( 'Tool execution through the `tool_runner` requires a `runtool_btn` flag or `URL` parameter.' )
+            if tool.display_interface:
+                error( 'Tool execution through the `tool_runner` requires a `runtool_btn` flag or `URL` parameter.' )
+            else:
+                return trans.response.send_redirect( url_for( controller='root' ) )
         # We may be visiting Galaxy for the first time ( e.g., sending data from UCSC ),
         # so make sure to create a new history if we've never had one before.
         history = tool.get_default_history_by_trans( trans, create=True )
