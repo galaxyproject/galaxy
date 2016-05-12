@@ -341,7 +341,17 @@ class SharableModelSerializer( base.ModelSerializer,
     #   user/user_id
     #   username_and_slug?
 
-    def serialize_users_shared_with( self, item, key, **context ):
+    def serialize_users_shared_with( self, item, key, user=None, **context ):
+        """
+        Returns a list of encoded ids for users the item has been shared.
+
+        Skipped if the requesting user is not the owner.
+        """
+        # TODO: still an open question as to whether key removal based on user
+        # should be handled here or at a higher level (even if we didn't have to pass user (via thread context, etc.))
+        if not self.manager.is_owner( item, user ):
+            self.skip()
+
         share_assocs = self.manager.get_share_assocs( item )
         return [ self.serialize_id( share, 'user_id' ) for share in share_assocs ]
 
