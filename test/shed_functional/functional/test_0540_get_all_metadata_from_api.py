@@ -87,6 +87,7 @@ class TestGetAllMetadata( ShedTwillTestCase ):
                           commit_message='Uploaded column maker 1.0.',
                           strings_displayed=[],
                           strings_not_displayed=[] )
+        # Add a dependency on BWA.
         self.upload_file( repository,
                           filename='0540_files/convert_chars/tool_dependencies.xml',
                           filepath=None,
@@ -96,7 +97,7 @@ class TestGetAllMetadata( ShedTwillTestCase ):
                           commit_message='Uploaded column maker 1.0.',
                           strings_displayed=[],
                           strings_not_displayed=[] )
-        # Visit the manage repository page for package_bwa_0_5_9_0100.
+        # Visit the manage repository page for convert_chars_0540.
         self.display_manage_repository_page( repository, strings_displayed=[ repositories['bwa']['name'] ] )
 
     def test_0015_create_column_repository( self ):
@@ -129,7 +130,7 @@ class TestGetAllMetadata( ShedTwillTestCase ):
                           valid_tools_only=True,
                           uncompress_file=True,
                           remove_repo_files_not_in_tar=False,
-                          commit_message='Uploaded column maker 1.0.',
+                          commit_message='Uploaded column maker 2.0.',
                           strings_displayed=[],
                           strings_not_displayed=[] )
 

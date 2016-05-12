@@ -85,7 +85,7 @@ def add_file( dataset, registry, json_file, output_path ):
     stdout = None
     link_data_only = dataset.get( 'link_data_only', 'copy_files' )
     in_place = dataset.get( 'in_place', True )
-
+    purge_source = dataset.get( 'purge_source', True )
     try:
         ext = dataset.file_type
     except AttributeError:
@@ -329,7 +329,10 @@ def add_file( dataset, registry, json_file, output_path ):
             # This should not happen, but it's here just in case
             shutil.copy( dataset.path, output_path )
     elif link_data_only == 'copy_files':
-        shutil.move( dataset.path, output_path )
+        if purge_source:
+            shutil.move( dataset.path, output_path )
+        else:
+            shutil.copy( dataset.path, output_path )
     # Write the job info
     stdout = stdout or 'uploaded %s file' % data_type
     info = dict( type='dataset',

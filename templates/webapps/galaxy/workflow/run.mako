@@ -648,12 +648,15 @@ if wf_parms:
     });
     </script>
 %endif
+<%
+import base64
+%>
 %for i, step in enumerate( steps ):
     <!-- Only way module would be missing is if tool is missing, but
          that would cause missing_tools.mako to render instead of this
          template. -->
     <% module = step.module %>
-    <input type="hidden" name="${step.id}|tool_state" value="${module.get_state( step.state )}">
+    <input type="hidden" name="${step.id}|tool_state" value="${base64.b64encode( module.get_state( step.state ))}">
     %if step.type == 'tool' or step.type is None:
       <%
         tool = trans.app.toolbox.get_tool( step.tool_id )

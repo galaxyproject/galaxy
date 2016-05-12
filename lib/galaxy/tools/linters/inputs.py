@@ -1,7 +1,9 @@
+"""This module contains a linting functions for tool inputs."""
 from ..lint_util import is_datasource
 
 
 def lint_inputs(tool_xml, lint_ctx):
+    """Lint parameters in a tool's inputs block."""
     datasource = is_datasource(tool_xml)
     inputs = tool_xml.findall("./inputs//param")
     num_inputs = 0
@@ -97,6 +99,7 @@ def lint_inputs(tool_xml, lint_ctx):
 
 
 def lint_repeats(tool_xml, lint_ctx):
+    """Lint repeat blocks in tool inputs."""
     repeats = tool_xml.findall("./inputs//repeat")
     for repeat in repeats:
         if "name" not in repeat.attrib:

@@ -1,5 +1,10 @@
+"""This module contains an interface and implementation describing Galaxy interactions used by gxformat2.
+
+The interface is :class:`ImporterGalaxyInterface` and the default
+implementation based on `bioblend <http://bioblend.readthedocs.io/>`__
+is :class:`BioBlendImporterGalaxyInterface`.
+"""
 import abc
-import json
 
 import bioblend
 import six
@@ -7,23 +12,22 @@ import six
 
 @six.add_metaclass(abc.ABCMeta)
 class ImporterGalaxyInterface(object):
-    """ An abstract interface describing the interaction between
-    Galaxy and the workflow import code.
+    """An abstract interface describing Galaxy operations used by gxformat2.
+
+    Specifically containing definitions of operations required to load
+    workflows into Galaxy.
     """
 
     @abc.abstractmethod
     def import_workflow(self, workflow, **kwds):
-        """ Import a workflow via POST /api/workflows or
-        comparable interface into Galaxy.
-        """
-        pass
+        """Import a workflow via POST /api/workflows or comparable interface into Galaxy."""
 
 
 class BioBlendImporterGalaxyInterface(object):
+    """Implementation of :class:`ImporterGalaxyInterface` using bioblend."""
 
     def __init__(self, **kwds):
-        """
-        """
+        """Build a :class:`bioblend.GalaxyInstance` from supplied arguments."""
         url = None
 
         admin_key = None
@@ -60,11 +64,12 @@ class BioBlendImporterGalaxyInterface(object):
         self._user_gi = user_gi
 
     def import_workflow(self, workflow, **kwds):
-        workflow_str = json.dumps(workflow, indent=4)
+        """Import Galaxy workflow using instance :class:`bioblend.GalaxyInstance` object."""
         return self._user_gi.workflows.import_workflow_json(
-            workflow_str,
+            workflow,
             **kwds
         )
 
     def import_tool(self, tool_representation):
+        """Import Galaxy tool using instance :class:`bioblend.GalaxyInstance` object."""
         pass

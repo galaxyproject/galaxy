@@ -10,4 +10,5 @@ fluent-logger
 raven
 pbs_python
 drmaa
+statsd
 # PyRods not in PyPI

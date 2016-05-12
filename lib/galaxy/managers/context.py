@@ -2,8 +2,8 @@
 Mixins for transaction-like objects.
 """
 
-import os
 from json import dumps
+import string
 
 from galaxy.util import bunch
 
@@ -139,12 +139,19 @@ class ProvidesUserContext( object ):
 
     @property
     def user_ftp_dir( self ):
-        identifier = self.app.config.ftp_upload_dir_identifier
         base_dir = self.app.config.ftp_upload_dir
         if base_dir is None:
             return None
         else:
-            return os.path.join( base_dir, getattr( self.user, identifier ) )
+            # e.g. 'email' or 'username'
+            identifier_attr = self.app.config.ftp_upload_dir_identifier
+            identifier_value = getattr(self.user, identifier_attr)
+            template = self.app.config.ftp_upload_dir_template
+            path = string.Template(template).safe_substitute(dict(
+                ftp_upload_dir=base_dir,
+                ftp_upload_dir_identifier=identifier_value,
+            ))
+            return path
 
 
 class ProvidesHistoryContext( object ):

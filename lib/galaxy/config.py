@@ -151,7 +151,8 @@ class Configuration( object ):
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         self.retry_metadata_internally = string_as_bool( kwargs.get( "retry_metadata_internally", "True" ) )
         self.max_metadata_value_size = int( kwargs.get( "max_metadata_value_size", 5242880 ) )
-        self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
+        self.single_user = kwargs.get( "single_user", None )
+        self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) ) or self.single_user
         self.normalize_remote_user_email = string_as_bool( kwargs.get( "normalize_remote_user_email", "False" ) )
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
         self.remote_user_header = kwargs.get( "remote_user_header", 'HTTP_REMOTE_USER' )
@@ -292,6 +293,8 @@ class Configuration( object ):
         self.whoosh_index_dir = resolve_path( kwargs.get( "whoosh_index_dir", "database/whoosh_indexes" ), self.root )
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
         self.ftp_upload_dir_identifier = kwargs.get( 'ftp_upload_dir_identifier', 'email' )  # attribute on user - email, username, id, etc...
+        self.ftp_upload_dir_template = kwargs.get( 'ftp_upload_dir_template', '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep )
+        self.ftp_upload_purge = string_as_bool(  kwargs.get( 'ftp_upload_purge', 'True' ) )
         self.ftp_upload_site = kwargs.get( 'ftp_upload_site', None )
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
@@ -302,6 +305,8 @@ class Configuration( object ):
         self.tool_name_boost = kwargs.get( "tool_name_boost", 9 )
         self.tool_section_boost = kwargs.get( "tool_section_boost", 3 )
         self.tool_description_boost = kwargs.get( "tool_description_boost", 2 )
+        self.tool_labels_boost = kwargs.get( "tool_labels_boost", 1 )
+        self.tool_stub_boost = kwargs.get( "tool_stub_boost", 5 )
         self.tool_help_boost = kwargs.get( "tool_help_boost", 0.5 )
         self.tool_search_limit = kwargs.get( "tool_search_limit", 20 )
         # Location for tool dependencies.
@@ -446,6 +451,7 @@ class Configuration( object ):
         # Statistics and profiling with statsd
         self.statsd_host = kwargs.get( 'statsd_host', '')
         self.statsd_port = int( kwargs.get( 'statsd_port', 8125 ) )
+        self.statsd_prefix = kwargs.get( 'statsd_prefix', 'galaxy' )
         # Logging with fluentd
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )

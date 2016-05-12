@@ -247,7 +247,11 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         # Get workflow by username and slug. Security is handled by the display methods below.
         session = trans.sa_session
         user = session.query( model.User ).filter_by( username=username ).first()
+        if not user:
+            raise web.httpexceptions.HTTPNotFound()
         stored_workflow = trans.sa_session.query( model.StoredWorkflow ).filter_by( user=user, slug=slug, deleted=False ).first()
+        if not stored_workflow:
+            raise web.httpexceptions.HTTPNotFound()
         encoded_id = trans.security.encode_id( stored_workflow.id )
 
         # Display workflow in requested format.

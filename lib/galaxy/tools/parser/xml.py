@@ -38,8 +38,9 @@ class XmlToolSource(ToolSource):
     """ Responsible for parsing a tool from classic Galaxy representation.
     """
 
-    def __init__(self, root, source_path=None):
-        self.root = root
+    def __init__(self, xml_tree, source_path=None):
+        self.xml_tree = xml_tree
+        self.root = xml_tree.getroot()
         self._source_path = source_path
         self.legacy_defaults = self.parse_profile() == "16.01"
 

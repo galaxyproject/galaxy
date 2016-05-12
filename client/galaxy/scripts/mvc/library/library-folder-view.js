@@ -80,15 +80,11 @@ var FolderView = Backbone.View.extend({
     this.$el.html(template({folder: this.model, is_admin:is_admin}));
 
     var self = this;
-    if (this.options.fetched_permissions === undefined){
-      $.get( Galaxy.root + "api/folders/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
-        self.prepareSelectBoxes({fetched_permissions:fetched_permissions});
-      }).fail(function(){
-          mod_toastr.error('An error occurred while attempting to fetch folder permissions.');
-      });
-    } else {
-      this.prepareSelectBoxes({});
-    }
+    $.get( Galaxy.root + "api/folders/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
+      self.prepareSelectBoxes({fetched_permissions:fetched_permissions});
+    }).fail(function(){
+        mod_toastr.error('An error occurred while attempting to fetch folder permissions.');
+    });
 
     $("#center [data-toggle]").tooltip();
     //hack to show scrollbars
