@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-16.7.6.dev0
+16.7.6 (2016-05-11)
 ---------------------
 
 * Fixes to cwl processing for Planemo.
