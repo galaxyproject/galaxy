@@ -12,7 +12,7 @@ define([ 'test-app', 'mvc/form/form-input', 'mvc/ui/ui-misc',
     } );
 
     test( 'input', function() {
-        var input = new InputElement( null, {
+        var input = new InputElement( {}, {
             field: new Ui.Input({})
         });
         $( 'body' ).prepend( input.$el );
