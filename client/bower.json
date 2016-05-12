@@ -11,7 +11,7 @@
     "jquery": "~1.11.1",
     "tracekit": "*",
     "ravenjs": "~1.1.16",
-    "underscore": "~1.7.0",
+    "underscore": "~1.8.3",
     "backbone": "~1.1.2",
     "bootstrap": "~3.3.2",
     "bootstrap-tour": "~0.10.2",

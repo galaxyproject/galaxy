@@ -180,9 +180,7 @@ var View = Backbone.View.extend(
     
     // get index
     _getIndex: function(value) {
-        // search index
-        // replaced the index search code 
-        // by UnderscoreJS method to make it faster and compact
+        // returns the index of the searched value
         _.findIndex(this.select_data, {id: value});
     },
     
