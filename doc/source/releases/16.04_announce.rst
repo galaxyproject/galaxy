@@ -75,7 +75,7 @@ However this has broken the TS's ``hg push`` functionality as Mercurial changed 
 format in a non-compatible manner. Given that we deprecated the ``hg push`` API
 functionality back in in 15.10 we decided to disable it fully from 16.01 (retroactively).
 
-**Only Tool Sheds newer than 16.01 should be deployed form now on.**
+**Only Tool Sheds newer than 16.01 should be deployed from now on.**
 
 .. _Mercurial: https://www.mercurial-scm.org/wiki/WhatsNew#Mercurial_3.7.3_.282016-3-29.29
 
