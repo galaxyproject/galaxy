@@ -60,11 +60,12 @@ API for history contents, index:
   ``q=deleted&qv=[True | False]&q=visible&qv=[True | False]``
 
 API for history contents, show:
-  * **api_type**: removed and unavailable (was 'file' and constant across HDAs) 
-  * **display_apps**, **display_types**, **visualization**: removed from the default `detailed` view but still available by calling url with `?keys=display_apps,display_types,visualization` (#1855)
+  * **api_type**: removed and unavailable (was :code:`file` and constant across HDAs) 
+  * **display_apps**, **display_types**, **visualization**: removed from the default :code:`detailed` view but still available by calling url with 
+   ``?keys=display_apps,display_types,visualization``
 
 API histories (removed from the available serialized data on all calls): 
-  * **state, state_details, state_ids** - can be replaced by specifically requesting a single array of contents, each containing `{ id, state, deleted, visible }` (name/key TBD)
+  * **state, state_details, state_ids** - can be replaced by specifically requesting a single array of contents, each containing :code:`{ id, state, deleted, visible }`
 
 Release Notes
 ===========================================================
