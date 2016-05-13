@@ -97,7 +97,7 @@ Enhancements
   `Pull Request 1610`_
 * Various improvements to the heartbeat
   `Pull Request 1614`_
-* Visualization plugins: add routes that more closely match potential s…
+* Visualization plugins: add routes that more closely match potential static assets.
   `Pull Request 1615`_
 * Disable individual file metadata changes in upload
   `Pull Request 1625`_
@@ -167,25 +167,25 @@ Enhancements
   `Pull Request 1893`_
 * Use shared value serialization for tool model
   `Pull Request 1901`_
-* adding contrib init for reports and modifying status check to have ou…
+* adding contrib init for reports and modifying status check to have output by process in case multiprocess
   (thanks to `@miloaec <https://github.com/miloaec>`__.)
   `Pull Request 1911`_
 * Retrieve authentification also for long urls
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
   `Pull Request 1912`_
-* Modify run.sh to add --restart option, for a more consistent use of pa…
+* Modify run.sh to add --restart option, for a more consistent use of parameters.
   (thanks to `@remimarenco <https://github.com/remimarenco>`__.)
   `Pull Request 1914`_
 * Rename tool_shed_get to url_get.
   `Pull Request 1918`_
 * Allow testing element counts in tool output collections.
   `Pull Request 1942`_
-* Use database query rather than dataset iteration to compute dataset c…
+* Use database query rather than dataset iteration to compute dataset counts in saved histories grid.
   `Pull Request 1948`_
 * Add "new" state to list of dataset states in saved history list.
   `Pull Request 1949`_
 * Add IUC as a new default bioconda channel
-  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__.)
+  (thanks to `@bgruening <https://github.com/bgruening>`__.)
   `Pull Request 1950`_
 * More job related timing logging.
   `Pull Request 1956`_
@@ -194,7 +194,8 @@ Enhancements
 * Optimization for discovering datasets for dynamic output collection.
   `Pull Request 1959`_
 * Improve tabular datatypes.
-  `Pull Request 1968`_
+  (thanks to `@brenninc <https://github.com/brenninc>`__ and `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 1968`_, `Pull Request 2317`_
 * Optimize adding datasets to large histories.
   `Pull Request 1983`_
 * Much more friendly route mapping.
@@ -278,7 +279,7 @@ Enhancements
 * Refactor the Html Datatype Class into text.py instead of images.py
   (thanks to `@remimarenco <https://github.com/remimarenco>`__.)
   `Pull Request 1760`_
-* Drop python2.6 (deprecated, will not be supported in 16.04) from test…
+* Drop python2.6 (deprecated, will not be supported in 16.04) from testing.
   `Pull Request 1785`_
 * Rework history updating
   `Pull Request 1788`_
@@ -292,7 +293,7 @@ Enhancements
 * Do not import dumps and loads from galaxy.util.json .
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 1840`_
-* Replace get_tool_shed_repository_by_tool_shed_name_owner_changeset_re…
+* Replace get_tool_shed_repository_by_tool_shed_name_owner_changeset_revision with get_repository_for_dependency_relationship.
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
   `Pull Request 1868`_
 * Cosmetic comma fixes :)
@@ -335,7 +336,7 @@ Fixes
 
 * upgrade mercurial wheel to latest (fixing CVE issues)
   `Pull Request 2045`_
-* Add changeset_revision to tool attributes, avoid self.tool_shed_repos…
+* Add changeset_revision to tool attributes, avoid self.tool_shed_repository.
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
   `Pull Request 1802`_
 
@@ -354,7 +355,7 @@ Fixes
   `Pull Request 1505`_
 * catch Exception and properly log errors
   `Pull Request 1510`_
-* Change python print() format to be backward compatible with older ver…
+* Change python print() format to be backward compatible with older versions.
   (thanks to `@einon <https://github.com/einon>`__.)
   `Pull Request 1520`_
 * Add js for mako based masthead
@@ -439,7 +440,7 @@ Fixes
   `Pull Request 1954`_
 * Fix typo: send-->sent
   `Pull Request 1965`_
-* Fix farbtastic's use of deprecated jquery fns by loading jq-migrate i…
+* Fix farbtastic's use of deprecated jquery fns by loading jq-migrate in galaxy.panels.mako .
   `Pull Request 1972`_
 * Remove duplicate help target
   (thanks to `@erasche <https://github.com/erasche>`__.)
@@ -465,7 +466,7 @@ Fixes
   `Pull Request 2048`_
 * Managers: remove UTC zone when parsing dates
   `Pull Request 2062`_
-* Change user disk usage pgcalc function up a bit to make a slightly sa…
+* Change user disk usage pgcalc function up a bit to make a slightly safer dry-run.
   `Pull Request 2063`_
 * Allow tool confs with a tool_path to not be interpreted as shed confs.
   `Pull Request 2066`_
@@ -525,7 +526,7 @@ Fixes
   `Pull Request 2190`_
 * Fix message in legacy panel mako
   `Pull Request 2191`_
-* Prepass on remote user header based on maildomain and normalize confi…
+* Prepass on remote user header based on maildomain and normalize config.
   `Pull Request 2195`_
 * Extend to_json for dataset tool parameters
   `Pull Request 2196`_
