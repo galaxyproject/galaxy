@@ -72,8 +72,6 @@ Enhancements
 * Add run_toolshed_tests.html to .gitignore .
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 1456`_
-* Pin release wheel versions
-  `Pull Request 1495`_
 * Allow sorting of discover_datasets elements.
   `Pull Request 1512`_
 * Cleanup common ui elements, add test cases
@@ -384,13 +382,6 @@ Fixes
   `Pull Request 1698`_
 * Wrap conditional test parameters
   `Pull Request 1714`_
-* Fix installation of Tool Shed repositories containing non-ASCII characters
-  in the description.
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
-  `Pull Request 1759`_
-* Fix pretty_print_time_interval for MySQL.
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
-  `Pull Request 1761`_
 * Remove len(stderr), breaks on recent docker versions
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
   `Pull Request 1769`_
@@ -604,11 +595,7 @@ Fixes
 .. _Pull Request 1488: https://github.com/galaxyproject/galaxy/pull/1488
 .. _Pull Request 1489: https://github.com/galaxyproject/galaxy/pull/1489
 .. _Pull Request 1490: https://github.com/galaxyproject/galaxy/pull/1490
-.. _Pull Request 1493: https://github.com/galaxyproject/galaxy/pull/1493
-.. _Pull Request 1495: https://github.com/galaxyproject/galaxy/pull/1495
 .. _Pull Request 1496: https://github.com/galaxyproject/galaxy/pull/1496
-.. _Pull Request 1497: https://github.com/galaxyproject/galaxy/pull/1497
-.. _Pull Request 1504: https://github.com/galaxyproject/galaxy/pull/1504
 .. _Pull Request 1505: https://github.com/galaxyproject/galaxy/pull/1505
 .. _Pull Request 1510: https://github.com/galaxyproject/galaxy/pull/1510
 .. _Pull Request 1512: https://github.com/galaxyproject/galaxy/pull/1512
@@ -619,8 +606,6 @@ Fixes
 .. _Pull Request 1533: https://github.com/galaxyproject/galaxy/pull/1533
 .. _Pull Request 1537: https://github.com/galaxyproject/galaxy/pull/1537
 .. _Pull Request 1539: https://github.com/galaxyproject/galaxy/pull/1539
-.. _Pull Request 1547: https://github.com/galaxyproject/galaxy/pull/1547
-.. _Pull Request 1548: https://github.com/galaxyproject/galaxy/pull/1548
 .. _Pull Request 1556: https://github.com/galaxyproject/galaxy/pull/1556
 .. _Pull Request 1561: https://github.com/galaxyproject/galaxy/pull/1561
 .. _Pull Request 1562: https://github.com/galaxyproject/galaxy/pull/1562
@@ -653,7 +638,6 @@ Fixes
 .. _Pull Request 1649: https://github.com/galaxyproject/galaxy/pull/1649
 .. _Pull Request 1650: https://github.com/galaxyproject/galaxy/pull/1650
 .. _Pull Request 1654: https://github.com/galaxyproject/galaxy/pull/1654
-.. _Pull Request 1656: https://github.com/galaxyproject/galaxy/pull/1656
 .. _Pull Request 1658: https://github.com/galaxyproject/galaxy/pull/1658
 .. _Pull Request 1665: https://github.com/galaxyproject/galaxy/pull/1665
 .. _Pull Request 1670: https://github.com/galaxyproject/galaxy/pull/1670
@@ -675,9 +659,7 @@ Fixes
 .. _Pull Request 1752: https://github.com/galaxyproject/galaxy/pull/1752
 .. _Pull Request 1755: https://github.com/galaxyproject/galaxy/pull/1755
 .. _Pull Request 1756: https://github.com/galaxyproject/galaxy/pull/1756
-.. _Pull Request 1759: https://github.com/galaxyproject/galaxy/pull/1759
 .. _Pull Request 1760: https://github.com/galaxyproject/galaxy/pull/1760
-.. _Pull Request 1761: https://github.com/galaxyproject/galaxy/pull/1761
 .. _Pull Request 1764: https://github.com/galaxyproject/galaxy/pull/1764
 .. _Pull Request 1769: https://github.com/galaxyproject/galaxy/pull/1769
 .. _Pull Request 1770: https://github.com/galaxyproject/galaxy/pull/1770
