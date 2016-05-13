@@ -261,7 +261,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         for pod_obj in pod_r.response['items']:
             pod = Pod(self._pykube_api, pod_obj)
             logs += "\n\n==== Pod " + pod.name + " log start ====\n\n"
-            logs += pod.get_logs(timestamps=True)
+            logs += pod.logs(timestamps=True)
             logs += "\n\n==== Pod " + pod.name + " log end   ===="
         logs_file_path = job_state.output_file
         logs_file = open(logs_file_path, mode="w")
