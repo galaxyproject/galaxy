@@ -867,8 +867,8 @@ class Registry( object ):
         :return extension:
         """
         extension = elem.get('extension', None)
-        # If extension is uppercase or mixed case, we need to lower case it
-        if not extension.islower():
+        # If extension is not None and is uppercase or mixed case, we need to lowercase it
+        if extension is not None and not extension.islower():
             self.log.debug( "%s is not lower case, that could cause troubles in the future. \
             Please change it to lower case" % extension )
             extension = extension.lower()
