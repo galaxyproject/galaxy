@@ -52,7 +52,7 @@ class UCSCTrackHub( Html ):
     Datatype for UCSC TrackHub
     """
 
-    file_ext = 'trackHub'
+    file_ext = 'trackhub'
     composite_type = 'auto_primary_file'
 
     def __init__(self, **kwd):
