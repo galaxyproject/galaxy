@@ -637,7 +637,7 @@ var HidSectionedHistoryContents = HistoryContents.extend({
 
     // ------------------------------------------------------------------------ sectioned fetching
     /** @type {Integer} number of contents/hid entries per section/page displayed */
-    hidsPerSection : 100,
+    hidsPerSection : 500,
 
     fetchFirst : function( options ){
 _.extend( options || {}, { silent: true });
