@@ -9,8 +9,8 @@ module.exports = function( grunt ){
     var _ = grunt.util._,
         fmt = _.sprintf,
     	theme = grunt.option( 'theme', 'blue' ),
-        styleDistPath = '../static/style/blue',
-        imagesPath = '../static/images',
+        styleDistPath = '../lib/galaxy/web/framework/static/style/blue',
+        imagesPath = '../lib/galaxy/web/framework/static/images',
         lessPath = './galaxy/style/less',
         lessFiles = [
             'base',

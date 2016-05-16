@@ -2,15 +2,15 @@ module.exports = function(grunt) {
     "use strict";
 
     var GALAXY_PATHS = {
-            dist        : '../static/scripts',
-            maps        : '../static/maps',
+            dist        : '../lib/galaxy/web/framework/static/scripts',
+            maps        : '../lib/galaxy/web/framework/static/maps',
             // this symlink allows us to serve uncompressed scripts in DEV_PATH for use with sourcemaps
-            srcSymlink  : '../static/src',
+            srcSymlink  : '../lib/galaxy/web/framework/static/src',
         },
         TOOLSHED_PATHS = {
-            dist        : '../static/toolshed/scripts',
-            maps        : '../static/toolshed/maps',
-            srcSymlink  : '../static/toolshed/src',
+            dist        : '../lib/galaxy/web/framework/static/toolshed/scripts',
+            maps        : '../lib/galaxy/web/framework/static/toolshed/maps',
+            srcSymlink  : '../lib/galaxy/web/framework/static/toolshed/src',
         };
 
     grunt.config.set( 'app', 'galaxy' );

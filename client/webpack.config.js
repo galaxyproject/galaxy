@@ -39,7 +39,7 @@ module.exports = {
         analysis: './galaxy/scripts/apps/analysis.js',
     },
     output  : {
-        path        : '../static/scripts/bundled',
+        path        : '../lib/galaxy/web/framework/static/scripts/bundled',
         filename    : '[name].bundled.js'
     },
     resolve : {
