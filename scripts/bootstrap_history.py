@@ -395,7 +395,6 @@ def _get_prs(release_name, state="closed"):
 
 
 def main(argv):
-    # print argv
     if requests is None:
         raise Exception("Requests library not found, please pip install requests")
     github = _github_client()
@@ -498,9 +497,7 @@ def main(argv):
         to_doc += "{0}_".format(short_rev)
 
     to_doc = wrap(to_doc)
-    # print history
     history = extend(".. %s\n" % text_target, to_doc, history)
-    # print history
     open(history_path, "w").write(history.encode("utf-8"))
 
 
