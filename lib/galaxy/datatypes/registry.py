@@ -106,11 +106,23 @@ class Registry( object ):
             if not self.converters_path:
                 self.converters_path_attr = registration.get( 'converters_path', 'lib/galaxy/datatypes/converters' )
                 self.converters_path = os.path.join( root_dir, self.converters_path_attr )
+                if self.converters_path_attr == 'lib/galaxy/datatypes/converters' \
+                    and not os.path.isdir( self.converters_path ):
+                    # Deal with the old default of this path being set in
+                    # datatypes_conf.xml.sample (this path is not useful in an
+                    # "installed Galaxy" world)
+                    self.converters_path_attr = os.path.abspath( os.path.join( os.path.dirname( __file__ ), 'converters' ) )
+                    self.converters_path = self.converters_path_attr
                 if not os.path.isdir( self.converters_path ):
                     raise ConfigurationError( "Directory does not exist: %s" % self.converters_path )
             if not self.display_applications_path:
                 self.display_path_attr = registration.get( 'display_path', 'display_applications' )
                 self.display_applications_path = os.path.join( root_dir, self.display_path_attr )
+                if self.display_path_attr == 'display_applications' \
+                    and not os.path.isdir( 'display_applications' ):
+                    # Ditto as with converters_path
+                    self.display_path_attr = os.path.abspath( os.path.join( os.path.dirname( __file__ ), 'display_applications', 'configs' ) )
+                    self.display_applications_path = self.display_path_attr
             # Proprietary datatype's <registration> tag may have special attributes, proprietary_converter_path and proprietary_display_path.
             proprietary_converter_path = registration.get( 'proprietary_converter_path', None )
             proprietary_display_path = registration.get( 'proprietary_display_path', None )
@@ -643,7 +655,7 @@ class Registry( object ):
         # We need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated
         # tool.  We'll load a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
         # Properly building a tool without relying on parsing an XML file is near difficult...so we bundle with Galaxy.
-        set_meta_tool = toolbox.load_hidden_lib_tool( "galaxy/datatypes/set_metadata_tool.xml" )
+        set_meta_tool = toolbox.load_hidden_lib_tool( os.path.abspath( os.path.join( os.path.dirname( __file__ ), "set_metadata_tool.xml" ) ) )
         self.set_external_metadata_tool = set_meta_tool
         self.log.debug( "Loaded external metadata tool: %s", self.set_external_metadata_tool.id )
 

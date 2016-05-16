@@ -73,11 +73,16 @@ class WebApplication( base.WebApplication ):
 
     def create_mako_template_lookup( self, galaxy_app, name ):
         paths = []
+        # FIXME: should be os.path.join (galaxy_root, 'templates')?
+        if galaxy_app.config.template_path == './templates':
+            template_path = os.path.abspath( os.path.join( os.path.dirname( __file__ ), 'templates' ) )
+        else:
+            template_path = galaxy_app.config.template_path
         # First look in webapp specific directory
         if name is not None:
-            paths.append( os.path.join( galaxy_app.config.template_path, 'webapps', name ) )
+            paths.append( os.path.join( template_path, 'webapps', name ) )
         # Then look in root directory
-        paths.append( galaxy_app.config.template_path )
+        paths.append( template_path )
         # Create TemplateLookup with a small cache
         return mako.lookup.TemplateLookup(directories=paths,
                                           module_directory=galaxy_app.config.template_cache,
@@ -910,13 +915,14 @@ def build_url_map( app, global_conf, local_conf ):
     cache_time = conf.get( "static_cache_time", None )
     if cache_time is not None:
         cache_time = int( cache_time )
+    _def = lambda x: os.path.abspath( os.path.join( os.path.dirname( __file__ ), x ) )
     # Send to dynamic app by default
     urlmap["/"] = app
     # Define static mappings from config
-    urlmap["/static"] = Static( conf.get( "static_dir", "./static/" ), cache_time )
-    urlmap["/images"] = Static( conf.get( "static_images_dir", "./static/images" ), cache_time )
-    urlmap["/static/scripts"] = Static( conf.get( "static_scripts_dir", "./static/scripts/" ), cache_time )
-    urlmap["/static/style"] = Static( conf.get( "static_style_dir", "./static/style/blue" ), cache_time )
-    urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir", "./static/favicon.ico" ), cache_time )
-    urlmap["/robots.txt"] = Static( conf.get( "static_robots_txt", "./static/robots.txt" ), cache_time )
+    urlmap["/static"] = Static( conf.get( "static_dir", _def("static/") ), cache_time )
+    urlmap["/images"] = Static( conf.get( "static_images_dir", _def("static/images") ), cache_time )
+    urlmap["/static/scripts"] = Static( conf.get( "static_scripts_dir", _def("static/scripts/") ), cache_time )
+    urlmap["/static/style"] = Static( conf.get( "static_style_dir", _def("./static/style/blue") ), cache_time )
+    urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir", _def("./static/favicon.ico") ), cache_time )
+    urlmap["/robots.txt"] = Static( conf.get( "static_robots_txt", _def("./static/robots.txt") ), cache_time )
     return urlmap, cache_time

@@ -102,6 +102,11 @@ class ToolBox( BaseGalaxyToolBox ):
     """
 
     def __init__( self, config_filenames, tool_root_dir, app ):
+        # This is here to deal with the old default value, which doesn't make
+        # sense in an "installed Galaxy" world.
+        # FIXME: ./
+        if tool_root_dir == './tools':
+            tool_root_dir = os.path.abspath( os.path.join( os.path.dirname( __file__ ), 'bundled' ) )
         super( ToolBox, self ).__init__(
             config_filenames=config_filenames,
             tool_root_dir=tool_root_dir,
