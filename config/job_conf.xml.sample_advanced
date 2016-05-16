@@ -446,13 +446,14 @@
                     <container type="docker">bgruening/galaxy-stable</container>
                 </requirements>
 
-                If not the container specified with id="docker_image" is used and as last resort
-                id="docker_default_container_id" is considered.
+            Unless the job destination specifies an override 
+            with docker_container_id_override. If neither of 
+            these is set a default container can be specified
+            with docker_default_container_id. The resolved
+            container ID will be passed along to condor as
+            the docker_image submission parameter.
             -->
-
-            <!-- <param id="docker_image">busybox:ubuntu-14.04</param> -->
             <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
-
         </destination>
 
         <!-- Jobs that hit the walltime on one destination can be automatically
