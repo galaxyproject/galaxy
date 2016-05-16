@@ -40,6 +40,8 @@ Update to exact version
 `BitBucket <https://bitbucket.org/galaxy/galaxy-dist>`__
 ===========================================================
 
+**Note**: Version 16.04 will be the *final* release to be pushed to Bitbucket. More details can be found in the `Deprecation Notices`_ below.
+
 Upgrade
   .. code-block:: shell
 
@@ -67,6 +69,19 @@ API for history contents, show:
 
 API histories (removed from the available serialized data on all calls):
   * **state, state_details, state_ids** - can be replaced by specifically requesting a single array of contents, each containing :code:`{ id, state, deleted, visible }`
+
+Galaxy on Bitbucket:
+  Galaxy moved its code and development activities from Bitbucket to GitHub in early 2015. Since this time, releases have been mirrored back to Bitbucket. However, after this release, no new changes will be pushed to Bitbucket. Anyone still receiving updates to a Galaxy server via Bitbucket and Mercurial should switch to GitHub and Git. This can be done using the following process:
+  
+  1. Backup everything.
+  2. Find what branch and commit your Mercurial Galaxy is at using :code:`hg log -b $(hg branch)`
+  3. :code:`git clone https://github.com/galaxyproject/galaxy` in a temporary directory.
+  4. Find the corresponding commit in the cloned Git repository on the corresponding branch (Bitbucket default->GitHub dev; Bitbucket stable->GitHub master).
+  5. Checkout the GitHub repository at the commit you found in the previous step.
+  6. Backup your .hg/ folder.
+  7. Replace your .hg/ folder with the .git/ folder from the new checkout.
+  8. Your Galaxy should be switched to Git. Unless you have local changes, git status should show none.
+  9. You can now update to the latest Git revision using :code:`git pull`
 
 Security
 ===========================================================

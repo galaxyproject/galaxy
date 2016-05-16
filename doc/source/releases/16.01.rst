@@ -19,7 +19,7 @@ Enhancements
   `Pull Request 428`_, `Pull Request 989`_, `Pull Request 988`_,
   `Pull Request 1389`_, `Pull Request 1485`_, `Pull Request 995`_,
   `Pull Request 996`_, `Pull Request 1006`_, `Pull Request 1017`_,
-  `Pull Request 1037`_
+  `Pull Request 1037`_, `Pull Request 1495`_
 * Implement nested workflows.
   `Pull Request 1306`_
 
@@ -500,6 +500,8 @@ Fixes
   `Pull Request 1366`_
 * Copy workflow objects when importing them.
   `Pull Request 1474`_
+* Undo user icon in masthead.
+  `Pull Request 1493`_
 * Fix mime type when previewing certain tabular data.
   `Pull Request 1498`_
 * Fix disabled CSS.
@@ -513,6 +515,13 @@ Fixes
   `Pull Request 1551`_
 * Force ``--skip-venv`` if we can detect that Python is Conda Python.
   `Pull Request 1554`_
+* Fix installation of Tool Shed repositories containing non-ASCII characters
+  in the description.
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 1759`_
+* Fix pretty_print_time_interval for MySQL.
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
+  `Pull Request 1761`_
 
 .. _iobio: http://iobio.io/
 
@@ -751,7 +760,9 @@ Fixes
 .. _Pull Request 1474: https://github.com/galaxyproject/galaxy/pull/1474
 .. _Pull Request 1485: https://github.com/galaxyproject/galaxy/pull/1485
 .. _Pull Request 1487: https://github.com/galaxyproject/galaxy/pull/1487
+.. _Pull Request 1493: https://github.com/galaxyproject/galaxy/pull/1493
 .. _Pull Request 1494: https://github.com/galaxyproject/galaxy/pull/1494
+.. _Pull Request 1495: https://github.com/galaxyproject/galaxy/pull/1495
 .. _Pull Request 1498: https://github.com/galaxyproject/galaxy/pull/1498
 .. _Pull Request 1501: https://github.com/galaxyproject/galaxy/pull/1501
 .. _Pull Request 1511: https://github.com/galaxyproject/galaxy/pull/1511
@@ -760,6 +771,8 @@ Fixes
 .. _Pull Request 1551: https://github.com/galaxyproject/galaxy/pull/1551
 .. _Pull Request 1554: https://github.com/galaxyproject/galaxy/pull/1554
 .. _Pull Request 1558: https://github.com/galaxyproject/galaxy/pull/1558
+.. _Pull Request 1759: https://github.com/galaxyproject/galaxy/pull/1759
+.. _Pull Request 1761: https://github.com/galaxyproject/galaxy/pull/1761
 
 .. _Commit f540a16: https://github.com/galaxyproject/galaxy/commit/f540a16768307995ea49c5d241948537ebbfa540
 .. _Commit bf1c77d: https://github.com/galaxyproject/galaxy/commit/bf1c77d171f079f42d481ad465dbaef3bac8b4d4
