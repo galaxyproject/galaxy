@@ -35,6 +35,7 @@ if GALAXY_PACKAGE == "galaxy-lib":
     package_data = [
         'exceptions/error_codes.json',
         'datatypes/converters/*.xml',
+        'datatypes/display_applications/configs/*/*.xml',
         'datatypes/set_metadata_tool.xml',
         'tools/imp_exp/imp_history_from_archive.xml',
         'tools/imp_exp/exp_history_to_archive.xml',
