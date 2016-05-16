@@ -8,14 +8,15 @@ April 2016 Galaxy Release (v 16.04)
 Highlights
 ===========================================================
 
-**Feature1**
-  Feature description.
+**Overhaul of Tools and Jobs**
+  Including Embedded Pulsar Job Runner.
 
-**Feature2**
-  Feature description.
+**New chemical datatypes**
+  Galaxy now detects and supports many molecular datatypes. See details at `Pull Request 1941`_
+  Thanks to `@bgruening <https://github.com/bgruening>`__.
 
-**Feature3**
-  Feature description.
+
+.. _Pull Request 1941: https://github.com/galaxyproject/galaxy/pull/1941
 
 `Github <https://github.com/galaxyproject/galaxy>`__
 ===========================================================
