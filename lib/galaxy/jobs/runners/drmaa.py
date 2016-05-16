@@ -247,7 +247,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 assert external_job_id not in ( None, 'None' ), '(%s/%s) Invalid job id' % ( galaxy_id_tag, external_job_id )
                 state = self.ds.job_status( external_job_id )
             except ( drmaa.InternalException, drmaa.InvalidJobException ) as e:
-                if isinstance( e , drmaa.InvalidJobException ):
+                if isinstance( e, drmaa.InvalidJobException ):
                     ecn = "InvalidJobException".lower()
                 else:
                     ecn = "InternalException".lower()

@@ -505,7 +505,7 @@ class CRAM( Binary ):
 
     def get_cram_version( self, filename):
         try:
-            with open( filename , "r") as fh:
+            with open( filename, "r") as fh:
                 header = fh.read(6)
                 return ord( header[4] ), ord( header[5] )
         except Exception as exc:
@@ -888,7 +888,7 @@ class SQlite ( Binary ):
 
 class GeminiSQLite( SQlite ):
     """Class describing a Gemini Sqlite database """
-    MetadataElement( name="gemini_version", default='0.10.0' , param=MetadataParameter, desc="Gemini Version",
+    MetadataElement( name="gemini_version", default='0.10.0', param=MetadataParameter, desc="Gemini Version",
                      readonly=True, visible=True, no_value='0.10.0' )
     file_ext = "gemini.sqlite"
 
@@ -1253,9 +1253,9 @@ Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
 
 class SearchGuiArchive ( CompressedArchive ):
     """Class describing a SearchGUI archive """
-    MetadataElement( name="searchgui_version", default='1.28.0' , param=MetadataParameter, desc="SearchGui Version",
+    MetadataElement( name="searchgui_version", default='1.28.0', param=MetadataParameter, desc="SearchGui Version",
                      readonly=True, visible=True, no_value=None )
-    MetadataElement( name="searchgui_major_version", default='1' , param=MetadataParameter, desc="SearchGui Major Version",
+    MetadataElement( name="searchgui_major_version", default='1', param=MetadataParameter, desc="SearchGui Major Version",
                      readonly=True, visible=True, no_value=None )
     file_ext = "searchgui_archive"
 

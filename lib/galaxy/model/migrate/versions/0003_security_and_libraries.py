@@ -150,7 +150,7 @@ LibraryDatasetDatasetAssociation_table = Table( "library_dataset_dataset_associa
     Column( "name", TrimmedString( 255 ) ),
     Column( "info", TrimmedString( 255 ) ),
     Column( "blurb", TrimmedString( 255 ) ),
-    Column( "peek" , TEXT ),
+    Column( "peek", TEXT ),
     Column( "extension", TrimmedString( 64 ) ),
     Column( "metadata", MetadataType(), key="_metadata" ),
     Column( "parent_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True ),

@@ -23,7 +23,7 @@ def upgrade(migrate_engine):
     metadata.reflect()
     # Create and initialize imported column in job table.
     Repository_table = Table( "repository", metadata, autoload=True )
-    c = Column( "long_description" , TEXT )
+    c = Column( "long_description", TEXT )
     try:
         # Create
         c.create( Repository_table )
@@ -32,7 +32,7 @@ def upgrade(migrate_engine):
         print "Adding long_description column to the repository table failed: %s" % str( e )
         log.debug( "Adding long_description column to the repository table failed: %s" % str( e ) )
 
-    c = Column( "times_downloaded" , Integer )
+    c = Column( "times_downloaded", Integer )
     try:
         # Create
         c.create( Repository_table )

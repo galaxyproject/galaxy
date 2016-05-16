@@ -177,9 +177,9 @@ class BaseAPIController( BaseController ):
             return BaseController.get_object( self, trans, id, class_name,
                                               check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
 
-        except ItemDeletionException, e:
+        except ItemDeletionException as e:
             raise HTTPBadRequest( detail="Invalid %s id ( %s ) specified: %s" % ( class_name, str( id ), str( e ) ) )
-        except MessageException, e:
+        except MessageException as e:
             raise HTTPBadRequest( detail=e.err_msg )
         except Exception, e:
             log.exception( "Exception in get_object check for %s %s." % ( class_name, str( id ) ) )
@@ -656,12 +656,12 @@ class UsesVisualizationMixin( UsesLibraryMixinItems ):
         """
         return {
             'model_class': 'Visualization',
-            'id'        : visualization.id,
-            'title'     : visualization.title,
-            'type'      : visualization.type,
-            'user_id'   : visualization.user.id,
-            'dbkey'     : visualization.dbkey,
-            'slug'      : visualization.slug,
+            'id'         : visualization.id,
+            'title'      : visualization.title,
+            'type'       : visualization.type,
+            'user_id'    : visualization.user.id,
+            'dbkey'      : visualization.dbkey,
+            'slug'       : visualization.slug,
             # to_dict only the latest revision (allow older to be fetched elsewhere)
             'latest_revision' : self.get_visualization_revision_dict( visualization.latest_revision ),
             'revisions' : [ r.id for r in visualization.revisions ],
@@ -673,12 +673,12 @@ class UsesVisualizationMixin( UsesLibraryMixinItems ):
         NOTE: that encoding ids isn't done here should happen at the caller level.
         """
         return {
-            'model_class': 'VisualizationRevision',
-            'id'        : revision.id,
+            'model_class'      : 'VisualizationRevision',
+            'id'               : revision.id,
             'visualization_id' : revision.visualization.id,
-            'title'     : revision.title,
-            'dbkey'     : revision.dbkey,
-            'config'    : revision.config,
+            'title'            : revision.title,
+            'dbkey'            : revision.dbkey,
+            'config'           : revision.config,
         }
 
     def import_visualization( self, trans, id, user=None ):
@@ -797,7 +797,7 @@ class UsesVisualizationMixin( UsesLibraryMixinItems ):
                 return {
                     "obj_type": collection_json[ 'obj_type' ],
                     "drawables": unpacked_drawables,
-                    "prefs": collection_json.get( 'prefs' , [] ),
+                    "prefs": collection_json.get( 'prefs', [] ),
                     "filters": collection_json.get( 'filters', None )
                 }
 

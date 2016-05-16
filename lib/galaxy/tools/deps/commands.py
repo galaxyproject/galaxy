@@ -94,9 +94,9 @@ def download_command(url, to=STDOUT_INDICATOR, quote_url=False):
     if which("wget"):
         download_cmd = ["wget", "-q"]
         if to == STDOUT_INDICATOR:
-            download_cmd += ["-O" , STDOUT_INDICATOR, url]
+            download_cmd += ["-O", STDOUT_INDICATOR, url]
         else:
-            download_cmd += ["--recursive", "-O" , to, url]
+            download_cmd += ["--recursive", "-O", to, url]
     else:
         download_cmd = ["curl", "-L", url]
         if to != STDOUT_INDICATOR:

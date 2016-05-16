@@ -17,7 +17,7 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         task_table = Table( "task", metadata, autoload=True )
-        c = Column( "info", TrimmedString(255) , nullable=True )
+        c = Column( "info", TrimmedString(255), nullable=True )
         c.create( task_table )
         assert c is task_table.c.info
     except Exception, e:

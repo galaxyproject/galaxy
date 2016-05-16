@@ -29,7 +29,7 @@ SkipToolTest_table = Table( "skip_tool_test", metadata,
                             Column( "update_time", DateTime, default=now, onupdate=now ),
                             Column( "repository_metadata_id", Integer, ForeignKey( "repository_metadata.id" ), index=True ),
                             Column( "initial_changeset_revision", TrimmedString( 255 ), index=True ),
-                            Column( "comment" , TEXT ) )
+                            Column( "comment", TEXT ) )
 
 
 def upgrade( migrate_engine ):

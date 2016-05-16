@@ -116,11 +116,11 @@ def downgrade(migrate_engine):
                         Column( "update_time", DateTime, default=now, onupdate=now ),
                         Column( "newer_version_id", Integer, ForeignKey( "tool.id" ), nullable=True ),
                         Column( "name", TrimmedString( 255 ), index=True ),
-                        Column( "description" , TEXT ),
-                        Column( "user_description" , TEXT ),
+                        Column( "description", TEXT ),
+                        Column( "user_description", TEXT ),
                         Column( "version", TrimmedString( 255 ) ),
                         Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-                        Column( "external_filename" , TEXT ),
+                        Column( "external_filename", TEXT ),
                         Column( "deleted", Boolean, index=True, default=False ),
                         Column( "suite", Boolean, default=False, index=True ) )
 

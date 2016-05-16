@@ -465,7 +465,7 @@ class SnpEffDb( Text ):
 
 class SnpSiftDbNSFP( Text ):
     """Class describing a dbNSFP database prepared fpr use by SnpSift dbnsfp """
-    MetadataElement( name='reference_name', default='dbSNFP' , desc='Reference Name', readonly=True, visible=True, set_in_upload=True, no_value='dbSNFP' )
+    MetadataElement( name='reference_name', default='dbSNFP', desc='Reference Name', readonly=True, visible=True, set_in_upload=True, no_value='dbSNFP' )
     MetadataElement( name="bgzip", default=None, desc="dbNSFP bgzip", readonly=True, visible=True, no_value=None )
     MetadataElement( name="index", default=None, desc="Tabix Index File", readonly=True, visible=True, no_value=None)
     MetadataElement( name="annotation", default=[], desc="Annotation Names", readonly=True, visible=True, no_value=[] )

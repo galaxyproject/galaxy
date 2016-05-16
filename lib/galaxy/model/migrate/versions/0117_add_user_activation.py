@@ -30,7 +30,7 @@ def upgrade(migrate_engine):
     # Add the active and activation_token columns to the user table in one try because the depend on each other.
     try:
         user_table = Table( "galaxy_user", metadata, autoload=True )
-        user_active_column.create( table=user_table , populate_default=True)
+        user_active_column.create( table=user_table, populate_default=True)
         user_activation_token_column.create( table=user_table )
         assert user_active_column is user_table.c.active
         assert user_activation_token_column is user_table.c.activation_token

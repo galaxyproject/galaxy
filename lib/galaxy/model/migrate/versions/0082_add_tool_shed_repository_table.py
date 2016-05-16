@@ -28,7 +28,7 @@ ToolShedRepository_table = Table( "tool_shed_repository", metadata,
                                   Column( "update_time", DateTime, default=now, onupdate=now ),
                                   Column( "tool_shed", TrimmedString( 255 ), index=True ),
                                   Column( "name", TrimmedString( 255 ), index=True ),
-                                  Column( "description" , TEXT ),
+                                  Column( "description", TEXT ),
                                   Column( "owner", TrimmedString( 255 ), index=True ),
                                   Column( "changeset_revision", TrimmedString( 255 ), index=True ),
                                   Column( "deleted", Boolean, index=True, default=False ) )
