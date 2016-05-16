@@ -36,13 +36,13 @@ def upgrade(migrate_engine):
         c = Column( "purged", Boolean, index=True, default=False )
         c.create( LibraryDataset_table, index_name='ix_library_dataset_purged')
         assert c is LibraryDataset_table.c.purged
-    except Exception, e:
+    except Exception as e:
         print "Adding purged column to library_dataset table failed: ", str( e )
     # Update the purged flag to the default False
     cmd = "UPDATE library_dataset SET purged = %s;" % boolean_false(migrate_engine)
     try:
         migrate_engine.execute( cmd )
-    except Exception, e:
+    except Exception as e:
         log.debug( "Setting default data for library_dataset.purged column failed: %s" % ( str( e ) ) )
 
     # Update the purged flag for those LibaryDatasets whose purged flag should be True.  This happens
@@ -64,5 +64,5 @@ def downgrade(migrate_engine):
     try:
         LibraryDataset_table = Table( "library_dataset", metadata, autoload=True )
         LibraryDataset_table.c.purged.drop()
-    except Exception, e:
+    except Exception as e:
         print "Dropping purged column from library_dataset table failed: ", str( e )

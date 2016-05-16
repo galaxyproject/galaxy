@@ -49,7 +49,7 @@ class EnvFileBuilder( object ):
         if not os.path.exists( file_dir ):
             try:
                 os.makedirs( file_dir )
-            except Exception, e:
+            except Exception as e:
                 log.exception( str( e ) )
                 return 1
         if os.path.exists( file_path ):
@@ -62,7 +62,7 @@ class EnvFileBuilder( object ):
                     if line:
                         new_env_file_contents.append( line )
                 env_file_contents = new_env_file_contents
-            except Exception, e:
+            except Exception as e:
                 log.exception( str( e ) )
                 return 1
         else:
@@ -73,7 +73,7 @@ class EnvFileBuilder( object ):
             # Explicitly set the file's executable bits.
             try:
                 os.chmod( file_path, int( '111', base=8 ) | os.stat( file_path )[ stat.ST_MODE ] )
-            except Exception, e:
+            except Exception as e:
                 log.exception( str( e ) )
                 return 1
         # Convert the received text to a list, in order to support adding one or more lines to the file.
@@ -85,7 +85,7 @@ class EnvFileBuilder( object ):
                 env_file_contents.append( line )
         try:
             file( file_path, 'w' ).write( '\n'.join( env_file_contents ) )
-        except Exception, e:
+        except Exception as e:
             log.exception( str( e ) )
             return 1
         return 0

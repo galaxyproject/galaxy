@@ -1176,7 +1176,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                                                          workflow_id=workflow_id,
                                                          workflow_select_field=workflow_select_field,
                                                          field_values=field_values ) )
-        except Exception, e:
+        except Exception as e:
             if str( e ) == "'unicode' object has no attribute 'file'":
                 message = "Select a file"
             else:

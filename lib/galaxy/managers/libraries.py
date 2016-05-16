@@ -41,7 +41,7 @@ class LibraryManager( object ):
             raise exceptions.InconsistentDatabase( 'Multiple libraries found with the same id.' )
         except NoResultFound:
             raise exceptions.RequestParameterInvalidException( 'No library found with the id provided.' )
-        except Exception, e:
+        except Exception as e:
             raise exceptions.InternalServerError( 'Error loading from the database.' + str( e ) )
         library = self.secure( trans, library, check_accessible)
         return library

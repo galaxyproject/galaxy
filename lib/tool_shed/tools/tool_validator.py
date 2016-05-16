@@ -295,13 +295,13 @@ class ToolValidator( object ):
             tool = self.app.toolbox.load_tool( full_path, repository_id=repository_id, allow_code_files=False, use_cached=False )
             valid = True
             error_message = None
-        except KeyError, e:
+        except KeyError as e:
             tool = None
             valid = False
             error_message = 'This file requires an entry for "%s" in the tool_data_table_conf.xml file.  Upload a file ' % str( e )
             error_message += 'named tool_data_table_conf.xml.sample to the repository that includes the required entry to correct '
             error_message += 'this error.  '
-        except Exception, e:
+        except Exception as e:
             tool = None
             valid = False
             error_message = str( e )

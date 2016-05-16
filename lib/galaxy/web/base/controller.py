@@ -181,7 +181,7 @@ class BaseAPIController( BaseController ):
             raise HTTPBadRequest( detail="Invalid %s id ( %s ) specified: %s" % ( class_name, str( id ), str( e ) ) )
         except MessageException as e:
             raise HTTPBadRequest( detail=e.err_msg )
-        except Exception, e:
+        except Exception as e:
             log.exception( "Exception in get_object check for %s %s." % ( class_name, str( id ) ) )
             raise HTTPInternalServerError( comment=str( e ) )
 
@@ -271,7 +271,7 @@ class JSAppLauncher( BaseUIController ):
             if self.user_manager.is_admin( trans.user ):
                 serializer = self.admin_config_serializer
             return serializer.serialize_to_view( self.app.config, view='all' )
-        except Exception, exc:
+        except Exception as exc:
             log.exception( exc )
             return {}
 

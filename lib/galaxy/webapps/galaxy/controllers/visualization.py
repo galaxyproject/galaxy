@@ -749,7 +749,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         plugin = self._get_plugin_from_registry( trans, visualization_name )
         try:
             return plugin.render( trans=trans, embedded=embedded, **kwargs )
-        except Exception, exception:
+        except Exception as exception:
             self._handle_plugin_error( trans, visualization_name, exception )
 
     def _get_plugin_from_registry( self, trans, visualization_name ):
@@ -795,7 +795,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         plugin = self._get_plugin_from_registry( trans, visualization.type )
         try:
             return plugin.render_saved( visualization, trans=trans, **kwargs )
-        except Exception, exception:
+        except Exception as exception:
             self._handle_plugin_error( trans, visualization.type, exception )
 
     def _POST_to_saved( self, trans, id=None, revision=None, type=None, config=None, title=None, **kwargs ):

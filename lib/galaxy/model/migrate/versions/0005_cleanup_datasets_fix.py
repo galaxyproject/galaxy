@@ -72,7 +72,7 @@ class Dataset( object ):
                 # Create directory if it does not exist
                 try:
                     os.makedirs( dir )
-                except OSError, e:
+                except OSError as e:
                     # File Exists is okay, otherwise reraise
                     if e.errno != errno.EEXIST:
                         raise
@@ -132,7 +132,7 @@ class Dataset( object ):
         """Remove the file that corresponds to this data"""
         try:
             os.remove(self.data.file_name)
-        except OSError, e:
+        except OSError as e:
             log.critical('%s delete error %s' % (self.__class__.__name__, e))
 
 

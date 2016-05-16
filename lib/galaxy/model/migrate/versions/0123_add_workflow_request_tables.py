@@ -85,7 +85,7 @@ def upgrade(migrate_engine):
     cmd = "UPDATE workflow_invocation SET state = 'scheduled'"
     try:
         migrate_engine.execute( cmd )
-    except Exception, e:
+    except Exception as e:
         log.debug( "failed to update past workflow invocation states: %s" % ( str( e ) ) )
 
     WorkflowInvocationStepAction_column = Column( "action", JSONType, nullable=True )

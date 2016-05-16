@@ -28,7 +28,7 @@ def upgrade(migrate_engine):
         # Create
         c.create( Repository_table )
         assert c is Repository_table.c.long_description
-    except Exception, e:
+    except Exception as e:
         print "Adding long_description column to the repository table failed: %s" % str( e )
         log.debug( "Adding long_description column to the repository table failed: %s" % str( e ) )
 
@@ -37,7 +37,7 @@ def upgrade(migrate_engine):
         # Create
         c.create( Repository_table )
         assert c is Repository_table.c.times_downloaded
-    except Exception, e:
+    except Exception as e:
         print "Adding times_downloaded column to the repository table failed: %s" % str( e )
         log.debug( "Adding times_downloaded column to the repository table failed: %s" % str( e ) )
 
@@ -54,11 +54,11 @@ def downgrade(migrate_engine):
     Repository_table = Table( "repository", metadata, autoload=True )
     try:
         Repository_table.c.long_description.drop()
-    except Exception, e:
+    except Exception as e:
         print "Dropping column long_description from the repository table failed: %s" % str( e )
         log.debug( "Dropping column long_description from the repository table failed: %s" % str( e ) )
     try:
         Repository_table.c.times_downloaded.drop()
-    except Exception, e:
+    except Exception as e:
         print "Dropping column times_downloaded from the repository table failed: %s" % str( e )
         log.debug( "Dropping column times_downloaded from the repository table failed: %s" % str( e ) )

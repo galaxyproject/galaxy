@@ -90,7 +90,7 @@ def create_archive( history_attrs_file, datasets_attrs_file, jobs_attrs_file, ou
 
         # Status.
         return 'Created history archive.'
-    except Exception, e:
+    except Exception as e:
         return 'Error creating history archive: %s' % str( e ), sys.stderr
 
 

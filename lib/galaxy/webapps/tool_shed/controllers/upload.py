@@ -65,7 +65,7 @@ class UploadController( BaseUIController ):
                 repo_url = repo_url.encode( 'ascii', 'replace' )
                 try:
                     commands.clone( hg_util.get_configured_ui(), repo_url, uploaded_directory )
-                except Exception, e:
+                except Exception as e:
                     message = 'Error uploading via mercurial clone: %s' % basic_util.to_html_string( str( e ) )
                     status = 'error'
                     basic_util.remove_dir( uploaded_directory )
@@ -74,7 +74,7 @@ class UploadController( BaseUIController ):
                 valid_url = True
                 try:
                     stream = urllib.urlopen( url )
-                except Exception, e:
+                except Exception as e:
                     valid_url = False
                     message = 'Error uploading file via http: %s' % str( e )
                     status = 'error'
@@ -119,7 +119,7 @@ class UploadController( BaseUIController ):
                             else:
                                 tar = tarfile.open( uploaded_file_name )
                             istar = True
-                        except tarfile.ReadError, e:
+                        except tarfile.ReadError as e:
                             tar = None
                             istar = False
                 else:

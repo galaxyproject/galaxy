@@ -290,7 +290,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             raise exceptions.ObjectAttributeInvalidException( 'You cannot add datasets into deleted library. Undelete it first.' )
         except exceptions.InsufficientPermissionsException:
             raise exceptions.exceptions.InsufficientPermissionsException( 'You do not have proper permissions to add a dataset to a folder with id (%s)' % ( encoded_folder_id ) )
-        except Exception, exc:
+        except Exception as exc:
             # TODO handle exceptions better within the mixins
             if ( ( 'not accessible to the current user' in str( exc ) ) or ( 'You are not allowed to access this dataset' in str( exc ) ) ):
                 raise exceptions.ItemAccessibilityException( 'You do not have access to the requested item' )

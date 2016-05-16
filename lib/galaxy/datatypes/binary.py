@@ -958,7 +958,7 @@ class MzSQlite( SQlite ):
                     if table_name not in result:
                         return False
                 return True
-            except Exception, e:
+            except Exception as e:
                 log.warn( '%s, sniff Exception: %s', self, e )
         return False
 
@@ -993,7 +993,7 @@ class IdpDB( SQlite ):
                     if table_name not in result:
                         return False
                 return True
-            except Exception, e:
+            except Exception as e:
                 log.warn( '%s, sniff Exception: %s', self, e )
         return False
 

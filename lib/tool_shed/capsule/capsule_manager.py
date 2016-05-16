@@ -109,7 +109,7 @@ class ExportRepositoryManager( object ):
                 exported_repository_root.append( exported_repository_elem )
             tmp_manifest = xml_util.create_and_write_tmp_file( exported_repository_root, use_indent=True )
             repositories_archive.add( tmp_manifest, arcname='manifest.xml' )
-        except Exception, e:
+        except Exception as e:
             log.exception( str( e ) )
         finally:
             if os.path.exists( tmp_export_info ):
@@ -517,7 +517,7 @@ class ImportRepositoryManager( object ):
             tar_archive.extractall( path=file_path )
             try:
                 tar_archive.close()
-            except Exception, e:
+            except Exception as e:
                 log.exception( "Cannot close tar_archive: %s" % str( e ) )
             del return_dict[ 'tar_archive' ]
         return return_dict
@@ -792,7 +792,7 @@ class ImportRepositoryManager( object ):
                 if error_message:
                     results_dict[ 'ok' ] = False
                     results_dict[ 'error_message' ] += error_message
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Error setting metadata on repository %s created from imported archive %s: %s" %
                     ( str( repository.name ), str( archive_file_name ), str( e ) ) )
         else:
@@ -822,7 +822,7 @@ class ImportRepositoryManager( object ):
             valid_url = True
             try:
                 stream = urllib.urlopen( url )
-            except Exception, e:
+            except Exception as e:
                 valid_url = False
                 return_dict['error_message'] = 'Error importing file via http: %s' % str( e )
                 return_dict['status'] = 'error'
@@ -850,7 +850,7 @@ class ImportRepositoryManager( object ):
             try:
                 # Open for reading with transparent compression.
                 tar_archive = tarfile.open( uploaded_file_name, 'r:*' )
-            except tarfile.ReadError, e:
+            except tarfile.ReadError as e:
                 error_message = 'Error opening file %s: %s' % ( str( uploaded_file_name ), str( e ) )
                 log.exception( error_message )
                 return_dict[ 'error_message' ] = error_message

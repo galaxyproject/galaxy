@@ -29,11 +29,11 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         Table( "form_definition", metadata, autoload=True )
-    except Exception, e:
+    except Exception as e:
         log.debug( "Loading 'form_definition' table failed: %s" % str( e ) )
     try:
         Table( "form_values", metadata, autoload=True )
-    except Exception, e:
+    except Exception as e:
         log.debug( "Loading 'form_values' table failed: %s" % str( e ) )
 
     def get_value(lst, index):
@@ -91,11 +91,11 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         Table( "form_definition", metadata, autoload=True )
-    except Exception, e:
+    except Exception as e:
         log.debug( "Loading 'form_definition' table failed: %s" % str( e ) )
     try:
         Table( "form_values", metadata, autoload=True )
-    except Exception, e:
+    except Exception as e:
         log.debug( "Loading 'form_values' table failed: %s" % str( e ) )
     # remove the name attribute in the content column JSON dict in the form_values table
     # and restore it to a list of values

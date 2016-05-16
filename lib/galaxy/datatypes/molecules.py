@@ -154,7 +154,7 @@ class SDF(GenericMolFile):
                     sdf_lines_accumulated = []
             if sdf_lines_accumulated:
                 _write_part_sdf_file(sdf_lines_accumulated)
-        except Exception, e:
+        except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             raise
     split = classmethod(split)
@@ -236,7 +236,7 @@ class MOL2(GenericMolFile):
                     mol2_lines_accumulated = []
             if mol2_lines_accumulated:
                 _write_part_mol2_file(mol2_lines_accumulated)
-        except Exception, e:
+        except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             raise
     split = classmethod(split)
@@ -316,7 +316,7 @@ class FPS(GenericMolFile):
                     lines_accumulated = []
             if lines_accumulated:
                 _write_part_fingerprint_file(header_lines + lines_accumulated)
-        except Exception, e:
+        except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             raise
     split = classmethod(split)
@@ -727,7 +727,7 @@ class CML(GenericXml):
                     cml_lines_accumulated = []
             if cml_lines_accumulated:
                 _write_part_cml_file(cml_lines_accumulated)
-        except Exception, e:
+        except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             raise
     split = classmethod(split)

@@ -363,7 +363,7 @@ def remove_tool_dependency_installation_directory( dependency_install_dir ):
             removed = True
             error_message = ''
             log.debug( "Removed tool dependency installation directory: %s" % str( dependency_install_dir ) )
-        except Exception, e:
+        except Exception as e:
             removed = False
             error_message = "Error removing tool dependency installation directory %s: %s" % ( str( dependency_install_dir ), str( e ) )
             log.warn( error_message )

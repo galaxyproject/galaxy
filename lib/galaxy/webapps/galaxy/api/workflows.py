@@ -251,7 +251,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         try:
             stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(self.decode_id(workflow_id))
-        except Exception, e:
+        except Exception as e:
             trans.response.status = 400
             return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, str( e ))
 

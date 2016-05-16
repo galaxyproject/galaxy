@@ -496,7 +496,7 @@ class GalaxyRBACAgent( RBACAgent ):
                                    % ( item.library_dataset_id, len( base_result ),
                                        len( new_result ) ) )
                 log.debug( "get_actions_for_items: Test end" )
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Exception in test code: %s" % e )
 
         return ret_permissions

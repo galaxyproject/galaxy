@@ -23,7 +23,7 @@ def upgrade(migrate_engine):
     # Create history_annotation_association table.
     try:
         PageAnnotationAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Creating page_annotation_association table failed: %s" % str( e ) )
 
@@ -35,6 +35,6 @@ def downgrade(migrate_engine):
     # Drop page_annotation_association table.
     try:
         PageAnnotationAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Dropping page_annotation_association table failed: %s" % str( e ) )

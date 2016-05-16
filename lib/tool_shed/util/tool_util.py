@@ -241,7 +241,7 @@ def new_state( trans, tool, invalid=False ):
     try:
         # Attempt to generate the tool state using the standard Galaxy-side code
         return tool.new_state( trans )
-    except Exception, e:
+    except Exception as e:
         # Fall back to building tool state as below
         log.debug( 'Failed to build tool state for tool "%s" using standard method, will try to fall back on custom method: %s', tool.id, e )
     inputs = tool.inputs_by_page[ 0 ]

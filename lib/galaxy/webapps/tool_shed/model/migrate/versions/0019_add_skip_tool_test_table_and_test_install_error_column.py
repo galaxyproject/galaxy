@@ -55,13 +55,13 @@ def upgrade( migrate_engine ):
             c.create( RepositoryMetadata_table, index_name="ix_repository_metadata_ttie")
             assert c is RepositoryMetadata_table.c.test_install_error
             migrate_engine.execute( "UPDATE repository_metadata SET test_install_error=%s" % default_false )
-        except Exception, e:
+        except Exception as e:
             print "Adding test_install_error column to the repository_metadata table failed: %s" % str( e )
 
     # Create skip_tool_test table.
     try:
         SkipToolTest_table.create()
-    except Exception, e:
+    except Exception as e:
         print "Creating the skip_tool_test table failed: %s" % str( e )
 
 
@@ -72,12 +72,12 @@ def downgrade( migrate_engine ):
     # Drop the skip_tool_test table.
     try:
         SkipToolTest_table.drop()
-    except Exception, e:
+    except Exception as e:
         print "Dropping the skip_tool_test table failed: %s" % str( e )
 
     # Drop test_install_error column from the repository_metadata table.
     RepositoryMetadata_table = Table( "repository_metadata", metadata, autoload=True )
     try:
         RepositoryMetadata_table.c.test_install_error.drop()
-    except Exception, e:
+    except Exception as e:
         print "Dropping column test_install_error from the repository_metadata table failed: %s" % str( e )
