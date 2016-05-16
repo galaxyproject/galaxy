@@ -1,12 +1,12 @@
-<tool id="Grouping1" name="Group" version="2.1.0">
+<tool id="Grouping1" name="Group" version="2.1.1">
   <description>data by a column and perform aggregate operation on other columns.</description>
   <command interpreter="python">
     grouping.py 
-      $out_file1
-      $input1
-      $groupcol
-      $ignorecase
-      $ignorelines
+      "${out_file1}"
+      "${input1}"
+      "${groupcol}"
+      "${ignorecase}"
+      "${ignorelines}"
       #for $op in $operations
        '${op.optype}
         ${op.opcol}

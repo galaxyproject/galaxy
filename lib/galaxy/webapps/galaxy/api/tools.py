@@ -59,6 +59,8 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                             results.append( tool.id )
                     except exceptions.AuthenticationFailed:
                         pass
+                    except exceptions.ObjectNotFound:
+                        pass
             return results
 
         # Find whether to detect.
@@ -175,6 +177,8 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         tool_name_boost = self.app.config.get( 'tool_name_boost', 9 )
         tool_section_boost = self.app.config.get( 'tool_section_boost', 3 )
         tool_description_boost = self.app.config.get( 'tool_description_boost', 2 )
+        tool_label_boost = self.app.config.get( 'tool_label_boost', 1 )
+        tool_stub_boost = self.app.config.get( 'tool_stub_boost', 5 )
         tool_help_boost = self.app.config.get( 'tool_help_boost', 0.5 )
         tool_search_limit = self.app.config.get( 'tool_search_limit', 20 )
 
@@ -182,6 +186,8 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                                                   tool_name_boost=tool_name_boost,
                                                   tool_section_boost=tool_section_boost,
                                                   tool_description_boost=tool_description_boost,
+                                                  tool_label_boost=tool_label_boost,
+                                                  tool_stub_boost=tool_stub_boost,
                                                   tool_help_boost=tool_help_boost,
                                                   tool_search_limit=tool_search_limit )
         return results

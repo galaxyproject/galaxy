@@ -1174,7 +1174,7 @@ class ColumnListParameter( SelectToolParameter ):
                 value = ColumnListParameter._strip_c( value )
             else:
                 value = None
-        if not value and not self.get_legal_values( trans, other_values ) and self.accept_default:
+        if not value and self.accept_default:
             value = self.default_value or '1'
             return [ value ] if self.multiple else value
         return super( ColumnListParameter, self ).from_json( value, trans, other_values )
@@ -1673,13 +1673,16 @@ class BaseDataToolParameter( ToolParameter ):
     def to_json( self, value, app ):
         def single_to_json( value ):
             src = None
-            if isinstance( value, galaxy.model.DatasetCollectionElement ):
+            if isinstance( value, dict ) and 'src' in value and 'id' in value:
+                return value
+            elif isinstance( value, galaxy.model.DatasetCollectionElement ):
                 src = 'dce'
             elif isinstance( value, app.model.HistoryDatasetCollectionAssociation ):
                 src = 'hdca'
-            else:
+            elif hasattr( value, 'id' ):
                 src = 'hda'
-            return { 'id' : app.security.encode_id( value.id ), 'src' : src }
+            if src is not None:
+                return { 'id' : app.security.encode_id( value.id ), 'src' : src }
 
         if value not in [ None, '', 'None' ]:
             if isinstance( value, list ) and len( value ) > 0:

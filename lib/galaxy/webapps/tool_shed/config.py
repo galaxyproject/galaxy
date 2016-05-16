@@ -76,9 +76,6 @@ class Configuration( object ):
         self.builds_file_path = resolve_path( kwargs.get( "builds_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'builds.txt') ), self.root )
         self.len_file_path = resolve_path( kwargs.get( "len_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'chrom') ), self.root )
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
-        # Install and test framework for testing tools contained in repositories.
-        self.display_legacy_test_results = string_as_bool( kwargs.get( 'display_legacy_test_results', True ) )
-        self.num_tool_test_results_saved = kwargs.get( 'num_tool_test_results_saved', 5 )
         self.update_integrated_tool_panel = False
         # Galaxy flavor Docker Image
         self.enable_galaxy_flavor_docker_image = string_as_bool( kwargs.get( "enable_galaxy_flavor_docker_image", "False" ) )

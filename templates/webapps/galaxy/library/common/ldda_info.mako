@@ -101,7 +101,7 @@
         </div>
         <div class="form-row">
             <label>Date uploaded:</label>
-            ${ldda.create_time.strftime( trans.app.config.pretty_datetime_format ) | h}
+            ${util.unicodify(ldda.create_time.strftime( trans.app.config.pretty_datetime_format )) | h}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">

@@ -7,7 +7,7 @@ from six import string_types, text_type
 from sqlalchemy.sql.expression import and_, false, func, null, or_, true
 
 from galaxy.model.item_attrs import RuntimeException, UsesAnnotations, UsesItemRatings
-from galaxy.util import sanitize_text
+from galaxy.util import sanitize_text, unicodify
 from galaxy.util.odict import odict
 from galaxy.web.framework import decorators, url_for
 from galaxy.web.framework.helpers import iff
@@ -372,7 +372,7 @@ class GridColumn( object ):
             value = None
         if self.format:
             value = self.format( value )
-        return escape(value)
+        return escape(unicodify(value))
 
     def get_link( self, trans, grid, item ):
         if self.link and self.link( item ):

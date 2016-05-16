@@ -1,7 +1,9 @@
 <tool id="trimmer" name="Trim" version="0.0.1">
     <description>leading or trailing characters</description>
-    <command interpreter="python">
-    trimmer.py -a -f $input1 -c $col -s $start -e $end -i $ignore $fastq > $out_file1
+    <command>
+<![CDATA[
+python $__tool_directory__/trimmer.py -a -f '$input1' -c $col -s $start -e $end -i '$ignore' $fastq > '$out_file1'
+]]>
     </command>
     <inputs>
         <param format="tabular,txt" name="input1" type="data" label="this dataset"/>
@@ -32,7 +34,7 @@
          </param>   
     </inputs>
     <outputs>
-        <data name="out_file1" format="input" metadata_source="input1"/>
+        <data name="out_file1" format_source="input1" metadata_source="input1"/>
     </outputs>
     <tests>
         <test>
@@ -65,8 +67,6 @@
     </tests>
 
     <help>
-
-
 **What it does**
 
 Trims specified number of characters from a dataset or its field (if dataset is tab-delimited).
@@ -136,7 +136,5 @@ cab done by setting **Remove everything from this position to the end** to 31::
 .. class:: warningmark
 
 **WARNING:** This tool will only work on properly formatted fastq datasets where (1) each read and quality string occupy one line and (2) '@' (read header) and "+" (quality header) lines are evenly numbered like in the above example.
-
-
     </help>
 </tool>

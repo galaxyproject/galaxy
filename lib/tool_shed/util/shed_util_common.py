@@ -98,7 +98,7 @@ def can_eliminate_repository_dependency(metadata_dict, tool_shed_url, name, owne
     return True
 
 
-def can_eliminate_tool_dependency(metadata_dict, name, type, version):
+def can_eliminate_tool_dependency(metadata_dict, name, dependency_type, version):
     """
     Determine if the relationship between a tool_dependency record
     associated with a tool_shed_repository record on the Galaxy side
@@ -106,12 +106,20 @@ def can_eliminate_tool_dependency(metadata_dict, name, type, version):
     """
     td_dict = metadata_dict.get('tool_dependencies', {})
     for td_key, td_val in td_dict.items():
-        n = td_val.get('name', None)
-        t = td_val.get('type', None)
-        v = td_val.get('version', None)
-        if n == name and t == type and v == version:
-            # The tool dependency is current, so keep it.
-            return False
+        if td_key == 'set_environment':
+            for td in td_val:
+                n = td.get('name', None)
+                t = td.get('type', None)
+                if n == name and t == dependency_type:
+                    # The tool dependency is current, so keep it.
+                    return False
+        else:
+            n = td_val.get('name', None)
+            t = td_val.get('type', None)
+            v = td_val.get('version', None)
+            if n == name and t == dependency_type and v == version:
+                # The tool dependency is current, so keep it.
+                return False
     return True
 
 
@@ -318,7 +326,7 @@ def get_current_repository_metadata_for_changeset_revision( app, repository, cha
     updated_changeset_revision = get_next_downloadable_changeset_revision( repository,
                                                                            repo,
                                                                            after_changeset_revision=changeset_revision )
-    if updated_changeset_revision:
+    if updated_changeset_revision and updated_changeset_revision != changeset_revision:
         repository_metadata = get_repository_metadata_by_changeset_revision( app,
                                                                              encoded_repository_id,
                                                                              updated_changeset_revision )
@@ -391,13 +399,14 @@ def get_metadata_changeset_revisions( repository, repo ):
 def get_next_downloadable_changeset_revision( repository, repo, after_changeset_revision ):
     """
     Return the installable changeset_revision in the repository changelog after the changeset to which
-    after_changeset_revision refers.  If there isn't one, return None.
+    after_changeset_revision refers.  If there isn't one, return None. If there is only one installable
+    changeset, and that matches the requested revision, return it.
     """
     changeset_revisions = [ revision[ 1 ] for revision in get_metadata_revisions( repository, repo ) ]
     if len( changeset_revisions ) == 1:
         changeset_revision = changeset_revisions[ 0 ]
         if changeset_revision == after_changeset_revision:
-            return None
+            return after_changeset_revision
     found_after_changeset_revision = False
     for changeset in repo.changelog:
         changeset_revision = str( repo.changectx( changeset ) )

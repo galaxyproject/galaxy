@@ -21,9 +21,9 @@ class DatatypesController( BaseAPIController ):
         Return an object containing upload datatypes.
         """
         datatypes_registry = self._datatypes_registry
-        extension_only = asbool( kwd.get( 'extension_only', True ) )
-        upload_only = asbool( kwd.get( 'upload_only', True ) )
         try:
+            extension_only = asbool( kwd.get( 'extension_only', True ) )
+            upload_only = asbool( kwd.get( 'upload_only', True ) )
             if extension_only:
                 if upload_only:
                     return datatypes_registry.upload_file_formats

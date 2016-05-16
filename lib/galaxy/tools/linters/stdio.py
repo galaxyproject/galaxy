@@ -1,3 +1,4 @@
+"""This module contains a linting functions for tool error detection."""
 from .command import get_command
 
 

@@ -56,7 +56,6 @@ module.exports = function( grunt ){
 
     if (grunt.option( 'develop' )){
         grunt.config( 'uglify.options', decompressedSettings );
-
     } else {
         grunt.config( 'uglify.target.options', {
             sourceMap : true,

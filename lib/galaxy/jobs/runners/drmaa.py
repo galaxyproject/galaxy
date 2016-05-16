@@ -29,6 +29,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
     runner_name = "DRMAARunner"
+    restrict_job_name_length = 15
 
     def __init__( self, app, nworkers, **kwargs ):
         """Start the job runner"""
@@ -124,13 +125,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         # wrapper.get_id_tag() instead of job_id for compatibility with TaskWrappers.
         galaxy_id_tag = job_wrapper.get_id_tag()
 
-        # define job attributes
-        job_name = 'g%s' % galaxy_id_tag
-        if job_wrapper.tool.old_id:
-            job_name += '_%s' % job_wrapper.tool.old_id
-        if external_runjob_script is None:
-            job_name += '_%s' % job_wrapper.user
-        job_name = ''.join( map( lambda x: x if x in ( string.letters + string.digits + '_' ) else '_', job_name ) )
+        job_name = self._job_name(job_wrapper)
         ajs = AsynchronousJobState( files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper, job_name=job_name )
 
         # set up the drmaa job template
@@ -290,8 +285,11 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 ajs.running = True
                 ajs.job_wrapper.change_state( model.Job.states.RUNNING )
             if state in ( drmaa.JobState.FAILED, drmaa.JobState.DONE ):
-                self._complete_terminal_job( ajs, drmaa_state=state )
-                continue
+                if self._complete_terminal_job( ajs, drmaa_state=state ) is not None:
+                    # job was not actually terminal
+                    state = ajs.old_state
+                else:
+                    continue
             if ajs.check_limits():
                 self.work_queue.put( ( self.fail_job, ajs ) )
                 continue
@@ -377,3 +375,18 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         # the DRMAA job-ID. If not the case, will throw an error.
         jobId = stdoutdata
         return jobId
+
+    def _job_name(self, job_wrapper):
+        external_runjob_script = job_wrapper.get_destination_configuration("drmaa_external_runjob_script", None)
+        galaxy_id_tag = job_wrapper.get_id_tag()
+
+        # define job attributes
+        job_name = 'g%s' % galaxy_id_tag
+        if job_wrapper.tool.old_id:
+            job_name += '_%s' % job_wrapper.tool.old_id
+        if external_runjob_script is None:
+            job_name += '_%s' % job_wrapper.user
+        job_name = ''.join( map( lambda x: x if x in ( string.letters + string.digits + '_' ) else '_', job_name ) )
+        if self.restrict_job_name_length:
+            job_name = job_name[:self.restrict_job_name_length]
+        return job_name

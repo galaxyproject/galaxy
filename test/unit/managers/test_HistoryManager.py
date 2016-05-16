@@ -437,6 +437,18 @@ class HistorySerializerTestCase( BaseTestCase ):
         serialized = self.history_serializer.serialize( history1, sharable_attrs )
         self.assertKeys( serialized, sharable_attrs )
 
+        self.log( 'should return user_id for user with whom it\'s been shared if the requester is the owner' )
+        non_owner = self.user_manager.create( **user3_data )
+        self.history_manager.share_with( history1, non_owner )
+        serialized = self.history_serializer.serialize( history1, [ 'users_shared_with' ], user=user2 )
+        self.assertKeys( serialized, [ 'users_shared_with' ] )
+        self.assertIsInstance( serialized[ 'users_shared_with' ], list )
+        self.assertEqual( serialized[ 'users_shared_with' ][0], self.app.security.encode_id( non_owner.id ) )
+
+        self.log( 'should not return users_shared_with if the requester is not the owner' )
+        serialized = self.history_serializer.serialize( history1, [ 'users_shared_with' ], user=non_owner )
+        self.assertFalse( hasattr( serialized, 'users_shared_with' ) )
+
     def test_purgable( self ):
         user2 = self.user_manager.create( **user2_data )
         history1 = self.history_manager.create( name='history1', user=user2 )
@@ -594,6 +606,42 @@ class HistoryDeserializerTestCase( BaseTestCase ):
         self.log( 'deserialization should fail silently on community_rating' )
         deserializer.deserialize( item, { 'community_rating' : 4 }, user=user2 )
         self.assertEqual( manager.ratings_count( item ), 1 )
+
+    def test_sharable( self ):
+        manager = self.history_manager
+        deserializer = self.history_deserializer
+
+        user2 = self.user_manager.create( **user2_data )
+        item = manager.create( name='history1', user=user2 )
+        non_owner = self.user_manager.create( **user3_data )
+
+        self.log( 'should allow adding a share by adding a user id to users_shared_with' )
+        non_owner_id = self.app.security.encode_id( non_owner.id )
+        deserializer.deserialize( item, { 'users_shared_with' : [ non_owner_id ] }, user=user2 )
+        user_shares = manager.get_share_assocs( item )
+        self.assertEqual( len( user_shares ), 1 )
+        self.assertEqual( user_shares[0].user_id, non_owner.id )
+
+        self.log( 're-adding an existing user id should do nothing' )
+        deserializer.deserialize( item, { 'users_shared_with' : [ non_owner_id, non_owner_id ] }, user=user2 )
+        user_shares = manager.get_share_assocs( item )
+        self.assertEqual( len( user_shares ), 1 )
+        self.assertEqual( user_shares[0].user_id, non_owner.id )
+
+        self.log( 'should allow removing a share by not having it in users_shared_with' )
+        deserializer.deserialize( item, { 'users_shared_with' : [] }, user=user2 )
+        user_shares = manager.get_share_assocs( item )
+        self.assertEqual( len( user_shares ), 0 )
+
+        self.log( 'adding a bad user id should error' )
+        self.assertRaises( AttributeError,
+            deserializer.deserialize, item, { 'users_shared_with' : [ None ] }, user=user2 )
+
+        self.log( 'adding a non-existing user id should do nothing' )
+        non_user_id = self.app.security.encode_id( 99 )
+        deserializer.deserialize( item, { 'users_shared_with' : [ non_user_id ] }, user=user2 )
+        user_shares = manager.get_share_assocs( item )
+        self.assertEqual( len( user_shares ), 0 )
 
 
 # =============================================================================

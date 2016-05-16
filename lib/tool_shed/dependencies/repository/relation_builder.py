@@ -197,10 +197,11 @@ class RelationBuilder( object ):
                         # The repository changeset_revision is no longer installable, so see if there's been an update.
                         repo = hg_util.get_repo_for_repository( self.app, repository=repository, repo_path=None, create=False )
                         changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, rd_changeset_revision )
-                        repository_metadata = \
-                            metadata_util.get_repository_metadata_by_repository_id_changeset_revision( self.app,
-                                                                                                       repository_id,
-                                                                                                       changeset_revision )
+                        if changeset_revision != rd_changeset_revision:
+                            repository_metadata = \
+                                metadata_util.get_repository_metadata_by_repository_id_changeset_revision( self.app,
+                                                                                                           repository_id,
+                                                                                                           changeset_revision )
                         if repository_metadata:
                             new_key_rd_dict = {}
                             new_key_rd_dict[ key ] = \

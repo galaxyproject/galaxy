@@ -98,7 +98,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-d
                                     input.options && ( ( input.options.length == 0 && !data_resolved ) || is_workflow_parameter ) && ( input.is_workflow = true );
                                     input.value && input.value.__class__ == 'RuntimeValue' && ( input.value = null );
                                     if ( !is_data_input && input.type !== 'hidden' && !is_workflow_parameter ) {
-                                        if ( input.optional || ( Utils.validate( input.value ) && input.value !== '' ) ) {
+                                        if ( input.optional || ( !Utils.isEmpty( input.value ) && input.value !== '' ) ) {
                                             input.collapsible_value = input.value;
                                             input.collapsible_preview = true;
                                         }

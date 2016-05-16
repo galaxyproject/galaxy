@@ -904,22 +904,23 @@ class ToolModule( WorkflowModule ):
         data_inputs = []
 
         def callback( input, prefixed_name, prefixed_label, **kwargs ):
-            if isinstance( input, DataToolParameter ):
-                data_inputs.append( dict(
-                    name=prefixed_name,
-                    label=prefixed_label,
-                    multiple=input.multiple,
-                    extensions=input.extensions,
-                    input_type="dataset", ) )
-            if isinstance( input, DataCollectionToolParameter ):
-                data_inputs.append( dict(
-                    name=prefixed_name,
-                    label=prefixed_label,
-                    multiple=input.multiple,
-                    input_type="dataset_collection",
-                    collection_types=input.collection_types,
-                    extensions=input.extensions,
-                ) )
+            if not hasattr( input, 'hidden' ) or not input.hidden:
+                if isinstance( input, DataToolParameter ):
+                    data_inputs.append( dict(
+                        name=prefixed_name,
+                        label=prefixed_label,
+                        multiple=input.multiple,
+                        extensions=input.extensions,
+                        input_type="dataset", ) )
+                elif isinstance( input, DataCollectionToolParameter ):
+                    data_inputs.append( dict(
+                        name=prefixed_name,
+                        label=prefixed_label,
+                        multiple=input.multiple,
+                        input_type="dataset_collection",
+                        collection_types=input.collection_types,
+                        extensions=input.extensions,
+                    ) )
 
         visit_input_values( self.tool.inputs, self.state.inputs, callback )
         return data_inputs

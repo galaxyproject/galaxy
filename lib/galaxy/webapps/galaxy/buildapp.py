@@ -713,16 +713,29 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     # other middleware):
     app = httpexceptions.make_middleware( app, conf )
     log.debug( "Enabling 'httpexceptions' middleware" )
+    # Statsd request timing and profiling
+    statsd_host = conf.get('statsd_host', None)
+    if statsd_host:
+        from galaxy.web.framework.middleware.statsd import StatsdMiddleware
+        app = StatsdMiddleware( app,
+                                statsd_host,
+                                conf.get('statsd_port', 8125),
+                                conf.get('statsd_prefix', 'galaxy') )
+        log.debug( "Enabling 'statsd' middleware" )
     # If we're using remote_user authentication, add middleware that
     # protects Galaxy from improperly configured authentication in the
     # upstream server
-    if asbool(conf.get( 'use_remote_user', False )):
+    single_user = conf.get( 'single_user', None )
+    use_remote_user = asbool(conf.get( 'use_remote_user', False )) or single_user
+    if use_remote_user:
         from galaxy.web.framework.middleware.remoteuser import RemoteUser
         app = RemoteUser( app, maildomain=conf.get( 'remote_user_maildomain', None ),
                           display_servers=util.listify( conf.get( 'display_servers', '' ) ),
+                          single_user=single_user,
                           admin_users=conf.get( 'admin_users', '' ).split( ',' ),
                           remote_user_header=conf.get( 'remote_user_header', 'HTTP_REMOTE_USER' ),
-                          remote_user_secret_header=conf.get('remote_user_secret', None) )
+                          remote_user_secret_header=conf.get('remote_user_secret', None),
+                          normalize_remote_user_email=conf.get('normalize_remote_user_email', False))
     # The recursive middleware allows for including requests in other
     # requests or forwarding of requests, all on the server side.
     if asbool(conf.get('use_recursive', True)):
@@ -770,13 +783,6 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         from galaxy.web.framework.middleware.translogger import TransLogger
         app = TransLogger( app )
         log.debug( "Enabling 'trans logger' middleware" )
-    # Statsd request timing and profiling
-    statsd_host = conf.get('statsd_host', None)
-    if statsd_host:
-        from galaxy.web.framework.middleware.statsd import StatsdMiddleware
-        app = StatsdMiddleware( app, statsd_host, conf.get('statsd_port'))
-        log.debug( "Enabling 'statsd' middleware" )
-
     # X-Forwarded-Host handling
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = XForwardedHostMiddleware( app )

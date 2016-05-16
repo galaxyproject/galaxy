@@ -4,12 +4,15 @@ Classes encapsulating Galaxy tool parameters.
 import re
 from json import dumps, loads
 
-from basic import RuntimeValue
+from basic import RuntimeValue, DataCollectionToolParameter, DataToolParameter, SelectToolParameter
 from grouping import Conditional, Repeat, Section, UploadDataset
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import json_fix
 
 REPLACE_ON_TRUTHY = object()
+
+# Some tools use the code tag and access the code base, expecting certain tool parameters to be available here.
+__all__ = [ DataCollectionToolParameter, DataToolParameter, SelectToolParameter ]
 
 
 def visit_input_values( inputs, input_values, callback, name_prefix='', label_prefix='', parent_prefix='', context=None, no_replacement_value=REPLACE_ON_TRUTHY ):

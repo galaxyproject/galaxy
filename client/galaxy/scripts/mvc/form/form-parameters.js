@@ -105,7 +105,6 @@ define(['utils/utils',
                 error_text  : input_def.error_text || 'No options available',
                 multiple    : input_def.multiple,
                 optional    : input_def.optional,
-                searchable  : input_def.searchable,
                 onchange    : function() {
                     self.app.trigger( 'change' );
                 }
@@ -126,6 +125,7 @@ define(['utils/utils',
                 id          : 'field-' + input_def.id,
                 data        : input_def.options,
                 display     : input_def.display,
+                optional    : input_def.optional,
                 onchange    : function() {
                     self.app.trigger( 'change' );
                 }
@@ -138,7 +138,7 @@ define(['utils/utils',
             // field replaces e.g. a select field
             if ( input_def.options ) {
                 input_def.area = input_def.multiple;
-                if ( !Utils.validate( input_def.value ) ) {
+                if ( Utils.isEmpty( input_def.value ) ) {
                     input_def.value = null;
                 } else {
                     if ( $.isArray( input_def.value ) ) {

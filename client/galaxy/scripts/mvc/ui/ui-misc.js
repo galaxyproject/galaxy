@@ -106,8 +106,10 @@ define(['utils/utils',
                     .addClass( this.model.get( 'cls' ) )
                     .attr( 'id', this.model.id )
                     .attr( 'type', this.model.get( 'type' ) )
-                    .attr( 'placeholder', this.model.get( 'placeholder' ) )
-                    .val( this.model.get( 'value' ) );
+                    .attr( 'placeholder', this.model.get( 'placeholder' ) );
+            if ( this.model.get( 'value' ) !== this.$el.val() ) {
+                this.$el.val( this.model.get( 'value' ) );
+            }
             this.model.get( 'disabled' ) ? this.$el.attr( 'disabled', true ) : this.$el.removeAttr( 'disabled' );
             this.$el[ this.model.get( 'visible' ) ? 'show' : 'hide' ]();
             return this;

@@ -759,6 +759,9 @@ input[type="submit"], button {
     background-image: url(error_large.png);
     background-repeat: no-repeat;
     background-position: 10px 8px;
+    .messagerow {
+        padding: 10px 20px;
+    }
 }
 
 .errormessagelarge {
@@ -876,7 +879,6 @@ table.tabletip tbody tr:hover td {
     background-color: #eee;
 }
 
-
 table.colored {
     border-top: solid @table-border-color 1px;
     border-bottom: solid @table-border-color 1px;
@@ -918,16 +920,13 @@ div.debug {
 .grid-header {
     padding-bottom: 1em;
 }
-
 .grid-header h2 {
     margin: 0;
     margin-bottom: 0.5em;
 }
-
 .grid-header .title {
     font-weight: bold;
 }
-
 .grid {
     padding-top: 1em;
     border-collapse: collapse;
@@ -1369,6 +1368,10 @@ div.permissionContainer {
             padding:.8em;
     }
 
+}
+
+.preserve-text-breaks {
+    white-space: pre-line;
 }
 
 // Icon buttons.
