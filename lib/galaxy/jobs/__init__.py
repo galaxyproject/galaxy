@@ -413,7 +413,15 @@ class JobConfiguration( object ):
 
         :returns: str -- id or tag representing the default.
         """
+
         rval = parent.get('default')
+        if 'default_from_environ' in parent.attrib:
+            environ_var = parent.attrib['default_from_environ']
+            rval = os.environ.get(environ_var, rval)
+        elif 'default_from_config' in parent.attrib:
+            config_val = parent.attrib['default_from_config']
+            rval = self.app.config.config_dict.get(config_val, rval)
+
         if rval is not None:
             # If the parent element has a 'default' attribute, use the id or tag in that attribute
             if rval not in names:
