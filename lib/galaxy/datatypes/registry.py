@@ -119,9 +119,7 @@ class Registry( object ):
             for elem in registration.findall( 'datatype' ):
                 # Keep a status of the process steps to enable stopping the process of handling the datatype if necessary.
                 ok = True
-                extension = elem.get( 'extension', None )
-                if extension:
-                    extension = extension.lower()
+                extension = self.get_extension( elem )
                 dtype = elem.get( 'type', None )
                 type_extension = elem.get( 'type_extension', None )
                 mimetype = elem.get( 'mimetype', None )
@@ -552,7 +550,7 @@ class Registry( object ):
             # Load display applications defined by local datatypes_conf.xml.
             datatype_elems = self.display_app_containers
         for elem in datatype_elems:
-            extension = elem.get( 'extension', None )
+            extension = self.get_extension( elem )
             for display_app in elem.findall( 'display' ):
                 display_file = display_app.get( 'file', None )
                 if installed_repository_dict:
@@ -861,3 +859,17 @@ class Registry( object ):
         os.write( fd, '</datatypes>\n' )
         os.close( fd )
         os.chmod( self.xml_filename, 0o644 )
+
+    def get_extension( self, elem ):
+        """
+        Function which returns the extension lowercased
+        :param elem:
+        :return extension:
+        """
+        extension = elem.get('extension', None)
+        # If extension is not None and is uppercase or mixed case, we need to lowercase it
+        if extension is not None and not extension.islower():
+            self.log.debug( "%s is not lower case, that could cause troubles in the future. \
+            Please change it to lower case" % extension )
+            extension = extension.lower()
+        return extension

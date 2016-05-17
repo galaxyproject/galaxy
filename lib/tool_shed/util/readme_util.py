@@ -44,7 +44,7 @@ def build_readme_files_dict( app, repository, changeset_revision, metadata, tool
                         f = open( full_path_to_readme_file, 'r' )
                         text = unicodify( f.read() )
                         f.close()
-                    except Exception, e:
+                    except Exception as e:
                         log.exception( "Error reading README file '%s' from disk: %s" % ( str( relative_path_to_readme_file ), str( e ) ) )
                         text = None
                     if text:
@@ -57,7 +57,7 @@ def build_readme_files_dict( app, repository, changeset_revision, metadata, tool
                                 text_of_reasonable_length = suc.set_image_paths( app,
                                                                                  app.security.encode_id( repository.id ),
                                                                                  text_of_reasonable_length )
-                            except Exception, e:
+                            except Exception as e:
                                 log.exception( "Exception in build_readme_files_dict, so images may not be properly displayed:\n%s" % str( e ) )
                             finally:
                                 lock.release()
@@ -82,7 +82,7 @@ def build_readme_files_dict( app, repository, changeset_revision, metadata, tool
                             try:
                                 text = unicodify( fctx.data() )
                                 readme_files_dict[ readme_file_name ] = basic_util.size_string( text )
-                            except Exception, e:
+                            except Exception as e:
                                 log.exception( "Error reading README file '%s' from repository manifest: %s" %
                                                ( str( relative_path_to_readme_file ), str( e ) ) )
     return readme_files_dict

@@ -49,7 +49,7 @@ class AdminToolshed( AdminGalaxy ):
         repository = repository_util.get_installed_tool_shed_repository( trans.app, repository_id )
         try:
             trans.app.installed_repository_manager.activate_repository( repository )
-        except Exception, e:
+        except Exception as e:
             error_message = "Error activating repository %s: %s" % ( escape( repository.name ), str( e ) )
             log.exception( error_message )
             message = '%s.<br/>You may be able to resolve this by uninstalling and then reinstalling the repository.  Click <a href="%s">here</a> to uninstall the repository.' \
@@ -326,7 +326,7 @@ class AdminToolshed( AdminGalaxy ):
                         shutil.rmtree( repository_install_dir )
                         log.debug( "Removed repository installation directory: %s" % str( repository_install_dir ) )
                         removed = True
-                    except Exception, e:
+                    except Exception as e:
                         log.debug( "Error removing repository installation directory %s: %s" % ( str( repository_install_dir ), str( e ) ) )
                         if isinstance( e, OSError ) and not os.path.exists( repository_install_dir ):
                             removed = True
@@ -1035,7 +1035,7 @@ class AdminToolshed( AdminGalaxy ):
                     params = dict( name=str( repository.name ), owner=str( repository.owner ) )
                     pathspec = [ 'repository', 'get_repository_id' ]
                     repository_ids = util.url_get( tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
-                except Exception, e:
+                except Exception as e:
                     # The Tool Shed cannot handle the get_repository_id request, so the code must be older than the
                     # 04/2014 Galaxy release when it was introduced.  It will be safest to error out and let the
                     # Tool Shed admin update the Tool Shed to a later release.

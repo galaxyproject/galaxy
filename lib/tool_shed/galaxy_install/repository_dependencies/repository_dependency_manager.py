@@ -293,7 +293,7 @@ class RepositoryDependencyInstallManager( object ):
         pathspec = [ 'repository', 'get_repository_dependencies' ]
         try:
             raw_text = url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
-        except Exception, e:
+        except Exception as e:
             log.error("The URL\n%s\nraised the exception:\n%s\n", build_url( tool_shed_url, pathspec=pathspec, params=params ), str( e ) )
             return ''
         if len( raw_text ) > 2:
@@ -387,7 +387,7 @@ class RepositoryDependencyInstallManager( object ):
                     if response:
                         try:
                             required_repo_info_dict = json.loads( response )
-                        except Exception, e:
+                        except Exception as e:
                             log.exception( e )
                             return all_repo_info_dicts
                         required_repo_info_dicts = []

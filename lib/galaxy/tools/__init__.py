@@ -109,8 +109,8 @@ class ToolBox( BaseGalaxyToolBox ):
 
     def create_tool( self, config_file, repository_id=None, guid=None, **kwds ):
         try:
-            tool_source = get_tool_source( config_file, getattr( self.app.config, "enable_beta_tool_formats", False ) )
-        except Exception, e:
+            tool_source = get_tool_source( config_file, enable_beta_formats=getattr( self.app.config, "enable_beta_tool_formats", False ) )
+        except Exception as e:
             # capture and log parsing errors
             global_tool_errors.add_error(config_file, "Tool XML parsing", e)
             raise e
@@ -295,7 +295,7 @@ class Tool( object, Dictifiable ):
         # Parse XML element containing configuration
         try:
             self.parse( tool_source, guid=guid )
-        except Exception, e:
+        except Exception as e:
             global_tool_errors.add_error(config_file, "Tool Loading", e)
             raise e
         self.history_manager = histories.HistoryManager( app )
@@ -943,7 +943,7 @@ class Tool( object, Dictifiable ):
                 # Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy.
                 try:
                     help_text = suc.set_image_paths( self.app, self.repository_id, help_text )
-                except Exception, e:
+                except Exception as e:
                     log.exception( "Exception in parse_help, so images may not be properly displayed:\n%s" % str( e ) )
             try:
                 self.__help = Template( rst_to_html(help_text), input_encoding='utf-8',
@@ -1078,7 +1078,7 @@ class Tool( object, Dictifiable ):
         if 'rerun_remap_job_id' in incoming:
             try:
                 rerun_remap_job_id = trans.app.security.decode_id( incoming[ 'rerun_remap_job_id' ] )
-            except Exception, exception:
+            except Exception as exception:
                 log.error( str( exception ) )
                 raise exceptions.MessageException( 'Failure executing tool (attempting to rerun invalid job).' )
 
@@ -1141,10 +1141,10 @@ class Tool( object, Dictifiable ):
         """
         try:
             job, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id, mapping_over_collection=mapping_over_collection, execution_cache=execution_cache )
-        except httpexceptions.HTTPFound, e:
+        except httpexceptions.HTTPFound as e:
             # if it's a paste redirect exception, pass it up the stack
             raise e
-        except Exception, e:
+        except Exception as e:
             log.exception('Exception caught while attempting tool execution:')
             message = 'Error executing tool: %s' % str(e)
             return False, message
@@ -1333,7 +1333,7 @@ class Tool( object, Dictifiable ):
             code = self.get_hook( hook_name )
             if code:
                 return code( *args, **kwargs )
-        except Exception, e:
+        except Exception as e:
             original_message = ''
             if len( e.args ):
                 original_message = e.args[0]
@@ -1587,7 +1587,7 @@ class Tool( object, Dictifiable ):
                 history = trans.get_history()
             if history is None:
                 raise exceptions.MessageException( 'History unavailable. Please specify a valid history id' )
-        except Exception, e:
+        except Exception as e:
             raise exceptions.MessageException( '[history_id=%s] Failed to retrieve history. %s.' % ( history_id, str( e ) ) )
 
         # build request context
@@ -1784,7 +1784,7 @@ class Tool( object, Dictifiable ):
                 try:
                     if [ hda.dependent_jobs for hda in [ jtod.dataset for jtod in job.output_datasets ] if hda.dependent_jobs ]:
                         return True
-                except Exception, exception:
+                except Exception as exception:
                     log.error( str( exception ) )
                     pass
         return False

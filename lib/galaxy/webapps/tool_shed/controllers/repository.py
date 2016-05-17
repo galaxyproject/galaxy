@@ -713,7 +713,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 template = basic_util.SELECTED_REPOSITORIES_TEMPLATE
                 repository_template = \
                     string.Template( template ).safe_substitute( tool_shed_url=tool_shed_url,
-                                                                 repository_owner=str( repository.user.username ) ,
+                                                                 repository_owner=str( repository.user.username ),
                                                                  repository_name=str( repository.name ) )
                 repository_string = '%s\n%s' % ( repository_string, repository_template )
             template = basic_util.DOCKER_IMAGE_TEMPLATE
@@ -878,7 +878,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                         tool_state=tool_state,
                                         message=message,
                                         status=status )
-        except Exception, e:
+        except Exception as e:
             message = "Error displaying tool, probably due to a problem in the tool config.  The exception is: %s." % str( e )
         if trans.webapp.name == 'galaxy' or render_repository_actions_for == 'galaxy':
             return trans.response.send_redirect( web.url_for( controller='repository',
@@ -1779,7 +1779,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                         tool_state=tool_state,
                                         message=message,
                                         status='error' )
-        except Exception, e:
+        except Exception as e:
             message = "Exception thrown attempting to display tool: %s." % str( e )
         if trans.webapp.name == 'galaxy':
             return trans.response.send_redirect( web.url_for( controller='repository',
@@ -2348,7 +2348,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 for selected_file in selected_files_to_delete:
                     try:
                         hg_util.remove_file( repo.ui, repo, selected_file, force=True )
-                    except Exception, e:
+                    except Exception as e:
                         log.debug( "Error removing the following file using the mercurial API:\n %s" % str( selected_file ) )
                         log.debug( "The error was: %s" % str( e ))
                         log.debug( "Attempting to remove the file using a different approach." )
@@ -2359,7 +2359,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                         if os.path.isdir( absolute_selected_file ):
                             try:
                                 os.rmdir( absolute_selected_file )
-                            except OSError, e:
+                            except OSError as e:
                                 # The directory is not empty
                                 pass
                         elif os.path.isfile( absolute_selected_file ):
@@ -2367,7 +2367,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                             dir = os.path.split( absolute_selected_file )[0]
                             try:
                                 os.rmdir( dir )
-                            except OSError, e:
+                            except OSError as e:
                                 # The directory is not empty
                                 pass
                 # Commit the change set.
@@ -2439,7 +2439,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 util.send_mail( from_address, to_address, subject, body, trans.app.config )
                 message = "Your message has been sent"
                 status = "done"
-            except Exception, e:
+            except Exception as e:
                 message = "An error occurred sending your message by email: %s" % str( e )
                 status = "error"
         else:
@@ -2719,15 +2719,15 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 has_metadata = True
             else:
                 has_metadata = False
-            change_dict = { 'ctx' : ctx,
-                            'rev' : str( ctx.rev() ),
-                            'date' : date,
-                            'display_date' : hg_util.get_readable_ctx_date( ctx ),
-                            'description' : ctx.description(),
-                            'files' : ctx.files(),
-                            'user' : ctx.user(),
-                            'parent' : ctx.parents()[0],
-                            'has_metadata' : has_metadata }
+            change_dict = { 'ctx': ctx,
+                            'rev': str( ctx.rev() ),
+                            'date': date,
+                            'display_date': hg_util.get_readable_ctx_date( ctx ),
+                            'description': ctx.description(),
+                            'files': ctx.files(),
+                            'user': ctx.user(),
+                            'parent': ctx.parents()[0],
+                            'has_metadata': has_metadata }
             # Make sure we'll view latest changeset first.
             changesets.insert( 0, change_dict )
         metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans.app,

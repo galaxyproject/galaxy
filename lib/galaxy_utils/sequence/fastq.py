@@ -96,7 +96,7 @@ class fastqSequencingRead( SequencingRead ):
                 try:
                     to_quality = self.ascii_min - self.quality_min
                     return [ chr( int( val ) + to_quality ) for val in quality.split() ]
-                except ValueError, e:
+                except ValueError as e:
                     raise ValueError( 'Error Parsing quality String. ASCII quality strings cannot contain spaces (%s): %s' % ( self.quality, e ) )
             else:
                 return []
@@ -113,7 +113,7 @@ class fastqSequencingRead( SequencingRead ):
             if quality:
                 try:
                     return len( quality.split() )
-                except ValueError, e:
+                except ValueError as e:
                     raise ValueError( 'Error Parsing quality String. ASCII quality strings cannot contain spaces (%s): %s' % ( self.quality, e ) )
             else:
                 return 0
@@ -602,9 +602,9 @@ class fastqVerboseErrorReader( fastqReader ):
             block = super( fastqVerboseErrorReader, self ).next()
             self.last_good_identifier = block.identifier
             return block
-        except StopIteration, e:
+        except StopIteration as e:
             raise e
-        except Exception, e:
+        except Exception as e:
             print "There was an error reading your input file. Your input file is likely malformed.\nIt is suggested that you double-check your original input file for errors -- helpful information for this purpose has been provided below.\nHowever, if you think that you have encountered an actual error with this tool, please do tell us by using the bug reporting mechanism.\n\nThe reported error is: '%s'." % e
             if self.last_good_identifier is not None:
                 print "The last valid FASTQ read had an identifier of '%s'." % self.last_good_identifier

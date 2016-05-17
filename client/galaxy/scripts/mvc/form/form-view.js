@@ -8,7 +8,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
             this.options = Utils.merge(options, {
                 initial_errors  : false,
                 cls             : 'ui-portlet-limited',
-                icon            : ''
+                icon            : null
             });
             this.modal = ( parent.Galaxy && parent.Galaxy.modal ) || new Ui.Modal.View();
             this.setElement('<div/>');
@@ -18,7 +18,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
         /** Update available options */
         update: function(new_model){
             var self = this;
-            this.data.matchModel(new_model, function(input_id, node) {
+            this.data.matchModel(new_model, function(node, input_id) {
                 var input = self.input_list[input_id];
                 if (input && input.options) {
                     if (!_.isEqual(input.options, node.options)) {

@@ -305,6 +305,8 @@ class Configuration( object ):
         self.tool_name_boost = kwargs.get( "tool_name_boost", 9 )
         self.tool_section_boost = kwargs.get( "tool_section_boost", 3 )
         self.tool_description_boost = kwargs.get( "tool_description_boost", 2 )
+        self.tool_labels_boost = kwargs.get( "tool_labels_boost", 1 )
+        self.tool_stub_boost = kwargs.get( "tool_stub_boost", 5 )
         self.tool_help_boost = kwargs.get( "tool_help_boost", 0.5 )
         self.tool_search_limit = kwargs.get( "tool_search_limit", 20 )
         # Location for tool dependencies.
@@ -630,7 +632,7 @@ class Configuration( object ):
         if path not in [ None, False ] and not os.path.isdir( path ):
             try:
                 os.makedirs( path )
-            except Exception, e:
+            except Exception as e:
                 raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
 
     def check( self ):
@@ -640,7 +642,7 @@ class Configuration( object ):
             if path not in [ None, False ] and not os.path.isdir( path ):
                 try:
                     os.makedirs( path )
-                except Exception, e:
+                except Exception as e:
                     raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
         # Create the directories that it makes sense to create
         if self.object_store_config_file is None:

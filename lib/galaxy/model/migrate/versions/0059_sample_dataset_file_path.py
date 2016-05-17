@@ -33,14 +33,14 @@ def upgrade(migrate_engine):
         # remove the 'file_path' column
         try:
             SampleDataset_table.c.file_path.drop()
-        except Exception, e:
+        except Exception as e:
             log.debug( "Deleting column 'file_path' from the 'sample_dataset' table failed: %s" % ( str( e ) ) )
         # create the column again
         try:
             col = Column( "file_path", TEXT )
             col.create( SampleDataset_table )
             assert col is SampleDataset_table.c.file_path
-        except Exception, e:
+        except Exception as e:
             log.debug( "Creating column 'file_path' in the 'sample_dataset' table failed: %s" % ( str( e ) ) )
 
         for id, file_path in filepath_dict.items():

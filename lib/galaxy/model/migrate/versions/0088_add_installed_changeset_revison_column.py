@@ -31,7 +31,7 @@ def upgrade(migrate_engine):
     try:
         col.create( ToolShedRepository_table )
         assert col is ToolShedRepository_table.c.installed_changeset_revision
-    except Exception, e:
+    except Exception as e:
         print "Adding installed_changeset_revision column to the tool_shed_repository table failed: %s" % str( e )
         log.debug( "Adding installed_changeset_revision column to the tool_shed_repository table failed: %s" % str( e ) )
     # Update each row by setting the value of installed_changeset_revison to be the value of changeset_revision.
@@ -60,6 +60,6 @@ def downgrade(migrate_engine):
     ToolShedRepository_table = Table( "tool_shed_repository", metadata, autoload=True )
     try:
         ToolShedRepository_table.c.installed_changeset_revision.drop()
-    except Exception, e:
+    except Exception as e:
         print "Dropping column installed_changeset_revision from the tool_shed_repository table failed: %s" % str( e )
         log.debug( "Dropping column installed_changeset_revision from the tool_shed_repository table failed: %s" % str( e ) )

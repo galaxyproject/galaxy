@@ -63,11 +63,11 @@ def upgrade(migrate_engine):
     # Create the tables.
     try:
         ToolVersion_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating tool_version table failed: %s" % str( e ) )
     try:
         ToolVersionAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating tool_version_association table failed: %s" % str( e ) )
     # Populate the tool table with tools included in installed tool shed repositories.
     cmd = "SELECT id, metadata FROM tool_shed_repository"
@@ -89,7 +89,7 @@ def upgrade(migrate_engine):
     # Drop the tool_id_guid_map table since the 2 new tables render it unnecessary.
     try:
         ToolIdGuidMap_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping tool_id_guid_map table failed: %s" % str( e ) )
 
 
@@ -110,13 +110,13 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         ToolVersionAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping tool_version_association table failed: %s" % str( e ) )
     try:
         ToolVersion_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping tool_version table failed: %s" % str( e ) )
     try:
         ToolIdGuidMap_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating tool_id_guid_map table failed: %s" % str( e ) )

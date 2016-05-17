@@ -34,13 +34,13 @@ def upgrade(migrate_engine):
     try:
         col.create( ToolDependency_table )
         assert col is ToolDependency_table.c.status
-    except Exception, e:
+    except Exception as e:
         print "Adding status column to the tool_dependency table failed: %s" % str( e )
     col = Column( "error_message", TEXT )
     try:
         col.create( ToolDependency_table )
         assert col is ToolDependency_table.c.error_message
-    except Exception, e:
+    except Exception as e:
         print "Adding error_message column to the tool_dependency table failed: %s" % str( e )
 
     if migrate_engine.name != 'sqlite':
@@ -48,7 +48,7 @@ def upgrade(migrate_engine):
         # TODO move to alembic.
         try:
             ToolDependency_table.c.uninstalled.drop()
-        except Exception, e:
+        except Exception as e:
             print "Dropping uninstalled column from the tool_dependency table failed: %s" % str( e )
 
 
@@ -58,15 +58,15 @@ def downgrade(migrate_engine):
     ToolDependency_table = Table( "tool_dependency", metadata, autoload=True )
     try:
         ToolDependency_table.c.status.drop()
-    except Exception, e:
+    except Exception as e:
         print "Dropping column status from the tool_dependency table failed: %s" % str( e )
     try:
         ToolDependency_table.c.error_message.drop()
-    except Exception, e:
+    except Exception as e:
         print "Dropping column error_message from the tool_dependency table failed: %s" % str( e )
     col = Column( "uninstalled", Boolean, default=False )
     try:
         col.create( ToolDependency_table )
         assert col is ToolDependency_table.c.uninstalled
-    except Exception, e:
+    except Exception as e:
         print "Adding uninstalled column to the tool_dependency table failed: %s" % str( e )

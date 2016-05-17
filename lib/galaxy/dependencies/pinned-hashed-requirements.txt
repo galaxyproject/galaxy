@@ -39,17 +39,17 @@ SQLAlchemy==1.0.8 --hash:sha256=3c357f36c141205cea2b5ec4c4e9885602452fea06428d6c
                   --hash:sha256=884b522d2d067cffd103f4e1a5342c678803cd6903da24a3f757b57b00eb188b \
                   --hash:sha256=d5dde66c1603853aebbfbbd74d79c60678f7d98c17abce4be4ebbb697dfd7265 \
                   --hash:sha256=42346d5e91c5e0a5a975352d8af3cfd8b2dad602dd07ec41b6b848ac5205cf5b
-# Mercurial >= 3.5 changed the bundle format, which breaks hg push of TS repositories
-mercurial==3.4.2 --hash:sha256=7851864b03929c09e07670bf8ab7d59f3529650c935a70d09fb6ce7f6a84e2a5 \
-                 --hash:sha256=c23b02b4c32edc2d0799221a9d35abd916fb8a1acd1c07d64c16a235ef677b9e \
-                 --hash:sha256=ca72ddfaea681a070b62edcb8e41d58bd24a2b04f73e66658565d189a76f3819 \
-                 --hash:sha256=fdad4496f3d7f3e7eced771fa46e21c074989f8437ddf3e0ff6c0eee964e4c29 \
-                 --hash:sha256=964a10ec1114dbee3696134bafed676f66038759b73de8593f92616f0e53f371 \
-                 --hash:sha256=c6ca6fbe56a8919dfc521e80ab781ab565760d87f4a6170e788d67eb6d69d30f \
-                 --hash:sha256=69540318fa9f7a3a0428647003d4f1fa8865d29648e73999b921cae039145ce9 \
-                 --hash:sha256=b3de0ee851cf8750f53102437c9a04c7217a8c6f7411030ab3bb5534885f3315 \
-                 --hash:sha256=46f67af52c7b1aed68b67daa33c26eafc0fb1d371954d3266fce739446cfcb1d \
-                 --hash:sha256=000afb932f0ae45c365cbc0457044e8800811fdad7eee9332b6403b83423ab0a
+mercurial==3.7.3 --hash:sha256=49f596820f005ac6f94266b89a0dbd815c0ee0aacd3aa86545dc39fb349ea4bf \
+                 --hash:sha256=75f5b6b708bec2d6e0e68ec8912725a5dcac42df00b122fa73a8c4bd21495039 \
+                 --hash:sha256=8c07cb3404d26641d8829099bd1047582b76def49eca067ba6bea9a73d261775 \
+                 --hash:sha256=6a05bf22101b79b5f56421f7a1c6d301000f759f0114827f37cc9f847c1ab352 \
+                 --hash:sha256=499a26d489325808d591ee1d60a488152a0edb38aa6e64cf2d8bf0ef354ca112 \
+                 --hash:sha256=d816c7752327474d11ab4a39c953995a171b6f37ad3bed3008d4ad9e4166d654 \
+                 --hash:sha256=01d96fe053506cf4ebf8858beca4ea258a853c291b5af89b8ee34b842fb52c6a \
+                 --hash:sha256=ec82ad6511a3d9e4ccb80a44d87ce6c2ef59fbf68aabe025225470e04a0f0631 \
+                 --hash:sha256=2261a7a60279ec094d0a7967337e922dfd82266a5696b910621081d878e2585a \
+                 --hash:sha256=f31fb4dea04f1776e1a503d9bf8d87cbba61717923d1f9ad91d7ef35ef064b24 \
+                 --hash:sha256=1164c24a4cf036ee87f9b492175b2d8688e246c90888804deafe4565bd42c558
 numpy==1.9.2 --hash:sha256=931ce6fd1180a10d58a925b614775706c05de35bca5805e705e1da17e1326862 \
              --hash:sha256=2340c4b72fdab79ac0fc04bb6629b26eeb93d10f4945b6b1f07d9be8663cab84 \
              --hash:sha256=83fe34ff67653a639c57cfd04a0d48dda5913250fd95c8466af1d8416b58af59 \
@@ -97,6 +97,8 @@ Mako==1.0.2 --hash:sha256=d3f372cbc2e7de080b5f7056d160f3ac8279353a2ea8f1ef8fd5b0
 pytz==2015.4 --hash:sha256=3bec70eef120ad0bf9143e59bbf36715ec1232fb0550ae2b8aa6c107aacfa6f2
 Babel==2.0 --hash:sha256=aa725635ef189f77b6b0579efe1e91602d7cf63a31f6dd719a88ee53642bb5ab
 Beaker==1.7.0 --hash:sha256=334427853ac291e4ecd1e03addb48e231681ab9b6c2bc793c0f0fb98024b70b1
+Whoosh==2.7.4 --hash:sha256=19d51999afc00df41ae301bde2a77ae5a6eb0cb4b20b3b72be40e800ee95c82f \
+              --hash:sha256=d880b32f6ca2911a84e06b7f8b06cf41a22cd6fc62c3f67cbe97c3cddad18f15
 
 # Cheetah and dependencies
 Cheetah==2.4.4  --hash:sha256=24cf67789b7a9f1e0a55cba266b6aad16e97aaf25810fd6f2f7e7b36005c1161 \
@@ -142,13 +144,6 @@ Fabric==1.10.2 --hash:sha256=8fe1eb0b0f271e2d41445e7da4470548d3bdf882aab1c1f1435
 paramiko==1.15.2 --hash:sha256=c92b168c8db94a9e1362f3fc27bc21e8c20794885bf2f7d303b5ad717c044ebc
 ecdsa==0.13 --hash:sha256=89f149066e4a1e419892cef830fd0db85c227d5d427f7075422ace83429e2d26
 # pycrypto, but it is a direct Galaxy dependency as well
-
-# Can't use Whoosh latest due to a bug but need to backport a bugfix from a
-# newer release.
-#
-# https://bitbucket.org/mchaput/whoosh/pull-requests/50/fix-lru-thread-safety/diff
-Whoosh==2.4.1+gx1 --hash:sha256=98897e796c048810d71f7f4fc174914869f1b3b77f44e5a19a5e649b078d5e0e \
-                  --hash:sha256=5ec3c22e782c86e981fab62a24ac9feea09e42c43b763a6493c78b82a3b6e3fd
 
 # Flexible BAM/tabix index naming
 pysam==0.8.4+gx1 --hash:sha256=9a548c88dbc928b64292ffa4a7697a4ee8c6653f998ef75c717c6dd37c8f67d3 \

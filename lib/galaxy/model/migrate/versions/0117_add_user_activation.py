@@ -30,11 +30,11 @@ def upgrade(migrate_engine):
     # Add the active and activation_token columns to the user table in one try because the depend on each other.
     try:
         user_table = Table( "galaxy_user", metadata, autoload=True )
-        user_active_column.create( table=user_table , populate_default=True)
+        user_active_column.create( table=user_table, populate_default=True)
         user_activation_token_column.create( table=user_table )
         assert user_active_column is user_table.c.active
         assert user_activation_token_column is user_table.c.activation_token
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.error( "Adding columns 'active' and 'activation_token' to galaxy_user table failed: %s" % str( e ) )
         return
@@ -52,5 +52,5 @@ def downgrade(migrate_engine):
         user_activation_token = user_table.c.activation_token
         user_active.drop()
         user_activation_token.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping 'active' and 'activation_token' columns from galaxy_user table failed: %s" % ( str( e ) ) )

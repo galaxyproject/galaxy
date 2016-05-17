@@ -58,7 +58,12 @@ def build_command(
         __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params)
 
     if container or job_wrapper.commands_in_new_shell:
-        externalized_commands = __externalize_commands(job_wrapper, shell, commands_builder, remote_command_params)
+        if container:
+            # Many Docker containers do not have /bin/bash.
+            external_command_shell = "/bin/sh"
+        else:
+            external_command_shell = shell
+        externalized_commands = __externalize_commands(job_wrapper, external_command_shell, commands_builder, remote_command_params)
         if container:
             # Stop now and build command before handling metadata and copying
             # working directory files back. These should always happen outside

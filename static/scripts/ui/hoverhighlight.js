@@ -1,2 +1,2 @@
-!function(a){"function"==typeof define&&define.amd?define([],a):a(jQuery)}(function(){jQuery.fn.extend({hoverhighlight:function(a,b){return a=a||"body",this.size()?($(this).each(function(){var c=$(this),d=c.data("target");d&&c.mouseover(function(){$(d,a).css({background:b})}).mouseout(function(){$(d).css({background:""})})}),this):this}})});
+!function(a){"function"==typeof define&&define.amd?define([],a):a(jQuery)}(function(){jQuery.fn.extend({hoverhighlight:function(a,b){return a=a||"body",this.length?($(this).each(function(){var c=$(this),d=c.data("target");d&&c.mouseover(function(){$(d,a).css({background:b})}).mouseout(function(){$(d).css({background:""})})}),this):this}})});
 //# sourceMappingURL=../../maps/ui/hoverhighlight.js.map

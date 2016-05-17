@@ -5,11 +5,12 @@ import logging
 import os
 import re
 import sys
-from ..tools import loader
 
 import yaml
 
 from galaxy.util import checkers
+from .parser import get_tool_source
+from ..tools import loader
 
 log = logging.getLogger(__name__)
 
@@ -40,7 +41,10 @@ def find_possible_tools_from_path(
         enable_beta_formats=enable_beta_formats
     ):
         try:
-            does_look_like_a_tool = looks_like_a_tool(possible_tool_file)
+            does_look_like_a_tool = looks_like_a_tool(
+                possible_tool_file,
+                enable_beta_formats=enable_beta_formats
+            )
         except IOError:
             # Some problem reading the tool file, skip.
             continue
@@ -51,6 +55,23 @@ def find_possible_tools_from_path(
     return possible_tool_files
 
 
+def load_tool_sources_from_path(
+    path,
+    load_exception_handler=load_exception_handler,
+    recursive=False,
+    register_load_errors=False,
+):
+    """Walk a directory and ToolSource objects."""
+    return _load_tools_from_path(
+        path,
+        load_exception_handler=load_exception_handler,
+        recursive=recursive,
+        register_load_errors=register_load_errors,
+        loader_func=get_tool_source,
+        enable_beta_formats=True,
+    )
+
+
 def load_tool_elements_from_path(
     path,
     load_exception_handler=load_exception_handler,
@@ -58,20 +79,39 @@ def load_tool_elements_from_path(
     register_load_errors=False,
 ):
     """Walk a directory and load tool XML elements."""
-    tool_elements = []
+    return _load_tools_from_path(
+        path,
+        load_exception_handler=load_exception_handler,
+        recursive=recursive,
+        register_load_errors=register_load_errors,
+        loader_func=loader.load_tool,
+        enable_beta_formats=False,
+    )
+
+
+def _load_tools_from_path(
+    path,
+    load_exception_handler,
+    recursive,
+    register_load_errors,
+    loader_func,
+    enable_beta_formats,
+):
+    loaded_objects = []
     for possible_tool_file in find_possible_tools_from_path(
         path,
         recursive=recursive,
-        enable_beta_formats=False,
+        enable_beta_formats=enable_beta_formats,
     ):
         try:
-            tool_elements.append((possible_tool_file, loader.load_tool(possible_tool_file)))
+            tool_element = loader_func(possible_tool_file)
+            loaded_objects.append((possible_tool_file, tool_element))
         except Exception:
             exc_info = sys.exc_info()
             load_exception_handler(possible_tool_file, exc_info)
             if register_load_errors:
-                tool_elements.append((possible_tool_file, TOOL_LOAD_ERROR))
-    return tool_elements
+                loaded_objects.append((possible_tool_file, TOOL_LOAD_ERROR))
+    return loaded_objects
 
 
 def is_tool_load_error(obj):
@@ -87,7 +127,7 @@ def looks_like_a_tool(path, invalid_names=[], enable_beta_formats=False):
     "looks_like_a_tool" but not everything that looks like a tool is actually
     a valid tool.
 
-    invalid_names may be supplid in the context of the tool shed to quickly
+    invalid_names may be supplied in the context of the tool shed to quickly
     rule common tool shed XML files.
     """
     looks = False
@@ -156,8 +196,7 @@ def looks_like_a_tool_yaml(path):
 
 
 def looks_like_a_cwl_artifact(path, classes=None):
-    """Quick check to see if a file looks like it may be a CWL aritifact."""
-
+    """Quick check to see if a file looks like it may be a CWL artifact."""
     if not _has_extension(path, CWL_EXTENSIONS):
         return False
 
@@ -180,7 +219,7 @@ def looks_like_a_cwl_artifact(path, classes=None):
 
 def looks_like_a_tool_cwl(path):
     """Quick check to see if a file looks like it may be a CWL tool."""
-    return looks_like_a_cwl_artifact(path, classes=["CommandLineTool"])
+    return looks_like_a_cwl_artifact(path, classes=["CommandLineTool", "ExpressionTool"])
 
 
 def _find_tool_files(path, recursive, enable_beta_formats):
@@ -232,6 +271,7 @@ __all__ = [
     "is_a_yaml_with_class",
     "is_tool_load_error",
     "load_tool_elements_from_path",
+    "load_tool_sources_from_path",
     "looks_like_a_cwl_artifact",
     "looks_like_a_tool_cwl",
     "looks_like_a_tool_xml",

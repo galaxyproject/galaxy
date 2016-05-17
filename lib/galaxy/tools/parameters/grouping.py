@@ -106,7 +106,7 @@ class Repeat( Group ):
                     else:
                         rval_dict[ input.name ] = input.value_from_basic( d[input.name], app, ignore_errors )
                 rval.append( rval_dict )
-        except Exception, e:
+        except Exception as e:
             if not ignore_errors:
                 raise e
         return rval
@@ -161,7 +161,7 @@ class Section( Group ):
             for input in self.inputs.itervalues():
                 if not ignore_errors or input.name in value:
                     rval[ input.name ] = input.value_from_basic( value[ input.name ], app, ignore_errors )
-        except Exception, e:
+        except Exception as e:
             if not ignore_errors:
                 raise e
         return rval
@@ -564,7 +564,7 @@ class Conditional( Group ):
                 # conditional's values dictionary.
                 if not ignore_errors or input.name in value:
                     rval[ input.name ] = input.value_from_basic( value[ input.name ], app, ignore_errors )
-        except Exception, e:
+        except Exception as e:
             if not ignore_errors:
                 raise e
         return rval

@@ -59,7 +59,7 @@ class InstallEnvironment( object ):
             try:
                 fd.close()
                 break
-            except IOError, e:
+            except IOError as e:
                 # Undoubtedly close() was called during a concurrent operation on the same file object.
                 log.debug( 'Error closing file descriptor: %s' % str( e ) )
                 time.sleep( .5 )
@@ -265,7 +265,7 @@ class InstallEnvironment( object ):
         if os.path.exists( work_dir ):
             try:
                 shutil.rmtree( work_dir )
-            except Exception, e:
+            except Exception as e:
                 log.exception( str( e ) )
 
     def __setup_environment( self ):

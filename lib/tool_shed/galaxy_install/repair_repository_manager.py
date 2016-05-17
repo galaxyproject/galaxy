@@ -162,7 +162,7 @@ class RepairRepositoryManager():
         if repository.status in [ self.app.install_model.ToolShedRepository.installation_status.DEACTIVATED ]:
             try:
                 self.app.installed_repository_manager.activate_repository( repository )
-            except Exception, e:
+            except Exception as e:
                 error_message = "Error activating repository %s: %s" % ( repository.name, str( e ) )
                 log.debug( error_message )
                 repair_dict[ repository.name ] = error_message

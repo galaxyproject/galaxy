@@ -124,7 +124,7 @@ class HistoryDatasetsSelectionGrid( grids.Grid ):
     title = "Add Datasets"
     template = "tracks/history_datasets_select_grid.mako"
     model_class = model.HistoryDatasetAssociation
-    default_filter = { "deleted" : "False" , "shared" : "All" }
+    default_filter = { "deleted": "False", "shared": "All" }
     default_sort_key = "-hid"
     use_async = True
     use_paging = False
@@ -613,7 +613,8 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
 
         if self.create_item_slug( trans.sa_session, visualization ):
             trans.sa_session.flush()
-        return_dict = { "name" : visualization.title, "link" : web.url_for(controller='visualization', action="display_by_username_and_slug", username=visualization.user.username, slug=visualization.slug ) }
+        return_dict = { "name": visualization.title,
+                        "link": web.url_for(controller='visualization', action="display_by_username_and_slug", username=visualization.user.username, slug=visualization.slug ) }
         return return_dict
 
     @web.expose
@@ -748,7 +749,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         plugin = self._get_plugin_from_registry( trans, visualization_name )
         try:
             return plugin.render( trans=trans, embedded=embedded, **kwargs )
-        except Exception, exception:
+        except Exception as exception:
             self._handle_plugin_error( trans, visualization_name, exception )
 
     def _get_plugin_from_registry( self, trans, visualization_name ):
@@ -794,7 +795,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         plugin = self._get_plugin_from_registry( trans, visualization.type )
         try:
             return plugin.render_saved( visualization, trans=trans, **kwargs )
-        except Exception, exception:
+        except Exception as exception:
             self._handle_plugin_error( trans, visualization.type, exception )
 
     def _POST_to_saved( self, trans, id=None, revision=None, type=None, config=None, title=None, **kwargs ):
@@ -881,7 +882,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
             }
 
         # fill template
-        return trans.fill_template('galaxy.panels.mako', config={'right_panel' : True, 'app' : app})
+        return trans.fill_template('galaxy.panels.mako', config={'right_panel': True, 'app': app})
 
     @web.expose
     def circster( self, trans, id=None, hda_ldda=None, dataset_id=None, dbkey=None ):

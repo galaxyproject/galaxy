@@ -1,6 +1,6 @@
 /* global define, QUnit, module, test, ok, equal, deepEqual, notEqual */
-define([ 'test-app', 'mvc/form/form-input', 'mvc/ui/ui-misc',
-], function( testApp, InputElement, Ui ){
+define([ 'test-app', 'mvc/form/form-input', 'mvc/ui/ui-misc', 'mvc/form/form-data', 'mvc/tool/tool-form', 'utils/utils',
+], function( testApp, InputElement, Ui, FormData, ToolForm, Utils ){
     'use strict';
     module( 'Form test', {
         setup: function() {
@@ -11,8 +11,33 @@ define([ 'test-app', 'mvc/form/form-input', 'mvc/ui/ui-misc',
         }
     } );
 
+    test( 'tool-form', function() {
+        var form = new ToolForm.View( { id: 'test' } );
+        $( 'body' ).prepend( form.$el );
+        window.fakeserver.respond();
+        ok( form.$( '.portlet-title-text' ).html() == '<b>_name</b> _description (Galaxy Version _version)', 'Title correct' );
+        var tour_ids = [];
+        $( '[tour_id]' ).each( function() { tour_ids.push( $( this ).attr( 'tour_id' ) ) } );
+        ok( JSON.stringify( tour_ids ) == '["a","b|c"]', 'Tour ids correct' );
+        ok( JSON.stringify( form.data.create() ) == '{"a":"","b|c":null}', 'Created data correct' );
+        var mapped_ids = [];
+        form.data.matchModel( form.options, function( input, id ) { mapped_ids.push( $( '#' + id ).find( '[tour_id]' ).first().attr( 'tour_id' ) ) } );
+        ok( JSON.stringify( mapped_ids ) == '["a","b|c"]', 'Remapped tour ids correct' );
+    });
+
+    test( 'data', function() {
+        var visits = [];
+        Utils.get( { url: Galaxy.root + 'api/tools/test/build', success: function( response ) {
+            FormData.visitInputs( response.inputs, function( node, name, context ) {
+                visits.push( { name: name, node: node } );
+            } );
+        } } );
+        window.fakeserver.respond();
+        ok( JSON.stringify( visits ) == '[{"name":"a","node":{"name":"a","type":"text"}},{"name":"b|c","node":{"name":"c","type":"select","value":"h"}},{"name":"b|i","node":{"name":"i","type":"text"}},{"name":"b|j","node":{"name":"j","type":"text"}},{"name":"k_0|l","node":{"name":"l","type":"text"}},{"name":"k_0|m|n","node":{"name":"n","type":"select","value":"o"}},{"name":"k_0|m|p","node":{"name":"p","type":"text"}},{"name":"k_0|m|q","node":{"name":"q","type":"text"}}]', 'Testing value visitor' );
+    });
+
     test( 'input', function() {
-        var input = new InputElement( null, {
+        var input = new InputElement( {}, {
             field: new Ui.Input({})
         });
         $( 'body' ).prepend( input.$el );

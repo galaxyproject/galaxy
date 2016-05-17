@@ -146,7 +146,7 @@
         // scroll to show active page in center of scrollable area
         var $container = this.$element.find( '.pagination-scroll-container' );
         // no scroll container : don't scroll
-        if( !$container.size() ){ return this; }
+        if( !$container.length ){ return this; }
 
         var $activePage = this.$element.find( 'li.active' ),
             midpoint = $container.width() / 2;

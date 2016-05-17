@@ -447,7 +447,7 @@ class MetadataGenerator( object ):
                                 valid_exported_galaxy_workflow = True
                                 try:
                                     exported_workflow_dict = json.loads( workflow_text )
-                                except Exception, e:
+                                except Exception as e:
                                     log.exception( "Skipping file %s since it does not seem to be a valid exported Galaxy workflow: %s"
                                                    % ( str( relative_path ), str( e ) ) )
                                     valid_exported_galaxy_workflow = False

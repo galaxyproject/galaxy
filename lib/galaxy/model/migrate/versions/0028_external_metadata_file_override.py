@@ -39,7 +39,7 @@ def upgrade(migrate_engine):
         col = Column( "filename_override_metadata", String( 255 ) )
         col.create( job_external_output_metadata )
         assert col is job_external_output_metadata.c.filename_override_metadata
-    except Exception, e:
+    except Exception as e:
         log.debug( "Adding column 'filename_override_metadata' to job_external_output_metadata table failed: %s" % ( str( e ) ) )
 
 

@@ -61,7 +61,7 @@ class UpdateRepositoryManager( object ):
             changeset_revision_dict[ 'has_repository_dependencies_only_if_compiling_contained_td' ] = has_repository_dependencies_only_if_compiling_contained_td
             changeset_revision_dict[ 'changeset_revision' ] = changeset_revision
             changeset_revision_dict[ 'ctx_rev' ] = ctx_rev
-        except Exception, e:
+        except Exception as e:
             log.debug( "Error getting change set revision for update from the tool shed for repository '%s': %s" % ( repository.name, str( e ) ) )
             changeset_revision_dict[ 'includes_data_managers' ] = False
             changeset_revision_dict[ 'includes_datatypes' ] = False

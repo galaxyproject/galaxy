@@ -37,7 +37,7 @@ def upgrade(migrate_engine):
     # Create repository_metadata table.
     try:
         RepositoryMetadata_table.create()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Creating repository_metadata table failed: %s" % str( e ) )
 
@@ -48,6 +48,6 @@ def downgrade(migrate_engine):
     # Drop repository_metadata table.
     try:
         RepositoryMetadata_table.drop()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Dropping repository_metadata table failed: %s" % str( e ) )

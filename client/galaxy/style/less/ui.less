@@ -352,9 +352,14 @@
                 vertical-align: middle;
                 line-height: 22px;
             }
-            .icon {
+            .portlet-title-text.no-highlight.collapsible {
+                cursor: pointer;
+                text-decoration: underline;
+            }
+            .portlet-title-icon {
                 font-size: 1.2em;
                 vertical-align: middle;
+                margin-right: 5px;
             }
         }
         .portlet-operations {
@@ -377,6 +382,9 @@
             margin-top: @ui-margin-vertical;
             margin-bottom: @ui-margin-vertical;
         }
+    }
+    .portlet-content.nopadding, .portlet-body.nopadding {
+        padding: 0px;
     }
     .portlet-footer {
         margin-top: 5px;
@@ -533,6 +541,10 @@
             margin-right: 5px;
             margin-top: 3px;
 
+        }
+        .ui-drilldown-subgroup {
+            display: none;
+            margin-left: 25px;
         }
         input[type=checkbox] + label:before {
             font-family: FontAwesome;
