@@ -8,7 +8,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
             this.options = Utils.merge(options, {
                 initial_errors  : false,
                 cls             : 'ui-portlet-limited',
-                icon            : ''
+                icon            : null
             });
             this.modal = ( parent.Galaxy && parent.Galaxy.modal ) || new Ui.Modal.View();
             this.setElement('<div/>');

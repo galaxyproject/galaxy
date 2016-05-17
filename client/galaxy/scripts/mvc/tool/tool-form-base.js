@@ -36,7 +36,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             var self = this;
             this.options = Utils.merge(options, this.options);
             this.options = Utils.merge({
-                icon            : ( (options.icon === undefined) && 'fa-wrench' ) || '',
+                icon            : options.icon,
                 title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')',
                 operations      : this._operations(),
                 onchange        : function() {
