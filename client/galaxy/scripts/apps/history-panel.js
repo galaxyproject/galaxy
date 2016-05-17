@@ -15,6 +15,7 @@ var HistoryPanel = RightPanel.extend({
 
         // view of the current history
         this.historyView = new CurrentHistoryView({
+            className       : CurrentHistoryView.prototype.className + ' middle',
             purgeAllowed    : options.allow_user_dataset_purge,
             linkTarget      : 'galaxy_main',
             $scrollContainer: function(){ return this.$el.parent(); }
@@ -63,9 +64,7 @@ var HistoryPanel = RightPanel.extend({
     /** add history view div */
     _templateBody : function( data ){
         return [
-            '<div class="middle">',
-                '<div id="current-history-panel" class="history-panel"/>',
-            '</div>'
+            '<div id="current-history-panel" class="history-panel middle"/>',
         ].join('');
     },
 
@@ -90,14 +89,6 @@ var HistoryPanel = RightPanel.extend({
         ev.preventDefault();
         this.historyView.loadCurrentHistory();
     },
-
-    // /** override to add the current change */
-    // resize : function( newSize ){
-    //     RightPanel.prototype.resize.call( this, newSize );
-    //     console.log( newSize, this.$( '.history-panel.fixed-header > .controls' ) );
-    //     this.$( '.history-panel.fixed-header > .controls' ).width( this.$( '.history-panel' ).innerWidth() );
-    //     return this;
-    // },
 
     toString : function(){ return 'HistoryPanel'; }
 });

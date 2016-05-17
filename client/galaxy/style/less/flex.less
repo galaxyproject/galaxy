@@ -52,18 +52,32 @@
 .two-rows-header(@header-height){
     .flex-vertical-container;
 
-    & > * {
+    > * {
         .flex-column;
     }
-    .header {
+    > .header {
         .vendor-prefix-property(flex, 0 0 @header-height);
+    }
+    > .middle {
+        overflow: auto;
     }
 }
 
 // has a fixed height header and footer
 .three-rows-header-footer(@header-height, @footer-height){
     .two-rows-header(@header-height);
-    .footer {
+    > .footer {
+        .flex-column;
         .vendor-prefix-property(flex, 0 0 @footer-height);
+    }
+}
+
+.test {
+    .two-rows-header(16px);
+    > .header {
+        background: steelblue;
+    }
+    > .middle {
+        background: aliceblue;
     }
 }
