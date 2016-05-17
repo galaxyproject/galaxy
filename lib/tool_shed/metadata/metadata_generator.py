@@ -847,7 +847,7 @@ class MetadataGenerator( object ):
                             sample_file_copy_paths.append( relative_path_to_sample_file )
                             if tool_path and relative_install_dir:
                                 if relative_path_to_sample_file.startswith( os.path.join( tool_path, relative_install_dir ) ):
-                                    relative_path_to_sample_file = relative_path_to_sample_file[ len( tool_path ) + 1 :]
+                                    relative_path_to_sample_file = relative_path_to_sample_file[ len( tool_path ) + 1:]
                         sample_file_metadata_paths.append( relative_path_to_sample_file )
         return sample_file_metadata_paths, sample_file_copy_paths
 
@@ -1063,7 +1063,7 @@ class MetadataGenerator( object ):
             else:
                 self.set_changeset_revision( changeset_revision )
             self.shed_config_dict = repository.get_shed_config_dict( self.app )
-            self.metadata_dict = { 'shed_config_filename' : self.shed_config_dict.get( 'config_filename', None ) }
+            self.metadata_dict = { 'shed_config_filename': self.shed_config_dict.get( 'config_filename', None ) }
         else:
             if relative_install_dir is None and self.repository is not None:
                 relative_install_dir = repository.repo_path( self.app )

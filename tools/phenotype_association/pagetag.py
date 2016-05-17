@@ -80,7 +80,7 @@ def read_inputfile(filename, samples):
             v = input[position]
             v[sample] = (allele1, allele2)
         else:
-            v = {sample : (allele1, allele2)}
+            v = {sample: (allele1, allele2)}
             input[position] = v
 
     file.close()

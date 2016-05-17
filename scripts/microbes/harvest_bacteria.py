@@ -75,7 +75,7 @@ def get_chroms_by_project_id( org_num, base_url="http://www.ncbi.nlm.nih.gov/ent
         return None
 
     chroms = []
-    for chr_row in BeautifulSoup( html ).findAll( "tr", { "class" : "vvv" } ):
+    for chr_row in BeautifulSoup( html ).findAll( "tr", { "class": "vvv" } ):
         chr_row = str( chr_row ).replace( "\n", "" ).replace( "\r", "" )
         fields2 = chr_row.split( "</td>" )
         refseq = fields2[1].split( "</a>" )[0].split( ">" )[-1]

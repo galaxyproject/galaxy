@@ -34,7 +34,7 @@ def upload_file( base_url, api_key, history_id, filepath, **kwargs ):
 
     response = None
     with open( filepath, 'rb' ) as file_to_upload:
-        files = { 'files_0|file_data' : file_to_upload }
+        files = { 'files_0|file_data': file_to_upload }
         response = requests.post( full_url, data=payload, files=files )
     return response.json()
 

@@ -60,7 +60,7 @@ def stop_err( msg ):
 
 
 def reverse_complement(s):
-    complement_dna = {"A": "T", "T": "A", "C": "G", "G": "C", "a": "t", "t": "a", "c": "g", "g": "c", "N": "N", "n": "n" , ".": ".", "-": "-"}
+    complement_dna = {"A": "T", "T": "A", "C": "G", "G": "C", "a": "t", "t": "a", "c": "g", "g": "c", "N": "N", "n": "n", ".": ".", "-": "-"}
     reversed_s = []
     for i in s:
         reversed_s.append(complement_dna[i])

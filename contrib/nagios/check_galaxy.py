@@ -30,26 +30,26 @@ else:
 test_data_dir = os.path.join( os.path.dirname( __file__ ), 'check_galaxy_data' )
 # what tools to run - not so pretty
 tools = {
-    "Extract+genomic+DNA+1" :
+    "Extract+genomic+DNA+1":
     [
         {
-            "inputs" :
+            "inputs":
             (
                 {
-                    "file_path" : os.path.join( test_data_dir, "1.bed" ),
-                    "dbkey" : "hg17",
+                    "file_path": os.path.join( test_data_dir, "1.bed" ),
+                    "dbkey": "hg17",
                 },
 
             )
         },
-        { "check_file" : os.path.join( test_data_dir, "extract_genomic_dna_out1.fasta" ) },
+        { "check_file": os.path.join( test_data_dir, "extract_genomic_dna_out1.fasta" ) },
         {
-            "tool_run_options" :
+            "tool_run_options":
             {
-                "input" : "1.bed",
-                "interpret_features" : "yes",
-                "index_source" : "cached",
-                "out_format" : "fasta"
+                "input": "1.bed",
+                "interpret_features": "yes",
+                "index_source": "cached",
+                "out_format": "fasta"
             }
         }
     ]

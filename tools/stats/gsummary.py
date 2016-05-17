@@ -22,7 +22,7 @@ def S3_METHODS( all="key" ):
         "cumsum", "cumprod", "cummax", "cummin", "c" ]
     Group_Ops = [ "+", "-", "*", "/", "^", "%%", "%/%", "&", "|", "!", "==", "!=", "<", "<=", ">=", ">", "(", ")", "~", "," ]
     if all is "key":
-        return { 'Math' : Group_Math, 'Ops' : Group_Ops }
+        return { 'Math': Group_Math, 'Ops': Group_Ops }
 
 
 def main():

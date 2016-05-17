@@ -257,7 +257,7 @@ def __main__():
         if includes_strand_col and strand == "-":
             sequence = reverse_complement( sequence )
 
-        if output_format == "fasta" :
+        if output_format == "fasta":
             l = len( sequence )
             c = 0
             if gff_format:

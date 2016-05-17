@@ -89,7 +89,7 @@ class Reader( object ):
                 # VCF produces after the sample
                 self.header_fields = [l for l in line.split( '\t' ) if l]
                 if len( self.header_fields ) > self.vcf_class.required_header_length:
-                    for sample_name in self.header_fields[ self.vcf_class.required_header_length + 1 : ]:
+                    for sample_name in self.header_fields[ self.vcf_class.required_header_length + 1: ]:
                         self.sample_names.append( sample_name )
                 break
             assert line.startswith( '##' ), 'Non-metadata line found before header'

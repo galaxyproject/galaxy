@@ -280,7 +280,7 @@ def fill_empty_columns( line, split, fill_values ):
         else:
             filled_columns.append( fill_values[i] )
     if len( fill_values ) > len( filled_columns ):
-        filled_columns.extend( fill_values[ len( filled_columns ) : ] )
+        filled_columns.extend( fill_values[ len( filled_columns ): ] )
     return split.join( filled_columns )
 
 

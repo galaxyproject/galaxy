@@ -10,7 +10,7 @@ import sys
 assert sys.version_info[:2] >= ( 2, 4 )
 
 
-def usage(prog) :
+def usage(prog):
     print "usage: %s file" % prog
     print """
 Marks a set of files as purged and renames them. The input file should contain a
@@ -24,7 +24,7 @@ them.
 
 
 def main():
-    if len(sys.argv) != 2 or sys.argv == "-h" or sys.argv == "--help" :
+    if len(sys.argv) != 2 or sys.argv == "-h" or sys.argv == "--help":
         usage(sys.argv[0])
         sys.exit()
     infile = sys.argv[1]

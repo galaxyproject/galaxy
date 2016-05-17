@@ -79,7 +79,7 @@ def main():
     parser.add_option( "-6", "--delete_datasets", action="store_true", dest="delete_datasets", default=False, help="mark deletable datasets as deleted and purge associated dataset instances" )
 
     ( options, args ) = parser.parse_args()
-    if len(args) != 1 :
+    if len(args) != 1:
         parser.print_help()
         sys.exit()
     ini_file = args[0]
