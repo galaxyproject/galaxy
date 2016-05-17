@@ -447,11 +447,11 @@ class Repository( RecipeTag, SyncDatabase ):
                 else:
                     # Make a call to the tool shed to get the changeset revision to which the current value of required_repository_changeset_revision
                     # should be updated if it's not current.
-                    text = suc.get_updated_changeset_revisions_from_tool_shed( app=self.app,
-                                                                               tool_shed_url=tool_shed,
-                                                                               name=required_repository_name,
-                                                                               owner=required_repository_owner,
-                                                                               changeset_revision=required_repository_changeset_revision )
+                    text = metadata_util.get_updated_changeset_revisions_from_tool_shed( app=self.app,
+                                                                                         tool_shed_url=tool_shed,
+                                                                                         name=required_repository_name,
+                                                                                         owner=required_repository_owner,
+                                                                                         changeset_revision=required_repository_changeset_revision )
                     if text:
                         updated_changeset_revisions = listify( text )
                         # The list of changeset revisions is in reverse order, so the newest will be first.
