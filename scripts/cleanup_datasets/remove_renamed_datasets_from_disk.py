@@ -40,7 +40,7 @@ def main():
                 os.unlink( line )
                 print >> out, line
                 removed_files += 1
-            except Exception, exc:
+            except Exception as exc:
                 print >> out, "# Error, exception " + str( exc ) + " caught attempting to remove " + line
     print >> out, "# Removed " + str( removed_files ) + " files"
 

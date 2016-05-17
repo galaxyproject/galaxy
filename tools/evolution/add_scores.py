@@ -16,7 +16,7 @@ def open_or_die( filename, mode='r', message=None ):
         message = 'Error opening %s' % filename
     try:
         fh = open( filename, mode )
-    except IOError, err:
+    except IOError as err:
         die( '%s: %s' % ( message, err.strerror ) )
     return fh
 
@@ -51,7 +51,7 @@ class LocationFile( object ):
                                     die( 'Location file %s line %d: duplicate key "%s"' % ( self.filename, line_number, key ) )
                             else:
                                 self._map[key] = elems
-        except IOError, err:
+        except IOError as err:
             die( 'Error opening location file %s: %s' % ( self.filename, err.strerror ) )
 
     def get_values( self, key ):

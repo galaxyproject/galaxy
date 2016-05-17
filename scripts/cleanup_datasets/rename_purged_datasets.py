@@ -42,7 +42,7 @@ def main():
                 os.rename( line, purged_filename )
                 print >> out, purged_filename
                 renamed_files += 1
-            except Exception, exc:
+            except Exception as exc:
                 print >> out, "# Error, exception " + str( exc ) + " caught attempting to rename " + purged_filename
     print >> out, "# Renamed " + str( renamed_files ) + " files"
 

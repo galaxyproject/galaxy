@@ -1320,7 +1320,7 @@ class ShedTwillTestCase( TwillTestCase ):
         #    try:
         #        self.check_for_strings( strings_displayed, strings_not_displayed )
         #        break
-        #    except Exception, e:
+        #    except Exception as e:
         #        if i == 4:
         #            raise e
         #        else:

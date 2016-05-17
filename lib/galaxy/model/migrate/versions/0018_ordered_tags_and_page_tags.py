@@ -79,7 +79,7 @@ def upgrade(migrate_engine):
     try:
         HistoryDatasetAssociationTagAssociation_table.drop()
         HistoryDatasetAssociationTagAssociation_table.create()
-    except OperationalError, e:
+    except OperationalError as e:
         # Handle error that results from and index name that is too long; this occurs
         # in MySQL.
         if str(e).find("CREATE INDEX") != -1:

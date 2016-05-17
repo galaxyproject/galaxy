@@ -62,7 +62,7 @@ def __main__():
     try:
         os.system(cmd)
         os.remove(tmp_name1)
-    except Exception, ex:
+    except Exception as ex:
         sys.stderr.write( "%s\n" % ex )
         sys.exit(1)
 
@@ -71,7 +71,7 @@ def __main__():
     try:
         os.system(cmd)
         os.remove(tmp_name2)
-    except Exception, ex:
+    except Exception as ex:
         sys.stderr.write( "%s\n" % ex )
         sys.exit(1)
 

@@ -859,7 +859,7 @@ def extract_reads_from_sff(config, sff_files):
         qual_fh = None
         try:
             os.remove(config['qual_fname'])
-        except :
+        except:
             pass
     else:
         qual_fh = open(config['qual_fname'], openmode)
@@ -1100,7 +1100,7 @@ def tests_for_ssaha():
         subprocess.call(["ssaha2"], stdout=fh)
         fh.close()
         print "ok."
-    except :
+    except:
         print "nope? Uh oh ...\n\n"
         raise RuntimeError('Could not launch ssaha2. Have you installed it? Is it in your path?')
 
@@ -1325,7 +1325,7 @@ def main():
         if len(args) == 0:
             raise RuntimeError("No SFF file given?")
         extract_reads_from_sff(config, args)
-    except (OSError, IOError, RuntimeError), errval:
+    except (OSError, IOError, RuntimeError) as errval:
         print errval
         return 1
 

@@ -359,7 +359,7 @@ def main():
     if options.fill_options_file is not None:
         try:
             fill_options = Bunch( **stringify_dictionary_keys( json.load( open( options.fill_options_file ) ) ) )  # json.load( open( options.fill_options_file ) )
-        except Exception, e:
+        except Exception as e:
             print "Warning: Ignoring fill options due to json error (%s)." % e
     if fill_options is None:
         fill_options = Bunch()

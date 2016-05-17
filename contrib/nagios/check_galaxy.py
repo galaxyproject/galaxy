@@ -62,7 +62,7 @@ def usage():
 
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'n' )
-except getopt.GetoptError, e:
+except getopt.GetoptError as e:
     print str(e)
     usage()
 if len( args ) < 1:
@@ -133,7 +133,7 @@ class Browser:
             tc.get_browser()._browser.set_handle_redirect(True)
             dprint( "%s is returning redirect (302)" % url )
             return(True)
-        except twill.errors.TwillAssertionError, e:
+        except twill.errors.TwillAssertionError as e:
             tc.get_browser()._browser.set_handle_redirect(True)
             dprint( "%s is not returning redirect (302): %s" % (url, e) )
             code = tc.browser.get_code()

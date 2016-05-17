@@ -8,7 +8,7 @@ import sys
 
 try:
     import requests
-except ImportError, imp_err:
+except ImportError:
     print "Could not import the requests module. See http://docs.python-requests.org/en/latest/" + \
           " or install with 'pip install requests'"
     raise

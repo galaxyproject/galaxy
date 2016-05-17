@@ -80,7 +80,7 @@ def __main__():
 
     try:
         os.system(command)
-    except Exception, e:
+    except Exception as e:
         stop_err(str(e))
 
     # check SHRiMP output: count number of lines
@@ -93,7 +93,7 @@ def __main__():
             try:
                 line.split()
                 num_hits += 1
-            except Exception, e:
+            except Exception as e:
                 stop_err(str(e))
 
     if num_hits == 0:   # no hits generated

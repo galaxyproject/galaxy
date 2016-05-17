@@ -20,6 +20,6 @@ try:
         if not data:
             break
         out.write(data)
-except Exception, e:
+except Exception as e:
     print 'Error getting the data -> %s' % e
 out.close()

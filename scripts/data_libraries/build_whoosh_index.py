@@ -22,7 +22,7 @@ try:
     schema = Schema( id=STORED, name=TEXT, info=TEXT, dbkey=TEXT, message=TEXT )
     import galaxy.model.mapping
     from galaxy import config, model
-except ImportError, e:
+except ImportError:
     whoosh_search_enabled = False
     schema = None
 

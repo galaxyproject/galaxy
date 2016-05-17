@@ -119,7 +119,7 @@ def __main__():
             # Error checking.
             if returncode != 0:
                 raise Exception(stderr)
-        except Exception, e:
+        except Exception as e:
             stop_err( 'Error running faToTwoBit. ' + str( e ) )
     else:
         seq_path = check_seq_file( dbkey, GALAXY_DATA_INDEX_DIR )
@@ -210,7 +210,7 @@ def __main__():
                 nibs[chrom] = nib = bx.seq.nib.NibFile( open( "%s/%s.nib" % ( seq_path, chrom ) ) )
             try:
                 sequence = nib.get( start, end - start )
-            except Exception, e:
+            except Exception as e:
                 warning = "Unable to fetch the sequence from '%d' to '%d' for build '%s'. " % ( start, end - start, dbkey )
                 warnings.append( warning )
                 if not invalid_lines:

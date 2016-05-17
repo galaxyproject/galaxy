@@ -384,7 +384,7 @@ def serve_webapp(webapp, port=None, host=None):
                 port = str( random.randint( 8000, 10000 ) )
                 server = httpserver.serve( webapp, host=host, port=port, start_loop=False )
                 break
-            except socket.error, e:
+            except socket.error as e:
                 if e[0] == 98:
                     continue
                 raise

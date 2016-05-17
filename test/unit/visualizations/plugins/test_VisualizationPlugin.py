@@ -165,7 +165,7 @@ class VisualizationsPlugin_TestCase( test_utils.unittest.TestCase ):
             for var in should_have:
                 try:
                     var = str( var )
-                except NameError, name_err:
+                except NameError as name_err:
                     found_all = False
                     break
         %>

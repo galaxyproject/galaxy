@@ -22,7 +22,7 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         Request_table = Table( "request", metadata, autoload=True )
-    except NoSuchTableError, e:
+    except NoSuchTableError:
         Request_table = None
         log.debug( "Failed loading table 'request'" )
 

@@ -102,7 +102,7 @@ def main():
             r.assign( col, r[ "$" ]( r_data_frame, col ) )
         try:
             summary = summary_func( r( expression ) )
-        except RException, s:
+        except RException as s:
             outfile.close()
             stop_err( "Computation resulted in the following error: %s" % str( s ) )
         summary = summary.as_py( BASIC_CONVERSION )

@@ -272,7 +272,7 @@ if __name__ == "__main__":
     try:
         opts, args = getopt(argv[1:], "hds:r:f:",
                             ["help", "debug", "rsquare=", "freq=", "sample="])
-    except GetoptError, err:
+    except GetoptError as err:
         print str(err)
         usage()
         exit(2)

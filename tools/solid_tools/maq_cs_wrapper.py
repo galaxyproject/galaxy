@@ -56,7 +56,7 @@ def __main__():
             os.system('gunzip -c %s >> %s' % (tmpr.name, tmprfastq.name))
             os.system('gunzip -c %s >> %s' % (tmps.name, tmpsfastq.name))
 
-        except Exception, eq:
+        except Exception as eq:
             stop_err("Error converting data to fastq format." + str(eq))
 
         # Make a temp directory where the split fastq files will be stored
@@ -129,7 +129,7 @@ def __main__():
                     except ValueError as we:
                         print >>sys.stderr, we
                 print >> out_f2, "%s\t%s\t%s\t%s\t%s\t%s" % ("\t".join(elems[:4]), coverage - ref_nt_count, a, t, g, c)
-        except Exception, er2:
+        except Exception as er2:
             stop_err("Encountered error while mapping: %s" % (str(er2)))
 
     else:  # single end reads

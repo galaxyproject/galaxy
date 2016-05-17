@@ -91,7 +91,7 @@ def send_mail_to_owner( app, name, owner, email, repositories_deprecated, days=1
         galaxy_send_mail( from_address, repository.user.email, subject, body, app.config )
         print "# An email has been sent to %s, the owner of %s." % ( repository.user.username, ', '.join( [ repository.name for repository in repositories_deprecated ] ) )
         return True
-    except Exception, e:
+    except Exception as e:
         print "# An error occurred attempting to send email: %s" % str( e )
         return False
 
