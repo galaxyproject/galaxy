@@ -257,7 +257,7 @@ var History = Backbone.Model
         options.view = 'dev-detailed';
 
         // fetch history then use history data to fetch (paginated) contents
-        return this.fetch( options ).pipe( function getContents( history ){
+        return this.fetch( options ).then( function getContents( history ){
             self.contents.history = self;
             self.contents.setHistoryId( history.id );
             return self.fetchContents( contentsOptions );

@@ -177,12 +177,19 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
         return panel;
     },
 
+    // /** In this override, handle null models and move the search input to the top */
+    // render : function( speed ){
+    //     _super.prototype.render.call( this, speed );
+    //     this.$el.addClass( 'fixed-header' );
+    //     this.$( '> .controls' ).width( this.$el.innerWidth() );
+    //     return this;
+    // },
+
     /** In this override, handle null models and move the search input to the top */
     _buildNewRender : function(){
         if( !this.model ){ return $(); }
         var $newRender = _super.prototype._buildNewRender.call( this );
-        //TODO: hacky
-        $newRender.find( '.search' ).prependTo( $newRender.find( '.controls' ) );
+        $newRender.find( '.search' ).prependTo( $newRender.find( '> .controls' ) );
         this._renderQuotaMessage( $newRender );
         return $newRender;
     },

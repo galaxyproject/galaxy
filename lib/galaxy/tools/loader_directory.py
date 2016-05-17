@@ -219,7 +219,7 @@ def looks_like_a_cwl_artifact(path, classes=None):
 
 def looks_like_a_tool_cwl(path):
     """Quick check to see if a file looks like it may be a CWL tool."""
-    return looks_like_a_cwl_artifact(path, classes=["CommandLineTool"])
+    return looks_like_a_cwl_artifact(path, classes=["CommandLineTool", "ExpressionTool"])
 
 
 def _find_tool_files(path, recursive, enable_beta_formats):

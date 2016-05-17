@@ -30,6 +30,7 @@
 @import "toastr.less";
 @import "jstree.less";
 @import "tour.less";
+@import "flex.less";
 
 // Mixins
 .unselectable {
@@ -253,6 +254,7 @@ body.has-message-box.has-inactivity-box {
         content:'\f054';
     }
     z-index: 201;
+    cursor: pointer;
     display: block;
     position: fixed;
     left: 0;
@@ -757,6 +759,9 @@ input[type="submit"], button {
     background-image: url(error_large.png);
     background-repeat: no-repeat;
     background-position: 10px 8px;
+    .messagerow {
+        padding: 10px 20px;
+    }
 }
 
 .errormessagelarge {
@@ -1448,6 +1453,7 @@ div.permissionContainer {
 // ============================================================================ History
 @import "ui/icon-btn.less";
 @import "list-item.less";
+@import "dataset.less";
 @import "history.less";
 @import "collections.less";
 @import "job.less";

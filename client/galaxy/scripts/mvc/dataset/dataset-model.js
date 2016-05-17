@@ -130,6 +130,8 @@ var DatasetAssociation = Backbone.Model
 
     /** Does this model already contain detailed data (as opposed to just summary level data)? */
     hasDetails : function(){
+        // if it's inaccessible assume it has everything it needs
+        if( !this.get( 'accessible' ) ){ return true; }
         return this.has( 'annotation' );
     },
 

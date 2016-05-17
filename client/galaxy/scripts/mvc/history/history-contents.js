@@ -291,6 +291,20 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return this.fetch( options );
     },
 
+
+    /** specialty fetch method for retrieving the element_counts of all hdcas in the history */
+    fetchCollectionCounts : function( options ){
+        options = options || {};
+        options.data = _.defaults({
+            keys : [ 'type_id', 'element_count' ].join( ',' ),
+            q    : 'history_content_type',
+            qv   : 'dataset_collection',
+        }, options.data || {} );
+        options.merge = true;
+        options.remove = false;
+        return this.fetch( options );
+    },
+
     // ............. quasi-batch ops
     // TODO: to batch
     /** helper that fetches using filterParams then calls save on each fetched using updateWhat as the save params */
