@@ -110,7 +110,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 request = consumer.begin( openid_provider_obj.op_endpoint_url )
                 if request is None:
                     message = 'No OpenID services are available at %s' % openid_provider_obj.op_endpoint_url
-            except Exception, e:
+            except Exception as e:
                 message = 'Failed to begin OpenID authentication: %s' % str( e )
             if request is not None:
                 trans.app.openid_manager.add_sreg( trans, request, required=openid_provider_obj.sreg_required, optional=openid_provider_obj.sreg_optional )
@@ -1768,7 +1768,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
                     attributes[ 'count' ] = chrom_count
                     updated = True
-                except Exception, e:
+                except Exception as e:
                     log.error( "Failed to open chrom count dataset: %s", e )
 
         if updated:

@@ -32,7 +32,7 @@ def upgrade(migrate_engine):
             col = Column( "notification", JSONType() )
             col.create( Request_table )
             assert col is Request_table.c.notification
-        except Exception, e:
+        except Exception as e:
             log.debug( "Creating column 'notification' in the 'request' table failed: %s" % ( str( e ) ) )
 
         cmd = "SELECT id, user_id, notify FROM request"
@@ -47,7 +47,7 @@ def upgrade(migrate_engine):
         if migrate_engine.name != 'sqlite':
             try:
                 Request_table.c.notify.drop()
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Deleting column 'notify' from the 'request' table failed: %s" % ( str( e ) ) )
 
 

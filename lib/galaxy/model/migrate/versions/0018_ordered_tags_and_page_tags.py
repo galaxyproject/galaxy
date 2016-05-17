@@ -65,14 +65,14 @@ def upgrade(migrate_engine):
     try:
         HistoryTagAssociation_table.drop()
         HistoryTagAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         print "Recreating history_tag_association table failed: %s" % str( e )
         log.debug( "Recreating history_tag_association table failed: %s" % str( e ) )
 
     try:
         DatasetTagAssociation_table.drop()
         DatasetTagAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Recreating dataset_tag_association table failed: %s" % str( e ) )
 
@@ -87,17 +87,17 @@ def upgrade(migrate_engine):
             i = Index( "ix_hda_ta_history_dataset_association_id", HistoryDatasetAssociationTagAssociation_table.c.history_dataset_association_id )
             try:
                 i.create()
-            except Exception, e:
+            except Exception as e:
                 print str(e)
                 log.debug( "Adding index 'ix_hda_ta_history_dataset_association_id' to table 'history_dataset_association_tag_association' table failed: %s" % str( e ) )
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Recreating history_dataset_association_tag_association table failed: %s" % str( e ) )
 
     # Create page_tag_association table.
     try:
         PageTagAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Creating page_tag_association table failed: %s" % str( e ) )
 
@@ -111,6 +111,6 @@ def downgrade(migrate_engine):
     # Drop page_tag_association table.
     try:
         PageTagAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Dropping page_tag_association table failed: %s" % str( e ) )

@@ -22,7 +22,7 @@ def upgrade(migrate_engine):
     # Create stored_workflow_tag_association table.
     try:
         PageUserShareAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Creating page_user_share_association table failed: %s" % str( e ) )
 
@@ -34,6 +34,6 @@ def downgrade(migrate_engine):
     # Drop workflow_tag_association table.
     try:
         PageUserShareAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Dropping page_user_share_association table failed: %s" % str( e ) )

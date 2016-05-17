@@ -996,7 +996,7 @@ class JobWrapper( object ):
                     try:
                         shutil.move( dataset_path.false_path, dataset_path.real_path )
                         log.debug( "fail(): Moved %s to %s" % ( dataset_path.false_path, dataset_path.real_path ) )
-                    except ( IOError, OSError ), e:
+                    except ( IOError, OSError ) as e:
                         log.error( "fail(): Missing output file in working directory: %s" % e )
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset = dataset_assoc.dataset
@@ -1202,7 +1202,7 @@ class JobWrapper( object ):
                         os.stat( dataset.dataset.file_name )
                         os.chown( dataset.dataset.file_name, os.getuid(), -1 )
                         trynum = self.app.config.retry_job_output_collection
-                    except ( OSError, ObjectNotFound ), e:
+                    except ( OSError, ObjectNotFound ) as e:
                         trynum += 1
                         log.warning( 'Error accessing %s, will retry: %s', dataset.dataset.file_name, e )
                         time.sleep( 2 )
@@ -1388,7 +1388,7 @@ class JobWrapper( object ):
 
         # fix permissions
         for path in [ dp.real_path for dp in self.get_mutable_output_fnames() ]:
-            util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
+            util.umask_fix_perms( path, self.app.config.umask, 0o666, self.app.config.gid )
 
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.
@@ -1442,7 +1442,7 @@ class JobWrapper( object ):
                         create=True,
                         preserve_symlinks=True
                     )
-        except Exception, e:
+        except Exception as e:
             log.debug( "Error in collect_associated_files: %s" % ( e ) )
 
     def _collect_metrics( self, has_metrics ):
@@ -1715,7 +1715,7 @@ class JobWrapper( object ):
                 self._change_ownership( self.user_system_pwent[0], str( self.user_system_pwent[3] ) )
             except:
                 log.exception( '(%s) Failed to change ownership of %s, making world-writable instead' % ( job.id, self.working_directory ) )
-                os.chmod( self.working_directory, 0777 )
+                os.chmod( self.working_directory, 0o777 )
 
     def reclaim_ownership( self ):
         job = self.get_job()

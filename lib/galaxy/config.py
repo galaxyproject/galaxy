@@ -632,7 +632,7 @@ class Configuration( object ):
         if path not in [ None, False ] and not os.path.isdir( path ):
             try:
                 os.makedirs( path )
-            except Exception, e:
+            except Exception as e:
                 raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
 
     def check( self ):
@@ -642,7 +642,7 @@ class Configuration( object ):
             if path not in [ None, False ] and not os.path.isdir( path ):
                 try:
                     os.makedirs( path )
-                except Exception, e:
+                except Exception as e:
                     raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
         # Create the directories that it makes sense to create
         if self.object_store_config_file is None:

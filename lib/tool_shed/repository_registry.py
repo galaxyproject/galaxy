@@ -93,7 +93,7 @@ class Registry( object ):
                 self.load_repository_and_suite_tuple( repository )
                 if is_level_one_certified:
                     self.load_certified_level_one_repository_and_suite_tuple( repository )
-        except Exception, e:
+        except Exception as e:
             # The viewable repository numbers and the categorized (filtered) lists of repository tuples
             # may be slightly skewed, but that is no reason to result in a potential server error.  All
             # will be corrected at next server start.
@@ -341,7 +341,7 @@ class Registry( object ):
                 self.unload_repository_and_suite_tuple( repository )
                 if is_level_one_certified:
                     self.unload_certified_level_one_repository_and_suite_tuple( repository )
-        except Exception, e:
+        except Exception as e:
             # The viewable repository numbers and the categorized (filtered) lists of repository tuples
             # may be slightly skewed, but that is no reason to result in a potential server error.  All
             # will be corrected at next server start.

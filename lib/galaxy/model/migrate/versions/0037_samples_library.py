@@ -42,7 +42,7 @@ def upgrade(migrate_engine):
             col = Column( "datatx_info", JSONType() )
             col.create( RequestType_table )
             assert col is RequestType_table.c.datatx_info
-        except Exception, e:
+        except Exception as e:
             log.debug( "Adding column 'datatx_info' to request_type table failed: %s" % ( str( e ) ) )
     # request table
     try:
@@ -68,7 +68,7 @@ def upgrade(migrate_engine):
                                        Column( "deleted", Boolean, index=True, default=False ) )
             try:
                 RequestTemp_table.create()
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Creating request_temp table failed: %s" % str( e ) )
             # insert all the rows from the request table to the request_temp table
             cmd = "INSERT INTO request_temp SELECT id, create_time, " + \
@@ -78,7 +78,7 @@ def upgrade(migrate_engine):
             # delete the 'request' table
             try:
                 Request_table.drop()
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Dropping request table failed: %s" % str( e ) )
             # rename table request_temp to request
             cmd = "ALTER TABLE request_temp RENAME TO request"
@@ -87,12 +87,12 @@ def upgrade(migrate_engine):
             # Delete the library_id column in 'request' table
             try:
                 Request_table.c.library_id.drop()
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Deleting column 'library_id' to request table failed: %s" % ( str( e ) ) )
             # Delete the folder_id column in 'request' table
             try:
                 Request_table.c.folder_id.drop()
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Deleting column 'folder_id' to request table failed: %s" % ( str( e ) ) )
     # sample table
     try:
@@ -106,7 +106,7 @@ def upgrade(migrate_engine):
             col = Column( "dataset_files", JSONType() )
             col.create( Sample_table )
             assert col is Sample_table.c.dataset_files
-        except Exception, e:
+        except Exception as e:
             log.debug( "Adding column 'dataset_files' to sample table failed: %s" % ( str( e ) ) )
         # library table
         try:
@@ -123,7 +123,7 @@ def upgrade(migrate_engine):
                     col = Column( "library_id", Integer, index=True )
                 col.create( Sample_table, index_name='ix_sample_library_id')
                 assert col is Sample_table.c.library_id
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Adding column 'library_id' to sample table failed: %s" % ( str( e ) ) )
         # library_folder table
         try:
@@ -140,7 +140,7 @@ def upgrade(migrate_engine):
                     col = Column( "folder_id", Integer, index=True )
                 col.create( Sample_table, index_name='ix_sample_library_folder_id')
                 assert col is Sample_table.c.folder_id
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Adding column 'folder_id' to sample table failed: %s" % ( str( e ) ) )
 
 

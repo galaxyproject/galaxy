@@ -137,7 +137,7 @@ def upgrade(migrate_engine):
         UCI_table.drop()
         CloudUserCredentials_table.drop()
         CloudProvider_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping cloud tables failed: %s" % str( e ) )
 
 

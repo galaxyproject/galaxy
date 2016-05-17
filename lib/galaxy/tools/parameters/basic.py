@@ -343,7 +343,7 @@ class IntegerToolParameter( TextToolParameter ):
     def to_python( self, value, app ):
         try:
             return int( value )
-        except Exception, err:
+        except Exception as err:
             if contains_workflow_parameter(value):
                 return value
             if not value and self.optional:
@@ -423,7 +423,7 @@ class FloatToolParameter( TextToolParameter ):
     def to_python( self, value, app ):
         try:
             return float( value )
-        except Exception, err:
+        except Exception as err:
             if contains_workflow_parameter(value):
                 return value
             if not value and self.optional:
@@ -850,7 +850,7 @@ class SelectToolParameter( ToolParameter ):
             call_other_values = self._get_dynamic_options_call_other_values( trans, other_values )
             try:
                 return eval( self.dynamic_options, self.tool.code_namespace, call_other_values )
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Error determining dynamic options for parameter '%s' in tool '%s':", self.name, self.tool.id, exc_info=e )
                 return []
         else:
@@ -863,7 +863,7 @@ class SelectToolParameter( ToolParameter ):
             try:
                 call_other_values = self._get_dynamic_options_call_other_values( trans, other_values )
                 return set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, call_other_values ) )
-            except Exception, e:
+            except Exception as e:
                 log.debug( 'Determining legal values failed for "%s": %s', self.name, e )
                 return set()
         else:

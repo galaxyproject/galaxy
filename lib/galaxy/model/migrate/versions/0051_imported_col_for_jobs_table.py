@@ -29,7 +29,7 @@ def upgrade(migrate_engine):
             default_false = "false"
         migrate_engine.execute( "UPDATE job SET imported=%s" % default_false )
 
-    except Exception, e:
+    except Exception as e:
         print "Adding imported column to job table failed: %s" % str( e )
         log.debug( "Adding imported column to job table failed: %s" % str( e ) )
 
@@ -42,6 +42,6 @@ def downgrade(migrate_engine):
     Jobs_table = Table( "job", metadata, autoload=True )
     try:
         Jobs_table.c.imported.drop()
-    except Exception, e:
+    except Exception as e:
         print "Dropping column imported from job table failed: %s" % str( e )
         log.debug( "Dropping column imported from job table failed: %s" % str( e ) )

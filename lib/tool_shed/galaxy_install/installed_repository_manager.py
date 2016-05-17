@@ -605,7 +605,7 @@ class InstalledRepositoryManager( object ):
                     if env_shell_file_path is not None:
                         try:
                             contents = open( env_shell_file_path, 'r' ).read()
-                        except Exception, e:
+                        except Exception as e:
                             contents = None
                             log.debug( 'Error reading file %s, so cannot determine if package %s requires package %s at run time: %s' %
                                        ( str( env_shell_file_path ), str( td.name ), str( tool_dependency.name ), str( e ) ) )
@@ -768,7 +768,7 @@ class InstalledRepositoryManager( object ):
                             try:
                                 sa_session.delete( tool_version_association )
                                 sa_session.flush()
-                            except Exception, e:
+                            except Exception as e:
                                 status = 'error'
                                 message = 'Error attempting to purge tool_versions for the repository named %s with status %s: %s.' % \
                                     ( str( repository.name ), str( repository.status ), str( e ) )
@@ -778,7 +778,7 @@ class InstalledRepositoryManager( object ):
                             try:
                                 sa_session.delete( tool_version_association )
                                 sa_session.flush()
-                            except Exception, e:
+                            except Exception as e:
                                 status = 'error'
                                 message = 'Error attempting to purge tool_versions for the repository named %s with status %s: %s.' % \
                                     ( str( repository.name ), str( repository.status ), str( e ) )
@@ -787,7 +787,7 @@ class InstalledRepositoryManager( object ):
                         sa_session.delete( tool_version )
                         sa_session.flush()
                         purged_tool_versions += 1
-                    except Exception, e:
+                    except Exception as e:
                         status = 'error'
                         message = 'Error attempting to purge tool_versions for the repository named %s with status %s: %s.' % \
                             ( str( repository.name ), str( repository.status ), str( e ) )
@@ -799,7 +799,7 @@ class InstalledRepositoryManager( object ):
                         sa_session.delete( tool_dependency )
                         sa_session.flush()
                         purged_tool_dependencies += 1
-                    except Exception, e:
+                    except Exception as e:
                         status = 'error'
                         message = 'Error attempting to purge tool_dependencies for the repository named %s with status %s: %s.' % \
                             ( str( repository.name ), str( repository.status ), str( e ) )
@@ -811,7 +811,7 @@ class InstalledRepositoryManager( object ):
                         sa_session.delete( rrda )
                         sa_session.flush()
                         purged_required_repositories += 1
-                    except Exception, e:
+                    except Exception as e:
                         status = 'error'
                         message = 'Error attempting to purge required_repositories for the repository named %s with status %s: %s.' % \
                             ( str( repository.name ), str( repository.status ), str( e ) )
@@ -830,7 +830,7 @@ class InstalledRepositoryManager( object ):
                         sa_session.delete( orphan_rrda )
                         sa_session.flush()
                         purged_orphan_repository_repository_dependency_association_records += 1
-                    except Exception, e:
+                    except Exception as e:
                         status = 'error'
                         message = 'Error attempting to purge repository_repository_dependency_association records associated with '
                         message += 'an orphan repository_dependency record for the repository named %s with status %s: %s.' % \
@@ -840,7 +840,7 @@ class InstalledRepositoryManager( object ):
                     sa_session.delete( orphan_repository_dependency )
                     sa_session.flush()
                     purged_orphan_repository_dependency_records += 1
-                except Exception, e:
+                except Exception as e:
                     status = 'error'
                     message = 'Error attempting to purge orphan repository_dependency records for the repository named %s with status %s: %s.' % \
                         ( str( repository.name ), str( repository.status ), str( e ) )

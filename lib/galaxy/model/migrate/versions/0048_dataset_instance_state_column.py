@@ -41,7 +41,7 @@ def upgrade(migrate_engine):
                 col = Column( "state", TrimmedString( 64 ), index=True, nullable=True )
                 col.create( dataset_instance_table, index_name=index_name)
                 assert col is dataset_instance_table.c.state
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Adding column 'state' to %s table failed: %s" % ( table_name, str( e ) ) )
 
 
@@ -59,5 +59,5 @@ def downgrade(migrate_engine):
             try:
                 col = dataset_instance_table.c.state
                 col.drop()
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Dropping column 'state' from %s table failed: %s" % ( table_name, str( e ) ) )

@@ -27,9 +27,9 @@ log = logging.getLogger(__name__)
 # Contains the meta columns and the words that map to it; list aliases on the
 # right side of the : in decreasing order of priority
 alias_spec = {
-    'chromCol'  : [ 'chrom' , 'CHROMOSOME' , 'CHROM', 'Chromosome Name' ],
-    'startCol'  : [ 'start' , 'START', 'chromStart', 'txStart', 'Start Position (bp)' ],
-    'endCol'    : [ 'end'   , 'END'  , 'STOP', 'chromEnd', 'txEnd', 'End Position (bp)'  ],
+    'chromCol'  : [ 'chrom', 'CHROMOSOME', 'CHROM', 'Chromosome Name' ],
+    'startCol'  : [ 'start', 'START', 'chromStart', 'txStart', 'Start Position (bp)' ],
+    'endCol'    : [ 'end', 'END', 'STOP', 'chromEnd', 'txEnd', 'End Position (bp)' ],
     'strandCol' : [ 'strand', 'STRAND', 'Strand' ],
     'nameCol'   : [ 'name', 'NAME', 'Name', 'name2', 'NAME2', 'Name2', 'Ensembl Gene ID', 'Ensembl Transcript ID', 'Ensembl Peptide ID' ]
 }

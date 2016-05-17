@@ -113,7 +113,7 @@ class WebApplication( base.WebApplication ):
                 module_name = package_name + "." + name
                 try:
                     module = import_module( module_name )
-                except ControllerUnavailable, exc:
+                except ControllerUnavailable as exc:
                     log.debug("%s could not be loaded: %s" % (module_name, str(exc)))
                     continue
                 # Look for a controller inside the modules
@@ -138,7 +138,7 @@ class WebApplication( base.WebApplication ):
                 module_name = package_name + "." + name
                 try:
                     module = import_module( module_name )
-                except ControllerUnavailable, exc:
+                except ControllerUnavailable as exc:
                     log.debug("%s could not be loaded: %s" % (module_name, str(exc)))
                     continue
                 for key in dir( module ):
@@ -252,7 +252,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
             for locale in client_locales:
                 try:
                     locales.append( Locale.parse( locale.split( ';' )[0].strip(), sep='-' ).language )
-                except Exception, e:
+                except Exception as e:
                     log.debug( "Error parsing locale '%s'. %s: %s", locale, type( e ), e )
         if not locales:
             # Default to English
@@ -347,7 +347,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
             self.response.cookies[name]['secure'] = True
         try:
             self.response.cookies[name]['httponly'] = True
-        except CookieError, e:
+        except CookieError as e:
             log.warning( "Error setting httponly attribute in cookie '%s': %s" % ( name, e ) )
 
     def _authenticate_api( self, session_cookie ):

@@ -48,7 +48,7 @@ def upgrade(migrate_engine):
             # Create slug index manually afterward.
             i = Index( "ix_page_slug", Page_table.c.slug, mysql_length=200)
             i.create()
-    except Exception, ex:
+    except Exception as ex:
         log.debug(ex)
         log.debug( "Could not create page table" )
     try:

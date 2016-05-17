@@ -89,7 +89,7 @@ class TempFileHandler( object ):
                         tmp_file = tempfile.NamedTemporaryFile( **temp_kwds )
                         filename = tmp_file.name
                         break
-                    except OSError, e:
+                    except OSError as e:
                         if self.open_file_indexes and e.errno == EMFILE:
                             self.max_open_files = len( self.open_file_indexes )
                             self.close( self.open_file_indexes[0] )
@@ -102,7 +102,7 @@ class TempFileHandler( object ):
                     try:
                         self.files[ index ] = open( self.files[ index ].name, 'r+b' )
                         break
-                    except OSError, e:
+                    except OSError as e:
                         if self.open_file_indexes and e.errno == EMFILE:
                             self.max_open_files = len( self.open_file_indexes )
                             self.close( self.open_file_indexes[0] )
@@ -290,7 +290,7 @@ def maf_index_by_uid( maf_uid, index_location_file ):
                 try:
                     maf_files = fields[4].replace( "\n", "" ).replace( "\r", "" ).split( "," )
                     return bx.align.maf.MultiIndexed( maf_files, keep_open=True, parse_e_rows=False )
-                except Exception, e:
+                except Exception as e:
                     raise Exception( 'MAF UID (%s) found, but configuration appears to be malformed: %s' % ( maf_uid, e ) )
         except:
             pass
@@ -341,7 +341,7 @@ def build_maf_index_species_chromosomes( filename, index_species=None ):
                     if forward_strand_end > forward_strand_start:
                         # require positive length; i.e. certain lines have start = end = 0 and cannot be indexed
                         indexes.add( c.src, forward_strand_start, forward_strand_end, pos, max=c.src_size )
-    except Exception, e:
+    except Exception as e:
         # most likely a bad MAF
         log.debug( 'Building MAF index on %s failed: %s' % ( filename, e ) )
         return ( None, [], {}, 0 )
