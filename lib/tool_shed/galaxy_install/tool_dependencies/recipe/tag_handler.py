@@ -6,8 +6,8 @@ from galaxy.tools.deps.resolvers import INDETERMINATE_DEPENDENCY
 from galaxy.util import listify, url_get
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
+from tool_shed.util import metadata_util
 from tool_shed.util import repository_util
-from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import xml_util
 
