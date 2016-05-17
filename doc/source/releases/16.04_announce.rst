@@ -55,12 +55,13 @@ Security
 ===========================================================
 TL;DR
 **Only Tool Sheds newer than 16.01 should be deployed from now on.**
+(with commit 449098d8b14b45269be106f6410c0b9145c51d50 from Mar 30 present)
 
 Due to the security fixes on the Mercurial_ side we had to update the hg version that
 both Galaxy and TS depend on because the fixes have not been backported to older versions.
 However this has broken the TS's ``hg push`` functionality as Mercurial changed their bundle
 format in a non-compatible manner. Given that we deprecated the ``hg push`` API
-functionality back in in 15.10 we decided to disable it fully from 16.01 (retroactively).
+functionality back in the 15.10 we decided to disable it fully from 16.01 (retroactively).
 
 .. _Mercurial: https://www.mercurial-scm.org/wiki/WhatsNew#Mercurial_3.7.3_.282016-3-29.29
 
