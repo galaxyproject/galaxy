@@ -9,7 +9,7 @@ Highlights
 ===========================================================
 
 **Overhaul of Tools and Jobs**
-  Including Embedded Pulsar Job Runner.
+  Including embedded Pulsar Job Runner.
 
 **New chemical datatypes**
   Galaxy now detects and supports many molecular datatypes. See details at `Pull Request 1941`_
@@ -54,25 +54,26 @@ See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additio
 Deprecation Notices
 ===========================================================
 
+API deprecations
+~~~~~~~~~~~~~~~~
+
 API for history contents, index:
- * **types**: is no longer a valid parameter but accessible using
-  ``?q=history_content_type&qv=[dataset | dataset_collection]``
- * **ids**: is no longer a valid url parameter but is accessible using
-  ``?q=type_id-in&qv=<e.g. dataset-abcdef123,dataset_collection-987fedcba, ...>``
- * **deleted** and **visible**: are no longer parameters but are still accessible using
-  ``q=deleted&qv=[True | False]&q=visible&qv=[True | False]``
+ * **types**: is no longer a valid parameter but accessible using ``?q=history_content_type&qv=[dataset | dataset_collection]``
+ * **ids**: is no longer a valid url parameter but is accessible using ``?q=type_id-in&qv=<e.g. dataset-abcdef123,dataset_collection-987fedcba, ...>``
+ * **deleted** and **visible**: are no longer parameters but are still accessible using ``q=deleted&qv=[True | False]&q=visible&qv=[True | False]``
 
 API for history contents, show:
   * **api_type**: removed and unavailable (was :code:`file` and constant across HDAs)
-  * **display_apps**, **display_types**, **visualization**: removed from the default :code:`detailed` view but still available by calling url with
-   ``?keys=display_apps,display_types,visualization``
+  * **display_apps**, **display_types**, **visualization**: removed from the default :code:`detailed` view but still available by calling url with ``?keys=display_apps,display_types,visualization``
 
 API histories (removed from the available serialized data on all calls):
   * **state, state_details, state_ids** - can be replaced by specifically requesting a single array of contents, each containing :code:`{ id, state, deleted, visible }`
 
-Galaxy on Bitbucket:
+Galaxy no longer on Bitbucket:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   Galaxy moved its code and development activities from Bitbucket to GitHub in early 2015. Since this time, releases have been mirrored back to Bitbucket. However, after this release, no new changes will be pushed to Bitbucket. Anyone still receiving updates to a Galaxy server via Bitbucket and Mercurial should switch to GitHub and Git. This can be done using the following process:
-  
+
   1. Backup everything.
   2. Find what branch and commit your Mercurial Galaxy is at using :code:`hg log -b $(hg branch)`
   3. :code:`git clone https://github.com/galaxyproject/galaxy` in a temporary directory.
@@ -85,13 +86,14 @@ Galaxy on Bitbucket:
 
 Security
 ===========================================================
-Due to security fixes on the Mercurial_ side we had to update the hg version that
+TL;DR
+**Only Tool Sheds newer than 16.01 should be deployed from now on.**
+
+Due to the security fixes on the Mercurial_ side we had to update the hg version that
 both Galaxy and TS depend on because the fixes have not been backported to older versions.
 However this has broken the TS's ``hg push`` functionality as Mercurial changed their bundle
 format in a non-compatible manner. Given that we deprecated the ``hg push`` API
 functionality back in in 15.10 we decided to disable it fully from 16.01 (retroactively).
-
-**Only Tool Sheds newer than 16.01 should be deployed from now on.**
 
 .. _Mercurial: https://www.mercurial-scm.org/wiki/WhatsNew#Mercurial_3.7.3_.282016-3-29.29
 
