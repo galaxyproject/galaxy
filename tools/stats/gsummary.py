@@ -65,7 +65,7 @@ def main():
     skipped_lines = 0
     first_invalid_line = 0
     i = 0
-    for i, line in enumerate( file( datafile ) ):
+    for i, line in enumerate( open( datafile ) ):
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( '#' ):
             valid = True

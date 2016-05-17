@@ -1787,7 +1787,7 @@ class TwillTestCase( unittest.TestCase ):
     def save_log( *path ):
         """Saves the log to a file"""
         filename = os.path.join( *path )
-        file(filename, 'wt').write(buffer.getvalue())
+        open(filename, 'wt').write(buffer.getvalue())
 
     def set_history( self ):
         """Sets the history (stores the cookies for this run)"""
@@ -2191,7 +2191,7 @@ class TwillTestCase( unittest.TestCase ):
             base_name = os.path.split(file_name)[-1]
         temp_name = self.makeTfname(fname=base_name)
         data = dataset_fetcher( hda_id, base_name )
-        file( temp_name, 'wb' ).write( data )
+        open( temp_name, 'wb' ).write( data )
         if self.keepOutdir > '':
             ofn = os.path.join(self.keepOutdir, base_name)
             shutil.copy(temp_name, ofn)
@@ -2288,7 +2288,7 @@ class TwillTestCase( unittest.TestCase ):
         if filename is not None:
             local_name = self.get_filename( filename, shed_tool_id=shed_tool_id )
             temp_name = self.makeTfname(fname=filename)
-            file( temp_name, 'wb' ).write( data )
+            open( temp_name, 'wb' ).write( data )
 
             # if the server's env has GALAXY_TEST_SAVE, save the output file to that dir
             if self.keepOutdir:

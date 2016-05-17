@@ -55,7 +55,7 @@ class EnvFileBuilder( object ):
         if os.path.exists( file_path ):
             try:
                 new_env_file_contents = []
-                env_file_contents = file( file_path, 'r' ).readlines()
+                env_file_contents = open( file_path, 'r' ).readlines()
                 # Clean out blank lines from the env.sh file.
                 for line in env_file_contents:
                     line = line.rstrip()
@@ -84,7 +84,7 @@ class EnvFileBuilder( object ):
             if line and line not in env_file_contents:
                 env_file_contents.append( line )
         try:
-            file( file_path, 'w' ).write( '\n'.join( env_file_contents ) )
+            open( file_path, 'w' ).write( '\n'.join( env_file_contents ) )
         except Exception as e:
             log.exception( str( e ) )
             return 1

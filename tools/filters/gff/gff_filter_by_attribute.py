@@ -99,7 +99,7 @@ def get_value(name, a_type, values_dict):
 
 # Read and filter input file, skipping invalid lines
 code = '''
-for i, line in enumerate( file( in_fname ) ):
+for i, line in enumerate( open( in_fname ) ):
     total_lines += 1
     line = line.rstrip( '\\r\\n' )
     if not line or line.startswith( '#' ):

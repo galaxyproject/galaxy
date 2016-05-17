@@ -33,7 +33,7 @@ def main():
         stop_err( 'Initialization error -> %s' % str(exc) )
 
     option = ""
-    for line in file(tmpfile1.name):
+    for line in open(tmpfile1.name):
         line = line.strip()
         if line:
             elems = line.split('\t')

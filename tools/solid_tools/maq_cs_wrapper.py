@@ -102,7 +102,7 @@ def __main__():
             os.system(cmdpileup)
             tmppileup.seek(0)
             print >> out_f2, "#chr\tposition\tref_nt\tcoverage\tSNP_count\tA_count\tT_count\tG_count\tC_count"
-            for line in file(tmppileup.name):
+            for line in open(tmppileup.name):
                 elems = line.strip().split()
                 ref_nt = elems[2].capitalize()
                 read_nt = elems[4]
@@ -178,7 +178,7 @@ def __main__():
             os.system(cmdpileup)
             tmppileup.seek(0)
             print >> out_f2, "#chr\tposition\tref_nt\tcoverage\tSNP_count\tA_count\tT_count\tG_count\tC_count"
-            for line in file(tmppileup.name):
+            for line in open(tmppileup.name):
                 elems = line.strip().split()
                 ref_nt = elems[2].capitalize()
                 read_nt = elems[4]

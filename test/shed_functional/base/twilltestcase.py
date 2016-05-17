@@ -628,7 +628,7 @@ class ShedTwillTestCase( TwillTestCase ):
         dependency_template = string.Template( common.complex_repository_dependency_template )
         repository_dependency_xml = dependency_template.safe_substitute( package=package, version=version, dependency_lines='\n'.join( dependency_entries ) )
         # Save the generated xml to the specified location.
-        file( file_path, 'w' ).write( repository_dependency_xml )
+        open( file_path, 'w' ).write( repository_dependency_xml )
 
     def generate_simple_dependency_xml( self,
                                         repository_tuples,
@@ -661,7 +661,7 @@ class ShedTwillTestCase( TwillTestCase ):
         repository_dependency_xml = template_parser.safe_substitute( description=description, dependency_lines='\n'.join( dependency_entries ) )
         # Save the generated xml to the specified location.
         full_path = os.path.join( filepath, filename )
-        file( full_path, 'w' ).write( repository_dependency_xml )
+        open( full_path, 'w' ).write( repository_dependency_xml )
 
     def generate_temp_path( self, test_script_path, additional_paths=[] ):
         temp_path = os.path.join( self.tool_shed_test_tmp_dir, test_script_path, os.sep.join( additional_paths ) )

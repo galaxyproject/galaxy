@@ -326,8 +326,8 @@ def __main__():
                     shutil.move( options.output, tmp_out_name )
                 except Exception as e:
                     raise Exception('Error moving output file before removing headers. \n' + str( e ))
-                fout = file( options.output, 'w' )
-                for line in file( tmp_out.name, 'r' ):
+                fout = open( options.output, 'w' )
+                for line in open( tmp_out.name, 'r' ):
                     if len( line ) < 3 or line[0:3] not in [ '@HD', '@SQ', '@RG', '@PG', '@CO' ]:
                         fout.write( line )
                 fout.close()

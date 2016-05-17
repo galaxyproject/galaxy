@@ -207,7 +207,7 @@ def __main__():
             if chrom in nibs:
                 nib = nibs[chrom]
             else:
-                nibs[chrom] = nib = bx.seq.nib.NibFile( file( "%s/%s.nib" % ( seq_path, chrom ) ) )
+                nibs[chrom] = nib = bx.seq.nib.NibFile( open( "%s/%s.nib" % ( seq_path, chrom ) ) )
             try:
                 sequence = nib.get( start, end - start )
             except Exception, e:
@@ -220,7 +220,7 @@ def __main__():
                 continue
         elif seq_path and os.path.isfile( seq_path ):
             if not(twobitfile):
-                twobitfile = bx.seq.twobit.TwoBitFile( file( seq_path ) )
+                twobitfile = bx.seq.twobit.TwoBitFile( open( seq_path ) )
             try:
                 if options.gff and interpret_features:
                     # Create sequence from intervals within a feature.

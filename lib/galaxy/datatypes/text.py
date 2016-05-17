@@ -451,14 +451,13 @@ class SnpEffDb( Text ):
             dataset.metadata.regulation = regulations
             dataset.metadata.annotation = annotations
             try:
-                fh = file(dataset.file_name, 'w')
-                fh.write("%s\n" % genome_version if genome_version else 'Genome unknown')
-                fh.write("%s\n" % snpeff_version if snpeff_version else 'SnpEff version unknown')
-                if annotations:
-                    fh.write("annotations: %s\n" % ','.join(annotations))
-                if regulations:
-                    fh.write("regulations: %s\n" % ','.join(regulations))
-                fh.close()
+                with open(dataset.file_name, 'w') as fh:
+                    fh.write("%s\n" % genome_version if genome_version else 'Genome unknown')
+                    fh.write("%s\n" % snpeff_version if snpeff_version else 'SnpEff version unknown')
+                    if annotations:
+                        fh.write("annotations: %s\n" % ','.join(annotations))
+                    if regulations:
+                        fh.write("regulations: %s\n" % ','.join(regulations))
             except:
                 pass
 
