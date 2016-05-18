@@ -31,7 +31,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=No
 
     try:
         page = urllib.urlopen(URL)
-    except Exception, exc:
+    except Exception as exc:
         raise Exception('Problems connecting to %s (%s)' % (URL, exc) )
 
     name, data = out_data.items()[0]

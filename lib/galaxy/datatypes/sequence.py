@@ -80,7 +80,7 @@ class Sequence( data.Text ):
         """
         data_lines = 0
         sequences = 0
-        for line in file( dataset.file_name ):
+        for line in open( dataset.file_name ):
             line = line.strip()
             if line and line.startswith( '#' ):
                 # We don't count comment lines for sequence data types
@@ -565,7 +565,7 @@ class Fastq ( Sequence ):
         data_lines = 0
         sequences = 0
         seq_counter = 0     # blocks should be 4 lines long
-        for line in file( dataset.file_name ):
+        for line in open( dataset.file_name ):
             line = line.strip()
             if line and line.startswith( '#' ) and not data_lines:
                 # We don't count comment lines for sequence data types
@@ -983,7 +983,7 @@ class DotBracket ( Sequence ):
         data_lines = 0
         sequences = 0
 
-        for line in file( dataset.file_name ):
+        for line in open( dataset.file_name ):
             line = line.strip()
             data_lines += 1
 

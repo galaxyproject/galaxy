@@ -104,7 +104,7 @@ class TestEnvironment( object ):
                 text = f.read()
                 f.close()
                 shed_tools_dict = loads( text )
-            except Exception, exc:
+            except Exception as exc:
                 log.error( 'Error reading tool shed test file "%s": %s', self.tool_shed_test_file, exc, exc_info=True )
 
         return shed_tools_dict
@@ -116,7 +116,7 @@ class TestEnvironment( object ):
             try:
                 if not os.path.exists( self.saved_output_dir ):
                     os.makedirs( self.saved_output_dir )
-            except Exception, exc:
+            except Exception as exc:
                 log.error( 'unable to create saved files directory "%s": %s',
                     self.saved_output_dir, exc, exc_info=True )
                 self.saved_output_dir = None
@@ -128,7 +128,7 @@ class TestEnvironment( object ):
         if self.debug_these_tests:
             try:
                 debug_list = self.debug_these_tests.split( delim )
-            except Exception, exc:
+            except Exception as exc:
                 log.error( 'unable to parse debug_these_tests "%s": %s',
                     self.debug_these_tests, exc, exc_info=True )
         self.debug_these_tests = debug_list

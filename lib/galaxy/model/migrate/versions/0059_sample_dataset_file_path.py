@@ -19,7 +19,7 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         SampleDataset_table = Table( "sample_dataset", metadata, autoload=True )
-    except NoSuchTableError, e:
+    except NoSuchTableError:
         SampleDataset_table = None
         log.debug( "Failed loading table 'sample_dataset'" )
 

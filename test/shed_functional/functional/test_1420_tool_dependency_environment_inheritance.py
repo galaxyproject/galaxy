@@ -92,8 +92,8 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         precompiled_binary_tarball = self.get_filename( '1420_files/binary_tarballs/lapack.tar' )
         edited_tool_dependency_filename = self.get_filename( filepath=tool_dependency_path, filename='tool_dependencies.xml' )
         original_tool_dependency = self.get_filename( '1420_files/package_lapack_3_4_1420/tool_dependencies.xml' )
-        tool_dependency_definition = file( original_tool_dependency, 'r' ).read().replace( '__PATH__', precompiled_binary_tarball )
-        file( edited_tool_dependency_filename, 'w' ).write( tool_dependency_definition )
+        tool_dependency_definition = open( original_tool_dependency, 'r' ).read().replace( '__PATH__', precompiled_binary_tarball )
+        open( edited_tool_dependency_filename, 'w' ).write( tool_dependency_definition )
         # Upload the edited tool dependency definition to the package_lapack_3_4_1420 repository.
         self.upload_file( repository,
                           filename='tool_dependencies.xml',
@@ -126,8 +126,8 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         precompiled_binary_tarball = self.get_filename( '1420_files/binary_tarballs/atlas.tar' )
         edited_tool_dependency_filename = self.get_filename( filepath=tool_dependency_path, filename='tool_dependencies.xml' )
         original_tool_dependency = self.get_filename( '1420_files/package_atlas_3_10_1420/tool_dependencies.xml' )
-        tool_dependency_definition = file( original_tool_dependency, 'r' ).read().replace( '__PATH__', precompiled_binary_tarball )
-        file( edited_tool_dependency_filename, 'w' ).write( tool_dependency_definition )
+        tool_dependency_definition = open( original_tool_dependency, 'r' ).read().replace( '__PATH__', precompiled_binary_tarball )
+        open( edited_tool_dependency_filename, 'w' ).write( tool_dependency_definition )
         # Upload the edited tool dependency definition to the package_atlas_3_10_1420 repository.
         self.upload_file( repository,
                           filename='tool_dependencies.xml',
@@ -160,8 +160,8 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         precompiled_binary_tarball = self.get_filename( '1420_files/binary_tarballs/bzlib.tar' )
         edited_tool_dependency_filename = self.get_filename( filepath=tool_dependency_path, filename='tool_dependencies.xml' )
         original_tool_dependency = self.get_filename( '1420_files/package_bzlib_1_0_1420/tool_dependencies.xml' )
-        tool_dependency_definition = file( original_tool_dependency, 'r' ).read().replace( '__PATH__', precompiled_binary_tarball )
-        file( edited_tool_dependency_filename, 'w' ).write( tool_dependency_definition )
+        tool_dependency_definition = open( original_tool_dependency, 'r' ).read().replace( '__PATH__', precompiled_binary_tarball )
+        open( edited_tool_dependency_filename, 'w' ).write( tool_dependency_definition )
         # Upload the edited tool dependency definition to the package_bzlib_1_0_1420 repository.
         self.upload_file( repository,
                           filename='tool_dependencies.xml',
@@ -194,8 +194,8 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         precompiled_binary_tarball = self.get_filename( '1420_files/binary_tarballs/boost.tar' )
         edited_tool_dependency_filename = self.get_filename( filepath=tool_dependency_path, filename='tool_dependencies.xml' )
         original_tool_dependency = self.get_filename( '1420_files/package_boost_1_53_1420/tool_dependencies.xml' )
-        tool_dependency_definition = file( original_tool_dependency, 'r' ).read().replace( '__PATH__', precompiled_binary_tarball )
-        file( edited_tool_dependency_filename, 'w' ).write( tool_dependency_definition )
+        tool_dependency_definition = open( original_tool_dependency, 'r' ).read().replace( '__PATH__', precompiled_binary_tarball )
+        open( edited_tool_dependency_filename, 'w' ).write( tool_dependency_definition )
         # Upload the edited tool dependency definition to the package_boost_1_53_1420 repository.
         self.upload_file( repository,
                           filename='tool_dependencies.xml',
@@ -228,8 +228,8 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         precompiled_binary_tarball = self.get_filename( '1420_files/binary_tarballs/numpy.tar' )
         edited_tool_dependency_filename = self.get_filename( filepath=tool_dependency_path, filename='tool_dependencies.xml' )
         original_tool_dependency = self.get_filename( '1420_files/package_numpy_1_7_1420/tool_dependencies.xml' )
-        tool_dependency_definition = file( original_tool_dependency, 'r' ).read().replace( '__PATH__', precompiled_binary_tarball )
-        file( edited_tool_dependency_filename, 'w' ).write( tool_dependency_definition )
+        tool_dependency_definition = open( original_tool_dependency, 'r' ).read().replace( '__PATH__', precompiled_binary_tarball )
+        open( edited_tool_dependency_filename, 'w' ).write( tool_dependency_definition )
         # Upload the edited tool dependency definition to the package_numpy_1_7_1420 repository.
         self.upload_file( repository,
                           filename='tool_dependencies.xml',
@@ -262,8 +262,8 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         precompiled_binary_tarball = self.get_filename( '1420_files/binary_tarballs/rdkit.tar' )
         edited_tool_dependency_filename = self.get_filename( filepath=tool_dependency_path, filename='tool_dependencies.xml' )
         original_tool_dependency = self.get_filename( '1420_files/package_rdkit_2012_12_1420/tool_dependencies.xml' )
-        tool_dependency_definition = file( original_tool_dependency, 'r' ).read().replace( '__PATH__', precompiled_binary_tarball )
-        file( edited_tool_dependency_filename, 'w' ).write( tool_dependency_definition )
+        tool_dependency_definition = open( original_tool_dependency, 'r' ).read().replace( '__PATH__', precompiled_binary_tarball )
+        open( edited_tool_dependency_filename, 'w' ).write( tool_dependency_definition )
         # Upload the edited tool dependency definition to the package_rdkit_2012_12_1420 repository.
         self.upload_file( repository,
                           filename='tool_dependencies.xml',
@@ -312,7 +312,7 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         boost_tool_dependency_path = self.get_tool_dependency_path( tool_dependency_name='boost',
                                                                     tool_dependency_version='1.53.0',
                                                                     repository=package_boost_repository )
-        rdkit_env_file_contents = file( rdkit_env_sh, 'r' ).read()
+        rdkit_env_file_contents = open( rdkit_env_sh, 'r' ).read()
         if numpy_tool_dependency_path not in rdkit_env_file_contents or boost_tool_dependency_path not in rdkit_env_file_contents:
             message = 'Environment file for package_rdkit_2012_12_1420 does not contain expected path.'
             message += '\nExpected:\n%s\n%s\nContents:\n%s' % ( numpy_tool_dependency_path, boost_tool_dependency_path, rdkit_env_file_contents )

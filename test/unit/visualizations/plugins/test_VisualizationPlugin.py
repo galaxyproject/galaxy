@@ -23,11 +23,11 @@ class VisualizationsPlugin_TestCase( test_utils.unittest.TestCase ):
         A plugin with no context passed in should have sane defaults.
         """
         vis_dir = galaxy_mock.MockDir({
-            'config' : {
-                'vis1.xml' : ''
+            'config': {
+                'vis1.xml': ''
             },
-            'static'    : {},
-            'templates' : {},
+            'static': {},
+            'templates': {},
         })
         config = dict()
         plugin = self.plugin_class( galaxy_mock.MockApp(), vis_dir.root_path,
@@ -52,11 +52,11 @@ class VisualizationsPlugin_TestCase( test_utils.unittest.TestCase ):
         A plugin with context passed in should use those in it's set up.
         """
         vis_dir = galaxy_mock.MockDir({
-            'config' : {
-                'vis1.xml' : ''
+            'config': {
+                'vis1.xml': ''
             },
-            'static'    : {},
-            'templates' : {},
+            'static': {},
+            'templates': {},
         })
         config = dict()
         context = dict(
@@ -77,8 +77,8 @@ class VisualizationsPlugin_TestCase( test_utils.unittest.TestCase ):
         A plugin that has neither template or static directory should serve neither.
         """
         vis_dir = galaxy_mock.MockDir({
-            'config' : {
-                'vis1.xml' : ''
+            'config': {
+                'vis1.xml': ''
             }
         })
         plugin = self.plugin_class( galaxy_mock.MockApp(), vis_dir.root_path,
@@ -134,9 +134,9 @@ class VisualizationsPlugin_TestCase( test_utils.unittest.TestCase ):
         plugin_config = dict(
             params=dict(
                 wat={
-                    'csv'       : False,
-                    'required'  : False,
-                    'type'      : 'int',
+                    'csv': False,
+                    'required': False,
+                    'type': 'int',
                     'var_name_in_template': 'wot'
                 },
             )
@@ -165,7 +165,7 @@ class VisualizationsPlugin_TestCase( test_utils.unittest.TestCase ):
             for var in should_have:
                 try:
                     var = str( var )
-                except NameError, name_err:
+                except NameError as name_err:
                     found_all = False
                     break
         %>
@@ -173,16 +173,16 @@ class VisualizationsPlugin_TestCase( test_utils.unittest.TestCase ):
         """ )
 
         mock_app_dir = galaxy_mock.MockDir({
-            'cache' : {},
-            'template.mako' : testing_template
+            'cache': {},
+            'template.mako': testing_template
         })
         mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         plugin = self.plugin_class( mock_app, '', 'myvis', {
-            "name" : "Vlad News Bears"
+            "name": "Vlad News Bears"
         })
 
         # somewhat easier to set this up by hand
-        plugin.config[ 'entry_point' ] = { 'file' : 'template.mako' }
+        plugin.config[ 'entry_point' ] = { 'file': 'template.mako' }
         plugin.template_path = mock_app_dir.root_path
         plugin.template_lookup = plugin._build_template_lookup( mock_app_dir.root_path )
 

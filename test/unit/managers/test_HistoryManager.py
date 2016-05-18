@@ -597,14 +597,14 @@ class HistoryDeserializerTestCase( BaseTestCase ):
         item = manager.create( name='history1', user=user2 )
 
         self.log( 'deserialization should allow ratings change' )
-        deserializer.deserialize( item, { 'user_rating' : 4 }, user=user2 )
+        deserializer.deserialize( item, { 'user_rating': 4 }, user=user2 )
         self.assertEqual( manager.rating( item, user2 ), 4 )
         self.assertEqual( manager.ratings( item ), [ 4 ] )
         self.assertEqual( manager.ratings_avg( item ), 4 )
         self.assertEqual( manager.ratings_count( item ), 1 )
 
         self.log( 'deserialization should fail silently on community_rating' )
-        deserializer.deserialize( item, { 'community_rating' : 4 }, user=user2 )
+        deserializer.deserialize( item, { 'community_rating': 4 }, user=user2 )
         self.assertEqual( manager.ratings_count( item ), 1 )
 
     def test_sharable( self ):
@@ -617,29 +617,29 @@ class HistoryDeserializerTestCase( BaseTestCase ):
 
         self.log( 'should allow adding a share by adding a user id to users_shared_with' )
         non_owner_id = self.app.security.encode_id( non_owner.id )
-        deserializer.deserialize( item, { 'users_shared_with' : [ non_owner_id ] }, user=user2 )
+        deserializer.deserialize( item, { 'users_shared_with': [ non_owner_id ] }, user=user2 )
         user_shares = manager.get_share_assocs( item )
         self.assertEqual( len( user_shares ), 1 )
         self.assertEqual( user_shares[0].user_id, non_owner.id )
 
         self.log( 're-adding an existing user id should do nothing' )
-        deserializer.deserialize( item, { 'users_shared_with' : [ non_owner_id, non_owner_id ] }, user=user2 )
+        deserializer.deserialize( item, { 'users_shared_with': [ non_owner_id, non_owner_id ] }, user=user2 )
         user_shares = manager.get_share_assocs( item )
         self.assertEqual( len( user_shares ), 1 )
         self.assertEqual( user_shares[0].user_id, non_owner.id )
 
         self.log( 'should allow removing a share by not having it in users_shared_with' )
-        deserializer.deserialize( item, { 'users_shared_with' : [] }, user=user2 )
+        deserializer.deserialize( item, { 'users_shared_with': [] }, user=user2 )
         user_shares = manager.get_share_assocs( item )
         self.assertEqual( len( user_shares ), 0 )
 
         self.log( 'adding a bad user id should error' )
         self.assertRaises( AttributeError,
-            deserializer.deserialize, item, { 'users_shared_with' : [ None ] }, user=user2 )
+            deserializer.deserialize, item, { 'users_shared_with': [ None ] }, user=user2 )
 
         self.log( 'adding a non-existing user id should do nothing' )
         non_user_id = self.app.security.encode_id( 99 )
-        deserializer.deserialize( item, { 'users_shared_with' : [ non_user_id ] }, user=user2 )
+        deserializer.deserialize( item, { 'users_shared_with': [ non_user_id ] }, user=user2 )
         user_shares = manager.get_share_assocs( item )
         self.assertEqual( len( user_shares ), 0 )
 
@@ -755,7 +755,7 @@ class HistoryFiltersTestCase( BaseTestCase ):
 
     def test_fn_filter_currying( self ):
         self.filter_parser.fn_filter_parsers = {
-            'name_len' : { 'op': { 'lt' : lambda i, v: len( i.name ) < v }, 'val': int }
+            'name_len': { 'op': { 'lt': lambda i, v: len( i.name ) < v }, 'val': int }
         }
         self.log( 'should be 2 filters now' )
         self.assertEqual( len( self.filter_parser.fn_filter_parsers ), 1 )

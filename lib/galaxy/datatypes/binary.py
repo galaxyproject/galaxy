@@ -770,7 +770,7 @@ class TwoBit (Binary):
             # All twobit files start with a 16-byte header. If the file is smaller than 16 bytes, it's obviously not a valid twobit file.
             if os.path.getsize(filename) < 16:
                 return False
-            input = file(filename)
+            input = open(filename)
             magic = struct.unpack(">L", input.read(TWOBIT_MAGIC_SIZE))[0]
             if magic == TWOBIT_MAGIC_NUMBER or magic == TWOBIT_MAGIC_NUMBER_SWAP:
                 return True

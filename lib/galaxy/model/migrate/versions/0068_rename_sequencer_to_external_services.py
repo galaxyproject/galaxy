@@ -38,14 +38,14 @@ def upgrade(migrate_engine):
     # add a foreign key to the external_service table in the sample_dataset table
     try:
         SampleDataset_table = Table( "sample_dataset", metadata, autoload=True )
-    except NoSuchTableError, e:
+    except NoSuchTableError:
         SampleDataset_table = None
         log.debug( "Failed loading table 'sample_dataset'" )
     if SampleDataset_table is None:
         return
     try:
         Sequencer_table = Table( "sequencer", metadata, autoload=True )
-    except NoSuchTableError, e:
+    except NoSuchTableError:
         Sequencer_table = None
         log.debug( "Failed loading table 'sequencer'" )
     if Sequencer_table is None:
@@ -92,7 +92,7 @@ def upgrade(migrate_engine):
     migrate_engine.execute( cmd )
     try:
         ExternalServices_table = Table( "external_service", metadata, autoload=True )
-    except NoSuchTableError, e:
+    except NoSuchTableError:
         ExternalServices_table = None
         log.debug( "Failed loading table 'external_service'" )
     if ExternalServices_table is None:
@@ -201,7 +201,7 @@ def downgrade(migrate_engine):
         return
     try:
         ExternalServices_table = Table( "external_service", metadata, autoload=True )
-    except NoSuchTableError, e:
+    except NoSuchTableError:
         ExternalServices_table = None
         log.debug( "Failed loading table 'external_service'" )
     if ExternalServices_table is None:
@@ -262,7 +262,7 @@ def downgrade(migrate_engine):
     # drop the 'external_service_id' column in the 'sample_dataset' table
     try:
         SampleDataset_table = Table( "sample_dataset", metadata, autoload=True )
-    except NoSuchTableError, e:
+    except NoSuchTableError:
         SampleDataset_table = None
         log.debug( "Failed loading table 'sample_dataset'" )
     if SampleDataset_table is None:

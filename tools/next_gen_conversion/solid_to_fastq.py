@@ -53,7 +53,7 @@ def __main__():
             os.system(cmd1)
             os.system('gunzip -c %s >> %s' % (tmpf.name, options.output1))
             os.system('gunzip -c %s >> %s' % (tmpr.name, options.output2))
-        except Exception, eq:
+        except Exception as eq:
             stop_err("Error converting data to fastq format.\n" + str(eq))
         tmpr.close()
         tmpqr.close()
@@ -63,7 +63,7 @@ def __main__():
         try:
             os.system(cmd1)
             os.system('gunzip -c %s >> %s' % (tmpf.name, options.output1))
-        except Exception, eq:
+        except Exception as eq:
             stop_err("Error converting data to fastq format.\n" + str(eq))
     tmpqf.close()
     tmpf.close()

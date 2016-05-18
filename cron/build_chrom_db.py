@@ -24,13 +24,13 @@ import parse_builds
 def getchrominfo(url, db):
     tableURL = "http://genome-test.cse.ucsc.edu/cgi-bin/hgTables?"
     URL = tableURL + urllib.urlencode({
-        "clade" : "",
-        "org" : "",
-        "db" : db,
+        "clade": "",
+        "org": "",
+        "db": db,
         "hgta_outputType": "primaryTable",
-        "hgta_group" : "allTables",
-        "hgta_table" : "chromInfo",
-        "hgta_track" : db,
+        "hgta_group": "allTables",
+        "hgta_table": "chromInfo",
+        "hgta_track": db,
         "hgta_regionType": "",
         "position": "",
         "hgta_doTopSubmit": "get info"})

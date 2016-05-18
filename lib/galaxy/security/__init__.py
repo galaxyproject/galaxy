@@ -795,7 +795,7 @@ class GalaxyRBACAgent( RBACAgent ):
             return None
         if not permissions:
             # default permissions
-            permissions = { self.permitted_actions.DATASET_MANAGE_PERMISSIONS : [ self.get_private_user_role( user, auto_create=True ) ] }
+            permissions = { self.permitted_actions.DATASET_MANAGE_PERMISSIONS: [ self.get_private_user_role( user, auto_create=True ) ] }
             # new_user_dataset_access_role_default_private is set as True in config file
             if default_access_private:
                 permissions[ self.permitted_actions.DATASET_ACCESS ] = permissions.values()[ 0 ]
@@ -998,7 +998,7 @@ class GalaxyRBACAgent( RBACAgent ):
             self.sa_session.flush()
             for user in users:
                 self.associate_components( user=user, role=sharing_role )
-        self.set_dataset_permission( dataset, { self.permitted_actions.DATASET_ACCESS : [ sharing_role ] } )
+        self.set_dataset_permission( dataset, { self.permitted_actions.DATASET_ACCESS: [ sharing_role ] } )
 
     def set_all_library_permissions( self, trans, library_item, permissions={} ):
         # Set new permissions on library_item, eliminating all current permissions
