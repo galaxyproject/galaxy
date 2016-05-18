@@ -112,7 +112,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             "description": tool.description,
             "tool_id": tool.id,
             "inputs": input_param,
-            "outputs":output_param,
+            "outputs": output_param,
             "tool_version": tool.version,
             "section": tool.get_panel_section(),
             "dependency_shell_commands": tool.build_dependency_shell_commands(),
@@ -123,7 +123,6 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             "installed_changeset_revision": None,
             "guid": tool.guid,
         }
-
 
     @expose_api_anonymous
     def build( self, trans, id, **kwd ):

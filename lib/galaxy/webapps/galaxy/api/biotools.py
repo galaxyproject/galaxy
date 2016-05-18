@@ -4,6 +4,7 @@ import string
 import logging
 log = logging.getLogger( __name__ )
 
+
 def json_formater(fonc):
     @functools.wraps(fonc)
     def innerfunc(cl, trans, id, **kwd):
@@ -97,7 +98,7 @@ def format_description(description):
         else:
             return description[0].upper() + description[1:size] + '.'
     except IndexError:
-        raise  description
+        raise description
 
 
 def get_source_registry(tool_id):
