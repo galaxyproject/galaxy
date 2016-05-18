@@ -90,4 +90,3 @@ class UCSCTrackHub( Html ):
 
     def sniff( self, filename ):
         return False
-

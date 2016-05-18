@@ -56,4 +56,3 @@ class HubAssembly( Html ):
 
     def sniff( self, filename ):
         return False
-
