@@ -107,7 +107,7 @@ class Registry( object ):
                 self.converters_path_attr = registration.get( 'converters_path', 'lib/galaxy/datatypes/converters' )
                 self.converters_path = os.path.join( root_dir, self.converters_path_attr )
                 if self.converters_path_attr == 'lib/galaxy/datatypes/converters' \
-                    and not os.path.isdir( self.converters_path ):
+                        and not os.path.isdir( self.converters_path ):
                     # Deal with the old default of this path being set in
                     # datatypes_conf.xml.sample (this path is not useful in an
                     # "installed Galaxy" world)
@@ -119,7 +119,7 @@ class Registry( object ):
                 self.display_path_attr = registration.get( 'display_path', 'display_applications' )
                 self.display_applications_path = os.path.join( root_dir, self.display_path_attr )
                 if self.display_path_attr == 'display_applications' \
-                    and not os.path.isdir( 'display_applications' ):
+                        and not os.path.isdir( 'display_applications' ):
                     # Ditto as with converters_path
                     self.display_path_attr = os.path.abspath( os.path.join( os.path.dirname( __file__ ), 'display_applications', 'configs' ) )
                     self.display_applications_path = self.display_path_attr

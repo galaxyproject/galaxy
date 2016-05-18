@@ -904,6 +904,10 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         return str(template)
 
 
+def default_url_path( path ):
+    return os.path.abspath( os.path.join( os.path.dirname( __file__ ), path ) )
+
+
 def build_url_map( app, global_conf, local_conf ):
     from paste.urlmap import URLMap
     from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
@@ -915,14 +919,13 @@ def build_url_map( app, global_conf, local_conf ):
     cache_time = conf.get( "static_cache_time", None )
     if cache_time is not None:
         cache_time = int( cache_time )
-    _def = lambda x: os.path.abspath( os.path.join( os.path.dirname( __file__ ), x ) )
     # Send to dynamic app by default
     urlmap["/"] = app
     # Define static mappings from config
-    urlmap["/static"] = Static( conf.get( "static_dir", _def("static/") ), cache_time )
-    urlmap["/images"] = Static( conf.get( "static_images_dir", _def("static/images") ), cache_time )
-    urlmap["/static/scripts"] = Static( conf.get( "static_scripts_dir", _def("static/scripts/") ), cache_time )
-    urlmap["/static/style"] = Static( conf.get( "static_style_dir", _def("./static/style/blue") ), cache_time )
-    urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir", _def("./static/favicon.ico") ), cache_time )
-    urlmap["/robots.txt"] = Static( conf.get( "static_robots_txt", _def("./static/robots.txt") ), cache_time )
+    urlmap["/static"] = Static( conf.get( "static_dir", default_url_path("static/") ), cache_time )
+    urlmap["/images"] = Static( conf.get( "static_images_dir", default_url_path("static/images") ), cache_time )
+    urlmap["/static/scripts"] = Static( conf.get( "static_scripts_dir", default_url_path("static/scripts/") ), cache_time )
+    urlmap["/static/style"] = Static( conf.get( "static_style_dir", default_url_path("./static/style/blue") ), cache_time )
+    urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir", default_url_path("./static/favicon.ico") ), cache_time )
+    urlmap["/robots.txt"] = Static( conf.get( "static_robots_txt", default_url_path("./static/robots.txt") ), cache_time )
     return urlmap, cache_time

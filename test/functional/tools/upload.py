@@ -1,1 +1,1 @@
-../../../tools/data_source/upload.py
+../../../lib/galaxy/tools/bundled/data_source/upload.py

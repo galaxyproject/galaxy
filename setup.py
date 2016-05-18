@@ -6,13 +6,9 @@ from setuptools import setup, find_packages
 
 readme = open('README.rst').read()
 
-# Obviously this should not be empty, but for the moment, use:
-# pip install -e git+https://github.com/natefoo/pip@linux-wheels#egg=pip && \
-# pip install -r requirements.txt --index-url https://wheels.galaxyproject.org/simple/
-requirements = [
-]
-
 GALAXY_PACKAGE = os.environ.get("GALAXY_PACKAGE", "galaxy-lib")
+VERSION = None
+
 
 def _find_packages(base):
     r = []
@@ -40,18 +36,30 @@ if GALAXY_PACKAGE == "galaxy-lib":
         'tools/imp_exp/imp_history_from_archive.xml',
         'tools/imp_exp/exp_history_to_archive.xml',
     ]
-elif GALAXY_PACKAGE == "galaxy-app":
+elif GALAXY_PACKAGE == "galaxy":
     requirements = [
         'galaxy-lib',
     ]
     base_packages = [
+        'galaxy.actions',
         'galaxy.auth',
+        'galaxy.dataset_collections',
         'galaxy.dependencies',
         'galaxy.external_services',
+        'galaxy.forms',
         'galaxy.jobs',
+        'galaxy.managers',
         'galaxy.model',
+        'galaxy.openid',
         'galaxy.quota',
+        'galaxy.sample_tracking',
         'galaxy.security',
+        'galaxy.tags',
+        'galaxy.tours',
+        'galaxy.visualization',
+        'galaxy.web',
+        'galaxy.webapps',
+        'galaxy.workflow',
         'galaxy.work',
     ]
     package_data = [
@@ -59,28 +67,7 @@ elif GALAXY_PACKAGE == "galaxy-app":
         'jobs/runners/util/job_script/CLUSTER_SLOTS_STATEMENT.sh',
         'model/migrate/migrate.cfg',
         'dependencies/*.txt',
-        # FIXME: web/proxy/js/lib doesn't exist
-        #'web/proxy/js/*',
     ]
-elif GALAXY_PACKAGE == "galaxy":
-    requirements = [
-        'galaxy-app',
-    ]
-    base_packages = [
-        'galaxy.actions',
-        'galaxy.dataset_collections',
-        'galaxy.forms',
-        'galaxy.managers',
-        'galaxy.openid',
-        'galaxy.sample_tracking',
-        'galaxy.tags',
-        'galaxy.tours',
-        'galaxy.visualization',
-        'galaxy.web',
-        'galaxy.webapps',
-        'galaxy.workflow',
-    ]
-    package_data = []
 elif GALAXY_PACKAGE == 'tool-shed':
     requirements = [
         'galaxy-app',
@@ -105,7 +92,6 @@ execfile('lib/galaxy/version.py')
 scripts = ["scripts/galaxy"]
 
 setup(
-    #name='galaxy',
     name=GALAXY_PACKAGE,
     version=VERSION,
     description='Galaxy (http://galaxyproject.org/).',
@@ -113,7 +99,6 @@ setup(
     author='Galaxy Project',
     author_email='galaxy-dev@lists.galaxyproject.org',
     url='https://github.com/galaxyproject/galaxy',
-    #packages=find_packages('lib'),
     packages=packages,
     entry_points='''
         [console_scripts]

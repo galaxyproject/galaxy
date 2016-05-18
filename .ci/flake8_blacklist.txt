@@ -4,3 +4,5 @@ database/
 doc/patch.py
 doc/source/conf.py
 lib/galaxy/util/jstree.py
+build/
+dist/
