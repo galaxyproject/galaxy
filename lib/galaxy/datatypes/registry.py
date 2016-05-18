@@ -822,18 +822,14 @@ class Registry( object ):
     def edam_formats( self ):
         """
         """
-        mapping = {}
-        for k, v in self.datatypes_by_extension.iteritems():
-            mapping[k] = v.edam_format
+        mapping = dict((k, v.edam_format) for k, v in self.datatypes_by_extension.items())
         return mapping
 
     @property
     def edam_data( self ):
         """
         """
-        mapping = {}
-        for k, v in self.datatypes_by_extension.iteritems():
-            mapping[k] = v.edam_data
+        mapping = dict((k, v.edam_data) for k, v in self.datatypes_by_extension.items())
         return mapping
 
     @property

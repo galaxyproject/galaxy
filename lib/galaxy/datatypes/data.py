@@ -66,7 +66,6 @@ class Data( object ):
     """
     edam_data = "data_0006"
     edam_format = "format_1915"
-    edam_data = "data_0006"
     # Data is not chunkable by default.
     CHUNKABLE = False
 

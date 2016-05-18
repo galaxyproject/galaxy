@@ -127,7 +127,7 @@ class PepXml(ProteomicsXml):
     file_ext = "pepxml"
     blurb = 'pepXML data'
     root = "msms_pipeline_analysis"
-    
+
 
 class MzML(ProteomicsXml):
     """mzML data"""

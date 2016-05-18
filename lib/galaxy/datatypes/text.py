@@ -394,7 +394,7 @@ class Arff( Text ):
 
 
 class SnpEffDb( Text ):
-    """Class describing a SnpEff genome build"""i
+    """Class describing a SnpEff genome build"""
     edam_format = "format_3624"
     file_ext = "snpeffdb"
     MetadataElement( name="genome_version", default=None, desc="Genome Version", readonly=True, visible=True, no_value=None )
