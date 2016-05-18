@@ -205,7 +205,11 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
       - [ ] Ensure all [blocking milestone PRs](https://github.com/galaxyproject/galaxy/pulls?q=is%3Aopen+is%3Apr+milestone%3A${version}) have been merged or closed.
 
             make release-check-blocking-prs RELEASE_CURR=${version}
-      - [ ] Do release (TODO: create a check a list for this...)
+      - [ ] Ensure previous release is merged into current. (TODO: Add Makefile target or this.)
+      - [ ] Create release tag:
+
+            make release-create RELEASE_CURR=${version}
+      - [ ] Push branches and tags as commented out in Makefile target for ``release-create``.
 
 - [ ] **Announce Release**
 
