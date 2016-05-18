@@ -89,8 +89,11 @@ class BaseJobRunner( object ):
                 return
             # id and name are collected first so that the call of method() is the last exception.
             try:
-                # arg should be a JobWrapper/TaskWrapper
-                job_id = arg.get_id_tag()
+                if isinstance(arg, AsynchronousJobState):
+                    job_id = arg.job_wrapper.get_id_tag()
+                else:
+                    # arg should be a JobWrapper/TaskWrapper
+                    job_id = arg.get_id_tag()
             except:
                 job_id = 'unknown'
             try:
