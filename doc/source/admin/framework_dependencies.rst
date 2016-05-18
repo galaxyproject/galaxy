@@ -125,10 +125,10 @@ virtualenv using the ``--no-create-venv`` option:
       repoze.lru, Routes, WebOb, WebHelpers, Mako, pytz, Babel, Beaker,
       Markdown, Cheetah, requests, requests-toolbelt, boto, bioblend, amqp,
       anyjson, kombu, pbr, sqlparse, decorator, Tempita, sqlalchemy-migrate,
-      Parsley, nose, SVGFig, ecdsa, paramiko, Fabric, Whoosh, pysam
+      Parsley, nose, svgwrite, ecdsa, paramiko, Fabric, Whoosh, pysam
     Successfully installed Babel-2.0 Beaker-1.7.0 Cheetah-2.4.4 Fabric-1.10.2
       Mako-1.0.2 Markdown-2.6.3 MarkupSafe-0.23 Parsley-1.3 Paste-2.0.2
-      PasteDeploy-1.5.2 PyYAML-3.11 Routes-2.2 SQLAlchemy-1.0.8 SVGFig-1.1.6
+      PasteDeploy-1.5.2 PyYAML-3.11 Routes-2.2 SQLAlchemy-1.0.8 svgwrite-1.1.6
       Tempita-0.5.3.dev0 WebHelpers-1.3 WebOb-1.4.1 Whoosh-2.4.1+gx1 amqp-1.4.8
       anyjson-0.3.3 bioblend-0.6.1 boto-2.38.0 bx-python-0.7.3 decorator-4.0.2
       docutils-0.12 ecdsa-0.13 kombu-3.0.30 mercurial-3.4.2 nose-1.3.7
@@ -178,10 +178,8 @@ Galaxy to start without attempting to fetch wheels:
     $ sh run.sh --no-create-venv --skip-wheels
 
 Including ``--index-url=https://wheels.galaxyproject.org/simple/`` is important
-- at least one current Galaxy dependency (SVGFig) is not available in PyPI but
-is available (in both source and wheel form) on `wheels.galaxyproject.org`_,
-and two (pysam, Whoosh) include modifications specific to Galaxy which are only
-available on `wheels.galaxyproject.org`_.
+as two dependencies (pysam, Whoosh) include modifications specific to Galaxy
+which are only available on `wheels.galaxyproject.org`_.
 
 .. _unpinned requirements file: https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/dependencies/requirements.txt
 

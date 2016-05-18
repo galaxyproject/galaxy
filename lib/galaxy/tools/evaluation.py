@@ -1,6 +1,7 @@
 import json
 import os
 import tempfile
+from six import string_types
 
 from galaxy import model
 from galaxy.util.object_wrapper import wrap_with_safe_string
@@ -21,11 +22,11 @@ from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     SelectToolParameter,
 )
-from galaxy.tools.parameters import wrapped_json
+from galaxy.tools.parameters import wrapped_json, visit_input_values
 from galaxy.tools.parameters.grouping import Conditional, Repeat, Section
 from galaxy.tools import global_tool_errors
 from galaxy.jobs.datasets import dataset_path_rewrites
-
+from galaxy.work.context import WorkRequestContext
 import logging
 log = logging.getLogger( __name__ )
 
@@ -52,8 +53,15 @@ class ToolEvaluator( object ):
         job = self.job
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         incoming = self.tool.params_from_strings( incoming, self.app )
-        # Do any validation that could not be done at job creation
-        self.tool.handle_unvalidated_param_values( incoming, self.app )
+
+        # Full parameter validation
+        request_context = WorkRequestContext( app=self.app, user=job.history and job.history.user, history=job.history )
+
+        def validate_inputs( input, value, context, **kwargs ):
+            value = input.from_json( value, request_context, context )
+            input.validate( value, request_context )
+        visit_input_values( self.tool.inputs, incoming, validate_inputs )
+
         # Restore input / output data lists
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
@@ -123,7 +131,7 @@ class ToolEvaluator( object ):
         param_dict.update( incoming )
 
         input_dataset_paths = dataset_path_rewrites( input_paths )
-        self.__populate_wrappers(param_dict, input_dataset_paths)
+        self.__populate_wrappers(param_dict, input_datasets, input_dataset_paths, job_working_directory)
         self.__populate_input_dataset_wrappers(param_dict, input_datasets, input_dataset_paths)
         self.__populate_output_dataset_wrappers(param_dict, output_datasets, output_paths, job_working_directory)
         self.__populate_output_collection_wrappers(param_dict, output_collections, output_paths, job_working_directory)
@@ -149,6 +157,7 @@ class ToolEvaluator( object ):
                 elif isinstance( input, Conditional ):
                     values = input_values[ input.name ]
                     current = values["__current_case__"]
+                    func( values, input.test_param )
                     do_walk( input.cases[current].inputs, values )
                 elif isinstance( input, Section ):
                     values = input_values[ input.name ]
@@ -158,18 +167,20 @@ class ToolEvaluator( object ):
 
         do_walk( inputs, input_values )
 
-    def __populate_wrappers(self, param_dict, input_dataset_paths):
+    def __populate_wrappers(self, param_dict, input_datasets, input_dataset_paths, job_working_directory):
 
         def wrap_input( input_values, input ):
             if isinstance( input, DataToolParameter ) and input.multiple:
                 value = input_values[ input.name ]
                 dataset_instances = DatasetListWrapper.to_dataset_instances( value )
                 input_values[ input.name ] = \
-                    DatasetListWrapper( dataset_instances,
+                    DatasetListWrapper( job_working_directory,
+                                        dataset_instances,
                                         dataset_paths=input_dataset_paths,
                                         datatypes_registry=self.app.datatypes_registry,
                                         tool=self.tool,
                                         name=input.name )
+
             elif isinstance( input, DataToolParameter ):
                 # FIXME: We're populating param_dict with conversions when
                 #        wrapping values, this should happen as a separate
@@ -208,14 +219,16 @@ class ToolEvaluator( object ):
                     tool=self,
                     name=input.name
                 )
-                identifier_key = "%s|__identifier__" % input.name
-                if identifier_key in param_dict:
-                    wrapper_kwds["identifier"] = param_dict[identifier_key]
                 if dataset:
                     # A None dataset does not have a filename
                     real_path = dataset.file_name
                     if real_path in input_dataset_paths:
                         wrapper_kwds[ "dataset_path" ] = input_dataset_paths[ real_path ]
+                identifier_key = identifier_key_dict.get(dataset, None)
+                if identifier_key:
+                    element_identifier = param_dict.get(identifier_key, None)
+                    if element_identifier:
+                        wrapper_kwds[ "identifier" ] = element_identifier
                 input_values[ input.name ] = \
                     DatasetFilenameWrapper( dataset, **wrapper_kwds )
             elif isinstance( input, DataCollectionToolParameter ):
@@ -227,6 +240,7 @@ class ToolEvaluator( object ):
                     name=input.name
                 )
                 wrapper = DatasetCollectionWrapper(
+                    job_working_directory,
                     dataset_collection,
                     **wrapper_kwds
                 )
@@ -242,6 +256,7 @@ class ToolEvaluator( object ):
         #       tools where the inputs don't even get passed through. These
         #       tools (e.g. UCSC) should really be handled in a special way.
         if self.tool.check_values:
+            identifier_key_dict = dict((v, "%s|__identifier__" % k) for k, v in input_datasets.iteritems())  # allows lookup of identifier through HDA.
             self.__walk_inputs( self.tool.inputs, param_dict, wrap_input )
 
     def __populate_input_dataset_wrappers(self, param_dict, input_datasets, input_dataset_paths):
@@ -299,6 +314,7 @@ class ToolEvaluator( object ):
                 name=name
             )
             wrapper = DatasetCollectionWrapper(
+                job_working_directory,
                 out_collection,
                 **wrapper_kwds
             )
@@ -513,7 +529,7 @@ class ToolEvaluator( object ):
         param_dict = self.param_dict
         directory = self.local_working_directory
         command = self.tool.command
-        if command and "$param_file" in command:
+        if self.tool.profile < 16.04 and command and "$param_file" in command:
             fd, param_filename = tempfile.mkstemp( dir=directory )
             os.close( fd )
             f = open( param_filename, "w" )
@@ -530,7 +546,7 @@ class ToolEvaluator( object ):
             return None
 
     def __build_config_file_text( self, content ):
-        if isinstance( content, basestring ):
+        if isinstance( content, string_types ):
             return content, True
 
         content_format = content["format"]

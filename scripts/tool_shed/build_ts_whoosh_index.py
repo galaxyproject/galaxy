@@ -11,23 +11,20 @@ Make sure you adjusted your config to:
 Also make sure that GALAXY_EGGS_PATH variable is properly set
 in case you are using non-default location for Galaxy.
 """
-import sys
-import os
 import ConfigParser
+import os
+import sys
 from optparse import OptionParser
 
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] )  # remove scripts/ from the path
-sys.path = new_path
-
-from galaxy.util import pretty_print_time_interval
-import galaxy.webapps.tool_shed.model.mapping
-from galaxy.webapps.tool_shed import config
-from galaxy.webapps.tool_shed import model
-from galaxy.tools.loader_directory import load_tool_elements_from_path
-
-from whoosh.filedb.filestore import FileStorage
 from whoosh.fields import Schema, STORED, TEXT
+from whoosh.filedb.filestore import FileStorage
+
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
+
+import galaxy.webapps.tool_shed.model.mapping
+from galaxy.tools.loader_directory import load_tool_elements_from_path
+from galaxy.util import pretty_print_time_interval
+from galaxy.webapps.tool_shed import config, model
 
 repo_schema = Schema(
     id=STORED,

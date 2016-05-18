@@ -79,16 +79,6 @@
             },
             // cache busting using time server was restarted
             urlArgs: 'v=${app.server_starttime}',
-            // this section allows us to require the compiled tool menu handlebars templates from compiled/ using requirejs
-            // even if they're formatted (with the extension) to load via handlebars-loader when using webpack
-            map: {
-                'mvc/tool/tools': {
-                    'templates/tool_form.handlebars'    : 'templates/compiled/tool_form',
-                    'templates/tool_search.handlebars'  : 'templates/compiled/tool_search',
-                    'templates/panel_section.handlebars': 'templates/compiled/panel_section',
-                    'templates/tool_link.handlebars'    : 'templates/compiled/tool_link',
-                },
-            },
         });
     </script>
 
@@ -213,9 +203,11 @@
             <div id="masthead" class="navbar navbar-fixed-top navbar-inverse">
                 ${self.masthead()}
             </div>
-            <div id="messagebox" class="panel-${app.config.message_box_class}-message">
-                ${app.config.message_box_content}
-            </div>
+            %if self.message_box_visible:
+                <div id="messagebox" class="panel-${app.config.message_box_class}-message" style="display:block">
+                    ${app.config.message_box_content}
+                </div>
+            %endif
             %if self.show_inactivity_warning:
                 <div id="inactivebox" class="panel-warning-message">
                     ${app.config.inactivity_box_content} <a href="${h.url_for( controller='user', action='resend_verification' )}">Resend verification.</a>

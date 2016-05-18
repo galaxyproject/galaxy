@@ -1,7 +1,7 @@
 """
 Objects with No values
 """
-from galaxy.datatypes.metadata import MetadataCollection
+from galaxy.model.metadata import MetadataCollection
 from galaxy.datatypes.registry import Registry
 
 

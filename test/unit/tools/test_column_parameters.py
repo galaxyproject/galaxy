@@ -5,6 +5,7 @@ test_select_parameters.py.
 from galaxy.util import bunch
 from galaxy import model
 from .test_parameter_parsing import BaseParameterTestCase
+from tools_support import datatypes_registry
 
 
 class DataColumnParameterTestCase( BaseParameterTestCase ):
@@ -22,24 +23,24 @@ class DataColumnParameterTestCase( BaseParameterTestCase ):
 
     def __param_optional(self):
         # TODO: don't break abstraction, try setting null value instead
-        return not self.param.force_select
+        return self.param.optional
 
-    def test_from_html(self):
-        value = self.param.from_html("3", self.trans, { "input_tsv": self.build_ready_hda()  } )
+    def test_from_json(self):
+        value = self.param.from_json("3", self.trans, { "input_tsv": self.build_ready_hda()  } )
         assert value == "3"
 
-    def test_from_html_strips_c(self):
-        value = self.param.from_html("c1", self.trans, { "input_tsv": self.build_ready_hda()  } )
+    def test_from_json_strips_c(self):
+        value = self.param.from_json("c1", self.trans, { "input_tsv": self.build_ready_hda()  } )
         assert value == "1"
 
-    def test_multiple_from_html(self):
+    def test_multiple_from_json(self):
         self.multiple = True
-        value = self.param.from_html("1,2,3", self.trans, { "input_tsv": self.build_ready_hda()  } )
+        value = self.param.from_json("1,2,3", self.trans, { "input_tsv": self.build_ready_hda()  } )
         assert value == ["1", "2", "3"]
 
-    def test_multiple_from_html_with_c(self):
+    def test_multiple_from_json_with_c(self):
         self.multiple = True
-        value = self.param.from_html("c1,c2,c3", self.trans, { "input_tsv": self.build_ready_hda()  } )
+        value = self.param.from_json("c1,c2,c3", self.trans, { "input_tsv": self.build_ready_hda()  } )
         assert value == ["1", "2", "3"]
 
     def test_get_initial_value_default(self):
@@ -99,6 +100,6 @@ class DataColumnParameterTestCase( BaseParameterTestCase ):
             template_xml = '''<param name="my_name" type="%s" %s %s %s %s></param>'''
             param_str = template_xml % ( self.type, data_ref_text, multi_text, optional_text, self.other_attributes )
             self._param = self._parameter_for( xml=param_str )
-            self._param.ref_input = bunch.Bunch(formats=[model.datatypes_registry.get_datatype_by_extension("tabular")])
+            self._param.ref_input = bunch.Bunch(formats=[datatypes_registry.get_datatype_by_extension("tabular")])
 
         return self._param

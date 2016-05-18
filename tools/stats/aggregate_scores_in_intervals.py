@@ -22,7 +22,7 @@ from bx.binned_array import BinnedArray, FileBinnedArray
 from bx.bitset_builders import binned_bitsets_from_file
 from bx.cookbook import doc_optparse
 
-from galaxy.tools.exception_handling import UCSCLimitException, UCSCOutWrapper
+from galaxy.util.ucsc import UCSCLimitException, UCSCOutWrapper
 
 
 class PositionalScoresOnDisk:

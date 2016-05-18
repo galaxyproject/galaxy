@@ -24,6 +24,7 @@ class CwlToolSource(ToolSource):
         self._cwl_tool_file = tool_file
         self._id, _ = os.path.splitext(os.path.basename(tool_file))
         self._tool_proxy = tool_proxy(tool_file)
+        self._source_path = tool_file
 
     @property
     def tool_proxy(self):
@@ -60,6 +61,12 @@ class CwlToolSource(ToolSource):
 
     def parse_help(self):
         return ""
+
+    def parse_sanitize(self):
+        return False
+
+    def parse_strict_shell(self):
+        return True
 
     def parse_stdio(self):
         # TODO: remove duplication with YAML
@@ -104,7 +111,10 @@ class CwlToolSource(ToolSource):
         name = output_instance.name
         # TODO: handle filters, actions, change_format
         output = ToolOutput( name )
-        output.format = "_sniff_"
+        if "File" in output_instance.output_data_type:
+            output.format = "_sniff_"
+        else:
+            output.format = "expression.json"
         output.change_format = []
         output.format_source = None
         output.metadata_source = ""
@@ -113,9 +123,8 @@ class CwlToolSource(ToolSource):
         output.count = None
         output.filters = []
         output.tool = tool
-        output.from_work_dir = "__cwl_output_%s" % name
         output.hidden = ""
-        output.dataset_collectors = []
+        output.dataset_collector_descriptions = []
         output.actions = ToolOutputActionGroup( output, None )
         return output
 
@@ -129,6 +138,9 @@ class CwlToolSource(ToolSource):
             requirements=[],  # TODO: enable via extensions
             containers=containers,
         ))
+
+    def parse_profile(self):
+        return "16.04"
 
 
 class CwlPageSource(PageSource):

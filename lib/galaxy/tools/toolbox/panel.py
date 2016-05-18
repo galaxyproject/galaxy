@@ -53,10 +53,11 @@ class ToolSection( Dictifiable, HasPanelItems, object ):
     def __init__( self, item=None ):
         """ Build a ToolSection from an ElementTree element or a dictionary.
         """
-        f = lambda item, val: item is not None and item.get( val ) or ''
-        self.name = f( item, 'name' )
-        self.id = f( item, 'id' )
-        self.version = f( item, 'version' )
+        if item is None:
+            item = dict()
+        self.name = item.get('name') or ''
+        self.id = item.get('id') or ''
+        self.version = item.get('version') or ''
         self.elems = ToolPanelElements()
 
     def copy( self ):

@@ -40,6 +40,9 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
         assert DEFAULT_TOOL_OUTPUT in datasets
         self.assertEquals( len( datasets[ DEFAULT_TOOL_OUTPUT ] ), 2 )
 
+        # Test default order of collection.
+        assert list(datasets[ DEFAULT_TOOL_OUTPUT ].keys()) == ["test1", "test2"]
+
         created_hda_1 = datasets[ DEFAULT_TOOL_OUTPUT ][ "test1" ]
         self.app.object_store.assert_created_with_path( created_hda_1.dataset, path1 )
 
@@ -48,7 +51,53 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
 
         # Test default metadata stuff
         assert created_hda_1.visible
+
+        # Since discovered_datasets not specified, older name based pattern
+        # didn't result in a dbkey being set.
         assert created_hda_1.dbkey == "?"
+
+    def test_collect_sorted_reverse( self ):
+        self._replace_output_collectors( '''<output>
+            <discover_datasets pattern="__name__" directory="subdir_for_name_discovery" sort_by="reverse_filename" ext="txt" />
+        </output>''')
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="test1" )
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="test2" )
+
+        datasets = self._collect()
+        assert DEFAULT_TOOL_OUTPUT in datasets
+
+        # Test default order of collection.
+        assert list(datasets[ DEFAULT_TOOL_OUTPUT ].keys()) == ["test2", "test1"]
+
+    def test_collect_sorted_name( self ):
+        self._replace_output_collectors( '''<output>
+            <discover_datasets pattern="[abc](?P&lt;name&gt;.*)" directory="subdir_for_name_discovery" sort_by="name" ext="txt" />
+        </output>''')
+        # Setup filenames in reverse order and ensure name is used as key.
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="ctest1" )
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="btest2" )
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="atest3" )
+
+        datasets = self._collect()
+        assert DEFAULT_TOOL_OUTPUT in datasets
+
+        # Test default order of collection.
+        assert list(datasets[ DEFAULT_TOOL_OUTPUT ].keys()) == ["test1", "test2", "test3"]
+
+    def test_collect_sorted_numeric( self ):
+        self._replace_output_collectors( '''<output>
+            <discover_datasets pattern="[abc](?P&lt;name&gt;.*)" directory="subdir_for_name_discovery" sort_by="numeric_name" ext="txt" />
+        </output>''')
+        # Setup filenames in reverse order and ensure name is used as key.
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="c1" )
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="b10" )
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="a100" )
+
+        datasets = self._collect()
+        assert DEFAULT_TOOL_OUTPUT in datasets
+
+        # Test default order of collection.
+        assert list(datasets[ DEFAULT_TOOL_OUTPUT ].keys()) == ["1", "10", "100"]
 
     def test_collect_hidden( self ):
         self._setup_extra_file( visible="hidden" )
@@ -125,6 +174,8 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
         created_hda = primary_outputs.values()[ 0 ]
         assert "foo.txt" in created_hda.name
         assert created_hda.ext == "txt"
+        assert created_hda.dbkey == "btau"
+        assert created_hda.dbkey == "btau"
 
     def test_name_and_ext_pattern( self ):
         self._replace_output_collectors( '''<output><discover_datasets pattern="__name_and_ext__" directory="subdir" /></output>''' )
@@ -134,6 +185,8 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
         assert len( primary_outputs ) == 2
         assert primary_outputs[ "foo1" ].ext == "txt"
         assert primary_outputs[ "foo2" ].ext == "tabular"
+        assert primary_outputs[ "foo1" ].dbkey == "btau"
+        assert primary_outputs[ "foo2" ].dbkey == "btau"
 
     def test_custom_pattern( self ):
         # Hypothetical oral metagenomic classifier that populates a directory
@@ -196,7 +249,7 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
     def _collect( self, job_working_directory=None ):
         if not job_working_directory:
             job_working_directory = self.test_directory
-        return self.tool.collect_primary_datasets( self.outputs, job_working_directory, "txt" )
+        return self.tool.collect_primary_datasets( self.outputs, job_working_directory, "txt", input_dbkey="btau" )
 
     def _replace_output_collectors( self, xml_str ):
         # Rewrite tool as if it had been created with output containing

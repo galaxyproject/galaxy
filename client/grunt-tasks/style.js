@@ -17,7 +17,6 @@ module.exports = function( grunt ){
             'autocomplete_tagging',
             'embed_item',
             'iphone',
-            'masthead',
             'library',
             'trackster',
             'circster',
@@ -68,6 +67,9 @@ module.exports = function( grunt ){
 
     // remove tmp files
     grunt.config( 'clean', {
+        options : {
+            force: true
+        },
         clean : [
             fmt( '%s/tmp-site-config.less', lessPath )
         ]

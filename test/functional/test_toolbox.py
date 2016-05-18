@@ -1,3 +1,4 @@
+import logging
 import new
 import sys
 from base.twilltestcase import TwillTestCase
@@ -6,11 +7,12 @@ from base.interactor import build_interactor, stage_data_in_history, RunToolExce
 from base.instrument import register_job_data
 from galaxy.tools import DataManagerTool
 from galaxy.util import bunch
-import logging
+
 try:
     from nose.tools import nottest
 except ImportError:
-    nottest = lambda x: x
+    def nottest(x):
+        return x
 
 log = logging.getLogger( __name__ )
 
@@ -209,6 +211,14 @@ class ToolTestCase( TwillTestCase ):
                     if expected_collection_type != collection_type:
                         template = "Expected output collection [%s] to be of type [%s], was of type [%s]."
                         message = template % (name, expected_collection_type, collection_type)
+                        raise AssertionError(message)
+
+                expected_element_count = output_collection_def.count
+                if expected_element_count:
+                    actual_element_count = len(data_collection[ "elements" ])
+                    if expected_element_count != actual_element_count:
+                        template = "Expected output collection [%s] to have %s elements, but it had %s."
+                        message = template % (name, expected_element_count, actual_element_count)
                         raise AssertionError(message)
 
                 def verify_elements( element_objects, element_tests ):

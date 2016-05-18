@@ -8,7 +8,7 @@ log = logging.getLogger( __name__ )
 import os
 import StringIO
 import unicodedata
-from basic import ToolParameter
+from six import text_type
 from galaxy.datatypes import sniff
 from galaxy.util import inflector
 from galaxy.util import relpath
@@ -32,7 +32,7 @@ class Group( object, Dictifiable ):
     def value_to_basic( self, value, app ):
         """
         Convert value to a (possibly nested) representation using only basic
-        types (dict, list, tuple, str, unicode, int, long, float, bool, None)
+        types (dict, list, tuple, string_types, int, long, float, bool, None)
         """
         return value
 
@@ -43,7 +43,7 @@ class Group( object, Dictifiable ):
         """
         return value
 
-    def get_initial_value( self, trans, context, history=None ):
+    def get_initial_value( self, trans, context ):
         """
         Return the initial state/value for this group
         """
@@ -111,21 +111,12 @@ class Repeat( Group ):
                 raise e
         return rval
 
-    def visit_inputs( self, prefix, value, callback ):
-        for i, d in enumerate( value ):
-            for input in self.inputs.itervalues():
-                new_prefix = prefix + "%s_%d|" % ( self.name, i )
-                if isinstance( input, ToolParameter ):
-                    callback( new_prefix, input, d[input.name], parent=d )
-                else:
-                    input.visit_inputs( new_prefix, d[input.name], callback )
-
-    def get_initial_value( self, trans, context, history=None ):
+    def get_initial_value( self, trans, context ):
         rval = []
         for i in range( self.default ):
             rval_dict = { '__index__': i}
             for input in self.inputs.itervalues():
-                rval_dict[ input.name ] = input.get_initial_value( trans, context, history=history )
+                rval_dict[ input.name ] = input.get_initial_value( trans, context )
             rval.append( rval_dict )
         return rval
 
@@ -175,18 +166,11 @@ class Section( Group ):
                 raise e
         return rval
 
-    def visit_inputs( self, prefix, value, callback ):
-        for input in self.inputs.itervalues():
-            if isinstance( input, ToolParameter ):
-                callback( prefix, input, value[input.name], parent=value )
-            else:
-                input.visit_inputs( prefix, value[input.name], callback )
-
-    def get_initial_value( self, trans, context, history=None ):
+    def get_initial_value( self, trans, context ):
         rval = {}
         child_context = ExpressionContext( rval, context )
         for child_input in self.inputs.itervalues():
-            rval[ child_input.name ] = child_input.get_initial_value( trans, child_context, history=history )
+            rval[ child_input.name ] = child_input.get_initial_value( trans, child_context )
         return rval
 
     def to_dict( self, trans, view='collection', value_mapper=None ):
@@ -287,23 +271,14 @@ class UploadDataset( Group ):
             rval.append( rval_dict )
         return rval
 
-    def visit_inputs( self, prefix, value, callback ):
-        for i, d in enumerate( value ):
-            for input in self.inputs.itervalues():
-                new_prefix = prefix + "%s_%d|" % ( self.name, i )
-                if isinstance( input, ToolParameter ):
-                    callback( new_prefix, input, d[input.name], parent=d )
-                else:
-                    input.visit_inputs( new_prefix, d[input.name], callback )
-
-    def get_initial_value( self, trans, context, history=None ):
+    def get_initial_value( self, trans, context ):
         d_type = self.get_datatype( trans, context )
         rval = []
         for i, ( composite_name, composite_file ) in enumerate( d_type.writable_files.iteritems() ):
             rval_dict = {}
             rval_dict['__index__'] = i  # create __index__
             for input in self.inputs.itervalues():
-                rval_dict[ input.name ] = input.get_initial_value( trans, context, history=history )  # input.value_to_basic( d[input.name], app )
+                rval_dict[ input.name ] = input.get_initial_value( trans, context )
             rval.append( rval_dict )
         return rval
 
@@ -323,11 +298,9 @@ class UploadDataset( Group ):
                 if not dataset_info:
                     dataset_info = 'uploaded file'
                 return Bunch( type='file', path=data_file['local_filename'], name=dataset_name )
-                # return 'file', data_file['local_filename'], get_file_name( data_file.filename ), dataset_name, dataset_info
             except:
                 # The uploaded file should've been persisted by the upload tool action
                 return Bunch( type=None, path=None, name=None )
-                # return None, None, None, None, None
 
         def get_url_paste_urls_or_filename( group_incoming, override_name=None, override_info=None ):
             url_paste_file = group_incoming.get( 'url_paste', None )
@@ -347,7 +320,6 @@ class UploadDataset( Group ):
                             if not dataset_info:
                                 dataset_info = 'uploaded url'
                             yield Bunch( type='url', path=line, name=dataset_name )
-                            # yield ( 'url', line, precreated_name, dataset_name, dataset_info )
                 else:
                     dataset_name = dataset_info = precreated_name = 'Pasted Entry'  # we need to differentiate between various url pastes here
                     if override_name:
@@ -355,7 +327,6 @@ class UploadDataset( Group ):
                     if override_info:
                         dataset_info = override_info
                     yield Bunch( type='file', path=url_paste_file, name=precreated_name )
-                    # yield ( 'file', url_paste_file, precreated_name, dataset_name, dataset_info )
 
         def get_one_filename( context ):
             data_file = context['file_data']
@@ -435,7 +406,7 @@ class UploadDataset( Group ):
             if ftp_files is not None:
                 # Normalize input paths to ensure utf-8 encoding is normal form c.
                 # This allows for comparison when the filesystem uses a different encoding than the browser.
-                ftp_files = [unicodedata.normalize('NFC', f) for f in ftp_files if isinstance(f, unicode)]
+                ftp_files = [unicodedata.normalize('NFC', f) for f in ftp_files if isinstance(f, text_type)]
                 if trans.user is None:
                     log.warning( 'Anonymous user passed values in ftp_files: %s' % ftp_files )
                     ftp_files = []
@@ -447,7 +418,7 @@ class UploadDataset( Group ):
                             path = relpath( os.path.join( dirpath, filename ), user_ftp_dir )
                             if not os.path.islink( os.path.join( dirpath, filename ) ):
                                 # Normalize filesystem paths
-                                if isinstance(path, unicode):
+                                if isinstance(path, text_type):
                                     valid_files.append(unicodedata.normalize('NFC', path ))
                                 else:
                                     valid_files.append(path)
@@ -556,12 +527,9 @@ class Conditional( Group ):
     def label( self ):
         return "Conditional (%s)" % self.name
 
-    def get_current_case( self, value, trans ):
+    def get_current_case( self, value ):
         # Convert value to user representation
-        if isinstance( value, bool ):
-            str_value = self.test_param.to_param_dict_string( value )
-        else:
-            str_value = self.test_param.filter_value( value, trans )
+        str_value = self.test_param.to_param_dict_string( value )
         # Find the matching case
         for index, case in enumerate( self.cases ):
             if str_value == case.value:
@@ -570,9 +538,9 @@ class Conditional( Group ):
 
     def value_to_basic( self, value, app ):
         rval = dict()
-        current_case = rval['__current_case__'] = value['__current_case__']
         rval[ self.test_param.name ] = self.test_param.value_to_basic( value[ self.test_param.name ], app )
-        for input in self.cases[current_case].inputs.itervalues():
+        current_case = rval[ '__current_case__' ] = self.get_current_case( value[ self.test_param.name ] )
+        for input in self.cases[ current_case ].inputs.itervalues():
             if input.name in value:  # parameter might be absent in unverified workflow
                 rval[ input.name ] = input.value_to_basic( value[ input.name ], app )
         return rval
@@ -580,44 +548,27 @@ class Conditional( Group ):
     def value_from_basic( self, value, app, ignore_errors=False ):
         rval = dict()
         try:
-            current_case = rval['__current_case__'] = value['__current_case__']
-            # Test param
-            if ignore_errors and self.test_param.name not in value:
-                # If ignoring errors, do nothing. However this is potentially very
-                # problematic since if we are missing the value of test param,
-                # the entire conditional is wrong.
-                pass
-            else:
-                rval[ self.test_param.name ] = self.test_param.value_from_basic( value[ self.test_param.name ], app, ignore_errors )
+            rval[ self.test_param.name ] = self.test_param.value_from_basic( value.get( self.test_param.name ), app, ignore_errors )
+            current_case = rval[ '__current_case__' ] = self.get_current_case( rval[ self.test_param.name ] )
             # Inputs associated with current case
-            for input in self.cases[current_case].inputs.itervalues():
-                if ignore_errors and input.name not in value:
-                    # If we do not have a value, and are ignoring errors, we simply
-                    # do nothing. There will be no value for the parameter in the
-                    # conditional's values dictionary.
-                    pass
-                else:
+            for input in self.cases[ current_case ].inputs.itervalues():
+                # If we do not have a value, and are ignoring errors, we simply
+                # do nothing. There will be no value for the parameter in the
+                # conditional's values dictionary.
+                if not ignore_errors or input.name in value:
                     rval[ input.name ] = input.value_from_basic( value[ input.name ], app, ignore_errors )
         except Exception, e:
             if not ignore_errors:
                 raise e
         return rval
 
-    def visit_inputs( self, prefix, value, callback ):
-        current_case = value['__current_case__']
-        for input in self.cases[current_case].inputs.itervalues():
-            if isinstance( input, ToolParameter ):
-                callback( prefix, input, value[input.name], parent=value )
-            else:
-                input.visit_inputs( prefix, value[input.name], callback )
-
-    def get_initial_value( self, trans, context, history=None ):
+    def get_initial_value( self, trans, context ):
         # State for a conditional is a plain dictionary.
         rval = {}
         # Get the default value for the 'test element' and use it
         # to determine the current case
-        test_value = self.test_param.get_initial_value( trans, context, history=history )
-        current_case = self.get_current_case( test_value, trans )
+        test_value = self.test_param.get_initial_value( trans, context )
+        current_case = self.get_current_case( test_value )
         # Store the current case in a special value
         rval['__current_case__'] = current_case
         # Store the value of the test element
@@ -625,7 +576,7 @@ class Conditional( Group ):
         # Fill in state for selected case
         child_context = ExpressionContext( rval, context )
         for child_input in self.cases[current_case].inputs.itervalues():
-            rval[ child_input.name ] = child_input.get_initial_value( trans, child_context, history=history )
+            rval[ child_input.name ] = child_input.get_initial_value( trans, child_context )
         return rval
 
     def to_dict( self, trans, view='collection', value_mapper=None ):
@@ -637,10 +588,6 @@ class Conditional( Group ):
         cond_dict[ "cases" ] = map( nested_to_dict, self.cases )
         cond_dict[ "test_param" ] = nested_to_dict( self.test_param )
         return cond_dict
-
-    @property
-    def is_job_resource_conditional(self):
-        return self.name == "__job_resource"
 
 
 class ConditionalWhen( object, Dictifiable ):

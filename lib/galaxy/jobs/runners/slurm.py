@@ -20,6 +20,7 @@ SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS = [': Exceeded job memory limit at 
 
 class SlurmJobRunner( DRMAAJobRunner ):
     runner_name = "SlurmRunner"
+    restrict_job_name_length = False
 
     def _complete_terminal_job( self, ajs, drmaa_state, **kwargs ):
         def __get_jobinfo():
@@ -74,6 +75,9 @@ class SlurmJobRunner( DRMAAJobRunner ):
                     else:
                         log.info( '(%s/%s) Job was cancelled via slurm (e.g. with scancel(1))', ajs.job_wrapper.get_id_tag(), ajs.job_id )
                         ajs.fail_message = "This job failed because it was cancelled by an administrator."
+                elif job_info['JobState'] in ('PENDING', 'RUNNING'):
+                    log.warning( '(%s/%s) Job was reported by drmaa as terminal but scontrol(1) JobState is: %s, returning to monitor queue', ajs.job_wrapper.get_id_tag(), ajs.job_id, job_info['JobState'] )
+                    return True
                 else:
                     log.warning( '(%s/%s) Job failed due to unknown reasons, JobState was: %s', ajs.job_wrapper.get_id_tag(), ajs.job_id, job_info['JobState'] )
                     ajs.fail_message = "This job failed for reasons that could not be determined."
@@ -84,7 +88,7 @@ class SlurmJobRunner( DRMAAJobRunner ):
                     return
             except Exception as e:
                 log.exception( '(%s/%s) Unable to inspect failed slurm job using scontrol, job will be unconditionally failed: %s', ajs.job_wrapper.get_id_tag(), ajs.job_id, e )
-                super( SlurmJobRunner, self )._complete_terminal_job( ajs, drmaa_state=drmaa_state )
+                return super( SlurmJobRunner, self )._complete_terminal_job( ajs, drmaa_state=drmaa_state )
         if drmaa_state == self.drmaa_job_states.DONE:
             with open(ajs.error_file, 'r+') as f:
                 lines = f.readlines()

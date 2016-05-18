@@ -33,7 +33,6 @@ steps:
       seed_source:
         seed_source_selector: set_seed
         seed: asdf
-        __current_case__: 1
 """)
         workflow = self._get("workflows/%s/download" % workflow_id).json()
 
@@ -180,7 +179,6 @@ steps:
             seed_source:
               seed_source_selector: set_seed
               seed: asdf
-              __current_case__: 1
     label: nested_workflow
     connect:
       inner_input: first_cat#out_file1

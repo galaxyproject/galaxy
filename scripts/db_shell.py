@@ -15,25 +15,19 @@ import decimal
 import os.path
 import sys
 
-db_shell_path = __file__
-new_path = [ os.path.join( os.path.dirname( db_shell_path ), os.pardir, "lib" ) ]
-new_path.extend( sys.path[1:] )  # remove scripts/ from the path
-sys.path = new_path
-
-from galaxy.model.orm.scripts import get_config
-
-
-db_url = get_config( sys.argv )['db_url']
-
-
 # Setup DB scripting environment
 from sqlalchemy import *  # noqa
 from sqlalchemy.orm import *  # noqa
 from sqlalchemy.exc import *  # noqa
 
-from galaxy.model.mapping import init
-sa_session = init( '/tmp/', db_url ).context
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
+
 from galaxy.model import *  # noqa
+from galaxy.model.mapping import init
+from galaxy.model.orm.scripts import get_config
+
+db_url = get_config( sys.argv )['db_url']
+sa_session = init( '/tmp/', db_url ).context
 
 
 # Helper function for debugging sqlalchemy queries...

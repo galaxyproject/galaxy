@@ -1,7 +1,8 @@
 #!/usr/bin/env python
-import sys
 import argparse
 import os
+import sys
+
 from bioblend import galaxy
 
 

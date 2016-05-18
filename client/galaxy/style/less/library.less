@@ -1,6 +1,14 @@
 @import "galaxy_bootstrap/variables.less";
 @import "galaxy_variables.less";
 
+.library_style_container .fa{
+    font-size: 12px;
+}
+.library_style_container .fa-globe{
+    font-size: initial;
+    margin-left: 0.6em;
+}
+
 .libraryRow {
     background-color: @table-heading-bg;
 }
@@ -30,7 +38,7 @@ li.datasetRow:hover
 }
 
 td.right-center {
-    vertical-align: middle !important; 
+    vertical-align: middle !important;
     text-align: right;
 }
 
@@ -44,7 +52,7 @@ td.right-center {
 .library_table {
     td {
         border-top:1px solid #5f6990 !important;
-    } 
+    }
     th {
         border-bottom: 2px solid #5f6990 !important;
     }
@@ -56,10 +64,10 @@ td.right-center {
     }
 }
 .library_style_container {
-    width: 95%; 
-    margin: auto; 
-    margin-top:2em; 
-    overflow: auto !important; 
+    width: 95%;
+    margin: auto;
+    margin-top:2em;
+    overflow: auto !important;
     tr {
         height: 32px;
     }
@@ -99,6 +107,9 @@ a.dark
     td{
         border: none !important;
     }
+    .dataset-first-column{
+        width: 30%;
+    }
 }
 
 th.button_heading{
@@ -125,6 +136,12 @@ th.button_heading{
     }
     .toolbar-item{
         margin-left: 1em;
+    }
+}
+
+#libraries_element, #folder_items_element{
+    button{
+        margin-left: 0.5em;
     }
 }
 
@@ -219,4 +236,22 @@ span.expandLink {
 }
 .library-paginator {
     margin-left: 2em;
+}
+.paginator-bottom{
+    width: 27em;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 2em;
+}
+.import-type-switch{
+    text-decoration: underline;
+}
+.libimport-select-none,
+.libimport-select-all{
+    margin-left: 0.5em;
+}
+.library-modal-item{
+    width:90%;
+    margin-left: 1em;
+    margin-right: 1em;
 }

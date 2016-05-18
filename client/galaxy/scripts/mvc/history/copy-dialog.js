@@ -3,7 +3,8 @@ define([
     "utils/localization"
 ], function( MODAL, _l ){
 
-"use strict";
+'use strict';
+
 //==============================================================================
 /**
  * A dialog/modal that allows copying a user history or 'importing' from user

@@ -312,7 +312,7 @@ class MetadataGenerator( object ):
         readme_file_names = readme_util.get_readme_file_names( str( self.repository.name ) )
         if self.app.name == 'galaxy':
             # Shed related tool panel configs are only relevant to Galaxy.
-            metadata_dict = { 'shed_config_filename' : self.shed_config_dict.get( 'config_filename' ) }
+            metadata_dict = { 'shed_config_filename': self.shed_config_dict.get( 'config_filename' ) }
         else:
             metadata_dict = {}
         readme_files = []

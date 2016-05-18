@@ -5,6 +5,7 @@ import logging
 import operator
 import re
 
+from six import string_types, text_type
 from sqlalchemy import true
 
 from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
@@ -221,7 +222,7 @@ class BaseAPIController( BaseController ):
     def _parse_serialization_params( self, kwd, default_view ):
         view = kwd.get( 'view', None )
         keys = kwd.get( 'keys' )
-        if isinstance( keys, basestring ):
+        if isinstance( keys, string_types ):
             keys = keys.split( ',' )
         return dict( view=view, keys=keys, default_view=default_view )
 
@@ -373,11 +374,11 @@ class ExportsHistoryMixin:
 
     def queue_history_export( self, trans, history, gzip=True, include_hidden=False, include_deleted=False ):
         # Convert options to booleans.
-        if isinstance( gzip, basestring ):
+        if isinstance( gzip, string_types ):
             gzip = ( gzip in [ 'True', 'true', 'T', 't' ] )
-        if isinstance( include_hidden, basestring ):
+        if isinstance( include_hidden, string_types ):
             include_hidden = ( include_hidden in [ 'True', 'true', 'T', 't' ] )
-        if isinstance( include_deleted, basestring ):
+        if isinstance( include_deleted, string_types ):
             include_deleted = ( include_deleted in [ 'True', 'true', 'T', 't' ] )
 
         # Run job to do export.
@@ -1563,7 +1564,7 @@ class UsesFormDefinitionsMixin:
                     else:
                         # Form was submitted via refresh_on_change
                         widget.value = 'new'
-                elif value == unicode( 'none' ):
+                elif value == text_type( 'none' ):
                     widget.value = ''
                 else:
                     widget.value = value

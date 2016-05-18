@@ -10,8 +10,7 @@ import optparse
 import os
 import sys
 import tarfile
-
-from galaxy.util.json import dumps, loads
+from json import dumps, loads
 
 
 def get_dataset_filename( name, ext, hid ):

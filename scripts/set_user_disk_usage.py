@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-
 import os
 import sys
 from ConfigParser import ConfigParser
 from optparse import OptionParser
 
-sys.path.insert( 1, os.path.join( os.path.dirname( __file__ ), os.pardir, 'lib' ) )
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
 import galaxy.config
 from galaxy.model.util import pgcalc

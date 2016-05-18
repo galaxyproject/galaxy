@@ -3,8 +3,8 @@ Mixins for transaction-like objects.
 """
 
 import os
+from json import dumps
 
-from galaxy.util.json import dumps
 from galaxy.util import bunch
 
 

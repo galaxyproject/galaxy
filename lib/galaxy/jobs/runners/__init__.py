@@ -89,8 +89,11 @@ class BaseJobRunner( object ):
                 return
             # id and name are collected first so that the call of method() is the last exception.
             try:
-                # arg should be a JobWrapper/TaskWrapper
-                job_id = arg.get_id_tag()
+                if isinstance(arg, AsynchronousJobState):
+                    job_id = arg.job_wrapper.get_id_tag()
+                else:
+                    # arg should be a JobWrapper/TaskWrapper
+                    job_id = arg.get_id_tag()
             except:
                 job_id = 'unknown'
             try:
@@ -169,9 +172,9 @@ class BaseJobRunner( object ):
                 include_metadata=include_metadata,
                 include_work_dir_outputs=include_work_dir_outputs,
             )
-        except:
+        except Exception as e:
             log.exception("(%s) Failure preparing job" % job_id)
-            job_wrapper.fail( "failure preparing job", exception=True )
+            job_wrapper.fail( e.message if hasattr( e, 'message' ) else "Job preparation failed", exception=True )
             return False
 
         if not job_wrapper.runner_command_line:
@@ -227,7 +230,7 @@ class BaseJobRunner( object ):
                 if hda_tool_output and hda_tool_output.from_work_dir:
                     # Copy from working dir to HDA.
                     # TODO: move instead of copy to save time?
-                    source_file = os.path.join( job_working_directory, hda_tool_output.from_work_dir )
+                    source_file = os.path.join( job_working_directory, 'working', hda_tool_output.from_work_dir )
                     destination = job_wrapper.get_output_destination( output_paths[ dataset.dataset_id ] )
                     if in_directory( source_file, job_working_directory ):
                         output_pairs.append( ( source_file, destination ) )
@@ -273,6 +276,7 @@ class BaseJobRunner( object ):
             log.debug( 'executing external set_meta script for job %d: %s' % ( job_wrapper.job_id, external_metadata_script ) )
             external_metadata_proc = subprocess.Popen( args=external_metadata_script,
                                                        shell=True,
+                                                       cwd=job_wrapper.working_directory,
                                                        env=os.environ,
                                                        preexec_fn=os.setpgrp )
             job_wrapper.external_output_metadata.set_job_runner_external_pid( external_metadata_proc.pid, self.sa_session )
@@ -322,7 +326,7 @@ class BaseJobRunner( object ):
         compute_job_directory=None
     ):
         if not compute_working_directory:
-            compute_working_directory = job_wrapper.working_directory
+            compute_working_directory = job_wrapper.tool_working_directory
 
         if not compute_tool_directory:
             compute_tool_directory = job_wrapper.tool.tool_dir
@@ -583,7 +587,8 @@ class AsynchronousJobRunner( BaseJobRunner ):
             exit_code = 0
 
         # clean up the job files
-        if self.app.config.cleanup_job == "always" or ( not stderr and self.app.config.cleanup_job == "onsuccess" ):
+        cleanup_job = job_state.job_wrapper.cleanup_job
+        if cleanup_job == "always" or ( not stderr and cleanup_job == "onsuccess" ):
             job_state.cleanup()
 
         try:
@@ -600,7 +605,7 @@ class AsynchronousJobRunner( BaseJobRunner ):
         # something necessary
         if not job_state.runner_state_handled:
             job_state.job_wrapper.fail( getattr( job_state, 'fail_message', 'Job failed' ) )
-            if self.app.config.cleanup_job == "always":
+            if job_state.job_wrapper.cleanup_job == "always":
                 job_state.cleanup()
 
     def mark_as_finished(self, job_state):

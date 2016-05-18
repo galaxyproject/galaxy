@@ -7,7 +7,7 @@ import time
 from sqlalchemy import and_, Boolean, Column, DateTime, false, ForeignKey, Integer, MetaData, not_, Numeric, Table, TEXT, true
 from sqlalchemy.orm import backref, mapper, relation, scoped_session, sessionmaker
 
-from galaxy.datatypes.metadata import MetadataCollection
+from galaxy.model.metadata import MetadataCollection
 from galaxy.model.custom_types import MetadataType, TrimmedString
 from galaxy.util.bunch import Bunch
 

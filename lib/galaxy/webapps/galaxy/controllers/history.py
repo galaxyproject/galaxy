@@ -2,6 +2,7 @@ import logging
 import urllib
 
 from markupsafe import escape
+from six import string_types
 from sqlalchemy import and_, false, func, null, true
 from sqlalchemy.orm import eagerload_all
 
@@ -37,18 +38,23 @@ class HistoryListGrid( grids.Grid ):
     # Custom column types
     class DatasetsByStateColumn( grids.GridColumn ):
         def get_value( self, trans, grid, history ):
-            state_counts = {
-                'ok' : 0,
-                'running' : 0,
-                'queued' : 0,
-                'error' : 0,
-            }
-            for hda in history.datasets:
-                if hda.visible and not hda.deleted and hda.state in state_counts.keys():
-                    state_counts[ hda.state ] += 1
+            # States to show in column.
+            states_to_show = ( 'ok', 'running', 'queued', 'new', 'error' )
 
+            # Get dataset counts for each state in a state-count dictionary.
+            state_counts = dict( ( state, count ) for state, count in
+                                 trans.sa_session.query( model.Dataset.state, func.count(model.Dataset.state) )
+                                      .join( model.HistoryDatasetAssociation )
+                                      .group_by( model.Dataset.state )
+                                      .filter( model.HistoryDatasetAssociation.history_id == history.id,
+                                               model.HistoryDatasetAssociation.visible == true(),
+                                               model.HistoryDatasetAssociation.deleted == false(),
+                                               model.Dataset.state.in_(states_to_show) )
+                                 )
+
+            # Create HTML.
             rval = ''
-            for state in state_counts.keys():
+            for state in states_to_show:
                 count = state_counts.get( state )
                 if count:
                     rval += '<div class="count-box state-color-%s">%s</div> ' % (state, count)
@@ -1331,7 +1337,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             new_name = name[i]
 
             # skip if name is empty
-            if not isinstance( new_name, basestring ) or not new_name.strip():
+            if not isinstance( new_name, string_types ) or not new_name.strip():
                 change_msgs.append( "You must specify a valid name for History: " + cur_name )
                 continue
 

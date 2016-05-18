@@ -1071,6 +1071,46 @@
     %>
 </%def>
 
+<%def name="render_tool_dependency_resolver( resolver_dependencies )">
+    <tr class="datasetRow">
+        <td style="padding-left: 20 px;">
+            <table class="grid" id="module_resolver_environment">
+               %if resolver_dependencies['model_class'] == 'NullDependency':
+                   <tr>
+                        <td><b> Dependency was not resolved by any resolver module.</b></td>
+                   </tr>
+               %else:
+                   <tr>
+                       <td><b>Dependency Resolver </b></td>
+                       <td> ${resolver_dependencies['model_class'] | h}</td>
+                   </tr>
+                   <tr>
+                       <td><b>Exact </b></td>
+                       <td> ${resolver_dependencies['exact'] | h}</td>
+                   </tr>
+                   <tr>
+                       <td><b>Dependency Type</b></td>
+                      <td> ${resolver_dependencies['dependency_type'] | h}</td>
+                   </tr>
+               %endif
+            </table>
+        </td>
+    </tr>
+</%def>
+
+<%def name="render_resolver_dependency_items( resolver_dependencies )">
+    %if resolver_dependencies:
+        <div class="toolForm">
+            <div class="toolFormTitle">Dependency Resolver Details</div>
+            <div class="toolFormBody">
+                <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="module_resolvers">
+                    ${render_tool_dependency_resolver( resolver_dependencies)}
+                </table>
+            </div>
+        </div>
+    %endif
+</%def>
+
 <%def name="render_repository_items( metadata, containers_dict, can_set_metadata=False, render_repository_actions_for='tool_shed' )">
     <%
         from tool_shed.util.encoding_util import tool_shed_encode

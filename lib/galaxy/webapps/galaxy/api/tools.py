@@ -1,21 +1,17 @@
+import logging
 import urllib
-
-from galaxy import exceptions
-from galaxy import web, util
-from galaxy import managers
-from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesVisualizationMixin
-from galaxy.visualization.genomes import GenomeRegion
-from galaxy.util.json import dumps
-from galaxy.managers.collections_util import dictify_dataset_collection_instance
+from json import dumps
 
 import galaxy.queue_worker
+from galaxy import exceptions, managers, util, web
+from galaxy.managers.collections_util import dictify_dataset_collection_instance
+from galaxy.visualization.genomes import GenomeRegion
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
+from galaxy.web.base.controller import BaseAPIController
+from galaxy.web.base.controller import UsesVisualizationMixin
 
-
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -225,6 +221,11 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         tool = trans.app.toolbox.get_tool( payload[ 'tool_id' ] , tool_version ) if 'tool_id' in payload else None
         if not tool or not tool.allow_user_access( trans.user ):
             raise exceptions.MessageException( 'Tool not found or not accessible.' )
+        if trans.app.config.user_activation_on:
+            if not trans.user:
+                log.warning( "Anonymous user attempts to execute tool, but account activation is turned on." )
+            elif not trans.user.active:
+                log.warning( "User \"%s\" attempts to execute tool, but account activation is turned on and user account is not active." % trans.user.email )
 
         # Set running history from payload parameters.
         # History not set correctly as part of this API call for
@@ -258,7 +259,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         # TODO: handle dbkeys
         params = util.Params( inputs, sanitize=False )
         incoming = params.__dict__
-        vars = tool.handle_input( trans, incoming, history=target_history, source='json' )
+        vars = tool.handle_input( trans, incoming, history=target_history )
 
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get( 'out_data', [] )

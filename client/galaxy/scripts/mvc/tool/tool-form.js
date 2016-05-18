@@ -14,7 +14,7 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tool/tool-form-base', 'mvc/tool/to
                             icon     : 'fa-check',
                             tooltip  : 'Execute: ' + options.name + ' (' + options.version + ')',
                             title    : 'Execute',
-                            cls      : 'btn btn-primary',
+                            cls      : 'ui-button btn btn-primary',
                             floating : 'clear',
                             onclick  : function() {
                                 execute_btn.wait();
@@ -57,6 +57,13 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tool/tool-form-base', 'mvc/tool/to
             this.trigger( 'reset' );
             if ( !self.validate( job_def ) ) {
                 Galaxy.emit.debug( 'tool-form::submit()', 'Submission canceled. Validation failed.' );
+                callback && callback();
+                return;
+            }
+            if ( options.action !== Galaxy.root + 'tool_runner/index' ) {
+                var $f = $( '<form/>' ).attr( { action: options.action, method: options.method, enctype: options.enctype } );
+                _.each( job_def.inputs, function( value, key ) { $f.append( $( '<input/>' ).attr( { 'name': key, 'value': value } ) ) } );
+                $f.hide().appendTo( 'body' ).submit().remove();
                 callback && callback();
                 return;
             }

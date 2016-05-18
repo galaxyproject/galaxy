@@ -8,32 +8,30 @@ data library search section for more details.
 Run from the ~/scripts/data_libraries directory:
 %sh build_whoosh_index.sh
 """
-import sys, os, csv, urllib, urllib2, ConfigParser
-    
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] ) # remove scripts/ from the path
-sys.path = new_path
+import ConfigParser
+import os
+import sys
 
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
 # Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether search is enabled.
 try:
     from whoosh.filedb.filestore import FileStorage
-    from whoosh.fields import Schema, STORED, ID, KEYWORD, TEXT
-    from whoosh.index import Index
+    from whoosh.fields import Schema, STORED, TEXT
     whoosh_search_enabled = True
     schema = Schema( id=STORED, name=TEXT, info=TEXT, dbkey=TEXT, message=TEXT )
     import galaxy.model.mapping
     from galaxy import config, model
-    import pkg_resources
-    pkg_resources.require( "SQLAlchemy >= 0.4" )
 except ImportError, e:
     whoosh_search_enabled = False
     schema = None
+
 
 def build_index( sa_session, whoosh_index_dir ):
     storage = FileStorage( whoosh_index_dir )
     index = storage.create_index( schema )
     writer = index.writer()
+
     def to_unicode( a_basestr ):
         if type( a_basestr ) is str:
             return unicode( a_basestr, 'utf-8' )
@@ -50,6 +48,7 @@ def build_index( sa_session, whoosh_index_dir ):
     writer.commit()
     print "Number of active library datasets indexed: ", lddas_indexed
 
+
 def get_lddas( sa_session ):
     for ldda in sa_session.query( model.LibraryDatasetDatasetAssociation ).filter_by( deleted=False ):
         id = ldda.id
@@ -65,6 +64,7 @@ def get_lddas( sa_session ):
         else:
             message = ''
         yield id, name, info, dbkey, message
+
 
 def get_sa_session_and_needed_config_settings( ini_file ):
     conf_parser = ConfigParser.ConfigParser( { 'here' : os.getcwd() } )

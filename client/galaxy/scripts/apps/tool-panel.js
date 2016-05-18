@@ -17,7 +17,6 @@ var ToolPanel = LeftPanel.extend({
 
         // create tool search, tool panel, and tool panel view.
         var tool_search = new Tools.ToolSearch({
-            spinner_url : options.spinner_url,
             search_url  : options.search_url,
             hidden      : false
         });

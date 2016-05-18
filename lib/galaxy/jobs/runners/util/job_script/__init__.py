@@ -4,9 +4,10 @@ import subprocess
 import time
 from pkg_resources import resource_string
 
+from six import text_type
 from galaxy.util import unicodify
 
-DEFAULT_SHELL = '/bin/sh'
+DEFAULT_SHELL = '/bin/bash'
 
 DEFAULT_JOB_FILE_TEMPLATE = Template(
     resource_string(__name__, 'DEFAULT_JOB_FILE_TEMPLATE.sh').decode('UTF-8')
@@ -64,7 +65,7 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     >>> script.startswith('#!/bin/sh\\n#PBS -test\\n')
     False
     >>> script = job_script(working_directory='wd', command='uptime', exit_code_path='ec', headers='#PBS -test')
-    >>> script.startswith('#!/bin/sh\\n#PBS -test\\n')
+    >>> script.startswith('#!/bin/bash\\n\\n#PBS -test\\n')
     True
     >>> script = job_script(working_directory='wd', command='uptime', exit_code_path='ec', slots_statement='GALAXY_SLOTS="$SLURM_JOB_NUM_NODES"')
     >>> script.find('GALAXY_SLOTS="$SLURM_JOB_NUM_NODES"\\nexport GALAXY_SLOTS\\n') > 0
@@ -75,7 +76,7 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     job_instrumenter = kwds.get("job_instrumenter", None)
     if job_instrumenter:
         del kwds["job_instrumenter"]
-        working_directory = kwds["working_directory"]
+        working_directory = kwds.get("metadata_directory", kwds["working_directory"])
         kwds["instrument_pre_commands"] = job_instrumenter.pre_execute_commands(working_directory) or ''
         kwds["instrument_post_commands"] = job_instrumenter.post_execute_commands(working_directory) or ''
 
@@ -95,8 +96,12 @@ def check_script_integrity(config):
 
 
 def write_script(path, contents, config, mode=0o755):
+    dir = os.path.dirname(path)
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
     with open(path, 'w') as f:
-        if isinstance(contents, unicode):
+        if isinstance(contents, text_type):
             contents = contents.encode("UTF-8")
         f.write(contents)
     os.chmod(path, mode)

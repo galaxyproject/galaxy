@@ -17,25 +17,27 @@ from datetime import datetime, timedelta
 from itertools import ifilter, imap
 from string import Template
 from uuid import UUID, uuid4
+from six import string_types
 
 from sqlalchemy import and_, func, not_, or_, true, join, select
 from sqlalchemy.orm import joinedload, object_session, aliased
 from sqlalchemy.ext import hybrid
+from sqlalchemy import types
+from sqlalchemy import type_coerce
 
-import galaxy.datatypes
-import galaxy.datatypes.registry
 import galaxy.model.orm.now
+import galaxy.model.metadata
 import galaxy.security.passwords
 import galaxy.util
-from galaxy.datatypes.metadata import MetadataCollection
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.security import get_permitted_actions
 from galaxy.util import Params, restore_text, send_mail
-from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util import ready_name_for_url, unique_id
-from galaxy.util.bunch import Bunch
+from galaxy.util import unicodify
+from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util.hash_util import new_secure_hash
+from galaxy.util.bunch import Bunch
 from galaxy.util.directory_hash import directory_hash_id
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.framework.helpers import to_unicode
@@ -45,9 +47,7 @@ from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
 
 log = logging.getLogger( __name__ )
 
-datatypes_registry = galaxy.datatypes.registry.Registry()
-# Default Value Required for unit tests
-datatypes_registry.load_datatypes()
+_datatypes_registry = None
 
 # When constructing filters with in for a fixed set of ids, maximum
 # number of items to place in the IN statement. Different databases
@@ -72,12 +72,18 @@ class ConverterDependencyException(Exception):
         return repr(self.value)
 
 
+def _get_datatypes_registry():
+    if _datatypes_registry is None:
+        raise Exception("galaxy.model.set_datatypes_registry must be called before performing certain DatasetInstance operations.")
+    return _datatypes_registry
+
+
 def set_datatypes_registry( d_registry ):
     """
     Set up datatypes_registry
     """
-    global datatypes_registry
-    datatypes_registry = d_registry
+    global _datatypes_registry
+    _datatypes_registry = d_registry
 
 
 class HasName:
@@ -88,8 +94,7 @@ class HasName:
         object. If string, convert to unicode object assuming 'utf-8' format.
         """
         name = self.name
-        if isinstance(name, str):
-            name = unicode(name, 'utf-8')
+        name = unicodify( name, 'utf-8' )
         return name
 
 
@@ -100,18 +105,13 @@ class JobLike:
         self.numeric_metrics = []
 
     def add_metric( self, plugin, metric_name, metric_value ):
-        if isinstance( plugin, str ):
-            plugin = unicode( plugin, 'utf-8' )
-
-        if isinstance( metric_name, str ):
-            metric_name = unicode( metric_name, 'utf-8' )
-
+        plugin = unicodify( plugin, 'utf-8' )
+        metric_name = unicodify( metric_name, 'utf-8' )
         if isinstance( metric_value, numbers.Number ):
             metric = self._numeric_metric( plugin, metric_name, metric_value )
             self.numeric_metrics.append( metric )
         else:
-            if isinstance( metric_value, str ):
-                metric_value = unicode( metric_value, 'utf-8' )
+            metric_value = unicodify( metric_value, 'utf-8' )
             if len( metric_value ) > 1022:
                 # Truncate these values - not needed with sqlite
                 # but other backends must need it.
@@ -135,6 +135,16 @@ class JobLike:
             stderr = galaxy.util.shrink_string_by_size( stderr, galaxy.util.DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
             log.info( "stderr for %s %d is greater than %s, only a portion will be logged to database", type(self), self.id, galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY )
         self.stderr = stderr
+
+    def log_str(self):
+        extra = ""
+        safe_id = getattr(self, "id", None)
+        if safe_id is not None:
+            extra += "id=%s" % safe_id
+        else:
+            extra += "unflushed"
+
+        return "%s[%s,tool_id=%s]" % (self.__class__.__name__, extra, self.tool_id)
 
 
 class User( object, Dictifiable ):
@@ -358,6 +368,15 @@ class Job( object, JobLike, Dictifiable ):
     terminal_states = [ states.OK,
                         states.ERROR,
                         states.DELETED ]
+    #: job states where the job hasn't finished and the model may still change
+    non_ready_states = [
+        states.NEW,
+        states.RESUBMITTED,
+        states.UPLOAD,
+        states.WAITING,
+        states.QUEUED,
+        states.RUNNING,
+    ]
 
     # Please include an accessor (get/set pair) for any new columns/members.
     def __init__( self ):
@@ -685,6 +704,18 @@ class Job( object, JobLike, Dictifiable ):
         self.set_state( final_state )
         if self.workflow_invocation_step:
             self.workflow_invocation_step.update()
+
+    def get_destination_configuration(self, config, key, default=None):
+        """ Get a destination parameter that can be defaulted back
+        in specified config if it needs to be applied globally.
+        """
+        param_unspecified = object()
+        config_value = (self.destination_params or {}).get(key, param_unspecified)
+        if config_value is param_unspecified:
+            config_value = getattr(config, key, param_unspecified)
+        if config_value is param_unspecified:
+            config_value = default
+        return config_value
 
 
 class Task( object, JobLike ):
@@ -1147,7 +1178,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         dataset.history = self
         if genome_build not in [None, '?']:
             self.genome_build = genome_build
-        self.datasets.append( dataset )
+        dataset.history_id = self.id
         return dataset
 
     def add_datasets( self, sa_session, datasets, parent_id=None, genome_build=None, set_hid=True, quota=True, flush=False ):
@@ -1155,9 +1186,13 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         interactions when adding many datasets to history at once.
         """
         all_hdas = all( imap( is_hda, datasets ) )
-        optimize = len( datasets) > 1 and parent_id is None and all_hdas and set_hid and not quota
+        optimize = len( datasets) > 1 and parent_id is None and all_hdas and set_hid
         if optimize:
             self.__add_datasets_optimized( datasets, genome_build=genome_build )
+            if quota and self.user:
+                disk_usage = sum([d.get_total_size() for d in datasets])
+                self.user.adjust_total_disk_usage(disk_usage)
+
             sa_session.add_all( datasets )
             if flush:
                 sa_session.flush()
@@ -1182,7 +1217,8 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             dataset.history = self
             if set_genome:
                 self.genome_build = genome_build
-        self.datasets.extend( datasets )
+        for dataset in datasets:
+            dataset.history_id = self.id
         return datasets
 
     def add_dataset_collection( self, history_dataset_collection, set_hid=True ):
@@ -1395,7 +1431,6 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         assert db_session is not None
         query = db_session.query( content_class ).filter( content_class.table.c.history_id == self.id )
         query = query.order_by( content_class.table.c.hid.asc() )
-        python_filter = None
         deleted = galaxy.util.string_as_bool_or_none( kwds.get( 'deleted', None ) )
         if deleted is not None:
             query = query.filter( content_class.deleted == deleted )
@@ -1408,11 +1443,8 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             if len(ids) < max_in_filter_length:
                 query = query.filter( content_class.id.in_(ids) )
             else:
-                python_filter = lambda content: content.id in ids
-        if python_filter:
-            return ifilter(python_filter, query)
-        else:
-            return query
+                query = ifilter(lambda content: content.id in ids, query)
+        return query
 
     def __collection_contents_iter( self, **kwds ):
         return self.__filter_contents( HistoryDatasetCollectionAssociation, **kwds )
@@ -1609,6 +1641,7 @@ class Dataset( StorableObject ):
     # failed_metadata is only valid as DatasetInstance state currently
 
     non_ready_states = (
+        states.NEW,
         states.UPLOAD,
         states.QUEUED,
         states.RUNNING,
@@ -1859,13 +1892,13 @@ class DatasetInstance( object ):
 
     @property
     def datatype( self ):
-        return datatypes_registry.get_datatype_by_extension( self.extension )
+        return _get_datatypes_registry().get_datatype_by_extension( self.extension )
 
     def get_metadata( self ):
         # using weakref to store parent (to prevent circ ref),
         #   does a Session.clear() cause parent to be invalidated, while still copying over this non-database attribute?
         if not hasattr( self, '_metadata_collection' ) or self._metadata_collection.parent != self:
-            self._metadata_collection = MetadataCollection( self )
+            self._metadata_collection = galaxy.model.metadata.MetadataCollection( self )
         return self._metadata_collection
 
     def set_metadata( self, bunch ):
@@ -1893,7 +1926,7 @@ class DatasetInstance( object ):
 
     def change_datatype( self, new_ext ):
         self.clear_associated_files()
-        datatypes_registry.change_datatype( self, new_ext )
+        _get_datatypes_registry().change_datatype( self, new_ext )
 
     def get_size( self, nice_size=False ):
         """Returns the size of the data on disk"""
@@ -1930,7 +1963,7 @@ class DatasetInstance( object ):
     def get_mime( self ):
         """Returns the mime type of the data"""
         try:
-            return datatypes_registry.get_mimetype_by_extension( self.extension.lower() )
+            return _get_datatypes_registry().get_mimetype_by_extension( self.extension.lower() )
         except AttributeError:
             # extension is None
             return 'data'
@@ -2055,14 +2088,14 @@ class DatasetInstance( object ):
         return None
 
     def get_converter_types(self):
-        return self.datatype.get_converter_types( self, datatypes_registry )
+        return self.datatype.get_converter_types( self, _get_datatypes_registry() )
 
     def can_convert_to(self, format):
         return format in self.get_converter_types()
 
     def find_conversion_destination( self, accepted_formats, **kwd ):
         """Returns ( target_ext, existing converted dataset )"""
-        return self.datatype.find_conversion_destination( self, accepted_formats, datatypes_registry, **kwd )
+        return self.datatype.find_conversion_destination( self, accepted_formats, _get_datatypes_registry(), **kwd )
 
     def add_validation_error( self, validation_error ):
         self.validation_errors.append( validation_error )
@@ -2175,7 +2208,7 @@ class DatasetInstance( object ):
                 data_source = source_list
             else:
                 # Convert.
-                if isinstance( source_list, str ):
+                if isinstance( source_list, string_types ):
                     source_list = [ source_list ]
 
                 # Loop through sources until viable one is found.
@@ -2410,7 +2443,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                      update_time=hda.update_time.isoformat(),
                      data_type=hda.datatype.__class__.__module__ + '.' + hda.datatype.__class__.__name__,
                      genome_build=hda.dbkey,
-                     misc_info=hda.info.strip() if isinstance( hda.info, basestring ) else hda.info,
+                     misc_info=hda.info.strip() if isinstance( hda.info, string_types ) else hda.info,
                      misc_blurb=hda.blurb )
 
         # add tags string list
@@ -2449,6 +2482,18 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
     @property
     def history_content_type( self ):
         return "dataset"
+
+    # TODO: down into DatasetInstance
+    content_type = u'dataset'
+
+    @hybrid.hybrid_property
+    def type_id( self ):
+        return u'-'.join([ self.content_type, str( self.id ) ])
+
+    @type_id.expression
+    def type_id( cls ):
+        return (( type_coerce( cls.content_type, types.Unicode ) + u'-' +
+                  type_coerce( cls.id, types.Unicode ) ).label( 'type_id' ))
 
     def copy_tags_from( self, target_user, source_hda ):
         """
@@ -3211,6 +3256,18 @@ class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnota
     @property
     def history_content_type( self ):
         return "dataset_collection"
+
+    # TODO: down into DatasetCollectionInstance
+    content_type = u'dataset_collection'
+
+    @hybrid.hybrid_property
+    def type_id( self ):
+        return u'-'.join([ self.content_type, str( self.id ) ])
+
+    @type_id.expression
+    def type_id( cls ):
+        return (( type_coerce( cls.content_type, types.Unicode ) + u'-' +
+                  type_coerce( cls.id, types.Unicode ) ).label( 'type_id' ))
 
     def to_dict( self, view='collection' ):
         dict_value = dict(

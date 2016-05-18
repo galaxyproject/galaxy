@@ -15,16 +15,13 @@ database will be constructed.
 .. seealso: galaxy.ini, specifically the settings: database_connection and
 database file
 """
-
-import sys
 import os.path
+import sys
 
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] )  # remove scripts/ from the path
-sys.path = new_path
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
-from galaxy.model.orm.scripts import get_config
 from galaxy.model.migrate.check import create_or_verify_database as create_db
+from galaxy.model.orm.scripts import get_config
 from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as create_install_db
 from galaxy.webapps.tool_shed.model.migrate.check import create_or_verify_database as create_tool_shed_db
 

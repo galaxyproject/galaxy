@@ -1,19 +1,18 @@
 import inspect
-from traceback import format_exc
+import logging
 from functools import wraps
+from json import loads
+from traceback import format_exc
 
 import paste.httpexceptions
+from six import string_types
 
-from galaxy.web.framework import url_for
 from galaxy import util
-from galaxy.exceptions import error_codes
-from galaxy.exceptions import MessageException
-from galaxy.util.json import loads
-from galaxy.util.json import safe_dumps as dumps
+from galaxy.exceptions import error_codes, MessageException
+from galaxy.util.json import safe_dumps
+from galaxy.web.framework import url_for
 
-import logging
 log = logging.getLogger( __name__ )
-
 
 JSON_CONTENT_TYPE = "application/json"
 
@@ -45,7 +44,7 @@ def json( func, **json_kwargs ):
     @wraps(func)
     def call_and_format( self, trans, *args, **kwargs ):
         trans.response.set_content_type( JSON_CONTENT_TYPE )
-        return dumps( func( self, trans, *args, **kwargs ), **json_kwargs )
+        return safe_dumps( func( self, trans, *args, **kwargs ), **json_kwargs )
     if not hasattr( func, '_orig' ):
         call_and_format._orig = func
     return expose( _save_orig_fn( call_and_format, func ) )
@@ -137,9 +136,9 @@ def expose_api( func, to_json=True, user_required=True ):
         try:
             rval = func( self, trans, *args, **kwargs)
             if to_json and trans.debug:
-                rval = dumps( rval, indent=4, sort_keys=True )
+                rval = safe_dumps( rval, indent=4, sort_keys=True )
             elif to_json:
-                rval = dumps( rval )
+                rval = safe_dumps( rval )
             return rval
         except paste.httpexceptions.HTTPException:
             raise  # handled
@@ -163,7 +162,7 @@ def __extract_payload_from_request(trans, func, kwargs):
         for arg in named_args:
             payload.pop(arg, None)
         for k, v in payload.iteritems():
-            if isinstance(v, (str, unicode)):
+            if isinstance(v, string_types):
                 try:
                     payload[k] = loads(v)
                 except:
@@ -257,9 +256,9 @@ def _future_expose_api( func, to_json=True, user_required=True, user_or_session_
         try:
             rval = func( self, trans, *args, **kwargs)
             if to_json and trans.debug:
-                rval = dumps( rval, indent=4, sort_keys=True )
+                rval = safe_dumps( rval, indent=4, sort_keys=True )
             elif to_json:
-                rval = dumps( rval )
+                rval = safe_dumps( rval )
             return rval
         except MessageException as e:
             traceback_string = format_exc()
@@ -333,7 +332,7 @@ def __api_error_response( trans, **kwds ):
         # non-success (i.e. not 200 or 201) has been set, do not override
         # underlying controller.
         response.status = status_code
-    return dumps( error_dict )
+    return safe_dumps( error_dict )
 
 
 def _future_expose_api_anonymous( func, to_json=True ):

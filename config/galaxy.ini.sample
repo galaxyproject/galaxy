@@ -172,7 +172,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # from the Tool Shed will fail.
 #tool_dependency_dir = None
 
-# The dependency resolves config file specifies an ordering and options for how 
+# The dependency resolves config file specifies an ordering and options for how
 # Galaxy resolves tool dependencies (requirement tags in Tool XML). The default
 # ordering is to the use the tool shed for tools installed that way, use local
 # Galaxy packages, and then use conda if available.
@@ -191,7 +191,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Pass debug flag to conda commands.
 #conda_debug = False
 # conda channels to enable by default (http://conda.pydata.org/docs/custom-channels.html)
-#conda_ensure_channels = r,bioconda
+#conda_ensure_channels = r,bioconda,iuc
 # Set to True to instruct Galaxy to look for and install missing tool
 # dependencies before each job runs.
 #conda_auto_install = False
@@ -273,14 +273,14 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # environment plugins.  By default none will be loaded.  Set to
 # config/plugins/interactive_environments to load Galaxy's stock plugins
 # (currently just IPython).  These will require Docker to be configured and
-# have security considerations, so proceed with caution. The path is relative to the 
+# have security considerations, so proceed with caution. The path is relative to the
 # Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a comma
 # separated list.
 #interactive_environment_plugins_directory =
 
 # Interactive tour directory: where to store interactive tour definition files.
 # Galaxy ships with several basic interface tours enabled, though a different
-# directory with custom tours can be specified here. The path is relative to the 
+# directory with custom tours can be specified here. The path is relative to the
 # Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a comma
 # separated list.
 #tour_config_dir = config/plugins/tours
@@ -307,13 +307,13 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #check_job_script_integrity_sleep = .25
 
 
-# Set the default shell used by jobs Galaxy-wide. This defaults to
-# sh and can be overidden at the destination level for
-# heterogenous clusters. conda job resolution requires bash or zsh
-# so if this is not switched to /bin/bash for instance - conda resolution
-# should be disabled. (16.01 will likely be the last release with a
-# default of /bin/sh instead of /bin/bash).
-#default_job_shell = /bin/sh
+# Set the default shell used by non-containerized jobs Galaxy-wide. This
+# defaults to bash for all jobs and can be overidden at the destination
+# level for heterogenous clusters. conda job resolution requires bash or zsh
+# so if this is switched to /bin/sh for instance - conda resolution
+# should be disabled. Containerized jobs always use /bin/sh - so more maximum
+# portability tool authors should assume generated commands run in sh.
+#default_job_shell = /bin/bash
 
 # Citation related caching.  Tool citations information maybe fetched from
 # external sources such as http://dx.doi.org/ by Galaxy - the following
@@ -611,8 +611,13 @@ nglims_config_file = tool-data/nglims.yaml
 # launch the proxy if it is actually going to be used (e.g. for IPython).
 #dynamic_proxy_manage=True
 
-# Dynamic proxy can use an SQLite database or a JSON file for IPC, set that
-# here.
+# As of 16.04 Galaxy supports multiple proxy types. The original NodeJS
+# implementation, alongside a new Golang single-binary-no-dependencies
+# version. Valid values are (node, golang)
+#dynamic_proxy=node
+#
+# The NodeJS dynamic proxy can use an SQLite database or a JSON file for IPC,
+# set that here.
 #dynamic_proxy_session_map=database/session_map.sqlite
 
 # Set the port and IP for the the dynamic proxy to bind to, this must match
@@ -632,6 +637,29 @@ nglims_config_file = tool-data/nglims.yaml
 # same path that your cookies are under. This will result in a url like
 # https://FQDN/galaxy-prefix/gie_proxy for proxying
 #dynamic_proxy_prefix=gie_proxy
+
+# The Golang proxy also manages the docker containers more closely than the
+# NodeJS proxy, so is able to expose more container management related options
+
+# This attribute governs the minimum length of time between consecutive HTTP/WS
+# requests through the proxy, before the proxy considers a container as being
+# inactive and kills it.
+#dynamic_proxy_golang_noaccess = 60
+
+# In order to kill containers, the golang proxy has to check at some interval
+# for possibly dead containers. This is exposed as a configurable parameter,
+# but the default value is probably fine.
+#dynamic_proxy_golang_clean_interval = 10
+
+# The golang proxy needs to know how to talk to your docker daemon. Currently
+# TLS is not supported, that will come in an update.
+#dynamic_proxy_golang_docker_address = unix:///var/run/docker.sock
+
+# The golang proxy uses a RESTful HTTP API for communication with Galaxy
+# instead of a JSON or SQLite file for IPC. If you do not specify this, it will
+# be set randomly for you. You should set this if you are managing the proxy
+# manually.
+#dynamic_proxy_golang_api_key = None
 
 # -- Logging and Debugging
 
@@ -682,6 +710,14 @@ nglims_config_file = tool-data/nglims.yaml
 # by setting the following option to True.
 #serve_xss_vulnerable_mimetypes = False
 
+# Return a Access-Control-Allow-Origin response header that matches the Origin
+# header of the request if that Origin hostname matches one of the strings or
+# regular expressions listed here. This is a comma separated list of hostname
+# strings or regular expressions beginning and ending with /.
+# E.g. mysite.com,google.com,usegalaxy.org,/^[\w\.]*example\.com/
+# See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS
+#allowed_origin_hostnames = None
+
 # Set the following to True to use IPython nbconvert to build HTML from IPython
 # notebooks in Galaxy histories.  This process may allow users to execute
 # arbitrary code or serve arbitrary HTML.  If enabled, IPython must be
@@ -712,6 +748,15 @@ use_interactive = True
 # space rapidly!).  Useful to determine why your processes may be consuming a
 # lot of CPU.
 #use_heartbeat = False
+
+# Control the period (in seconds) between dumps. Use -1 to disable. Regardless
+# of this setting, if use_heartbeat is enabled, you can send a Galaxy process
+# (unless running with uWSGI) SIGUSR1 (`kill -USR1`) to force a dump.
+#heartbeat_interval = 20
+
+# Heartbeat log filename. Can accept the template variables {server_name} and
+# {pid}
+#heartbeat_log = heartbeat_{server_name}.log
 
 # Log to Sentry
 # Sentry is an open source logging and error aggregation platform.  Setting
@@ -770,7 +815,7 @@ use_interactive = True
 
 # Search data libraries with lucene
 #enable_lucene_library_search = False
-# maxiumum file size to index for searching, in MB
+# maximum file size to index for searching, in MB
 #fulltext_max_size = 500
 #fulltext_noindex_filetypes = bam,sam,wig,bigwig,fasta,fastq,fastqsolexa,fastqillumina,fastqsanger
 # base URL of server providing search functionality using lucene
@@ -894,12 +939,16 @@ use_interactive = True
 # in 16.01 and the option will go away in the future.
 #enable_beta_tool_command_isolation = True
 
+# Enable the new interface for installing tools from Tool Shed
+# via the API. Admin menu will list both if enabled.
+#enable_beta_ts_api_install = False
+
 
 # Set the following to a number of threads greater than 1 to spawn
 # a Python task queue for dealing with large tool submissions (either
 # through the tool form or as part of an individual workflow step across
-# large collection). The size of a "large" tool request is controlled by 
-# the second parameter below and defaults to 10. This affects workflow 
+# large collection). The size of a "large" tool request is controlled by
+# the second parameter below and defaults to 10. This affects workflow
 # scheduling and web processes, not job handlers.
 #tool_submission_burst_threads = 1
 #tool_submission_burst_at = 10

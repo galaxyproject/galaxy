@@ -1,6 +1,7 @@
 import errno
 import json
 import os
+from six import string_types
 
 from galaxy import util
 from galaxy.util.odict import odict
@@ -369,7 +370,7 @@ class DataManager( object ):
         value = kwd.get( column_name )
         if data_table_name in self.value_translation_by_data_table_column and column_name in self.value_translation_by_data_table_column[ data_table_name ]:
             for value_translation in self.value_translation_by_data_table_column[ data_table_name ][ column_name ]:
-                if isinstance( value_translation, basestring ):
+                if isinstance( value_translation, string_types ):
                     value = fill_template( value_translation, GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path, **kwd  )
                 else:
                     value = value_translation( value )

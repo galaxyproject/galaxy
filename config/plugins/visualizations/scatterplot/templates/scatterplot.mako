@@ -34,7 +34,6 @@ ${h.js( 'libs/jquery/jquery',
         'libs/underscore',
         'libs/backbone',
         'libs/d3',
-        'libs/handlebars.runtime',
         'ui/peek-column-selector',
         'ui/pagination',
         'mvc/visualization/visualization-model' )}

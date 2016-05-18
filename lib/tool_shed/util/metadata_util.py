@@ -5,6 +5,45 @@ from tool_shed.util import common_util, hg_util, shed_util_common as suc
 log = logging.getLogger( __name__ )
 
 
+def get_all_dependencies( app, metadata_entry, processed_dependency_links=[] ):
+    encoder = app.security.encode_id
+    value_mapper = { 'repository_id': encoder, 'id': encoder, 'user_id': encoder }
+    metadata = metadata_entry.to_dict( value_mapper=value_mapper, view='element' )
+    db = app.model.context.current
+    returned_dependencies = []
+    required_metadata = get_dependencies_for_metadata_revision( app, metadata )
+    if required_metadata is None:
+        return metadata
+    for dependency_metadata in required_metadata:
+        dependency_dict = dependency_metadata.to_dict( value_mapper=value_mapper, view='element' )
+        dependency_link = ( metadata[ 'id' ], dependency_dict['id'] )
+        if dependency_link in processed_dependency_links:
+            continue
+        processed_dependency_links.append( dependency_link )
+        repository = db.query( app.model.Repository ).get( app.security.decode_id( dependency_dict[ 'repository_id' ] ) )
+        dependency_dict[ 'repository' ] = repository.to_dict( value_mapper=value_mapper )
+        if dependency_metadata.includes_tools:
+            dependency_dict[ 'tools' ] = dependency_metadata.metadata[ 'tools' ]
+        dependency_dict[ 'repository_dependencies' ] = []
+        if dependency_dict['includes_tool_dependencies']:
+            dependency_dict['tool_dependencies'] = repository.get_tool_dependencies( dependency_dict['changeset_revision'] )
+        if dependency_dict['has_repository_dependencies']:
+            dependency_dict['repository_dependencies'] = get_all_dependencies( app, dependency_metadata, processed_dependency_links )
+        else:
+            dependency_dict['repository_dependencies'] = []
+        returned_dependencies.append( dependency_dict )
+    return returned_dependencies
+
+
+def get_dependencies_for_metadata_revision( app, metadata ):
+    dependencies = []
+    for shed, name, owner, changeset, prior, _ in metadata[ 'repository_dependencies' ]:
+        required_repository = suc.get_repository_by_name_and_owner( app, name, owner )
+        metadata_entry = suc.get_repository_metadata_by_changeset_revision( app, app.security.encode_id( required_repository.id ), changeset )
+        dependencies.append( metadata_entry )
+    return dependencies
+
+
 def get_latest_changeset_revision( app, repository, repo ):
     repository_tip = repository.tip( app )
     repository_metadata = suc.get_repository_metadata_by_changeset_revision( app,
@@ -12,7 +51,7 @@ def get_latest_changeset_revision( app, repository, repo ):
                                                                              repository_tip )
     if repository_metadata and repository_metadata.downloadable:
         return repository_tip
-    changeset_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=False )
+    changeset_revisions = [ revision[ 1 ] for revision in suc.get_metadata_revisions( repository, repo ) ]
     if changeset_revisions:
         return changeset_revisions[ -1 ]
     return hg_util.INITIAL_CHANGELOG_HASH
@@ -32,13 +71,18 @@ def get_latest_repository_metadata( app, decoded_repository_id, downloadable=Fal
                                                               changeset_revision )
 
 
+def get_metadata_by_id( app, metadata_id ):
+    sa_session = app.model.context.current
+    return sa_session.query( app.model.RepositoryMetadata ).filter( app.model.RepositoryMetadata.table.c.id == metadata_id ).one()
+
+
 def get_previous_metadata_changeset_revision( repository, repo, before_changeset_revision, downloadable=True ):
     """
     Return the changeset_revision in the repository changelog that has associated metadata prior to
     the changeset to which before_changeset_revision refers.  If there isn't one, return the hash value
     of an empty repository changelog, hg_util.INITIAL_CHANGELOG_HASH.
     """
-    changeset_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=downloadable )
+    changeset_revisions = [ revision[ 1 ] for revision in suc.get_metadata_revisions( repository, repo ) ]
     if len( changeset_revisions ) == 1:
         changeset_revision = changeset_revisions[ 0 ]
         if changeset_revision == before_changeset_revision:
@@ -54,6 +98,12 @@ def get_previous_metadata_changeset_revision( repository, repo, before_changeset
                 return hg_util.INITIAL_CHANGELOG_HASH
         else:
             previous_changeset_revision = changeset_revision
+
+
+def get_repository_dependencies( app, metadata_id ):
+    '''Return a list of RepositoryDependency objects that specify the provided repository metadata record as the parent.'''
+    sa_session = app.model.context.current
+    return sa_session.query( app.model.RepositoryDependency ).filter( app.model.RepositoryDependency.table.c.parent_metadata_id == metadata_id ).all()
 
 
 def get_repository_dependency_tups_from_repository_metadata( app, repository_metadata, deprecated_only=False ):

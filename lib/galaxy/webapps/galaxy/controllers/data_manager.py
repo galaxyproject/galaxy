@@ -1,13 +1,14 @@
-from markupsafe import escape
+import logging
+from json import loads
+
 import paste.httpexceptions
+from markupsafe import escape
+from six import string_types
 
 import galaxy.queue_worker
 from galaxy import web
-from galaxy.util.json import loads
 from galaxy.web.base.controller import BaseUIController
 
-# set up logger
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -87,7 +88,7 @@ class DataManager( BaseUIController ):
     @web.expose
     @web.require_admin
     def reload_tool_data_tables( self, trans, table_name=None, **kwd ):
-        if table_name and isinstance( table_name, basestring ):
+        if table_name and isinstance( table_name, string_types ):
             table_name = table_name.split( "," )
         # Reload the tool data tables
         table_names = self.app.tool_data_tables.reload_tables( table_names=table_name )

@@ -51,8 +51,8 @@ class ObjectStore(object):
     :param extra_dir: Append `extra_dir` to the directory structure where the
         dataset identified by `obj` should be located. (e.g.,
         000/extra_dir/obj.id). Valid values include 'job_work' (defaulting to
-        config.job_working_directory =
-        '$GALAXY_ROOT/database/job_working_directory');
+        config.jobs_directory =
+        '$GALAXY_ROOT/database/jobs_directory');
         'temp' (defaulting to config.new_file_path =
         '$GALAXY_ROOT/database/tmp').
 
@@ -79,7 +79,7 @@ class ObjectStore(object):
         populated from `galaxy/config.ini`. The following attributes are
         currently used:
             object_store_check_old_style (only used by the DiskObjectStore)
-            job_working_directory -- Each job is given a unique empty directory
+            jobs_directory -- Each job is given a unique empty directory
                 as its current working directory. This option defines in what
                 parent directory those directories will be created.
         """
@@ -87,7 +87,7 @@ class ObjectStore(object):
         self.extra_dirs = {}
         self.config = config
         self.check_old_style = config.object_store_check_old_style
-        self.extra_dirs['job_work'] = config.job_working_directory
+        self.extra_dirs['job_work'] = config.jobs_directory
         self.extra_dirs['temp'] = config.new_file_path
 
     def shutdown(self):
@@ -207,7 +207,7 @@ class DiskObjectStore(ObjectStore):
     >>> import tempfile
     >>> file_path=tempfile.mkdtemp()
     >>> obj = Bunch(id=1)
-    >>> s = DiskObjectStore(Bunch(umask=0o077, job_working_directory=file_path, new_file_path=file_path, object_store_check_old_style=False), file_path=file_path)
+    >>> s = DiskObjectStore(Bunch(umask=0o077, jobs_directory=file_path, new_file_path=file_path, object_store_check_old_style=False), file_path=file_path)
     >>> s.create(obj)
     >>> s.exists(obj)
     True
@@ -221,7 +221,7 @@ class DiskObjectStore(ObjectStore):
             populated from `galaxy/config.ini`. The DiskObjectStore specific
             attributes are:
                 object_store_check_old_style
-                job_working_directory -- Each job is given a unique empty
+                job_directory -- Each job is given a unique empty
                     directory as its current working directory. This option
                     defines in what parent directory those directories will be
                     created.

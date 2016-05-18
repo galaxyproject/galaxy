@@ -9,6 +9,7 @@ import urlparse
 from paste.auth.basic import AuthBasicAuthenticator
 from paste.httpheaders import AUTH_TYPE
 from paste.httpheaders import REMOTE_USER
+from six import string_types
 
 from galaxy.util import asbool, safe_relpath
 from galaxy.util.hash_util import new_secure_hash
@@ -102,7 +103,7 @@ class Hg( object ):
             # If all of these mechanisms fail, Mercurial will fail, printing an error message. In this case, it
             # will not let you commit until you set up a username.
             result = self.authentication( environ )
-            if not isinstance( result, str ) and cmd == 'unbundle' and 'wsgi.input' in environ:
+            if not isinstance( result, string_types ) and cmd == 'unbundle' and 'wsgi.input' in environ:
                 bundle_data_stream = environ[ 'wsgi.input' ]
                 # Convert the incoming mercurial bundle into a json object and persit it to a temporary file for inspection.
                 fh = tempfile.NamedTemporaryFile( 'wb', prefix="tmp-hg-bundle"  )
@@ -159,7 +160,7 @@ class Hg( object ):
                                 if len( entry ) == 2:
                                     # We possibly found an altered file entry.
                                     filename, change_list = entry
-                                    if filename and isinstance( filename, str ):
+                                    if filename and isinstance( filename, string_types ):
                                         if filename == rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                                             # Make sure the any complex repository dependency definitions contain valid <repository> tags.
                                             is_valid, error_msg = self.repository_tags_are_valid( filename, change_list )
@@ -178,7 +179,7 @@ class Hg( object ):
                                 if len( entry ) == 2:
                                     # We possibly found an altered file entry.
                                     filename, change_list = entry
-                                    if filename and isinstance( filename, str ):
+                                    if filename and isinstance( filename, string_types ):
                                         if filename == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                                             # Make sure the any complex repository dependency definitions contain valid <repository> tags.
                                             is_valid, error_msg = self.repository_tags_are_valid( filename, change_list )
@@ -199,7 +200,7 @@ class Hg( object ):
                                 if len( entry ) == 2:
                                     # We possibly found an altered file entry.
                                     filename, change_list = entry
-                                    if filename and isinstance( filename, str ):
+                                    if filename and isinstance( filename, string_types ):
                                         if filename in [ rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
                                                          rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME ]:
                                             # We check both files since tool dependency definitions files can contain complex
@@ -208,7 +209,7 @@ class Hg( object ):
                                             if not is_valid:
                                                 log.debug( error_msg )
                                                 return self.__display_exception_remotely( start_response, error_msg )
-            if isinstance( result, str ):
+            if isinstance( result, string_types ):
                 # Authentication was successful
                 AUTH_TYPE.update( environ, 'basic' )
                 REMOTE_USER.update( environ, result )

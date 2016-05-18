@@ -21,6 +21,7 @@ define([ "test-app", "layout/masthead"
                 'citation_url'              : 'citation_url',
                 'terms_url'                 : 'terms_url',
                 'logo_url'                  : 'logo_url',
+                'logo_src'                  : '../../../static/images/galaxyIcon_noText.png',
                 'is_admin_user'             : 'is_admin_user',
                 'active_view'               : 'analysis',
                 'ftp_upload_dir'            : 'ftp_upload_dir',
@@ -37,76 +38,85 @@ define([ "test-app", "layout/masthead"
         }
     } );
 
-    test( 'test masthead tabs', function() {
-        this.tab = this.masthead.collection.first();
-        this.$tab = $( '.dropdown:first' );
-        this.$toggle = this.$tab.find( '.dropdown-toggle' );
-        this.$note = this.$tab.find( '.dropdown-note' );
-        this.$menu = this.$tab.find( 'ul' );
-        this.tab.set( 'title', 'Analyze' );
-        ok( this.$toggle.html() == 'Analyze', 'Correct title' );
-        ok( this.tab.get( 'target' ) == '_parent', 'Correct initial target' );
-        this.tab.set( 'target', '_target' );
-        ok( this.$toggle.attr( 'target' ) == '_target', 'Correct test target' );
-        ok( this.$tab.css( 'visibility' ) == 'visible', 'Tab visible' );
-        this.tab.set( 'visible', false );
-        ok( this.$tab.css( 'visibility' ) == 'hidden', 'Tab hidden' );
-        this.tab.set( 'visible', true );
-        ok( this.$tab.css( 'visibility' ) == 'visible', 'Tab visible, again' );
-        ok( this.$toggle.attr( 'href' ) == Galaxy.root, 'Correct initial url' );
-        this.tab.set( 'url', '_url' );
-        ok( this.$toggle.attr( 'href' ) == '/_url', 'Correct test url' );
-        this.tab.set( 'url', 'http://_url' );
-        ok( this.$toggle.attr( 'href' ) == 'http://_url', 'Correct http url' );
-        this.tab.set( 'tooltip', '_tooltip' );
-        this.$toggle.trigger( 'mouseover' );
+    test( 'tabs', function() {
+        var tab = this.masthead.collection.findWhere( { id: 'analysis' } );
+        var $tab = $( '#analysis' ).find( '.dropdown' );
+        var $toggle = $tab.find( '.dropdown-toggle' );
+        var $note = $tab.find( '.dropdown-note' );
+        var $menu = $tab.find( 'ul' );
+        ok( tab && $tab.length == 1, 'Found analysis tab' );
+        tab.set( 'title', 'Analyze' );
+        ok( $toggle.html() == 'Analyze', 'Correct title' );
+        ok( tab.get( 'target' ) == '_parent', 'Correct initial target' );
+        tab.set( 'target', '_target' );
+        ok( $toggle.attr( 'target' ) == '_target', 'Correct test target' );
+        ok( $tab.css( 'visibility' ) == 'visible', 'Tab visible' );
+        tab.set( 'visible', false );
+        ok( $tab.css( 'visibility' ) == 'hidden', 'Tab hidden' );
+        tab.set( 'visible', true );
+        ok( $tab.css( 'visibility' ) == 'visible', 'Tab visible, again' );
+        ok( $toggle.attr( 'href' ) == Galaxy.root, 'Correct initial url' );
+        tab.set( 'url', '_url' );
+        ok( $toggle.attr( 'href' ) == '/_url', 'Correct test url' );
+        tab.set( 'url', 'http://_url' );
+        ok( $toggle.attr( 'href' ) == 'http://_url', 'Correct http url' );
+        tab.set( 'tooltip', '_tooltip' );
+        $toggle.trigger( 'mouseover' );
         ok( $( '.tooltip-inner' ).html() == '_tooltip', 'Correct tooltip' );
-        this.tab.set( 'tooltip', null );
-        this.$toggle.trigger( 'mouseover' );
+        tab.set( 'tooltip', null );
+        $toggle.trigger( 'mouseover' );
         ok( $( '.tooltip-inner' ).length == 0, 'Tooltip removed' );
-        this.tab.set( 'tooltip', '_tooltip_new' );
-        this.$toggle.trigger( 'mouseover' );
+        tab.set( 'tooltip', '_tooltip_new' );
+        $toggle.trigger( 'mouseover' );
         ok( $( '.tooltip-inner' ).html() == '_tooltip_new', 'Correct new tooltip' );
-        this.tab.set( 'cls', '_cls' );
-        ok( this.$toggle.hasClass ( '_cls' ), 'Correct extra class' );
-        this.tab.set( 'cls', '_cls_new' );
-        ok( this.$toggle.hasClass ( '_cls_new' ) && !this.$toggle.hasClass ( '_cls' ), 'Correct new extra class' );
-        ok( this.$note.html() == '', 'Correct empty note' );
-        this.tab.set( { 'note' : '_note', 'show_note' : true } );
-        ok( this.$note.html() == '_note', 'Correct new note' );
-        this.tab.set( 'toggle', true );
-        ok( this.$toggle.hasClass( 'toggle' ), 'Toggled' );
-        this.tab.set( 'toggle', false );
-        ok( !this.$toggle.hasClass( 'toggle' ), 'Untoggled' );
-        this.tab.set( 'disabled', true );
-        ok( this.$tab.hasClass( 'disabled' ), 'Correctly disabled' );
-        this.tab.set( 'disabled', false );
-        ok( !this.$tab.hasClass( 'disabled' ), 'Correctly enabled' );
-        ok( this.$tab.hasClass( 'active' ), 'Highlighted' );
-        this.tab.set( 'active', false );
-        ok( !this.$tab.hasClass( 'active' ), 'Not highlighted' );
-        this.tab.set( 'active', true );
-        ok( this.$tab.hasClass( 'active' ), 'Highlighted, again' );
-        this.tab.set( 'menu', [ { title: '_menu_title', url: '_menu_url', target: '_menu_target' } ] );
-        ok( this.$menu.hasClass( 'dropdown-menu' ), 'Menu has correct class' );
-        ok( this.$menu.css( 'display' ) == 'none', 'Menu hidden' );
-        this.$toggle.trigger( 'click' );
-        ok( this.$menu.css( 'display' ) == 'block', 'Menu shown' );
-        var $item = this.$menu.find( 'a' );
+        tab.set( 'cls', '_cls' );
+        ok( $toggle.hasClass ( '_cls' ), 'Correct extra class' );
+        tab.set( 'cls', '_cls_new' );
+        ok( $toggle.hasClass ( '_cls_new' ) && !$toggle.hasClass ( '_cls' ), 'Correct new extra class' );
+        ok( $note.html() == '', 'Correct empty note' );
+        tab.set( { 'note' : '_note', 'show_note' : true } );
+        ok( $note.html() == '_note', 'Correct new note' );
+        tab.set( 'toggle', true );
+        ok( $toggle.hasClass( 'toggle' ), 'Toggled' );
+        tab.set( 'toggle', false );
+        ok( !$toggle.hasClass( 'toggle' ), 'Untoggled' );
+        tab.set( 'disabled', true );
+        ok( $tab.hasClass( 'disabled' ), 'Correctly disabled' );
+        tab.set( 'disabled', false );
+        ok( !$tab.hasClass( 'disabled' ), 'Correctly enabled' );
+        ok( $tab.hasClass( 'active' ), 'Highlighted' );
+        tab.set( 'active', false );
+        ok( !$tab.hasClass( 'active' ), 'Not highlighted' );
+        tab.set( 'active', true );
+        ok( $tab.hasClass( 'active' ), 'Highlighted, again' );
+        tab.set( 'menu', [ { title: '_menu_title', url: '_menu_url', target: '_menu_target' } ] );
+        ok( $menu.hasClass( 'dropdown-menu' ), 'Menu has correct class' );
+        ok( $menu.css( 'display' ) == 'none', 'Menu hidden' );
+        $toggle.trigger( 'click' );
+        ok( $menu.css( 'display' ) == 'block', 'Menu shown' );
+        var $item = $menu.find( 'a' );
         ok( $item.length == 1, 'Added one menu item' );
         ok( $item.html() == '_menu_title', 'Menu item has correct title' );
         ok( $item.attr( 'href' ) == '/_menu_url', 'Menu item has correct url' );
         ok( $item.attr( 'target' ) == '_menu_target', 'Menu item has correct target' );
-        this.tab.set( 'menu', null );
-        $item = this.$menu.find( 'a' );
+        tab.set( 'menu', null );
+        $item = $menu.find( 'a' );
         ok( $item.length == 0, 'All menu items removed' );
-        this.tab.set( 'menu', [ { title: '_menu_title_0', url: '_menu_url_0', target: '_menu_target_0' },
-                                { title: '_menu_title_1', url: '_menu_url_1', target: '_menu_target_1' } ] );
-        $item = this.$menu.find( 'a' );
+        tab.set( 'menu', [ { title: '_menu_title_0', url: '_menu_url_0', target: '_menu_target_0' },
+                           { title: '_menu_title_1', url: '_menu_url_1', target: '_menu_target_1' } ] );
+        $item = $menu.find( 'a' );
         ok( $item.length == 2, 'Two menu items added' );
-        this.tab.set( 'show_menu', false );
-        ok( this.$menu.css( 'display', 'none' ), 'Menu manually hidden' );
-        this.tab.set( 'show_menu', true );
-        ok( this.$menu.css( 'display', 'block' ), 'Menu manually shown, again' );
+        tab.set( 'show_menu', false );
+        ok( $menu.css( 'display', 'none' ), 'Menu manually hidden' );
+        tab.set( 'show_menu', true );
+        ok( $menu.css( 'display', 'block' ), 'Menu manually shown, again' );
+        var tab = this.masthead.collection.findWhere( { id: 'enable-scratchbook' } );
+        var $tab = $( '#enable-scratchbook' ).find( '.dropdown' );
+        ok( tab && $tab.length == 1, 'Found tab to enable scratchbook' );
+        var $toggle = $tab.find( '.dropdown-toggle' );
+        ok( !$toggle.hasClass( 'toggle' ), 'Untoggled before click' );
+        $toggle.trigger( 'click' );
+        ok( $toggle.hasClass( 'toggle' ), 'Toggled after click' );
+        ok( Galaxy.frame.active, 'Scratchbook is active' );
     } );
 });

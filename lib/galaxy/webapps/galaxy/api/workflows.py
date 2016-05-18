@@ -5,7 +5,6 @@ API operations for Workflows
 from __future__ import absolute_import
 
 import logging
-import copy
 import urllib
 from sqlalchemy import desc, false, or_, true
 from galaxy import exceptions, util
@@ -314,21 +313,20 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return self.workflow_contents_manager.workflow_to_dict( trans, stored_workflow, style="instance" )
 
     @expose_api
-    def build_module( self, trans, payload={}):
+    def build_module( self, trans, payload={} ):
         """
         POST /api/workflows/build_module
         Builds module details including a tool model for the workflow editor.
         """
-        tool_id = payload.get( 'tool_id', None )
-        tool_version = payload.get( 'tool_version', None )
+        tool_id = payload.get( 'tool_id' )
+        tool_version = payload.get( 'tool_version' )
         tool_inputs = payload.get( 'inputs', {} )
-        annotation = payload.get( 'annotation', tool_inputs.get('annotation', '') )
+        annotation = payload.get( 'annotation', tool_inputs.get( 'annotation', '' ) )
 
         # load tool
         tool = self._get_tool( tool_id, tool_version=tool_version, user=trans.user )
 
         # initialize module
-        trans.workflow_building_mode = True
         module = module_factory.from_dict( trans, {
             'type'          : 'tool',
             'tool_id'       : tool.id,
@@ -336,8 +334,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         } )
 
         # create tool model and default tool state (if missing)
-        tool_model = module.tool.to_json(trans, tool_inputs, workflow_mode=True)
-        module.state.inputs = copy.deepcopy(tool_model['state_inputs'])
+        tool_model = module.tool.to_json( trans, tool_inputs, workflow_mode=True )
+        module.update_state( tool_model[ 'state_inputs' ] )
         return {
             'tool_model'        : tool_model,
             'tool_state'        : module.get_state(),

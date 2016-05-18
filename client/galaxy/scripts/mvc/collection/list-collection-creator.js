@@ -9,6 +9,8 @@ define([
     "ui/hoverhighlight"
 ], function( HDCA, STATES, BASE_MVC, UI_MODAL, naturalSort, _l ){
 
+'use strict';
+
 var logNamespace = 'collections';
 /*==============================================================================
 TODO:

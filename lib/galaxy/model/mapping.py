@@ -2100,16 +2100,16 @@ mapper( model.Job, model.Job.table, properties=dict(
     user=relation( model.User ),
     galaxy_session=relation( model.GalaxySession ),
     history=relation( model.History ),
-    library_folder=relation( model.LibraryFolder ),
-    parameters=relation( model.JobParameter, lazy=False ),
+    library_folder=relation( model.LibraryFolder, lazy=True ),
+    parameters=relation( model.JobParameter, lazy=True ),
     input_datasets=relation( model.JobToInputDatasetAssociation ),
-    output_datasets=relation( model.JobToOutputDatasetAssociation ),
-    output_dataset_collection_instances=relation( model.JobToOutputDatasetCollectionAssociation ),
-    output_dataset_collections=relation( model.JobToImplicitOutputDatasetCollectionAssociation ),
+    output_datasets=relation( model.JobToOutputDatasetAssociation, lazy=True ),
+    output_dataset_collection_instances=relation( model.JobToOutputDatasetCollectionAssociation, lazy=True ),
+    output_dataset_collections=relation( model.JobToImplicitOutputDatasetCollectionAssociation, lazy=True ),
     post_job_actions=relation( model.PostJobActionAssociation, lazy=False ),
     input_library_datasets=relation( model.JobToInputLibraryDatasetAssociation ),
-    output_library_datasets=relation( model.JobToOutputLibraryDatasetAssociation ),
-    external_output_metadata=relation( model.JobExternalOutputMetadata, lazy=False ),
+    output_library_datasets=relation( model.JobToOutputLibraryDatasetAssociation, lazy=True ),
+    external_output_metadata=relation( model.JobExternalOutputMetadata, lazy=True ),
     tasks=relation( model.Task )
 ) )
 

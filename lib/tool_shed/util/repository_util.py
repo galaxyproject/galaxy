@@ -408,6 +408,43 @@ def handle_role_associations( app, role, repository, **kwd ):
     return associations_dict
 
 
+def check_for_updates( app, model, repository_id=None ):
+    message = ''
+    status = 'ok'
+    if repository_id is None:
+        success_count = 0
+        repository_names_not_updated = []
+        updated_count = 0
+        for repository in model.context.query( model.ToolShedRepository ) \
+                                       .filter( model.ToolShedRepository.table.c.deleted == false() ):
+            ok, updated = \
+                check_or_update_tool_shed_status_for_installed_repository( app, repository )
+            if ok:
+                success_count += 1
+            else:
+                repository_names_not_updated.append( '<b>%s</b>' % escape( str( repository.name ) ) )
+            if updated:
+                updated_count += 1
+        message = "Checked the status in the tool shed for %d repositories.  " % success_count
+        message += "Updated the tool shed status for %d repositories.  " % updated_count
+        if repository_names_not_updated:
+            message += "Unable to retrieve status from the tool shed for the following repositories:\n"
+            message += ", ".join( repository_names_not_updated )
+    else:
+        repository = suc.get_tool_shed_repository_by_id( app, repository_id )
+        ok, updated = \
+            check_or_update_tool_shed_status_for_installed_repository( app, repository )
+        if ok:
+            if updated:
+                message = "The tool shed status for repository <b>%s</b> has been updated." % escape( str( repository.name ) )
+            else:
+                message = "The status has not changed in the tool shed for repository <b>%s</b>." % escape( str( repository.name ) )
+        else:
+            message = "Unable to retrieve status from the tool shed for repository <b>%s</b>." % escape( str( repository.name ) )
+            status = 'error'
+    return message, status
+
+
 def validate_repository_name( app, name, user ):
     """
     Validate whether the given name qualifies as a new TS repo name.

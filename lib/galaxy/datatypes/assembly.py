@@ -3,14 +3,15 @@ velvet datatypes
 James E Johnson - University of Minnesota
 for velvet assembler tool in galaxy
 """
+from __future__ import absolute_import
 
-import data
+from galaxy.datatypes import data
 import logging
 import os
 import re
 import sys
 from galaxy.datatypes import sequence
-from galaxy.datatypes.images import Html
+from galaxy.datatypes.text import Html
 from galaxy.datatypes.metadata import MetadataElement
 
 log = logging.getLogger(__name__)

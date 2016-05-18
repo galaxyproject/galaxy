@@ -24,6 +24,7 @@
             'terms_url'                 : app.config.get("terms_url", ""),
             'allow_user_creation'       : app.config.allow_user_creation,
             'logo_url'                  : h.url_for(app.config.get( 'logo_url', '/')),
+            'logo_src'                  : h.url_for( app.config.get( 'logo_src', '../../../static/images/galaxyIcon_noText.png' ) ),
             'is_admin_user'             : trans.user_is_admin(),
             'active_view'               : active_view,
             'ftp_upload_dir'            : app.config.get("ftp_upload_dir",  None),
@@ -72,7 +73,7 @@
                 if (!Galaxy.masthead) {
                     Galaxy.masthead = new Masthead.View(${ h.dumps( masthead_config ) });
                     Galaxy.modal = new Modal.View();
-                    $('body').append( Galaxy.masthead.render().$el );
+                    $('#masthead').replaceWith( Galaxy.masthead.render().$el );
                 }
             });
         });

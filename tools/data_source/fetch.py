@@ -1,16 +1,15 @@
 #!/usr/bin/env python
-
 """
 Script that just echos the command line.
 """
-
-import sys, os, urllib
+import sys
+import urllib
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
 BUFFER = 1048576
 
-url      = sys.argv[1]
+url = sys.argv[1]
 out_name = sys.argv[2]
 
 out = open(out_name, 'wt')

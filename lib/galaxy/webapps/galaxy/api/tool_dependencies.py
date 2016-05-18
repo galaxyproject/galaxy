@@ -21,7 +21,7 @@ class ToolDependenciesAPIController( BaseAPIController ):
 
     @expose_api
     @require_admin
-    def index(self, trans):
+    def index(self, trans, **kwd):
         """
         GET /api/dependencies_resolvers
         """
@@ -71,6 +71,8 @@ class ToolDependenciesAPIController( BaseAPIController ):
         """
         return self._view.resolver_dependency(id, **kwds)
 
+    @expose_api
+    @require_admin
     def manager_dependency(self, trans, **kwds):
         """
         GET /api/dependencies_resolvers/dependency

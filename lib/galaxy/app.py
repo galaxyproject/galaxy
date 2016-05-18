@@ -1,8 +1,17 @@
 from __future__ import absolute_import
+import logging
+import signal
 import sys
+import time
 import os
 
-import time
+try:
+    from uwsgidecorators import postfork
+except:
+    def pf_dec(func):
+        return func
+    postfork = pf_dec
+
 from galaxy import config, jobs
 import galaxy.model
 import galaxy.security
@@ -21,9 +30,10 @@ from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.jobs import metrics as job_metrics
 from galaxy.web.proxy import ProxyManager
 from galaxy.queue_worker import GalaxyQueueWorker
+from galaxy.util import heartbeat
 from tool_shed.galaxy_install import update_repository_manager
 
-import logging
+
 log = logging.getLogger( __name__ )
 app = None
 
@@ -132,15 +142,29 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
             self.openid_providers = OpenIDProviders.from_file( self.config.openid_config_file )
         else:
             self.openid_providers = OpenIDProviders()
-        # Start the heartbeat process if configured and available
         from galaxy import auth
         self.auth_manager = auth.AuthManager( self )
+        # Start the heartbeat process if configured and available (wait until
+        # postfork if using uWSGI)
         if self.config.use_heartbeat:
-            from galaxy.util import heartbeat
             if heartbeat.Heartbeat:
-                self.heartbeat = heartbeat.Heartbeat( fname=self.config.heartbeat_log )
+                self.heartbeat = heartbeat.Heartbeat(
+                    self.config,
+                    period=self.config.heartbeat_interval,
+                    fname=self.config.heartbeat_log
+                )
                 self.heartbeat.daemon = True
-                self.heartbeat.start()
+
+                @postfork
+                def _start():
+                    self.heartbeat.start()
+                if not config.process_is_uwsgi:
+                    _start()
+        if self.config.sentry_dsn:
+            import raven
+            self.sentry_client = raven.Client(self.config.sentry_dsn)
+        else:
+            self.sentry_client = None
         # Transfer manager client
         if self.config.get_bool( 'enable_beta_job_managers', False ):
             from galaxy.jobs import transfer_manager
@@ -161,6 +185,12 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         from galaxy.workflow import scheduling_manager
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager( self )
+
+        # Configure handling of signals
+        handlers = {}
+        if self.heartbeat:
+            handlers[signal.SIGUSR1] = self.heartbeat.dump_signal_handler
+        self._configure_signal_handlers( handlers )
 
         self.model.engine.dispose()
         self.server_starttime = int(time.time())  # used for cachebusting

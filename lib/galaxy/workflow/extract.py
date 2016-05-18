@@ -6,10 +6,7 @@ from galaxy import exceptions
 from galaxy import model
 from galaxy.tools.parameters.basic import (
     DataToolParameter,
-    DataCollectionToolParameter,
-    DrillDownSelectToolParameter,
-    SelectToolParameter,
-    UnvalidatedValue
+    DataCollectionToolParameter
 )
 from galaxy.tools.parser import ToolOutputCollectionPart
 from galaxy.tools.parameters.grouping import (
@@ -317,9 +314,6 @@ def __cleanup_param_values( inputs, values ):
     # Recursively clean data inputs and dynamic selects
     def cleanup( prefix, inputs, values ):
         for key, input in inputs.items():
-            if isinstance( input, ( SelectToolParameter, DrillDownSelectToolParameter ) ):
-                if input.is_dynamic and not isinstance( values[key], UnvalidatedValue ):
-                    values[key] = UnvalidatedValue( values[key] )
             if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
                 tmp = values[key]
                 values[key] = None
@@ -351,7 +345,7 @@ def __cleanup_param_values( inputs, values ):
                 # Scrub dynamic resource related parameters from workflows,
                 # they cause problems and the workflow probably should include
                 # their state in workflow encoding.
-                if input.is_job_resource_conditional:
+                if input.name == '__job_resource':
                     if input.name in values:
                         del values[input.name]
                     return

@@ -6,6 +6,7 @@ import shutil
 import socket
 import string
 from urllib2 import HTTPError
+from operator import itemgetter
 
 import sqlalchemy.orm.exc
 from sqlalchemy import and_, false, or_, true
@@ -126,10 +127,16 @@ def clean_dependency_relationships(trans, metadata_dict, tool_shed_repository, t
         rd = rrda.repository_dependency
         r = rd.repository
         if can_eliminate_repository_dependency(metadata_dict, tool_shed_url, r.name, r.owner):
+            message = "Repository dependency %s by owner %s is not required by repository %s, owner %s, "
+            message += "removing from list of repository dependencies."
+            log.debug(message % (r.name, r.owner, tool_shed_repository.name, tool_shed_repository.owner))
             trans.install_model.context.delete(rrda)
             trans.install_model.context.flush()
     for td in tool_shed_repository.tool_dependencies:
         if can_eliminate_tool_dependency(metadata_dict, td.name, td.type, td.version):
+            message = "Tool dependency %s, version %s is not required by repository %s, owner %s, "
+            message += "removing from list of tool dependencies."
+            log.debug(message % (td.name, td.version, tool_shed_repository.name, tool_shed_repository.owner))
             trans.install_model.context.delete(td)
             trans.install_model.context.flush()
 
@@ -247,7 +254,7 @@ def generate_tool_shed_repository_install_dir( repository_clone_url, changeset_r
     tool_shed_url = items[ 0 ]
     repo_path = items[ 1 ]
     tool_shed_url = common_util.remove_port_from_tool_shed_url( tool_shed_url )
-    return common_util.url_join( tool_shed_url, pathspec=[ 'repos', repo_path, changeset_revision ] )
+    return '/'.join( [ tool_shed_url, 'repos', repo_path, changeset_revision ] )
 
 
 def get_absolute_path_to_file_in_repository( repo_files_dir, file_name ):
@@ -294,7 +301,7 @@ def get_ctx_rev( app, tool_shed_url, name, owner, changeset_revision ):
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
     params = dict( name=name, owner=owner, changeset_revision=changeset_revision )
     pathspec = [ 'repository', 'get_ctx_rev' ]
-    ctx_rev = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
+    ctx_rev = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
     return ctx_rev
 
 
@@ -340,12 +347,14 @@ def get_ids_of_tool_shed_repositories_being_installed( app, as_string=False ):
     return installing_repository_ids
 
 
-def get_latest_downloadable_changeset_revision( app, repository, repo ):
+def get_latest_downloadable_changeset_revision( app, repository, repo=None ):
+    if repo is None:
+        repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
     repository_tip = repository.tip( app )
     repository_metadata = get_repository_metadata_by_changeset_revision( app, app.security.encode_id( repository.id ), repository_tip )
     if repository_metadata and repository_metadata.downloadable:
         return repository_tip
-    changeset_revisions = get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
+    changeset_revisions = [ revision[ 1 ] for revision in get_metadata_revisions( repository, repo ) ]
     if changeset_revisions:
         return changeset_revisions[ -1 ]
     return hg_util.INITIAL_CHANGELOG_HASH
@@ -360,8 +369,23 @@ def get_tool_dependency_definition_metadata_from_tool_shed( app, tool_shed_url, 
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
     params = dict( name=name, owner=owner )
     pathspec = [ 'repository', 'get_tool_dependency_definition_metadata' ]
-    metadata = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
+    metadata = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
     return metadata
+
+
+def get_metadata_changeset_revisions( repository, repo ):
+    """
+    Return an unordered list of changeset_revisions and changeset numbers that are defined as installable.
+    """
+    changeset_tups = []
+    for repository_metadata in repository.downloadable_revisions:
+        ctx = hg_util.get_changectx_for_changeset( repo, repository_metadata.changeset_revision )
+        if ctx:
+            rev = ctx.rev()
+        else:
+            rev = -1
+        changeset_tups.append( ( rev, repository_metadata.changeset_revision ) )
+    return sorted( changeset_tups )
 
 
 def get_next_downloadable_changeset_revision( repository, repo, after_changeset_revision ):
@@ -369,7 +393,7 @@ def get_next_downloadable_changeset_revision( repository, repo, after_changeset_
     Return the installable changeset_revision in the repository changelog after the changeset to which
     after_changeset_revision refers.  If there isn't one, return None.
     """
-    changeset_revisions = get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
+    changeset_revisions = [ revision[ 1 ] for revision in get_metadata_revisions( repository, repo ) ]
     if len( changeset_revisions ) == 1:
         changeset_revision = changeset_revisions[ 0 ]
         if changeset_revision == after_changeset_revision:
@@ -420,10 +444,9 @@ def get_next_prior_import_or_install_required_dict_entry( prior_required_dict, p
         return key
 
 
-def get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True ):
+def get_metadata_revisions( repository, repo, sort_revisions=True, reverse=False, downloadable=True ):
     """
-    Return an ordered list of changeset_revisions that are associated with metadata
-    where order is defined by the repository changelog.
+    Return a list of changesets for the provided repository.
     """
     if downloadable:
         metadata_revisions = repository.downloadable_revisions
@@ -431,16 +454,15 @@ def get_ordered_metadata_changeset_revisions( repository, repo, downloadable=Tru
         metadata_revisions = repository.metadata_revisions
     changeset_tups = []
     for repository_metadata in metadata_revisions:
-        changeset_revision = repository_metadata.changeset_revision
-        ctx = hg_util.get_changectx_for_changeset( repo, changeset_revision )
+        ctx = hg_util.get_changectx_for_changeset( repo, repository_metadata.changeset_revision )
         if ctx:
             rev = '%04d' % ctx.rev()
         else:
-            rev = '-1'
-        changeset_tups.append( ( rev, changeset_revision ) )
-    sorted_changeset_tups = sorted( changeset_tups )
-    sorted_changeset_revisions = [ str( changeset_tup[ 1 ] ) for changeset_tup in sorted_changeset_tups ]
-    return sorted_changeset_revisions
+            rev = -1
+        changeset_tups.append( ( rev, repository_metadata.changeset_revision ) )
+    if sort_revisions:
+        changeset_tups.sort( key=itemgetter( 0 ), reverse=reverse )
+    return changeset_tups
 
 
 def get_prior_import_or_install_required_dict( app, tsr_ids, repo_info_dicts ):
@@ -476,6 +498,22 @@ def get_repo_info_tuple_contents( repo_info_tuple ):
     elif len( repo_info_tuple ) == 7:
         description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
     return description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies
+
+
+def get_repositories_by_category( app, category_id ):
+    sa_session = app.model.context.current
+    resultset = sa_session.query( app.model.Category ).get( category_id )
+    repositories = []
+    default_value_mapper = { 'id': app.security.encode_id, 'user_id': app.security.encode_id }
+    for row in resultset.repositories:
+        repository_dict = row.repository.to_dict( value_mapper=default_value_mapper )
+        repository_dict[ 'metadata' ] = {}
+        for changeset, changehash in row.repository.installable_revisions( app ):
+            encoded_id = app.security.encode_id( row.repository.id )
+            metadata = get_repository_metadata_by_changeset_revision( app, encoded_id, changehash )
+            repository_dict[ 'metadata' ][ '%s:%s' % ( changeset, changehash ) ] = metadata.to_dict( value_mapper=default_value_mapper )
+        repositories.append( repository_dict )
+    return repositories
 
 
 def get_repository_and_repository_dependencies_from_repo_info_dict( app, repo_info_dict ):
@@ -588,7 +626,7 @@ def get_repository_for_dependency_relationship( app, tool_shed, name, owner, cha
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed )
         params = dict( name=name, owner=owner, changeset_revision=changeset_revision )
         pathspec = [ 'repository', 'next_installable_changeset_revision' ]
-        text = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
+        text = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
         if text:
             repository = get_installed_repository( app=app,
                                                    tool_shed=tool_shed,
@@ -790,7 +828,7 @@ def get_repository_type_from_tool_shed( app, tool_shed_url, name, owner ):
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
     params = dict( name=name, owner=owner )
     pathspec = [ 'repository', 'get_repository_type' ]
-    repository_type = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
+    repository_type = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
     return repository_type
 
 
@@ -876,7 +914,7 @@ def get_tool_shed_status_for_installed_repository( app, repository ):
     params = dict( name=repository.name, owner=repository.owner, changeset_revision=repository.changeset_revision )
     pathspec = [ 'repository', 'status_for_installed_repository' ]
     try:
-        encoded_tool_shed_status_dict = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
+        encoded_tool_shed_status_dict = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
         tool_shed_status_dict = encoding_util.tool_shed_decode( encoded_tool_shed_status_dict )
         return tool_shed_status_dict
     except HTTPError, e:
@@ -888,7 +926,7 @@ def get_tool_shed_status_for_installed_repository( app, repository ):
         params[ 'from_update_manager' ] = True
         try:
             # The value of text will be 'true' or 'false', depending upon whether there is an update available for the installed revision.
-            text = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
+            text = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
             return dict( revision_update=text )
         except Exception, e:
             # The required tool shed may be unavailable, so default the revision_update value to 'false'.
@@ -983,7 +1021,7 @@ def get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url, name, ow
         raise Exception( message )
     params = dict( name=name, owner=owner, changeset_revision=changeset_revision )
     pathspec = [ 'repository', 'updated_changeset_revisions' ]
-    text = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
+    text = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
     return text
 
 
@@ -1213,7 +1251,7 @@ def repository_was_previously_installed( app, tool_shed_url, repository_name, re
                    changeset_revision=changeset_revision,
                    from_tip=str( from_tip ) )
     pathspec = [ 'repository', 'previous_changeset_revisions' ]
-    text = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
+    text = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
     if text:
         changeset_revisions = util.listify( text )
         for previous_changeset_revision in changeset_revisions:

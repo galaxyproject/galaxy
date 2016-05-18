@@ -4,7 +4,8 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( DC_LI, DATASET_LI_EDIT, BASE_MVC, _l ){
-/* global Backbone */
+
+'use strict';
 //==============================================================================
 var DCListItemView = DC_LI.DCListItemView;
 /** @class Edit view for DatasetCollection.

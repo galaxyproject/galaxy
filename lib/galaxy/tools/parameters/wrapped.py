@@ -58,7 +58,8 @@ class WrappedParameters( object ):
                 value = input_values[ input.name ]
                 dataset_instances = DatasetListWrapper.to_dataset_instances( value )
                 input_values[ input.name ] = \
-                    DatasetListWrapper( dataset_instances,
+                    DatasetListWrapper( None,
+                                        dataset_instances,
                                         datatypes_registry=trans.app.datatypes_registry,
                                         tool=tool,
                                         name=input.name )
@@ -72,6 +73,7 @@ class WrappedParameters( object ):
                 input_values[ input.name ] = SelectToolParameterWrapper( input, input_values[ input.name ], tool.app, other_values=incoming )
             elif isinstance( input, DataCollectionToolParameter ):
                 input_values[ input.name ] = DatasetCollectionWrapper(
+                    None,
                     input_values[ input.name ],
                     datatypes_registry=trans.app.datatypes_registry,
                     tool=tool,

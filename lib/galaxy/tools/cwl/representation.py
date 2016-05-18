@@ -1,29 +1,78 @@
 """ This module is responsible for converting between Galaxy's tool
 input description and the CWL description for a job json. """
 
+from six import string_types
+import json
+import os
+
 import logging
 
-from galaxy.util import string_as_bool
+from galaxy.util import string_as_bool, safe_makedirs
+from galaxy.exceptions import RequestParameterInvalidException
 
 log = logging.getLogger(__name__)
 
 NOT_PRESENT = object()
 
+GALAXY_TO_CWL_TYPES = {
+    'integer': 'integer',
+    'float': 'float',
+    'data': 'File',
+    'boolean': 'boolean',
+}
 
-def to_cwl_job(tool, param_dict):
+
+def to_cwl_job(tool, param_dict, local_working_directory):
     """ tool is Galaxy's representation of the tool and param_dict is the
     parameter dictionary with wrapped values.
     """
     inputs = tool.inputs
     input_json = {}
 
-    def simple_value(input, param_dict_value):
-        if input.type == "data":
-            return {"path": str(param_dict_value), "class": "File"}
-        elif input.type == "integer":
+    inputs_dir = os.path.join(local_working_directory, "_inputs")
+
+    def simple_value(input, param_dict_value, cwl_type=None):
+        # Hmm... cwl_type isn't really the cwl type in every case,
+        # like in the case of json for instance.
+        if cwl_type is None:
+            input_type = input.type
+            cwl_type = GALAXY_TO_CWL_TYPES[input_type]
+
+        if cwl_type == "null":
+            assert param_dict_value is None
+            return None
+        if cwl_type == "File":
+            dataset_wrapper = param_dict_value
+            extra_files_path = dataset_wrapper.extra_files_path
+            secondary_files_path = os.path.join(extra_files_path, "__secondary_files__")
+            path = str(dataset_wrapper)
+            if os.path.exists(secondary_files_path):
+                safe_makedirs(inputs_dir)
+                name = os.path.basename(path)
+                new_input_path = os.path.join(inputs_dir, name)
+                os.symlink(path, new_input_path)
+                for secondary_file_name in os.listdir(secondary_files_path):
+                    secondary_file_path = os.path.join(secondary_files_path, secondary_file_name)
+                    os.symlink(secondary_file_path, new_input_path + secondary_file_name)
+                path = new_input_path
+
+            return {"path": path, "class": "File"}
+        elif cwl_type == "integer":
             return int(str(param_dict_value))
-        elif input.type == "boolean":
+        elif cwl_type == "long":
+            return int(str(param_dict_value))
+        elif cwl_type == "float":
+            return float(str(param_dict_value))
+        elif cwl_type == "double":
+            return float(str(param_dict_value))
+        elif cwl_type == "boolean":
             return string_as_bool(param_dict_value)
+        elif cwl_type == "string":
+            return str(param_dict_value)
+        elif cwl_type == "json":
+            raw_value = param_dict_value.value
+            log.info("raw_value is %s (%s)" % (raw_value, type(raw_value)))
+            return json.loads(raw_value)
         else:
             return str(param_dict_value)
 
@@ -37,12 +86,11 @@ def to_cwl_job(tool, param_dict):
         elif input.type == "conditional":
             assert input_name in param_dict, "No value for %s in %s" % (input_name, param_dict)
             current_case = param_dict[input_name]["_cwl__type_"]
-            if current_case != "null":
-                # TODO: make sure trans is not needed here...
-                case_index = input.get_current_case( current_case, None )
-                case_input = input.cases[ case_index ].inputs[ "_cwl__value_"]
+            if str(current_case) != "null":  # str because it is a wrapped...
+                case_index = input.get_current_case( current_case )
+                case_input = input.cases[ case_index ].inputs["_cwl__value_"]
                 case_value = param_dict[input_name]["_cwl__value_"]
-                input_json[input_name] = simple_value(case_input, case_value)
+                input_json[input_name] = simple_value(case_input, case_value, cwl_type=current_case)
         else:
             input_json[input_name] = simple_value(input, param_dict[input_name])
 
@@ -59,13 +107,17 @@ def to_galaxy_parameters(tool, as_dict):
     inputs = tool.inputs
     galaxy_request = {}
 
-    def from_simple_value(input, param_dict_value):
-        return param_dict_value
+    def from_simple_value(input, param_dict_value, cwl_type=None):
+        if cwl_type == "json":
+            return json.dumps(param_dict_value)
+        else:
+            return param_dict_value
 
     for input_name, input in inputs.iteritems():
         as_dict_value = as_dict.get(input_name, NOT_PRESENT)
+        galaxy_input_type = input.type
 
-        if input.type == "repeat":
+        if galaxy_input_type == "repeat":
             if input_name not in as_dict:
                 continue
 
@@ -74,21 +126,46 @@ def to_galaxy_parameters(tool, as_dict):
                 key = "%s_repeat_0|%s" % (input_name, only_input.name)
                 galaxy_value = from_simple_value(only_input, value)
                 galaxy_request[key] = galaxy_value
-        elif input.type == "conditional":
+        elif galaxy_input_type == "conditional":
+            case_strings = input.case_strings
             # TODO: less crazy handling of defaults...
-            if as_dict_value is NOT_PRESENT:
+            if (as_dict_value is NOT_PRESENT or as_dict_value is None) and "null" in case_strings:
                 cwl_type = "null"
-            elif isinstance(as_dict_value, bool):
+            elif (as_dict_value is NOT_PRESENT or as_dict_value is None):
+                raise RequestParameterInvalidException(
+                    "Cannot translate CWL datatype - value [%s] of type [%s] with case_strings [%s]. Non-null property must be set." % (
+                        as_dict_value, type(as_dict_value), case_strings
+                    )
+                )
+            elif isinstance(as_dict_value, bool) and "boolean" in case_strings:
                 cwl_type = "boolean"
-            elif isinstance(as_dict_value, int):
+            elif isinstance(as_dict_value, int) and "integer" in case_strings:
                 cwl_type = "integer"
-            else:
+            elif isinstance(as_dict_value, int) and "long" in case_strings:
+                cwl_type = "long"
+            elif isinstance(as_dict_value, (int, float)) and "float" in case_strings:
+                cwl_type = "float"
+            elif isinstance(as_dict_value, (int, float)) and "double" in case_strings:
+                cwl_type = "double"
+            elif isinstance(as_dict_value, string_types) and "string" in case_strings:
                 cwl_type = "string"
+            elif isinstance(as_dict_value, dict) and "src" in as_dict_value and "id" in as_dict_value:
+                # Bit problematic...
+                cwl_type = "File"
+            elif "json" in case_strings and as_dict_value is not None:
+                cwl_type = "json"
+            else:
+                raise RequestParameterInvalidException(
+                    "Cannot translate CWL datatype - value [%s] of type [%s] with case_strings [%s]." % (
+                        as_dict_value, type(as_dict_value), case_strings
+                    )
+                )
             galaxy_request["%s|_cwl__type_" % input_name] = cwl_type
             if cwl_type != "null":
-                current_case_index = input.get_current_case(cwl_type, None)
-                current_case_input = input.cases[ current_case_index ].inputs[ "_cwl__value_" ]
-                galaxy_value = from_simple_value(current_case_input, as_dict_value)
+                current_case_index = input.get_current_case(cwl_type)
+                current_case_inputs = input.cases[ current_case_index ].inputs
+                current_case_input = current_case_inputs[ "_cwl__value_" ]
+                galaxy_value = from_simple_value(current_case_input, as_dict_value, cwl_type)
                 galaxy_request["%s|_cwl__value_" % input_name] = galaxy_value
         elif as_dict_value is NOT_PRESENT:
             continue

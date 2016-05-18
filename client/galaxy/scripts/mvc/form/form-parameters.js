@@ -3,11 +3,11 @@
 */
 define(['utils/utils',
         'mvc/ui/ui-misc',
-        'mvc/form/form-select-content',
+        'mvc/ui/ui-select-content',
         'mvc/ui/ui-select-library',
         'mvc/ui/ui-select-ftp',
         'mvc/ui/ui-color-picker'],
-    function(Utils, Ui, SelectContent, SelectLibrary, SelectFtp, ColorPicker) {
+    function( Utils, Ui, SelectContent, SelectLibrary, SelectFtp, ColorPicker ) {
 
     // create form view
     return Backbone.Model.extend({
@@ -31,50 +31,30 @@ define(['utils/utils',
             'ftpfile'           : '_fieldFtp'
         },
 
-        // initialize
-        initialize: function(app, options) {
+        initialize: function( app, options ) {
             this.app = app;
         },
 
         /** Returns an input field for a given field type
         */
-        create: function(input_def) {
-            // add regular/default value if missing
-            if (input_def.value === undefined) {
-                input_def.value = null;
-            }
-            if (input_def.default_value === undefined) {
-                input_def.default_value = input_def.value;
-            }
-
-            // create field wrapper
-            var field = null;
-            var fieldClass = this.types[input_def.type];
-            if (fieldClass && typeof(this[fieldClass]) === 'function') {
-                field = this[fieldClass].call(this, input_def);
-            }
-
-            // match unavailable field types
-            if (!field) {
+        create: function( input_def ) {
+            var fieldClass = this.types[ input_def.type ];
+            var field = typeof( this[ fieldClass ] ) === 'function' ? this[ fieldClass ].call( this, input_def ) : null;
+            if ( !field ) {
                 this.app.incompatible = true;
-                if (input_def.options) {
-                    field = this._fieldSelect(input_def);
-                } else {
-                    field = this._fieldText(input_def);
-                }
+                field = input_def.options ? this._fieldSelect( input_def ) : this._fieldText( input_def );
                 Galaxy.emit.debug('form-parameters::_addRow()', 'Auto matched field type (' + input_def.type + ').');
             }
-
-            // set initial field value
-            input_def.value !== undefined && ( field.value( input_def.value ) );
+            input_def.value === undefined && ( input_def.value = null );
+            field.value( input_def.value );
             return field;
         },
 
         /** Data input field
         */
-        _fieldData: function(input_def) {
+        _fieldData: function( input_def ) {
             var self = this;
-            return new SelectContent.View(this.app, {
+            return new SelectContent.View({
                 id          : 'field-' + input_def.id,
                 extensions  : input_def.extensions,
                 optional    : input_def.optional,
@@ -82,37 +62,33 @@ define(['utils/utils',
                 type        : input_def.type,
                 data        : input_def.options,
                 onchange    : function() {
-                    self.app.trigger('change');
+                    self.app.trigger( 'change' );
                 }
             });
         },
 
         /** Select/Checkbox/Radio options field
         */
-        _fieldSelect: function (input_def) {
+        _fieldSelect: function ( input_def ) {
             // show text field e.g. in workflow editor
             if( input_def.is_workflow ) {
                 return this._fieldText( input_def );
             }
 
             // customize properties
-            if (input_def.type == 'data_column') {
+            if ( input_def.type == 'data_column' ) {
                 input_def.error_text = 'Missing columns in referenced dataset.'
             }
 
             // configure options fields
             var options = [];
-            for (var i in input_def.options) {
-                var option = input_def.options[i];
-                options.push({
-                    label: option[0],
-                    value: option[1]
-                });
-            }
+            _.each( input_def.options, function( option ) {
+                options.push( { label: option[ 0 ], value: option[ 1 ] } );
+            });
 
             // identify display type
             var SelectClass = Ui.Select;
-            switch (input_def.display) {
+            switch ( input_def.display ) {
                 case 'checkboxes':
                     SelectClass = Ui.Checkbox;
                     break;
@@ -127,19 +103,18 @@ define(['utils/utils',
                 id          : 'field-' + input_def.id,
                 data        : options,
                 error_text  : input_def.error_text || 'No options available',
-                optional    : input_def.optional && input_def.default_value === null,
                 multiple    : input_def.multiple,
                 optional    : input_def.optional,
                 searchable  : input_def.searchable,
                 onchange    : function() {
-                    self.app.trigger('change');
+                    self.app.trigger( 'change' );
                 }
             });
         },
 
         /** Drill down options field
         */
-        _fieldDrilldown: function (input_def) {
+        _fieldDrilldown: function ( input_def ) {
             // show text field e.g. in workflow editor
             if( input_def.is_workflow ) {
                 return this._fieldText( input_def );
@@ -152,25 +127,25 @@ define(['utils/utils',
                 data        : input_def.options,
                 display     : input_def.display,
                 onchange    : function() {
-                    self.app.trigger('change');
+                    self.app.trigger( 'change' );
                 }
             });
         },
 
         /** Text input field
         */
-        _fieldText: function(input_def) {
+        _fieldText: function( input_def ) {
             // field replaces e.g. a select field
-            if (input_def.options) {
+            if ( input_def.options ) {
                 input_def.area = input_def.multiple;
-                if (!Utils.validate(input_def.value)) {
+                if ( !Utils.validate( input_def.value ) ) {
                     input_def.value = null;
                 } else {
-                    if ($.isArray(input_def.value)) {
+                    if ( $.isArray( input_def.value ) ) {
                         var str_value = '';
-                        for (var i in input_def.value) {
-                            str_value += String(input_def.value[i]);
-                            if (!input_def.multiple) {
+                        for ( var i in input_def.value ) {
+                            str_value += String( input_def.value[ i ] );
+                            if ( !input_def.multiple ) {
                                 break;
                             }
                             str_value += '\n';
@@ -179,21 +154,20 @@ define(['utils/utils',
                     }
                 }
             }
-
             // create input element
             var self = this;
             return new Ui.Input({
                 id          : 'field-' + input_def.id,
                 area        : input_def.area,
-                onchange    : function() {
-                    self.app.trigger('change');
+                onchange    : function( new_value ) {
+                    input_def.onchange ? input_def.onchange( new_value ) : self.app.trigger( 'change' );
                 }
             });
         },
 
         /** Slider field
         */
-        _fieldSlider: function(input_def) {
+        _fieldSlider: function( input_def ) {
             var self = this;
             return new Ui.Slider.View({
                 id          : 'field-' + input_def.id,
@@ -202,14 +176,14 @@ define(['utils/utils',
                 min         : input_def.min,
                 max         : input_def.max,
                 onchange    : function() {
-                    self.app.trigger('change');
+                    self.app.trigger( 'change' );
                 }
             });
         },
 
         /** Hidden field
         */
-        _fieldHidden: function(input_def) {
+        _fieldHidden: function( input_def ) {
             return new Ui.Hidden({
                 id          : 'field-' + input_def.id,
                 info        : input_def.info
@@ -218,54 +192,54 @@ define(['utils/utils',
 
         /** Boolean field
         */
-        _fieldBoolean: function(input_def) {
+        _fieldBoolean: function( input_def ) {
             var self = this;
             return new Ui.RadioButton.View({
                 id          : 'field-' + input_def.id,
                 data        : [ { label : 'Yes', value : 'true'  },
                                 { label : 'No',  value : 'false' }],
                 onchange    : function() {
-                    self.app.trigger('change');
+                    self.app.trigger( 'change' );
                 }
             });
         },
 
         /** Color picker field
         */
-        _fieldColor: function(input_def) {
+        _fieldColor: function( input_def ) {
             var self = this;
             return new ColorPicker({
                 id          : 'field-' + input_def.id,
                 onchange    : function() {
-                    self.app.trigger('change');
+                    self.app.trigger( 'change' );
                 }
             });
         },
 
         /** Library dataset field
         */
-        _fieldLibrary: function(input_def) {
+        _fieldLibrary: function( input_def ) {
             var self = this;
             return new SelectLibrary.View({
                 id          : 'field-' + input_def.id,
                 optional    : input_def.optional,
                 multiple    : input_def.multiple,
                 onchange    : function() {
-                    self.app.trigger('change');
+                    self.app.trigger( 'change' );
                 }
             });
         },
 
         /** FTP file field
         */
-        _fieldFtp: function(input_def) {
+        _fieldFtp: function( input_def ) {
             var self = this;
             return new SelectFtp.View({
                 id          : 'field-' + input_def.id,
                 optional    : input_def.optional,
                 multiple    : input_def.multiple,
                 onchange    : function() {
-                    self.app.trigger('change');
+                    self.app.trigger( 'change' );
                 }
             });
         }

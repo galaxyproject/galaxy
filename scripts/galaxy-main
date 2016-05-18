@@ -15,15 +15,13 @@ a loggers section in Galaxy's ini file - this can be overridden with sensible
 defaults logging to a single file with the following:
 
 galaxy-main -d --server-name handler0 --daemon-log-file=handler0-daemon.log --pid-file handler0.pid --log-file handler0.log
-
 """
-import logging
-from logging.config import fileConfig
-
 import functools
+import logging
 import os
-import time
 import sys
+import time
+from logging.config import fileConfig
 
 try:
     import ConfigParser as configparser

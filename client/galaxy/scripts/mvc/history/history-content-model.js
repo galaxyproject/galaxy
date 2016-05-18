@@ -4,6 +4,8 @@ define([
     "utils/localization"
 ], function( STATES, BASE_MVC, _l ){
 
+'use strict';
+
 var logNamespace = 'history';
 //==============================================================================
 /** How the type_id attribute is built for the history's mixed contents collection */

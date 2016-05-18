@@ -6,6 +6,8 @@ define([
     "utils/localization",
     "ui/editable-text",
 ], function( DC_VIEW, DC_MODEL, DC_EDIT, BASE_MVC, _l ){
+
+'use strict';
 /* =============================================================================
 TODO:
 

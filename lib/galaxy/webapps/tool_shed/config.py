@@ -7,7 +7,7 @@ import sys
 import logging
 import logging.config
 import ConfigParser
-from galaxy.util import string_as_bool, listify
+from galaxy.util import string_as_bool
 from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.version import VERSION, VERSION_MAJOR
 
@@ -66,12 +66,12 @@ class Configuration( object ):
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
         self.cookie_path = kwargs.get( "cookie_path", "/" )
         self.enable_quotas = string_as_bool( kwargs.get( 'enable_quotas', False ) )
-        self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         # Tool stuff
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "shed-tool-data" ), os.getcwd() )
+        self.tool_data_table_config_path = None
         self.integrated_tool_panel_config = resolve_path( kwargs.get( 'integrated_tool_panel_config', 'integrated_tool_panel.xml' ), self.root )
         self.builds_file_path = resolve_path( kwargs.get( "builds_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'builds.txt') ), self.root )
         self.len_file_path = resolve_path( kwargs.get( "len_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'chrom') ), self.root )
@@ -176,10 +176,6 @@ class Configuration( object ):
             shed_tool_data_table_config=[ 'shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml' ],
         )
 
-        listify_defaults = dict(
-            tool_data_table_config_path=[ 'config/tool_data_table_conf.xml', 'tool_data_table_conf.xml', 'config/tool_data_table_conf.xml.sample' ],
-        )
-
         for var, defaults in defaults.items():
             if kwargs.get( var, None ) is not None:
                 path = kwargs.get( var )
@@ -191,22 +187,6 @@ class Configuration( object ):
                 else:
                     path = defaults[-1]
             setattr( self, var, resolve_path( path, self.root ) )
-
-        for var, defaults in listify_defaults.items():
-            paths = []
-            if kwargs.get( var, None ) is not None:
-                paths = listify( kwargs.get( var ) )
-            else:
-                for default in defaults:
-                    for path in listify( default ):
-                        if not os.path.exists( resolve_path( path, self.root ) ):
-                            break
-                    else:
-                        paths = listify( default )
-                        break
-                else:
-                    paths = listify( defaults[-1] )
-            setattr( self, var, [ resolve_path( x, self.root ) for x in paths ] )
 
         # Backwards compatibility for names used in too many places to fix
         self.datatypes_config = self.datatypes_config_file

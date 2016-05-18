@@ -23,7 +23,6 @@ var webpack = require( 'webpack' ),
         // mvc
         'libs/underscore',
         'libs/backbone',
-        'libs/handlebars.runtime',
         // all pages get these
         'ui/autocom_tagging',
         'layout/modal',
@@ -54,7 +53,6 @@ module.exports = {
     },
     module : {
         loaders : [
-            { test : /\.handlebars$/, loader : 'handlebars-loader' },
         ],
     },
     resolveLoader : {
@@ -74,7 +72,6 @@ module.exports = {
             'window.jQuery':    'jquery',
             _:                  "underscore",
             Backbone:           'libs/backbone',
-            Handlebars:         'libs/handlebars.runtime'
         }),
         // new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 })
     ],

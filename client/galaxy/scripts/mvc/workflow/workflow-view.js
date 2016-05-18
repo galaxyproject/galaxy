@@ -361,12 +361,10 @@ EditorFormView = Backbone.View.extend({
                      self.canvas_manager.draw_overview();
                      // Determine if any parameters were 'upgraded' and provide message
                      upgrade_message = "";
-                     $.each( data.upgrade_messages, function( step_id, messages ) {
+                     _.each( data.upgrade_messages, function( messages, step_id ) {
                         var details = "";
-                        Utils.deepeach( [ messages ], function( d ) {
-                            $.each( d, function( i, v ) {
-                                details += typeof v === "string" ? "<li>" + v + "</li>" : "";
-                            });
+                        _.each( messages, function( m ) {
+                            details += "<li>" + m + "</li>";
                         });
                         if ( details ) {
                             upgrade_message += "<li>Step " + ( parseInt( step_id, 10 ) + 1 ) + ": " + self.workflow.nodes[ step_id ].name + "<ul>" + details + "</ul></li>";
@@ -621,9 +619,7 @@ EditorFormView = Backbone.View.extend({
 
         // Global state for the whole workflow
         reset: function() {
-            if ( this.workflow ) {
-                this.workflow.remove_all();
-            }
+            this.workflow && this.workflow.remove_all();
             this.workflow = Globals.workflow = new Workflow( this, $("#canvas-container") );
         },
 
@@ -799,6 +795,7 @@ EditorFormView = Backbone.View.extend({
                 if (node.type == 'tool' && Utils.isJSON(text)) {
                     var options = JSON.parse(text);
                     options.node = node;
+                    options.workflow = this.workflow;
                     options.datatypes = this.datatypes;
                     formView = new ToolForm.View(options);
                 } else {

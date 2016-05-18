@@ -193,7 +193,6 @@ User.prototype.logout = function logout(){
     this.spaceghost.openHomePage( function(){
         if( spaceghost.user.loggedInAs() ){
             this.click( xpath( spaceghost.data.selectors.masthead.user ) )
-            //spaceghost.clickLabel( spaceghost.data.labels.masthead.menus.user );
             spaceghost.clickLabel( spaceghost.data.labels.masthead.userMenu.logout );
             spaceghost.waitForNavigation( 'user/logout', function _toLogoutPage() {
                 spaceghost.clickLabel( 'go to the home page' );

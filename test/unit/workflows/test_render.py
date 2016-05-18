@@ -66,4 +66,4 @@ def test_render():
     )
     workflow_canvas.add_steps()
     workflow_canvas.finish()
-    assert workflow_canvas.canvas.standalone_xml()
+    assert workflow_canvas.canvas.tostring()

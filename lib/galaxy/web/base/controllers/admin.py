@@ -1,6 +1,7 @@
 import logging
 import os
 from datetime import datetime, timedelta
+from six import string_types
 from string import punctuation as PUNCTUATION
 
 from sqlalchemy import and_, false, func, or_
@@ -1129,7 +1130,7 @@ class Admin( object ):
             # write the configured sanitize_whitelist_file with new whitelist
             # and update in-memory list.
             with open(trans.app.config.sanitize_whitelist_file, 'wt') as f:
-                if isinstance(tools_to_whitelist, basestring):
+                if isinstance(tools_to_whitelist, string_types):
                     tools_to_whitelist = [tools_to_whitelist]
                 new_whitelist = sorted([tid for tid in tools_to_whitelist if tid in trans.app.toolbox.tools_by_id])
                 f.write("\n".join(new_whitelist))

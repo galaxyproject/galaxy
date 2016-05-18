@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 import ConfigParser
 import logging
 import os
@@ -14,9 +13,7 @@ import sqlalchemy as sa
 from sqlalchemy import and_, false, null, true
 from sqlalchemy.orm import eagerload
 
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] )  # remove scripts/ from the path
-sys.path = new_path
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
 import galaxy.config
 import galaxy.model.mapping

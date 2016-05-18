@@ -1,0 +1,33 @@
+<tool id="split" name="split" version="0.1.0">
+  <command detect_errors="exit_code">
+    bash $script
+  </command>
+  <configfiles>
+    <configfile name="script">
+      mkdir outputs;
+      cd outputs;
+      i=1;
+      while read -r line || [[ -n "\$line" ]]; do
+        printf "\$line\n" &gt; \$i ;
+        i=\$[\$i +1];
+      done &lt; "$input1";
+    </configfile>
+  </configfiles>
+  <inputs>
+    <param name="input1" type="data" format="txt" label="Input Text" />
+  </inputs>
+  <outputs>
+    <collection name="output" type="list" label="lines">
+      <discover_datasets pattern="__name__" directory="outputs" />
+    </collection>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="simple_lines_both.txt" />
+      <output_collection name="output" type="list">
+        <element name="1" file="simple_line.txt" />
+        <element name="2" file="simple_line_alternative.txt" />
+      </output_collection>
+    </test>
+  </tests>
+</tool>

@@ -19,11 +19,40 @@ class OpenObject( object ):
     pass
 
 
+def buildMockEnviron( **kwargs ):
+    environ = {
+        'CONTENT_LENGTH': '0',
+        'CONTENT_TYPE': '',
+        'HTTP_ACCEPT': '*/*',
+        'HTTP_ACCEPT_ENCODING': 'gzip, deflate',
+        'HTTP_ACCEPT_LANGUAGE': 'en-US,en;q=0.8,zh;q=0.5,ja;q=0.3',
+        'HTTP_CACHE_CONTROL': 'no-cache',
+        'HTTP_CONNECTION': 'keep-alive',
+        'HTTP_DNT': '1',
+        'HTTP_HOST': 'localhost:8000',
+        'HTTP_ORIGIN': 'http://localhost:8000',
+        'HTTP_PRAGMA': 'no-cache',
+        'HTTP_REFERER': 'http://localhost:8000',
+        'HTTP_USER_AGENT': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:43.0) Gecko/20100101 Firefox/43.0',
+        'PATH_INFO': '/',
+        'QUERY_STRING': '',
+        'REMOTE_ADDR': '127.0.0.1',
+        'REQUEST_METHOD': 'GET',
+        'SCRIPT_NAME': '',
+        'SERVER_NAME': '127.0.0.1',
+        'SERVER_PORT': '8080',
+        'SERVER_PROTOCOL': 'HTTP/1.1'
+    }
+    environ.update( **kwargs )
+    return environ
+
+
 class MockApp( object ):
 
-    def __init__( self, **kwargs ):
-        self.config = MockAppConfig( **kwargs )
+    def __init__( self, config=None, **kwargs ):
+        self.config = config or MockAppConfig( **kwargs )
         self.security = self.config.security
+        self.name = kwargs.get( 'name', 'galaxy' )
         self.object_store = objectstore.build_object_store_from_config( self.config )
         self.model = mapping.init( "/tmp", "sqlite:///:memory:", create_tables=True, object_store=self.object_store )
         self.security_agent = self.model.security_agent
@@ -37,8 +66,9 @@ class MockAppConfig( Bunch ):
     def __init__( self, root=None, **kwargs ):
         Bunch.__init__( self, **kwargs )
         self.security = security.SecurityHelper( id_secret='bler' )
+        self.use_remote_user = kwargs.get( 'use_remote_user', False )
         self.file_path = '/tmp'
-        self.job_working_directory = '/tmp'
+        self.jobs_directory = '/tmp'
         self.new_file_path = '/tmp'
 
         self.object_store_config_file = ''
@@ -52,6 +82,8 @@ class MockAppConfig( Bunch ):
         self.allow_user_dataset_purge = True
         self.enable_old_display_applications = True
 
+        self.umask = 0o77
+
         # set by MockDir
         self.root = root
 
@@ -60,6 +92,7 @@ class MockWebapp( object ):
 
     def __init__( self, **kwargs ):
         self.name = kwargs.get( 'name', 'galaxy' )
+        self.security = security.SecurityHelper( id_secret='bler' )
 
 
 class MockTrans( object ):
@@ -74,6 +107,9 @@ class MockTrans( object ):
         self.__user = user
         self.security = self.app.security
         self.history = history
+
+        self.request = Bunch( headers={} )
+        self.response = Bunch( headers={} )
 
     def get_user( self ):
         if self.galaxy_session:

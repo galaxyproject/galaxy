@@ -9,12 +9,15 @@ import logging
 import logging.config
 import os
 import re
+import signal
 import socket
 import string
 import sys
 import tempfile
 import threading
 from datetime import timedelta
+from six import string_types
+
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
 from galaxy.util import string_as_bool
@@ -88,7 +91,6 @@ class Configuration( object ):
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "tool-data" ), os.getcwd() )
         self.builds_file_path = resolve_path( kwargs.get( "builds_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'builds.txt') ), self.root )
         self.len_file_path = resolve_path( kwargs.get( "len_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'chrom') ), self.root )
-        self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
         # and moved to the tool shed.
         self.integrated_tool_panel_config = resolve_path( kwargs.get( 'integrated_tool_panel_config', 'integrated_tool_panel.xml' ), self.root )
@@ -124,7 +126,7 @@ class Configuration( object ):
         self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
         self.hours_between_check = kwargs.get( 'hours_between_check', 12 )
         self.enable_tool_shed_check = string_as_bool( kwargs.get( 'enable_tool_shed_check', False ) )
-        if isinstance( self.hours_between_check, basestring ):
+        if isinstance( self.hours_between_check, string_types ):
             self.hours_between_check = float( self.hours_between_check )
         try:
             if isinstance( self.hours_between_check, int ):
@@ -168,8 +170,11 @@ class Configuration( object ):
         self.cluster_job_queue_workers = int( kwargs.get( "cluster_job_queue_workers", "3" ) )
         self.job_queue_cleanup_interval = int( kwargs.get("job_queue_cleanup_interval", "5") )
         self.cluster_files_directory = os.path.abspath( kwargs.get( "cluster_files_directory", "database/pbs" ) )
-        self.job_working_directory = resolve_path( kwargs.get( "job_working_directory", "database/job_working_directory" ), self.root )
-        self.default_job_shell = kwargs.get( "default_job_shell", "/bin/sh" )
+
+        # Fall back to to legacy job_working_directory config variable if set.
+        default_jobs_directory = kwargs.get( "job_working_directory", "database/jobs_directory" )
+        self.jobs_directory = resolve_path( kwargs.get( "jobs_directory", default_jobs_directory ), self.root )
+        self.default_job_shell = kwargs.get( "default_job_shell", "/bin/bash" )
         self.cleanup_job = kwargs.get( "cleanup_job", "always" )
         self.container_image_cache_path = self.resolve_path( kwargs.get( "container_image_cache_path", "database/container_images" ) )
         self.outputs_to_working_directory = string_as_bool( kwargs.get( 'outputs_to_working_directory', False ) )
@@ -221,6 +226,9 @@ class Configuration( object ):
         self.commands_in_new_shell = string_as_bool( kwargs.get( 'enable_beta_tool_command_isolation', "True" ) )
         self.tool_submission_burst_threads = int( kwargs.get( 'tool_submission_burst_threads', '1' ) )
         self.tool_submission_burst_at = int( kwargs.get( 'tool_submission_burst_at', '10' ) )
+        # Enable new interface for API installations from TS.
+        # Admin menu will list both if enabled.
+        self.enable_beta_ts_api_install = string_as_bool( kwargs.get( 'enable_beta_ts_api_install', 'False' ) )
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool( kwargs.get( 'enable_beta_job_managers', 'False' ) )
         # These workflow modules should not be considered part of Galaxy's
@@ -255,11 +263,14 @@ class Configuration( object ):
         self.external_chown_script = kwargs.get('external_chown_script', None)
         self.environment_setup_file = kwargs.get( 'environment_setup_file', None )
         self.use_heartbeat = string_as_bool( kwargs.get( 'use_heartbeat', 'False' ) )
+        self.heartbeat_interval = int( kwargs.get( 'heartbeat_interval', 20 ) )
+        self.heartbeat_log = kwargs.get( 'heartbeat_log', None )
         self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )
         self.log_events = string_as_bool( kwargs.get( 'log_events', 'False' ) )
         self.sanitize_all_html = string_as_bool( kwargs.get( 'sanitize_all_html', True ) )
         self.sanitize_whitelist_file = resolve_path( kwargs.get( 'sanitize_whitelist_file', "config/sanitize_whitelist.txt" ), self.root )
         self.serve_xss_vulnerable_mimetypes = string_as_bool( kwargs.get( 'serve_xss_vulnerable_mimetypes', False ) )
+        self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames( kwargs )
         self.trust_ipython_notebook_conversion = string_as_bool( kwargs.get( 'trust_ipython_notebook_conversion', False ) )
         self.enable_old_display_applications = string_as_bool( kwargs.get( "enable_old_display_applications", "True" ) )
         self.brand = kwargs.get( 'brand', None )
@@ -347,8 +358,10 @@ class Configuration( object ):
             self.config_file = global_conf['__file__']
             global_conf_parser.read(global_conf['__file__'])
         # Heartbeat log file name override
-        if global_conf is not None:
-            self.heartbeat_log = global_conf.get( 'heartbeat_log', 'heartbeat.log' )
+        if global_conf is not None and 'heartbeat_log' in global_conf:
+            self.heartbeat_log = global_conf['heartbeat_log']
+        if self.heartbeat_log is None:
+            self.heartbeat_log = 'heartbeat_{server_name}.log'
         # Determine which 'server:' this is
         self.server_name = 'main'
         for arg in sys.argv:
@@ -441,6 +454,7 @@ class Configuration( object ):
         self.visualization_plugins_directory = kwargs.get(
             'visualization_plugins_directory', 'config/plugins/visualizations' )
         ie_dirs = kwargs.get( 'interactive_environment_plugins_directory', None )
+        self.gie_dirs = [d.strip() for d in (ie_dirs.split(",") if ie_dirs else [])]
         if ie_dirs and not self.visualization_plugins_directory:
             self.visualization_plugins_directory = ie_dirs
         elif ie_dirs:
@@ -453,6 +467,12 @@ class Configuration( object ):
         self.dynamic_proxy_bind_ip = kwargs.get( "dynamic_proxy_bind_ip", "0.0.0.0" )
         self.dynamic_proxy_external_proxy = string_as_bool( kwargs.get( "dynamic_proxy_external_proxy", "False" ) )
         self.dynamic_proxy_prefix = kwargs.get( "dynamic_proxy_prefix", "gie_proxy" )
+
+        self.dynamic_proxy = kwargs.get( "dynamic_proxy", "node" )
+        self.dynamic_proxy_golang_noaccess = kwargs.get( "dynamic_proxy_golang_noaccess", 60 )
+        self.dynamic_proxy_golang_clean_interval = kwargs.get( "dynamic_proxy_golang_clean_interval", 10 )
+        self.dynamic_proxy_golang_docker_address = kwargs.get( "dynamic_proxy_golang_docker_address", "unix:///var/run/docker.sock" )
+        self.dynamic_proxy_golang_api_key = kwargs.get( "dynamic_proxy_golang_api_key", None )
 
         # Default chunk size for chunkable datatypes -- 64k
         self.display_chunk_size = int( kwargs.get( 'display_chunk_size', 65536) )
@@ -669,6 +689,24 @@ class Configuration( object ):
             # uWSGI galaxy installations don't use paster and only speak uWSGI not http
             port = None
         return port
+
+    def _parse_allowed_origin_hostnames( self, kwargs ):
+        """
+        Parse a CSV list of strings/regexp of hostnames that should be allowed
+        to use CORS and will be sent the Access-Control-Allow-Origin header.
+        """
+        allowed_origin_hostnames = listify( kwargs.get( 'allowed_origin_hostnames', None ) )
+        if not allowed_origin_hostnames:
+            return None
+
+        def parse( string ):
+            # a string enclosed in fwd slashes will be parsed as a regexp: e.g. /<some val>/
+            if string[0] == '/' and string[-1] == '/':
+                string = string[1:-1]
+                return re.compile( string, flags=( re.UNICODE | re.LOCALE ) )
+            return string
+
+        return [ parse( v ) for v in allowed_origin_hostnames if v ]
 
 
 def get_database_engine_options( kwargs, model_prefix='' ):
@@ -891,3 +929,7 @@ class ConfiguresGalaxyMixin:
             install_db_engine_options = self.config.install_database_engine_options
             self.install_model = install_mapping.init( install_db_url,
                                                        install_db_engine_options )
+
+    def _configure_signal_handlers( self, handlers ):
+        for sig, handler in handlers.items():
+            signal.signal( sig, handler )

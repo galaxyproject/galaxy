@@ -89,10 +89,6 @@
 ## generates dictionary
 <%
     item_class = grid.model_class.__name__
-    print item_class
-
-    print 'tag url:', url( controller='tag', action='tag_autocomplete_data', item_class=item_class )
-    ## print 'name url:', url( controller='history', action='name_autocomplete_data' )
     self.grid_config = {
         'title'                         : grid.title,
         'url_base'                      : trans.request.path_url,

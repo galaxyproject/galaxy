@@ -8,6 +8,7 @@ import random
 import socket
 import string
 import time
+import urlparse
 from Cookie import CookieError
 
 from Cheetah.Template import Template
@@ -15,6 +16,7 @@ import mako.runtime
 import mako.lookup
 from babel.support import Translations
 from babel import Locale
+from six import string_types
 from sqlalchemy import and_, true
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import joinedload
@@ -184,6 +186,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         self.galaxy_session = None
         self.error_message = None
 
+        # set any cross origin resource sharing headers if configured to do so
+        self.set_cors_headers()
+
         if self.environ.get('is_api_request', False):
             # With API requests, if there's a key, use it and associate the
             # user with the transaction.
@@ -254,6 +259,50 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
             locales = 'en'
         t = Translations.load( dirname='locale', locales=locales, domain='ginga' )
         self.template_context.update( dict( _=t.ugettext, n_=t.ugettext, N_=t.ungettext ) )
+
+    def set_cors_headers( self ):
+        """Allow CORS requests if configured to do so by echoing back the request's
+        'Origin' header (if any) as the response header 'Access-Control-Allow-Origin'
+        """
+        # TODO: in order to use these, we need preflight to work, and to do that we
+        # need the OPTIONS method on all api calls (or everywhere we can POST/PUT)
+        # ALLOWED_METHODS = ( 'POST', 'PUT' )
+
+        # do not set any access control headers if not configured for it (common case)
+        if not self.app.config.get( 'allowed_origin_hostnames', None ):
+            return
+        # do not set any access control headers if there's no origin header on the request
+        origin_header = self.request.headers.get( "Origin", None )
+        if not origin_header:
+            return
+
+        # singular match
+        def matches_allowed_origin( origin, allowed_origin ):
+            if isinstance( allowed_origin, string_types ):
+                return origin == allowed_origin
+            match = allowed_origin.match( origin )
+            return match and match.group() == origin
+
+        # check for '*' or compare to list of allowed
+        def is_allowed_origin( origin ):
+            # localhost uses no origin header (== null)
+            if not origin:
+                return False
+            for allowed_origin in self.app.config.allowed_origin_hostnames:
+                if allowed_origin == '*' or matches_allowed_origin( origin, allowed_origin ):
+                    return True
+            return False
+
+        # boil origin header down to hostname
+        origin = urlparse.urlparse( origin_header ).hostname
+        # check against the list of allowed strings/regexp hostnames, echo original if cleared
+        if is_allowed_origin( origin ):
+            self.response.headers[ 'Access-Control-Allow-Origin' ] = origin_header
+            # TODO: see the to do on ALLOWED_METHODS above
+            # self.response.headers[ 'Access-Control-Allow-Methods' ] = ', '.join( ALLOWED_METHODS )
+
+        # NOTE: raising some errors (such as httpexceptions), will remove the header
+        # (e.g. client will get both cors error and 404 inside that)
 
     def get_user( self ):
         """Return the current user if logged in or None."""

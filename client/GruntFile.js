@@ -24,5 +24,5 @@ module.exports = function(grunt) {
     // see the sub directory grunt-tasks/ for individual task definitions
     grunt.loadTasks( 'grunt-tasks' );
     // note: 'handlebars' *not* 'templates' since handlebars doesn't call uglify
-    grunt.registerTask( 'default', [ 'check-modules', 'handlebars', 'uglify' ] );
+    grunt.registerTask( 'default', [ 'check-modules', 'uglify', 'webpack' ] );
 };

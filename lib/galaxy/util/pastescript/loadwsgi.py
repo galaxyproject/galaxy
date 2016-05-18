@@ -7,12 +7,13 @@ from __future__ import with_statement
 
 import inspect
 import os
-import sys
 import re
+import sys
 
 from galaxy.util.properties import NicerConfigParser
 
 import pkg_resources
+from six import iteritems
 
 __all__ = ['loadapp', 'loadserver', 'loadfilter', 'appconfig']
 
@@ -31,15 +32,11 @@ def print_(template, *args, **kwargs):
 
 if sys.version_info < (3, 0):
     from urllib import unquote
-    iteritems = lambda d: d.iteritems()
-    dictkeys = lambda d: d.keys()
 
     def reraise(t, e, tb):
         exec('raise t, e, tb', dict(t=t, e=e, tb=tb))
 else:
     from urllib.parse import unquote
-    iteritems = lambda d: d.items()
-    dictkeys = lambda d: list(d.keys())
 
     def reraise(t, e, tb):
         exec('raise e from tb', dict(e=e, tb=tb))
@@ -703,7 +700,7 @@ class EggLoader(_Loader):
                     dist.location,
                     ', '.join(_flatten(object_type.egg_protocols)),
                     ', '.join(_flatten([
-                        dictkeys(pkg_resources.get_entry_info(self.spec, prot, name) or {})
+                        list((pkg_resources.get_entry_info(self.spec, prot, name) or {}).keys())
                         for prot in protocol_options] or '(no entry points)'))))
         if len(possible) > 1:
             raise LookupError(

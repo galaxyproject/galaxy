@@ -15,7 +15,8 @@ except ImportError:
     oidutil = None
 
     class FakeConsumer( object ):
-        __getattr__ = lambda x, y: None
+        def __getattr__(x, y):
+            return None
     consumer = FakeConsumer()
 
 

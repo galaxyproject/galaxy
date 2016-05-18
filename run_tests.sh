@@ -13,7 +13,7 @@ cat <<EOF
 '${0##*/} -sid ccc'                 for testing one section with sid 'ccc' ('ccc' is the string after 'section::')
 '${0##*/} -list'                    for listing all the tool ids
 '${0##*/} -api (test_path)'         for running all the test scripts in the ./test/api directory
-'${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./test/tool_shed/functional directory
+'${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./test/shed_functional/functional directory
 '${0##*/} -workflow test.xml'       for running a workflow test case as defined by supplied workflow xml test file (experimental)
 '${0##*/} -installed'               for running tests of Tool Shed installed tools
 '${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"
@@ -35,16 +35,118 @@ Run a specific API test:
     ./run_tests.sh -api test/api/test_tools.py:ToolsTestCase.test_map_over_with_output_format_actions
 
 
+External Tests:
+
+A small subset of tests can be run against an existing Galxy
+instance. The external Galaxy instance URL can be configured with
+--external_url. If this is set, either --external_master_key or
+--external_user_key must be set as well - more tests can be executed
+with --external_master_key than with a user key.
+
 Extra options:
+
  --verbose_errors      Force some tests produce more verbose error reporting.
- --no_cleanup          Do not delete temp files for Python functional tests (-toolshed, -framework, etc...)
- --debug               On python test error or failure invoke a pdb shell for interactive debugging of the test
- --report_file         Path of HTML report to produce (for Python Galaxy functional tests).
- --xunit_report_file   Path of XUnit report to produce (for Python Galaxy functional tests).
- --skip-venv           Do not create .venv (passes this flag to common_startup.sh)
- --dockerize           Run tests in a pre-configured Docker container (must be first argument if present).
- --db <type>           For use with --dockerize, run tests using partially migrated 'postgres', 'mysql',
-                       or 'sqlite' databases.
+ --no_cleanup          Do not delete temp files for Python functional tests
+                       (-toolshed, -framework, etc...)
+ --debug               On python test error or failure invoke a pdb shell for
+                       interactive debugging of the test
+ --report_file         Path of HTML report to produce (for Python Galaxy
+                       functional tests).
+ --xunit_report_file   Path of XUnit report to produce (for Python Galaxy
+                       functional tests).
+ --skip-venv           Do not create .venv (passes this flag to
+                       common_startup.sh)
+ --dockerize           Run tests in a pre-configured Docker container (must be
+                       first argument if present).
+ --db <type>           For use with --dockerize, run tests using partially
+                       migrated 'postgres', 'mysql', or 'sqlite' databases.
+ --external_url        External URL to use for Galaxy testing (only certain
+                       tests).
+ --external_master_key Master API key used to configure external tests.
+ --external_user_key   User API used for external tests - not required if
+                       external_master_key is specified.
+
+Environment Variables:
+
+In addition to the above command-line options, many environment variables
+can be used to control the Galaxy functional testing processing. Command-line
+options above like (--external_url) will set environment variables - in such
+cases the command line argument takes precedent over environment variables set
+at the time of running this script.
+
+Functional Test Environment Variables
+
+GALAXY_TEST_DBURI               Database connection string used for functional
+                                test database for Galaxy.
+GALAXY_TEST_INSTALL_DBURI       Database connection string used for functional
+                                test database for Galaxy's install framework.
+GALAXY_TEST_INSTALL_DB_MERGED   Set to use same database for Galaxy and install
+                                framework, this defaults to True for Galaxy
+                                tests an False for shed tests.
+GALAXY_TEST_DB_TEMPLATE         If GALAXY_TEST_DBURI is unset, this URL can be
+                                retrieved and should be an sqlite database that
+                                will be upgraded and tested against.
+GALAXY_TEST_TMP_DIR             Temp directory used for files required by
+                                Galaxy server setup for Galaxy functional tests.
+GALAXY_TEST_SAVE                Location to save certain test files (such as
+                                tool outputs).
+GALAXY_TEST_EXTERNAL            Target an external Galaxy as part of testing.
+GALAXY_TEST_JOB_CONFIG_FILE     Job config file to use for the test.
+GALAXY_CONFIG_MASTER_KEY        Master or admin API key to use as part of
+                                testing with GALAXY_TEST_EXTERNAL.
+GALAXY_TEST_USER_API_KEY        User API key to use as part of testing with
+                                GALAXY_TEST_EXTERNAL.
+GALAXY_TEST_HISTORY_ID          Point casperjs tests at specific external
+                                history for testing.
+GALAXY_TEST_WORKFLOW_FILE       Point casperjs tests at specific workflow
+                                file for testing.
+GALAXY_TEST_VERBOSE_ERRORS      Enable more verbose errors during API tests.
+GALAXY_TEST_UPLOAD_ASYNC        Upload tool test inputs asynchronously (may
+                                overwhelm sqlite database).
+GALAXY_TEST_RAW_DIFF            Don't slice up tool test diffs to keep output
+                                managable - print all output. (default off)
+GALAXY_TEST_DEFAULT_WAIT        Max time allowed for a tool test before Galaxy
+                                gives up (default 86400) - tools may define a
+                                maxseconds attribute to extend this.
+GALAXY_TEST_TOOL_DEPENDENCY_DIR tool dependency dir to use for Galaxy during
+                                functional tests.
+GALAXY_TEST_FILE_DIR            Test data sources (default to
+              test-data,https://github.com/galaxyproject/galaxy-test-data.git)
+GALAXY_TEST_DIRECTORY           $GALAXY_ROOT/test
+GALAXY_TEST_TOOL_DATA_PATH      Set to override tool data path during tool
+                                shed tests.
+GALAXY_TEST_FETCH_DATA          Fetch remote test data to
+                                GALAXY_TEST_DATA_REPO_CACHE as part of tool
+                                tests if it is not available locally (default
+                                to True). Requires git to be available on the
+                                command-line.
+GALAXY_TEST_DATA_REPO_CACHE     Where to cache remote test data to (default to
+                                test-data-cache).
+HTTP_ACCEPT_LANGUAGE            Defaults to 'en'
+GALAXY_TEST_NO_CLEANUP          Do not cleanup main test directory after tests,
+                                the deprecated option TOOL_SHED_TEST_NO_CLEANUP
+                                does the same thing.
+GALAXY_TEST_HOST                Host to use for Galaxy server setup for
+                                testing.
+GALAXY_TEST_PORT                Port to use for Galaxy server setup for
+                                testing.
+GALAXY_TEST_TOOL_PATH           Path defaulting to 'tools'.
+GALAXY_TEST_SHED_TOOL_CONF      Shed toolbox conf (defaults to
+                                config/shed_tool_conf.xml) used when testing
+                                installed to tools with -installed.
+TOOL_SHED_TEST_HOST             Host to use for shed server setup for testing.
+TOOL_SHED_TEST_PORT             Port to use for shed server setup for testing.
+TOOL_SHED_TEST_FILE_DIR         Defaults to test/shed_functional/test_data.
+TOOL_SHED_TEST_TMP_DIR          Defaults to random /tmp directory - place for
+                                tool shed test server files to be placed.
+TOOL_SHED_TEST_OMIT_GALAXY      Do not launch a Galaxy server for tool shed
+                                testing.
+
+Unit Test Environment Variables
+
+GALAXY_TEST_INCLUDE_SLOW - Used in unit tests to trigger slower tests that
+                           aren't included by default with --unit/-u.
+
 EOF
 }
 
@@ -146,19 +248,31 @@ do
           fi
           ;;
       -t|-toolshed|--toolshed)
-          test_script="./test/tool_shed/functional_tests.py"
+          test_script="./test/shed_functional/functional_tests.py"
           report_file="run_toolshed_tests.html"
           if [ $# -gt 1 ]; then
               toolshed_script=$2
               shift 2
           else
-              toolshed_script="./test/tool_shed/functional"
+              toolshed_script="./test/shed_functional/functional"
               shift 1
           fi
           ;;
       -with_framework_test_tools|--with_framework_test_tools)
           with_framework_test_tools_arg="-with_framework_test_tools"
           shift
+          ;;
+      --external_url)
+          GALAXY_TEST_EXTERNAL=$2
+          shift 2
+          ;;
+      --external_master_key)
+          GALAXY_CONFIG_MASTER_KEY=$2
+          shift 2
+          ;;
+      --external_user_key)
+          GALAXY_TEST_USER_API_KEY=$2
+          shift 2
           ;;
       -w|-workflow|--workflow)
           if [ $# -gt 1 ]; then
@@ -349,7 +463,8 @@ elif [ -n "$data_managers_test" ] ; then
     [ -n "$test_id" ] && class=":TestForDataManagerTool_$test_id" || class=""
     extra_args="functional.test_data_managers$class -data_managers"
 elif [ -n "$workflow_test" ]; then
-    extra_args="functional.workflow:WorkflowTestCase $workflow_file"
+    GALAXY_TEST_WORKFLOW_FILE="$workflow_file"
+    extra_args="functional.workflow:WorkflowTestCase"
 elif [ -n "$toolshed_script" ]; then
     extra_args="$toolshed_script"
 elif [ -n "$api_script" ]; then
@@ -387,7 +502,11 @@ if [ "$driver" = "python" ]; then
     else
         structured_data_args=""
     fi
-    python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $with_framework_test_tools_arg $extra_args
+    if [ -n "$with_framework_test_tools_arg" ]; then
+        GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
+        export GALAXY_TEST_TOOL_CONF
+    fi
+    python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args
 else
     ensure_grunt
     if [ -n "$watch" ]; then

@@ -232,7 +232,8 @@ def total_size(o, handlers={}, verbose=False):
 
     Recipe from:  https://code.activestate.com/recipes/577504-compute-memory-footprint-of-an-object-and-its-cont/
     """
-    dict_handler = lambda d: chain.from_iterable(d.items())
+    def dict_handler(d):
+        return chain.from_iterable(d.items())
     all_handlers = { tuple: iter,
                      list: iter,
                      deque: iter,
@@ -271,7 +272,7 @@ class MetadataType( JSONType ):
                     sz = total_size(v)
                     if sz > app.app.config.max_metadata_value_size:
                         del value[k]
-                        log.error('Refusing to bind metadata key %s due to size (%s)' % (k, sz))
+                        log.warning('Refusing to bind metadata key %s due to size (%s)' % (k, sz))
             value = json_encoder.encode(value)
         return value
 

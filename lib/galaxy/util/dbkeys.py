@@ -2,10 +2,12 @@
 Functionality for dealing with dbkeys.
 """
 # dbkeys read from disk using builds.txt
-from galaxy.util import read_dbnames
-from galaxy.util.json import loads
-from galaxy.util.object_wrapper import sanitize_lists_to_string
+from __future__ import absolute_import
 import os.path
+from json import loads
+
+from galaxy.util import read_dbnames
+from galaxy.util.object_wrapper import sanitize_lists_to_string
 
 
 class GenomeBuilds( object ):

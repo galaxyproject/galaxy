@@ -4,6 +4,7 @@ Visualizations resource control over the API.
 NOTE!: this is a work in progress and functionality and data structures
 may change often.
 """
+from six import string_types
 
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesVisualizationMixin
@@ -170,7 +171,7 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, Shara
         for key, val in payload.items():
             # TODO: validate types in VALID_TYPES/registry names at the mixin/model level?
             if key == 'type':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                if not isinstance( val, string_types ):
                     raise ValidationError( '%s must be a string or unicode: %s' % ( key, str( type( val ) ) ) )
                 val = util.sanitize_html.sanitize_html( val, 'utf-8' )
             elif key == 'config':
@@ -178,22 +179,22 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, Shara
                     raise ValidationError( '%s must be a dictionary: %s' % ( key, str( type( val ) ) ) )
 
             elif key == 'annotation':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                if not isinstance( val, string_types ):
                     raise ValidationError( '%s must be a string or unicode: %s' % ( key, str( type( val ) ) ) )
                 val = util.sanitize_html.sanitize_html( val, 'utf-8' )
 
             # these are keys that actually only be *updated* at the revision level and not here
             #   (they are still valid for create, tho)
             elif key == 'title':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                if not isinstance( val, string_types ):
                     raise ValidationError( '%s must be a string or unicode: %s' % ( key, str( type( val ) ) ) )
                 val = util.sanitize_html.sanitize_html( val, 'utf-8' )
             elif key == 'slug':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                if not isinstance( val, string_types ):
                     raise ValidationError( '%s must be a string: %s' % ( key, str( type( val ) ) ) )
                 val = util.sanitize_html.sanitize_html( val, 'utf-8' )
             elif key == 'dbkey':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                if not isinstance( val, string_types ):
                     raise ValidationError( '%s must be a string or unicode: %s' % ( key, str( type( val ) ) ) )
                 val = util.sanitize_html.sanitize_html( val, 'utf-8' )
 

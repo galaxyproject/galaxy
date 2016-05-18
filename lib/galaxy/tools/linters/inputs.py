@@ -51,15 +51,21 @@ def lint_inputs(tool_xml, lint_ctx):
             lint_ctx.warn("Conditional without <param type=\"select\" /> or <param type=\"boolean\" />")
             continue
 
+        test_param_optional = False
         for select in selects:
+            test_param_optional = test_param_optional or (select.attrib.get('optional', None) is not None)
             select_options = _find_with_attribute(select, 'option', 'value')
             select_option_ids = [option.attrib.get('value', None) for option in select_options]
 
         for boolean in booleans:
+            test_param_optional = test_param_optional or (boolean.attrib.get('optional', None) is not None)
             select_option_ids = [
                 boolean.attrib.get('truevalue', 'true'),
                 boolean.attrib.get('falsevalue', 'false')
             ]
+
+        if test_param_optional:
+            lint_ctx.warn("Conditional test parameter declares an invalid optional attribute.")
 
         whens = conditional.findall('./when')
         if any(['value' not in when.attrib for when in whens]):

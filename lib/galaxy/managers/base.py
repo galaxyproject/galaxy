@@ -24,6 +24,8 @@ attribute change to a model object.
 #   such as: a single flat class, serializers being singletons in the manager, etc.
 #   instead of the three separate classes. With no 'apparent' perfect scheme
 #   I'm opting to just keep them separate.
+import datetime
+import re
 
 import sqlalchemy
 import routes
@@ -151,6 +153,25 @@ def get_object( trans, id, class_name, check_ownership=False, check_accessible=F
 
 
 # =============================================================================
+def munge_lists( listA, listB ):
+    """
+    Combine two lists into a single list.
+
+    (While allowing them to be None, non-lists, or lists.)
+    """
+    # TODO: there's nothing specifically filter or model-related here - move to util
+    if listA is None:
+        return listB
+    if listB is None:
+        return listA
+    if not isinstance( listA, list ):
+        listA = [ listA ]
+    if not isinstance( listB, list ):
+        listB = [ listB ]
+    return listA + listB
+
+
+# -----------------------------------------------------------------------------
 class ModelManager( object ):
     """
     Base class for all model/resource managers.
@@ -219,16 +240,7 @@ class ModelManager( object ):
 
         (While allowing them to be None, non-lists, or lists.)
         """
-        # TODO: there's nothing specifically filter or model-related here - move to util
-        if filtersA is None:
-            return filtersB
-        if filtersB is None:
-            return filtersA
-        if not isinstance( filtersA, list ):
-            filtersA = [ filtersA ]
-        if not isinstance( filtersB, list ):
-            filtersB = [ filtersB ]
-        return filtersA + filtersB
+        return munge_lists( filtersA, filtersB )
 
     # .... order, limit, and offset
     def _apply_order_by( self, query, order_by ):
@@ -460,7 +472,6 @@ class ModelManager( object ):
             self.session().flush()
         return item
 
-    # TODO: yagni?
     def associate( self, associate_with, item, foreign_key_name=None ):
         """
         Generically associate `item` with `associate_with` based on `foreign_key_name`.
@@ -469,17 +480,48 @@ class ModelManager( object ):
         setattr( associate_with, foreign_key_name, item )
         return item
 
+    def _foreign_key( self, associated_model_class, foreign_key_name=None ):
+        foreign_key_name = foreign_key_name or self.foreign_key_name
+        return getattr( associated_model_class, foreign_key_name )
+
     def query_associated( self, associated_model_class, item, foreign_key_name=None ):
         """
         Generically query other items that have been associated with this `item`.
         """
-        foreign_key_name = foreign_key_name or self.foreign_key_name
-        foreign_key = getattr( associated_model_class, foreign_key_name )
+        foreign_key = self._foreign_key( associated_model_class, foreign_key_name=foreign_key_name )
         return self.session().query( associated_model_class ).filter( foreign_key == item )
 
     # a rename of sql DELETE to differentiate from the Galaxy notion of mark_as_deleted
     # def destroy( self, item, **kwargs ):
     #    return item
+
+
+# ---- code for classes that use one *main* model manager
+# TODO: this may become unecessary if we can access managers some other way (class var, app, etc.)
+class HasAModelManager( object ):
+    """
+    Mixin used where serializers, deserializers, filter parsers, etc.
+    need some functionality around the model they're mainly concerned with
+    and would perform that functionality with a manager.
+    """
+
+    #: the class used to create this serializer's generically accessible model_manager
+    model_manager_class = None
+    # examples where this doesn't really work are ConfigurationSerializer (no manager)
+    # and contents (2 managers)
+
+    def __init__( self, app, manager=None, **kwargs ):
+        self._manager = manager
+
+    @property
+    def manager( self ):
+        """Return an appropriate manager if it exists, instantiate if not."""
+        # PRECONDITION: assumes self.app is assigned elsewhere
+        if not self._manager:
+            # TODO: pass this serializer to it
+            self._manager = self.model_manager_class( self.app )
+            # this will error for unset model_manager_class'es
+        return self._manager
 
 
 # ==== SERIALIZERS/to_dict,from_dict
@@ -503,7 +545,7 @@ class SkipAttribute( Exception ):
     pass
 
 
-class ModelSerializer( object ):
+class ModelSerializer( HasAModelManager ):
     """
     Turns models into JSONable dicts.
 
@@ -523,10 +565,11 @@ class ModelSerializer( object ):
     #: 'service' to use for getting urls - use class var to allow overriding when testing
     url_for = staticmethod( routes.url_for )
 
-    def __init__( self, app ):
+    def __init__( self, app, **kwargs ):
         """
         Set up serializer map, any additional serializable keys, and views here.
         """
+        super( ModelSerializer, self ).__init__( app, **kwargs )
         self.app = app
 
         # a list of valid serializable keys that can use the default (string) serializer
@@ -552,7 +595,9 @@ class ModelSerializer( object ):
         the attribute.
         """
         self.serializers.update({
-            'id' : self.serialize_id,
+            'id'            : self.serialize_id,
+            'create_time'   : self.serialize_date,
+            'update_time'   : self.serialize_date,
         })
 
     def add_view( self, view_name, key_list, include_keys_from=None ):
@@ -629,6 +674,18 @@ class ModelSerializer( object ):
         # Note: it may not be best to encode the id at this layer
         return self.app.security.encode_id( id ) if id is not None else None
 
+    def serialize_type_id( self, item, key, **context ):
+        """
+        Serialize an type-id for `item`.
+        """
+        TYPE_ID_SEP = '-'
+        type_id = getattr( item, key )
+        if type_id is None:
+            return None
+        split = type_id.split( TYPE_ID_SEP, 1 )
+        # Note: it may not be best to encode the id at this layer
+        return TYPE_ID_SEP.join([ split[0], self.app.security.encode_id( split[1] )])
+
     # serializing to a view where a view is a predefied list of keys to serialize
     def serialize_to_view( self, item, view=None, keys=None, default_view=None, **context ):
         """
@@ -671,20 +728,18 @@ class ModelSerializer( object ):
         return self.views[ view ][:]
 
 
-class ModelDeserializer( object ):
+class ModelDeserializer( HasAModelManager ):
     """
     An object that converts an incoming serialized dict into values that can be
     directly assigned to an item's attributes and assigns them.
     """
-    #: the class used to create this deserializer's generically accessible model_manager
-    model_manager_class = None
-
     # TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
 
-    def __init__( self, app ):
+    def __init__( self, app, **kwargs ):
         """
         Set up deserializers and validator.
         """
+        super( ModelDeserializer, self ).__init__( app, **kwargs )
         self.app = app
 
         self.deserializers = {}
@@ -692,11 +747,6 @@ class ModelDeserializer( object ):
         self.add_deserializers()
         # a sub object that can validate incoming values
         self.validate = ModelValidator( self.app )
-
-        # create a generically accessible manager for the model this deserializer works with/for
-        self.manager = None
-        if self.model_manager_class:
-            self.manager = self.model_manager_class( self.app )
 
     def add_deserializers( self ):
         """
@@ -763,7 +813,7 @@ class ModelDeserializer( object ):
         return self.default_deserializer( item, key, val, **context )
 
 
-class ModelValidator( object ):
+class ModelValidator( HasAModelManager ):
     """
     An object that inspects a dictionary (generally meant to be a set of
     new/updated values for the model) and raises an error if a value is
@@ -771,6 +821,7 @@ class ModelValidator( object ):
     """
 
     def __init__( self, app, *args, **kwargs ):
+        super( ModelValidator, self ).__init__( app, **kwargs )
         self.app = app
 
     def type( self, key, val, types ):
@@ -846,7 +897,7 @@ class ModelValidator( object ):
 
 
 # ==== Building query filters based on model data
-class ModelFilterParser( object ):
+class ModelFilterParser( HasAModelManager ):
     """
     Converts string tuples (partially converted query string params) of
     attr, op, val into either:
@@ -872,11 +923,15 @@ class ModelFilterParser( object ):
     #: model class
     model_class = None
 
-    def __init__( self, app ):
+    def __init__( self, app, **kwargs ):
         """
         Set up serializer map, any additional serializable keys, and views here.
         """
+        super( ModelFilterParser, self ).__init__( app, **kwargs )
         self.app = app
+
+        #: regex for testing/dicing iso8601 date strings, with optional time and ms, but allowing only UTC timezone
+        self.date_string_re = re.compile( r'^(\d{4}\-\d{2}\-\d{2})[T| ]{0,1}(\d{2}:\d{2}:\d{2}(?:\.\d{1,6}){0,1}){0,1}Z{0,1}$' )
 
         # dictionary containing parsing data for ORM/SQLAlchemy-based filters
         # ..note: although kind of a pain in the ass and verbose, opt-in/whitelisting allows more control
@@ -899,14 +954,15 @@ class ModelFilterParser( object ):
             'id'            : { 'op': ( 'in' ) },
             'encoded_id'    : { 'column' : 'id', 'op': ( 'in' ), 'val': self.parse_id_list },
             # dates can be directly passed through the orm into a filter (no need to parse into datetime object)
-            'create_time'   : { 'op': ( 'le', 'ge' ) },
-            'update_time'   : { 'op': ( 'le', 'ge' ) },
+            'create_time'   : { 'op': ( 'le', 'ge' ), 'val': self.parse_date },
+            'update_time'   : { 'op': ( 'le', 'ge' ), 'val': self.parse_date },
         })
 
     def parse_filters( self, filter_tuple_list ):
         """
         Parse string 3-tuples (attr, op, val) into orm or functional filters.
         """
+        # TODO: allow defining the default filter op in this class (and not 'eq' in base/controller.py)
         parsed = []
         for ( attr, op, val ) in filter_tuple_list:
             filter_ = self.parse_filter( attr, op, val )
@@ -936,7 +992,7 @@ class ModelFilterParser( object ):
         # by convention, assume most val parsers raise ValueError
         except ValueError, val_err:
             raise exceptions.RequestParameterInvalidException( 'unparsable value for filter',
-                                                               column=attr, operation=op, value=val, ValueError=str( val_err ) )
+                column=attr, operation=op, value=val, ValueError=str( val_err ) )
 
         # if neither of the above work, raise an error with how-to info
         # TODO: send back all valid filter keys in exception for added user help
@@ -980,10 +1036,12 @@ class ModelFilterParser( object ):
             return None
         # attr must be a whitelisted column by attr name or by key passed in column_map
         # note: column_map[ 'column' ] takes precedence
-        column = self.model_class.table.columns.get( attr )
         if 'column' in column_map:
-            remap_to = column_map[ 'column' ]
-            column = self.model_class.table.columns.get( remap_to )
+            attr = column_map[ 'column' ]
+        column = self.model_class.table.columns.get( attr )
+        if column is None:
+            # could be a property (hybrid_property, etc.) - assume we can make a filter from it
+            column = getattr( self.model_class, attr )
         if column is None:
             # no orm column
             return None
@@ -1055,3 +1113,32 @@ class ModelFilterParser( object ):
         # TODO: move id decoding out
         id_list = [ self.app.security.decode_id( id_ ) for id_ in id_list_string.split( sep ) ]
         return id_list
+
+    def parse_int_list( self, int_list_string, sep=',' ):
+        """
+        Split `int_list_string` at `sep` and parse as ints.
+        """
+        # TODO: move id decoding out
+        int_list = [ int( v ) for v in int_list_string.split( sep ) ]
+        return int_list
+
+    def parse_date( self, date_string ):
+        """
+        Reformats a string containing either seconds from epoch or an iso8601 formated
+        date string into a new date string usable within a filter query.
+
+        Seconds from epoch can be a floating point value as well (i.e containing ms).
+        """
+        # assume it's epoch if no date separator is present
+        try:
+            epoch = float( date_string )
+            datetime_obj = datetime.datetime.fromtimestamp( epoch )
+            return datetime_obj.isoformat( sep=' ' )
+        except ValueError:
+            pass
+
+        match = self.date_string_re.match( date_string )
+        if match:
+            date_string = ' '.join([ group for group in match.groups() if group ])
+            return date_string
+        raise ValueError( 'datetime strings must be in the ISO 8601 format and in the UTC' )

@@ -329,7 +329,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         return self.NOT_EQUAL_AND_NOT_SUBSET
 
     def create_or_update_repository_metadata( self, changeset_revision, metadata_dict ):
-        """Create or update a repository_metadatqa record in the tool shed."""
+        """Create or update a repository_metadata record in the tool shed."""
         has_repository_dependencies = False
         has_repository_dependencies_only_if_compiling_contained_td = False
         includes_datatypes = False
@@ -394,6 +394,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         repository_metadata.tool_test_results = None
         self.sa_session.add( repository_metadata )
         self.sa_session.flush()
+
         if check_skip_tool_test:
             # Since we created a new repository_metadata record, we may need to update the
             # skip_tool_test table to point to it.  Inspect each changeset revision in the

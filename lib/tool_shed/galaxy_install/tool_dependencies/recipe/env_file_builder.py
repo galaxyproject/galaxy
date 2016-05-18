@@ -1,6 +1,7 @@
 import logging
 import os
 import stat
+from six import string_types
 
 log = logging.getLogger( __name__ )
 
@@ -76,7 +77,7 @@ class EnvFileBuilder( object ):
                 log.exception( str( e ) )
                 return 1
         # Convert the received text to a list, in order to support adding one or more lines to the file.
-        if isinstance( text, basestring ):
+        if isinstance( text, string_types ):
             text = [ text ]
         for line in text:
             line = line.rstrip()

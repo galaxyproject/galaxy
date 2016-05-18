@@ -4,17 +4,15 @@ import logging
 import os
 import shutil
 import tempfile
+from json import dumps, loads
 
 from sqlalchemy.orm import eagerload, eagerload_all
+from sqlalchemy.sql import expression
 
 from galaxy import model
 from galaxy.exceptions import MalformedContents
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.tools.parameters.basic import UnvalidatedValue
-from galaxy.util.json import dumps, loads
 from galaxy.web.framework.helpers import to_unicode
-
-from sqlalchemy.sql import expression
 
 log = logging.getLogger(__name__)
 
@@ -384,8 +382,6 @@ class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):
                     else:
                         rval['exported'] = True
                     return rval
-                if isinstance( obj, UnvalidatedValue ):
-                    return obj.__str__()
                 return json.JSONEncoder.default( self, obj )
 
         #

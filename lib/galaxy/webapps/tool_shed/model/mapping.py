@@ -14,7 +14,13 @@ from galaxy.model.base import ModelMapping
 from galaxy.model.custom_types import JSONType, TrimmedString
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
-from galaxy.webapps.tool_shed.model import APIKeys, Category, Component, ComponentReview, GalaxySession, Group, GroupRoleAssociation, PasswordResetToken, Repository, RepositoryCategoryAssociation, RepositoryMetadata, RepositoryRatingAssociation, RepositoryReview, RepositoryRoleAssociation, Role, SkipToolTest, Tag, User, UserGroupAssociation, UserRoleAssociation
+from galaxy.webapps.tool_shed.model import APIKeys, Category, Component, ComponentReview
+from galaxy.webapps.tool_shed.model import GalaxySession, Group, GroupRoleAssociation
+from galaxy.webapps.tool_shed.model import PasswordResetToken, Repository, RepositoryCategoryAssociation
+from galaxy.webapps.tool_shed.model import RepositoryMetadata, RepositoryRatingAssociation
+from galaxy.webapps.tool_shed.model import RepositoryReview, RepositoryRoleAssociation, Role
+from galaxy.webapps.tool_shed.model import SkipToolTest, Tag, User, UserGroupAssociation
+from galaxy.webapps.tool_shed.model import UserRoleAssociation
 from galaxy.webapps.tool_shed.security import CommunityRBACAgent
 
 log = logging.getLogger( __name__ )
@@ -109,8 +115,8 @@ Repository.table = Table( "repository", metadata,
                           Column( "type", TrimmedString( 255 ), index=True ),
                           Column( "remote_repository_url", TrimmedString( 255 ) ),
                           Column( "homepage_url", TrimmedString( 255 ) ),
-                          Column( "description" , TEXT ),
-                          Column( "long_description" , TEXT ),
+                          Column( "description", TEXT ),
+                          Column( "long_description", TEXT ),
                           Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
                           Column( "private", Boolean, default=False ),
                           Column( "deleted", Boolean, index=True, default=False ),
@@ -146,7 +152,7 @@ SkipToolTest.table = Table( "skip_tool_test", metadata,
                             Column( "update_time", DateTime, default=now, onupdate=now ),
                             Column( "repository_metadata_id", Integer, ForeignKey( "repository_metadata.id" ), index=True ),
                             Column( "initial_changeset_revision", TrimmedString( 255 ), index=True ),
-                            Column( "comment" , TEXT ) )
+                            Column( "comment", TEXT ) )
 
 RepositoryReview.table = Table( "repository_review", metadata,
                                 Column( "id", Integer, primary_key=True ),
@@ -195,7 +201,7 @@ Category.table = Table( "category", metadata,
                         Column( "create_time", DateTime, default=now ),
                         Column( "update_time", DateTime, default=now, onupdate=now ),
                         Column( "name", TrimmedString( 255 ), index=True, unique=True ),
-                        Column( "description" , TEXT ),
+                        Column( "description", TEXT ),
                         Column( "deleted", Boolean, index=True, default=False ) )
 
 Tag.table = Table( "tag", metadata,

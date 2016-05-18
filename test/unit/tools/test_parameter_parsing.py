@@ -241,7 +241,7 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
         """)
         assert param.data_ref == "input1"
         assert param.usecolnames is False
-        assert param.force_select is True
+        assert param.optional is False
         assert param.numerical is False
 
         param = self._parameter_for(xml="""
@@ -250,7 +250,7 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
         """)
         assert param.data_ref == "input1"
         assert param.usecolnames is True
-        assert param.force_select is False
+        assert param.optional is True
         assert param.numerical is True
 
     def test_data_param_no_validation(self):

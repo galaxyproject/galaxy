@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import threading
@@ -6,7 +7,7 @@ from mako.template import Template
 
 import tool_shed.util.shed_util_common as suc
 from galaxy import web
-from galaxy.util import json, rst_to_html, unicodify
+from galaxy.util import rst_to_html, unicodify, url_get
 from tool_shed.util import basic_util, common_util, hg_util
 
 log = logging.getLogger( __name__ )
@@ -96,7 +97,7 @@ def get_readme_files_dict_for_display( app, tool_shed_url, repo_info_dict ):
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
     params = dict( name=name, owner=repository_owner, changeset_revision=changeset_revision )
     pathspec = [ 'repository', 'get_readme_files' ]
-    raw_text = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
+    raw_text = url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
     readme_files_dict = json.loads( raw_text )
     return readme_files_dict
 

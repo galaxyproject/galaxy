@@ -34,7 +34,7 @@ var PageLayoutView = Backbone.View.extend( BaseMVC.LoggableMixin ).extend({
         this.$el.attr( 'scroll', 'no' );
         this.$el.html( this._template() );
         this.$el.append( this.masthead.frame.$el );
-        this.$el.append( this.masthead.$el );
+        this.$( '#masthead' ).replaceWith( this.masthead.$el );
         this.$el.append( this.modal.$el );
         this.$messagebox = this.$( '#messagebox' );
         this.$inactivebox = this.$( '#inactivebox' );
@@ -110,6 +110,7 @@ var PageLayoutView = Backbone.View.extend( BaseMVC.LoggableMixin ).extend({
         return [
             '<div id="everything">',
                 '<div id="background"/>',
+                '<div id="masthead"/>',
                 '<div id="messagebox"/>',
                 '<div id="inactivebox" class="panel-warning-message" />',
                 this.left?   '<div id="left" />' : '',

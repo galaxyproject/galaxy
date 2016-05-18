@@ -5,7 +5,7 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( LIST_ITEM, STATES, faIconButton, BASE_MVC, _l ){
-/* global Backbone */
+'use strict';
 
 var logNamespace = 'dataset';
 /*==============================================================================
@@ -44,7 +44,7 @@ var DatasetListItemView = _super.extend(
         _super.prototype._setUpListeners.call( this );
 
         // re-rendering on any model changes
-        this.model.on( 'change', function( model, options ){
+        this.listenTo( this.model, 'change', function( model, options ){
             // if the model moved into the ready state and is expanded without details, fetch those details now
             if( this.model.changedAttributes().state && this.model.inReadyState()
             &&  this.expanded && !this.model.hasDetails() ){
@@ -54,7 +54,7 @@ var DatasetListItemView = _super.extend(
             } else {
                 this.render();
             }
-        }, this );
+        });
     },
 
     // ......................................................................... expandable

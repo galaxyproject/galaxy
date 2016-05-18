@@ -18,12 +18,13 @@ class WorkRequestContext( ProvidesAppContext, ProvidesUserContext, ProvidesHisto
     objects.
     """
 
-    def __init__( self, app, user=None, history=None ):
+    def __init__( self, app, user=None, history=None, workflow_building_mode=False ):
         self.app = app
         self.security = app.security
         self.__user = user
         self.__history = history
         self.api_inherit_admin = False
+        self.workflow_building_mode = workflow_building_mode
 
     def get_history( self, create=False ):
         if create:

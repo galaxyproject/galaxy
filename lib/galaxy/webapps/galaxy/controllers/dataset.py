@@ -4,6 +4,7 @@ import urllib
 
 from markupsafe import escape
 import paste.httpexceptions
+from six import string_types, text_type
 from sqlalchemy import false, true
 
 from galaxy import datatypes, model, util, web
@@ -20,8 +21,6 @@ log = logging.getLogger( __name__ )
 
 comptypes = []
 
-# TODO: not used in this file
-from galaxy.util.json import loads  # noqa
 try:
     import zlib  # noqa
     comptypes.append( 'zip' )
@@ -219,7 +218,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         """ Primarily used for the S3ObjectStore - get the status of data transfer
         if the file is not in cache """
         data = self._check_dataset(trans, dataset_id)
-        if isinstance( data, basestring ):
+        if isinstance( data, string_types ):
             return data
         log.debug( "Checking transfer status for dataset %s..." % data.dataset.id )
 
@@ -593,7 +592,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
 
             # If data is binary or an image, stream without template; otherwise, use display template.
             # TODO: figure out a way to display images in display template.
-            if isinstance(dataset.datatype, datatypes.binary.Binary) or isinstance(dataset.datatype, datatypes.images.Image) or isinstance(dataset.datatype, datatypes.images.Html):
+            if isinstance(dataset.datatype, datatypes.binary.Binary) or isinstance(dataset.datatype, datatypes.images.Image) or isinstance(dataset.datatype, datatypes.text.Html):
                 trans.response.set_content_type( dataset.get_mime() )
                 return open( dataset.file_name )
             else:
@@ -651,7 +650,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         if not dataset:
             web.httpexceptions.HTTPNotFound()
         annotation = self.get_item_annotation_str( trans.sa_session, trans.user, dataset )
-        if annotation and isinstance( annotation, unicode ):
+        if annotation and isinstance( annotation, text_type ):
             annotation = annotation.encode( 'ascii', 'replace' )  # paste needs ascii here
         return annotation
 

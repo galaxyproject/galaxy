@@ -42,7 +42,6 @@
 
     <script type='text/javascript'>
         workflow_view = null;
-        console.debug( 'bibtex?', window.BibtexParser );
         $( function() {
             require(['mvc/workflow/workflow-view'], function(Workflow){
                 workflow_view = new Workflow(${h.dumps(self.editor_config)});

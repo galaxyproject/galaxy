@@ -23,6 +23,8 @@ define([
     _l
 ){
 
+'use strict';
+
 var logNamespace = 'history';
 
 // ============================================================================
@@ -129,8 +131,8 @@ var HistoryView = _super.extend(
     /** In this override, clear the update timer on the model */
     freeModel : function(){
         _super.prototype.freeModel.call( this );
-//TODO: move to History.free()
         if( this.model ){
+//TODO: move to History.free()
             this.model.clearUpdateTimeout();
         }
         return this;
@@ -219,9 +221,9 @@ var HistoryView = _super.extend(
     },
 
     /** convenience alias to the model. Updates the item list only (not the history) */
-    refreshContents : function( detailIds, options ){
+    refreshContents : function( options ){
         if( this.model ){
-            return this.model.refresh( detailIds, options );
+            return this.model.refresh( options );
         }
         // may have callbacks - so return an empty promise
         return $.when();
@@ -377,11 +379,13 @@ var HistoryView = _super.extend(
 
         //TODO:?? could use 'view:expanded' here?
         // maintain a list of items whose bodies are expanded
-        view.on( 'expanded', function( v ){
-            panel.storage.addExpanded( v.model );
-        });
-        view.on( 'collapsed', function( v ){
-            panel.storage.removeExpanded( v.model );
+        panel.listenTo( view, {
+            'expanded': function( v ){
+                panel.storage.addExpanded( v.model );
+            },
+            'collapsed': function( v ){
+                panel.storage.removeExpanded( v.model );
+            }
         });
         return this;
     },

@@ -6,9 +6,11 @@ immediate_actions listed below.  Currently only used in workflows.
 import datetime
 import logging
 import socket
-from galaxy.util import send_mail
-from galaxy.util.json import dumps
+from json import dumps
+
 from markupsafe import escape
+
+from galaxy.util import send_mail
 
 log = logging.getLogger( __name__ )
 

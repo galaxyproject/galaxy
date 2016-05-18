@@ -7,7 +7,8 @@ var jQuery = require( 'jquery' ),
     ToolPanel = require( './tool-panel' ),
     HistoryPanel = require( './history-panel' ),
     PAGE = require( 'layout/page' ),
-    ToolForm = require( 'mvc/tool/tool-form' );
+    ToolForm = require( 'mvc/tool/tool-form' ),
+    Tours = require( 'mvc/tours' );
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -30,7 +31,6 @@ window.app = function app( options, bootstrapped ){
         toolPanel = new ToolPanel({
             el                  : '#left',
             userIsAnonymous     : Galaxy.user.isAnonymous(),
-            spinner_url         : config.spinner_url,
             search_url          : config.search_url,
             toolbox             : config.toolbox,
             toolbox_in_panel    : config.toolbox_in_panel,
@@ -100,15 +100,29 @@ window.app = function app( options, bootstrapped ){
             '(/)' : 'home',
             // TODO: remove annoying 'root' from root urls
             '(/)root*' : 'home',
+            '(/)tours(/)(:tour_id)' : 'show_tours',
+        },
+
+        show_tours : function( tour_id ){
+            if (tour_id){
+                Tours.giveTour(tour_id);
+            }
+            else{
+                centerPanel.display( new Tours.ToursView() );
+            }
         },
 
         /**  */
         home : function( params ){
             // TODO: to router, remove Globals
             // load a tool by id (tool_id) or rerun a previous tool execution (job_id)
-            if( ( params.tool_id || params.job_id ) && params.tool_id !== 'upload1' ){
-                this._loadToolForm( params );
-
+            if( params.tool_id || params.job_id ) {
+                if ( params.tool_id === 'upload1' ) {
+                    Galaxy.upload.show();
+                    this._loadCenterIframe( 'welcome' );
+                } else {
+                    this._loadToolForm( params );
+                }
             } else {
                 // show the workflow run form
                 if( params.workflow_id ){

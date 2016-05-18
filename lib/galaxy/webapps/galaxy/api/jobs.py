@@ -7,6 +7,7 @@ API operations on a jobs.
 import json
 import logging
 
+from six import string_types
 from sqlalchemy import and_, false, or_
 from sqlalchemy.orm import aliased
 
@@ -73,7 +74,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
 
         def build_and_apply_filters( query, objects, filter_func ):
             if objects is not None:
-                if isinstance( objects, basestring ):
+                if isinstance( objects, string_types ):
                     query = query.filter( filter_func( objects ) )
                 elif isinstance( objects, list ):
                     t = []
@@ -310,7 +311,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
                 )
             )
         else:
-            if isinstance( payload[ 'state' ], basestring ):
+            if isinstance( payload[ 'state' ], string_types ):
                 query = query.filter( trans.app.model.Job.state == payload[ 'state' ] )
             elif isinstance( payload[ 'state' ], list ):
                 o = []

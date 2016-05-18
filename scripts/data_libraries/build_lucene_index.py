@@ -9,19 +9,18 @@ details.
 Run from the ~/scripts/data_libraries directory:
 %sh build_lucene_index.sh
 """
-
-import sys
-import os
-import csv
-import urllib, urllib2
 import ConfigParser
+import csv
+import os
+import sys
+import urllib
+import urllib2
 
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] ) # remove scripts/ from the path
-sys.path = new_path
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
 import galaxy.model.mapping
 from galaxy import config, model
+
 
 def main( ini_file ):
     sa_session, gconfig = get_sa_session( ini_file )
@@ -37,11 +36,13 @@ def main( ini_file ):
         if os.path.exists( dataset_file ):
             os.remove( dataset_file )
 
+
 def build_index( search_url, dataset_file ):
     url = "%s/index?%s" % ( search_url, urllib.urlencode( { "docfile" : dataset_file } ) )
     request = urllib2.Request( url )
     request.get_method = lambda: "PUT"
-    response = urllib2.urlopen( request )
+    urllib2.urlopen( request )
+
 
 def create_dataset_file( dataset_iter ):
     dataset_file = os.path.join( os.getcwd(), "full-text-search-files.csv" )
@@ -52,6 +53,7 @@ def create_dataset_file( dataset_iter ):
     out_handle.close()
     return dataset_file
 
+
 def get_lddas( sa_session, max_size, ignore_exts ):
     for ldda in sa_session.query( model.LibraryDatasetDatasetAssociation ).filter_by( deleted=False ):
         if ( float( ldda.dataset.get_size() ) > max_size or ldda.extension in ignore_exts ):
@@ -59,6 +61,7 @@ def get_lddas( sa_session, max_size, ignore_exts ):
         else:
             fname = ldda.dataset.get_file_name()
         yield ldda.id, fname, _get_dataset_metadata(ldda).replace("\n", " ")
+
 
 def _get_dataset_metadata(ldda):
     """Retrieve descriptions and information associated with a dataset.
@@ -73,6 +76,7 @@ def _get_dataset_metadata(ldda):
     return "%s %s %s %s %s" % (lds.name or "", lds_info, ldda.metadata.dbkey,
                                ldda.message, folder_info)
 
+
 def _get_folder_info(folder):
     """Get names and descriptions for all parent folders except top level.
     """
@@ -81,11 +85,12 @@ def _get_folder_info(folder):
         folder_info = _get_folder_info(folder.parent)
         folder_info += " %s %s" % (
             folder.name.replace("Unnamed folder", ""),
-                folder.description or "")
+            folder.description or "")
     return folder_info
 
+
 def get_sa_session( ini_file ):
-    conf_parser = ConfigParser.ConfigParser( { 'here':os.getcwd() } )
+    conf_parser = ConfigParser.ConfigParser( { 'here': os.getcwd() } )
     conf_parser.read( ini_file )
     kwds = dict()
     for key, value in conf_parser.items( "app:main" ):

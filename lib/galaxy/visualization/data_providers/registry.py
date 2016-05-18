@@ -1,3 +1,5 @@
+from six import string_types
+
 from galaxy.visualization.data_providers.basic import ColumnDataProvider
 from galaxy.visualization.data_providers import genome
 from galaxy.model import NoConverterException
@@ -97,7 +99,7 @@ class DataProviderRegistry( object ):
                                                             original_dataset=original_dataset )
                 else:
                     source_list = data_provider_mapping[ source ]
-                    if isinstance( source_list, str ):
+                    if isinstance( source_list, string_types ):
                         source_list = [ source_list ]
 
                     # Find a valid data provider in the source list.

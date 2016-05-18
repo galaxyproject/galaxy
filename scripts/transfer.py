@@ -4,23 +4,34 @@ Downloads files to temp locations.  This script is invoked by the Transfer
 Manager (galaxy.jobs.transfer_manager) and should not normally be invoked by
 hand.
 """
-import os, sys, optparse, ConfigParser, socket, SocketServer, threading, logging, random, urllib2, tempfile, time
-
-galaxy_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir ) )
-sys.path.insert( 0, os.path.abspath( os.path.join( galaxy_root, 'lib' ) ) )
+import ConfigParser
+import json
+import logging
+import optparse
+import os
+import random
+import SocketServer
+import sys
+import tempfile
+import threading
+import time
+import urllib2
 
 try:
     import pexpect
 except ImportError:
     pexpect = None
 
-from sqlalchemy import *
-from sqlalchemy.orm import *
 from daemon import DaemonContext
+from sqlalchemy import create_engine, MetaData, Table
+from sqlalchemy.orm import scoped_session, sessionmaker
+
+galaxy_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir ) )
+sys.path.insert( 1, os.path.join( galaxy_root, 'lib' ) )
 
 import galaxy.model
-from galaxy.util import json, bunch
-
+from galaxy.util import bunch
+from galaxy.util.json import jsonrpc_response, validate_jsonrpc_request
 
 PEXPECT_IMPORT_MESSAGE = ('The Python pexpect package is required to use this '
                           'feature, please install it')
@@ -33,6 +44,7 @@ log.addHandler( handler )
 debug = False
 slow = False
 
+
 class ArgHandler( object ):
     """
     Collect command line flags.
@@ -40,10 +52,11 @@ class ArgHandler( object ):
     def __init__( self ):
         self.parser = optparse.OptionParser()
         self.parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (config/galaxy.ini)',
-                                                  default=os.path.abspath( os.path.join( galaxy_root, 'config/galaxy.ini' ) ) )
+                                default=os.path.abspath( os.path.join( galaxy_root, 'config/galaxy.ini' ) ) )
         self.parser.add_option( '-d', '--debug', action='store_true', dest='debug', help="Debug (don't detach)" )
         self.parser.add_option( '-s', '--slow', action='store_true', dest='slow', help="Transfer slowly (for debugging)" )
         self.opts = None
+
     def parse( self ):
         self.opts, args = self.parser.parse_args()
         if len( args ) != 1:
@@ -62,19 +75,21 @@ class ArgHandler( object ):
             global slow
             slow = True
 
+
 class GalaxyApp( object ):
     """
     A shell Galaxy App to provide access to the Galaxy configuration and
     model/database.
     """
     def __init__( self, config_file ):
-        self.config = ConfigParser.ConfigParser( dict( database_file = 'database/universe.sqlite',
-                                                       file_path = 'database/files',
-                                                       transfer_worker_port_range = '12275-12675',
-                                                       transfer_worker_log = None ) )
+        self.config = ConfigParser.ConfigParser( dict( database_file='database/universe.sqlite',
+                                                       file_path='database/files',
+                                                       transfer_worker_port_range='12275-12675',
+                                                       transfer_worker_log=None ) )
         self.config.read( config_file )
         self.model = bunch.Bunch()
         self.connect_database()
+
     def connect_database( self ):
         # Avoid loading the entire model since doing so is exceptionally slow
         default_dburl = 'sqlite:///%s?isolation_level=IMMEDIATE' % self.config.get( 'app:main', 'database_file' )
@@ -87,8 +102,10 @@ class GalaxyApp( object ):
         self.sa_session = scoped_session( sessionmaker( bind=engine, autoflush=False, autocommit=True ) )
         self.model.TransferJob = galaxy.model.TransferJob
         self.model.TransferJob.table = Table( "transfer_job", metadata, autoload=True )
+
     def get_transfer_job( self, id ):
         return self.sa_session.query( self.model.TransferJob ).get( int( id ) )
+
 
 class ListenerServer( SocketServer.ThreadingTCPServer ):
     """
@@ -110,6 +127,7 @@ class ListenerServer( SocketServer.ThreadingTCPServer ):
         app.sa_session.add( transfer_job )
         app.sa_session.flush()
 
+
 class ListenerRequestHandler( SocketServer.BaseRequestHandler ):
     """
     Handle state or transfer requests received on the socket.
@@ -117,9 +135,9 @@ class ListenerRequestHandler( SocketServer.BaseRequestHandler ):
     def handle( self ):
         request = self.request.recv( 8192 )
         response = {}
-        valid, request, response = json.validate_jsonrpc_request( request, ( 'get_state', ), () )
+        valid, request, response = validate_jsonrpc_request( request, ( 'get_state', ), () )
         if valid:
-            self.request.send( json.dumps( json.jsonrpc_response( request=request, result=self.server.state_result.result ) ) )
+            self.request.send( json.dumps( jsonrpc_response( request=request, result=self.server.state_result.result ) ) )
         else:
             error_msg = 'Unable to serve request: %s' % response['error']['message']
             if 'data' in response['error']:
@@ -127,12 +145,14 @@ class ListenerRequestHandler( SocketServer.BaseRequestHandler ):
             log.error( error_msg )
             log.debug( 'Original request was: %s' % request )
 
+
 class StateResult( object ):
     """
     A mutable container for the 'result' portion of JSON-RPC responses to state requests.
     """
     def __init__( self, result=None ):
         self.result = result
+
 
 def transfer( app, transfer_job_id ):
     transfer_job = app.get_transfer_job( transfer_job_id )
@@ -149,14 +169,14 @@ def transfer( app, transfer_job_id ):
     if protocol not in ( 'http', 'https', 'scp' ):
         log.error( 'Unsupported protocol: %s' % protocol )
         return False
-    state_result = StateResult( result = dict( state = transfer_job.states.RUNNING, info='Transfer process starting up.' ) )
+    state_result = StateResult( result=dict( state=transfer_job.states.RUNNING, info='Transfer process starting up.' ) )
     listener_server = ListenerServer( range( port_range[0], port_range[1] + 1 ), ListenerRequestHandler, app, transfer_job, state_result )
     # daemonize here (if desired)
     if not debug:
         daemon_context = DaemonContext( files_preserve=[ listener_server.fileno() ], working_directory=os.getcwd() )
         daemon_context.open()
         # If this fails, it'll never be detected.  Hopefully it won't fail since it succeeded once.
-        app.connect_database() # daemon closed the database fd
+        app.connect_database()  # daemon closed the database fd
         transfer_job = app.get_transfer_job( transfer_job_id )
     listener_thread = threading.Thread( target=listener_server.serve_forever )
     listener_thread.setDaemon( True )
@@ -191,13 +211,14 @@ def transfer( app, transfer_job_id ):
     app.sa_session.flush()
     return True
 
+
 def http_transfer( transfer_job ):
     """Plugin" for handling http(s) transfers."""
     url = transfer_job.params['url']
     try:
         f = urllib2.urlopen( url )
     except urllib2.URLError, e:
-        yield dict( state = transfer_job.states.ERROR, info = 'Unable to open URL: %s' % str( e ) )
+        yield dict( state=transfer_job.states.ERROR, info='Unable to open URL: %s' % str( e ) )
         return
     size = f.info().getheader( 'Content-Length' )
     if size is not None:
@@ -210,7 +231,7 @@ def http_transfer( transfer_job ):
     try:
         fh, fn = tempfile.mkstemp()
     except Exception, e:
-        yield dict( state = transfer_job.states.ERROR, info = 'Unable to create temporary file for transfer: %s' % str( e ) )
+        yield dict( state=transfer_job.states.ERROR, info='Unable to create temporary file for transfer: %s' % str( e ) )
         return
     log.debug( 'Writing %s to %s, size is %s' % ( url, fn, size or 'unknown' ) )
     try:
@@ -223,18 +244,19 @@ def http_transfer( transfer_job ):
             if size is not None and read < size:
                 percent = int( float( read ) / size * 100 )
                 if percent != last:
-                    yield dict( state = transfer_job.states.PROGRESS, read = read, percent = '%s' % percent )
+                    yield dict( state=transfer_job.states.PROGRESS, read=read, percent='%s' % percent )
                     last = percent
             elif size is None:
-                yield dict( state = transfer_job.states.PROGRESS, read = read )
+                yield dict( state=transfer_job.states.PROGRESS, read=read )
             if slow:
                 time.sleep( 1 )
         os.close( fh )
-        yield dict( state = transfer_job.states.DONE, path = fn )
+        yield dict( state=transfer_job.states.DONE, path=fn )
     except Exception, e:
-        yield dict( state = transfer_job.states.ERROR, info = 'Error during file transfer: %s' % str( e ) )
+        yield dict( state=transfer_job.states.ERROR, info='Error during file transfer: %s' % str( e ) )
         return
     return
+
 
 def scp_transfer( transfer_job ):
     """Plugin" for handling scp transfers using pexpect"""
@@ -245,24 +267,23 @@ def scp_transfer( transfer_job ):
     password = transfer_job.params[ 'password' ]
     file_path = transfer_job.params[ 'file_path' ]
     if pexpect is None:
-        return dict( state = transfer_job.states.ERROR, info = PEXPECT_IMPORT_MESSAGE )
+        return dict( state=transfer_job.states.ERROR, info=PEXPECT_IMPORT_MESSAGE )
     try:
         fh, fn = tempfile.mkstemp()
     except Exception, e:
-        return dict( state = transfer_job.states.ERROR, info = 'Unable to create temporary file for transfer: %s' % str( e ) )
+        return dict( state=transfer_job.states.ERROR, info='Unable to create temporary file for transfer: %s' % str( e ) )
     try:
         # TODO: add the ability to determine progress of the copy here like we do in the http_transfer above.
         cmd = "scp %s@%s:'%s' '%s'" % ( user_name,
                                         host,
                                         file_path.replace( ' ', '\ ' ),
                                         fn )
-        output = pexpect.run( cmd, 
-                              events={ '.ssword:*': password + '\r\n', 
-                                       pexpect.TIMEOUT: print_ticks }, 
-                              timeout=10 )
-        return dict( state = transfer_job.states.DONE, path = fn )
+        pexpect.run( cmd, events={ '.ssword:*': password + '\r\n',
+                                   pexpect.TIMEOUT: print_ticks },
+                     timeout=10 )
+        return dict( state=transfer_job.states.DONE, path=fn )
     except Exception, e:
-        return dict( state = transfer_job.states.ERROR, info = 'Error during file transfer: %s' % str( e ) )
+        return dict( state=transfer_job.states.ERROR, info='Error during file transfer: %s' % str( e ) )
 
 if __name__ == '__main__':
     arg_handler = ArgHandler()

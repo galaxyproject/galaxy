@@ -8,6 +8,7 @@ import zipfile
 from urllib import quote_plus
 
 from galaxy.datatypes.binary import Binary
+from galaxy.datatypes.text import Html as HtmlFromText
 from galaxy.datatypes.sniff import get_headers
 from galaxy.datatypes.util.image_util import check_image_type
 from galaxy.util import nice_size
@@ -297,43 +298,9 @@ class Gmaj( data.Data ):
         return True
 
 
-class Html( data.Text ):
-    """Class describing an html file"""
-    edam_format = "format_2331"
-    file_ext = "html"
-
-    def set_peek( self, dataset, is_multi_byte=False ):
-        if not dataset.dataset.purged:
-            dataset.peek = "HTML file"
-            dataset.blurb = nice_size( dataset.get_size() )
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-
-    def get_mime(self):
-        """Returns the mime type of the datatype"""
-        return 'text/html'
-
-    def sniff( self, filename ):
-        """
-        Determines whether the file is in html format
-
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname( 'complete.bed' )
-        >>> Html().sniff( fname )
-        False
-        >>> fname = get_test_fname( 'file.html' )
-        >>> Html().sniff( fname )
-        True
-        """
-        headers = get_headers( filename, None )
-        try:
-            for i, hdr in enumerate(headers):
-                if hdr and hdr[0].lower().find( '<html>' ) >= 0:
-                    return True
-            return False
-        except:
-            return True
+class Html( HtmlFromText ):
+    """Deprecated class. This class should not be used anymore, but the galaxy.datatypes.text:Html one.
+    This is for backwards compatibilities only."""
 
 
 class Laj( data.Text ):

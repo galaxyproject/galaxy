@@ -14,6 +14,7 @@ database/citations
 database/community_files
 database/compiled_templates
 database/files
+database/jobs_directory
 database/job_working_directory
 database/pbs
 database/tmp
@@ -64,6 +65,8 @@ object_store_conf.xml
 job_metrics_conf.xml
 workflow_schedulers_conf.xml
 config/*
+config/plugins/interactive_environments/**/*.ini
+!config/plugins
 static/welcome.html.*
 static/welcome.html
 
@@ -86,12 +89,13 @@ tool-data/genome/*
 tool-data/*.sample
 tool-data/testtoolshed.g2.bx.psu.edu/
 tool-data/toolshed.g2.bx.psu.edu/
-
+tool-data/**/*.fa 
 
 # Test output
 test-data-cache
 run_framework_tests.html
 run_functional_tests.html
+run_toolshed_tests.html
 run_api_tests.html
 test/tool_shed/tmp/*
 .coverage

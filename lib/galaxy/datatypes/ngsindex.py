@@ -5,7 +5,7 @@ import os
 import logging
 
 from metadata import MetadataElement
-from images import Html
+from text import Html
 
 log = logging.getLogger(__name__)
 

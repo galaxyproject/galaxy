@@ -30,6 +30,9 @@ define([
     PopupMenu,
     _l
 ){
+
+'use strict';
+
 /* =============================================================================
 TODO:
 
@@ -90,7 +93,7 @@ var HistoryViewEdit = _super.extend(
         });
         panel.on( 'view:attached view:removed', function(){
             panel._renderCounts();
-        }, panel );
+        });
     },
 
     // ------------------------------------------------------------------------ listeners
@@ -98,19 +101,21 @@ var HistoryViewEdit = _super.extend(
     _setUpCollectionListeners : function(){
         _super.prototype._setUpCollectionListeners.call( this );
 
-        this.collection.on( 'change:deleted', this._handleHdaDeletionChange, this );
-        this.collection.on( 'change:visible', this._handleHdaVisibleChange, this );
-        this.collection.on( 'change:purged', function( model ){
-            // hafta get the new nice-size w/o the purged model
-            this.model.fetch();
-        }, this );
+        this.listenTo( this.collection, {
+            'change:deleted': this._handleHdaDeletionChange,
+            'change:visible': this._handleHdaVisibleChange,
+            'change:purged' : function( model ){
+                // hafta get the new nice-size w/o the purged model
+                this.model.fetch();
+            }
+        });
         return this;
     },
 
     /** listening for history and HDA events */
     _setUpModelListeners : function(){
         _super.prototype._setUpModelListeners.call( this );
-        this.model.on( 'change:size', this.updateHistoryDiskSize, this );
+        this.listenTo( this.model, 'change:size', this.updateHistoryDiskSize );
         return this;
     },
 

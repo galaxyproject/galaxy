@@ -42,12 +42,13 @@ Members
 - Björn Grüning (@bgruening)
 - Aysam Guerler (@guerler)
 - Jennifer Hillman Jackson (@jennaj)
-- Ross Lazarus (@fubar2)
 - Anton Nekrutenko (@nekrut)
 - Eric Rasche (@erasche)
 - Nicola Soranzo (@nsoranzo)
 - James Taylor (@jxtx)
 - Nitesh Turaga (@nitesh1989)
+- Marius van den Beek (@mvdbeek)
+
 
 Membership
 ----------

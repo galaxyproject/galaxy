@@ -56,7 +56,8 @@ class RepairRepositoryManager():
         and attempt to make sure they are all properly installed as well as each repository's
         tool dependencies.  This method is called only from Galaxy when attempting to correct
         issues with an installed repository that has installation problems somewhere in its
-        dependency hierarchy.
+        dependency hierarchy. Problems with dependencies that have never been installed
+        cannot be resolved with a repair.
         """
         rdim = repository_dependency_manager.RepositoryDependencyInstallManager( self.app )
         tsr_ids = []
@@ -150,8 +151,12 @@ class RepairRepositoryManager():
             else:
                 repair_dict[ repository_name ] = [ error_message ]
             return repair_dict
-
+        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, repository.tool_shed )
         metadata = repository.metadata
+        # The repository.metadata contains dependency information that corresponds to the current changeset revision,
+        # which may be different from what is stored in the database
+        # If any of these repository-repository dependency associations is obsolete, clean_dependency_relationships removes them.
+        suc.clean_dependency_relationships(self.app, metadata, repository, tool_shed_url)
         repair_dict = {}
         tpm = tool_panel_manager.ToolPanelManager( self.app )
         if repository.status in [ self.app.install_model.ToolShedRepository.installation_status.DEACTIVATED ]:

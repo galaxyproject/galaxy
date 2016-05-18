@@ -4,6 +4,9 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( DATASET_LI_EDIT, HDA_LI, BASE_MVC, _l ){
+
+'use strict';
+
 //==============================================================================
 var _super = DATASET_LI_EDIT.DatasetListItemEdit;
 /** @class Editing view for HistoryDatasetAssociation.

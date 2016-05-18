@@ -10,6 +10,7 @@ import tempfile
 import urllib
 import urllib2
 import zipfile
+from json import dumps, loads
 
 from markupsafe import escape
 from sqlalchemy import and_, false
@@ -18,8 +19,7 @@ from sqlalchemy.orm import eagerload_all
 from galaxy import util, web
 from galaxy.security import Action
 from galaxy.tools.actions import upload_common
-from galaxy.util import inflector
-from galaxy.util.json import dumps, loads
+from galaxy.util import inflector, unicodify
 from galaxy.util.streamball import StreamBall
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin, UsesLibraryMixinItems
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, build_select_field
@@ -86,7 +86,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         job_ldda = job_ldda.copied_from_library_dataset_dataset_association
                     rval[id] = {
                         "state": data.state,
-                        "html": unicode( trans.fill_template( "library/common/library_item_info.mako", ldda=data ), 'utf-8' )
+                        "html": unicodify( trans.fill_template( "library/common/library_item_info.mako", ldda=data ), 'utf-8' )
                         # "force_history_refresh": force_history_refresh
                     }
         return rval
@@ -1039,7 +1039,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         tool_id = 'upload1'
         tool = trans.app.toolbox.get_tool( tool_id )
         state = tool.new_state( trans )
-        tool.populate_state( trans, tool.inputs, state.inputs, kwd )
+        tool.populate_state( trans, tool.inputs, kwd, state.inputs )
         tool_params = state.inputs
         dataset_upload_inputs = []
         for input_name, input in tool.inputs.iteritems():
@@ -1115,10 +1115,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                        status='error' ) )
         json_file_path = upload_common.create_paramfile( trans, uploaded_datasets )
         data_list = [ ud.data for ud in uploaded_datasets ]
-        job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=library_bunch.folder )
-        # HACK: Prevent outputs_to_working_directory from overwriting inputs when "linking"
-        job.add_parameter( 'link_data_only', dumps( kwd.get( 'link_data_only', 'copy_files' ) ) )
-        job.add_parameter( 'uuid', dumps( kwd.get( 'uuid', None ) ) )
+        job_params = {}
+        job_params['link_data_only'] = dumps( kwd.get( 'link_data_only', 'copy_files' ) )
+        job_params['uuid'] = dumps( kwd.get( 'uuid', None ) )
+        job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=library_bunch.folder, job_params=job_params )
         trans.sa_session.add( job )
         trans.sa_session.flush()
         return output

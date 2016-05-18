@@ -31,9 +31,20 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
 
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
-        """Called on any url that does not match a controller method.
+        """
+        Called on any url that does not match a controller method.
         """
         raise HTTPNotFound( 'This link may not be followed from within Galaxy.' )
+
+    @web.expose
+    def client(self, trans, **kwd):
+        """
+        Endpoint for clientside routes.  Currently a passthrough to index
+        (minus kwargs) though we can differentiate it more in the future.
+        Should not be used with url_for -- see
+        (https://github.com/galaxyproject/galaxy/issues/1878) for why.
+        """
+        return self.index(trans)
 
     def _get_extended_config( self, trans ):
         app = trans.app
@@ -43,7 +54,6 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
             'active_view'                   : 'analysis',
             'params'                        : dict( trans.request.params ),
             'enable_cloud_launch'           : app.config.get_bool( 'enable_cloud_launch', False ),
-            'spinner_url'                   : web.url_for( '/static/images/loading_small_white_bg.gif' ),
             'search_url'                    : web.url_for( controller='root', action='tool_search' ),
             # TODO: next two should be redundant - why can't we build one from the other?
             'toolbox'                       : app.toolbox.to_dict( trans, in_panel=False ),
