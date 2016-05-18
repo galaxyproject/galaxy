@@ -8,12 +8,24 @@ April 2016 Galaxy Release (v 16.04)
 Highlights
 ===========================================================
 
-**Overhaul of Tools and Jobs**
-  Including embedded Pulsar Job Runner.
+**Tool Profile Versions**
+  Tools may now `declare which version <http://planemo.readthedocs.io/en/latest/galaxy_changelog.html#tool-profile-version-pr-1688>`__
+  of Galaxy they require. Tools requiring 16.04 or newer will
+  have new default behaviors (such as using exit code for error detection) that should simplify tool development.
+  See `PR #1688 <https://github.com/galaxyproject/galaxy/pull/1688>`__.
+
+**Embedded Pulsar Job Runner**
+  Galaxy can now start a Pulsar application embedded within
+  the Galaxy process itself. This allows using Pulsar's
+  job staging and isolation without requiring a RESTful
+  web service or a message queue. This is enabling
+  `usegalaxy.org <https://usegalaxy.org/>`__ to run jobs to
+  on the new `JetStream cloud <http://jetstream-cloud.org/>`__.
+  See `PR #2057 <https://github.com/galaxyproject/galaxy/pull/2057>`__.
 
 **New chemical datatypes**
-  Galaxy now detects and supports many molecular datatypes. See details at `Pull Request 1941`_
-  Thanks to `@bgruening <https://github.com/bgruening>`__.
+  Galaxy now detects and supports many molecular datatypes. See `Pull Request 1941`_.
+  Thanks to `Björn Grüning (@bgruening) <https://github.com/bgruening>`__.
 
 
 .. _Pull Request 1941: https://github.com/galaxyproject/galaxy/pull/1941
