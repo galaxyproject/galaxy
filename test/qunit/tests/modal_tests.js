@@ -28,19 +28,19 @@ define([ "test-app", "mvc/ui/ui-modal"
     test( "test dialog visibility", function() {
         ok( this.app.$el.css( 'display' ) == 'block', 'Modal is initially visible' );
         this.app.hide();
-        this.clock.tick( WAIT_FADE_FAST );
+        this.clock.tick( WAIT_FADE );
         ok( this.app.$el.css( 'display' ) == 'none', 'Modal hidden manually' );
         this.app.show();
-        this.clock.tick( WAIT_FADE_FAST );
+        this.clock.tick( WAIT_FADE );
         ok( this.app.$el.css( 'display' ) == 'block', 'Modal shown manually' );
         this.app.getButton( 'Ok' ).trigger( 'click' );
-        this.clock.tick( WAIT_FADE_FAST );
+        this.clock.tick( WAIT_FADE );
         ok( this.app.$el.css( 'display' ) == 'block', 'Modal still visible after clicking Ok' );
         this.app.getButton( 'Cancel' ).trigger( 'click' );
-        this.clock.tick( WAIT_FADE_FAST );
+        this.clock.tick( WAIT_FADE );
         ok( this.app.$el.css( 'display' ) == 'none', 'Modal hidden after clicking Cancel' );
         this.app.show();
-        this.clock.tick( WAIT_FADE_FAST );
+        this.clock.tick( WAIT_FADE );
         ok( this.app.$el.css( 'display' ) == 'block', 'Modal manually shown again' );
         ok( !this.app.$header.hasClass( 'no-separator' ), 'Title separator tagged as visible.' );
         this.app.show({ title_separator: false });
@@ -52,12 +52,12 @@ define([ "test-app", "mvc/ui/ui-modal"
 
     test( "test dialog closing events", function() {
         this.app.$backdrop.trigger( 'click' );
-        this.clock.tick( WAIT_FADE_FAST );
+        this.clock.tick( WAIT_FADE );
         ok( this.app.$el.css( 'display' ) == 'block', 'Modal shown after backdrop click' );
         this.app.show({ closing_events: true });
         ok( this.app.$el.css( 'display' ) == 'block', 'Modal shown with closing events' );
         this.app.$backdrop.trigger( 'click' );
-        this.clock.tick( WAIT_FADE_FAST );
+        this.clock.tick( WAIT_FADE );
         ok( this.app.$el.css( 'display' ) == 'none', 'Modal hidden after backdrop click' );
     } );
 

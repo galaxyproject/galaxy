@@ -60,6 +60,7 @@ define(['utils/utils',
                 optional    : input_def.optional,
                 multiple    : input_def.multiple,
                 type        : input_def.type,
+                flavor      : input_def.flavor,
                 data        : input_def.options,
                 onchange    : function() {
                     self.app.trigger( 'change' );

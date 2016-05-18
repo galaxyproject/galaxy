@@ -10,7 +10,6 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
                 cls             : 'ui-portlet-limited',
                 icon            : null
             });
-            this.modal = ( parent.Galaxy && parent.Galaxy.modal ) || new Ui.Modal.View();
             this.setElement('<div/>');
             this.render();
         },
@@ -69,18 +68,11 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
         /** Highlight and scroll to input element (currently only used for error notifications)
         */
         highlight: function (input_id, message, silent) {
-            // get input field
             var input_element = this.element_list[input_id];
-
-            // check input element
             if (input_element) {
-                // mark error
                 input_element.error(message || 'Please verify this parameter.');
-
-                // trigger expand event for parent containers
+                this.portlet.expand();
                 this.trigger('expand', input_id);
-
-                // scroll to first input element
                 if (!silent) {
                     if (self==top) {
                         var $panel = this.$el.parents().filter(function() {
@@ -97,10 +89,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
         /** Highlights errors
         */
         errors: function(options) {
-            // hide previous error statements
             this.trigger('reset');
-
-            // highlight all errors
             if (options && options.errors) {
                 var error_messages = this.data.matchResponse(options.errors);
                 for (var input_id in this.element_list) {
@@ -147,9 +136,9 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
 
             // add listener which triggers on checksum change
             var current_check = this.data.checksum();
-            this.on('change', function() {
+            this.on('change', function( force ) {
                 var new_check = self.data.checksum();
-                if (new_check != current_check) {
+                if (new_check != current_check || force ) {
                     current_check = new_check;
                     self.options.onchange && self.options.onchange();
                 }

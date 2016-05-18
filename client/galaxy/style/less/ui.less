@@ -264,13 +264,6 @@
             width: 100%;
             height: 100%;
             background: @white;
-        }
-        .ui-form-backdrop-default {
-            display: block;
-            opacity: 0.2;
-            cursor: not-allowed;
-        }
-        .ui-form-backdrop-silent {
             display: block;
             opacity: 0.0;
             cursor: default;
@@ -281,6 +274,12 @@
         margin-top: @ui-margin-vertical;
         border-color: transparent !important;
         box-shadow: none !important;
+    }
+}
+.ui-form-element-disabled {
+    &:extend(.ui-form-element all);
+    .ui-form-title {
+        font-weight: normal;
     }
 }
 
@@ -300,10 +299,11 @@
         font-size: 1.2em;
         padding: 2px 5px;
     }
-}
-
-.ui-form-footer-info {
-    line-height: 1.4em;
+    .ui-form-title {
+        clear:both;
+        font-weight: bold;
+        padding-right: @ui-margin-horizontal;
+    }
 }
 
 .ui-form-error {
@@ -326,6 +326,10 @@
         &:extend(.btn all);
         &:extend(.btn-default all);
         margin-left: @ui-margin-horizontal;
+    }
+    .ui-message {
+        margin-top: 0px;
+        margin-bottom:10px;
     }
 }
 
