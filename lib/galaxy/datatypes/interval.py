@@ -1446,7 +1446,7 @@ class ENCODEPeak( Interval ):
     This format is used to provide called peaks of signal enrichment based on
     pooled, normalized (interpreted) data. It is a BED6+4 format.
     '''
-    edam_format = "format_3612"   
+    edam_format = "format_3612"
     file_ext = "encodepeak"
     column_names = [ 'Chrom', 'Start', 'End', 'Name', 'Score', 'Strand', 'SignalValue', 'pValue', 'qValue', 'Peak' ]
     data_sources = { "data": "tabix", "index": "bigwig" }

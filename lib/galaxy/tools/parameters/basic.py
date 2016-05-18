@@ -2038,8 +2038,7 @@ class DataToolParameter( BaseDataToolParameter ):
         all_edam_data = self._datatypes_registery( trans, self.tool ).edam_data
         edam_formats = map(lambda ext: all_edam_formats.get(ext, None),
                            extensions)
-        edam_data = map(lambda ext: all_edam_data.get(ext, None),
-                           extensions)
+        edam_data = map(lambda ext: all_edam_data.get(ext, None), extensions)
 
         d['extensions'] = extensions
         d['edam'] = {'edam_formats': edam_formats, 'edam_data': edam_data}

@@ -15,6 +15,7 @@ class QualityScore ( data.Text ):
     edam_data = "data_2048"
     edam_format = "format_3606"
 
+
 class QualityScoreSOLiD ( QualityScore ):
     """
     until we know more about quality score formats
@@ -121,6 +122,7 @@ class QualityScoreSolexa ( QualityScore ):
     """
     file_ext = "qualsolexa"
     edam_format = "format_3608"
+
 
 class QualityScoreIllumina ( QualityScore ):
     """
