@@ -85,20 +85,16 @@ def build_tool_name(tool_id, tool_version):
 
 def format_description(description):
     """
-    Test the first and last char of a description and replace them
-    with the format adapted to Elixir
-    :param description: Tool Galaxy description
-    :return: Formatted tool Galaxy description
+    Ensure capital first character and final `.` in description.
+    :param description: tool description
+    :return: tool description for bio.tools
     :rtype: string
     """
-    try:
-        size = len(description)
-        if description[size - 1] == '.':
-            return description[0].upper() + description[1:size]
-        else:
-            return description[0].upper() + description[1:size] + '.'
-    except IndexError:
-        raise description
+    if not description:  # Descriptions are not mandatory in galaxy, but they are mandatory in bio.tools
+        return None
+    if not description.endswith('.'):
+        description = "%s." % description
+    return description
 
 
 def get_source_registry(tool_id):
