@@ -42,6 +42,7 @@ class InteractiveEnvironmentRequest(object):
         self.load_deploy_config()
         self.load_allowed_images()
         self.attr.docker_hostname = self.attr.viz_config.get("docker", "docker_hostname")
+        self.attr.docker_swarm = self.attr.viz_config.getboolean("docker", "docker_swarm")
 
         # Generate per-request passwords the IE plugin can use to configure
         # the destination container.
@@ -109,6 +110,7 @@ class InteractiveEnvironmentRequest(object):
             'command': 'docker {docker_args}',
             'command_inject': '--sig-proxy=true -e DEBUG=false',
             'docker_hostname': 'localhost',
+            'docker_swarm': 'False',
             'wx_tempdir': 'False',
             'docker_galaxy_temp_dir': None
         }
@@ -304,7 +306,9 @@ class InteractiveEnvironmentRequest(object):
             log.debug( "Container id: %s" % container_id)
             inspect_data = self.inspect_container(container_id)
             port_mappings = self.get_container_port_mapping(inspect_data)
-            if self.attr.docker_hostname == 'localhost':
+            if self.attr.docker_swarm:
+                self.attr.docker_hostname = self.get_container_node_ip(inspect_data)
+            elif self.attr.docker_hostname == 'localhost':
                 self.attr.docker_hostname = self.get_container_gateway_ip(inspect_data)
             if len(port_mappings) > 1:
                 log.warning("Don't know how to handle proxies to containers with multiple exposed ports. Arbitrarily choosing first")
@@ -367,6 +371,25 @@ class InteractiveEnvironmentRequest(object):
         #                 }
         #             ]
         return inspect_data
+
+    def get_container_node_ip(self, inspect_data):
+        """
+        Returns Node ip from inspect_data, this is set when using Docker Swarm.
+
+        The relevant section of the JSON looks like::
+
+            "Node": {
+                "ID": "ICJM:DDQR:AEJI:JLTO:E6EE:6GAG:7N74:EVJE:SHE7:6L6G:ICXZ:PL2N",
+                "IP": "192.168.64.5",
+                "Addr": "192.168.64.5:2376",
+                "Name": "boot2docker",
+            ...
+
+        :type inspect_data: dict
+        :param inspect_data: output of docker inspect
+        :returns: IP address of the node the conatainer is running on.
+        """
+        return inspect_data[0]['Node']['IP']
 
     def get_container_gateway_ip(self, inspect_data):
         """
