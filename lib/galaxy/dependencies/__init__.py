@@ -3,7 +3,6 @@ Determine what optional dependencies are needed.
 """
 import pkg_resources
 
-from sys import version_info
 from os.path import dirname, join
 from xml.etree import ElementTree
 
