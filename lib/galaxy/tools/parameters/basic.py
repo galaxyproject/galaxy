@@ -1480,10 +1480,11 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             return None
         if not isinstance( value, list ):
             value = [ value ]
-        if not( self.repeat ) and len( value ) > 1:
-            assert self.multiple, "Multiple values provided but parameter %s is not expecting multiple values" % self.name
+        if not self.repeat and len( value ) > 1 and not self.multiple:
+            raise ValueError( "Multiple values provided but parameter %s is not expecting multiple values." % self.name )
         rval = []
-        assert legal_values, "Parameter %s requires a value, but has no legal values defined" % self.name
+        if not legal_values:
+            raise ValueError( "Parameter %s requires a value, but has no legal values defined." % self.name )
         for val in value:
             if val not in legal_values:
                 raise ValueError( "An invalid option was selected for %s, %r, please verify" % ( self.name, val ) )
@@ -1520,9 +1521,8 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             for val in value:
                 options = get_options_list( val )
                 rval.extend( options )
-        if len( rval ) > 1:
-            if not self.repeat:
-                assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
+        if not self.repeat and len( rval ) > 1 and not self.multiple:
+            raise ValueError( "Multiple values provided but parameter %s is not expecting multiple values." % self.name )
         rval = self.separator.join( map( value_map, rval ) )
         if self.tool is None or self.tool.options.sanitize:
             if self.sanitizer:
