@@ -1,6 +1,9 @@
 <tool id="bed_to_bigBed" name="BED-to-bigBed" version="1.0.0">
   <description>converter</description>
-  <command>bedToBigBed $input1 $chromInfo $out_file1 
+  <edam_operations>
+    <edam_operation>operation_3434</edam_operation>
+  </edam_operations>
+  <command>bedToBigBed $input1 $chromInfo $out_file1
     #if $settings.settingsType == "full":
       -blockSize=${settings.blockSize} -itemsPerSlot=${settings.itemsPerSlot} ${settings.unc}
     #end if
