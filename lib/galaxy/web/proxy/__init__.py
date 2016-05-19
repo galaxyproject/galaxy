@@ -89,6 +89,8 @@ class ProxyManager(object):
             return NodeProxyLauncher()
         elif self.dynamic_proxy == "golang":
             return GolangProxyLauncher()
+        elif self.dynamic_proxy == "uwsgi":
+            return UWSGIProxyLauncher()
         else:
             raise Exception("Unknown proxy type")
 
@@ -141,6 +143,21 @@ class GolangProxyLauncher(object):
         return args
 
 
+class UWSGIProxyLauncher(object):
+
+    def launch_proxy_command(self, config):
+        parent_directory = os.path.dirname( __file__ )
+        path_to_application = os.path.join( parent_directory, "uwsgi" )
+        args = [
+            os.path.join( path_to_application, "uwsgi_proxy.ini" ),
+            "--chdir", path_to_application,
+            "--set", "sessions=" + os.path.abspath( config.proxy_session_map ),
+            "--http-socket", config.dynamic_proxy_bind_ip + ":" + str(config.dynamic_proxy_bind_port),
+        ]
+        command = [ "uwsgi" ] + args
+        return command
+
+
 class AuthenticationToken(object):
 
     def __init__(self, trans):
@@ -162,7 +179,7 @@ class ProxyRequests(object):
 
 def proxy_ipc(config):
     proxy_session_map = config.proxy_session_map
-    if config.dynamic_proxy == "node":
+    if config.dynamic_proxy == "node" or config.dynamic_proxy == "uwsgi":
         if proxy_session_map.endswith(".sqlite"):
             return SqliteProxyIpc(proxy_session_map)
         else:
