@@ -1245,6 +1245,8 @@ class ColumnListParameter( SelectToolParameter ):
         return SelectToolParameter.get_initial_value( self, trans, other_values )
 
     def get_legal_values( self, trans, other_values ):
+        if self.data_ref not in other_values:
+            raise ValueError( "Value for associated data reference not found (data_ref)." )
         return set( self.get_column_list( trans, other_values ) )
 
     def get_dependencies( self ):
