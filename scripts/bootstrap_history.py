@@ -212,6 +212,12 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
             make release-create RELEASE_CURR=${version}
       - [ ] Push branches and tags as commented out in Makefile target for ``release-create``.
 
+- [ ] **Do Docker Release**
+
+      - [ ] Change the [dev branch](https://github.com/bgruening/docker-galaxy-stable/tree/dev
+) of the Galaxy Docker container to ${next_version}
+      - [ ] Merge dev into master
+
 - [ ] **Announce Release**
 
       - [ ] Stage annoucement content (Wiki, Biostars, Bit.ly link) on annouce date to capture date tags. Note: all final content does not need to be completed to do this.
