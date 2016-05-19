@@ -1,8 +1,8 @@
-import sys
 import uwsgi
 import sqlite3
 
 db_conn = sqlite3.connect( uwsgi.opt[ "sessions" ] )
+
 
 def dynamic_proxy_mapper(hostname, galaxy_session):
     """Attempt to lookup downstream host from database"""
@@ -13,5 +13,6 @@ def dynamic_proxy_mapper(hostname, galaxy_session):
             return row[0].encode()
     # No match for session found
     return None
+
 
 uwsgi.register_rpc('dynamic_proxy_mapper', dynamic_proxy_mapper)
