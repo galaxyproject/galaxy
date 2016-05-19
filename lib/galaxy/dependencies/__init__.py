@@ -77,12 +77,6 @@ class ConditionalDependencies( object ):
         # pygments is a dependency of weberror and only weberror
         return self.check_weberror()
 
-    def check_importlib( self ):
-        return version_info < (2, 7)
-
-    def check_ordereddict( self ):
-        return version_info < (2, 7)
-
 
 def optional( config_file ):
     rval = []

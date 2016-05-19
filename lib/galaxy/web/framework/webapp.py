@@ -10,6 +10,7 @@ import string
 import time
 import urlparse
 from Cookie import CookieError
+from importlib import import_module
 
 from Cheetah.Template import Template
 import mako.runtime
@@ -26,7 +27,6 @@ from galaxy.exceptions import MessageException
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util import safe_str_cmp
-from galaxy.util.backports.importlib import import_module
 from galaxy.util.sanitize_html import sanitize_html
 
 from galaxy.managers import context
