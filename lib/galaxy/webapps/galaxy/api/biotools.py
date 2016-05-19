@@ -5,12 +5,12 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-def json_formater(fonc):
-    @functools.wraps(fonc)
+def json_formatter(func):
+    @functools.wraps(func)
     def innerfunc(cl, trans, id, **kwd):
-        result = fonc(cl, trans, id, **kwd)
+        result = func(cl, trans, id, **kwd)
         general_dict = build_general_dict(result)
-        general_dict['function'] = build_fonction_dict(result)
+        general_dict['function'] = build_function_dict(result)
         tool_name = build_tool_name(result['tool_id'], result['tool_version'])
         general_dict["name"] = tool_name
         clean_dict(general_dict)
@@ -184,7 +184,7 @@ def build_general_dict(tool_meta_data):
     return gen_dict
 
 
-def build_fonction_dict(json_tool):
+def build_function_dict(json_tool):
     """
     Extract information from a galaxy json tool and return a list of functions in the json biotools format
     :param json_tool: galaxy json tool

@@ -11,7 +11,7 @@ from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesVisualizationMixin
-from .biotools import json_formater
+from .biotools import json_formatter
 
 
 log = logging.getLogger( __name__ )
@@ -88,7 +88,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         return tool.to_dict( trans, io_details=io_details, link_details=link_details )
 
     @expose_api_anonymous_and_sessionless
-    @json_formater
+    @json_formatter
     def biotools( self, trans, id, **kwd ):
         """
         GET /api/tools/{tool_id}/biotools
