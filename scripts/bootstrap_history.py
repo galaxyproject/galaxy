@@ -222,6 +222,8 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
       - [ ]  Update GALAXY_RELEASE in https://github.com/galaxyproject/tools-iuc/blob/master/.travis.yml#L6
 
+      - [ ]  Update GALAXY_RELEASE in https://github.com/galaxyproject/tools-devteam/blob/master/.travis.yml#L6
+
 - [ ] **Announce Release**
 
       - [ ] Stage annoucement content (Wiki, Biostars, Bit.ly link) on annouce date to capture date tags. Note: all final content does not need to be completed to do this.
