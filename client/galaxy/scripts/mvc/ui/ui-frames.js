@@ -1,50 +1,77 @@
-/** Scratchbook viewer */
 define([], function() {
+
+/** Frame view */
+var FrameView = Backbone.View.extend({
+    initialize: function( options ) {
+        this.setElement( $( '<div/>' ).addClass( 'corner' ).addClass( 'frame' ) );
+        this.$el.append( this.$header  = $( '<div/>' ).addClass( 'f-header corner' )
+                                                      .append( this.$title = $( '<div/>' ).addClass( 'f-title' ).html( options.title || '' ) )
+                                                      .append( this.$close = $( '<div/>' ).addClass( 'f-icon f-close fa fa-close' ) )
+                                                      .append( this.$pin   = $( '<div/>' ).addClass( 'f-icon f-pin fa fa-thumb-tack' ) )
+                                                      .append( this.$left  = $( '<div/>' ).addClass( 'f-icon f-left fa fa-chevron-circle-left' ) )
+                                                      .append( this.$right = $( '<div/>' ).addClass( 'f-icon f-right fa fa-chevron-circle-right' ) ) )
+                .append( this.$content = $( '<div/>' ).addClass( 'f-content' ).append( $( '<div/>' ).addClass( 'f-cover' ) ) )
+                .append( this.$resize  = $( '<div/>' ).addClass( 'f-resize f-icon corner fa fa-expand' ) );
+
+        // configure frame
+        if ( options.onslider ) {
+            this.$left.on( 'click', function() { options.onslider() } );
+        }
+
+        // configure content
+        if ( options.url ) {
+            this.$content.append(
+                $ ( '<iframe/>' ).addClass( 'f-iframe' )
+                                 .attr( 'scrolling', 'auto' )
+                                 .attr( 'src', options.url + ( options.url.indexOf( '?' ) === -1 ? '?' : '&' ) + 'widget=True' )
+            );
+        } else if ( options.content ) {
+            _.isFunction( options.content ) ? options.content( this.$content ) : this.$content.append( options.content );
+        }
+    }
+});
+
+/** Scratchbook viewer */
 var View = Backbone.View.extend({
     defaultOptions: {
-        frame: {            // default frame size in cells
+        frame: {             // default frame size in cells
             cols : 6,
             rows : 3
         },
-        rows        : 1000, // maximum number of rows
-        cell        : 130,  // cell size in px
-        margin      : 5,
-        scroll      : 5,    // scroll speed
-        top_min     : 40,   // top margin
-        frame_max   : 9,    // maximum number of frames
-        visible     : true, // initial visibility
+        rows        : 1000,  // maximum number of rows
+        cell        : 130,   // cell size in px
+        margin      : 5,     // margin between frames
+        scroll      : 5,     // scroll speed
+        top_min     : 40,    // top margin
+        frame_max   : 9,     // maximum number of frames
+        visible     : true,  // initial visibility
     },
 
-    cols            : 0,    // number of columns
-    top             : 0,    // scroll/element top
-    top_max         : 0,    // viewport scrolling state
-    frame_z         : 0,    // frame z-index
-    frame_counter   : 0,    // frame counter
-    frame_uid       : 0,
-    frame_list      : {},   // list of all frames
-    frame_shadow    : null,
-    visible         : false,
-    event           : {},
+    cols            : 0,     // number of columns
+    top             : 0,     // scroll/element top
+    top_max         : 0,     // viewport scrolling state
+    frame_z         : 0,     // frame z-index
+    frame_counter   : 0,     // frame counter
+    frame_uid       : 0,     // unique frame id counter
+    frame_list      : {},    // list of all frames
+    frame_shadow    : null,  // frame shown as placeholder when moving active frames
+    visible         : false, // flag indicating if scratchbook viewer is visible or not
+    event           : {},    // dictionary keeping track of current event
 
     initialize : function( options ) {
         var self = this;
         this.options = _.defaults( options || {}, this.defaultOptions );
         this.visible = this.options.visible;
         this.top = this.top_max = this.options.top_min;
-        this.setElement( $( '<div/>' ).addClass( 'galaxy-frame' ) );
-        this.$el.append( $( '<div/>' ).addClass( 'frame-background' ) );
-        this.$el.append( $( '<div/>' ).addClass( 'frame-menu frame-scroll-up fa fa-chevron-up fa-2x' ) );
-        this.$el.append( $( '<div/>' ).addClass( 'frame-menu frame-scroll-down fa fa-chevron-down fa-2x' ) );
-        this.$el.append( $( '<div/>' ).addClass( 'frame-shadow corner' ).attr( 'id', 'frame-shadow' ) );
+        this.setElement( $( '<div/>' ).addClass( 'galaxy-frame' )
+                            .append( $( '<div/>' ).addClass( 'frame-background' ) )
+                            .append( $( '<div/>' ).addClass( 'frame-menu frame-scroll-up fa fa-chevron-up fa-2x' ) )
+                            .append( $( '<div/>' ).addClass( 'frame-menu frame-scroll-down fa fa-chevron-down fa-2x' ) ) );
 
         // initialize shadow to guiding drag/resize events
-        this.frame_shadow = {
-            id              : '#frame-shadow',
-            screen_location : {},
-            grid_location   : {},
-            grid_rank       : null,
-            grid_lock       : false
-        };
+        this.frame_shadow = new Backbone.View({}).setElement( $( '<div/>' ).addClass( 'corner frame-shadow' ) );
+        this.$el.append( this.frame_shadow.$el );
+        this._frameInit( this.frame_shadow, '#frame-shadow' );
         this._frameResize( this.frame_shadow, { width: 0, height: 0 } );
         this.frame_list[ '#frame-shadow' ] = this.frame_shadow;
 
@@ -87,38 +114,18 @@ var View = Backbone.View.extend({
             } else {
                 // initialize new frame elements
                 this.top = this.options.top_min;
-                var $frame_el = $( this._frameTemplate( frame_id.substring( 1 ), options.title ) );
-                var $frame_content = $frame_el.find( '.f-content' );
-                this.$el.append( $frame_el );
-
-                // configure content
-                if ( options.url ) {
-                    $frame_content.append(
-                        $ ( '<iframe/>' ).addClass( 'f-iframe' )
-                                         .attr( 'scrolling', 'auto' )
-                                         .attr( 'src', options.url + ( options.url.indexOf( '?' ) === -1 ? '?' : '&' ) + 'widget=True' )
-                    );
-                } else if ( options.content ) {
-                    _.isFunction( options.content ) ? options.content( $frame_content ) : $frame_content.append( options.content );
-                }
-
-                // construct a new frame
-                var frame = {
-                    id              : frame_id,
-                    screen_location : {},
-                    grid_location   : {},
-                    grid_rank       : null,
-                    grid_lock       : false
-                };
+                var frame = new FrameView( options );
+                this.$el.append( frame.$el );
 
                 // set dimensions
                 options.width   = this._toPixelCoord( 'width', this.options.frame.cols );
                 options.height  = this._toPixelCoord( 'height', this.options.frame.rows );
 
                 // set default z-index and add to ui and frame list
-                this.frame_z = parseInt( $( frame.id ).css( 'z-index' ) );
+                this.frame_z = parseInt( frame.$el.css( 'z-index' ) );
                 this.frame_list[ frame_id ] = frame;
                 this.frame_counter++;
+                this._frameInit( frame, frame_id );
                 this._frameResize( frame, { width: options.width, height: options.height } );
                 this._frameInsert( frame, { top: 0, left: 0 }, true );
                 !this.visible && this.show();
@@ -128,12 +135,12 @@ var View = Backbone.View.extend({
     },
 
     /** Remove a frame */
-    del: function( frame_id ) {
+    del: function( frame ) {
         var self = this;
-        var $frame = this.$( frame_id );
+        var $frame = frame.$el;
         $frame.fadeOut( 'fast', function() {
             $frame.remove();
-            delete self.frame_list[ frame_id ];
+            delete self.frame_list[ frame.id ];
             self.frame_counter--;
             self._panelRefresh( true );
             self._panelAnimationComplete();
@@ -267,7 +274,7 @@ var View = Backbone.View.extend({
     _eventFrameClose: function ( e ) {
         if ( !this.event.type ) {
             e.preventDefault();
-            this.del( this._frameIdentify( e.target ).id );
+            this.del( this._frameIdentify( e.target ) );
         }
     },
 
@@ -277,12 +284,12 @@ var View = Backbone.View.extend({
             e.preventDefault();
             var frame = this._frameIdentify( e.target );
             var locked = frame.grid_lock = !frame.grid_lock;
-            var $el = $( frame.id );
-            $el.find( '.f-pin' )      [ locked && 'addClass' || 'removeClass' ]( 'toggle' );
-            $el.find( '.f-header' )   [ locked && 'removeClass' || 'addClass' ]( 'f-not-allowed' );
-            $el.find( '.f-title' )    [ locked && 'removeClass' || 'addClass' ]( 'f-not-allowed' );
-            $el.find( '.f-resize' )   [ locked && 'hide' || 'show' ]();
-            $el.find( '.f-close' )    [ locked && 'hide' || 'show' ]();
+            var $el = frame.$el;
+            $el.find( '.f-pin' )      [ locked ? 'addClass' : 'removeClass' ]( 'toggle' );
+            $el.find( '.f-header' )   [ locked ? 'removeClass' : 'addClass' ]( 'f-not-allowed' );
+            $el.find( '.f-title' )    [ locked ? 'removeClass' : 'addClass' ]( 'f-not-allowed' );
+            $el.find( '.f-resize' )   [ locked ? 'hide' : 'show' ]();
+            $el.find( '.f-close' )    [ locked ? 'hide' : 'show' ]();
         }
     },
 
@@ -326,6 +333,16 @@ var View = Backbone.View.extend({
         FRAME EVENTS SUPPORT
     */
 
+    /** Initialize a new frame */
+    _frameInit: function( frame, id ) {
+        frame.id              = id
+        frame.screen_location = {};
+        frame.grid_location   = {};
+        frame.grid_rank       = null;
+        frame.grid_lock       = false;
+        frame.$el.attr( 'id', id.substring( 1 ) );
+    },
+
     /** Identify the target frame */
     _frameIdentify: function( target ) {
         return this.frame_list[ '#' + $( target ).closest( '.frame' ).attr( 'id' ) ];
@@ -338,7 +355,7 @@ var View = Backbone.View.extend({
         this._frameResize( this.frame_shadow, p );
         this._frameGrid( this.frame_shadow, frame.grid_location );
         frame.grid_location = null;
-        $( this.frame_shadow.id ).show();
+        this.frame_shadow.$el.show();
         $( '.f-cover' ).show();
     },
 
@@ -349,7 +366,7 @@ var View = Backbone.View.extend({
         this._frameResize( frame, p );
         this._frameGrid( frame, this.frame_shadow.grid_location, true );
         this.frame_shadow.grid_location = null;
-        $( this.frame_shadow.id ).hide();
+        this.frame_shadow.$el.hide();
         $( '.f-cover' ).hide();
         this._panelAnimationComplete();
     },
@@ -516,7 +533,7 @@ var View = Backbone.View.extend({
 
     /** Handle frame focussing */
     _frameFocus: function( frame, has_focus ) {
-        $( frame.id ).css( 'z-index', this.frame_z + ( has_focus ? 1 : 0 ) );
+        frame.$el.css( 'z-index', this.frame_z + ( has_focus ? 1 : 0 ) );
     },
 
     /** New left/top position frame */
@@ -526,17 +543,17 @@ var View = Backbone.View.extend({
         if ( animate ) {
             this._frameFocus( frame, true );
             var self = this;
-            $( frame.id ).animate({ top: p.top, left: p.left }, 'fast', function() {
+            frame.$el.animate({ top: p.top, left: p.left }, 'fast', function() {
                 self._frameFocus( frame, false );
             });
         } else {
-            $( frame.id ).css( { top: p.top, left: p.left } );
+            frame.$el.css( { top: p.top, left: p.left } );
         }
     },
 
     /** Resize frame */
     _frameResize: function( frame, p ) {
-        $( frame.id ).css( { width: p.width, height: p.height } );
+        frame.$el.css( { width: p.width, height: p.height } );
         frame.screen_location.width = p.width;
         frame.screen_location.height = p.height;
     },
@@ -552,21 +569,6 @@ var View = Backbone.View.extend({
     _frameScreen: function( frame ) {
         var p = frame.screen_location;
         return { top: p.top, left: p.left, width: p.width, height: p.height };
-    },
-
-    /** Regular frame template */
-    _frameTemplate: function( id, title ) {
-        return  '<div id="' + id + '" class="frame corner">' +
-                    '<div class="f-header corner">' +
-                        '<span class="f-title">' + ( title || '' ) + '</span>' +
-                        '<span class="f-icon f-close fa fa-close"/>' +
-                        '<span class="f-icon f-pin fa fa-thumb-tack"/>' +
-                    '</div>' +
-                    '<div class="f-content">' +
-                        '<div class="f-cover"/>' +
-                    '</div>' +
-                    '<span class="f-resize f-icon corner fa fa-expand"/>' +
-                '</div>';
     }
 });
 
