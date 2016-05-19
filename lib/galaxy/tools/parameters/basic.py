@@ -1001,15 +1001,7 @@ class SelectToolParameter( ToolParameter ):
         d = super( SelectToolParameter, self ).to_dict( trans )
 
         # Get options, value.
-        options = []
-        try:
-            options = self.get_options( trans, other_values )
-        except AssertionError:
-            # we dont/cant set other_values (the {} above), so params that require other params to be filled will error:
-            #       required dependency in filter_options
-            #       associated DataToolParam in get_column_list
-            pass
-
+        options = self.get_options( trans, other_values )
         d[ 'options' ] = options
         if options:
             value = options[0][1]
@@ -1191,10 +1183,8 @@ class ColumnListParameter( SelectToolParameter ):
         Generate a select list containing the columns of the associated
         dataset (if found).
         """
-        # No value indicates a configuration error
-        assert self.data_ref in other_values, "Value for associated data reference not found (data_ref)."
         # Get the value of the associated data reference (a dataset)
-        dataset = other_values[ self.data_ref ]
+        dataset = other_values.get( self.data_ref, None )
         # Check if a dataset is selected
         if not dataset:
             return []
@@ -1228,8 +1218,7 @@ class ColumnListParameter( SelectToolParameter ):
         """
         options = []
         if self.usecolnames:  # read first row - assume is a header with metadata useful for making good choices
-            assert self.data_ref in other_values, "Value for associated data reference not found (data_ref)."
-            dataset = other_values[ self.data_ref ]
+            dataset = other_values.get( self.data_ref, None )
             try:
                 head = open( dataset.get_file_name(), 'r' ).readline()
                 cnames = head.rstrip().split( '\t' )
@@ -1594,15 +1583,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         # skip SelectToolParameter (the immediate parent) bc we need to get options in a different way here
         d = ToolParameter.to_dict( self, trans )
-
-        options = []
-        try:
-            options = self.get_options( trans=trans, other_values=other_values )
-        except KeyError:
-            # will sometimes error if self.is_dynamic and self.filtered
-            #   bc we dont/cant fill out other_values above ({})
-            pass
-        d['options'] = options
+        d['options'] = self.get_options( trans=trans, other_values=other_values )
         d['display'] = self.display
         return d
 
