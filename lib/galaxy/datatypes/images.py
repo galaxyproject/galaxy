@@ -37,6 +37,7 @@ log = logging.getLogger(__name__)
 
 class Image( data.Data ):
     """Class describing an image"""
+    edam_data = 'data_2968'
     edam_format = "format_3547"
 
     def set_peek( self, dataset, is_multi_byte=False ):

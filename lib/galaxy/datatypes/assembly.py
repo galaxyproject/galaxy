@@ -21,9 +21,7 @@ class Amos( data.Text ):
     """Class describing the AMOS assembly file """
 
     edam_data = "data_0925"
-
     edam_format = "format_3582"
-
     file_ext = 'afg'
 
     def sniff( self, filename ):
