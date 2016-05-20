@@ -64,7 +64,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # prepare the job
         # We currently don't need to include_metadata or include_work_dir_outputs, as working directory is the same
         # were galaxy will expect results.
-        if not self.prepare_job(job_wrapper, include_metadata=False, include_work_dir_outputs=False):
+        log.debug("Starting queue_job for job " + job_wrapper.get_id_tag())
+        if not self.prepare_job(job_wrapper, include_metadata=False, include_work_dir_outputs=False,
+                                modify_command_for_container=False):
             return
 
         job_destination = job_wrapper.job_destination
