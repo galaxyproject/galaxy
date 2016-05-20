@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-GXPIP_VERSION='8.0.2+gx2'
-
 SET_VENV=1
 for arg in "$@"; do
     [ "$arg" = "--skip-venv" ] && SET_VENV=0
