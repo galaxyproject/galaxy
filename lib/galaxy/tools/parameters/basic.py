@@ -1484,7 +1484,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                     value = value.split( "\n" )
             return value
         if not value and not self.optional:
-            raise ValueError( "An invalid option was selected for %s, 'None', please verify" % (self.name) )
+            raise ValueError( "An invalid option was selected for %s, please verify." % (self.name) )
         if not value:
             return None
         if not isinstance( value, list ):
