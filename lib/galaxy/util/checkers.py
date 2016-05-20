@@ -140,3 +140,16 @@ def is_bz2( file_path ):
 def is_gzip( file_path ):
     is_gzipped, is_valid = check_gzip( file_path )
     return is_gzipped
+
+
+__all__ = [
+    'check_binary',
+    'check_bz2',
+    'check_gzip',
+    'check_html',
+    'check_image',
+    'check_zip',
+    'HTML_CHECK_LINES',
+    'is_gzip',
+    'is_bz2',
+]
