@@ -623,7 +623,7 @@
             -->
             <!-- REQUIRED: To play nicely with the existing galaxy setup for containers. This could be set though
                  internally by the runner. -->
-            <param id="docker_enabled">"true"</param>
+            <param id="docker_enabled">true</param>
         </destination>
 
 
