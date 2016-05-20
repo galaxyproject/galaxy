@@ -57,8 +57,8 @@ Binary.register_sniffable_binary_format("wiff", "wiff", Wiff )
 
 class PepXmlReport(Tabular):
     """pepxml converted to tabular report"""
-    file_ext = "tsv"
     edam_data = "data_2536"
+    file_ext = "tsv"
 
     def __init__(self, **kwd):
         Tabular.__init__(self, **kwd)
@@ -71,9 +71,9 @@ class PepXmlReport(Tabular):
 
 class ProtXmlReport(Tabular):
     """protxml converted to tabular report"""
+    edam_data = "data_2536"
     file_ext = "tsv"
     comment_lines = 1
-    edam_data = "data_2536"
 
     def __init__(self, **kwd):
         Tabular.__init__(self, **kwd)
@@ -131,8 +131,8 @@ class PepXml(ProteomicsXml):
 
 class MzML(ProteomicsXml):
     """mzML data"""
-    file_ext = "mzml"
     edam_format = "format_3244"
+    file_ext = "mzml"
     blurb = 'mzML Mass Spectrometry data'
     root = "(mzML|indexedmzML)"
 
@@ -153,22 +153,22 @@ class MzXML(ProteomicsXml):
 
 
 class MzIdentML(ProteomicsXml):
-    file_ext = "mzid"
     edam_format = "format_3247"
+    file_ext = "mzid"
     blurb = "XML identified peptides and proteins."
     root = "MzIdentML"
 
 
 class TraML(ProteomicsXml):
-    file_ext = "traml"
     edam_format = "format_3246"
+    file_ext = "traml"
     blurb = "TraML transition list"
     root = "TraML"
 
 
 class MzQuantML(ProteomicsXml):
-    file_ext = "mzq"
     edam_format = "format_3248"
+    file_ext = "mzq"
     blurb = "XML quantification data"
     root = "MzQuantML"
 

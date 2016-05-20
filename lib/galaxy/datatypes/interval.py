@@ -50,8 +50,8 @@ VIEWPORT_MAX_READS_PER_LINE = 10
 @dataproviders.decorators.has_dataproviders
 class Interval( Tabular ):
     """Tab delimited data containing interval information"""
-    edam_format = "format_3475"
     edam_data = "data_3002"
+    edam_format = "format_3475"
     file_ext = "interval"
     line_class = "region"
     track_type = "FeatureTrack"
@@ -376,7 +376,6 @@ class Interval( Tabular ):
 
 class BedGraph( Interval ):
     """Tab delimited chrom/start/end/datavalue dataset"""
-
     edam_format = "format_3583"
     file_ext = "bedgraph"
     track_type = "LineTrack"
@@ -584,7 +583,6 @@ class Bed( Interval ):
 
 class BedStrict( Bed ):
     """Tab delimited data in strict BED format - no non-standard columns allowed"""
-
     edam_format = "format_3584"
     file_ext = "bedstrict"
 
@@ -622,7 +620,6 @@ class Bed6( BedStrict ):
 
 class Bed12( BedStrict ):
     """Tab delimited data in strict BED format - no non-standard columns allowed; column count forced to 12"""
-
     edam_format = "format_3586"
     file_ext = "bed12"
 
@@ -1466,11 +1463,9 @@ class ChromatinInteractions( Interval ):
     '''
     Chromatin interactions obtained from 3C/5C/Hi-C experiments.
     '''
-
     file_ext = "chrint"
     track_type = "DiagonalHeatmapTrack"
     data_sources = { "data": "tabix", "index": "bigwig" }
-
     column_names = [ 'Chrom1', 'Start1', 'End1', 'Chrom2', 'Start2', 'End2', 'Value' ]
 
     """Add metadata elements"""

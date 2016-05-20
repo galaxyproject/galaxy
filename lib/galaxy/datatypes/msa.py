@@ -11,8 +11,8 @@ log = logging.getLogger(__name__)
 
 
 class Hmmer( Text ):
-    edam_format = "format_1370"
     edam_data = "data_1364"
+    edam_format = "format_1370"
     file_ext = "hmm"
 
     def set_peek(self, dataset, is_multi_byte=False):

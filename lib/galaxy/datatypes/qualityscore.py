@@ -11,17 +11,17 @@ class QualityScore ( data.Text ):
     """
     until we know more about quality score formats
     """
-    file_ext = "qual"
     edam_data = "data_2048"
     edam_format = "format_3606"
+    file_ext = "qual"
 
 
 class QualityScoreSOLiD ( QualityScore ):
     """
     until we know more about quality score formats
     """
-    file_ext = "qualsolid"
     edam_format = "format_3610"
+    file_ext = "qualsolid"
 
     def sniff( self, filename ):
         """
@@ -78,8 +78,8 @@ class QualityScore454 ( QualityScore ):
     """
     until we know more about quality score formats
     """
-    file_ext = "qual454"
     edam_format = "format_3611"
+    file_ext = "qual454"
 
     def sniff( self, filename ):
         """
@@ -120,13 +120,13 @@ class QualityScoreSolexa ( QualityScore ):
     """
     until we know more about quality score formats
     """
-    file_ext = "qualsolexa"
     edam_format = "format_3608"
+    file_ext = "qualsolexa"
 
 
 class QualityScoreIllumina ( QualityScore ):
     """
     until we know more about quality score formats
     """
-    file_ext = "qualillumina"
     edam_format = "format_3609"
+    file_ext = "qualillumina"
