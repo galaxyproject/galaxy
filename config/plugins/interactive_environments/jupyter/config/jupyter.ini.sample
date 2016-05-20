@@ -29,10 +29,6 @@ command_inject = --sig-proxy=true -e DEBUG=false -e DEFAULT_CONTAINER_RUNTIME=12
 # host than Galaxy.
 #docker_hostname = localhost
 
-# If set, will assume Docker Swarm is being used and look for the appropriate
-# worker host to connect to.
-#docker_swarm=False
-
 # Try to set the tempdirectory to world execute - this can fix the issue 
 # where 'sudo docker' is not able to mount the folder otherwise.
 # "finalize namespace chdir to /import permission denied"
