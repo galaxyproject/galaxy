@@ -1943,8 +1943,11 @@ class DataToolParameter( BaseDataToolParameter ):
                     raise ValueError( "The previously selected dataset has entered an unusable state" )
         if not self.multiple:
             if len( values ) > 1:
-                raise ValueError( "More than one dataset supplied to single input dataset parameter.")
-            rval = values[ 0 ]
+                raise ValueError( "More than one dataset supplied to single input dataset parameter." )
+            if len( values ) > 0:
+                rval = values[ 0 ]
+            else:
+                raise ValueError( "Invalid dataset supplied to single input dataset parameter." )
         return rval
 
     def to_param_dict_string( self, value, other_values={} ):
