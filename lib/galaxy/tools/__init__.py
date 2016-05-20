@@ -1240,9 +1240,10 @@ class Tool( object, Dictifiable ):
             if error:
                 if update_values:
                     try:
+                        previous_value = value
                         value = input.get_initial_value( request_context, context )
                         if not prefixed_name.startswith( '__' ):
-                            messages[ prefixed_name ] = '%s Using default: \'%s\'.' % ( error, value )
+                            messages[ prefixed_name ] = error if previous_value == value else '%s Using default: \'%s\'.' % ( error, value )
                         parent[ input.name ] = value
                     except:
                         messages[ prefixed_name ] = 'Attempt to replace invalid value for \'%s\' failed.' % ( prefixed_label )
