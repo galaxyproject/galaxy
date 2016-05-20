@@ -592,10 +592,24 @@
             <!-- The following four fields assemble the container's full name:
                  docker pull <repo>/<owner>/<image>:tag
             -->
-            <param id="repo">my-docker-registry.org</param>
-            <param id="owner">superbioinfo</param>
-            <param id="image">my-tool</param>
-            <param id="tag">latest</param>
+            <param id="docker_repo_override">my-docker-registry.org</param>
+            <param id="docker_owner_override">superbioinfo</param>
+            <param id="docker_image_override">my-tool</param>
+            <param id="docker_tag_override">latest</param>
+            <!-- Alternatively you could specify a different type of container, such as rkt (not tested with Kubernetes)
+                <param id="rkt_repo_override">my-docker-registry.org</param>
+                <param id="rkt_owner_override">superbioinfo</param>
+                <param id="rkt_image_override">my-tool</param>
+                <param id="rkt_tag_override">latest</param>
+            -->
+            <!-- You can also allow the destination to accept the docker container set in the tool, and only fall into
+                 the docker image set by this destination if the tool doesn't set a docker container, by using the
+                 "default" suffix instead of "override".
+                <param id="docker_repo_default">my-docker-registry.org</param>
+                <param id="docker_owner_default">superbioinfo</param>
+                <param id="docker_image_default">my-tool</param>
+                <param id="docker_tag_default">latest</param>
+            -->
             <param id="max_pod_retrials">3</param>
             <!-- Allows pods to retry up to this number of times, before marking the galaxy job failed. k8s is a state
                  setter essentially, so by default it will try to take a job submitted to successful completion. A job

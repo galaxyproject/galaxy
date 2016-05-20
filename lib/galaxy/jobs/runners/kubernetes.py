@@ -148,7 +148,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """Fills in all required for setting up the docker containers to be used."""
         k8s_container = {
             "name": self.__get_k8s_container_name(job_wrapper),
-            "image": self.__assemble_k8s_container_image_name(job_wrapper),
+            "image": self._find_container(job_wrapper),
             # this form of command overrides the entrypoint and allows multi command
             # command line execution, separated by ;, which is what Galaxy does
             # to assemble the command.
