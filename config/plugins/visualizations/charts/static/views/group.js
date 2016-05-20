@@ -92,8 +92,7 @@ return Backbone.View.extend({
 
             // create select field
             var select = new Ui.Select.View({
-                id      : 'select_' + id,
-                wait    : true
+                id      : 'select_' + id
             });
             
             // title

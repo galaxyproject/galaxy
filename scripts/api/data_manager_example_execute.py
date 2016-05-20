@@ -19,7 +19,7 @@ def run_tool( tool_id, history_id, params, api_key, galaxy_url, wait=True, sleep
     sleep_time = sleep_time or DEFAULT_SLEEP_TIME
     tools_url = urlparse.urljoin( galaxy_url, 'api/tools' )
     payload = {
-        'tool_id'       : tool_id,
+        'tool_id': tool_id,
     }
     if history_id:
         payload['history_id'] = history_id

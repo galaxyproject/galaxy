@@ -117,7 +117,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         pathspec = [ 'api', 'repositories', 'get_ordered_installable_revisions' ]
         try:
             raw_text = util.url_get( tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
-        except Exception, e:
+        except Exception as e:
             message = "Error attempting to retrieve the latest installable revision from tool shed %s for repository %s owned by %s: %s" % \
                 ( str( tool_shed_url ), str( name ), str( owner ), str( e ) )
             log.debug( message )
@@ -517,7 +517,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                     message = "Successfully reset metadata on repository %s owned by %s" % \
                         ( str( repository.name ), str( repository.owner ) )
                     results[ 'successful_count' ] += 1
-            except Exception, e:
+            except Exception as e:
                 message = "Error resetting metadata on repository %s owned by %s: %s" % \
                     ( str( repository.name ), str( repository.owner ), str( e ) )
                 results[ 'unsuccessful_count' ] += 1

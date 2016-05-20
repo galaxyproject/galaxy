@@ -180,7 +180,7 @@ class ToolTestCase( TwillTestCase ):
                 try:
                     data = job_stdio[what]
                     verify_assertions( data, getattr( testdef, what ) )
-                except AssertionError, err:
+                except AssertionError as err:
                     errmsg = '%s different than expected\n' % description
                     errmsg += str( err )
                     register_exception( AssertionError( errmsg ) )

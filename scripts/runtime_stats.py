@@ -118,7 +118,7 @@ def parse_arguments():
         cp = configparser.ConfigParser()
         cp.readfp(open(args.config))
         uri = cp.get('app:main', 'database_connection')
-        names = { 'database' : 'dbname', 'username' : 'user' }
+        names = { 'database': 'dbname', 'username': 'user' }
         args.connect_args = url.make_url(uri).translate_connect_args(**names)
     else:
         args.connect_args = {}

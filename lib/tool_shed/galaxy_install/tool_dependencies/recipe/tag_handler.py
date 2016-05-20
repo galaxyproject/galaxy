@@ -103,7 +103,7 @@ class SyncDatabase( object ):
         try:
             log.debug( "Returning from sync_database_with_file_system with tool_dependency %s, can_install_tool_dependency %s." %
                 ( str( tool_dependency.name ), str( can_install_tool_dependency ) ) )
-        except Exception, e:
+        except Exception as e:
             log.debug( str( e ) )
         return tool_dependency, can_install_tool_dependency
 
@@ -523,7 +523,7 @@ class SetEnvironment( RecipeTag ):
             attr_tups_of_dependencies_for_install = [ ( td.name, td.version, td.type ) for td in tool_dependency_db_records ]
         try:
             self.set_environment( package_elem, tool_shed_repository, attr_tups_of_dependencies_for_install )
-        except Exception, e:
+        except Exception as e:
             error_message = "Error setting environment for tool dependency: %s" % str( e )
             log.debug( error_message )
         return tool_dependency, proceed_with_install, action_elem_tuples

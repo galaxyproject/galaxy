@@ -25,23 +25,23 @@ scripts_dir = os.path.abspath( os.path.dirname( sys.argv[0] ) )
 test_data_dir = os.path.join( scripts_dir, os.pardir, "test-data" )
 # what tools to run - not so pretty
 tools = {
-    "gops_intersect_1" :
+    "gops_intersect_1":
     [
         {
-            "inputs" :
+            "inputs":
             (
                 os.path.join( test_data_dir, "1.bed" ),
                 os.path.join( test_data_dir, "2.bed" )
             )
         },
-        { "check_file" : os.path.join( test_data_dir, "gops_intersect_out.bed" ) },
+        { "check_file": os.path.join( test_data_dir, "gops_intersect_out.bed" ) },
         {
-            "tool_run_options" :
+            "tool_run_options":
             {
-                "input1" : "1.bed",
-                "input2" : "2.bed",
-                "min" : "1",
-                "returntype" : ""
+                "input1": "1.bed",
+                "input2": "2.bed",
+                "min": "1",
+                "returntype": ""
             }
         }
     ]
@@ -54,7 +54,7 @@ def usage():
 
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'n' )
-except getopt.GetoptError, e:
+except getopt.GetoptError as e:
     print str(e)
     usage()
 if len( args ) < 1:
@@ -151,7 +151,7 @@ class Browser:
             tc.get_browser()._browser.set_handle_redirect(True)
             dprint( "%s is returning redirect (302)" % url )
             return(True)
-        except twill.errors.TwillAssertionError, e:
+        except twill.errors.TwillAssertionError as e:
             tc.get_browser()._browser.set_handle_redirect(True)
             dprint( "%s is not returning redirect (302): %s" % (url, e) )
             code = tc.browser.get_code()

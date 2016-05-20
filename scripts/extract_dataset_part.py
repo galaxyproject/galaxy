@@ -40,7 +40,7 @@ def __main__():
         if not cls.process_split_file(data):
             sys.stderr.write('Writing split file failed\n')
             sys.exit(1)
-    except Exception, e:
+    except Exception as e:
         sys.stderr.write(str(e))
         sys.exit(1)
 

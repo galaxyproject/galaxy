@@ -56,12 +56,12 @@ class GalaxyWebTransaction_Headers_TestCase( test_utils.unittest.TestCase ):
 
         # falsy listify value should return None
         self.assertEqual( config._parse_allowed_origin_hostnames({
-            "allowed_origin_hostnames" : ""
+            "allowed_origin_hostnames": ""
         }), None )
 
         # should parse regex if using fwd slashes, string otherwise
         hostnames = config._parse_allowed_origin_hostnames({
-            "allowed_origin_hostnames" : "/host\d{2}/,geocities.com,miskatonic.edu"
+            "allowed_origin_hostnames": "/host\d{2}/,geocities.com,miskatonic.edu"
         })
         self.assertTrue( isinstance( hostnames[0], re._pattern_type ) )
         self.assertTrue( isinstance( hostnames[1], str ) )

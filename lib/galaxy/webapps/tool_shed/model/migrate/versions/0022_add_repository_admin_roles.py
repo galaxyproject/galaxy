@@ -65,7 +65,7 @@ def upgrade( migrate_engine ):
     # Create the new repository_role_association table.
     try:
         RepositoryRoleAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Creating repository_role_association table failed: %s" % str( e ) )
     # Select the list of repositories and associated public user names for their owners.
@@ -159,5 +159,5 @@ def downgrade( migrate_engine ):
         log.debug( "Failed loading table repository_role_association" )
     try:
         RepositoryRoleAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping repository_role_association table failed: %s" % str( e ) )

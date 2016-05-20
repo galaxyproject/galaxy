@@ -352,7 +352,7 @@ class DatasetDeserializerTestCase( BaseTestCase ):
 
         self.log( 'deserializing permissions with a single access should make the dataset private' )
         private_role = self.user_manager.private_role( who_manages )
-        private_role = private_role.to_dict( value_mapper={ 'id' : self.app.security.encode_id } )
+        private_role = private_role.to_dict( value_mapper={ 'id': self.app.security.encode_id } )
         permissions = dict( manage=existing_manage_permissions, access=[ private_role[ 'id' ] ] )
         self.dataset_deserializer.deserialize( dataset, user=who_manages, data={
             'permissions': permissions

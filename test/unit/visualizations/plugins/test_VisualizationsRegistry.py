@@ -73,36 +73,36 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
     def test_plugin_load( self ):
         """"""
         mock_app_dir = galaxy_mock.MockDir({
-            'plugins'   : {
-                'vis1'          : {
-                    'config' : {
-                        'vis1.xml' : config1
+            'plugins': {
+                'vis1': {
+                    'config': {
+                        'vis1.xml': config1
                     },
-                    'static'    : {},
-                    'templates' : {},
+                    'static': {},
+                    'templates': {},
                 },
-                'vis2'          : {
-                    'config' : {
-                        'vis2.xml' : config1
+                'vis2': {
+                    'config': {
+                        'vis2.xml': config1
                     }
                 },
-                'not_a_vis1'    : {
-                    'config' : {
-                        'vis1.xml' : 'blerbler'
+                'not_a_vis1': {
+                    'config': {
+                        'vis1.xml': 'blerbler'
                     },
                 },
-                'not_a_vis1'    : {
+                'not_a_vis1': {
                     # no config
-                    'static'    : {},
-                    'templates' : {},
+                    'static': {},
+                    'templates': {},
                 },
                 # empty
-                'not_a_vis2'    : {},
-                'not_a_vis3'    : 'blerbler',
+                'not_a_vis2': {},
+                'not_a_vis3': 'blerbler',
                 # bad config
-                'not_a_vis4'          : {
-                    'config' : {
-                        'not_a_vis4.xml' : 'blerbler'
+                'not_a_vis4': {
+                    'config': {
+                        'not_a_vis4.xml': 'blerbler'
                     }
                 },
             }
@@ -163,12 +163,12 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
         """ )
 
         mock_app_dir = {
-            'plugins'   : {
-                'ipython' : {
-                    'config' : {
-                        'ipython.xml' : ipython_config
+            'plugins': {
+                'ipython': {
+                    'config': {
+                        'ipython.xml': ipython_config
                     },
-                    'templates' : {}
+                    'templates': {}
                 },
             },
         }
@@ -236,12 +236,12 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
         """ )
 
         mock_app_dir = galaxy_mock.MockDir({
-            'plugins' : {
-                'jstest' : {
-                    'config' : {
-                        'jstest.xml' : script_entry_config
+            'plugins': {
+                'jstest': {
+                    'config': {
+                        'jstest.xml': script_entry_config
                     },
-                    'static' : {}
+                    'static': {}
                 },
             }
         })

@@ -59,7 +59,7 @@ def __main__():
     cur_transcript_id = None
     cur_transcript_strand = None
     cur_transcripts_blocks = []  # (start, end) for each block.
-    for i, line in enumerate( file( input_name ) ):
+    for i, line in enumerate( open( input_name ) ):
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( '#' ):
             try:

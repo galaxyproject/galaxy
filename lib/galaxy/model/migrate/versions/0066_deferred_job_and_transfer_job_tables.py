@@ -40,13 +40,13 @@ def upgrade(migrate_engine):
     # Create deferred_job table
     try:
         DeferredJob_table.create()
-    except Exception, e:
+    except Exception as e:
         log.error( "Creating deferred_job table failed: %s" % str( e ) )
 
     # Create transfer_job table
     try:
         TransferJob_table.create()
-    except Exception, e:
+    except Exception as e:
         log.error( "Creating transfer_job table failed: %s" % str( e ) )
 
 
@@ -57,11 +57,11 @@ def downgrade(migrate_engine):
     # Drop deferred_job table
     try:
         DeferredJob_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.error( "Dropping deferred_job table failed: %s" % str( e ) )
 
     # Drop transfer_job table
     try:
         TransferJob_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.error( "Dropping transfer_job table failed: %s" % str( e ) )

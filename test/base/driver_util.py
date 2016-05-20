@@ -162,7 +162,7 @@ def setup_galaxy_config(
         allow_user_creation=True,
         allow_user_deletion=True,
         api_allow_run_as='test@bx.psu.edu',
-        auto_configure_logging=logging_config_file is None ,
+        auto_configure_logging=logging_config_file is None,
         check_migrate_tools=False,
         cleanup_job='onsuccess',
         data_manager_config_file=data_manager_config_file,
@@ -384,7 +384,7 @@ def serve_webapp(webapp, port=None, host=None):
                 port = str( random.randint( 8000, 10000 ) )
                 server = httpserver.serve( webapp, host=host, port=port, start_loop=False )
                 break
-            except socket.error, e:
+            except socket.error as e:
                 if e[0] == 98:
                     continue
                 raise

@@ -16,7 +16,6 @@ define([ "test-app", "layout/page", "layout/panel",
         ok( page.$( '#center' ).length == 1, 'Center panel found.' );
         _.each( sidePanels, function( panelVisible, panelId ) {
             ok( page.$( '#' + panelId ).length == panelVisible ? 1 : 0, ( panelVisible ? '' : 'No' ) + ' ' + panelId + ' panel found.' );
-            ok( ( page.$( '#center' ).css( panelId ) == '0px' ) == !panelVisible, 'Center panel extension to ' + panelId + ' correct.' );
             ok ( _.has( page, panelId ) == panelVisible, 'Panel attribute valid.' );
             panelVisible && ok( page.$( '#' + panelId ).find( '.panel-header-text' ).text() == '_title', 'Title correct' );
         });

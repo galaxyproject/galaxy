@@ -119,9 +119,9 @@ class DatasetCollectionManagerTestCase( BaseTestCase, CreatesCollectionsMixin ):
 
         self.log( "should be set from a dictionary" )
         self.collection_manager._set_from_dict( self.trans, hdca, {
-            'deleted'   : True,
-            'visible'   : False,
-            'name'      : 'New Name',
+            'deleted': True,
+            'visible': False,
+            'name': 'New Name',
             # TODO: doesn't work
             # 'tags'      : [ 'one', 'two', 'three' ]
             # 'annotations'      : [?]

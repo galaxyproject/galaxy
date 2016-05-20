@@ -756,7 +756,7 @@ class Admin( object ):
             for user_id in user_ids:
                 user = get_user( trans, user_id )
                 password = kwd.get( 'password', None )
-                confirm = kwd.get( 'confirm' , None )
+                confirm = kwd.get( 'confirm', None )
                 if len( password ) < 6:
                     message = "Use a password of at least 6 characters."
                     status = 'error'

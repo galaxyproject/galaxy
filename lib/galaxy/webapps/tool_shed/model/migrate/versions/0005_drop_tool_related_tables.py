@@ -37,7 +37,7 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table tool_category_association" )
     try:
         ToolCategoryAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping tool_category_association table failed: %s" % str( e ) )
     # Load and then drop the tool_event_association table
     try:
@@ -46,7 +46,7 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table tool_event_association" )
     try:
         ToolEventAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping tool_event_association table failed: %s" % str( e ) )
     # Load and then drop the tool_rating_association table
     try:
@@ -55,7 +55,7 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table tool_rating_association" )
     try:
         ToolRatingAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping tool_rating_association table failed: %s" % str( e ) )
     # Load and then drop the tool_tag_association table
     try:
@@ -64,7 +64,7 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table tool_tag_association" )
     try:
         ToolTagAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping tool_tag_association table failed: %s" % str( e ) )
     # Load and then drop the tool_annotation_association table
     try:
@@ -73,7 +73,7 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table tool_annotation_association" )
     try:
         ToolAnnotationAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping tool_annotation_association table failed: %s" % str( e ) )
     # Load and then drop the event table
     try:
@@ -82,7 +82,7 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table event" )
     try:
         Event_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping event table failed: %s" % str( e ) )
     # Load and then drop the tool table
     try:
@@ -91,7 +91,7 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table tool" )
     try:
         Tool_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping tool table failed: %s" % str( e ) )
 
 
@@ -116,11 +116,11 @@ def downgrade(migrate_engine):
                         Column( "update_time", DateTime, default=now, onupdate=now ),
                         Column( "newer_version_id", Integer, ForeignKey( "tool.id" ), nullable=True ),
                         Column( "name", TrimmedString( 255 ), index=True ),
-                        Column( "description" , TEXT ),
-                        Column( "user_description" , TEXT ),
+                        Column( "description", TEXT ),
+                        Column( "user_description", TEXT ),
                         Column( "version", TrimmedString( 255 ) ),
                         Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-                        Column( "external_filename" , TEXT ),
+                        Column( "external_filename", TEXT ),
                         Column( "deleted", Boolean, index=True, default=False ),
                         Column( "suite", Boolean, default=False, index=True ) )
 
@@ -161,35 +161,35 @@ def downgrade(migrate_engine):
     # Create the event table
     try:
         Event_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating event table failed: %s" % str( e ) )
     # Create the tool table
     try:
         Tool_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating tool table failed: %s" % str( e ) )
     # Create the tool_category_association table
     try:
         ToolCategoryAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating tool_category_association table failed: %s" % str( e ) )
     # Create the tool_event_association table
     try:
         ToolEventAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating tool_event_association table failed: %s" % str( e ) )
     # Create the tool_rating_association table
     try:
         ToolRatingAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating tool_rating_association table failed: %s" % str( e ) )
     # Create the tool_tag_association table
     try:
         ToolTagAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating tool_tag_association table failed: %s" % str( e ) )
     # Create the tool_annotation_association table
     try:
         ToolAnnotationAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating tool_annotation_association table failed: %s" % str( e ) )

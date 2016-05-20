@@ -923,15 +923,19 @@ class BaseCSV( TabularData ):
                 # No columns so not separated by this dialect.
                 return False
 
-            # check all rows can be read as otherwise set_meta throws an exception
+            # Check that there is a second row as it is used by set_meta and
+            # that all rows can be read
             if self.strict_width:
                 num_columns = len(header_row)
+                found_second_line = False
                 for data_row in reader:
+                    found_second_line = True
                     # All columns must be the same length
                     if num_columns != len(data_row):
                         return False
+                if not found_second_line:
+                    return False
             else:
-                # Check the next row as it is used by set_meta
                 data_row = reader.next()
                 if len(data_row) < 2:
                     # No columns so not separated by this dialect.
@@ -958,7 +962,6 @@ class BaseCSV( TabularData ):
             """
             if not csv.Sniffer().has_header(open(filename, 'r').read(self.big_peek_size)):
                 return False
-
             return True
         except:
             # Not readable by Python's csv using this dialect
@@ -995,8 +998,8 @@ class BaseCSV( TabularData ):
 @dataproviders.decorators.has_dataproviders
 class CSV( BaseCSV ):
     """
-    Comma separated table data.
-    Only sniffs comma separated files with at least 2 columns
+    Comma-separated table data.
+    Only sniffs comma-separated files with at least 2 rows and 2 columns.
     """
 
     def __init__(self, **kwd):
@@ -1009,14 +1012,16 @@ class CSV( BaseCSV ):
 @dataproviders.decorators.has_dataproviders
 class TSV( BaseCSV ):
     """
-    Comma separated table data.
-    Only sniff tab separated files with at least two columns
+    Tab-separated table data.
+    Only sniff tab-separated files with at least 2 rows and 2 columns.
 
-    Note: Use of this datatype is optional as the general tabular format will handle most tab separated files.
-    This datatype would only be required for dataset with tabs INSIDE double quotes.
+    Note: Use of this datatype is optional as the general tabular datatype will
+    handle most tab-separated files. This datatype is only required for datasets
+    with tabs INSIDE double quotes.
 
-    This datatype currently does not support tsv files where the header has one column less to indicate first column is row names
-    This kind of file is handled fine by tabular.
+    This datatype currently does not support TSV files where the header has one
+    column less to indicate first column is row names. This kind of file is
+    handled fine by the tabular datatype.
     """
 
     def __init__(self, **kwd):
@@ -1042,7 +1047,7 @@ class ConnectivityTable( Tabular ):
     def set_meta( self, dataset, **kwd ):
         data_lines = 0
 
-        for line in file( dataset.file_name ):
+        for line in open( dataset.file_name ):
             data_lines += 1
 
         dataset.metadata.data_lines = data_lines

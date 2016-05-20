@@ -123,7 +123,7 @@ class Data( object ):
     def get_raw_data( self, dataset ):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
         try:
-            return file(dataset.file_name, 'rb').read(-1)
+            return open(dataset.file_name, 'rb').read(-1)
         except OSError:
             log.exception('%s reading a file that does not exist %s' % (self.__class__.__name__, dataset.file_name))
             return ''
@@ -688,7 +688,7 @@ class Text( Data ):
         os.close(fd)
         # rewrite the file with unix newlines
         fp = open(dataset.file_name, 'w')
-        for line in file(temp_name, "U"):
+        for line in open(temp_name, "U"):
             line = line.strip() + '\n'
             fp.write(line)
         fp.close()
@@ -700,7 +700,7 @@ class Text( Data ):
         os.close(fd)
         # rewrite the file with unix newlines
         fp = open(dataset.file_name, 'w')
-        for line in file(temp_name, "U"):
+        for line in open(temp_name, "U"):
             line = line.strip() + '\n'
             fp.write(line)
         fp.close()
@@ -734,7 +734,7 @@ class Text( Data ):
         skipping all blank lines and comments.
         """
         data_lines = 0
-        for line in file( dataset.file_name ):
+        for line in open( dataset.file_name ):
             line = line.strip()
             if line and not line.startswith( '#' ):
                 data_lines += 1

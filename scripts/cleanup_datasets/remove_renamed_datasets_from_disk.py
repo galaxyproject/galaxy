@@ -10,7 +10,7 @@ import sys
 assert sys.version_info[:2] >= ( 2, 4 )
 
 
-def usage(prog) :
+def usage(prog):
     print "usage: %s file" % prog
     print """
 Removes a set of files from disk. The input file should contain a list of files
@@ -23,7 +23,7 @@ with .removed.log appended.
 
 
 def main():
-    if len(sys.argv) != 2 or sys.argv == "-h" or sys.argv == "--help" :
+    if len(sys.argv) != 2 or sys.argv == "-h" or sys.argv == "--help":
         usage(sys.argv[0])
         sys.exit()
     infile = sys.argv[1]
@@ -40,7 +40,7 @@ def main():
                 os.unlink( line )
                 print >> out, line
                 removed_files += 1
-            except Exception, exc:
+            except Exception as exc:
                 print >> out, "# Error, exception " + str( exc ) + " caught attempting to remove " + line
     print >> out, "# Removed " + str( removed_files ) + " files"
 

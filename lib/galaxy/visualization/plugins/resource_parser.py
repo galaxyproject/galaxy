@@ -74,7 +74,7 @@ class ResourceParser( object ):
                     resource = self.parse_parameter( trans, param_config,
                                                      query_val, param_modifiers=target_param_modifiers )
 
-                except Exception, exception:
+                except Exception as exception:
                     if trans.debug:
                         raise
                     else:
@@ -108,7 +108,7 @@ class ResourceParser( object ):
                 try:
                     config_val = self.parse_parameter( trans, param_config, config_val )
 
-                except Exception, exception:
+                except Exception as exception:
                     log.warn( 'Exception parsing visualization param from query: ' +
                               '%s, %s, (%s) %s' % ( param_name, config_val, str( type( exception ) ), str( exception ) ))
                     config_val = None

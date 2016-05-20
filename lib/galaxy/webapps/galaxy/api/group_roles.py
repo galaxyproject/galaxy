@@ -33,7 +33,7 @@ class GroupRolesAPIController( BaseAPIController ):
                 rval.append( dict( id=encoded_id,
                                    name=role.name,
                                    url=url_for( 'group_role', group_id=group_id, id=encoded_id, ) ) )
-        except Exception, e:
+        except Exception as e:
             rval = "Error in group API at listing roles"
             log.error( rval + ": %s" % str(e) )
             trans.response.status = 500
@@ -60,7 +60,7 @@ class GroupRolesAPIController( BaseAPIController ):
                                  url=url_for( 'group_role', group_id=group_id, id=role_id) )  # TODO Fix This
             if not item:
                 item = "role %s not in group %s" % (role.name, group.name)
-        except Exception, e:
+        except Exception as e:
             item = "Error in group_role API group %s role %s" % (group.name, role.name)
             log.error(item + ": %s" % str(e))
         return item
@@ -92,7 +92,7 @@ class GroupRolesAPIController( BaseAPIController ):
                 item = dict( id=role_id,
                              name=role.name,
                              url=url_for( 'group_role', group_id=group_id, id=role_id) )
-        except Exception, e:
+        except Exception as e:
             item = "Error in group_role API Adding role %s to group %s" % (role.name, group.name)
             log.error(item + ": %s" % str(e))
         return item
@@ -119,7 +119,7 @@ class GroupRolesAPIController( BaseAPIController ):
                                  url=url_for( 'group_role', group_id=group_id, id=role_id) )
             if not item:
                 item = "role %s not in group %s" % (role.name, group.name)
-        except Exception, e:
+        except Exception as e:
             item = "Error in group_role API Removing role %s from group %s" % (role.name, group.name)
             log.error(item + ": %s" % str(e))
         return item
