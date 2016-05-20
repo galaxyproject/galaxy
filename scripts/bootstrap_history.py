@@ -176,8 +176,9 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
 - [ ] **Deploy and Test Release**
 
-      - [ ] Deploy to test (${freeze_date} + 1 day).
+      - [ ] Update test to ensure it is running a dev at or past branch point (${freeze_date} + 1 day).
       - [ ] Deploy to usegalaxy.org (${freeze_date} + 1 week).
+      - [ ] [Update bioblend testing](https://github.com/galaxyproject/bioblend/commit/b74b1c302a1b8fed86786b40d7ecc3520cbadcd3) to include a ``release_${version}`` target - add ``env`` target ``- TOX_ENV=py27 GALAXY_VERSION=release_${version}`` to ``tox.ini``.
 
 - [ ] **Create Release Notes**
 
@@ -210,19 +211,20 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
 - [ ] **Announce Release**
 
+      - [ ] Verify release included in https://docs.galaxyproject.org/en/master/releases/index.html
+      - [ ] Review announcement in https://github.com/galaxyproject/galaxy/blob/dev/doc/source/releases/${version}_announce.rst
       - [ ] Stage annoucement content (Wiki, Biostars, Bit.ly link) on annouce date to capture date tags. Note: all final content does not need to be completed to do this.
-      - [ ] Finalize https://github.com/galaxyproject/galaxy/blob/dev/doc/source/releases/${version}_announce.rst
-      - [ ] Post release notes to https://docs.galaxyproject.org/en/master/releases/index.html
-      - [ ] Create wiki *highlights* and post to http://galaxyproject.org News (w/ RSS) and NewsBriefs
-      - [ ] Tweet wiki news *highlights* (or RTD?) via bit.ly link to https://twitter.com/galaxyproject/
-      - [ ] Post *highlights* type News to Galaxy Biostars https://biostar.usegalaxy.org
-      - [ ] Email *highlights* to galaxy-dev and galaxy-announce @lists.galaxyproject.org
-      - [ ] Adjust http://getgalaxy.org text and links to match current master branch
+      - [ ] Create wiki *highlights* and post to http://galaxyproject.org News (w/ RSS) and NewsBriefs. [An Example](https://wiki.galaxyproject.org/News/2016_04_GalaxyRelease).
+      - [ ] Tweet docs news *highlights* via bit.ly link to https://twitter.com/galaxyproject/ (As user ``galaxyproject``, password in Galaxy password store under ``twitter.com / galaxyproject`` ). [An Example](https://twitter.com/galaxyproject/status/733029921316986881).
+      - [ ] Post *highlights* type News to Galaxy Biostars https://biostar.usegalaxy.org. [An Example](https://biostar.usegalaxy.org/p/17712/).
+      - [ ] Email *highlights* to [galaxy-dev](http://dev.list.galaxyproject.org/) and [galaxy-announce](http://announce.list.galaxyproject.org/) @lists.galaxyproject.org. [An Example](http://dev.list.galaxyproject.org/The-Galaxy-release-16-04-is-out-tp4669419.html)
+      - [ ] Adjust http://getgalaxy.org text and links to match current master branch (TODO: describe how to do this)
 
 - [ ] **Prepare for next release**
 
       - [ ] Ensure milestone ``${next_version}`` exists.
       - [ ] Create release issue for next version ``make release-issue RELEASE_CURR=${next_version}``.
+      - [ ] Schedule committer meeting to discuss re-alignment of priorities.
       - [ ] Close this issue.
 
 """)
