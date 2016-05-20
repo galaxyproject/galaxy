@@ -25,8 +25,11 @@ from .dataset_matcher import DatasetCollectionMatcher
 from galaxy.web import url_for
 from galaxy.util.dictifiable import Dictifiable
 import galaxy.model
+from galaxy.util.bunch import Bunch
 
 log = logging.getLogger(__name__)
+
+workflow_building_modes = Bunch( DISABLED=False, ENABLED=True, USE_HISTORY=1 )
 
 WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile( '''\$\{.+?\}''' )
 
@@ -264,7 +267,7 @@ class TextToolParameter( ToolParameter ):
 
     def validate( self, value, trans=None ):
         search = self.type == "text"
-        if not ( trans and trans.workflow_building_mode and contains_workflow_parameter(value, search=search) ):
+        if not ( trans and trans.workflow_building_mode is workflow_building_modes.ENABLED and contains_workflow_parameter(value, search=search) ):
             return super( TextToolParameter, self ).validate( value, trans )
 
     def get_initial_value( self, trans, other_values ):
@@ -331,11 +334,11 @@ class IntegerToolParameter( TextToolParameter ):
         try:
             return int( value )
         except:
-            if contains_workflow_parameter( value ) and trans.workflow_building_mode:
+            if contains_workflow_parameter( value ) and trans.workflow_building_mode is workflow_building_modes.ENABLED:
                 return value
             if not value and self.optional:
                 return ""
-            if trans.workflow_building_mode:
+            if trans.workflow_building_mode is workflow_building_modes.ENABLED:
                 raise ValueError( "An integer or workflow parameter e.g. ${name} is required" )
             else:
                 raise ValueError( "An integer is required" )
@@ -411,11 +414,11 @@ class FloatToolParameter( TextToolParameter ):
         try:
             return float( value )
         except:
-            if contains_workflow_parameter( value ) and trans.workflow_building_mode:
+            if contains_workflow_parameter( value ) and trans.workflow_building_mode is workflow_building_modes.ENABLED:
                 return value
             if not value and self.optional:
                 return ""
-            if trans and trans.workflow_building_mode:
+            if trans and trans.workflow_building_mode is workflow_building_modes.ENABLED:
                 raise ValueError( "A real number or workflow parameter e.g. ${name} is required" )
             else:
                 raise ValueError( "A real number is required" )
@@ -1871,7 +1874,7 @@ class DataToolParameter( BaseDataToolParameter ):
         return ''
 
     def from_json( self, value, trans, other_values={} ):
-        if trans.workflow_building_mode:
+        if trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return None
         if not value and not self.optional:
             raise ValueError( "History does not include a dataset of the required format / build" )
@@ -2051,7 +2054,7 @@ class DataToolParameter( BaseDataToolParameter ):
 
         # return dictionary without options if context is unavailable
         history = trans.history
-        if history is None or trans.workflow_building_mode:
+        if history is None or trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return d
 
         # prepare dataset/collection matching
@@ -2152,7 +2155,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         return field
 
     def from_json( self, value, trans, other_values={} ):
-        if trans.workflow_building_mode:
+        if trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return None
         if not value and not self.optional:
             raise ValueError( "History does not include a dataset collection of the correct type or containing the correct types of datasets" )
@@ -2213,7 +2216,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
         # return dictionary without options if context is unavailable
         history = trans.history
-        if history is None or trans.workflow_building_mode or other_values is None:
+        if history is None or trans.workflow_building_mode is workflow_building_modes.ENABLED or other_values is None:
             return d
 
         # prepare dataset/collection matching
