@@ -372,12 +372,12 @@ class InteractiveEnvironmentRequest(object):
         """
         Determine the ip address on the container. If inspect_data contains
         Node.IP return that (e.g. running in Docker Swarm). If the hostname
-        is "localhost", look for NetworkSettings.Gateway. Otherwise, just 
+        is "localhost", look for NetworkSettings.Gateway. Otherwise, just
         return the configured docker_hostname.
 
         :type inspect_data: dict
         :param inspect_data: output of docker inspect
-        :returns: IP address or hostname of the node the conatainer is 
+        :returns: IP address or hostname of the node the conatainer is
                   running on.
         """
         inspect_data = inspect_data[0]
