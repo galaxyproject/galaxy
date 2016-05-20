@@ -2035,10 +2035,13 @@ class DataToolParameter( BaseDataToolParameter ):
         d = super( DataToolParameter, self ).to_dict( trans )
         extensions = self.extensions
         all_edam_formats = self._datatypes_registery( trans, self.tool ).edam_formats
+        all_edam_data = self._datatypes_registery( trans, self.tool ).edam_data
         edam_formats = map(lambda ext: all_edam_formats.get(ext, None),
                            extensions)
+        edam_data = map(lambda ext: all_edam_data.get(ext, None), extensions)
+
         d['extensions'] = extensions
-        d['edam_formats'] = edam_formats
+        d['edam'] = {'edam_formats': edam_formats, 'edam_data': edam_data}
         d['multiple'] = self.multiple
         if self.multiple:
             # For consistency, should these just always be in the dict?

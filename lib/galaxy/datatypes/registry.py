@@ -131,6 +131,10 @@ class Registry( object ):
                 if edam_format and not make_subclass:
                     self.log.warn("Cannot specify edam_format without setting subclass to True, skipping datatype.")
                     continue
+                edam_data = elem.get( 'edam_data', None )
+                if edam_data and not make_subclass:
+                    self.log.warn("Cannot specify edam_data without setting subclass to True, skipping datatype.")
+                    continue
                 # Proprietary datatypes included in installed tool shed repositories will include two special attributes
                 # (proprietary_path and proprietary_datatype_module) if they depend on proprietary datatypes classes.
                 # The value of proprietary_path is the path to the cloned location of the tool shed repository's contained
@@ -230,6 +234,8 @@ class Registry( object ):
                                     datatype_class = type( datatype_class_name, ( datatype_class, ), {} )
                                     if edam_format:
                                         datatype_class.edam_format = edam_format
+                                    if edam_data:
+                                        datatype_class.edam_data = edam_data
                                 self.datatypes_by_extension[ extension ] = datatype_class()
                                 if mimetype is None:
                                     # Use default mimetype per datatype specification.
@@ -816,9 +822,14 @@ class Registry( object ):
     def edam_formats( self ):
         """
         """
-        mapping = {}
-        for k, v in self.datatypes_by_extension.iteritems():
-            mapping[k] = v.edam_format
+        mapping = dict((k, v.edam_format) for k, v in self.datatypes_by_extension.items())
+        return mapping
+
+    @property
+    def edam_data( self ):
+        """
+        """
+        mapping = dict((k, v.edam_data) for k, v in self.datatypes_by_extension.items())
         return mapping
 
     @property

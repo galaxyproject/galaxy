@@ -12,6 +12,7 @@ log = logging.getLogger(__name__)
 
 
 class GeneTrack( binary.Binary ):
+    edam_data = "data_3002"
     edam_format = "format_2919"
     file_ext = "genetrack"
 
