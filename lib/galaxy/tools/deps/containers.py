@@ -110,14 +110,14 @@ class ContainerFinder(object):
     def __build_container_id_from_parts(self, container_type, destination_info, mode):
         repo = ""
         owner = ""
-        repo_key = "%s_repo_%s" % container_type, mode
-        owner_key = "%s_owner_%s" % container_type, mode
+        repo_key = "%s_repo_%s" % (container_type, mode)
+        owner_key = "%s_owner_%s" % (container_type, mode)
         if repo_key in destination_info:
             repo = destination_info[repo_key] + "/"
         if owner_key in destination_info:
             owner = destination_info[owner_key] + "/"
-        cont_id = repo + owner + destination_info["%s_image_%s" % container_type, mode]
-        tag_key = "%s_tag_%s" % container_type, mode
+        cont_id = repo + owner + destination_info["%s_image_%s" % (container_type, mode)]
+        tag_key = "%s_tag_%s" % (container_type, mode)
         if tag_key in destination_info:
             cont_id += ":" + destination_info[tag_key]
         return cont_id
