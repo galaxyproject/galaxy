@@ -117,7 +117,7 @@ class ToolDataTableManager( object ):
             table_elems = self.load_from_config_file( config_filename=config_filename,
                                                       tool_data_path=tool_data_path,
                                                       from_shed_config=True )
-        except Exception, e:
+        except Exception as e:
             error_message = 'Error attempting to parse file %s: %s' % ( str( os.path.split( config_filename )[ 1 ] ), str( e ) )
             log.debug( error_message )
             table_elems = []
@@ -144,7 +144,7 @@ class ToolDataTableManager( object ):
             tree = util.parse_xml( full_path )
             root = tree.getroot()
             out_elems = [ elem for elem in root ]
-        except Exception, e:
+        except Exception as e:
             out_elems = []
             log.debug( 'Could not parse existing tool data table config, assume no existing elements: %s', e )
         for elem in remove_elems:
@@ -291,7 +291,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                     tmp_file = NamedTemporaryFile( prefix='TTDT_URL_%s-' % self.name )
                     try:
                         tmp_file.write( urlopen( filename, timeout=url_timeout ).read() )
-                    except Exception, e:
+                    except Exception as e:
                         log.error( 'Error loading Data Table URL "%s": %s', filename, e )
                         continue
                     log.debug( 'Loading Data Table URL "%s" as filename "%s".', filename, tmp_file.name )
@@ -569,7 +569,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 log.debug( "Persisting changes to file: %s", filename )
                 try:
                     data_table_fh = open( filename, 'r+b' )
-                except IOError, e:
+                except IOError as e:
                     log.warning( 'Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s', filename, e )
                     data_table_fh = open( filename, 'wb' )
                 if os.stat( filename )[6] != 0:

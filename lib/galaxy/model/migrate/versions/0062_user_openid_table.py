@@ -30,7 +30,7 @@ def upgrade(migrate_engine):
     # Create galaxy_user_openid table
     try:
         UserOpenID_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating galaxy_user_openid table failed: %s" % str( e ) )
 
     ix_name = 'ix_galaxy_user_openid_openid'
@@ -41,7 +41,7 @@ def upgrade(migrate_engine):
         i = Index( ix_name, UserOpenID_table.c.openid, unique=True )
         try:
             i.create()
-        except Exception, e:
+        except Exception as e:
             log.debug( "Adding index '%s' failed: %s" % ( ix_name, str( e ) ) )
 
 
@@ -52,5 +52,5 @@ def downgrade(migrate_engine):
     # Drop galaxy_user_openid table
     try:
         UserOpenID_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping galaxy_user_openid table failed: %s" % str( e ) )

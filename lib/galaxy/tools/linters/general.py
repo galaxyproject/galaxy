@@ -10,6 +10,8 @@ VALID_NAME_MSG = "Tool defines a name [%s]."
 ERROR_ID_MSG = "Tool does not define an id attribute."
 VALID_ID_MSG = "Tool defines an id [%s]."
 
+lint_tool_types = ["*"]
+
 
 def lint_general(tool_source, lint_ctx):
     """Check tool version, name, and id."""
@@ -29,7 +31,7 @@ def lint_general(tool_source, lint_ctx):
     if not tool_id:
         lint_ctx.error(ERROR_ID_MSG)
     else:
-        lint_ctx.valid(VALID_ID_MSG % id)
+        lint_ctx.valid(VALID_ID_MSG % tool_id)
 
     if re.search(r"\s", tool_id):
         lint_ctx.warn("Tool id contains a space - this is discouraged.")

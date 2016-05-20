@@ -104,7 +104,7 @@ class ItemSelectionGrid( grids.Grid ):
     # Grid definition.
     show_item_checkboxes = True
     template = "/page/select_items_grid.mako"
-    default_filter = { "deleted": "False" , "sharing": "All" }
+    default_filter = { "deleted": "False", "sharing": "All" }
     default_sort_key = "-update_time"
     use_async = True
     use_paging = True
@@ -758,16 +758,17 @@ class PageController( BaseUIController, SharableMixin,
         history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
 
         # include all datasets: hidden, deleted, and purged
-        history_dictionary = self.history_serializer.serialize_to_view( history,
-            view='detailed', user=trans.user, trans=trans )
+        history_dictionary = self.history_serializer.serialize_to_view(
+            history, view='detailed', user=trans.user, trans=trans
+        )
         contents = self.history_serializer.serialize_contents( history, 'contents', trans=trans, user=trans.user )
         history_dictionary[ 'annotation' ] = history.annotation
 
         filled = trans.fill_template( "history/embed.mako",
-            item=history,
-            user_is_owner=user_is_owner,
-            history_dict=history_dictionary,
-            content_dicts=contents )
+                                      item=history,
+                                      user_is_owner=user_is_owner,
+                                      history_dict=history_dictionary,
+                                      content_dicts=contents )
         return filled
 
     def _get_embedded_visualization_html( self, trans, id ):

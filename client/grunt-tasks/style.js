@@ -78,16 +78,21 @@ module.exports = function( grunt ){
 
     // -------------------------------------------------------------------------- watch & rebuild less files
     // use 'grunt watch-style' (from a new tab in your terminal) to have grunt re-copy changed files automatically
-    grunt.config( 'watch', {
-        watch: {
-            // watch for changes in the src dir
-            files: [ lessPath + '/**' ],
-            tasks: ['check-modules', 'sprite', 'less-site-config', 'less', 'clean'],
-            options: {
-                spawn: false
+    //
+    // the conditional prevents reconfiguration of 'normal' (.js) grunt watch from grunt-tasks/scripts.js
+
+    if (this.cli.tasks.indexOf("watch-style") > -1){
+        grunt.config( 'watch', {
+            watch: {
+                // watch for changes in the src dir
+                files: [ lessPath + '/**' ],
+                tasks: ['check-modules', 'sprite', 'less-site-config', 'less', 'clean'],
+                options: {
+                    spawn: false
+                }
             }
-        }
-    });
+        });
+    }
 
     grunt.loadNpmTasks( 'grunt-contrib-less' );
     grunt.loadNpmTasks( 'grunt-spritesmith' );

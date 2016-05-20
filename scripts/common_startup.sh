@@ -9,7 +9,7 @@ for arg in "$@"; do
 done
 
 # Conda Python is in use, do not use virtualenv
-if python -V 2>&1 | grep -q 'Continuum Analytics'; then
+if python -V 2>&1 | grep -q -e 'Anaconda' -e 'Continuum Analytics' ; then
     SET_VENV=0
 fi
 

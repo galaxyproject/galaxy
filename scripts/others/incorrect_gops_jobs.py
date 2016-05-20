@@ -87,7 +87,7 @@ def main():
                             jobs[ job.id ][ 'history_name' ] = history.name
                             jobs[ job.id ][ 'history_update_time' ] = history.update_time
                             jobs[ job.id ][ 'user_email' ] = user.email
-    except Exception, e:
+    except Exception as e:
         print "# caught exception: %s" % str( e )
 
     print "\n\n# Number of incorrect Jobs: %d\n\n" % ( len( jobs ) )

@@ -49,7 +49,7 @@ class GenomeGraphs( Tabular ):
     def set_meta(self, dataset, **kwd):
         Tabular.set_meta( self, dataset, **kwd)
         dataset.metadata.markerCol = 1
-        header = file(dataset.file_name, 'r').readlines()[0].strip().split('\t')
+        header = open(dataset.file_name, 'r').readlines()[0].strip().split('\t')
         dataset.metadata.columns = len(header)
         t = ['numeric' for x in header]
         t[0] = 'string'
@@ -60,7 +60,7 @@ class GenomeGraphs( Tabular ):
         """
         Returns file
         """
-        return file(dataset.file_name, 'r')
+        return open(dataset.file_name, 'r')
 
     def ucsc_links( self, dataset, type, app, base_url ):
         """
@@ -298,10 +298,9 @@ class Rgenetics(Html):
             f, e = os.path.splitext(fname)
             rval.append( '<li><a href="%s">%s</a></li>' % ( sfname, sfname) )
         rval.append( '</ul></body></html>' )
-        f = file(dataset.file_name, 'w')
-        f.write("\n".join( rval ))
-        f.write('\n')
-        f.close()
+        with open(dataset.file_name, 'w') as f:
+            f.write("\n".join( rval ))
+            f.write('\n')
 
     def get_mime(self):
         """Returns the mime type of the datatype"""
@@ -624,7 +623,7 @@ class RexpBase( Html ):
         A file can be written as
         write.table(file='foo.pheno',pData(foo),sep='\t',quote=F,row.names=F)
         """
-        p = file(dataset.metadata.pheno_path, 'r').readlines()
+        p = open(dataset.metadata.pheno_path, 'r').readlines()
         if len(p) > 0:  # should only need to fix an R pheno file once
             head = p[0].strip().split('\t')
             line1 = p[1].strip().split('\t')
@@ -643,7 +642,7 @@ class RexpBase( Html ):
         if not dataset.dataset.purged:
             pp = os.path.join(dataset.extra_files_path, '%s.pheno' % dataset.metadata.base_name)
             try:
-                p = file(pp, 'r').readlines()
+                p = open(pp, 'r').readlines()
             except:
                 p = ['##failed to find %s' % pp, ]
             dataset.peek = ''.join(p[:5])
@@ -658,7 +657,7 @@ class RexpBase( Html ):
         """
         pp = os.path.join(dataset.extra_files_path, '%s.pheno' % dataset.metadata.base_name)
         try:
-            p = file(pp, 'r').readlines()
+            p = open(pp, 'r').readlines()
         except:
             p = ['##failed to find %s' % pp]
         return ''.join(p[:5])
@@ -669,7 +668,7 @@ class RexpBase( Html ):
         """
         h = '## rexpression get_file_peek: no file found'
         try:
-            h = file(filename, 'r').readlines()
+            h = open(filename, 'r').readlines()
         except:
             pass
         return ''.join(h[:5])
@@ -685,10 +684,9 @@ class RexpBase( Html ):
             sfname = os.path.split(fname)[-1]
             rval.append( '<li><a href="%s">%s</a>' % ( sfname, sfname ) )
         rval.append( '</ul></html>' )
-        f = file(dataset.file_name, 'w')
-        f.write("\n".join( rval ))
-        f.write('\n')
-        f.close()
+        with open(dataset.file_name, 'w') as f:
+            f.write("\n".join( rval ))
+            f.write('\n')
 
     def init_meta( self, dataset, copy_from=None ):
         if copy_from:
@@ -721,7 +719,7 @@ class RexpBase( Html ):
         pp = os.path.join(dataset.extra_files_path, pn)
         dataset.metadata.pheno_path = pp
         try:
-            pf = file(pp, 'r').readlines()  # read the basename.phenodata in the extra_files_path
+            pf = open(pp, 'r').readlines()  # read the basename.phenodata in the extra_files_path
         except:
             pf = None
         if pf:

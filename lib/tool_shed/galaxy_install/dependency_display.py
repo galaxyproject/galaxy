@@ -318,7 +318,7 @@ class DependencyDisplayer( object ):
                 if tool_dependencies_root_folder:
                     tool_dependencies_root_folder.folders.append( tool_dependencies_folder )
                     new_containers_dict[ 'tool_dependencies' ] = tool_dependencies_root_folder
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Exception in merge_containers_dicts_for_new_install: %s" % str( e ) )
             finally:
                 lock.release()

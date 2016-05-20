@@ -218,10 +218,9 @@ class Velvet( Html ):
                 else:
                     rval.append( '<li><a href="%s" type="text/plain">%s</a>%s</li>' % ( fn, fn, opt_text ) )
         rval.append( '</ul></div></html>' )
-        f = file(dataset.file_name, 'w')
-        f.write("\n".join( rval ))
-        f.write('\n')
-        f.close()
+        with open(dataset.file_name, 'w') as f:
+            f.write("\n".join( rval ))
+            f.write('\n')
 
     def set_meta( self, dataset, **kwd ):
         Html.set_meta( self, dataset, **kwd )

@@ -2,17 +2,20 @@
 Module for building and searching the index of tools
 installed within this Galaxy.
 """
+import logging
 import re
+import tempfile
 
 from galaxy.web.framework.helpers import to_unicode
 from datetime import datetime
 
-from whoosh.filedb.filestore import RamStorage
+from whoosh.filedb.filestore import RamStorage, FileStorage
 from whoosh.fields import KEYWORD, Schema, STORED, TEXT
 from whoosh.scoring import BM25F
 from whoosh.qparser import MultifieldParser
 from whoosh import analysis
-import logging
+
+
 log = logging.getLogger( __name__ )
 
 
@@ -38,6 +41,8 @@ class ToolBoxSearch( object ):
         self.build_index( index_help )
 
     def build_index( self, index_help=True ):
+        # Works around https://bitbucket.org/mchaput/whoosh/issues/391/race-conditions-with-temp-storage
+        RamStorage.temp_storage = _temp_storage
         self.storage = RamStorage()
         self.index = self.storage.create_index( self.schema )
         writer = self.index.writer()
@@ -103,3 +108,9 @@ class ToolBoxSearch( object ):
         # Perform the search
         hits = searcher.search( parser.parse( '*' + q + '*' ), limit=float( tool_search_limit ) )
         return [ hit[ 'id' ] for hit in hits ]
+
+
+def _temp_storage(self, name=None):
+    path = tempfile.mkdtemp()
+    tempstore = FileStorage(path)
+    return tempstore.create()

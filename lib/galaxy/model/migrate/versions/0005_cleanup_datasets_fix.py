@@ -72,7 +72,7 @@ class Dataset( object ):
                 # Create directory if it does not exist
                 try:
                     os.makedirs( dir )
-                except OSError, e:
+                except OSError as e:
                     # File Exists is okay, otherwise reraise
                     if e.errno != errno.EEXIST:
                         raise
@@ -132,7 +132,7 @@ class Dataset( object ):
         """Remove the file that corresponds to this data"""
         try:
             os.remove(self.data.file_name)
-        except OSError, e:
+        except OSError as e:
             log.critical('%s delete error %s' % (self.__class__.__name__, e))
 
 
@@ -561,7 +561,7 @@ Dataset.table = Table( "dataset", metadata,
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ),
     Column( "purgable", Boolean, default=True ),
-    Column( "external_filename" , TEXT ),
+    Column( "external_filename", TEXT ),
     Column( "_extra_files_path", TEXT ),
     Column( 'file_size', Numeric( 15, 0 ) ) )
 
@@ -577,7 +577,7 @@ HistoryDatasetAssociation.table = Table( "history_dataset_association", metadata
     Column( "name", TrimmedString( 255 ) ),
     Column( "info", TrimmedString( 255 ) ),
     Column( "blurb", TrimmedString( 255 ) ),
-    Column( "peek" , TEXT ),
+    Column( "peek", TEXT ),
     Column( "extension", TrimmedString( 64 ) ),
     Column( "metadata", MetadataType(), key="_metadata" ),
     Column( "parent_id", Integer, ForeignKey( "history_dataset_association.id" ), nullable=True ),
@@ -597,7 +597,7 @@ LibraryDatasetDatasetAssociation.table = Table( "library_dataset_dataset_associa
     Column( "name", TrimmedString( 255 ) ),
     Column( "info", TrimmedString( 255 ) ),
     Column( "blurb", TrimmedString( 255 ) ),
-    Column( "peek" , TEXT ),
+    Column( "peek", TEXT ),
     Column( "extension", TrimmedString( 64 ) ),
     Column( "metadata", MetadataType(), key="_metadata" ),
     Column( "parent_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True ),

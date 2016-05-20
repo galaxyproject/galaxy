@@ -13,7 +13,7 @@ import galaxy.app
 assert sys.version_info[:2] >= ( 2, 4 )
 
 
-def usage(prog) :
+def usage(prog):
     print "usage: %s galaxy.ini" % prog
     print """
 Updates the dataset.size column. Users are advised to backup the database before

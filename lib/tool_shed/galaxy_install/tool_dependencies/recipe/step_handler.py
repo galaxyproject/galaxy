@@ -179,7 +179,7 @@ class Download( object ):
                     err_msg = 'Downloading from URL %s took longer than the defined timeout period of %.1f seconds.' % \
                         ( str( download_url ), basic_util.NO_OUTPUT_TIMEOUT )
                     raise Exception( err_msg )
-        except Exception, e:
+        except Exception as e:
             err_msg = err_msg = 'Error downloading from URL\n%s:\n%s' % ( str( download_url ), str( e ) )
             raise Exception( err_msg )
         finally:
@@ -605,7 +605,7 @@ class DownloadBinary( Download, RecipeStep ):
                 # Set actions to the same, so that the current download_binary doesn't get re-run in the
                 # next stage.  TODO: this may no longer be necessary...
                 actions = [ item for item in filtered_actions ]
-        except Exception, e:
+        except Exception as e:
             log.exception( str( e ) )
             if initial_download:
                 # No binary exists, or there was an error downloading the binary from the generated URL.

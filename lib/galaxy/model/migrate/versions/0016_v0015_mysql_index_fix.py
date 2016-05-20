@@ -37,7 +37,7 @@ def upgrade(migrate_engine):
     i = Index( "ix_hda_ta_history_dataset_association_id", HistoryDatasetAssociationTagAssociation_table.c.history_dataset_association_id )
     try:
         i.create()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Adding index 'ix_hdata_history_dataset_association_id' to table 'history_dataset_association_tag_association' table failed: %s" % str( e ) )
 
@@ -48,6 +48,6 @@ def downgrade(migrate_engine):
     i = Index( "ix_hda_ta_history_dataset_association_id", HistoryDatasetAssociationTagAssociation_table.c.history_dataset_association_id )
     try:
         i.drop()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Removing index 'ix_hdata_history_dataset_association_id' to table 'history_dataset_association_tag_association' table failed: %s" % str( e ) )

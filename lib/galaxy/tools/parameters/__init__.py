@@ -129,7 +129,7 @@ def check_param( trans, param, incoming_value, param_values ):
                     return [ value, None ]
         value = param.from_json( value, trans, param_values )
         param.validate( value, trans )
-    except ValueError, e:
+    except ValueError as e:
         error = str( e )
     return value, error
 

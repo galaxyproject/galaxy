@@ -31,7 +31,7 @@ def upgrade(migrate_engine):
         # Create
         c.create( Repository_table )
         assert c is Repository_table.c.email_alerts
-    except Exception, e:
+    except Exception as e:
         print "Adding email_alerts column to the repository table failed: %s" % str( e )
         log.debug( "Adding email_alerts column to the repository table failed: %s" % str( e ) )
 
@@ -43,6 +43,6 @@ def downgrade(migrate_engine):
     Repository_table = Table( "repository", metadata, autoload=True )
     try:
         Repository_table.c.email_alerts.drop()
-    except Exception, e:
+    except Exception as e:
         print "Dropping column email_alerts from the repository table failed: %s" % str( e )
         log.debug( "Dropping column email_alerts from the repository table failed: %s" % str( e ) )

@@ -96,7 +96,7 @@ def add_file( dataset, registry, json_file, output_path ):
         try:
             page = urllib.urlopen( dataset.path )  # page will be .close()ed by sniff methods
             temp_name, dataset.is_multi_byte = sniff.stream_to_file( page, prefix='url_paste', source_encoding=util.get_charset_from_http_headers( page.headers ) )
-        except Exception, e:
+        except Exception as e:
             file_err( 'Unable to fetch %s\n%s' % ( dataset.path, str( e ) ), dataset, json_file )
             return
         dataset.path = temp_name
@@ -111,7 +111,7 @@ def add_file( dataset, registry, json_file, output_path ):
         # Already set is_multi_byte above if type == 'url'
         try:
             dataset.is_multi_byte = multi_byte.is_multi_byte( codecs.open( dataset.path, 'r', 'utf-8' ).read( 100 ) )
-        except UnicodeDecodeError, e:
+        except UnicodeDecodeError as e:
             dataset.is_multi_byte = False
     # Is dataset an image?
     image = check_image( dataset.path )
@@ -364,7 +364,7 @@ def add_composite_file( dataset, json_file, output_path, files_path ):
                     if isurl:
                         try:
                             temp_name, dataset.is_multi_byte = sniff.stream_to_file( urllib.urlopen( dp ), prefix='url_paste' )
-                        except Exception, e:
+                        except Exception as e:
                             file_err( 'Unable to fetch %s\n%s' % ( dp, str( e ) ), dataset, json_file )
                             return
                         dataset.path = temp_name

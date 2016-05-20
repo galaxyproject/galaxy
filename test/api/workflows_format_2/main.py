@@ -1,13 +1,14 @@
+"""Module containing :func:`convert_and_import_workflow`."""
 import os
+
 import yaml
 
+from .converter import python_to_workflow, yaml_to_workflow
 from .interface import BioBlendImporterGalaxyInterface
-from .converter import yaml_to_workflow, python_to_workflow
 
 
 def convert_and_import_workflow(has_workflow, **kwds):
-    """
-    """
+    """Function is main entry for conversion and import of Format 2 workflows."""
     galaxy_interface = kwds.get("galaxy_interface", None)
     if galaxy_interface is None:
         galaxy_interface = BioBlendImporterGalaxyInterface(**kwds)

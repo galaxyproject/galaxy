@@ -104,7 +104,7 @@ def set_genomespace_format_identifiers( url_opener, dm_site ):
     for format in genomespace_formats:
         GENOMESPACE_FORMAT_IDENTIFIER_TO_GENOMESPACE_EXT[ format['url'] ] = format['name']
     global GENOMESPACE_FORMAT_IDENTIFIER_UNKNOWN
-    GENOMESPACE_FORMAT_IDENTIFIER_UNKNOWN = dict( map( lambda x: ( x[1], x[0] ) , GENOMESPACE_FORMAT_IDENTIFIER_TO_GENOMESPACE_EXT.iteritems() ) ).get( GENOMESPACE_UNKNOWN_FORMAT_KEY, GENOMESPACE_FORMAT_IDENTIFIER_UNKNOWN )
+    GENOMESPACE_FORMAT_IDENTIFIER_UNKNOWN = dict( map( lambda x: ( x[1], x[0] ), GENOMESPACE_FORMAT_IDENTIFIER_TO_GENOMESPACE_EXT.iteritems() ) ).get( GENOMESPACE_UNKNOWN_FORMAT_KEY, GENOMESPACE_FORMAT_IDENTIFIER_UNKNOWN )
 
 
 def download_from_genomespace_file_browser( json_parameter_file, genomespace_site, gs_toolname ):

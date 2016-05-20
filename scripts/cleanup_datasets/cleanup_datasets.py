@@ -79,7 +79,7 @@ def main():
     parser.add_option( "-6", "--delete_datasets", action="store_true", dest="delete_datasets", default=False, help="mark deletable datasets as deleted and purge associated dataset instances" )
 
     ( options, args ) = parser.parse_args()
-    if len(args) != 1 :
+    if len(args) != 1:
         parser.print_help()
         sys.exit()
     ini_file = args[0]
@@ -440,7 +440,7 @@ def _delete_dataset( dataset, app, remove_from_disk, info_only=False, is_deletab
                     try:
                         print "Removing disk file ", metadata_file.file_name
                         os.unlink( metadata_file.file_name )
-                    except Exception, e:
+                    except Exception as e:
                         print "Error, exception: %s caught attempting to purge metadata file %s\n" % ( str( e ), metadata_file.file_name )
                     metadata_file.purged = True
                     app.sa_session.add( metadata_file )
@@ -488,7 +488,7 @@ def _purge_dataset( app, dataset, remove_from_disk, info_only=False ):
                     print "Dataset %i will be purged (without 'info_only' mode)" % (dataset.id)
             else:
                 print "This dataset (%i) is not purgable, the file (%s) will not be removed.\n" % ( dataset.id, dataset.file_name )
-        except OSError, exc:
+        except OSError as exc:
             print "Error, dataset file has already been removed: %s" % str( exc )
             print "Purging dataset id", dataset.id
             dataset.purged = True
@@ -496,7 +496,7 @@ def _purge_dataset( app, dataset, remove_from_disk, info_only=False ):
             app.sa_session.flush()
         except ObjectNotFound:
             print "Dataset %i cannot be found in the object store" % dataset.id
-        except Exception, exc:
+        except Exception as exc:
             print "Error attempting to purge data file: ", dataset.file_name, " error: ", str( exc )
     else:
         print "Error: '%s' has not previously been deleted, so it cannot be purged\n" % dataset.file_name

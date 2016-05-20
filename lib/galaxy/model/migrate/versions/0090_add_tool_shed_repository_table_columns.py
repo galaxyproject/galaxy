@@ -36,14 +36,14 @@ def upgrade(migrate_engine):
         c.create( ToolShedRepository_table )
         assert c is ToolShedRepository_table.c.uninstalled
         migrate_engine.execute( "UPDATE tool_shed_repository SET uninstalled=%s" % default_false(migrate_engine) )
-    except Exception, e:
+    except Exception as e:
         print "Adding uninstalled column to the tool_shed_repository table failed: %s" % str( e )
     c = Column( "dist_to_shed", Boolean, default=False )
     try:
         c.create( ToolShedRepository_table )
         assert c is ToolShedRepository_table.c.dist_to_shed
         migrate_engine.execute( "UPDATE tool_shed_repository SET dist_to_shed=%s" % default_false(migrate_engine) )
-    except Exception, e:
+    except Exception as e:
         print "Adding dist_to_shed column to the tool_shed_repository table failed: %s" % str( e )
 
 
@@ -53,9 +53,9 @@ def downgrade(migrate_engine):
     ToolShedRepository_table = Table( "tool_shed_repository", metadata, autoload=True )
     try:
         ToolShedRepository_table.c.uninstalled.drop()
-    except Exception, e:
+    except Exception as e:
         print "Dropping column uninstalled from the tool_shed_repository table failed: %s" % str( e )
     try:
         ToolShedRepository_table.c.dist_to_shed.drop()
-    except Exception, e:
+    except Exception as e:
         print "Dropping column dist_to_shed from the tool_shed_repository table failed: %s" % str( e )

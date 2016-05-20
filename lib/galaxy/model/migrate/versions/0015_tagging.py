@@ -72,22 +72,22 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         Tag_table.create()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Creating tag table failed: %s" % str( e ) )
     try:
         HistoryTagAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Creating history_tag_association table failed: %s" % str( e ) )
     try:
         DatasetTagAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Creating dataset_tag_association table failed: %s" % str( e ) )
     try:
         HistoryDatasetAssociationTagAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Creating history_dataset_association_tag_association table failed: %s" % str( e ) )
 
@@ -97,21 +97,21 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         Tag_table.drop()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Dropping tag table failed: %s" % str( e ) )
     try:
         HistoryTagAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Dropping history_tag_association table failed: %s" % str( e ) )
     try:
         DatasetTagAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Dropping dataset_tag_association table failed: %s" % str( e ) )
     try:
         HistoryDatasetAssociationTagAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Dropping history_dataset_association_tag_association table failed: %s" % str( e ) )

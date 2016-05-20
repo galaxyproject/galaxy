@@ -184,10 +184,10 @@ def read_sequence(header, fileh, fposition):
     # correct for the case the right clip is <= than the left clip
     # in this case, left clip is 0 are set to 0 (right clip == 0 means
     # "whole sequence")
-    if data['clip_qual_right'] <= data['clip_qual_left'] :
+    if data['clip_qual_right'] <= data['clip_qual_left']:
         data['clip_qual_right'] = 0
         data['clip_qual_left'] = 0
-    if data['clip_adapter_right'] <= data['clip_adapter_left'] :
+    if data['clip_adapter_right'] <= data['clip_adapter_left']:
         data['clip_adapter_right'] = 0
         data['clip_adapter_left'] = 0
 
@@ -410,7 +410,7 @@ def get_read_data(data):
     if config['mix_case']:
         seq = sequence_case(data)
         qual = data['quality_scores']
-    else :
+    else:
         seq = data['bases']
         qual = data['quality_scores']
 
@@ -430,7 +430,7 @@ def write_sequence(name, seq, qual, seq_fh, qual_fh):
     '''Write sequence and quality FASTA and FASTA qual filehandles
     (or into FASTQ and XML)
     if sequence length is 0, don't write'''
-    if len(seq) == 0 :
+    if len(seq) == 0:
         return
 
     if qual_fh is None:
@@ -447,7 +447,7 @@ def write_unpaired_read(data, sff_fh, seq_fh, qual_fh, xml_fh):
     (or into FASTQ and XML)
     if sequence length is 0, don't write'''
     seq, qual = get_read_data(data)
-    if len(seq) == 0 :
+    if len(seq) == 0:
         return
 
     write_sequence(data['name'], seq, qual, seq_fh, qual_fh)
@@ -632,7 +632,7 @@ def correct_for_smallhits(maskedseq, maskchar, linkername):
             newseq += maskedseq[left:right]
         else:
             clearstart = 0
-            if left > 0 :
+            if left > 0:
                 clearstart = left + growl2
             clearstop = len(maskedseq)
             if right < len(maskedseq):
@@ -762,7 +762,7 @@ def split_paired_end(data, sff_fh, seq_fh, qual_fh, xml_fh):
                 data['clip_adapter_right'] = boundaries[2][0]
             elif len(boundaries) == 2:
                 # case: mask char left or right of sequence
-                if maskedseq[0] == maskchar :
+                if maskedseq[0] == maskchar:
                     # case: mask char left
                     data['clip_adapter_left'] = boundaries[0][1]
                 else:
@@ -839,7 +839,7 @@ def extract_reads_from_sff(config, sff_files):
     '''
     global ssahapematches
 
-    if len(sff_files) == 0 :
+    if len(sff_files) == 0:
         raise RuntimeError("No SFF file given?")
 
     # we go through all input files
@@ -859,7 +859,7 @@ def extract_reads_from_sff(config, sff_files):
         qual_fh = None
         try:
             os.remove(config['qual_fname'])
-        except :
+        except:
             pass
     else:
         qual_fh = open(config['qual_fname'], openmode)
@@ -880,7 +880,7 @@ def extract_reads_from_sff(config, sff_files):
         if not debug and config['pelinker_fname']:
             sys.stdout.flush()
 
-            if 0 :
+            if 0:
                 # for debugging
                 pid = os.getpid()
                 tmpfasta_fname = 'sffe.tmp.' + str(pid) + '.fasta'
@@ -897,7 +897,7 @@ def extract_reads_from_sff(config, sff_files):
                 tmpfasta_fh.write(seqstring)
             tmpfasta_fh.seek(0)
 
-            if 0 :
+            if 0:
                 # for debugging
                 tmpssaha_fname = 'sffe.tmp.' + str(pid) + '.ssaha2'
                 tmpssaha_fh = open(tmpssaha_fname, 'w+')
@@ -982,7 +982,7 @@ def check_for_dubious_startseq(seqcheckstore, sffname, seqdata):
                 left, right = return_merged_clips(seqdata)
                 foundproblem += "    (Probably '--min_left_clip=" + str(left + len(shortseq)) + "' but you should cross-check that)\n"
                 foundproblem += "*" * 80 + "\n"
-        if not foundinloop :
+        if not foundinloop:
             break
     if len(foundproblem):
         print foundproblem
@@ -1100,7 +1100,7 @@ def tests_for_ssaha():
         subprocess.call(["ssaha2"], stdout=fh)
         fh.close()
         print "ok."
-    except :
+    except:
         print "nope? Uh oh ...\n\n"
         raise RuntimeError('Could not launch ssaha2. Have you installed it? Is it in your path?')
 
@@ -1153,7 +1153,7 @@ def read_ssaha_data(ssahadata_fh):
     for line in ssahadata_fh:
         if line.startswith('ALIGNMENT'):
             ml = line.split()
-            if len(ml) != 12 :
+            if len(ml) != 12:
                 print "\n", line,
                 raise RuntimeError('Expected 12 elements in the SSAHA2 line with ALIGMENT keyword, but found ' + str(len(ml)))
             if ml[2] not in ssahapematches:
@@ -1325,7 +1325,7 @@ def main():
         if len(args) == 0:
             raise RuntimeError("No SFF file given?")
         extract_reads_from_sff(config, args)
-    except (OSError, IOError, RuntimeError), errval:
+    except (OSError, IOError, RuntimeError) as errval:
         print errval
         return 1
 

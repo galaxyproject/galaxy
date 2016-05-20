@@ -33,7 +33,7 @@ def upgrade(migrate_engine):
         workflow_table = Table( "workflow", metadata, autoload=True )
         workflow_uuid_column.create( workflow_table )
         assert workflow_uuid_column is workflow_table.c.uuid
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.error( "Adding column 'uuid' to workflow table failed: %s" % str( e ) )
         return
@@ -48,5 +48,5 @@ def downgrade(migrate_engine):
         workflow_table = Table( "workflow", metadata, autoload=True )
         workflow_uuid = workflow_table.c.uuid
         workflow_uuid.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping 'uuid' column from workflow table failed: %s" % ( str( e ) ) )

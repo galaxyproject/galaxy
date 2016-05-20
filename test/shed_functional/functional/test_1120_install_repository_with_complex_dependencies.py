@@ -45,7 +45,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
             old_tool_dependency = self.get_filename( os.path.join( 'bwa', 'complex', 'tool_dependencies.xml' ) )
             new_tool_dependency_path = self.generate_temp_path( 'test_1100', additional_paths=[ 'tool_dependency' ] )
             xml_filename = os.path.abspath( os.path.join( new_tool_dependency_path, 'tool_dependencies.xml' ) )
-            file( xml_filename, 'w' ).write( file( old_tool_dependency, 'r' )
+            open( xml_filename, 'w' ).write( open( old_tool_dependency, 'r' )
                                      .read().replace( '__PATH__', self.get_filename( 'bwa/complex' ) ) )
             self.upload_file( repository,
                               filename=xml_filename,
@@ -196,7 +196,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
             old_tool_dependency = self.get_filename( os.path.join( 'bwa', 'complex', 'readme', 'tool_dependencies.xml' ) )
             new_tool_dependency_path = self.generate_temp_path( 'test_1100', additional_paths=[ 'tool_dependency' ] )
             xml_filename = os.path.abspath( os.path.join( new_tool_dependency_path, 'tool_dependencies.xml' ) )
-            file( xml_filename, 'w' ).write( file( old_tool_dependency, 'r' )
+            open( xml_filename, 'w' ).write( open( old_tool_dependency, 'r' )
                                      .read().replace( '__PATH__', self.get_filename( 'bwa/complex' ) ) )
             self.upload_file( tool_repository,
                               filename=xml_filename,
@@ -257,7 +257,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
                                             tool_dependency_version='0.5.9',
                                             repository=base_repository )
         assert os.path.exists( env_sh_path ), 'env.sh was not generated in %s for this dependency.' % env_sh_path
-        contents = file( env_sh_path, 'r' ).read()
+        contents = open( env_sh_path, 'r' ).read()
         if tool_repository.installed_changeset_revision not in contents:
             raise AssertionError( 'Installed changeset revision %s not found in env.sh.\nContents of env.sh: %s' %
                                   ( tool_repository.installed_changeset_revision, contents ) )

@@ -76,6 +76,7 @@ Fixes
 
 
 .. github_links
+
 """
 
 ANNOUNCE_TEMPLATE = string.Template("""
@@ -180,10 +181,10 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
 - [ ] **Create Release Notes**
 
-      - [ ] Review merged PRs and ensure they all milestones attached. [Link](https://github.com/galaxyproject/galaxy/pulls?q=is%3Apr+is%3Amerged+no%3Amilestone)
+      - [ ] Review merged PRs and ensure they all have a milestones attached. [Link](https://github.com/galaxyproject/galaxy/pulls?q=is%3Apr+is%3Amerged+no%3Amilestone)
       - [ ] Checkout release branch
 
-            git checkout $version -b ${version}_release_notes
+            git checkout release_${version} -b ${version}_release_notes
       - [ ] Check for obvious missing metadata in release PRs
 
             make release-check-metadata RELEASE_CURR=${version}
@@ -205,7 +206,23 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
       - [ ] Ensure all [blocking milestone PRs](https://github.com/galaxyproject/galaxy/pulls?q=is%3Aopen+is%3Apr+milestone%3A${version}) have been merged or closed.
 
             make release-check-blocking-prs RELEASE_CURR=${version}
-      - [ ] Do release (TODO: create a check a list for this...)
+      - [ ] Ensure previous release is merged into current. (TODO: Add Makefile target or this.)
+      - [ ] Create release tag:
+
+            make release-create RELEASE_CURR=${version}
+      - [ ] Push branches and tags as commented out in Makefile target for ``release-create``.
+
+- [ ] **Do Docker Release**
+
+      - [ ] Change the [dev branch](https://github.com/bgruening/docker-galaxy-stable/tree/dev
+) of the Galaxy Docker container to ${next_version}
+      - [ ] Merge dev into master
+
+- [ ] **Ensure Tool Tests use Latest Release**
+
+      - [ ]  Update GALAXY_RELEASE in https://github.com/galaxyproject/tools-iuc/blob/master/.travis.yml#L6
+
+      - [ ]  Update GALAXY_RELEASE in https://github.com/galaxyproject/tools-devteam/blob/master/.travis.yml#L6
 
 - [ ] **Announce Release**
 
@@ -287,7 +304,7 @@ def do_release(argv):
     open(next_release_file, "w").write(next_announce.encode("utf-8"))
     releases_index = _release_file("index.rst")
     releases_index_contents = open(releases_index, "r").read()
-    releases_index_contents = releases_index_contents.replace(".. annoucements\n", ".. annoucements\n" + next_version + "_announce\n" )
+    releases_index_contents = releases_index_contents.replace(".. annoucements\n", ".. annoucements\n   " + next_version + "_announce\n" )
     with open(releases_index, "w") as f:
         f.write(releases_index_contents)
 
@@ -337,10 +354,14 @@ def check_blocking_issues(argv):
 
 
 def _pr_to_str(pr):
+    if isinstance(pr, basestring):
+        return pr
     return "PR #%s (%s) %s" % (pr.number, pr.title, pr.html_url)
 
 
 def _issue_to_str(pr):
+    if isinstance(pr, basestring):
+        return pr
     return "Issue #%s (%s) %s" % (pr.number, pr.title, pr.html_url)
 
 
@@ -479,7 +500,7 @@ def main(argv):
             )
         to_doc += "\n`Pull Request {0}`_".format(pull_request)
         if github:
-            _text_target(github, pull_request)
+            text_target = _text_target(github, pull_request)
     elif ident.startswith("issue"):
         issue = ident[len("issue"):]
         text = ".. _Issue {0}: {1}/issues/{0}".format(issue, PROJECT_URL)
@@ -492,17 +513,26 @@ def main(argv):
         to_doc += "{0}_".format(short_rev)
 
     to_doc = wrap(to_doc)
-    history = extend(".. %s\n" % text_target, to_doc)
+    history = extend(".. %s\n" % text_target, to_doc, history)
     open(history_path, "w").write(history.encode("utf-8"))
 
 
 def _text_target(github, pull_request):
     labels = []
+    pr_number = None
+    if isinstance(pull_request, basestring):
+        pr_number = pull_request
+    else:
+        pr_number = pull_request.number
+
     try:
-        labels = github.issues.labels.list_by_issue(int(pull_request.number), user=PROJECT_OWNER, repo=PROJECT_NAME)
+        labels = github.issues.labels.list_by_issue(int(pr_number), user=PROJECT_OWNER, repo=PROJECT_NAME)
     except Exception as e:
         print e
     is_bug = is_enhancement = is_feature = is_minor = is_major = is_merge = is_small_enhancement = False
+    if len(labels) == 0:
+        print 'No labels found for %s' % pr_number
+        return None
     for label in labels:
         label_name = label.name.lower()
         if label_name == "minor":
@@ -542,7 +572,7 @@ def _text_target(github, pull_request):
     elif is_bug:
         text_target = "bug"
     else:
-        print "Logic problem, cannot determine section for %s" % pull_request
+        print "Logic problem, cannot determine section for %s" % _pr_to_str(pull_request)
         text_target = None
     return text_target
 
