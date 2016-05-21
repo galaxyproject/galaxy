@@ -3,19 +3,23 @@ define([], function() {
 /** Frame view */
 var FrameView = Backbone.View.extend({
     initialize: function( options ) {
+        var self = this;
         this.setElement( $( '<div/>' ).addClass( 'corner' ).addClass( 'frame' ) );
         this.$el.append( this.$header  = $( '<div/>' ).addClass( 'f-header corner' )
                                                       .append( this.$title = $( '<div/>' ).addClass( 'f-title' ).html( options.title || '' ) )
-                                                      .append( this.$close = $( '<div/>' ).addClass( 'f-icon f-close fa fa-close' ) )
-                                                      .append( this.$left  = $( '<div/>' ).addClass( 'f-icon f-left fa fa-chevron-circle-left' ) )
-                                                      .append( this.$right = $( '<div/>' ).addClass( 'f-icon f-right fa fa-chevron-circle-right' ) ) )
-                .append( this.$content = $( '<div/>' ).addClass( 'f-content' ).append( $( '<div/>' ).addClass( 'f-cover' ) ) )
-                .append( this.$resize  = $( '<div/>' ).addClass( 'f-resize f-icon corner fa fa-expand' ) );
+                                                      .append( this.$close = $( '<div/>' ).addClass( 'f-icon f-close fa fa-close' )
+                                                                                          .tooltip( { title: 'Close', placement: 'bottom' } ) ) )
+                .append( this.$content = $( '<div/>' ).addClass( 'f-content' ) )
+                .append( this.$resize  = $( '<div/>' ).addClass( 'f-resize f-icon corner fa fa-expand' ).tooltip( { title: 'Resize' } ) )
+                .append( this.$cover   = $( '<div/>' ).addClass( 'f-cover' ) );
 
-        // configure frame
-        if ( options.onslider ) {
-            this.$left.on( 'click', function() { options.onslider() } );
-        }
+        // configure content
+        _.each( options.menu, function( option ) {
+            self.$header.append( $( '<div/>' ).addClass( 'f-icon-left' )
+                                              .addClass( option.icon )
+                                              .tooltip( { title: option.tooltip, placement: 'bottom' } )
+                                              .on( 'click', function() { option.onclick( self.$content ) } ) );
+        } );
 
         // configure content
         if ( options.url ) {
@@ -189,6 +193,7 @@ var View = Backbone.View.extend({
 
     /** Start drag/resize event */
     _eventFrameMouseDown: function ( e ) {
+        $( '.tooltip' ).hide();
         if ( !this.event.type ) {
             if ( $( e.target ).hasClass( 'f-header' ) || $( e.target ).hasClass( 'f-title' ) ) {
                 this.event.type = 'drag';
@@ -311,15 +316,6 @@ var View = Backbone.View.extend({
     /*
         FRAME EVENTS SUPPORT
     */
-
-    /** Initialize a new frame */
-    _frameInit: function( frame, id ) {
-        frame.id              = id
-        frame.screen_location = {};
-        frame.grid_location   = {};
-        frame.grid_rank       = null;
-        frame.$el.attr( 'id', id.substring( 1 ) );
-    },
 
     /** Identify the target frame */
     _frameIdentify: function( target ) {
@@ -452,6 +448,15 @@ var View = Backbone.View.extend({
     /*
         FRAME FUNCTIONS
     */
+
+    /** Initialize a new frame */
+    _frameInit: function( frame, id ) {
+        frame.id              = id
+        frame.screen_location = {};
+        frame.grid_location   = {};
+        frame.grid_rank       = null;
+        frame.$el.attr( 'id', id.substring( 1 ) );
+    },
 
     /** Insert frame at given location */
     _frameInsert: function( frame, new_loc, animate ) {

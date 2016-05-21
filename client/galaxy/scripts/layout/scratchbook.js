@@ -52,9 +52,19 @@ return Backbone.View.extend({
                 // Construct frame config based on dataset's type.
                 var frame_config = {
                         title: dataset.get('name'),
-                        onslider: function() {
-                            alert( 'clicked' );
-                        }
+                        menu: [ {
+                            icon    : 'fa fa-chevron-circle-left',
+                            tooltip : 'Previous in History',
+                            onclick : function() {
+                                alert( 'previous' );
+                            }
+                        }, {
+                            icon    : 'fa fa-chevron-circle-right',
+                            tooltip : 'Next in History',
+                            onclick : function() {
+                                alert( 'next' );
+                            }
+                        } ]
                     },
                     // HACK: For now, assume 'tabular' and 'interval' are the only
                     // modules that contain tabular files. This needs to be replaced
