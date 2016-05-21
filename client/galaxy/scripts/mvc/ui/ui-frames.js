@@ -7,7 +7,6 @@ var FrameView = Backbone.View.extend({
         this.$el.append( this.$header  = $( '<div/>' ).addClass( 'f-header corner' )
                                                       .append( this.$title = $( '<div/>' ).addClass( 'f-title' ).html( options.title || '' ) )
                                                       .append( this.$close = $( '<div/>' ).addClass( 'f-icon f-close fa fa-close' ) )
-                                                      .append( this.$pin   = $( '<div/>' ).addClass( 'f-icon f-pin fa fa-thumb-tack' ) )
                                                       .append( this.$left  = $( '<div/>' ).addClass( 'f-icon f-left fa fa-chevron-circle-left' ) )
                                                       .append( this.$right = $( '<div/>' ).addClass( 'f-icon f-right fa fa-chevron-circle-right' ) ) )
                 .append( this.$content = $( '<div/>' ).addClass( 'f-content' ).append( $( '<div/>' ).addClass( 'f-cover' ) ) )
@@ -185,8 +184,7 @@ var View = Backbone.View.extend({
         'mousedown .frame-background'       : '_eventHide',
         'mousedown .frame-scroll-up'        : '_eventPanelScroll_up',
         'mousedown .frame-scroll-down'      : '_eventPanelScroll_down',
-        'mousedown .f-close'                : '_eventFrameClose',
-        'mousedown .f-pin'                  : '_eventFrameLock'
+        'mousedown .f-close'                : '_eventFrameClose'
     },
 
     /** Start drag/resize event */
@@ -201,10 +199,6 @@ var View = Backbone.View.extend({
             if ( this.event.type ) {
                 e.preventDefault();
                 this.event.target = this._frameIdentify( e.target );
-                if ( this.event.target.grid_lock ) {
-                    this.event.type = null;
-                    return;
-                }
                 this.event.xy = {
                     x: e.originalEvent.pageX,
                     y: e.originalEvent.pageY
@@ -278,21 +272,6 @@ var View = Backbone.View.extend({
         }
     },
 
-    /** Lock/Unlock the frame location */
-    _eventFrameLock: function ( e ) {
-        if ( !this.event.type ) {
-            e.preventDefault();
-            var frame = this._frameIdentify( e.target );
-            var locked = frame.grid_lock = !frame.grid_lock;
-            var $el = frame.$el;
-            $el.find( '.f-pin' )      [ locked ? 'addClass' : 'removeClass' ]( 'toggle' );
-            $el.find( '.f-header' )   [ locked ? 'removeClass' : 'addClass' ]( 'f-not-allowed' );
-            $el.find( '.f-title' )    [ locked ? 'removeClass' : 'addClass' ]( 'f-not-allowed' );
-            $el.find( '.f-resize' )   [ locked ? 'hide' : 'show' ]();
-            $el.find( '.f-close' )    [ locked ? 'hide' : 'show' ]();
-        }
-    },
-
     /** Hide all frames */
     _eventHide: function ( e ) {
         !this.event.type && this.hide();
@@ -339,7 +318,6 @@ var View = Backbone.View.extend({
         frame.screen_location = {};
         frame.grid_location   = {};
         frame.grid_rank       = null;
-        frame.grid_lock       = false;
         frame.$el.attr( 'id', id.substring( 1 ) );
     },
 
@@ -484,7 +462,7 @@ var View = Backbone.View.extend({
             place_list.push( [ frame, this._locationRank( new_loc ) ] );
         }
         _.each( this.frame_list, function( f ) {
-            if ( f.grid_location !== null && !f.grid_lock ) {
+            if ( f.grid_location !== null ) {
                 f.grid_location = null;
                 place_list.push( [ f, f.grid_rank ] );
             }
