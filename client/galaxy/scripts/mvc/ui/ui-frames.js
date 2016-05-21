@@ -68,7 +68,7 @@ var View = Backbone.View.extend({
                             .append( $( '<div/>' ).addClass( 'frame-menu frame-scroll-down fa fa-chevron-down fa-2x' ) ) );
 
         // initialize shadow to guiding drag/resize events
-        this.frame_shadow = new Backbone.View({}).setElement( $( '<div/>' ).addClass( 'corner frame-shadow' ) );
+        this.frame_shadow = new Backbone.View({ el: $( '<div/>' ).addClass( 'corner frame-shadow' ) } );
         this.$el.append( this.frame_shadow.$el );
         this._frameInit( this.frame_shadow, '#frame-shadow' );
         this._frameResize( this.frame_shadow, { width: 0, height: 0 } );
