@@ -3,6 +3,7 @@ define([], function() {
 /** Frame view */
 var FrameView = Backbone.View.extend({
     initialize: function( options ) {
+        var self = this;
         this.setElement( $( '<div/>' ).addClass( 'corner frame' ) );
         this.$el.append( $( '<div/>' ).addClass( 'f-header corner' )
                                       .append( $( '<div/>' ).addClass( 'f-title' ).html( options.title || '' ) )
@@ -11,22 +12,22 @@ var FrameView = Backbone.View.extend({
                 .append( $( '<div/>' ).addClass( 'f-content' ) )
                 .append( $( '<div/>' ).addClass( 'f-resize f-icon corner fa fa-expand' ).tooltip( { title: 'Resize' } ) )
                 .append( $( '<div/>' ).addClass( 'f-cover' ) );
-        var $header  = this.$( '.f-header' );
-        var $content = this.$( '.f-content' );
+        this.$header  = this.$( '.f-header' );
+        this.$content = this.$( '.f-content' );
         _.each( options.menu, function( option ) {
-            $header.append( $( '<div/>' ).addClass( 'f-icon-left' )
-                                         .addClass( option.icon )
-                                         .tooltip( { title: option.tooltip, placement: 'bottom' } )
-                                         .on( 'click', function() { option.onclick( $content ) } ) );
+            self.$header.append( $( '<div/>' ).addClass( 'f-icon-left' )
+                                              .addClass( option.icon )
+                                              .tooltip( { title: option.tooltip, placement: 'bottom' } )
+                                              .on( 'click', function() { option.onclick( self ) } ) );
         } );
         if ( options.url ) {
-            $content.html(
+            this.$content.html(
                 $ ( '<iframe/>' ).addClass( 'f-iframe' )
                                  .attr( 'scrolling', 'auto' )
                                  .attr( 'src', options.url + ( options.url.indexOf( '?' ) === -1 ? '?' : '&' ) + 'widget=True' )
             );
         } else if ( options.content ) {
-            _.isFunction( options.content ) ? options.content( $content ) : $content.html( options.content );
+            _.isFunction( options.content ) ? options.content( this.$content ) : $content.html( options.content );
         }
     }
 });
