@@ -4,30 +4,43 @@ define([], function() {
 var FrameView = Backbone.View.extend({
     initialize: function( options ) {
         var self = this;
+        this.model = options && options.model || new Backbone.Model( options );
         this.setElement( $( '<div/>' ).addClass( 'corner frame' ) );
         this.$el.append( $( '<div/>' ).addClass( 'f-header corner' )
-                                      .append( $( '<div/>' ).addClass( 'f-title' ).html( options.title || '' ) )
+                                      .append( $( '<div/>' ).addClass( 'f-title' ) )
                                       .append( $( '<div/>' ).addClass( 'f-icon f-close fa fa-close' )
                                                             .tooltip( { title: 'Close', placement: 'bottom' } ) ) )
                 .append( $( '<div/>' ).addClass( 'f-content' ) )
                 .append( $( '<div/>' ).addClass( 'f-resize f-icon corner fa fa-expand' ).tooltip( { title: 'Resize' } ) )
                 .append( $( '<div/>' ).addClass( 'f-cover' ) );
         this.$header  = this.$( '.f-header' );
+        this.$title   = this.$( '.f-title' );
         this.$content = this.$( '.f-content' );
+        this.render();
+        this.listenTo( this.model, 'change', this.render, this );
+    },
+
+    render: function() {
+        var self = this;
+        var options = this.model.attributes;
+        this.$title.html( options.title || '' );
+        this.$header.find( '.f-icon-left' ).remove();
         _.each( options.menu, function( option ) {
-            self.$header.append( $( '<div/>' ).addClass( 'f-icon-left' )
-                                              .addClass( option.icon )
-                                              .tooltip( { title: option.tooltip, placement: 'bottom' } )
-                                              .on( 'click', function() { option.onclick( self ) } ) );
+            var $option = $( '<div/>' ).addClass( 'f-icon-left' ).addClass( option.icon );
+            if ( _.isFunction( option.disabled ) && option.disabled() ) {
+                $option.attr( 'disabled', true );
+            } else {
+                $option.on( 'click', function() { option.onclick( self ) } )
+                       .tooltip( { title: option.tooltip, placement: 'bottom' } );
+            }
+            self.$header.append( $option );
         } );
         if ( options.url ) {
-            this.$content.html(
-                $ ( '<iframe/>' ).addClass( 'f-iframe' )
-                                 .attr( 'scrolling', 'auto' )
-                                 .attr( 'src', options.url + ( options.url.indexOf( '?' ) === -1 ? '?' : '&' ) + 'widget=True' )
-            );
+            this.$content.html( $ ( '<iframe/>' ).addClass( 'f-iframe' )
+                                                 .attr( 'scrolling', 'auto' )
+                                                 .attr( 'src', options.url + ( options.url.indexOf( '?' ) === -1 ? '?' : '&' ) + 'widget=True' ) );
         } else if ( options.content ) {
-            _.isFunction( options.content ) ? options.content( this.$content ) : $content.html( options.content );
+            _.isFunction( options.content ) ? options.content( self.$content ) : self.$content.html( options.content );
         }
     }
 });

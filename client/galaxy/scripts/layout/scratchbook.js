@@ -46,53 +46,51 @@ return Backbone.View.extend({
     /** Add a dataset to the frames */
     addDataset: function( dataset_id ) {
         var self = this;
+        this.dataset_list = [];
+        Galaxy.currHistoryPanel.collection.find( function( model ) {
+            !model.get( 'deleted' ) && self.dataset_list.push( model.get( 'id' ) );
+        });
+        var _loadDatasetOffset = function( frame, offset ) {
+            var pos = self.dataset_list.indexOf( dataset_id );
+            if ( pos !== -1 && self.dataset_list[ pos + offset ] ) {
+                self._loadDataset( dataset_id = self.dataset_list[ pos + offset ], function( config ) {
+                    frame.model.set( config );
+                });
+            }
+        }
+        this._loadDataset( dataset_id, function( config ) {
+            self.add( _.extend( { menu: [ { icon     : 'fa fa-chevron-circle-left',
+                                            tooltip  : 'Previous in History',
+                                            onclick  : function( frame ) { _loadDatasetOffset( frame, -1 ) },
+                                            disabled : function() { return self.dataset_list.indexOf( dataset_id ) === 0 } },
+                                          { icon     : 'fa fa-chevron-circle-right',
+                                            tooltip  : 'Next in History',
+                                            onclick  : function( frame ) { _loadDatasetOffset( frame, 1 ) },
+                                            disabled : function() { return self.dataset_list.indexOf( dataset_id ) + 1 >= self.dataset_list.length } } ] }, config ) )
+        });
+    },
+
+    _loadDataset: function( dataset_id, callback ) {
+        var self = this;
         require([ 'mvc/dataset/data' ], function( DATA ) {
             var dataset = new DATA.Dataset( { id : dataset_id } );
             $.when( dataset.fetch() ).then( function() {
-                // Construct frame config based on dataset's type.
-                var frame_config = {
-                        title: dataset.get('name'),
-                        menu: [ {
-                            icon    : 'fa fa-chevron-circle-left',
-                            tooltip : 'Previous in History',
-                            onclick : function() {
-                                alert( 'previous' );
-                            }
-                        }, {
-                            icon    : 'fa fa-chevron-circle-right',
-                            tooltip : 'Next in History',
-                            onclick : function() {
-                                alert( 'next' );
-                            }
-                        } ]
-                    },
-                    // HACK: For now, assume 'tabular' and 'interval' are the only
-                    // modules that contain tabular files. This needs to be replaced
-                    // will a is_datatype() function.
-                    is_tabular = _.find( [ 'tabular', 'interval' ] , function( data_type ) {
-                        return dataset.get( 'data_type' ).indexOf( data_type ) !== -1;
-                    });
-
-                // Use tabular chunked display if dataset is tabular; otherwise load via URL.
-                if ( is_tabular ) {
-                    var tabular_dataset = new DATA.TabularDataset( dataset.toJSON() );
-                    _.extend( frame_config, {
-                        content: function( parent_elt ) {
-                            DATA.createTabularDatasetChunkedView({
-                                model       : tabular_dataset,
-                                parent_elt  : parent_elt,
-                                embedded    : true,
-                                height      : '100%'
-                            });
-                        }
-                    });
-                }
-                else {
-                    _.extend( frame_config, {
-                        url: Galaxy.root + 'datasets/' + dataset.id + '/display/?preview=True'
-                    });
-                }
-                self.add( frame_config );
+                var is_tabular = _.find( [ 'tabular', 'interval' ] , function( data_type ) {
+                    return dataset.get( 'data_type' ).indexOf( data_type ) !== -1;
+                });
+                callback( is_tabular ? {
+                    title   : dataset.get( 'name' ),
+                    url     : null,
+                    content : DATA.createTabularDatasetChunkedView({
+                        model       : new DATA.TabularDataset( dataset.toJSON() ),
+                        embedded    : true,
+                        height      : '100%'
+                    }).$el
+                } : {
+                    title   : dataset.get( 'name' ),
+                    url     : Galaxy.root + 'datasets/' + dataset.id + '/display/?preview=True',
+                    content : null
+                } );
             });
         });
     },
