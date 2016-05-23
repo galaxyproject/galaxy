@@ -41,32 +41,53 @@ return Backbone.View.extend({
         }).on( 'show hide ', function() {
             self.buttonLoad.set( { 'toggle': this.visible, 'icon': this.visible && 'fa-eye' || 'fa-eye-slash' } );
         });
+        this.history_cache = {};
     },
 
     /** Add a dataset to the frames */
     addDataset: function( dataset_id ) {
         var self = this;
-        this.dataset_list = [];
-        Galaxy.currHistoryPanel.collection.find( function( model ) {
-            !model.get( 'deleted' ) && self.dataset_list.push( model.get( 'id' ) );
-        });
-        var _loadDatasetOffset = function( frame, offset ) {
-            var pos = self.dataset_list.indexOf( dataset_id );
-            if ( pos !== -1 && self.dataset_list[ pos + offset ] ) {
-                self._loadDataset( dataset_id = self.dataset_list[ pos + offset ], function( config ) {
+        var current_dataset = null;
+        if ( Galaxy && Galaxy.currHistoryPanel ) {
+            var history_id = Galaxy.currHistoryPanel.collection.historyId;
+            this.history_cache[ history_id ] = { name: Galaxy.currHistoryPanel.model.get( 'name' ), dataset_ids: [] };
+            Galaxy.currHistoryPanel.collection.each( function( model ) {
+                !model.get( 'deleted' ) && model.get( 'visible' ) && self.history_cache[ history_id ].dataset_ids.push( model.get( 'id' ) );
+            });
+        }
+        var _findDataset = function( dataset, offset ) {
+            if ( dataset ) {
+                var history_details = self.history_cache[ dataset.get( 'history_id' ) ];
+                if ( history_details && history_details.dataset_ids ) {
+                    var dataset_list = history_details.dataset_ids;
+                    var pos = dataset_list.indexOf( dataset.get( 'id' ) );
+                    if ( pos !== -1 && pos + offset >= 0 && pos + offset < dataset_list.length ) {
+                        return dataset_list[ pos + offset ];
+                    }
+                }
+            }
+        };
+        var _loadDatasetOffset = function( dataset, offset, frame ) {
+            var new_dataset_id = _findDataset( dataset, offset );
+            if ( new_dataset_id ) {
+                self._loadDataset( new_dataset_id, function( new_dataset, config ) {
+                    current_dataset = new_dataset;
                     frame.model.set( config );
                 });
+            } else {
+                frame.model.trigger( 'change' );
             }
         }
-        this._loadDataset( dataset_id, function( config ) {
+        this._loadDataset( dataset_id, function( dataset, config ) {
+            current_dataset = dataset;
             self.add( _.extend( { menu: [ { icon     : 'fa fa-chevron-circle-left',
                                             tooltip  : 'Previous in History',
-                                            onclick  : function( frame ) { _loadDatasetOffset( frame, -1 ) },
-                                            disabled : function() { return self.dataset_list.indexOf( dataset_id ) === 0 } },
+                                            onclick  : function( frame ) { _loadDatasetOffset( current_dataset, -1, frame ) },
+                                            disabled : function() { return !_findDataset( current_dataset, -1 ) } },
                                           { icon     : 'fa fa-chevron-circle-right',
                                             tooltip  : 'Next in History',
-                                            onclick  : function( frame ) { _loadDatasetOffset( frame, 1 ) },
-                                            disabled : function() { return self.dataset_list.indexOf( dataset_id ) + 1 >= self.dataset_list.length } } ] }, config ) )
+                                            onclick  : function( frame ) { _loadDatasetOffset( current_dataset, 1, frame ) },
+                                            disabled : function() { return !_findDataset( current_dataset, 1 ) } } ] }, config ) )
         });
     },
 
@@ -78,8 +99,13 @@ return Backbone.View.extend({
                 var is_tabular = _.find( [ 'tabular', 'interval' ] , function( data_type ) {
                     return dataset.get( 'data_type' ).indexOf( data_type ) !== -1;
                 });
-                callback( is_tabular ? {
-                    title   : dataset.get( 'name' ),
+                var title = dataset.get( 'name' );
+                var history_details = self.history_cache[ dataset.get( 'history_id' ) ];
+                if ( history_details ) {
+                    title = history_details.name + ': ' + title;
+                }
+                callback( dataset, is_tabular ? {
+                    title   : title,
                     url     : null,
                     content : DATA.createTabularDatasetChunkedView({
                         model       : new DATA.TabularDataset( dataset.toJSON() ),
@@ -87,8 +113,8 @@ return Backbone.View.extend({
                         height      : '100%'
                     }).$el
                 } : {
-                    title   : dataset.get( 'name' ),
-                    url     : Galaxy.root + 'datasets/' + dataset.id + '/display/?preview=True',
+                    title   : title,
+                    url     : Galaxy.root + 'datasets/' + dataset_id + '/display/?preview=True',
                     content : null
                 } );
             });
