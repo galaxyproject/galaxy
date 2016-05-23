@@ -1005,15 +1005,7 @@ class SelectToolParameter( ToolParameter ):
         d = super( SelectToolParameter, self ).to_dict( trans )
 
         # Get options, value.
-        options = []
-        try:
-            options = self.get_options( trans, other_values )
-        except AssertionError:
-            # we dont/cant set other_values (the {} above), so params that require other params to be filled will error:
-            #       required dependency in filter_options
-            #       associated DataToolParam in get_column_list
-            pass
-
+        options = self.get_options( trans, other_values )
         d[ 'options' ] = options
         if options:
             value = options[0][1]
@@ -1195,10 +1187,8 @@ class ColumnListParameter( SelectToolParameter ):
         Generate a select list containing the columns of the associated
         dataset (if found).
         """
-        # No value indicates a configuration error
-        assert self.data_ref in other_values, "Value for associated data reference not found (data_ref)."
         # Get the value of the associated data reference (a dataset)
-        dataset = other_values[ self.data_ref ]
+        dataset = other_values.get( self.data_ref, None )
         # Check if a dataset is selected
         if not dataset:
             return []
@@ -1232,8 +1222,7 @@ class ColumnListParameter( SelectToolParameter ):
         """
         options = []
         if self.usecolnames:  # read first row - assume is a header with metadata useful for making good choices
-            assert self.data_ref in other_values, "Value for associated data reference not found (data_ref)."
-            dataset = other_values[ self.data_ref ]
+            dataset = other_values.get( self.data_ref, None )
             try:
                 head = open( dataset.get_file_name(), 'r' ).readline()
                 cnames = head.rstrip().split( '\t' )
@@ -1260,6 +1249,8 @@ class ColumnListParameter( SelectToolParameter ):
         return SelectToolParameter.get_initial_value( self, trans, other_values )
 
     def get_legal_values( self, trans, other_values ):
+        if self.data_ref not in other_values:
+            raise ValueError( "Value for associated data reference not found (data_ref)." )
         return set( self.get_column_list( trans, other_values ) )
 
     def get_dependencies( self ):
@@ -1493,10 +1484,11 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             return None
         if not isinstance( value, list ):
             value = [ value ]
-        if not( self.repeat ) and len( value ) > 1:
-            assert self.multiple, "Multiple values provided but parameter %s is not expecting multiple values" % self.name
+        if not self.repeat and len( value ) > 1 and not self.multiple:
+            raise ValueError( "Multiple values provided but parameter %s is not expecting multiple values." % self.name )
         rval = []
-        assert legal_values, "Parameter %s requires a value, but has no legal values defined" % self.name
+        if not legal_values:
+            raise ValueError( "Parameter %s requires a value, but has no legal values defined." % self.name )
         for val in value:
             if val not in legal_values:
                 raise ValueError( "An invalid option was selected for %s, %r, please verify" % ( self.name, val ) )
@@ -1533,9 +1525,8 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             for val in value:
                 options = get_options_list( val )
                 rval.extend( options )
-        if len( rval ) > 1:
-            if not self.repeat:
-                assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
+        if not self.repeat and len( rval ) > 1 and not self.multiple:
+            raise ValueError( "Multiple values provided but parameter %s is not expecting multiple values." % self.name )
         rval = self.separator.join( map( value_map, rval ) )
         if self.tool is None or self.tool.options.sanitize:
             if self.sanitizer:
@@ -1600,15 +1591,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         # skip SelectToolParameter (the immediate parent) bc we need to get options in a different way here
         d = ToolParameter.to_dict( self, trans )
-
-        options = []
-        try:
-            options = self.get_options( trans=trans, other_values=other_values )
-        except KeyError:
-            # will sometimes error if self.is_dynamic and self.filtered
-            #   bc we dont/cant fill out other_values above ({})
-            pass
-        d['options'] = options
+        d['options'] = self.get_options( trans=trans, other_values=other_values )
         d['display'] = self.display
         return d
 
