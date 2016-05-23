@@ -164,6 +164,7 @@ var HistoryView = _super.extend(
         _super.prototype.render.call( this, speed );
 
         if( this.model.contents._countSections() > 2 ){
+            console.log( 'list len:',  this.$list().length );
             this.$list().scrollablePages();
             this.$list().on( 'scrollable-pages.page-change', _.bind( this.onPageChange, this ));
         }
