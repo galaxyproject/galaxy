@@ -1578,7 +1578,7 @@ class Tool( object, Dictifiable ):
 
         return tool_dict
 
-    def to_json( self, trans, kwd={}, job=None, workflow_mode=False ):
+    def to_json( self, trans, kwd={}, job=None, workflow_building_mode=False ):
         """
         Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
         """
@@ -1595,7 +1595,7 @@ class Tool( object, Dictifiable ):
             raise exceptions.MessageException( '[history_id=%s] Failed to retrieve history. %s.' % ( history_id, str( e ) ) )
 
         # build request context
-        request_context = WorkRequestContext( app=trans.app, user=trans.user, history=history, workflow_building_mode=workflow_mode )
+        request_context = WorkRequestContext( app=trans.app, user=trans.user, history=history, workflow_building_mode=workflow_building_mode )
 
         # load job parameters into incoming
         tool_message = ''
