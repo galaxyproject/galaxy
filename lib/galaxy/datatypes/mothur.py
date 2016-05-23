@@ -133,7 +133,7 @@ class GroupAbund(Otu):
     def init_meta(self, dataset, copy_from=None):
         Otu.init_meta(self, dataset, copy_from=copy_from)
 
-    def set_meta(self, dataset, overwrite=True, skip=1, max_data_lines=100000, **kwd):
+    def set_meta(self, dataset, overwrite=True, skip=1, **kwd):
         # See if file starts with header line
         if dataset.has_data():
             label_names = set()
@@ -142,7 +142,7 @@ class GroupAbund(Otu):
             comment_lines = 0
             ncols = 0
 
-            headers = get_headers(dataset.file_name, sep='\t', count=max_data_lines)
+            headers = get_headers(dataset.file_name, sep='\t', count=-1)
             for line in headers:
                 if line[0] == 'label' and line[1] == 'Group':
                     skip = 1
@@ -516,7 +516,7 @@ class Group(Tabular):
         Tabular.set_meta(self, dataset, overwrite, skip, max_data_lines)
         group_names = set()
 
-        headers = get_headers(dataset.file_name, sep='\t')
+        headers = get_headers(dataset.file_name, sep='\t', count=-1)
         for line in headers:
             if len(line) > 1:
                 group_names.add(line[1])
@@ -897,7 +897,7 @@ class SffFlow(Tabular):
     def set_meta(self, dataset, overwrite=True, skip=1, max_data_lines=None, **kwd):
         Tabular.set_meta(self, dataset, overwrite, 1, max_data_lines)
 
-        headers = get_headers(dataset.file_name, sep='\t')
+        headers = get_headers(dataset.file_name, sep='\t', count=-1)
         try:
             flow_values = int(headers[0][0])
             dataset.metadata.flow_values = flow_values
