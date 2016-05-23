@@ -10,7 +10,8 @@ define([
     "ui/fa-icon-button",
     "mvc/base-mvc",
     "utils/localization",
-    "ui/search-input"
+    "ui/search-input",
+    "ui/scrollable-pages"
 ], function(
     LIST_VIEW,
     HISTORY_MODEL,
@@ -159,6 +160,37 @@ var HistoryView = _super.extend(
 
     // ------------------------------------------------------------------------ panel rendering
     /** In this override, add a btn to toggle the selectors */
+    render : function( speed ){
+        _super.prototype.render.call( this, speed );
+
+        if( this.model.contents._countSections() > 2 ){
+            this.$list().scrollablePages();
+            this.$list().on( 'scrollable-pages.page-change', _.bind( this.onPageChange, this ));
+        }
+        return this;
+    },
+
+    onPageChange : function( ev ){
+        console.log( '_pageScroll', ev );
+        var section = this.model.contents._lastSection() - ev.newPage;
+        this.model.contents.currentSection = section;
+        console.log( 'section:', section );
+        this.loadAndRenderSection( section );
+    },
+
+    loadAndRenderSection : function( section, options ){
+        options = options || {};
+        var self = this;
+        var contents = self.model.contents;
+        return self.model.contents.fetchSection( section, { silent: true })
+            .done( function(){
+                if( !self.$section( section ).children( '.history-content' ).length ){
+                    self._renderSection( section );
+                }
+            });
+    },
+
+    /** In this override, add a btn to toggle the selectors */
     _buildNewRender : function(){
         var $newRender = _super.prototype._buildNewRender.call( this );
         this._renderSelectButton( $newRender );
@@ -207,7 +239,7 @@ var HistoryView = _super.extend(
     },
 
     // ------------------------------------------------------------------------ client-side pagination
-    /**   */
+    /**  */
     renderItems : function( $whereTo ){
         $( '.tooltip' ).remove();
 
@@ -216,6 +248,7 @@ var HistoryView = _super.extend(
         var self = this;
         var contents = self.model.contents;
         var hidsPerSection = contents.hidsPerSection;
+        var empty = self.model.get( 'contents_active' ).active <= 0;
 
         // self.freeViews();
         self.views = [];
@@ -226,8 +259,14 @@ var HistoryView = _super.extend(
             return self.templates.listItemsSection( section, self );
         }).join( '\n' ));
         // render content views into (only) the current section
-        self.views = self._renderSection( this.model.contents.currentSection, $whereTo );
-        self._renderEmptyMessage( $whereTo ).toggle( !self.views.length );
+        // self.views = self._renderSection( this.model.contents.currentSection, $whereTo );
+        self.views = self._renderSection( contents.currentSection, $whereTo );
+
+        if( empty ){
+            self.$list( $whereTo ).hide();
+            self._renderEmptyMessage( $whereTo );
+        }
+        self.$list().scrollablePages( 'updateViewport' );
 
         self.trigger( 'views:ready', self.views );
         // console.log( '----------------------------------------------------------- renderItems' );
@@ -370,6 +409,7 @@ var HistoryView = _super.extend(
 
         // console.log( 'at index', insertionIndex, 'adding: ' + model );
         var view = self._createItemView( model );
+        self.$list().show();
         self.$emptyMessage().fadeOut( self.fxSpeed );
         self._attachView( view, insertionIndex );
         // console.log( '^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^' );
@@ -449,7 +489,7 @@ var HistoryView = _super.extend(
         // $indicator = $( '<div class="contents-loading-indicator">' + _l( 'Loading...' ) + '</div>' ).hide();
         $indicator = $( this.templates.contentsLoadingIndicator( {}, this )).hide();
         return $indicator
-            .insertAfter( this.$( '> .list-items' ) )
+            .insertAfter( this.$list() )
             .slideDown( speed );
     },
 
@@ -616,7 +656,6 @@ var HistoryView = _super.extend(
         return this.scrollToItem( _.first( this.viewsWhereModel({ hid: hid }) ) );
     },
 
-
     // ........................................................................ misc
     /** Return a string rep of the history */
     toString : function(){
@@ -632,7 +671,7 @@ HistoryView.prototype.templates = (function(){
         // temp container
         '<div>',
             '<div class="controls"></div>',
-            '<div class="list-items"></div>',
+            '<ul class="list-items"></ul>',
             '<div class="empty-message infomessagesmall"></div>',
         '</div>'
     ]);
@@ -707,15 +746,14 @@ HistoryView.prototype.templates = (function(){
     ], 'history' );
 
     var listItemsSectionTemplate = BASE_MVC.wrapTemplate([
-        '<% if( section.number === view.model.contents.currentSection ){ %>',
-            '<li class="list-items-section current-section" data-section="<%- section.number %>"></li>',
-        '<% } else { %>',
-            '<li class="list-items-section" data-section="<%- section.number %>">',
+        '<% var currClass = section.number === view.model.contents.currentSection? " current-section" : ""; %>',
+        '<li class="list-items-section<%- currClass %>" data-section="<%- section.number %>">',
+            '<% if( view.model.contents._countSections() > 2 ){ %>',
                 '<a class="list-items-section-link" href="javascript:void(0)">',
                     '<%- section.first %>  ', _l( "to" ), ' <%- section.last %>',
                 '</a>',
-            '</li>',
-        '<% } %>',
+            '<% } %>',
+        '</li>',
     ], 'section' );
 
     return _.extend( _.clone( _super.prototype.templates ), {

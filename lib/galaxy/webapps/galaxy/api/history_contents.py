@@ -546,7 +546,8 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         """
         rval = []
 
-        history = self.history_manager.get_accessible( self.decode_id( history_id ), trans.user, current_history=trans.history )
+        history = self.history_manager.get_accessible( self.decode_id( history_id ), trans.user,
+            current_history=trans.history )
 
         filter_params = self.parse_filter_params( kwd )
         filters = self.history_contents_filters.parse_filters( filter_params )

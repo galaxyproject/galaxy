@@ -322,6 +322,7 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         query = ( self._session().query( component_class )
             .filter( component_class.id.in_( id_list ) )
             .options( undefer( '_metadata' ) )
+            .options( eagerload( 'dataset.actions' ) )
             .options( eagerload( 'tags' ) )
             .options( eagerload( 'annotations' ) ) )
         return dict( ( row.id, row ) for row in query.all() )

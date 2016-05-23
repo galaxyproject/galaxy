@@ -516,7 +516,6 @@ var HidSectionedHistoryContents = HistoryContents.extend({
         if( this.order === 'hid' ){
             sectionNumbers.reverse();
         }
-        // console.log( '_mapSectionRanges:', sectionCount, sectionNumbers );
         return sectionNumbers.map( function( sectionNumber ){
             return mapFn( _.extend( self._getSectionRange( sectionNumber ), {
                 number: sectionNumber,
@@ -651,7 +650,7 @@ var HidSectionedHistoryContents = HistoryContents.extend({
 
     // ------------------------------------------------------------------------ sectioned fetching
     /** @type {Integer} number of contents/hid entries per section/page displayed */
-    hidsPerSection : 500,
+    hidsPerSection : 100,
 
     fetchFirst : function( options ){
 _.extend( options || {}, { silent: true });

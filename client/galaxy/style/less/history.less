@@ -3,20 +3,29 @@
     .flex-vertical-container;
 
     > .controls {
-        .flex-column;
-        flex-basis: 103px;
-        border-bottom: 1px solid @layout-border-color;
+        // .flex-column;
+        // min-height: 113px;
+        // min-height: 0px;
     }
 
     > .list-items {
         .flex-column;
-        overflow: auto;
+        .flex-horizontal-container;
+        overflow-x: auto;
+        overflow-y: hidden;
     }
 
+    .list-items .list-items-section {
+        display: inline-block;
+        flex: 1 0 auto;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
 
     > .controls {
+        .clear;
         margin: 0px;
-        padding: 10px 10px 0px 10px;
+        padding: 10px 10px 8px 10px;
 
         .messages {
             margin-bottom: 0px;
@@ -45,11 +54,12 @@
             }
         }
         .history-size {
-            display: inline-block;
-            margin-top: 4px;
+            float: left;
+            margin: 4px 0px;
             color: black;
         }
         .actions {
+            // display: block;
             margin-bottom: 0px;
         }
 
@@ -127,37 +137,9 @@
         border-radius : 3px;
     }
 
-    .list-items .list-items-section {
-        @section-height: 24px;
-        list-style: none;
-        border: 1px solid lightgrey;
-        & > a {
-            display: inline-block;
-            width: 100%;
 
-            min-height: @section-height;
-            padding: 0px 10px 0px 10px;
-            // font-size: 80%;
-            line-height: @section-height;
-            color: grey;
-            text-align: right;
-            text-decoration: none;
-            &:hover {
-                background: white;
-                text-decoration: underline;
-                color: black;
-            }
-        }
-        &.fisheye-focus {
-            background: @brand-primary;
-            & > a {
-                color: white;
-            }
-        }
-    }
-
-    .list-item.history-content+.list-items-section {
-        border-top-color: @border-default-color;
+    .list-items {
+        border-top: 1px solid @border-default-color;
     }
 
     // display only a top border on all
@@ -174,6 +156,16 @@
         &.current-section {
             border-width: 0px;
         }
+    }
+
+    .list-items .list-items-section-link {
+        display: inline-block;
+        width: 100%;
+        text-decoration: none;
+        font-size: 80%;
+        color: grey;
+        text-align: center;
+        // margin-left: 8px;
     }
 
     > .empty-message {
