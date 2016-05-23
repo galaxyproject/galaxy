@@ -171,7 +171,9 @@ class ToolParameter( object, Dictifiable ):
         Convert a value to a text representation suitable for displaying to
         the user
         """
-        return unicodify( value )
+        if value:
+            return unicodify( value )
+        return "Not available."
 
     def to_param_dict_string( self, value, other_values={} ):
         """Called via __str__ when used in the Cheetah template"""
@@ -986,7 +988,9 @@ class SelectToolParameter( ToolParameter ):
             for t, v, s in options:
                 if v in value:
                     rval.append( t )
-        return "\n".join( rval )
+        if rval:
+            return "\n".join( rval )
+        return "Nothing selected."
 
     def get_dependencies( self ):
         """
@@ -1484,7 +1488,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                     value = value.split( "\n" )
             return value
         if not value and not self.optional:
-            raise ValueError( "An invalid option was selected for %s, 'None', please verify" % (self.name) )
+            raise ValueError( "An invalid option was selected for %s, please verify." % (self.name) )
         if not value:
             return None
         if not isinstance( value, list ):
@@ -1583,7 +1587,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             rval = []
             for val in value:
                 rval.append( get_option_display( val, self.options ) or val )
-        return "\n".join( map( str, rval ) )
+        if rval:
+            return "\n".join( map( str, rval ) )
+        return "Nothing selected."
 
     def get_dependencies( self ):
         """
@@ -1937,8 +1943,11 @@ class DataToolParameter( BaseDataToolParameter ):
                     raise ValueError( "The previously selected dataset has entered an unusable state" )
         if not self.multiple:
             if len( values ) > 1:
-                raise ValueError( "More than one dataset supplied to single input dataset parameter.")
-            rval = values[ 0 ]
+                raise ValueError( "More than one dataset supplied to single input dataset parameter." )
+            if len( values ) > 0:
+                rval = values[ 0 ]
+            else:
+                raise ValueError( "Invalid dataset supplied to single input dataset parameter." )
         return rval
 
     def to_param_dict_string( self, value, other_values={} ):
@@ -1954,7 +1963,7 @@ class DataToolParameter( BaseDataToolParameter ):
                 return ", ".join( [ "%s: %s" % ( item.hid, item.name ) for item in value ] )
             except:
                 pass
-        return "No dataset"
+        return "No dataset."
 
     def validate( self, value, trans=None ):
         dataset_count = 0
