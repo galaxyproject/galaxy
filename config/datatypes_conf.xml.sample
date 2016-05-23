@@ -318,9 +318,9 @@
     <datatype extension="sif" type="galaxy.datatypes.graph:Sif" display_in_upload="true"/>
     <!-- datatypes storing triples -->
     <datatype extension="triples" type="galaxy.datatypes.triples:Triples" display_in_upload="false"/>
-    <datatype extension="nt" type="galaxy.datatypes.triples:NTriples" display_in_upload="true"/> 
-    <datatype extension="n3" type="galaxy.datatypes.triples:N3" display_in_upload="true"/>  
-    <datatype extension="ttl" type="galaxy.datatypes.triples:Turtle" display_in_upload="true"/> 
+    <datatype extension="nt" type="galaxy.datatypes.triples:NTriples" display_in_upload="true"/>
+    <datatype extension="n3" type="galaxy.datatypes.triples:N3" display_in_upload="true"/>
+    <datatype extension="ttl" type="galaxy.datatypes.triples:Turtle" display_in_upload="true"/>
     <datatype extension="rdf" type="galaxy.datatypes.triples:Rdf" display_in_upload="true"/>
     <datatype extension="jsonld" type="galaxy.datatypes.triples:Jsonld" display_in_upload="true"/>
     <!-- Excel datatypes -->
@@ -511,6 +511,7 @@
     <datatype extension="mothur.align.report" type="galaxy.datatypes.mothur:AlignReport" display_in_upload="true"/>
     <datatype extension="mothur.filter" type="galaxy.datatypes.mothur:LaneMask" display_in_upload="true"/>
     <datatype extension="mothur.dist" type="galaxy.datatypes.mothur:DistanceMatrix" display_in_upload="true"/>
+    <datatype extension="mothur.tre" type="galaxy.datatypes.data:Text" subclass="True" display_in_upload="true"/>
     <datatype extension="mothur.pair.dist" type="galaxy.datatypes.mothur:PairwiseDistanceMatrix" display_in_upload="true"/>
     <datatype extension="mothur.square.dist" type="galaxy.datatypes.mothur:SquareDistanceMatrix" display_in_upload="true"/>
     <datatype extension="mothur.lower.dist" type="galaxy.datatypes.mothur:LowerTriangleDistanceMatrix" display_in_upload="true"/>
