@@ -443,6 +443,8 @@ class Tool( object, Dictifiable ):
             else:
                 raise Exception( "Missing tool 'version' for tool with id '%s' at '%s'" % (self.id, tool_source) )
 
+        self.edam_operations = tool_source.parse_edam_operations()
+
         # Support multi-byte tools
         self.is_multi_byte = tool_source.parse_is_multi_byte()
         # Legacy feature, ignored by UI.
@@ -1538,6 +1540,8 @@ class Tool( object, Dictifiable ):
 
         # Basic information
         tool_dict = super( Tool, self ).to_dict()
+
+        tool_dict["edam_operations"] = self.edam_operations
 
         # Fill in ToolShedRepository info
         if hasattr(self, 'tool_shed') and self.tool_shed:
