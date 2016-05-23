@@ -7,6 +7,11 @@ from galaxy.util import which
 
 STDOUT_INDICATOR = "-"
 
+try:
+    from shlex import quote as shell_quote
+except ImportError:
+    from pipes import quote as shell_quote
+
 
 def redirecting_io(sys=_sys):
     """Predicate to determine if we are redicting I/O in process."""
@@ -73,11 +78,23 @@ def execute(cmds):
     return _wait(cmds, shell=False)
 
 
+def argv_to_str(command_argv):
+    """Convert an argv command list to a string for shell subprocess.
+
+    If None appears in the command list it is simply excluded.
+
+    Arguments are quoted with shlex.quote. That said, this method is not meant to be
+    used in security critical paths of code and should not be used to sanitize
+    code.
+    """
+    return " ".join([shell_quote(c) for c in command_argv if c is not None])
+
+
 def _wait(cmds, **popen_kwds):
     p = subprocess.Popen(cmds, **popen_kwds)
     stdout, stderr = p.communicate()
     if p.returncode != 0:
-        raise CommandLineException(" ".join(cmds), stdout, stderr)
+        raise CommandLineException(argv_to_str(cmds), stdout, stderr)
     return stdout
 
 
@@ -127,6 +144,7 @@ class CommandLineException(Exception):
 
 
 __all__ = [
+    'argv_to_str',
     'CommandLineException',
     'download_command',
     'execute',
@@ -134,5 +152,6 @@ __all__ = [
     'redirecting_io',
     'shell',
     'shell_process',
+    'shell_quote',
     'which',
 ]
