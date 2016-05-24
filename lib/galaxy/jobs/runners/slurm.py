@@ -97,7 +97,7 @@ class SlurmJobRunner( DRMAAJobRunner ):
                         else:
                             f.write(line)
                     f.truncate()
-        except Exception as e:
+        except Exception:
             log.exception( '(%s/%s) Failure in SLURM _complete_terminal_job(), job final state will be: %s', ajs.job_wrapper.get_id_tag(), ajs.job_id, drmaa_state )
         # by default, finish the job with the state from drmaa
         return super( SlurmJobRunner, self )._complete_terminal_job( ajs, drmaa_state=drmaa_state )
