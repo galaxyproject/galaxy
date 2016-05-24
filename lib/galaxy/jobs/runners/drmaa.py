@@ -220,6 +220,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         Handle a job upon its termination in the DRM. This method is meant to
         be overridden by subclasses to improve post-mortem and reporting of
         failures.
+        Returns True if job was not actually terminal, None otherwise.
         """
         if drmaa_state == drmaa.JobState.FAILED:
             if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
