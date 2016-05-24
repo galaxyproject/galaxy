@@ -87,7 +87,7 @@ var View = Backbone.View.extend({
     add: function(options) {
         var self = this;
         if (this.$('[id="' + options.id + '"]').length === 0) {
-            if (Utils.validate(options.id)) {
+            if (!Utils.isEmpty(options.id)) {
                 var $el = $(this._templateRow({
                     id      : options.id,
                     name    : options.name

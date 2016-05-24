@@ -11,7 +11,7 @@ from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import MessageException
 from galaxy.model import tool_shed_install as install_model
 from galaxy.model.util import pgcalc
-from galaxy.util import nice_size, sanitize_text
+from galaxy.util import nice_size, sanitize_text, url_get
 from galaxy.util.odict import odict
 from galaxy.web import url_for
 from galaxy.web.base.controller import BaseUIController, UsesQuotaMixin
@@ -539,7 +539,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                                                                   webapp=params.webapp,
                                                                   message=sanitize_text( message ),
                                                                   status='done' ) )
-            except MessageException, e:
+            except MessageException as e:
                 params.message = str( e )
                 params.status = 'error'
         in_users = map( int, params.in_users )
@@ -712,7 +712,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
             for id in galaxy.util.listify( params.id ):
                 try:
                     quota.append( self.get_quota( trans, id ) )
-                except MessageException, e:
+                except MessageException as e:
                     messages.append( str( e ) )
             if messages:
                 return None, trans.response.send_redirect( web.url_for( controller='admin',
@@ -723,7 +723,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         else:
             try:
                 quota = self.get_quota( trans, params.id, deleted=False )
-            except MessageException, e:
+            except MessageException as e:
                 return None, trans.response.send_redirect( web.url_for( controller='admin',
                                                                         action='quotas',
                                                                         webapp=params.webapp,
@@ -737,7 +737,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                                                                         webapp=params.webapp,
                                                                         message=sanitize_text( message ),
                                                                         status='done' ) )
-            except MessageException, e:
+            except MessageException as e:
                 params.message = e.err_msg
                 params.status = e.type
         return quota, params
@@ -770,9 +770,9 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         tree = galaxy.util.parse_xml( tools_xml_file_path )
         root = tree.getroot()
         tool_shed = root.get( 'name' )
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed )
+        shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed )
         repo_name_dependency_tups = []
-        if tool_shed_url:
+        if shed_url:
             for elem in root:
                 if elem.tag == 'repository':
                     tool_dependencies = []
@@ -781,7 +781,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                     changeset_revision = elem.get( 'changeset_revision' )
                     params = dict( name=repository_name, owner='devteam', changeset_revision=changeset_revision )
                     pathspec = [ 'repository', 'get_tool_dependencies' ]
-                    text = common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=pathspec, params=params )
+                    text = url_get( shed_url, password_mgr=self.app.tool_shed_registry.url_auth( shed_url ), pathspec=pathspec, params=params )
                     if text:
                         tool_dependencies_dict = encoding_util.tool_shed_decode( text )
                         for dependency_key, requirements_dict in tool_dependencies_dict.items():

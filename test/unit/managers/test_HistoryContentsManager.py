@@ -5,6 +5,7 @@ import os
 import imp
 import unittest
 import random
+import datetime
 
 test_utils = imp.load_source( 'test_utils',
     os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
@@ -30,10 +31,10 @@ user4_data = dict( email='user4@user4.user4', username='user4', password=default
 
 
 # =============================================================================
-class HistoryAsContainerTestCase( BaseTestCase, CreatesCollectionsMixin ):
+class HistoryAsContainerBaseTestCase( BaseTestCase, CreatesCollectionsMixin ):
 
     def set_up_managers( self ):
-        super( HistoryAsContainerTestCase, self ).set_up_managers()
+        super( HistoryAsContainerBaseTestCase, self ).set_up_managers()
         self.history_manager = HistoryManager( self.app )
         self.hda_manager = hdas.HDAManager( self.app )
         self.collection_manager = collections.DatasetCollectionManager( self.app )
@@ -48,6 +49,10 @@ class HistoryAsContainerTestCase( BaseTestCase, CreatesCollectionsMixin ):
         hdca = self.collection_manager.create( self.trans, history, name, 'list',
             element_identifiers=self.build_element_identifiers( hdas ) )
         return hdca
+
+
+# =============================================================================
+class HistoryAsContainerTestCase( HistoryAsContainerBaseTestCase ):
 
     def test_contents( self ):
         user2 = self.user_manager.create( **user2_data )
@@ -302,6 +307,49 @@ class HistoryAsContainerTestCase( BaseTestCase, CreatesCollectionsMixin ):
         filters = [ column( 'type_id' ).in_([ u'dataset-2', u'dataset_collection-2' ]) ]
         self.assertEqual( self.contents_manager.contents( history, filters=filters ), [ contents[1], contents[6] ])
 
+
+class HistoryContentsFilterParserTestCase( HistoryAsContainerBaseTestCase ):
+
+    def set_up_managers( self ):
+        super( HistoryContentsFilterParserTestCase, self ).set_up_managers()
+        self.filter_parser = history_contents.HistoryContentsFilters( self.app )
+
+    def test_date_parser( self ):
+        # -- seconds and milliseconds from epoch
+        self.log( 'should be able to parse epoch seconds' )
+        self.assertEqual( self.filter_parser.parse_date( '1234567890' ),
+            datetime.datetime.fromtimestamp( 1234567890 ).isoformat( sep=' ' ) )
+
+        self.log( 'should be able to parse floating point epoch seconds.milliseconds' )
+        self.assertEqual( self.filter_parser.parse_date( '1234567890.123' ),
+            datetime.datetime.fromtimestamp( 1234567890.123 ).isoformat( sep=' ' ) )
+
+        self.log( 'should error if bad epoch is used' )
+        self.assertRaises( ValueError, self.filter_parser.parse_date, '0x000234' )
+
+        # -- datetime strings
+        self.log( 'should allow date alone' )
+        self.assertEqual( self.filter_parser.parse_date( '2009-02-13' ), '2009-02-13' )
+
+        self.log( 'should allow date and time' )
+        self.assertEqual( self.filter_parser.parse_date( '2009-02-13 18:13:00' ), '2009-02-13 18:13:00' )
+        self.assertEqual( self.filter_parser.parse_date( '2009-02-13T18:13:00' ), '2009-02-13 18:13:00' )
+        self.assertEqual( self.filter_parser.parse_date( '2009-02-13T18:13:00Z' ), '2009-02-13 18:13:00' )
+
+        self.log( 'should allow date and time with milliseconds' )
+        self.assertEqual( self.filter_parser.parse_date( '2009-02-13 18:13:00.123' ), '2009-02-13 18:13:00.123' )
+        self.assertEqual( self.filter_parser.parse_date( '2009-02-13T18:13:00.123' ), '2009-02-13 18:13:00.123' )
+        self.assertEqual( self.filter_parser.parse_date( '2009-02-13T18:13:00.123Z' ), '2009-02-13 18:13:00.123' )
+
+        self.log( 'should error if timezone is added' )
+        self.assertRaises( ValueError, self.filter_parser.parse_date, '2009-02-13T18:13:00.123+0700' )
+
+        self.log( 'should error if locale is used' )
+        self.assertRaises( ValueError, self.filter_parser.parse_date, 'Fri Feb 13 18:31:30 2009' )
+
+        self.log( 'should error if wrong milliseconds format is used' )
+        self.assertRaises( ValueError, self.filter_parser.parse_date, '2009-02-13 18:13:00.' )
+        self.assertRaises( ValueError, self.filter_parser.parse_date, '2009-02-13 18:13:00.1234567' )
 
 # =============================================================================
 if __name__ == '__main__':

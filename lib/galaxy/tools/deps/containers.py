@@ -107,7 +107,11 @@ class ContainerFinder(object):
     def __default_container_id(self, container_type, destination_info):
         if not self.__container_type_enabled(container_type, destination_info):
             return None
-        return destination_info.get("%s_default_container_id" % container_type)
+        key = "%s_default_container_id" % container_type
+        # Also allow docker_image...
+        if key not in destination_info:
+            key = "%s_image" % container_type
+        return destination_info.get(key)
 
     def __destination_container(self, container_id, container_type, tool_info, destination_info, job_info):
         # TODO: ensure destination_info is dict-like
@@ -298,7 +302,7 @@ class DockerContainer(Container):
             defaults = "$job_directory:ro,$tool_directory:ro,$job_directory/outputs:rw,$working_directory:rw"
         elif self.app_info.outputs_to_working_directory:
             # Should need default_file_path (which is a course estimate given
-            # object stores anyway.
+            # object stores anyway).
             defaults = "$galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:ro"
         else:
             defaults = "$galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:rw"

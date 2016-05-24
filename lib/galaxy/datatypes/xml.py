@@ -94,6 +94,8 @@ class CisML( GenericXml ):
 
 class Phyloxml( GenericXml ):
     """Format for defining phyloxml data http://www.phyloxml.org/"""
+    edam_data = "data_0872"
+    edam_format = "format_3159"
     file_ext = "phyloxml"
 
     def set_peek( self, dataset, is_multi_byte=False ):

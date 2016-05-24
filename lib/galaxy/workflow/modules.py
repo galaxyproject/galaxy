@@ -1,7 +1,6 @@
 """
 Modules used in building workflows
 """
-import copy
 import logging
 from json import dumps, loads
 from xml.etree.ElementTree import Element
@@ -529,7 +528,7 @@ class InputDataModule( InputModule ):
 
     def get_runtime_inputs( self, filter_set=['data'] ):
         label = self.state.get( "name", "Input Dataset" )
-        return dict( input=DataToolParameter( None, Element( "param", name="input", label=label, multiple=True, type="data", format=', '.join(filter_set) ), self.trans ) )
+        return dict( input=DataToolParameter( None, Element( "param", name="input", label=label, multiple=False, type="data", format=', '.join(filter_set) ), self.trans ) )
 
 
 class InputDataCollectionModule( InputModule ):
@@ -773,7 +772,7 @@ class ToolModule( WorkflowModule ):
             if tool_id != module.tool_id:
                 message += "The tool (id '%s') specified in this step is not available. Using the tool with id %s instead." % (tool_id, module.tool_id)
             if d.get('tool_version', 'Unspecified') != module.get_tool_version():
-                message += "%s: using version '%s' instead of version '%s' specified in this workflow." % ( tool_id, d.get( 'tool_version', 'Unspecified' ), module.get_tool_version() )
+                message += "%s: using version '%s' instead of version '%s' specified in this workflow." % ( tool_id, module.get_tool_version(), d.get( 'tool_version', 'Unspecified' ) )
             if message:
                 log.debug(message)
                 module.version_changes.append(message)
@@ -905,22 +904,23 @@ class ToolModule( WorkflowModule ):
         data_inputs = []
 
         def callback( input, prefixed_name, prefixed_label, **kwargs ):
-            if isinstance( input, DataToolParameter ):
-                data_inputs.append( dict(
-                    name=prefixed_name,
-                    label=prefixed_label,
-                    multiple=input.multiple,
-                    extensions=input.extensions,
-                    input_type="dataset", ) )
-            if isinstance( input, DataCollectionToolParameter ):
-                data_inputs.append( dict(
-                    name=prefixed_name,
-                    label=prefixed_label,
-                    multiple=input.multiple,
-                    input_type="dataset_collection",
-                    collection_types=input.collection_types,
-                    extensions=input.extensions,
-                ) )
+            if not hasattr( input, 'hidden' ) or not input.hidden:
+                if isinstance( input, DataToolParameter ):
+                    data_inputs.append( dict(
+                        name=prefixed_name,
+                        label=prefixed_label,
+                        multiple=input.multiple,
+                        extensions=input.extensions,
+                        input_type="dataset", ) )
+                elif isinstance( input, DataCollectionToolParameter ):
+                    data_inputs.append( dict(
+                        name=prefixed_name,
+                        label=prefixed_label,
+                        multiple=input.multiple,
+                        input_type="dataset_collection",
+                        collection_types=input.collection_types,
+                        extensions=input.extensions,
+                    ) )
 
         visit_input_values( self.tool.inputs, self.state.inputs, callback )
         return data_inputs
@@ -965,11 +965,8 @@ class ToolModule( WorkflowModule ):
                         input_dicts.append( { "name": name, "description": "runtime parameter for tool %s" % self.get_name() } )
         return input_dicts
 
-    def get_post_job_actions( self, incoming=None):
-        if incoming is None:
-            return self.post_job_actions
-        else:
-            return ActionBox.handle_incoming(incoming)
+    def get_post_job_actions( self, incoming ):
+        return ActionBox.handle_incoming( incoming )
 
     def get_config_form( self ):
         self.add_dummy_datasets()
@@ -977,8 +974,7 @@ class ToolModule( WorkflowModule ):
                                          tool=self.tool, values=self.state.inputs, errors=( self.errors or {} ) )
 
     def update_state( self, incoming ):
-        self.label = incoming.get( 'label' )
-        self.state.inputs = copy.deepcopy( incoming )
+        self.recover_state( incoming )
 
     def check_and_update_state( self ):
         inputs = self.state.inputs
@@ -1064,7 +1060,7 @@ class ToolModule( WorkflowModule ):
             try:
                 # Replace DummyDatasets with historydatasetassociations
                 visit_input_values( tool.inputs, execution_state.inputs, callback, no_replacement_value=NO_REPLACEMENT )
-            except KeyError, k:
+            except KeyError as k:
                 message_template = "Error due to input mapping of '%s' in '%s'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review your workflow."
                 message = message_template % (tool.name, k.message)
                 raise exceptions.MessageException( message )
@@ -1123,6 +1119,7 @@ class ToolModule( WorkflowModule ):
 
         # Combine workflow and runtime post job actions into the effective post
         # job actions for this execution.
+        flush_required = False
         effective_post_job_actions = step.post_job_actions[:]
         for key, value in self.runtime_post_job_actions.iteritems():
             effective_post_job_actions.append( self.__to_pja( key, value, None ) )
@@ -1130,7 +1127,11 @@ class ToolModule( WorkflowModule ):
             if pja.action_type in ActionBox.immediate_actions:
                 ActionBox.execute( self.trans.app, self.trans.sa_session, pja, job, replacement_dict )
             else:
-                job.add_post_job_action( pja )
+                pjaa = model.PostJobActionAssociation( pja, job_id=job.id )
+                self.trans.sa_session.add(pjaa)
+                flush_required = True
+        if flush_required:
+            self.trans.sa_session.flush()
 
     def add_dummy_datasets( self, connections=None):
         if connections:

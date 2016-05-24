@@ -124,8 +124,11 @@
         href_to_user_items = href_to_user_items.replace( 'xxx', 'f-username')
     %>
 
-    <div class="unified-panel-header" unselectable="on">
+    <div class="unified-panel-header" unselectable="on" style="overflow: hidden">
         <div class="unified-panel-header-inner">
+            <div style="float: right">
+                ${self.render_item_links( item )}
+            </div>
             %if item.published:
                     <a href="${href_to_all_items}">Published ${item_plural}</a> |
                     <a href="${href_to_user_items}">${item.user.username}</a>
@@ -137,10 +140,6 @@
                 Private ${get_class_display_name( item.__class__ )}
             %endif
             | ${get_item_name( item ) | h}
-
-            <div style="float: right">
-                ${self.render_item_links( item )}
-            </div>
         </div>
     </div>
 

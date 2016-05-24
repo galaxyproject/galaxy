@@ -223,7 +223,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                 if params.get( 'create_request_button', False ):
                     return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                                       action='browse_requests',
-                                                                      message=message ,
+                                                                      message=message,
                                                                       status='done' ) )
                 elif params.get( 'add_sample_button', False ):
                     request_id = trans.security.encode_id( request.id )
@@ -695,7 +695,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                                                           action='edit_basic_request_info',
                                                           cntrller=cntrller,
                                                           id=request_id,
-                                                          message=message ,
+                                                          message=message,
                                                           status=status ) )
 
     @web.expose
@@ -1100,7 +1100,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                 # Get the library
                 library = trans.sa_session.query( trans.model.Library ) \
                                           .filter( and_( trans.model.Library.table.c.name == row[1],
-                                                    trans.model.Library.table.c.deleted == false() ) ) \
+                                                   trans.model.Library.table.c.deleted == false() ) ) \
                                           .first()
                 if library:
                     # Get the folder
@@ -1176,7 +1176,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                                                          workflow_id=workflow_id,
                                                          workflow_select_field=workflow_select_field,
                                                          field_values=field_values ) )
-        except Exception, e:
+        except Exception as e:
             if str( e ) == "'unicode' object has no attribute 'file'":
                 message = "Select a file"
             else:
@@ -1525,7 +1525,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                     history_id = trans.security.encode_id( sample.history.id )
                 history = self.__get_history(trans, history_id)
                 wf_tag = 'sample_%i_workflow_id' % index
-                workflow_id = util.restore_text( params.get( wf_tag , '' ) )
+                workflow_id = util.restore_text( params.get( wf_tag, '' ) )
                 if not workflow_id and sample.workflow:
                     workflow_id = trans.security.encode_id( sample.workflow['id'] )
                     workflow_dict = sample.workflow
@@ -1535,7 +1535,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                     workflow = self.__get_workflow(trans, workflow_id)
                     if workflow:
                         workflow_dict = {'id': workflow.id,
-                                         'name' : workflow.name,
+                                         'name': workflow.name,
                                          'mappings': {}}
                         for k, v in kwd.iteritems():
                             kwd_tag = "%s_" % wf_tag
@@ -1602,7 +1602,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                 history_id = trans.security.encode_id( sample.history.id )
             history = self.__get_history(trans, history_id)
             wf_tag = 'sample_%i_workflow_id' % index
-            workflow_id = util.restore_text( params.get( wf_tag , '' ) )
+            workflow_id = util.restore_text( params.get( wf_tag, '' ) )
             if not workflow_id and sample.workflow:
                 workflow_id = trans.security.encode_id( sample.workflow['id'] )
                 workflow_dict = sample.workflow
@@ -1612,7 +1612,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                 workflow = self.__get_workflow(trans, workflow_id)
                 if workflow:
                     workflow_dict = {'id': workflow.id,
-                                     'name' : workflow.name,
+                                     'name': workflow.name,
                                      'mappings': {}}
                     for k, v in kwd.iteritems():
                         kwd_tag = "%s_" % wf_tag

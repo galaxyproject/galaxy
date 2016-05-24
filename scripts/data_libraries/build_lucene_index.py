@@ -38,7 +38,7 @@ def main( ini_file ):
 
 
 def build_index( search_url, dataset_file ):
-    url = "%s/index?%s" % ( search_url, urllib.urlencode( { "docfile" : dataset_file } ) )
+    url = "%s/index?%s" % ( search_url, urllib.urlencode( { "docfile": dataset_file } ) )
     request = urllib2.Request( url )
     request.get_method = lambda: "PUT"
     urllib2.urlopen( request )

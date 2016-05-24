@@ -37,6 +37,7 @@ log = logging.getLogger(__name__)
 
 class Image( data.Data ):
     """Class describing an image"""
+    edam_data = 'data_2968'
     edam_format = "format_3547"
 
     def set_peek( self, dataset, is_multi_byte=False ):
@@ -64,6 +65,7 @@ class Image( data.Data ):
 
 
 class Jpg( Image ):
+    edam_format = "format_3579"
     file_ext = "jpg"
 
     def sniff(self, filename, image=None):
@@ -72,6 +74,7 @@ class Jpg( Image ):
 
 
 class Png( Image ):
+    edam_format = "format_3603"
     file_ext = "png"
 
     def sniff(self, filename, image=None):
@@ -80,6 +83,7 @@ class Png( Image ):
 
 
 class Tiff( Image ):
+    edam_format = "format_3591"
     file_ext = "tiff"
 
     def sniff(self, filename, image=None):
@@ -88,6 +92,7 @@ class Tiff( Image ):
 
 
 class Bmp( Image ):
+    edam_format = "format_3592"
     file_ext = "bmp"
 
     def sniff(self, filename, image=None):
@@ -105,6 +110,7 @@ class Gif( Image ):
 
 
 class Im( Image ):
+    edam_format = "format_3593"
     file_ext = "im"
 
     def sniff(self, filename, image=None):
@@ -113,6 +119,7 @@ class Im( Image ):
 
 
 class Pcd( Image ):
+    edam_format = "format_3594"
     file_ext = "pcd"
 
     def sniff(self, filename, image=None):
@@ -121,6 +128,7 @@ class Pcd( Image ):
 
 
 class Pcx( Image ):
+    edam_format = "format_3595"
     file_ext = "pcx"
 
     def sniff(self, filename, image=None):
@@ -129,6 +137,7 @@ class Pcx( Image ):
 
 
 class Ppm( Image ):
+    edam_format = "format_3596"
     file_ext = "ppm"
 
     def sniff(self, filename, image=None):
@@ -137,6 +146,7 @@ class Ppm( Image ):
 
 
 class Psd( Image ):
+    edam_format = "format_3597"
     file_ext = "psd"
 
     def sniff(self, filename, image=None):
@@ -145,6 +155,7 @@ class Psd( Image ):
 
 
 class Xbm( Image ):
+    edam_format = "format_3598"
     file_ext = "xbm"
 
     def sniff(self, filename, image=None):
@@ -153,6 +164,7 @@ class Xbm( Image ):
 
 
 class Xpm( Image ):
+    edam_format = "format_3599"
     file_ext = "xpm"
 
     def sniff(self, filename, image=None):
@@ -161,6 +173,7 @@ class Xpm( Image ):
 
 
 class Rgb( Image ):
+    edam_format = "format_3600"
     file_ext = "rgb"
 
     def sniff(self, filename, image=None):
@@ -169,6 +182,7 @@ class Rgb( Image ):
 
 
 class Pbm( Image ):
+    edam_format = "format_3601"
     file_ext = "pbm"
 
     def sniff(self, filename, image=None):
@@ -177,6 +191,7 @@ class Pbm( Image ):
 
 
 class Pgm( Image ):
+    edam_format = "format_3602"
     file_ext = "pgm"
 
     def sniff(self, filename, image=None):
@@ -194,6 +209,7 @@ class Eps( Image ):
 
 
 class Rast( Image ):
+    edam_format = "format_3605"
     file_ext = "rast"
 
     def sniff(self, filename, image=None):

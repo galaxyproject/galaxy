@@ -108,8 +108,8 @@ class ToolBox( BaseGalaxyToolBox ):
 
     def create_tool( self, config_file, repository_id=None, guid=None, **kwds ):
         try:
-            tool_source = get_tool_source( config_file, getattr( self.app.config, "enable_beta_tool_formats", False ) )
-        except Exception, e:
+            tool_source = get_tool_source( config_file, enable_beta_formats=getattr( self.app.config, "enable_beta_tool_formats", False ) )
+        except Exception as e:
             # capture and log parsing errors
             global_tool_errors.add_error(config_file, "Tool XML parsing", e)
             raise e
@@ -294,7 +294,7 @@ class Tool( object, Dictifiable ):
         # Parse XML element containing configuration
         try:
             self.parse( tool_source, guid=guid )
-        except Exception, e:
+        except Exception as e:
             global_tool_errors.add_error(config_file, "Tool Loading", e)
             raise e
         self.history_manager = histories.HistoryManager( app )
@@ -407,6 +407,8 @@ class Tool( object, Dictifiable ):
         """
         :returns: bool -- Whether the user is allowed to access the tool.
         """
+        if self.require_login and user is None:
+            return False
         return True
 
     def parse( self, tool_source, guid=None ):
@@ -440,6 +442,8 @@ class Tool( object, Dictifiable ):
                 self.version = "1.0.0"
             else:
                 raise Exception( "Missing tool 'version' for tool with id '%s' at '%s'" % (self.id, tool_source) )
+
+        self.edam_operations = tool_source.parse_edam_operations()
 
         # Support multi-byte tools
         self.is_multi_byte = tool_source.parse_is_multi_byte()
@@ -940,7 +944,7 @@ class Tool( object, Dictifiable ):
                 # Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy.
                 try:
                     help_text = suc.set_image_paths( self.app, self.repository_id, help_text )
-                except Exception, e:
+                except Exception as e:
                     log.exception( "Exception in parse_help, so images may not be properly displayed:\n%s" % str( e ) )
             try:
                 self.__help = Template( rst_to_html(help_text), input_encoding='utf-8',
@@ -1075,7 +1079,7 @@ class Tool( object, Dictifiable ):
         if 'rerun_remap_job_id' in incoming:
             try:
                 rerun_remap_job_id = trans.app.security.decode_id( incoming[ 'rerun_remap_job_id' ] )
-            except Exception, exception:
+            except Exception as exception:
                 log.error( str( exception ) )
                 raise exceptions.MessageException( 'Failure executing tool (attempting to rerun invalid job).' )
 
@@ -1097,6 +1101,8 @@ class Tool( object, Dictifiable ):
         for expanded_incoming in expanded_incomings:
             params = {}
             errors = {}
+            if self.input_translator:
+                self.input_translator.translate( expanded_incoming )
             if not self.check_values:
                 # If `self.check_values` is false we don't do any checking or
                 # processing on input  This is used to pass raw values
@@ -1116,7 +1122,7 @@ class Tool( object, Dictifiable ):
         log.debug( 'Validated and populated state for tool request %s' % validation_timer )
         # If there were errors, we stay on the same page and display them
         if any( all_errors ):
-            raise exceptions.MessageException( err_data=all_errors[ 0 ] )
+            raise exceptions.MessageException( ', '.join( [ msg for msg in all_errors[ 0 ].itervalues() ] ), err_data=all_errors[ 0 ] )
         else:
             execution_tracker = execute_job( trans, self, all_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info )
             if execution_tracker.successful_jobs:
@@ -1136,10 +1142,10 @@ class Tool( object, Dictifiable ):
         """
         try:
             job, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id, mapping_over_collection=mapping_over_collection, execution_cache=execution_cache )
-        except httpexceptions.HTTPFound, e:
+        except httpexceptions.HTTPFound as e:
             # if it's a paste redirect exception, pass it up the stack
             raise e
-        except Exception, e:
+        except Exception as e:
             log.exception('Exception caught while attempting tool execution:')
             message = 'Error executing tool: %s' % str(e)
             return False, message
@@ -1236,9 +1242,10 @@ class Tool( object, Dictifiable ):
             if error:
                 if update_values:
                     try:
+                        previous_value = value
                         value = input.get_initial_value( request_context, context )
                         if not prefixed_name.startswith( '__' ):
-                            messages[ prefixed_name ] = '%s Using default: \'%s\'.' % ( error, value )
+                            messages[ prefixed_name ] = error if previous_value == value else '%s Using default: \'%s\'.' % ( error, value )
                         parent[ input.name ] = value
                     except:
                         messages[ prefixed_name ] = 'Attempt to replace invalid value for \'%s\' failed.' % ( prefixed_label )
@@ -1248,13 +1255,14 @@ class Tool( object, Dictifiable ):
         visit_input_values( self.inputs, values, validate_inputs )
         return messages
 
-    def build_dependency_shell_commands( self, job_directory=None ):
+    def build_dependency_shell_commands( self, job_directory=None, metadata=False ):
         """Return a list of commands to be run to populate the current environment to include this tools requirements."""
         return self.app.toolbox.dependency_manager.dependency_shell_commands(
             self.requirements,
             installed_tool_dependencies=self.installed_tool_dependencies,
             tool_dir=self.tool_dir,
             job_directory=job_directory,
+            metadata=metadata,
         )
 
     @property
@@ -1327,7 +1335,7 @@ class Tool( object, Dictifiable ):
             code = self.get_hook( hook_name )
             if code:
                 return code( *args, **kwargs )
-        except Exception, e:
+        except Exception as e:
             original_message = ''
             if len( e.args ):
                 original_message = e.args[0]
@@ -1426,7 +1434,7 @@ class Tool( object, Dictifiable ):
         return output_collect.collect_dynamic_collections( self, output, **kwds )
 
     def to_archive(self):
-        tool = self.tool
+        tool = self
         tarball_files = []
         temp_files = []
         tool_xml = open( os.path.abspath( tool.config_file ), 'r' ).read()
@@ -1533,6 +1541,8 @@ class Tool( object, Dictifiable ):
         # Basic information
         tool_dict = super( Tool, self ).to_dict()
 
+        tool_dict["edam_operations"] = self.edam_operations
+
         # Fill in ToolShedRepository info
         if hasattr(self, 'tool_shed') and self.tool_shed:
             tool_dict['tool_shed_repository'] = {
@@ -1568,7 +1578,7 @@ class Tool( object, Dictifiable ):
 
         return tool_dict
 
-    def to_json( self, trans, kwd={}, job=None, workflow_mode=False ):
+    def to_json( self, trans, kwd={}, job=None, workflow_building_mode=False ):
         """
         Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
         """
@@ -1581,11 +1591,11 @@ class Tool( object, Dictifiable ):
                 history = trans.get_history()
             if history is None:
                 raise exceptions.MessageException( 'History unavailable. Please specify a valid history id' )
-        except Exception, e:
+        except Exception as e:
             raise exceptions.MessageException( '[history_id=%s] Failed to retrieve history. %s.' % ( history_id, str( e ) ) )
 
         # build request context
-        request_context = WorkRequestContext( app=trans.app, user=trans.user, history=history, workflow_building_mode=workflow_mode )
+        request_context = WorkRequestContext( app=trans.app, user=trans.user, history=history, workflow_building_mode=workflow_building_mode )
 
         # load job parameters into incoming
         tool_message = ''
@@ -1643,7 +1653,8 @@ class Tool( object, Dictifiable ):
         # expand incoming parameters (parameters might trigger multiple tool executions,
         # here we select the first execution only in order to resolve dynamic parameters)
         expanded_incomings, _ = expand_meta_parameters( trans, self, params.__dict__ )
-        params.__dict__ = expanded_incomings[ 0 ]
+        if expanded_incomings:
+            params.__dict__ = expanded_incomings[ 0 ]
 
         # do param translation here, used by datasource tools
         if self.input_translator:
@@ -1658,12 +1669,6 @@ class Tool( object, Dictifiable ):
         tool_model = self.to_dict( request_context )
         tool_model[ 'inputs' ] = {}
         populate_model( self.inputs, state_inputs, tool_model[ 'inputs' ] )
-
-        # sanitize tool state
-        def value_to_basic( input, value, parent, **kwargs ):
-            parent[ input.name ] = input.value_to_basic( value, self.app )
-
-        visit_input_values( self.inputs, state_inputs, value_to_basic )
 
         # create tool help
         tool_help = ''
@@ -1690,10 +1695,14 @@ class Tool( object, Dictifiable ):
             'versions'      : tool_versions,
             'requirements'  : [ { 'name' : r.name, 'version' : r.version } for r in self.requirements ],
             'errors'        : state_errors,
-            'state_inputs'  : state_inputs,
+            'state_inputs'  : params_to_strings( self.inputs, state_inputs, self.app ),
             'job_id'        : trans.security.encode_id( job.id ) if job else None,
             'job_remap'     : self._get_job_remap( job ),
-            'history_id'    : trans.security.encode_id( history.id )
+            'history_id'    : trans.security.encode_id( history.id ),
+            'display'       : self.display_interface,
+            'action'        : url_for( self.action ),
+            'method'        : self.method,
+            'enctype'       : self.enctype
         })
         return tool_model
 
@@ -1753,11 +1762,25 @@ class Tool( object, Dictifiable ):
                     rep_prefix = '%s_%d|' % ( key, rep_index )
                     self.populate_state( request_context, input.inputs, incoming, rep_state, errors, prefix=rep_prefix, context=context )
             else:
-                param_value = incoming.get( key, state.get( input.name ) )
+                param_value = self._get_incoming_value( incoming, key, state.get( input.name ) )
                 value, error = check_param( request_context, input, param_value, context )
                 if error:
                     errors[ key ] = error
                 state[ input.name ] = value
+
+    def _get_incoming_value( self, incoming, key, default ):
+        """
+        Fetch value from incoming dict directly or check special nginx upload
+        created variants of this key.
+        """
+        if '__' + key + '__is_composite' in incoming:
+            composite_keys = incoming[ '__' + key + '__keys' ].split()
+            value = dict()
+            for composite_key in composite_keys:
+                value[ composite_key ] = incoming[ key + '_' + composite_key ]
+            return value
+        else:
+            return incoming.get( key, default )
 
     def _get_job_remap( self, job):
         if job:
@@ -1765,7 +1788,7 @@ class Tool( object, Dictifiable ):
                 try:
                     if [ hda.dependent_jobs for hda in [ jtod.dataset for jtod in job.output_datasets ] if hda.dependent_jobs ]:
                         return True
-                except Exception, exception:
+                except Exception as exception:
                     log.error( str( exception ) )
                     pass
         return False

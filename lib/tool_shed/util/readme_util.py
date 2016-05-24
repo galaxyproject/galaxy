@@ -7,7 +7,7 @@ from mako.template import Template
 
 import tool_shed.util.shed_util_common as suc
 from galaxy import web
-from galaxy.util import rst_to_html, unicodify
+from galaxy.util import rst_to_html, unicodify, url_get
 from tool_shed.util import basic_util, common_util, hg_util
 
 log = logging.getLogger( __name__ )
@@ -40,7 +40,7 @@ def build_readme_files_dict( app, repository, changeset_revision, metadata, tool
                         f = open( full_path_to_readme_file, 'r' )
                         text = unicodify( f.read() )
                         f.close()
-                    except Exception, e:
+                    except Exception as e:
                         log.exception( "Error reading README file '%s' from disk: %s" % ( str( relative_path_to_readme_file ), str( e ) ) )
                         text = None
                     if text:
@@ -53,7 +53,7 @@ def build_readme_files_dict( app, repository, changeset_revision, metadata, tool
                                 text_of_reasonable_length = suc.set_image_paths( app,
                                                                                  app.security.encode_id( repository.id ),
                                                                                  text_of_reasonable_length )
-                            except Exception, e:
+                            except Exception as e:
                                 log.exception( "Exception in build_readme_files_dict, so images may not be properly displayed:\n%s" % str( e ) )
                             finally:
                                 lock.release()
@@ -78,7 +78,7 @@ def build_readme_files_dict( app, repository, changeset_revision, metadata, tool
                             try:
                                 text = unicodify( fctx.data() )
                                 readme_files_dict[ readme_file_name ] = basic_util.size_string( text )
-                            except Exception, e:
+                            except Exception as e:
                                 log.exception( "Error reading README file '%s' from repository manifest: %s" %
                                                ( str( relative_path_to_readme_file ), str( e ) ) )
     return readme_files_dict
@@ -97,7 +97,7 @@ def get_readme_files_dict_for_display( app, tool_shed_url, repo_info_dict ):
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
     params = dict( name=name, owner=repository_owner, changeset_revision=changeset_revision )
     pathspec = [ 'repository', 'get_readme_files' ]
-    raw_text = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
+    raw_text = url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
     readme_files_dict = json.loads( raw_text )
     return readme_files_dict
 

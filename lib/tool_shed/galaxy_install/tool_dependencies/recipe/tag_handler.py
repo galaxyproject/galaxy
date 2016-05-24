@@ -3,7 +3,7 @@ import os
 import tempfile
 
 from galaxy.tools.deps.resolvers import INDETERMINATE_DEPENDENCY
-from galaxy.util import listify
+from galaxy.util import listify, url_get
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import shed_util_common as suc
@@ -103,7 +103,7 @@ class SyncDatabase( object ):
         try:
             log.debug( "Returning from sync_database_with_file_system with tool_dependency %s, can_install_tool_dependency %s." %
                 ( str( tool_dependency.name ), str( can_install_tool_dependency ) ) )
-        except Exception, e:
+        except Exception as e:
             log.debug( str( e ) )
         return tool_dependency, can_install_tool_dependency
 
@@ -249,7 +249,7 @@ class Repository( RecipeTag, SyncDatabase ):
                        owner=owner,
                        changeset_revision=changeset_revision )
         pathspec = [ 'repository', 'get_tool_dependencies_config_contents' ]
-        text = common_util.tool_shed_get( self.app, tool_shed_url, pathspec=pathspec, params=params )
+        text = url_get( tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
         if text:
             # Write the contents to a temporary file on disk so it can be reloaded and parsed.
             fh = tempfile.NamedTemporaryFile( 'wb', prefix="tmp-toolshed-cttdc"  )
@@ -523,7 +523,7 @@ class SetEnvironment( RecipeTag ):
             attr_tups_of_dependencies_for_install = [ ( td.name, td.version, td.type ) for td in tool_dependency_db_records ]
         try:
             self.set_environment( package_elem, tool_shed_repository, attr_tups_of_dependencies_for_install )
-        except Exception, e:
+        except Exception as e:
             error_message = "Error setting environment for tool dependency: %s" % str( e )
             log.debug( error_message )
         return tool_dependency, proceed_with_install, action_elem_tuples

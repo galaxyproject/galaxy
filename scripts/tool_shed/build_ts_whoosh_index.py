@@ -198,7 +198,7 @@ def load_one_dir( path ):
 
 
 def get_sa_session_and_needed_config_settings( path_to_tool_shed_config ):
-    conf_parser = ConfigParser.ConfigParser( { 'here' : os.getcwd() } )
+    conf_parser = ConfigParser.ConfigParser( { 'here': os.getcwd() } )
     conf_parser.read( path_to_tool_shed_config )
     kwds = dict()
     for key, value in conf_parser.items( "app:main" ):

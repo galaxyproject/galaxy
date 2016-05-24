@@ -20,23 +20,18 @@ class Folder( object ):
         self.current_repository_successful_installations = []
         self.description = None
         self.datatypes = []
-        self.failed_tests = []
         self.folders = []
         self.invalid_data_managers = []
         self.invalid_repository_dependencies = []
         self.invalid_tool_dependencies = []
         self.invalid_tools = []
         self.missing_test_components = []
-        self.not_tested = []
-        self.passed_tests = []
         self.readme_files = []
         self.repository_dependencies = []
         self.repository_installation_errors = []
         self.repository_successful_installations = []
         self.test_environments = []
         self.tool_dependencies = []
-        self.tool_dependency_installation_errors = []
-        self.tool_dependency_successful_installations = []
         self.valid_tools = []
         self.valid_data_managers = []
         self.workflows = []
@@ -223,7 +218,7 @@ class UtilityContainerManager( object ):
                     name = data_manager_dict.get( 'name', '' )
                     version = data_manager_dict.get( 'version', '' )
                     data_tables = ", ".join( data_manager_dict.get( 'data_tables', '' ) )
-                except Exception, e:
+                except Exception as e:
                     name = str( e )
                     version = 'unknown'
                     data_tables = 'unknown'
@@ -282,7 +277,7 @@ class UtilityContainerManager( object ):
                     subclass = datatypes_dict.get( 'subclass', '' )
                     converters = num_converters
                     display_app_containers = num_display_app_containers
-                except Exception, e:
+                except Exception as e:
                     extension = str( e )
                     type = 'unknown'
                     mimetype = 'unknown'
@@ -471,7 +466,7 @@ class UtilityContainerManager( object ):
                         try:
                             requirement_name = str( requirement_dict.get( 'name', 'unknown' ) )
                             requirement_type = str( requirement_dict.get( 'type', 'unknown' ) )
-                        except Exception, e:
+                        except Exception as e:
                             requirement_name = str( e )
                             requirement_type = 'unknown'
                         requirements_str += '%s (%s), ' % ( requirement_name, requirement_type )
@@ -484,7 +479,7 @@ class UtilityContainerManager( object ):
                     name = str( tool_dict.get( 'name', 'unknown' ) )
                     description = str( tool_dict.get( 'description', '' ) )
                     version = str( tool_dict.get( 'version', 'unknown' ) )
-                except Exception, e:
+                except Exception as e:
                     tool_config = str( e )
                     tool_id = 'unknown'
                     name = 'unknown'
@@ -557,7 +552,7 @@ class UtilityContainerManager( object ):
                             type = set_environment_dict[ 'type' ]
                             repository_id = set_environment_dict.get( 'repository_id', None )
                             td_id = set_environment_dict.get( 'tool_dependency_id', None )
-                        except Exception, e:
+                        except Exception as e:
                             name = str( e )
                             type = 'unknown'
                             repository_id = 'unknown'
@@ -565,7 +560,7 @@ class UtilityContainerManager( object ):
                         if self.app.name == 'galaxy':
                             try:
                                 installation_status = set_environment_dict.get( 'status', 'Never installed' )
-                            except Exception, e:
+                            except Exception as e:
                                 installation_status = str( e )
                         else:
                             installation_status = None
@@ -585,7 +580,7 @@ class UtilityContainerManager( object ):
                         type = requirements_dict[ 'type' ]
                         repository_id = requirements_dict.get( 'repository_id', None )
                         td_id = requirements_dict.get( 'tool_dependency_id', None )
-                    except Exception, e:
+                    except Exception as e:
                         name = str( e )
                         version = 'unknown'
                         type = 'unknown'
@@ -594,7 +589,7 @@ class UtilityContainerManager( object ):
                     if self.app.name == 'galaxy':
                         try:
                             installation_status = requirements_dict.get( 'status', 'Never installed' )
-                        except Exception, e:
+                        except Exception as e:
                             installation_status = str( e )
                     else:
                         installation_status = None

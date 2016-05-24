@@ -29,11 +29,11 @@ def main():
         # Sort the two files based on specified fields
         os.system("sort -t '	' -k %d,%d -o %s %s" % (field1, field1, tmpfile1.name, infile1))
         os.system("sort -t '	' -k %d,%d -o %s %s" % (field2, field2, tmpfile2.name, infile2))
-    except Exception, exc:
+    except Exception as exc:
         stop_err( 'Initialization error -> %s' % str(exc) )
 
     option = ""
-    for line in file(tmpfile1.name):
+    for line in open(tmpfile1.name):
         line = line.strip()
         if line:
             elems = line.split('\t')
@@ -69,7 +69,7 @@ def main():
 
     try:
         os.system(cmdline)
-    except Exception, exj:
+    except Exception as exj:
         stop_err('Error joining the two datasets -> %s' % str(exj))
 
 if __name__ == "__main__":

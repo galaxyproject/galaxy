@@ -41,23 +41,19 @@ var Collection = Backbone.Collection.extend({
             url             : 'library/index',
             tooltip         : 'Access published resources',
             menu            : [{
-                    title   : 'Data Libraries deprecated',
-                    url     : 'library/index'
-                },{
                     title   : 'Data Libraries',
-                    url     : 'library/list',
-                    divider : true
+                    url     : 'library/list'
                 },{
-                    title   : 'Published Histories',
+                    title   : 'Histories',
                     url     : 'history/list_published'
                 },{
-                    title   : 'Published Workflows',
+                    title   : 'Workflows',
                     url     : 'workflow/list_published'
                 },{
-                    title   : 'Published Visualizations',
+                    title   : 'Visualizations',
                     url     : 'visualization/list_published'
                 },{
-                    title   : 'Published Pages',
+                    title   : 'Pages',
                     url     : 'page/list_published'
             }]
         });
@@ -97,7 +93,12 @@ var Collection = Backbone.Collection.extend({
                     title   : 'Saved Visualizations',
                     url     : 'visualization/list',
                     target  : '_frame'
-            }]
+                },{
+                    title   : 'Interactive Environments',
+                    url     : 'visualization/gie_list',
+                    target  : 'galaxy_main'
+                }
+            ]
         });
 
         //

@@ -4,12 +4,15 @@ Classes encapsulating Galaxy tool parameters.
 import re
 from json import dumps, loads
 
-from basic import RuntimeValue
+from basic import RuntimeValue, DataCollectionToolParameter, DataToolParameter, SelectToolParameter
 from grouping import Conditional, Repeat, Section, UploadDataset
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import json_fix
 
 REPLACE_ON_TRUTHY = object()
+
+# Some tools use the code tag and access the code base, expecting certain tool parameters to be available here.
+__all__ = [ DataCollectionToolParameter, DataToolParameter, SelectToolParameter ]
 
 
 def visit_input_values( inputs, input_values, callback, name_prefix='', label_prefix='', parent_prefix='', context=None, no_replacement_value=REPLACE_ON_TRUTHY ):
@@ -24,7 +27,7 @@ def visit_input_values( inputs, input_values, callback, name_prefix='', label_pr
     >>> from xml.etree.ElementTree import XML
     >>> from galaxy.util.bunch import Bunch
     >>> from galaxy.util.odict import odict
-    >>> from galaxy.tools.parameters.basic import TextToolParameter
+    >>> from galaxy.tools.parameters.basic import TextToolParameter, BooleanToolParameter
     >>> from galaxy.tools.parameters.grouping import Repeat
     >>> a = TextToolParameter( None, XML( '<param name="a"/>' ) )
     >>> b = Repeat()
@@ -32,7 +35,7 @@ def visit_input_values( inputs, input_values, callback, name_prefix='', label_pr
     >>> d = Repeat()
     >>> e = TextToolParameter( None, XML( '<param name="e"/>' ) )
     >>> f = Conditional()
-    >>> g = TextToolParameter( None, XML( '<param name="g"/>' ) )
+    >>> g = BooleanToolParameter( None, XML( '<param name="g"/>' ) )
     >>> h = TextToolParameter( None, XML( '<param name="h"/>' ) )
     >>> i = TextToolParameter( None, XML( '<param name="i"/>' ) )
     >>> b.name = 'b'
@@ -45,12 +48,16 @@ def visit_input_values( inputs, input_values, callback, name_prefix='', label_pr
     >>>
     >>> def visitor( input, value, prefix, prefixed_name, **kwargs ):
     ...     print 'name=%s, prefix=%s, prefixed_name=%s, value=%s' % ( input.name, prefix, prefixed_name, value )
-    >>> visit_input_values( odict([('a',a),('b',b)]), odict([ ('a', 1), ('b', [ odict([('c', 3), ( 'd', [odict([ ('e',5), ('f', odict([ ('g','true'), ('h',7) ])) ]) ])]) ]) ]), visitor )
+    >>> inputs = odict([('a',a),('b',b)])
+    >>> nested = odict([ ('a', 1), ('b', [ odict([('c', 3), ( 'd', [odict([ ('e', 5), ('f', odict([ ('g', True), ('h', 7) ])) ]) ])]) ]) ])
+    >>> visit_input_values( inputs, nested, visitor )
     name=a, prefix=, prefixed_name=a, value=1
     name=c, prefix=b_0|, prefixed_name=b_0|c, value=3
     name=e, prefix=b_0|d_0|, prefixed_name=b_0|d_0|e, value=5
-    name=g, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f|g, value=true
+    name=g, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f|g, value=True
     name=h, prefix=b_0|d_0|, prefixed_name=b_0|d_0|f|h, value=7
+    >>> params_from_strings( inputs, params_to_strings( inputs, nested, None ), None )[ 'b' ][ 0 ][ 'd' ][ 0 ][ 'f' ][ 'g' ] is True
+    True
     """
     def callback_helper( input, input_values, name_prefix, label_prefix, parent_prefix, context=None, error=None ):
         args = {
@@ -122,7 +129,7 @@ def check_param( trans, param, incoming_value, param_values ):
                     return [ value, None ]
         value = param.from_json( value, trans, param_values )
         param.validate( value, trans )
-    except ValueError, e:
+    except ValueError as e:
         error = str( e )
     return value, error
 

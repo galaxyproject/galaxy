@@ -1,14 +1,13 @@
+"""Functionality for converting a Format 2 workflow into a standard Galaxy workflow."""
+from __future__ import print_function
+
+from collections import OrderedDict
+import json
 import os
 import sys
-
-import yaml
-import json
 import uuid
 
-try:
-    from collections import OrderedDict
-except ImportError:
-    from galaxy.util.odict import odict as OrderedDict
+import yaml
 
 
 STEP_TYPES = [
@@ -32,11 +31,13 @@ RUN_ACTIONS_TO_STEPS = {
 
 
 def yaml_to_workflow(has_yaml, galaxy_interface, workflow_directory):
+    """Convert a Format 2 workflow into standard Galaxy format from supplied stream."""
     as_python = yaml.load(has_yaml)
     return python_to_workflow(as_python, galaxy_interface, workflow_directory)
 
 
 def python_to_workflow(as_python, galaxy_interface, workflow_directory):
+    """Convert a Format 2 workflow into standard Galaxy format from supplied dictionary."""
     if workflow_directory is None:
         workflow_directory = os.path.abspath(".")
 
@@ -58,7 +59,7 @@ def _python_to_workflow(as_python, conversion_context):
     if as_python["class"] != "GalaxyWorkflow":
         raise Exception("This is not a not a valid Galaxy workflow definition, 'class' must be 'GalaxyWorkflow'.")
 
-    __ensure_defaults(as_python, {
+    _ensure_defaults(as_python, {
         "a_galaxy_workflow": "true",
         "format-version": "0.1",
         "annotation": "",
@@ -77,7 +78,7 @@ def _python_to_workflow(as_python, conversion_context):
     if isinstance(steps, list):
         steps_as_dict = OrderedDict()
         for i, step in enumerate(steps):
-            steps_as_dict[ str(i) ] = step
+            steps_as_dict[str(i)] = step
             if "id" not in step:
                 step["id"] = i
 
@@ -216,11 +217,11 @@ def transform_parameter_input(context, step):
 
 def transform_input(context, step, default_name):
     default_name = step.get("label", default_name)
-    __ensure_defaults( step, {
+    _ensure_defaults(step, {
         "annotation": "",
     })
 
-    __ensure_inputs_connections(step)
+    _ensure_inputs_connections(step)
 
     if "inputs" not in step:
         step["inputs"] = [{}]
@@ -231,7 +232,7 @@ def transform_input(context, step, default_name):
     else:
         name = default_name
 
-    __ensure_defaults( step_inputs, {
+    _ensure_defaults(step_inputs, {
         "name": name,
         "description": "",
     })
@@ -242,16 +243,16 @@ def transform_input(context, step, default_name):
         if attrib in step:
             tool_state[attrib] = step[attrib]
 
-    __populate_tool_state(step, tool_state)
+    _populate_tool_state(step, tool_state)
 
 
 def transform_pause(context, step, default_name="Pause for dataset review"):
     default_name = step.get("label", default_name)
-    __ensure_defaults( step, {
+    _ensure_defaults(step, {
         "annotation": "",
     })
 
-    __ensure_inputs_connections(step)
+    _ensure_inputs_connections(step)
 
     if "inputs" not in step:
         step["inputs"] = [{}]
@@ -262,43 +263,43 @@ def transform_pause(context, step, default_name="Pause for dataset review"):
     else:
         name = default_name
 
-    __ensure_defaults( step_inputs, {
+    _ensure_defaults(step_inputs, {
         "name": name,
     })
     tool_state = {
         "name": name
     }
 
-    connect = __init_connect_dict(step)
-    __populate_input_connections(context, step, connect)
-    __populate_tool_state(step, tool_state)
+    connect = _init_connect_dict(step)
+    _populate_input_connections(context, step, connect)
+    _populate_tool_state(step, tool_state)
 
 
 def transform_subworkflow(context, step):
-    __ensure_defaults( step, {
+    _ensure_defaults(step, {
         "annotation": "",
     })
 
-    __ensure_inputs_connections(step)
+    _ensure_inputs_connections(step)
 
     tool_state = {
     }
 
-    connect = __init_connect_dict(step)
-    __populate_input_connections(context, step, connect)
-    __populate_tool_state(step, tool_state)
+    connect = _init_connect_dict(step)
+    _populate_input_connections(context, step, connect)
+    _populate_tool_state(step, tool_state)
 
 
 def transform_tool(context, step):
     if "tool_id" not in step:
         raise Exception("Tool steps must define a tool_id.")
 
-    __ensure_defaults( step, {
+    _ensure_defaults(step, {
         "annotation": "",
         "name": step['tool_id'],
         "post_job_actions": {},
         "tool_version": None,
-    } )
+    })
     post_job_actions = step["post_job_actions"]
 
     tool_state = {
@@ -306,7 +307,7 @@ def transform_tool(context, step):
         "__page__": 0,
     }
 
-    connect = __init_connect_dict(step)
+    connect = _init_connect_dict(step)
 
     def append_link(key, value):
         if key not in connect:
@@ -314,7 +315,7 @@ def transform_tool(context, step):
         connect[key].append(value["$link"])
 
     def replace_links(value, key=""):
-        if __is_link(value):
+        if _is_link(value):
             append_link(key, value)
             # Filled in by the connection, so to force late
             # validation of the field just mark as RuntimeValue.
@@ -326,7 +327,7 @@ def transform_tool(context, step):
         if isinstance(value, dict):
             new_values = {}
             for k, v in value.iteritems():
-                new_key = __join_prefix(key, k)
+                new_key = _join_prefix(key, k)
                 new_values[k] = replace_links(v, new_key)
             return new_values
         elif isinstance(value, list):
@@ -334,11 +335,11 @@ def transform_tool(context, step):
             for i, v in enumerate(value):
                 # If we are a repeat we need to modify the key
                 # but not if values are actually $links.
-                if __is_link(v):
+                if _is_link(v):
                     append_link(key, v)
                     new_values.append(None)
                 else:
-                    new_key = "%s_%d" % ( key, i )
+                    new_key = "%s_%d" % (key, i)
                     new_values.append(replace_links(v, new_key))
             return new_values
         else:
@@ -353,16 +354,16 @@ def transform_tool(context, step):
         del step["state"]
 
     # Fill in input connections
-    __populate_input_connections(context, step, connect)
+    _populate_input_connections(context, step, connect)
 
-    __populate_tool_state(step, tool_state)
+    _populate_tool_state(step, tool_state)
 
     # Handle outputs.
     if "outputs" in step:
         for name, output in step.get("outputs", {}).items():
             if output.get("hide", False):
                 action_name = "HideDatasetAction%s" % name
-                action = __action(
+                action = _action(
                     "HideDatasetAction",
                     name,
                 )
@@ -372,7 +373,7 @@ def transform_tool(context, step):
                 new_name = output.get("rename")
                 action_name = "RenameDatasetAction%s" % name
                 arguments = dict(newname=new_name)
-                action = __action(
+                action = _action(
                     "RenameDatasetAction",
                     name,
                     arguments,
@@ -382,7 +383,7 @@ def transform_tool(context, step):
             if output.get("delete_intermediate_datasets", None):
                 action_name = "DeleteIntermediatesAction%s" % name
                 arguments = dict()
-                action = __action(
+                action = _action(
                     "DeleteIntermediatesAction",
                     name,
                     arguments,
@@ -435,7 +436,7 @@ class ConversionContext(object):
         return self.subworkflow_conversion_contexts[step_id]
 
 
-def __action(type, name, arguments={}):
+def _action(type, name, arguments={}):
     return {
         "action_arguments": arguments,
         "action_type": type,
@@ -443,11 +444,11 @@ def __action(type, name, arguments={}):
     }
 
 
-def __is_link(value):
+def _is_link(value):
     return isinstance(value, dict) and "$link" in value
 
 
-def __join_prefix(prefix, key):
+def _join_prefix(prefix, key):
     if prefix:
         new_key = "%s|%s" % (prefix, key)
     else:
@@ -455,7 +456,7 @@ def __join_prefix(prefix, key):
     return new_key
 
 
-def __init_connect_dict(step):
+def _init_connect_dict(step):
     if "connect" not in step:
         step["connect"] = {}
 
@@ -464,15 +465,15 @@ def __init_connect_dict(step):
     return connect
 
 
-def __populate_input_connections(context, step, connect):
-    __ensure_inputs_connections(step)
+def _populate_input_connections(context, step, connect):
+    _ensure_inputs_connections(step)
     input_connections = step["input_connections"]
     is_subworkflow_step = step.get("type") == "subworkflow"
 
     for key, values in connect.iteritems():
         input_connection_value = []
         if not isinstance(values, list):
-            values = [ values ]
+            values = [values]
         for value in values:
             if not isinstance(value, dict):
                 if key == "$step":
@@ -489,24 +490,29 @@ def __populate_input_connections(context, step, connect):
         input_connections[key] = input_connection_value
 
 
-def __ensure_inputs_connections(step):
+def _ensure_inputs_connections(step):
     if "input_connections" not in step:
         step["input_connections"] = {}
 
 
-def __ensure_defaults(in_dict, defaults):
+def _ensure_defaults(in_dict, defaults):
     for key, value in defaults.items():
         if key not in in_dict:
-            in_dict[ key ] = value
+            in_dict[key] = value
 
 
-def __populate_tool_state(step, tool_state):
+def _populate_tool_state(step, tool_state):
     step["tool_state"] = json.dumps(tool_state)
 
 
 def main(argv):
-    print json.dumps(yaml_to_workflow(argv[0]))
+    print(json.dumps(yaml_to_workflow(argv[0])))
 
 
 if __name__ == "__main__":
     main(sys.argv)
+
+__all__ = [
+    'yaml_to_workflow',
+    'python_to_workflow',
+]

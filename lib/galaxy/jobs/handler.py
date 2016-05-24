@@ -186,7 +186,7 @@ class JobHandlerQueue( object ):
         jobs (either from the database or from its own queue), then iterates
         over all new and waiting jobs to check the state of the jobs each
         depends on. If the job has dependencies that have not finished, it
-        it goes to the waiting queue. If the job has dependencies with errors,
+        goes to the waiting queue. If the job has dependencies with errors,
         it is marked as having errors and removed from the queue. If the job
         belongs to an inactive user it is ignored.
         Otherwise, the job is dispatched.
@@ -364,7 +364,7 @@ class JobHandlerQueue( object ):
         except JobNotReadyException as e:
             job_state = e.job_state or JOB_WAIT
             return job_state, None
-        except Exception, e:
+        except Exception as e:
             failure_message = getattr( e, 'failure_message', DEFAULT_JOB_PUT_FAILURE_MESSAGE )
             if failure_message == DEFAULT_JOB_PUT_FAILURE_MESSAGE:
                 log.exception( 'Failed to generate job destination' )
@@ -384,7 +384,7 @@ class JobHandlerQueue( object ):
                     usage = self.app.quota_agent.get_usage( user=job.user, history=job.history )
                     if usage > quota:
                         return JOB_USER_OVER_QUOTA, job_destination
-                except AssertionError, e:
+                except AssertionError as e:
                     pass  # No history, should not happen with an anon user
         return state, job_destination
 
@@ -743,7 +743,7 @@ class DefaultJobDispatcher( object ):
         runner_name = url.split(':', 1)[0]
         try:
             return self.job_runners[runner_name].url_to_destination(url)
-        except Exception, e:
+        except Exception as e:
             log.exception("Unable to convert legacy job runner URL '%s' to job destination, destination will be the '%s' runner with no params: %s" % (url, runner_name, e))
             return JobDestination(runner=runner_name)
 

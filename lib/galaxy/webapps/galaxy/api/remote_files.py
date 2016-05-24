@@ -6,7 +6,7 @@ import time
 import hashlib
 from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
-from galaxy.util import jstree
+from galaxy.util import jstree, unicodify
 from galaxy.web.base.controller import BaseAPIController
 from operator import itemgetter
 
@@ -50,7 +50,7 @@ class RemoteFilesAPIController( BaseAPIController ):
                     try:
                         userdir_jstree = self.__create_jstree( full_import_dir, disable )
                         response = userdir_jstree.jsonData()
-                    except Exception, exception:
+                    except Exception as exception:
                         log.debug( str( exception ) )
                         raise exceptions.InternalServerError( 'Could not create tree representation of the given folder: ' + str( full_import_dir ) )
                     if not response:
@@ -60,7 +60,7 @@ class RemoteFilesAPIController( BaseAPIController ):
                 else:
                     try:
                         response = self.__load_all_filenames( full_import_dir )
-                    except Exception, exception:
+                    except Exception as exception:
                         log.error( 'Could not get user import files: %s', str( exception ), exc_info=True )
                         raise exceptions.InternalServerError( 'Could not get the files from your user directory folder.' )
             else:
@@ -74,7 +74,7 @@ class RemoteFilesAPIController( BaseAPIController ):
                     try:
                         importdir_jstree = self.__create_jstree( base_dir, disable )
                         response = importdir_jstree.jsonData()
-                    except Exception, exception:
+                    except Exception as exception:
                         log.debug( str( exception ) )
                         raise exceptions.InternalServerError( 'Could not create tree representation of the given folder: ' + str( base_dir ) )
             elif format == 'ajax':
@@ -82,7 +82,7 @@ class RemoteFilesAPIController( BaseAPIController ):
             else:
                 try:
                     response = self.__load_all_filenames( base_dir )
-                except Exception, exception:
+                except Exception as exception:
                     log.error( 'Could not get user import files: %s', str( exception ), exc_info=True )
                     raise exceptions.InternalServerError( 'Could not get the files from your import directory folder.' )
         else:
@@ -90,15 +90,13 @@ class RemoteFilesAPIController( BaseAPIController ):
             if user_ftp_base_dir is None:
                 raise exceptions.ConfigDoesNotAllowException( 'The configuration of this Galaxy instance does not allow upload from FTP directories.' )
             try:
-                user_ftp_dir = None
-                identifier = trans.app.config.ftp_upload_dir_identifier
-                user_ftp_dir = os.path.join( user_ftp_base_dir, getattr(trans.user, identifier) )
+                user_ftp_dir = trans.user_ftp_dir
                 if user_ftp_dir is not None:
                     response = self.__load_all_filenames( user_ftp_dir )
                 else:
                     log.warning( 'You do not have an FTP directory named as your login at this Galaxy instance.' )
                     return None
-            except Exception, exception:
+            except Exception as exception:
                 log.warning( 'Could not get ftp files: %s', str( exception ), exc_info=True )
                 return None
         return response
@@ -134,20 +132,18 @@ class RemoteFilesAPIController( BaseAPIController ):
         jstree_paths = []
         if os.path.exists( directory ):
             for ( dirpath, dirnames, filenames ) in os.walk( directory ):
-
                 for dirname in dirnames:
                     dir_path = os.path.relpath( os.path.join( dirpath, dirname ), directory )
-                    dir_path_hash = hashlib.sha1( dir_path.encode('utf-8') ).hexdigest()
+                    dir_path_hash = hashlib.sha1(unicodify(dir_path).encode('utf-8')).hexdigest()
                     disabled = True if disable == 'folders' else False
                     jstree_paths.append( jstree.Path( dir_path, dir_path_hash, { 'type': 'folder', 'state': { 'disabled': disabled }, 'li_attr': { 'full_path': dir_path } } ) )
 
                 for filename in filenames:
                     file_path = os.path.relpath( os.path.join( dirpath, filename ), directory )
-                    file_path_hash = hashlib.sha1( file_path.encode('utf-8') ).hexdigest()
+                    file_path_hash = hashlib.sha1(unicodify(file_path).encode('utf-8')).hexdigest()
                     disabled = True if disable == 'files' else False
                     jstree_paths.append( jstree.Path( file_path, file_path_hash, { 'type': 'file', 'state': { 'disabled': disabled }, 'li_attr': { 'full_path': file_path } } ) )
         else:
             raise exceptions.ConfigDoesNotAllowException( 'The given directory does not exist.' )
-
         userdir_jstree = jstree.JSTree( jstree_paths )
         return userdir_jstree

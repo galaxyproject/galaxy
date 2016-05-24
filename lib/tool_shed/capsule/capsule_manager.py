@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import os
 import shutil
@@ -15,6 +16,7 @@ from galaxy import web
 from galaxy.util import asbool
 from galaxy.util import CHUNK_SIZE
 from galaxy.util import safe_relpath
+from galaxy.util import build_url
 from galaxy.util.odict import odict
 from tool_shed.dependencies.repository.relation_builder import RelationBuilder
 from tool_shed.dependencies import attribute_handlers
@@ -83,20 +85,19 @@ class ExportRepositoryManager( object ):
             for repository_id, ordered_repository, ordered_changeset_revision in zip( ordered_repository_ids,
                                                                                       ordered_repositories,
                                                                                       ordered_changeset_revisions ):
-                work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-export-er" )
-                repository_archive, error_message = self.generate_repository_archive( ordered_repository,
-                                                                                      ordered_changeset_revision,
-                                                                                      work_dir )
-                if error_message:
-                    error_messages = '%s  %s' % ( error_messages, error_message )
-                else:
-                    archive_name = str( os.path.basename( repository_archive.name ) )
-                    repositories_archive.add( repository_archive.name, arcname=archive_name )
-                    attributes, sub_elements = self.get_repository_attributes_and_sub_elements( ordered_repository,
-                                                                                                archive_name )
-                    elem = xml_util.create_element( 'repository', attributes=attributes, sub_elements=sub_elements )
-                    exported_repository_registry.exported_repository_elems.append( elem )
-                basic_util.remove_dir( work_dir )
+                with self.__tempdir( prefix='tmp-toolshed-export-er' ) as work_dir:
+                    repository_archive, error_message = self.generate_repository_archive( ordered_repository,
+                                                                                          ordered_changeset_revision,
+                                                                                          work_dir )
+                    if error_message:
+                        error_messages = '%s  %s' % ( error_messages, error_message )
+                    else:
+                        archive_name = str( os.path.basename( repository_archive.name ) )
+                        repositories_archive.add( repository_archive.name, arcname=archive_name )
+                        attributes, sub_elements = self.get_repository_attributes_and_sub_elements( ordered_repository,
+                                                                                                    archive_name )
+                        elem = xml_util.create_element( 'repository', attributes=attributes, sub_elements=sub_elements )
+                        exported_repository_registry.exported_repository_elems.append( elem )
             # Keep information about the export in a file named export_info.xml in the archive.
             sub_elements = self.generate_export_elem()
             export_elem = xml_util.create_element( 'export_info', attributes=None, sub_elements=sub_elements )
@@ -108,7 +109,7 @@ class ExportRepositoryManager( object ):
                 exported_repository_root.append( exported_repository_elem )
             tmp_manifest = xml_util.create_and_write_tmp_file( exported_repository_root, use_indent=True )
             repositories_archive.add( tmp_manifest, arcname='manifest.xml' )
-        except Exception, e:
+        except Exception as e:
             log.exception( str( e ) )
         finally:
             if os.path.exists( tmp_export_info ):
@@ -123,7 +124,7 @@ class ExportRepositoryManager( object ):
             params = dict( encoded_repositories_archive_name=encoded_repositories_archive_name )
             pathspec = [ 'repository', 'export_via_api' ]
             tool_shed_url = web.url_for( '/', qualified=True )
-            download_url = common_util.url_join( tool_shed_url, pathspec=pathspec, params=params )
+            download_url = build_url( tool_shed_url, pathspec=pathspec, params=params )
             return dict( download_url=download_url, error_messages=error_messages )
         return repositories_archive, error_messages
 
@@ -377,6 +378,14 @@ class ExportRepositoryManager( object ):
         base = base.rstrip( '/' )
         return base
 
+    @contextlib.contextmanager
+    def __tempdir( self, prefix=None ):
+        td = tempfile.mkdtemp( prefix=prefix )
+        try:
+            yield td
+        finally:
+            shutil.rmtree( td )
+
 
 class ImportRepositoryManager( object ):
 
@@ -508,7 +517,7 @@ class ImportRepositoryManager( object ):
             tar_archive.extractall( path=file_path )
             try:
                 tar_archive.close()
-            except Exception, e:
+            except Exception as e:
                 log.exception( "Cannot close tar_archive: %s" % str( e ) )
             del return_dict[ 'tar_archive' ]
         return return_dict
@@ -595,7 +604,7 @@ class ImportRepositoryManager( object ):
                                                 suc.get_next_downloadable_changeset_revision( defined_repository,
                                                                                               defined_repo,
                                                                                               changeset_revision )
-                                            if updated_changeset_revision == rm_changeset_revision:
+                                            if updated_changeset_revision == rm_changeset_revision and updated_changeset_revision != changeset_revision:
                                                 dependent_downloadable_revisions.append( downloadable_revision )
         return dependent_downloadable_revisions
 
@@ -783,7 +792,7 @@ class ImportRepositoryManager( object ):
                 if error_message:
                     results_dict[ 'ok' ] = False
                     results_dict[ 'error_message' ] += error_message
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Error setting metadata on repository %s created from imported archive %s: %s" %
                     ( str( repository.name ), str( archive_file_name ), str( e ) ) )
         else:
@@ -813,7 +822,7 @@ class ImportRepositoryManager( object ):
             valid_url = True
             try:
                 stream = urllib.urlopen( url )
-            except Exception, e:
+            except Exception as e:
                 valid_url = False
                 return_dict['error_message'] = 'Error importing file via http: %s' % str( e )
                 return_dict['status'] = 'error'
@@ -841,7 +850,7 @@ class ImportRepositoryManager( object ):
             try:
                 # Open for reading with transparent compression.
                 tar_archive = tarfile.open( uploaded_file_name, 'r:*' )
-            except tarfile.ReadError, e:
+            except tarfile.ReadError as e:
                 error_message = 'Error opening file %s: %s' % ( str( uploaded_file_name ), str( e ) )
                 log.exception( error_message )
                 return_dict[ 'error_message' ] = error_message

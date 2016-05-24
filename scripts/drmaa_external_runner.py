@@ -96,7 +96,7 @@ def set_user(uid, assign_all_groups):
             os.setgroups(groups)
         os.setuid(uid)
 
-    except OSError, e:
+    except OSError as e:
         if e.errno == errno.EPERM:
             sys.stderr.write( "error: setuid(%d) failed: permission denied. Did you setup 'sudo' correctly for this script?\n" % uid )
             exit(1)

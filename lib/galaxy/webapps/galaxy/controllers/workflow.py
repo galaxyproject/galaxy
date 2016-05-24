@@ -10,7 +10,6 @@ from sqlalchemy import and_
 from sqlalchemy.sql import expression
 from markupsafe import escape
 
-from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 
 from galaxy import model
@@ -248,7 +247,11 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         # Get workflow by username and slug. Security is handled by the display methods below.
         session = trans.sa_session
         user = session.query( model.User ).filter_by( username=username ).first()
+        if not user:
+            raise web.httpexceptions.HTTPNotFound()
         stored_workflow = trans.sa_session.query( model.StoredWorkflow ).filter_by( user=user, slug=slug, deleted=False ).first()
+        if not stored_workflow:
+            raise web.httpexceptions.HTTPNotFound()
         encoded_id = trans.security.encode_id( stored_workflow.id )
 
         # Display workflow in requested format.
@@ -345,7 +348,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                     use_panels=use_panels )
 
     @web.expose
-    @web.require_login( "use Galaxy workflows" )
+    @web.require_login( "Share or export Galaxy workflows" )
     def sharing( self, trans, id, **kwargs ):
         """ Handle workflow sharing. """
         session = trans.sa_session
@@ -716,16 +719,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
     @web.expose
     @web.require_login( "use workflows" )
-    def export( self, trans, id=None, **kwd ):
-        """
-        Handles download/export workflow command.
-        """
-        stored = self.get_stored_workflow( trans, id, check_ownership=False, check_accessible=True )
-
-        return trans.fill_template( "/workflow/export.mako", item=stored, use_panels=True )
-
-    @web.expose
-    @web.require_login( "use workflows" )
     def export_to_myexp( self, trans, id, myexp_username, myexp_password ):
         """
         Exports a workflow to myExperiment website.
@@ -862,7 +855,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                            workflow_name=encoding_util.tool_shed_encode( workflow_name ),
                            open_for_url=True )
             pathspec = [ 'workflow', 'import_workflow' ]
-            workflow_text = common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=pathspec, params=params )
+            workflow_text = util.url_get( tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
             import_button = True
         if import_button:
             workflow_data = None
@@ -871,7 +864,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 # NOTE: blocks the web thread.
                 try:
                     workflow_data = urllib2.urlopen( url ).read()
-                except Exception, e:
+                except Exception as e:
                     message = "Failed to open URL: <b>%s</b><br>Exception: %s" % ( escape( url ), escape( str( e ) ) )
                     status = 'error'
             elif workflow_text:
@@ -898,7 +891,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 # Convert incoming workflow data from json
                 try:
                     data = json.loads( workflow_data )
-                except Exception, e:
+                except Exception as e:
                     data = None
                     message = "The data content does not appear to be a Galaxy workflow."
                     status = 'error'
@@ -934,7 +927,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                             message += "The workflow requires the following tools that are not available in this Galaxy instance."
                             message += "You can likely install the required tools from one of the Galaxy tool sheds listed below.<br/>"
                             for missing_tool_tup in missing_tool_tups:
-                                missing_tool_id, missing_tool_name, missing_tool_version = missing_tool_tup
+                                missing_tool_id, missing_tool_name, missing_tool_version, step_id = missing_tool_tup
                                 message += "<b>Tool name</b> %s, <b>id</b> %s, <b>version</b> %s<br/>" % (
                                            escape( missing_tool_name ),
                                            escape( missing_tool_id ),

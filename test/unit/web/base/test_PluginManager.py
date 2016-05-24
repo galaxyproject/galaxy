@@ -20,10 +20,10 @@ class PluginManager_TestCase( test_utils.unittest.TestCase ):
     def test_rel_path_search( self ):
         """should be able to search given rel. path"""
         mock_app_dir = galaxy_mock.MockDir({
-            'plugins'   : {
-                'plugin1'   : {},
-                'plugin2'   : {},
-                'file1'     : 'blerbler'
+            'plugins': {
+                'plugin1': {},
+                'plugin2': {},
+                'file1': 'blerbler'
             }
         })
         mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
@@ -45,9 +45,9 @@ class PluginManager_TestCase( test_utils.unittest.TestCase ):
         """should be able to search given abs. path"""
         mock_app_dir = galaxy_mock.MockDir({})
         mock_plugin_dir = galaxy_mock.MockDir({
-            'plugin1'   : {},
-            'plugin2'   : {},
-            'file1'     : 'blerbler'
+            'plugin1': {},
+            'plugin2': {},
+            'file1': 'blerbler'
         })
         mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         plugin_mgr = PluginManager( mock_app, directories_setting=mock_plugin_dir.root_path )
@@ -63,16 +63,16 @@ class PluginManager_TestCase( test_utils.unittest.TestCase ):
     def test_multiple_dirs( self ):
         """should search in multiple directories"""
         mock_app_dir = galaxy_mock.MockDir({
-            'plugins'   : {
-                'plugin1'   : {},
-                'plugin2'   : {},
-                'file1'     : 'blerbler'
+            'plugins': {
+                'plugin1': {},
+                'plugin2': {},
+                'file1': 'blerbler'
             }
         })
         mock_abs_plugin_dir = galaxy_mock.MockDir({
-            'plugin3'   : {},
-            'plugin4'   : {},
-            'file2'     : 'blerbler'
+            'plugin3': {},
+            'plugin4': {},
+            'file2': 'blerbler'
         })
         mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         directories_setting = ','.join([ 'plugins', mock_abs_plugin_dir.root_path ])

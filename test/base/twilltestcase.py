@@ -48,7 +48,8 @@ class TwillTestCase( unittest.TestCase ):
         self.history_id = os.environ.get( 'GALAXY_TEST_HISTORY_ID', None )
         self.host = os.environ.get( 'GALAXY_TEST_HOST' )
         self.port = os.environ.get( 'GALAXY_TEST_PORT' )
-        self.url = "http://%s:%s" % ( self.host, self.port )
+        default_url = "http://%s:%s" % (self.host, self.port)
+        self.url = os.environ.get('GALAXY_TEST_EXTERNAL', default_url)
         self.test_data_resolver = TestDataResolver( )
         self.tool_shed_test_file = os.environ.get( 'GALAXY_TOOL_SHED_TEST_FILE', None )
         if self.tool_shed_test_file:
@@ -333,7 +334,7 @@ class TwillTestCase( unittest.TestCase ):
             assert os.path.exists( downloaded_file )
             try:
                 self.files_diff( orig_file, downloaded_file )
-            except AssertionError, err:
+            except AssertionError as err:
                 errmsg = 'Library item %s different than expected, difference:\n' % ldda.name
                 errmsg += str( err )
                 errmsg += 'Unpacked archive remains in: %s\n' % tmpd
@@ -420,7 +421,7 @@ class TwillTestCase( unittest.TestCase ):
             json_data = self.get_history_from_api( show_deleted=show_deleted, show_details=True )
             check_result = check_fn( json_data )
             assert check_result, 'failed check_fn: %s (got %s)' % ( check_fn.func_name, str( check_result ) )
-        except Exception, e:
+        except Exception as e:
             log.exception( e )
             log.debug( 'json_data: %s', ( '\n' + pprint.pformat( json_data ) if json_data else '(no match)' ) )
             fname = self.write_temp_file( tc.browser.get_html() )
@@ -453,7 +454,7 @@ class TwillTestCase( unittest.TestCase ):
         page = self.last_page()
         if page.find( patt ) == -1:
             fname = self.write_temp_file( page )
-            errmsg = "no match to '%s'\npage content written to '%s'" % ( patt, fname )
+            errmsg = "no match to '%s'\npage content written to '%s'\npage: [[%s]]" % ( patt, fname, page )
             raise AssertionError( errmsg )
 
     def check_request_grid( self, cntrller, state, deleted=False, strings_displayed=[] ):
@@ -1786,7 +1787,7 @@ class TwillTestCase( unittest.TestCase ):
     def save_log( *path ):
         """Saves the log to a file"""
         filename = os.path.join( *path )
-        file(filename, 'wt').write(buffer.getvalue())
+        open(filename, 'wt').write(buffer.getvalue())
 
     def set_history( self ):
         """Sets the history (stores the cookies for this run)"""
@@ -1934,7 +1935,7 @@ class TwillTestCase( unittest.TestCase ):
                             try:
                                 checkbox = control.get()
                                 checkbox.selected = is_checked( control_value )
-                            except Exception, e1:
+                            except Exception as e1:
                                 print "Attempting to set checkbox selected value threw exception: ", e1
                                 # if there's more than one checkbox, probably should use the behaviour for
                                 # ClientForm.ListControl ( see twill code ), but this works for now...
@@ -1971,7 +1972,7 @@ class TwillTestCase( unittest.TestCase ):
                                     log.debug( formcontrol )
                                 log.exception( "Attempting to set control '%s' to value '%s' (also tried '%s') threw exception.", control.name, elem, elem_name )
                                 pass
-                except Exception, exc:
+                except Exception as exc:
                     for formcontrol in formcontrols:
                         log.debug( formcontrol )
                     errmsg = "Attempting to set field '%s' to value '%s' in form '%s' threw exception: %s\n" % ( control_name, str( control_value ), f.name, str( exc ) )
@@ -2130,7 +2131,7 @@ class TwillTestCase( unittest.TestCase ):
                     tc.config("readonly_controls_writeable", 1)
                     tc.fv( "tool_form", "NAME", name )
             tc.submit( "runtool_btn" )
-        except AssertionError, err:
+        except AssertionError as err:
             errmsg = "Uploading file resulted in the following exception.  Make sure the file (%s) exists.  " % filename
             errmsg += str( err )
             raise AssertionError( errmsg )
@@ -2154,7 +2155,7 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( "tool_form", "dbkey", dbkey )
             tc.fv( "tool_form", "url_paste", url_paste )
             tc.submit( "runtool_btn" )
-        except Exception, e:
+        except Exception as e:
             errmsg = "Problem executing upload utility using url_paste: %s" % str( e )
             raise AssertionError( errmsg )
         # Make sure every history item has a valid hid
@@ -2190,7 +2191,7 @@ class TwillTestCase( unittest.TestCase ):
             base_name = os.path.split(file_name)[-1]
         temp_name = self.makeTfname(fname=base_name)
         data = dataset_fetcher( hda_id, base_name )
-        file( temp_name, 'wb' ).write( data )
+        open( temp_name, 'wb' ).write( data )
         if self.keepOutdir > '':
             ofn = os.path.join(self.keepOutdir, base_name)
             shutil.copy(temp_name, ofn)
@@ -2213,7 +2214,7 @@ class TwillTestCase( unittest.TestCase ):
                     raise Exception( 'Files %s=%db but %s=%db - compare (delta=%s) failed' % (temp_name, s1, local_name, s2, delta) )
             else:
                 raise Exception( 'Unimplemented Compare type: %s' % compare )
-        except AssertionError, err:
+        except AssertionError as err:
             errmsg = 'Composite file (%s) of History item %s different than expected, difference (using %s):\n' % ( base_name, hda_id, compare )
             errmsg += str( err )
             raise AssertionError( errmsg )
@@ -2272,7 +2273,7 @@ class TwillTestCase( unittest.TestCase ):
         if attributes is not None and attributes.get( "assert_list", None ) is not None:
             try:
                 verify_assertions(data, attributes["assert_list"])
-            except AssertionError, err:
+            except AssertionError as err:
                 errmsg = 'History item %s different than expected\n' % (hid)
                 errmsg += str( err )
                 raise AssertionError( errmsg )
@@ -2280,14 +2281,14 @@ class TwillTestCase( unittest.TestCase ):
             md5 = attributes.get("md5")
             try:
                 self._verify_md5(data, md5)
-            except AssertionError, err:
+            except AssertionError as err:
                 errmsg = 'History item %s different than expected\n' % (hid)
                 errmsg += str( err )
                 raise AssertionError( errmsg )
         if filename is not None:
             local_name = self.get_filename( filename, shed_tool_id=shed_tool_id )
             temp_name = self.makeTfname(fname=filename)
-            file( temp_name, 'wb' ).write( data )
+            open( temp_name, 'wb' ).write( data )
 
             # if the server's env has GALAXY_TEST_SAVE, save the output file to that dir
             if self.keepOutdir:
@@ -2295,7 +2296,7 @@ class TwillTestCase( unittest.TestCase ):
                 log.debug( 'keepoutdir: %s, ofn: %s', self.keepOutdir, ofn )
                 try:
                     shutil.copy( temp_name, ofn )
-                except Exception, exc:
+                except Exception as exc:
                     error_log_msg = ( 'TwillTestCase could not save output file %s to %s: ' % ( temp_name, ofn ) )
                     error_log_msg += str( exc )
                     log.error( error_log_msg, exc_info=True )
@@ -2327,7 +2328,7 @@ class TwillTestCase( unittest.TestCase ):
                     raise Exception( 'Unimplemented Compare type: %s' % compare )
                 if extra_files:
                     self.verify_extra_files_content( extra_files, hda_id, shed_tool_id=shed_tool_id, dataset_fetcher=dataset_fetcher )
-            except AssertionError, err:
+            except AssertionError as err:
                 errmsg = 'History item %s different than expected, difference (using %s):\n' % ( hid, compare )
                 errmsg += "( %s v. %s )\n" % ( local_name, temp_name )
                 errmsg += str( err )

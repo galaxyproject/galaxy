@@ -38,8 +38,9 @@ class XmlToolSource(ToolSource):
     """ Responsible for parsing a tool from classic Galaxy representation.
     """
 
-    def __init__(self, root, source_path=None):
-        self.root = root
+    def __init__(self, xml_tree, source_path=None):
+        self.xml_tree = xml_tree
+        self.root = xml_tree.getroot()
         self._source_path = source_path
         self.legacy_defaults = self.parse_profile() == "16.01"
 
@@ -76,6 +77,12 @@ class XmlToolSource(ToolSource):
 
     def parse_name(self):
         return self.root.get( "name" )
+
+    def parse_edam_operations(self):
+        edam_ops = self.root.find("edam_operations")
+        if edam_ops is None:
+            return []
+        return [ edam_op.text for edam_op in edam_ops.findall("edam_operation") ]
 
     def parse_description(self):
         return xml_text(self.root, "description")

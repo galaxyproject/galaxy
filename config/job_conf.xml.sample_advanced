@@ -98,6 +98,26 @@
                deprecated and will disappear with a future release of Galaxy.
           -->
         </plugin>
+        <plugin id="pulsar_embedded" type="runner" load="galaxy.jobs.runners.pulsar:PulsarEmbeddedJobRunner">
+          <!-- The embedded Pulsar runner starts a Pulsar app
+               internal to Galaxy and communicates it directly.
+               This maybe be useful for instance when Pulsar
+               staging is important but a Pulsar server is
+               unneeded (for instance if compute servers cannot
+               mount Galaxy's files but Galaxy can mount a
+               scratch directory available on compute). -->
+          <!-- Specify a complete description of the Pulsar app
+               to create. If this configuration defines more than
+               one manager - you can specify the manager name 
+               using the "manager" destination parameter. For more
+               information on configuring a Pulsar app see:
+
+               https://github.com/galaxyproject/pulsar/blob/master/app.yml.sample
+               http://pulsar.readthedocs.org/en/latest/configure.html
+          -->
+          <!-- <param id="pulsar_config">path/to/pulsar/app.yml</param> -->
+        </plugin>
+
     </plugins>
     <handlers default="handlers">
         <!-- Additional job handlers - the id should match the name of a
@@ -414,6 +434,26 @@
                  <param> tags.
             -->
             <param id="request_cpus">8</param>
+
+            <!-- Recent version of HTCondor do have a `docker` universe to handle containers.
+                 Activate this feature by explicitly specifying the `docker` universe.
+            -->
+            <!-- <param id="universe">docker</param> -->
+
+            <!-- If the tool has a container specified this one is used.
+
+                <requirements>
+                    <container type="docker">bgruening/galaxy-stable</container>
+                </requirements>
+
+            Unless the job destination specifies an override 
+            with docker_container_id_override. If neither of 
+            these is set a default container can be specified
+            with docker_default_container_id. The resolved
+            container ID will be passed along to condor as
+            the docker_image submission parameter.
+            -->
+            <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
         </destination>
 
         <!-- Jobs that hit the walltime on one destination can be automatically

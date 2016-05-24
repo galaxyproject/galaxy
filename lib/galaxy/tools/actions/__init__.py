@@ -439,6 +439,7 @@ class DefaultToolAction( object ):
                     handle_output( name, output )
                     log.info("Handled output named %s for tool %s %s" % (name, tool.id, handle_output_timer))
 
+        add_datasets_timer = ExecutionTimer()
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
         datasets_to_persist = []
         for name in out_data.keys():
@@ -461,6 +462,8 @@ class DefaultToolAction( object ):
             child_dataset = out_data[ child_name ]
             parent_dataset.children.append( child_dataset )
 
+        log.info("Added output datasets to history %s" % add_datasets_timer)
+        job_setup_timer = ExecutionTimer()
         # Create the job object
         job, galaxy_session = self._new_job_for_session( trans, tool, history )
         self._record_inputs( trans, tool, job, incoming, inp_data, inp_dataset_collections, current_user_roles )
@@ -509,7 +512,12 @@ class DefaultToolAction( object ):
                     trans.sa_session.add(jtod)
             except Exception:
                 log.exception('Cannot remap rerun dependencies.')
+
+        log.info("Setup for job %s complete, ready to flush %s" % (job.log_str(), job_setup_timer))
+
+        job_flush_timer = ExecutionTimer()
         trans.sa_session.flush()
+        log.info("Flushed transaction for job %s %s" % (job.log_str(), job_flush_timer))
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
         # Examples include tools that redirect to other applications ( epigraph ).  These special tools must
         # include something that can be retrieved from the params ( e.g., REDIRECT_URL ) to keep the job
@@ -568,7 +576,7 @@ class DefaultToolAction( object ):
                     first_reduction = False
                     incoming[ name ] = []
                 if reduced:
-                    incoming[ name ].append( dataset_collection )
+                    incoming[ name ].append( { 'id': trans.app.security.encode_id( dataset_collection.id ), 'src': 'hdca' } )
                 # Should verify security? We check security of individual
                 # datasets below?
                 # TODO: verify can have multiple with same name, don't want to loose tracability
@@ -681,7 +689,7 @@ def filter_output(output, incoming):
         try:
             if not eval( filter.text.strip(), globals(), incoming ):
                 return True  # do not create this dataset
-        except Exception, e:
+        except Exception as e:
             log.debug( 'Dataset output filter failed: %s' % e )
     return False
 
@@ -721,7 +729,7 @@ def determine_output_format(output, parameter_context, input_datasets, input_dat
                     input_dataset = input_collection.collection[element_index].element_object
                     input_extension = input_dataset.ext
                     ext = input_extension
-                except Exception, e:
+                except Exception as e:
                     log.debug("Exception while trying to determine format_source: %s", e)
                     pass
 

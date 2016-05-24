@@ -413,7 +413,15 @@ class JobConfiguration( object ):
 
         :returns: str -- id or tag representing the default.
         """
+
         rval = parent.get('default')
+        if 'default_from_environ' in parent.attrib:
+            environ_var = parent.attrib['default_from_environ']
+            rval = os.environ.get(environ_var, rval)
+        elif 'default_from_config' in parent.attrib:
+            config_val = parent.attrib['default_from_config']
+            rval = self.app.config.config_dict.get(config_val, rval)
+
         if rval is not None:
             # If the parent element has a 'default' attribute, use the id or tag in that attribute
             if rval not in names:
@@ -785,7 +793,7 @@ class JobWrapper( object ):
     def cleanup_job(self):
         """ Remove the job after it is complete, should return "always", "onsuccess", or "never".
         """
-        self.get_destination_configuration("cleanup_job", DEFAULT_CLEANUP_JOB)
+        return self.get_destination_configuration("cleanup_job", DEFAULT_CLEANUP_JOB)
 
     def can_split( self ):
         # Should the job handler split this job up?
@@ -996,7 +1004,7 @@ class JobWrapper( object ):
                     try:
                         shutil.move( dataset_path.false_path, dataset_path.real_path )
                         log.debug( "fail(): Moved %s to %s" % ( dataset_path.false_path, dataset_path.real_path ) )
-                    except ( IOError, OSError ), e:
+                    except ( IOError, OSError ) as e:
                         log.error( "fail(): Missing output file in working directory: %s" % e )
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset = dataset_assoc.dataset
@@ -1125,12 +1133,21 @@ class JobWrapper( object ):
             self.app.config, key, default
         )
 
-    def finish( self, stdout, stderr, tool_exit_code=None, remote_working_directory=None ):
+    def finish(
+        self,
+        stdout,
+        stderr,
+        tool_exit_code=None,
+        remote_working_directory=None,
+        remote_metadata_directory=None,
+    ):
         """
         Called to indicate that the associated command has been run. Updates
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files.
         """
+        # remote_working_directory not used with updated (7.0+ pulsar and 16.04+
+        # originated Galaxy job - keep for a few releases for older jobs)
         finish_timer = util.ExecutionTimer()
 
         # default post job setup
@@ -1202,7 +1219,7 @@ class JobWrapper( object ):
                         os.stat( dataset.dataset.file_name )
                         os.chown( dataset.dataset.file_name, os.getuid(), -1 )
                         trynum = self.app.config.retry_job_output_collection
-                    except ( OSError, ObjectNotFound ), e:
+                    except ( OSError, ObjectNotFound ) as e:
                         trynum += 1
                         log.warning( 'Error accessing %s, will retry: %s', dataset.dataset.file_name, e )
                         time.sleep( 2 )
@@ -1258,12 +1275,15 @@ class JobWrapper( object ):
                         output_filename = self.external_output_metadata.get_output_filenames_by_dataset( dataset, self.sa_session ).filename_out
 
                         def path_rewriter( path ):
-                            if not remote_working_directory or not path:
+                            if not path:
                                 return path
-                            normalized_remote_working_directory = os.path.normpath( remote_working_directory )
+                            normalized_remote_working_directory = remote_working_directory and os.path.normpath( remote_working_directory )
+                            normalized_remote_metadata_directory = remote_metadata_directory and os.path.normpath( remote_metadata_directory )
                             normalized_path = os.path.normpath( path )
-                            if normalized_path.startswith( normalized_remote_working_directory ):
+                            if remote_working_directory and normalized_path.startswith( normalized_remote_working_directory ):
                                 return normalized_path.replace( normalized_remote_working_directory, self.working_directory, 1 )
+                            if remote_metadata_directory and normalized_path.startswith( normalized_remote_metadata_directory ):
+                                return normalized_path.replace( normalized_remote_metadata_directory, self.working_directory, 1 )
                             return path
 
                         dataset.metadata.from_JSON_dict( output_filename, path_rewriter=path_rewriter )
@@ -1388,7 +1408,7 @@ class JobWrapper( object ):
 
         # fix permissions
         for path in [ dp.real_path for dp in self.get_mutable_output_fnames() ]:
-            util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
+            util.umask_fix_perms( path, self.app.config.umask, 0o666, self.app.config.gid )
 
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.
@@ -1442,7 +1462,7 @@ class JobWrapper( object ):
                         create=True,
                         preserve_symlinks=True
                     )
-        except Exception, e:
+        except Exception as e:
             log.debug( "Error in collect_associated_files: %s" % ( e ) )
 
     def _collect_metrics( self, has_metrics ):
@@ -1662,10 +1682,13 @@ class JobWrapper( object ):
                                                                          **kwds )
         if resolve_metadata_dependencies:
             metadata_tool = self.app.toolbox.get_tool("__SET_METADATA__")
-            dependency_shell_commands = metadata_tool.build_dependency_shell_commands(job_directory=self.working_directory)
-            if dependency_shell_commands:
-                dependency_shell_commands = "; ".join(dependency_shell_commands)
-                command = "%s; %s" % (dependency_shell_commands, command)
+            if metadata_tool is not None:
+                # Due to tool shed hacks for migrate and installed tool tests...
+                # see (``setup_shed_tools_for_test`` in test/base/driver_util.py).
+                dependency_shell_commands = metadata_tool.build_dependency_shell_commands(job_directory=self.working_directory, metadata=True)
+                if dependency_shell_commands:
+                    dependency_shell_commands = "; ".join(dependency_shell_commands)
+                    command = "%s; %s" % (dependency_shell_commands, command)
         return command
 
     @property
@@ -1712,7 +1735,7 @@ class JobWrapper( object ):
                 self._change_ownership( self.user_system_pwent[0], str( self.user_system_pwent[3] ) )
             except:
                 log.exception( '(%s) Failed to change ownership of %s, making world-writable instead' % ( job.id, self.working_directory ) )
-                os.chmod( self.working_directory, 0777 )
+                os.chmod( self.working_directory, 0o777 )
 
     def reclaim_ownership( self ):
         job = self.get_job()

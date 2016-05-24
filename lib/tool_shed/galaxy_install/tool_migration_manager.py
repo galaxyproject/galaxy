@@ -411,7 +411,7 @@ class ToolMigrationManager( object ):
                 lock.acquire( True )
                 try:
                     self.filter_and_persist_proprietary_tool_panel_configs( tool_configs_to_filter )
-                except Exception, e:
+                except Exception as e:
                     log.exception( "Exception attempting to filter and persist non-shed-related tool panel configs:\n%s" % str( e ) )
                 finally:
                     lock.release()
@@ -581,7 +581,7 @@ class ToolMigrationManager( object ):
                                    owner=self.repository_owner,
                                    changeset_revision=tool_shed_repository.installed_changeset_revision )
                     pathspec = [ 'repository', 'get_tool_versions' ]
-                    text = common_util.tool_shed_get( self.app, self.tool_shed_url, pathspec=pathspec, params=params )
+                    text = util.url_get( self.tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth( self.tool_shed_url ), pathspec=pathspec, params=params )
                     if text:
                         tool_version_dicts = json.loads( text )
                         tvm.handle_tool_versions( tool_version_dicts, tool_shed_repository )

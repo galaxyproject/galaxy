@@ -496,7 +496,7 @@ class GalaxyRBACAgent( RBACAgent ):
                                    % ( item.library_dataset_id, len( base_result ),
                                        len( new_result ) ) )
                 log.debug( "get_actions_for_items: Test end" )
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Exception in test code: %s" % e )
 
         return ret_permissions
@@ -795,7 +795,7 @@ class GalaxyRBACAgent( RBACAgent ):
             return None
         if not permissions:
             # default permissions
-            permissions = { self.permitted_actions.DATASET_MANAGE_PERMISSIONS : [ self.get_private_user_role( user, auto_create=True ) ] }
+            permissions = { self.permitted_actions.DATASET_MANAGE_PERMISSIONS: [ self.get_private_user_role( user, auto_create=True ) ] }
             # new_user_dataset_access_role_default_private is set as True in config file
             if default_access_private:
                 permissions[ self.permitted_actions.DATASET_ACCESS ] = permissions.values()[ 0 ]
@@ -871,7 +871,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 permissions[ action ] = [ dhp.role ]
         return permissions
 
-    def set_all_dataset_permissions( self, dataset, permissions={}, new=False ):
+    def set_all_dataset_permissions( self, dataset, permissions={}, new=False, flush=True ):
         """
         Set new full permissions on a dataset, eliminating all current permissions.
         Permission looks like: { Action : [ Role, Role ] }
@@ -902,7 +902,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 dp = self.model.DatasetPermissions( action, dataset, role_id=role.id )
                 self.sa_session.add( dp )
                 flush_needed = True
-        if flush_needed:
+        if flush_needed and flush:
             self.sa_session.flush()
         return ""
 
@@ -998,7 +998,7 @@ class GalaxyRBACAgent( RBACAgent ):
             self.sa_session.flush()
             for user in users:
                 self.associate_components( user=user, role=sharing_role )
-        self.set_dataset_permission( dataset, { self.permitted_actions.DATASET_ACCESS : [ sharing_role ] } )
+        self.set_dataset_permission( dataset, { self.permitted_actions.DATASET_ACCESS: [ sharing_role ] } )
 
     def set_all_library_permissions( self, trans, library_item, permissions={} ):
         # Set new permissions on library_item, eliminating all current permissions

@@ -29,7 +29,7 @@ def __main__():
     fastq_block_lines = 0
     seq_title_startswith = ''
 
-    for i, line in enumerate( file( infile_name ) ):
+    for i, line in enumerate( open( infile_name ) ):
         line = line.rstrip()  # eliminate trailing space and new line characters
         if not line or line.startswith( '#' ):
             continue

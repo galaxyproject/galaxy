@@ -52,9 +52,8 @@
       <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
     </datatype>
-    <!-- MSI added Datatypes -->
     <datatype extension="csv" type="galaxy.datatypes.tabular:CSV" display_in_upload="true" />
-    <!-- End MSI added Datatypes -->
+    <datatype extension="tsv" type="galaxy.datatypes.tabular:TSV" display_in_upload="true" />
     <datatype extension="customtrack" type="galaxy.datatypes.interval:CustomTrack"/>
     <datatype extension="bowtie_color_index" type="galaxy.datatypes.ngsindex:BowtieColorIndex" mimetype="text/html" display_in_upload="False"/>
     <datatype extension="bowtie_base_index" type="galaxy.datatypes.ngsindex:BowtieBaseIndex" mimetype="text/html" display_in_upload="False"/>
@@ -440,9 +439,97 @@
     <datatype extension="vtkascii" type="galaxy.datatypes.constructive_solid_geometry:VtkAscii" display_in_upload="true" />
     <datatype extension="vtkbinary" type="galaxy.datatypes.constructive_solid_geometry:VtkBinary" display_in_upload="true" />
     <!-- Metagenomic Datatype -->
-    <datatype extension="biom1" type="galaxy.datatypes.text:Biom1" display_in_upload="True" subclass="True" mimetype="application/json" />
+    <datatype extension="biom1" type="galaxy.datatypes.text:Biom1" display_in_upload="True" subclass="True" mimetype="application/json">
+        <display file="biom/biom_simple.xml" />
+    </datatype>
     <!-- Strand-specific Coordinate Count Datatype used by the Center for Eukaryotic Gene Regulation labs at Penn State -->
     <datatype extension="scidx" type="galaxy.datatypes.interval:ScIdx" display_in_upload="true" />
+
+    <!--Cheminformatics Datatypes -->
+    <datatype extension="smi" type="galaxy.datatypes.molecules:SMILES" display_in_upload="True">
+        <!-- The ordering is important. The first one is considered as default converter in the build-in conversion function -> (as sdf)-->
+        <converter file="smi_to_sdf_converter.xml" target_datatype="sdf"/>
+        <converter file="smi_to_inchi_converter.xml" target_datatype="inchi"/>
+        <converter file="smi_to_cml_converter.xml" target_datatype="cml"/>
+        <converter file="smi_to_mol_converter.xml" target_datatype="mol"/>
+        <converter file="smi_to_mol2_converter.xml" target_datatype="mol2"/>
+        <converter file="smi_to_smi_converter.xml" target_datatype="smi"/>
+    </datatype>
+    <datatype extension="sdf" type="galaxy.datatypes.molecules:SDF" display_in_upload="True">
+        <converter file="sdf_to_smi_converter.xml" target_datatype="smi"/>
+        <converter file="sdf_to_inchi_converter.xml" target_datatype="inchi"/>
+        <converter file="sdf_to_mol2_converter.xml" target_datatype="mol2"/>
+        <converter file="sdf_to_cml_converter.xml" target_datatype="cml"/>
+    </datatype>
+    <datatype extension="inchi" type="galaxy.datatypes.molecules:InChI" display_in_upload="True">
+        <converter file="inchi_to_smi_converter.xml" target_datatype="smi"/>
+        <converter file="inchi_to_sdf_converter.xml" target_datatype="sdf"/>
+        <converter file="inchi_to_mol_converter.xml" target_datatype="mol"/>
+        <converter file="inchi_to_mol2_converter.xml" target_datatype="mol2"/>
+        <converter file="inchi_to_cml_converter.xml" target_datatype="cml"/>
+    </datatype>
+    <datatype extension="mol" type="galaxy.datatypes.molecules:MOL" display_in_upload="True">
+        <converter file="mol_to_smi_converter.xml" target_datatype="smi"/>
+        <converter file="mol_to_inchi_converter.xml" target_datatype="inchi"/>
+        <converter file="mol_to_mol2_converter.xml" target_datatype="mol2"/>
+        <converter file="mol_to_cml_converter.xml" target_datatype="cml"/>
+    </datatype>
+    <datatype extension="mol2" type="galaxy.datatypes.molecules:MOL2" display_in_upload="False">
+        <converter file="mol2_to_smi_converter.xml" target_datatype="smi"/>
+        <converter file="mol2_to_sdf_converter.xml" target_datatype="sdf"/>
+        <converter file="mol2_to_inchi_converter.xml" target_datatype="inchi"/>
+        <converter file="mol2_to_mol_converter.xml" target_datatype="mol"/>
+        <converter file="mol2_to_cml_converter.xml" target_datatype="cml"/>
+    </datatype>
+    <datatype extension="cml" type="galaxy.datatypes.molecules:CML" display_in_upload="True">
+        <converter file="cml_to_smi_converter.xml" target_datatype="smi"/>
+        <converter file="cml_to_inchi_converter.xml" target_datatype="inchi"/>
+        <converter file="cml_to_sdf_converter.xml" target_datatype="sdf"/>
+        <converter file="cml_to_mol2_converter.xml" target_datatype="mol2"/>
+        </datatype>
+    <datatype extension="fps" type="galaxy.datatypes.molecules:FPS" mimetype="text/html" display_in_upload="True" />
+    <datatype extension="obfs" type="galaxy.datatypes.molecules:OBFS" mimetype="text/html" display_in_upload="True" />
+    <datatype extension="phar" type="galaxy.datatypes.molecules:PHAR" display_in_upload="False" />
+    <datatype extension="pdb" type="galaxy.datatypes.molecules:PDB" display_in_upload="True" />
+    <!-- mothur formats -->
+    <datatype extension="mothur.otu" type="galaxy.datatypes.mothur:Otu" display_in_upload="true"/>
+    <datatype extension="mothur.list" type="galaxy.datatypes.mothur:Otu" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.sabund" type="galaxy.datatypes.mothur:Sabund" display_in_upload="true"/>
+    <datatype extension="mothur.rabund" type="galaxy.datatypes.mothur:Sabund" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.shared" type="galaxy.datatypes.mothur:GroupAbund" display_in_upload="true"/>
+    <datatype extension="mothur.relabund" type="galaxy.datatypes.mothur:GroupAbund" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.names" type="galaxy.datatypes.mothur:Names" display_in_upload="true"/>
+    <datatype extension="mothur.design" type="galaxy.datatypes.mothur:Group" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.summary" type="galaxy.datatypes.mothur:Summary" display_in_upload="true"/>
+    <datatype extension="mothur.groups" type="galaxy.datatypes.mothur:Group" display_in_upload="true"/>
+    <datatype extension="mothur.oligos" type="galaxy.datatypes.mothur:Oligos" display_in_upload="true"/>
+    <datatype extension="mothur.align" type="galaxy.datatypes.sequence:Fasta" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.accnos" type="galaxy.datatypes.mothur:AccNos" display_in_upload="true"/>
+    <datatype extension="mothur.otulabels" type="galaxy.datatypes.mothur:AccNos" display_in_upload="true"/>
+    <datatype extension="mothur.otu.corr" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.map" type="galaxy.datatypes.mothur:SecondaryStructureMap" display_in_upload="true"/>
+    <datatype extension="mothur.align.check" type="galaxy.datatypes.mothur:AlignCheck" display_in_upload="true"/>
+    <datatype extension="mothur.align.report" type="galaxy.datatypes.mothur:AlignReport" display_in_upload="true"/>
+    <datatype extension="mothur.filter" type="galaxy.datatypes.mothur:LaneMask" display_in_upload="true"/>
+    <datatype extension="mothur.dist" type="galaxy.datatypes.mothur:DistanceMatrix" display_in_upload="true"/>
+    <datatype extension="mothur.pair.dist" type="galaxy.datatypes.mothur:PairwiseDistanceMatrix" display_in_upload="true"/>
+    <datatype extension="mothur.square.dist" type="galaxy.datatypes.mothur:SquareDistanceMatrix" display_in_upload="true"/>
+    <datatype extension="mothur.lower.dist" type="galaxy.datatypes.mothur:LowerTriangleDistanceMatrix" display_in_upload="true"/>
+    <datatype extension="mothur.ref.taxonomy" type="galaxy.datatypes.mothur:RefTaxonomy" display_in_upload="true">
+      <converter file="ref_to_seq_taxonomy_converter.xml" target_datatype="mothur.seq.taxonomy"/>
+    </datatype>
+    <datatype extension="mothur.seq.taxonomy" type="galaxy.datatypes.mothur:RefTaxonomy" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.rdp.taxonomy" type="galaxy.datatypes.mothur:RefTaxonomy" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.cons.taxonomy" type="galaxy.datatypes.mothur:ConsensusTaxonomy" display_in_upload="true"/>
+    <datatype extension="mothur.tax.summary" type="galaxy.datatypes.mothur:TaxonomySummary" display_in_upload="true"/>
+    <datatype extension="mothur.freq" type="galaxy.datatypes.mothur:Frequency" display_in_upload="true"/>
+    <datatype extension="mothur.quan" type="galaxy.datatypes.mothur:Quantile" display_in_upload="true"/>
+    <datatype extension="mothur.filtered.quan" type="galaxy.datatypes.mothur:Quantile" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.masked.quan" type="galaxy.datatypes.mothur:Quantile" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.filtered.masked.quan" type="galaxy.datatypes.mothur:Quantile" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.axes" type="galaxy.datatypes.mothur:Axes" display_in_upload="true"/>
+    <datatype extension="mothur.sff.flow" type="galaxy.datatypes.mothur:SffFlow" display_in_upload="true"/>
+    <datatype extension="mothur.count_table" type="galaxy.datatypes.mothur:CountTable" display_in_upload="true"/>
   </registration>
   <sniffers>
     <!--
@@ -452,6 +539,19 @@
     defined format first, followed by next-most rigidly defined,
     and so on.
     -->
+    <sniffer type="galaxy.datatypes.mothur:Sabund"/>
+    <sniffer type="galaxy.datatypes.mothur:Otu"/>
+    <sniffer type="galaxy.datatypes.mothur:GroupAbund"/>
+    <sniffer type="galaxy.datatypes.mothur:SecondaryStructureMap"/>
+    <sniffer type="galaxy.datatypes.mothur:LowerTriangleDistanceMatrix"/>
+    <sniffer type="galaxy.datatypes.mothur:SquareDistanceMatrix"/>
+    <sniffer type="galaxy.datatypes.mothur:PairwiseDistanceMatrix"/>
+    <sniffer type="galaxy.datatypes.mothur:Oligos"/>
+    <sniffer type="galaxy.datatypes.mothur:Quantile"/>
+    <sniffer type="galaxy.datatypes.mothur:Frequency"/>
+    <sniffer type="galaxy.datatypes.mothur:LaneMask"/>
+    <sniffer type="galaxy.datatypes.mothur:RefTaxonomy"/>
+    <sniffer type="galaxy.datatypes.mothur:Axes"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyAscii"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyBinary"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkAscii"/>
@@ -484,6 +584,7 @@
     <sniffer type="galaxy.datatypes.proteomics:Msp"/>
     <sniffer type="galaxy.datatypes.proteomics:SPLib"/>
     <sniffer type="galaxy.datatypes.proteomics:ThermoRAW"/>
+    <sniffer type="galaxy.datatypes.molecules:CML"/>
     <sniffer type="galaxy.datatypes.xml:GenericXml"/>
     <sniffer type="galaxy.datatypes.triples:Turtle"/>
     <sniffer type="galaxy.datatypes.triples:NTriples"/>
@@ -493,6 +594,12 @@
     <sniffer type="galaxy.datatypes.sequence:csFasta"/>
     <sniffer type="galaxy.datatypes.qualityscore:QualityScoreSOLiD"/>
     <sniffer type="galaxy.datatypes.qualityscore:QualityScore454"/>
+    <sniffer type="galaxy.datatypes.molecules:SDF"/>
+    <sniffer type="galaxy.datatypes.molecules:PDB"/>
+    <sniffer type="galaxy.datatypes.molecules:MOL2"/>
+    <sniffer type="galaxy.datatypes.molecules:InChI"/>
+    <sniffer type="galaxy.datatypes.molecules:FPS"/>
+    <!-- TODO: see molecules.py <sniffer type="galaxy.datatypes.molecules:SMILES"/>-->
     <sniffer type="galaxy.datatypes.sequence:Fasta"/>
     <sniffer type="galaxy.datatypes.sequence:Fastq"/>
     <sniffer type="galaxy.datatypes.interval:Wiggle"/>
@@ -518,6 +625,7 @@
     <sniffer type="galaxy.datatypes.sequence:DotBracket"/>
     <sniffer type="galaxy.datatypes.tabular:ConnectivityTable"/>
     <sniffer type="galaxy.datatypes.tabular:CSV"/>
+    <sniffer type="galaxy.datatypes.tabular:TSV"/>
     <sniffer type="galaxy.datatypes.msa:Hmmer2" />
     <sniffer type="galaxy.datatypes.msa:Hmmer3" />
     <sniffer type="galaxy.datatypes.msa:Stockholm_1_0" />

@@ -39,7 +39,7 @@
 
 ## Default javascripts
 <%def name="javascripts()">
-    ## Send errors to Sntry server if configured
+    ## Send errors to Sentry server if configured
     %if app.config.sentry_dsn:
         ${h.js( "libs/tracekit", "libs/raven" )}
         <script>
@@ -60,6 +60,8 @@
         // configure require
         // due to our using both script tags and require, we need to access the same jq in both for plugin retention
         // source http://www.manuel-strehl.de/dev/load_jquery_before_requirejs.en.html
+        window.Galaxy = window.Galaxy || {};
+        window.Galaxy.root = '${h.url_for( "/" )}';
         define( 'jquery', [], function(){ return jQuery; })
         // TODO: use one system
 
@@ -201,9 +203,11 @@
             <div id="masthead" class="navbar navbar-fixed-top navbar-inverse">
                 ${self.masthead()}
             </div>
-            <div id="messagebox" class="panel-${app.config.message_box_class}-message">
-                ${app.config.message_box_content}
-            </div>
+            %if self.message_box_visible:
+                <div id="messagebox" class="panel-${app.config.message_box_class}-message" style="display:block">
+                    ${app.config.message_box_content}
+                </div>
+            %endif
             %if self.show_inactivity_warning:
                 <div id="inactivebox" class="panel-warning-message">
                     ${app.config.inactivity_box_content} <a href="${h.url_for( controller='user', action='resend_verification' )}">Resend verification.</a>

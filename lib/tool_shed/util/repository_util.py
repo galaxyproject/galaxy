@@ -299,7 +299,7 @@ def get_repo_info_dict( app, user, repository_id, changeset_revision ):
         # repository_suite_definition or tool_dependency_definition.
         next_downloadable_changeset_revision = \
             suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
-        if next_downloadable_changeset_revision:
+        if next_downloadable_changeset_revision and next_downloadable_changeset_revision != changeset_revision:
             repository_metadata = suc.get_repository_metadata_by_changeset_revision( app,
                                                                                      repository_id,
                                                                                      next_downloadable_changeset_revision )

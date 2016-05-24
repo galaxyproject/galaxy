@@ -10,6 +10,7 @@ import string
 import time
 import urlparse
 from Cookie import CookieError
+from importlib import import_module
 
 from Cheetah.Template import Template
 import mako.runtime
@@ -26,7 +27,6 @@ from galaxy.exceptions import MessageException
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util import safe_str_cmp
-from galaxy.util.backports.importlib import import_module
 from galaxy.util.sanitize_html import sanitize_html
 
 from galaxy.managers import context
@@ -113,7 +113,7 @@ class WebApplication( base.WebApplication ):
                 module_name = package_name + "." + name
                 try:
                     module = import_module( module_name )
-                except ControllerUnavailable, exc:
+                except ControllerUnavailable as exc:
                     log.debug("%s could not be loaded: %s" % (module_name, str(exc)))
                     continue
                 # Look for a controller inside the modules
@@ -138,7 +138,7 @@ class WebApplication( base.WebApplication ):
                 module_name = package_name + "." + name
                 try:
                     module = import_module( module_name )
-                except ControllerUnavailable, exc:
+                except ControllerUnavailable as exc:
                     log.debug("%s could not be loaded: %s" % (module_name, str(exc)))
                     continue
                 for key in dir( module ):
@@ -252,7 +252,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
             for locale in client_locales:
                 try:
                     locales.append( Locale.parse( locale.split( ';' )[0].strip(), sep='-' ).language )
-                except Exception, e:
+                except Exception as e:
                     log.debug( "Error parsing locale '%s'. %s: %s", locale, type( e ), e )
         if not locales:
             # Default to English
@@ -347,7 +347,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
             self.response.cookies[name]['secure'] = True
         try:
             self.response.cookies[name]['httponly'] = True
-        except CookieError, e:
+        except CookieError as e:
             log.warning( "Error setting httponly attribute in cookie '%s': %s" % ( name, e ) )
 
     def _authenticate_api( self, session_cookie ):
@@ -431,8 +431,6 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
             assert self.app.config.remote_user_header in self.environ, \
                 "use_remote_user is set but %s header was not provided" % self.app.config.remote_user_header
             remote_user_email = self.environ[ self.app.config.remote_user_header ]
-            if getattr( self.app.config, "normalize_remote_user_email", False ):
-                remote_user_email = remote_user_email.lower()
             if galaxy_session:
                 # An existing session, make sure correct association exists
                 if galaxy_session.user is None:

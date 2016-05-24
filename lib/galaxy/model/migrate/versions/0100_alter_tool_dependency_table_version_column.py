@@ -41,7 +41,7 @@ def upgrade(migrate_engine):
     if cmd:
         try:
             migrate_engine.execute( cmd )
-        except Exception, e:
+        except Exception as e:
             log.debug( "Altering tool_dependency.version column from TrimmedString(40) to Text failed: %s" % str( e ) )
 
 

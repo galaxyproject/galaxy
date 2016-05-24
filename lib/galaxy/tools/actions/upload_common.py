@@ -288,7 +288,7 @@ def create_paramfile( trans, uploaded_datasets ):
             p = subprocess.Popen( cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
             stdout, stderr = p.communicate()
             assert p.returncode == 0, stderr
-        except Exception, e:
+        except Exception as e:
             log.warning( 'Changing ownership of uploaded file %s failed: %s' % ( path, str( e ) ) )
 
     # TODO: json_file should go in the working directory
@@ -325,6 +325,10 @@ def create_paramfile( trans, uploaded_datasets ):
                 uuid_str = uploaded_dataset.uuid
             except:
                 uuid_str = None
+            try:
+                purge_source = uploaded_dataset.purge_source
+            except:
+                purge_source = True
             json = dict( file_type=uploaded_dataset.file_type,
                          ext=uploaded_dataset.ext,
                          name=uploaded_dataset.name,
@@ -335,6 +339,7 @@ def create_paramfile( trans, uploaded_datasets ):
                          link_data_only=link_data_only,
                          uuid=uuid_str,
                          to_posix_lines=getattr(uploaded_dataset, "to_posix_lines", True),
+                         purge_source=purge_source,
                          space_to_tab=uploaded_dataset.space_to_tab,
                          in_place=trans.app.config.external_chown_script is None,
                          path=uploaded_dataset.path )

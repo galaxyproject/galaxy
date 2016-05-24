@@ -124,7 +124,6 @@ class DataMetaFilter( Filter ):
             if self.multiple:
                 return dataset_value in file_value.split( self.separator )
             return file_value == dataset_value
-        assert self.ref_name in other_values or ( trans is not None and trans.workflow_building_mode), "Required dependency '%s' not found in incoming values" % self.ref_name
         ref = other_values.get( self.ref_name, None )
         is_data = isinstance( ref, galaxy.tools.wrappers.DatasetFilenameWrapper )
         is_data_list = isinstance( ref, galaxy.tools.wrappers.DatasetListWrapper ) or isinstance( ref, list )
@@ -146,7 +145,7 @@ class DataMetaFilter( Filter ):
         else:
             meta_value = ref.metadata.get( self.key, None )
 
-        if meta_value is None:  # assert meta_value is not None, "Required metadata value '%s' not found in referenced dataset" % self.key
+        if meta_value is None:
             return [ ( disp_name, optval, selected ) for disp_name, optval, selected in options ]
 
         if self.column is not None:
@@ -208,7 +207,6 @@ class ParamValueFilter( Filter ):
     def filter_options( self, options, trans, other_values ):
         if trans is not None and trans.workflow_building_mode:
             return []
-        assert self.ref_name in other_values, "Required dependency '%s' not found in incoming values" % self.ref_name
         ref = other_values.get( self.ref_name, None )
         for ref_attribute in self.ref_attribute:
             if not hasattr( ref, ref_attribute ):
@@ -381,7 +379,6 @@ class RemoveValueFilter( Filter ):
     def filter_options( self, options, trans, other_values ):
         if trans is not None and trans.workflow_building_mode:
             return options
-        assert self.value is not None or ( self.ref_name is not None and self.ref_name in other_values ) or (self.meta_ref is not None and self.meta_ref in other_values ) or ( trans is not None and trans.workflow_building_mode), Exception( "Required dependency '%s' or '%s' not found in incoming values" % ( self.ref_name, self.meta_ref ) )
 
         def compare_value( option_value, filter_value ):
             if isinstance( filter_value, list ):
@@ -582,7 +579,6 @@ class DynamicOptions( object ):
         if self.dataset_ref_name:
             dataset = other_values.get( self.dataset_ref_name, None )
             if not dataset or not hasattr( dataset, 'file_name' ):
-                log.warn( "Required dataset '%s' missing from input" % self.dataset_ref_name )
                 return []  # no valid dataset in history
             # Ensure parsing dynamic options does not consume more than a megabyte worth memory.
             path = dataset.file_name

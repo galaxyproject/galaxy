@@ -38,18 +38,23 @@ class HistoryListGrid( grids.Grid ):
     # Custom column types
     class DatasetsByStateColumn( grids.GridColumn ):
         def get_value( self, trans, grid, history ):
-            state_counts = {
-                'ok' : 0,
-                'running' : 0,
-                'queued' : 0,
-                'error' : 0,
-            }
-            for hda in history.datasets:
-                if hda.visible and not hda.deleted and hda.state in state_counts.keys():
-                    state_counts[ hda.state ] += 1
+            # States to show in column.
+            states_to_show = ( 'ok', 'running', 'queued', 'new', 'error' )
 
+            # Get dataset counts for each state in a state-count dictionary.
+            state_counts = dict( ( state, count ) for state, count in
+                                 trans.sa_session.query( model.Dataset.state, func.count(model.Dataset.state) )
+                                      .join( model.HistoryDatasetAssociation )
+                                      .group_by( model.Dataset.state )
+                                      .filter( model.HistoryDatasetAssociation.history_id == history.id,
+                                               model.HistoryDatasetAssociation.visible == true(),
+                                               model.HistoryDatasetAssociation.deleted == false(),
+                                               model.Dataset.state.in_(states_to_show) )
+                                 )
+
+            # Create HTML.
             rval = ''
-            for state in state_counts.keys():
+            for state in states_to_show:
                 count = state_counts.get( state )
                 if count:
                     rval += '<div class="count-box state-color-%s">%s</div> ' % (state, count)
@@ -626,7 +631,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             contents = self.history_serializer.serialize_contents( history_to_view,
                 'contents', trans=trans, user=trans.user )
 
-        except Exception, exc:
+        except Exception as exc:
             user_id = str( trans.user.id ) if trans.user else '(anonymous)'
             log.exception( 'Error bootstrapping history for user %s: %s', user_id, exc )
             if isinstance( exc, exceptions.ItemAccessibilityException ):
@@ -1268,9 +1273,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         if self.create_item_slug( trans.sa_session, history ):
             trans.sa_session.flush()
         return_dict = {
-            "name" : history.name,
-            "link" : url_for(controller='history', action="display_by_username_and_slug",
-                             username=history.user.username, slug=history.slug ) }
+            "name": history.name,
+            "link": url_for(controller='history', action="display_by_username_and_slug",
+                            username=history.user.username, slug=history.slug ) }
         return return_dict
         # TODO: used in page/editor.mako
 
@@ -1387,7 +1392,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             history = self.history_manager.get_owned( self.decode_id( id ), trans.user, current_history=trans.history )
             trans.set_history( history )
             return self.history_serializer.serialize_to_view( history, view='detailed', user=trans.user, trans=trans )
-        except exceptions.MessageException, msg_exc:
+        except exceptions.MessageException as msg_exc:
             trans.response.status = msg_exc.err_code.code
             return { 'err_msg': msg_exc.err_msg, 'err_code': msg_exc.err_code.code }
 

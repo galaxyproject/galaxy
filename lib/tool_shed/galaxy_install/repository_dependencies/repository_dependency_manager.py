@@ -8,7 +8,7 @@ import os
 import urllib
 import urllib2
 
-from galaxy.util import asbool
+from galaxy.util import asbool, url_get, build_url
 
 from tool_shed.galaxy_install.tools import tool_panel_manager
 
@@ -291,9 +291,9 @@ class RepositoryDependencyInstallManager( object ):
                        changeset_revision=str( repository.changeset_revision ) )
         pathspec = [ 'repository', 'get_repository_dependencies' ]
         try:
-            raw_text = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
-        except Exception, e:
-            log.error("The URL\n%s\nraised the exception:\n%s\n", common_util.url_join( tool_shed_url, pathspec=pathspec, params=params ), str( e ) )
+            raw_text = url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
+        except Exception as e:
+            log.error("The URL\n%s\nraised the exception:\n%s\n", build_url( tool_shed_url, pathspec=pathspec, params=params ), str( e ) )
             return ''
         if len( raw_text ) > 2:
             encoded_text = json.loads( raw_text )
@@ -378,7 +378,7 @@ class RepositoryDependencyInstallManager( object ):
                         # Handle secure / insecure Tool Shed URL protocol changes and port changes.
                         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, tool_shed_url )
                     pathspec = [ 'repository', 'get_required_repo_info_dict' ]
-                    url = common_util.url_join( tool_shed_url, pathspec=pathspec )
+                    url = build_url( tool_shed_url, pathspec=pathspec )
                     # Fix for handling 307 redirect not being handled nicely by urllib2.urlopen when the urllib2.Request has data provided
                     url = urllib2.urlopen( urllib2.Request( url ) ).geturl()
                     request = urllib2.Request( url, data=urllib.urlencode( dict( encoded_str=encoded_required_repository_str ) ) )
@@ -386,7 +386,7 @@ class RepositoryDependencyInstallManager( object ):
                     if response:
                         try:
                             required_repo_info_dict = json.loads( response )
-                        except Exception, e:
+                        except Exception as e:
                             log.exception( e )
                             return all_repo_info_dicts
                         required_repo_info_dicts = []
