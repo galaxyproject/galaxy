@@ -432,7 +432,16 @@ def __parse_element_tests( parent_element ):
 
 def __parse_test_attributes( output_elem, attrib, parse_elements=False ):
     assert_list = __parse_assert_list( output_elem )
-    file = attrib.pop( 'file', None )
+
+    # Allow either file or value to specify a target file to compare result with
+    # file was traditionally used by outputs and value by extra files.
+    if 'file' in attrib:
+        file = attrib.pop( 'file', None )
+    elif 'value' in attrib:
+        file = attrib.pop( 'value', None )
+    else:
+        file = None
+
     # File no longer required if an list of assertions was present.
     attributes = {}
     # Method of comparison
@@ -490,20 +499,15 @@ def __parse_assert_list_from_elem( assert_elem ):
     return assert_list
 
 
-def __parse_extra_files_elem( extra ):
+def __parse_extra_files_elem(extra):
     # File or directory, when directory, compare basename
     # by basename
-    extra_type = extra.get( 'type', 'file' )
-    extra_name = extra.get( 'name', None )
+    attrib = dict(extra.attrib)
+    extra_type = attrib.pop('type', 'file')
+    extra_name = attrib.pop('name', None)
     assert extra_type == 'directory' or extra_name is not None, \
         'extra_files type (%s) requires a name attribute' % extra_type
-    extra_value = extra.get( 'value', None )
-    assert extra_value is not None, 'extra_files requires a value attribute'
-    extra_attributes = {}
-    extra_attributes['compare'] = extra.get( 'compare', 'diff' ).lower()
-    extra_attributes['delta'] = extra.get( 'delta', '0' )
-    extra_attributes['lines_diff'] = int( extra.get( 'lines_diff', '0' ) )
-    extra_attributes['sort'] = string_as_bool( extra.get( 'sort', False ) )
+    extra_value, extra_attributes = __parse_test_attributes(extra, attrib)
     return extra_type, extra_value, extra_name, extra_attributes
 
 

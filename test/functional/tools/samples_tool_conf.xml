@@ -19,6 +19,7 @@
   <tool file="dbkey_filter_input.xml" />
   <tool file="dbkey_filter_multi_input.xml" />
   <tool file="composite_output.xml" />
+  <tool file="composite_output_tests.xml" />
   <tool file="unicode_stream.xml" />
   <tool file="metadata.xml" />
   <tool file="metadata_bam.xml" />
