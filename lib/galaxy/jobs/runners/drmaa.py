@@ -231,7 +231,8 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             external_metadata = not asbool( ajs.job_wrapper.job_destination.params.get( "embed_metadata_in_job", True) )
             if external_metadata:
                 self._handle_metadata_externally( ajs.job_wrapper, resolve_requirements=True )
-            super( DRMAAJobRunner, self )._complete_terminal_job( ajs )
+            if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
+                self.work_queue.put( ( self.finish_job, ajs ) )
 
     def check_watched_items( self ):
         """
