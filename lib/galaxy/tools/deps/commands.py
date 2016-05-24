@@ -70,7 +70,7 @@ def execute(cmds):
 
     Return the standard output if the commands are successful
     """
-    return __wait(cmds, shell=False, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    return _wait(cmds, shell=False, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
 
 def _wait(cmds, **popen_kwds):
