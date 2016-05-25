@@ -149,7 +149,6 @@ __all__ = [
     'check_html',
     'check_image',
     'check_zip',
-    'HTML_CHECK_LINES',
     'is_gzip',
     'is_bz2',
 ]

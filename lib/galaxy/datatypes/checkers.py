@@ -9,7 +9,6 @@ from galaxy.util.checkers import (
     check_html,
     check_image,
     check_zip,
-    HTML_CHECK_LINES,
     is_gzip,
     is_bz2,
 )
@@ -21,7 +20,6 @@ __all__ = [
     'check_html',
     'check_image',
     'check_zip',
-    'HTML_CHECK_LINES',
     'is_gzip',
     'is_bz2',
 ]
