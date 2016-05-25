@@ -1,16 +1,42 @@
-.repos_toolbar {
+.library_style_container{
+  .repos_toolbar {
     margin-bottom: 0.5em;
     span {
-        margin-right: 0.2em;
+      margin-right: 0.2em;
     }
     .toolbar-item{
-        margin-left: 1em;
+      margin-left: 1em;
     }
-}
-.repos-nav{
-  margin-top: 0.5em;
-}
+  }
+  .repos-nav{
+    margin-top: 0.5em;
+  }
+  .icon-inline{
+    margin-left: 0.5em;
+  }
 
-.icon-inline{
-  margin-left: 0.5em;
+
+  .status-uninstalled,
+  .status-deactivated {
+    background-color: #eee;
+  }
+  .status-new{
+    background-color: #DBDB93;
+  }
+  .status-error{
+    background-color: #f9c7c5;
+  }
+  .status-cloning,
+  .status-installing-tool-dependencies,
+  .status-installing-repository-dependencies,
+  .status-setting-tool-versions {
+    background-color: #FFFFCC;
+  }
+
+  .update-new-version{
+    background-color: #9394B1;
+  }
+  .update-minor-update{
+    background-color: #FFE4CC;
+  }
 }

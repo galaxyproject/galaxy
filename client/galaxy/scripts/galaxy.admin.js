@@ -22,7 +22,7 @@ var AdminRouter = Backbone.Router.extend({
     "repos"                      : "repolist",
     "repos/v/:view"              : "repolist",
     "repos/v/:view/f/:filter"    : "repolist",
-    // "repos/:id"           : "repos",
+    "repos/:id"                  : "repodetail",
     // "repos(?view=:view)&(filter=:filter)"    : "repolist",
 
   },
@@ -57,6 +57,9 @@ var GalaxyAdminApp = Backbone.View.extend({
       } else{
         Galaxy.adminapp.adminReposListView = new mod_repos_list_view.AdminReposListView({view: view, filter: filter});
       }
+    });
+    this.admin_router.on('route:repodetail', function(id) {
+      console.log('detail id:'+id);
     });
 
     Backbone.history.start({pushState: false});
