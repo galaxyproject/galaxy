@@ -55,7 +55,7 @@ def ensure_cwltool_available():
         if main is None:
             message += " cwltool is not unavailable."
         elif load_tool is None:
-            message += " cwltool.load_tool is unavailabe - cwltool version is too old."
+            message += " cwltool.load_tool is unavailable - cwltool version is too old."
         if requests is None:
             message += " Library 'requests' unavailable."
         if shellescape is None:

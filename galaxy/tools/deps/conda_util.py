@@ -23,6 +23,7 @@ CONDA_LICENSE = "http://docs.continuum.io/anaconda/eula"
 VERSIONED_ENV_DIR_NAME = re.compile(r"__package__(.*)@__version__(.*)")
 UNVERSIONED_ENV_DIR_NAME = re.compile(r"__package__(.*)@__unversioned__")
 USE_PATH_EXEC_DEFAULT = False
+CONDA_VERSION = "3.19.3"
 
 
 def conda_link():
@@ -264,7 +265,8 @@ def install_conda(conda_context=None):
     os.close(f)
     download_cmd = " ".join(commands.download_command(conda_link(), to=script_path, quote_url=True))
     install_cmd = "bash '%s' -b -p '%s'" % (script_path, conda_context.conda_prefix)
-    full_command = "%s; %s" % (download_cmd, install_cmd)
+    fix_version_cmd = "%s install -y -q conda=%s " % (os.path.join(conda_context.conda_prefix, 'bin/conda'), CONDA_VERSION)
+    full_command = "%s && %s && %s" % (download_cmd, install_cmd, fix_version_cmd)
     try:
         return conda_context.shell_exec(full_command)
     finally:

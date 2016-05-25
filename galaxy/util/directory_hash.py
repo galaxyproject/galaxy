@@ -25,7 +25,7 @@ def directory_hash_id( id ):
         # Drop the last three digits -- 1000 files per directory
         padded = padded[:-3]
         # Break into chunks of three
-        return [ padded[ i * 3 : (i + 1 ) * 3 ] for i in range( len( padded ) // 3 ) ]
+        return [ padded[ i * 3:(i + 1 ) * 3 ] for i in range( len( padded ) // 3 ) ]
     else:
         # assume it is a UUID
         return list(iter(s[0:3]))
