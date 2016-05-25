@@ -441,12 +441,7 @@ def __parse_test_attributes( output_elem, attrib, parse_elements=False ):
 
     # Allow either file or value to specify a target file to compare result with
     # file was traditionally used by outputs and value by extra files.
-    if 'file' in attrib:
-        file = attrib.pop( 'file', None )
-    elif 'value' in attrib:
-        file = attrib.pop( 'value', None )
-    else:
-        file = None
+    file = attrib.pop( 'file', attrib.pop( 'value', None ) )
 
     # File no longer required if an list of assertions was present.
     attributes = {}
