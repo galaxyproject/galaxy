@@ -39,8 +39,8 @@ class SlurmJobRunner( DRMAAJobRunner ):
                     return dict( JobState='NOT_FOUND' )
                 raise Exception( '`%s` returned %s, stderr: %s' % ( ' '.join( cmd ), p.returncode, stderr ) )
             return dict( [ out_param.split( '=', 1 ) for out_param in stdout.split() ] )
-        if drmaa_state == self.drmaa_job_states.FAILED:
-            try:
+        try:
+            if drmaa_state == self.drmaa_job_states.FAILED:
                 job_info = __get_jobinfo()
                 sleep = 1
                 while job_info['JobState'] == 'COMPLETING':
@@ -86,22 +86,21 @@ class SlurmJobRunner( DRMAAJobRunner ):
                     ajs.stop_job = False
                     self.work_queue.put( ( self.fail_job, ajs ) )
                     return
-            except Exception as e:
-                log.exception( '(%s/%s) Unable to inspect failed slurm job using scontrol, job will be unconditionally failed: %s', ajs.job_wrapper.get_id_tag(), ajs.job_id, e )
-                return super( SlurmJobRunner, self )._complete_terminal_job( ajs, drmaa_state=drmaa_state )
-        if drmaa_state == self.drmaa_job_states.DONE:
-            with open(ajs.error_file, 'r+') as f:
-                lines = f.readlines()
-                f.seek(0)
-                for line in lines:
-                    stripped_line = line.strip()
-                    if any([_ in stripped_line for _ in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS]):
-                        log.debug( '(%s/%s) Job completed, removing SLURM exceeded memory warning: "%s"', ajs.job_wrapper.get_id_tag(), ajs.job_id, stripped_line )
-                    else:
-                        f.write(line)
-                f.truncate()
-        # by default, finish as if the job was successful.
-        super( SlurmJobRunner, self )._complete_terminal_job( ajs, drmaa_state=drmaa_state )
+            if drmaa_state == self.drmaa_job_states.DONE:
+                with open(ajs.error_file, 'r+') as f:
+                    lines = f.readlines()
+                    f.seek(0)
+                    for line in lines:
+                        stripped_line = line.strip()
+                        if any([_ in stripped_line for _ in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS]):
+                            log.debug( '(%s/%s) Job completed, removing SLURM exceeded memory warning: "%s"', ajs.job_wrapper.get_id_tag(), ajs.job_id, stripped_line )
+                        else:
+                            f.write(line)
+                    f.truncate()
+        except Exception:
+            log.exception( '(%s/%s) Failure in SLURM _complete_terminal_job(), job final state will be: %s', ajs.job_wrapper.get_id_tag(), ajs.job_id, drmaa_state )
+        # by default, finish the job with the state from drmaa
+        return super( SlurmJobRunner, self )._complete_terminal_job( ajs, drmaa_state=drmaa_state )
 
     def __check_memory_limit( self, efile_path ):
         """
