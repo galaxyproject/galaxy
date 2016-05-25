@@ -48,6 +48,7 @@ var PageLayoutView = Backbone.View.extend( BaseMVC.LoggableMixin ).extend({
         this.renderMessageBox();
         this.renderInactivityBox();
         this.renderPanels();
+        this._checkChatServerOnline();
         return this;
     },
 
@@ -131,7 +132,31 @@ var PageLayoutView = Backbone.View.extend( BaseMVC.LoggableMixin ).extend({
         }
     },
 
-    toString : function() { return 'PageLayoutView'; }
+    toString : function() { return 'PageLayoutView'; },
+
+    /** Check if the chat server is online and show icon otherwise hide it chat */
+    _checkChatServerOnline: function(){
+        var host = window.Galaxy.config.communication_server_host,
+            port = window.Galaxy.config.communication_server_port,
+            $chat_icon_element = $( "#show-chat-online" );
+        // ping the server whether it is online
+ 	$.ajax({
+		url: host + ":" + port,
+	})
+	.success( function( data ) { 
+                // enable chat only when a user is logged in
+                if( window.Galaxy.user.id !== null ) {
+			if( $chat_icon_element.css( "visibility")  === "hidden" ) {
+				$chat_icon_element.css( "visibility", "visible" ); 
+			}
+		}
+                
+	})
+	.error( function( data ) { 
+                // makes the chat icon hidden if chat server is not up
+		$chat_icon_element.css( "visibility", "hidden" ); 
+	});
+    },
 });
 
 // ============================================================================

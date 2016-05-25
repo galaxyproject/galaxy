@@ -79,16 +79,17 @@ def crossdomain(origin=None, methods=None, headers=None,
 template = """<!DOCTYPE HTML>
 <html>
 <head>
-    <title>Real-time communication for Galaxy</title>
+    <title>Chat</title>
 </head>
-<body> 
+<body overflow="hidden"> 
+    <div id="all_messages" class="messages" style="overflow: auto; height: 300px;"></div>
 
+    <div class="send_message" style="margin-top:15px;">
     <form id="broadcast" method="POST" action='#'>
-        <input type="text" name="broadcast_data" id="broadcast_data" placeholder="type your message...">
+        <textarea rows="4" cols="100" name="broadcast_data" id="broadcast_data" placeholder="type your message..."></textarea>
         <input type="submit" value="Send">
     </form>
-    <h3>All messages</h3>
-    <div id="log"></div>
+    </div>
 
     <script type="text/javascript" src="//code.jquery.com/jquery-1.4.2.min.js"></script>
     <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
@@ -105,7 +106,11 @@ template = """<!DOCTYPE HTML>
             socket.on('event response', function( msg ) {
                 var orig_message = msg.data.split(':'),
                     message = unescape(orig_message[1]) + ": " + unescape(orig_message[0]);
-                $('#log').append('<br>' + $('<div' + '/' + '>').text( message ).html());
+                // append only for non empty messages
+                if( orig_message[0].length > 0 ) {
+			$( '#all_messages' ).append( '<br><br>' + $('<div' + '/' + '>' ).text( message ).html() );
+		}
+                
             });
 
             // event handler for new connections
@@ -130,13 +135,13 @@ template = """<!DOCTYPE HTML>
         function get_username() {
                 var username_keyvalue = $('.modal-body').context.URL.split('?')[1];
                 if(username_keyvalue) {
-                    return unescape(username_keyvalue.split('=')[1]);
-        }
-        else {
-            return "";
-        }
-
-}
+			return unescape(username_keyvalue.split('=')[1]);
+		}
+		else {
+			return "";	
+		}
+                
+	}
 
     </script>
 </body>
@@ -157,7 +162,6 @@ def event_connect(message):
 
 @socketio.on('event broadcast', namespace='/chat')
 def event_broadcast(message):
-    print(message)
     emit( 'event response',
          { 'data': message['data']}, broadcast=True )
 
