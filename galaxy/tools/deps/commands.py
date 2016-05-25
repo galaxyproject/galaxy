@@ -78,7 +78,7 @@ def execute(cmds):
     return _wait(cmds, shell=False)
 
 
-def argv_to_str(command_argv):
+def argv_to_str(command_argv, quote=True):
     """Convert an argv command list to a string for shell subprocess.
 
     If None appears in the command list it is simply excluded.
@@ -87,7 +87,8 @@ def argv_to_str(command_argv):
     used in security critical paths of code and should not be used to sanitize
     code.
     """
-    return " ".join([shell_quote(c) for c in command_argv if c is not None])
+    map_func = shell_quote if quote else lambda x: x
+    return " ".join([map_func(c) for c in command_argv if c is not None])
 
 
 def _wait(cmds, **popen_kwds):
