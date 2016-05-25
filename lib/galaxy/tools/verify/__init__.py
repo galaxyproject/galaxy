@@ -45,7 +45,7 @@ def verify(
         md5 = attributes.get("md5")
         try:
             _verify_md5(output_content, md5)
-        except AssertionError, err:
+        except AssertionError as err:
             errmsg = 'History item %s different than expected\n' % (hid)
             errmsg += str( err )
             raise AssertionError( errmsg )
@@ -62,7 +62,7 @@ def verify(
             log.debug('keep_outputs_dir: %s, ofn: %s', keep_outputs_dir, ofn)
             try:
                 shutil.copy( temp_name, ofn )
-            except Exception, exc:
+            except Exception as exc:
                 error_log_msg = 'Could not save output file %s to %s: ' % (temp_name, ofn)
                 error_log_msg += str(exc)
                 log.error(error_log_msg, exc_info=True)
@@ -95,7 +95,7 @@ def verify(
                 extra_files = attributes.get('extra_files', None)
                 if extra_files:
                     verify_extra_files(extra_files)
-        except AssertionError, err:
+        except AssertionError as err:
             errmsg = 'History item %s different than expected, difference (using %s):\n' % ( hid, compare )
             errmsg += "( %s v. %s )\n" % ( local_name, temp_name )
             errmsg += str( err )
@@ -212,7 +212,7 @@ def files_diff(file1, file2, attributes=None):
                     log.info('## files diff on %s and %s lines_diff=%d, found diff = %d, found pdf invalid diff = %d' % (file1, file2, allowed_diff_count, diff_lines, invalid_diff_lines))
                     if invalid_diff_lines > allowed_diff_count:
                         # Print out diff_slice so we can see what failed
-                        print "###### diff_slice ######"
+                        log.info("###### diff_slice ######")
                         raise AssertionError( "".join( diff_slice ) )
                 else:
                     log.info('## files diff on %s and %s lines_diff=%d, found diff = %d' % (file1, file2, allowed_diff_count, diff_lines))
