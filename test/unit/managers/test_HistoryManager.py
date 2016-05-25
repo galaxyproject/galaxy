@@ -337,6 +337,19 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.assertEqual( self.history_manager.set_current_by_id( self.trans, history1.id ), history1 )
         self.assertEqual( self.history_manager.get_current( self.trans ), history1 )
 
+    def test_most_recently_used( self ):
+        user2 = self.user_manager.create( **user2_data )
+        self.trans.set_user( user2 )
+
+        history1 = self.history_manager.create( name='history1', user=user2 )
+        self.trans.set_history( history1 )
+        history2 = self.history_manager.create( name='history2', user=user2 )
+
+        self.log( "should be able to get the most recently used (updated) history for a given user" )
+        self.assertEqual( self.history_manager.most_recent( user2 ), history2 )
+        self.history_manager.update( history1, { 'name': 'new name' })
+        self.assertEqual( self.history_manager.most_recent( user2 ), history1 )
+
 
 # =============================================================================
 # web.url_for doesn't work well in the framework
