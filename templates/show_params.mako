@@ -140,6 +140,7 @@
         encoded_hda_id = trans.security.encode_id( hda.id )
         encoded_history_id = trans.security.encode_id( hda.history_id )
         %>
+        <tr><td>Number:</td><td>${hda.hid | h}</td></tr>
         <tr><td>Name:</td><td>${hda.name | h}</td></tr>
         <tr><td>Created:</td><td>${unicodify(hda.create_time.strftime(trans.app.config.pretty_datetime_format))}</td></tr>
         ##      <tr><td>Copied from another history?</td><td>${hda.source_library_dataset}</td></tr>
