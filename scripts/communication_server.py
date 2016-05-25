@@ -87,11 +87,12 @@ template = """<!DOCTYPE HTML>
     <div class="send_message" style="margin-top:15px;">
     <form id="broadcast" method="POST" action='#'>
         <textarea rows="4" cols="100" name="broadcast_data" id="broadcast_data" placeholder="type your message..."></textarea>
-        <input type="submit" value="Send">
+        <input type="submit" value="Send Message">
+        <input type="button" value="Disconnect" id="disconnect">
     </form>
     </div>
 
-    <script type="text/javascript" src="//code.jquery.com/jquery-1.4.2.min.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.10.2.js"></script>
     <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
     <script type="text/javascript" charset="utf-8">
         $(document).ready(function(){
@@ -100,17 +101,28 @@ template = """<!DOCTYPE HTML>
 
             // connect io socket to the current server
             var socket = io.connect( window.location.protocol + '//' + document.domain + ':' + location.port + namespace );
-              
+            
+            // fill the messages if user is already connected 
+            // and comes back to the chat window
+            fill_messages();
+
             // event handler for server sent data
             // append all the messages broadcasted
             socket.on('event response', function( msg ) {
                 var orig_message = msg.data.split(':'),
-                    message = unescape(orig_message[1]) + ": " + unescape(orig_message[0]);
+                    from_uid = orig_message[1].split('-')[1],
+                    message = unescape(orig_message[1].split('-')[0]) + ": " + unescape(orig_message[0]),
+                    uid = get_userid(),
+                    $all_messages = $('#all_messages');
                 // append only for non empty messages
                 if( orig_message[0].length > 0 ) {
-			$( '#all_messages' ).append( '<br><br>' + $('<div' + '/' + '>' ).text( message ).html() );
+                        $( '#all_messages' ).append( $('<div' + '/' + '>' ).text( message ).html() );
+                        $( '#all_messages' ).append('<br><br>');
 		}
-                
+                // updates the user session storage with all the messages
+                sessionStorage[uid]  = $all_messages.html();
+                // show the last item by scrolling to the end
+                scroll_to_last($all_messages);                
             });
 
             // event handler for new connections
@@ -123,24 +135,63 @@ template = """<!DOCTYPE HTML>
             // broadcast the data
             $('form#broadcast').submit( function( event ) {
                 var send_data = { };
-                send_data.data = escape( $( '#broadcast_data' ).val() ) + ':' + get_username();
+                send_data.data = escape( $( '#broadcast_data' ).val() ) + ':' + get_userdata();
                 socket.emit( 'event broadcast', send_data );
                 $( '#broadcast_data' ).val('');
                 return false;
             });
-            
+
+            // disconnet the user from the chat server
+            $('#disconnect').click(function(event){
+                var send_data = { }
+                    uid = get_userid();
+                send_data.data = "disconnected" + ":" + get_username();
+		socket.emit( 'event disconnect', send_data );
+                sessionStorage.removeItem(uid);
+                return false
+	    });
         });
+
         // get the current username of logged in user
         // from the querystring of the URL
-        function get_username() {
-                var username_keyvalue = $('.modal-body').context.URL.split('?')[1];
-                if(username_keyvalue) {
-			return unescape(username_keyvalue.split('=')[1]);
+        function get_userdata() {
+                var user_data = $('.modal-body').context.URL.split('?')[1],
+                    data = user_data.split('&'),
+                    userid_data = data[1],
+                    username_data = data[0];
+                if(data) {
+			return unescape( username_data.split('=')[1] + "-" + userid_data.split('=')[1] );
 		}
 		else {
 			return "";	
 		}
-                
+	}
+
+	// fill in all messages
+        function fill_messages() {
+                var uid = get_userid(),
+                    message_html = $.parseHTML( sessionStorage[uid] ),
+		    $all_messages = $('#all_messages');
+		if(sessionStorage[uid]) {
+			$all_messages.append( $( '<div' + '/' + '>' ).html( message_html ) );
+		}
+                // show the last item by scrolling to the end
+                scroll_to_last($all_messages);
+	}
+
+	// gets the user id
+        function get_userid() {
+		return get_userdata().split('-')[1];
+	}
+
+        // gets the user name
+        function get_username() {
+		return get_userdata().split('-')[0];
+	}
+
+	// scrolls to the last of element
+        function scroll_to_last($el) {
+		$el.scrollTop( $el[0].scrollHeight );
 	}
 
     </script>
@@ -156,14 +207,24 @@ def index():
 
 @socketio.on('event connect', namespace='/chat')
 def event_connect(message):
-    emit( 'event response',
-         { 'data': message['data'] },  broadcast=True )
-
+    print("connected")
+    
 
 @socketio.on('event broadcast', namespace='/chat')
 def event_broadcast(message):
     emit( 'event response',
          { 'data': message['data']}, broadcast=True )
+
+
+@socketio.on('event disconnect', namespace='/chat')
+def event_disconnect(message):
+    print("disconnected")
+    disconnect()
+
+
+@socketio.on('disconnect', namespace='/chat')
+def event_disconnect():
+    print("disconnected")
 
 
 if __name__ == '__main__':

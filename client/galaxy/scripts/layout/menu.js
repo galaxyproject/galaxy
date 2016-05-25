@@ -24,16 +24,21 @@ var Collection = Backbone.Collection.extend({
                 var host =  window.Galaxy.config.communication_server_host,
                     port = window.Galaxy.config.communication_server_port,
                     username = escape(window.Galaxy.user.attributes.username),
-                    query_string = "?username=" + username,
+                    uid = escape(window.Galaxy.user.id),
+                    query_string = "?username=" + username + "&uid=" + uid,
                     src = host + ":" + port + query_string,
-		    template = "<iframe data-username=" + username + " class='f-iframe' src=" + src + " style='width:100%; height:100%;'> </iframe>";
+		    template = "<iframe class='f-iframe' src=" + src + " style='width:100%; height:100%;'> </iframe>";
+                // shows the modal if already present, otherwise create one
+                if( $(".modal.ui-modal").length > 0 ) {
+			$(".modal.ui-modal").remove();
+		}
 		this.modal = new Modal.View({
-		        title           : 'Chat with online users',
-		        body            : template,
-		        height          : 500,
-		        width           : 900,
-		        closing_events  : true,
-		        title_separator : false
+			title           : 'Chat with online users',
+			body            : template,
+			height          : 500,
+			width           : 900,
+			closing_events  : true,
+			title_separator : false
 		});
 		// show modal
 		this.modal.show();
