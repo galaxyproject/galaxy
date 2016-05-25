@@ -81,15 +81,11 @@ var AdminReposListView = Backbone.View.extend({
     this.options = _.extend( this.options, options );
     this.$el.find('li').removeClass('active');
     $('.tab_' + this.options.view).addClass('active');
-    var that = this;
-    // _.filter(this.collection, function(repo){ return repo.type === that.options.filter; });
-    // this.updateRepoCounts();
-  },
-
-  updateRepoCounts: function(options){
-    this.options = _.extend( this.options, options );
-    // this.$el.find('.tab_with_tools > a').text('With Tools (125)');
-
+    if (this.options.view === 'uninstalled'){
+      $("#admin_section_select").hide();
+    } else{
+      $("#admin_section_select").show();
+    }
   },
 
   /**
@@ -113,20 +109,24 @@ var AdminReposListView = Backbone.View.extend({
    */
   renderOne: function(repo){
     var repoView = null;
-    if (this.options.view === 'all' || this.options.view === repo.get('type')){
-      var is_filter_valid = (typeof repo.get('sections') !== 'undefined') && (repo.get('sections').indexOf(this.options.filter) >= 0);
-      if ( !this.options.filter  || is_filter_valid ){
-        if (this.rowViews[repo.get('id')]){
-          repoView = this.rowViews[repo.get('id')].render();
-          this.$el.find('[data-toggle]').tooltip();
-        } else {
-          repoView = new mod_repo_row_view.AdminReposRowView({repo: repo});
-          this.rowViews[repo.get('id')] = repoView;
-          this.$el.find('[data-toggle]').tooltip();
-        }
-        this.$el.find('#repos_list_body').append(repoView.el);
+    var is_visible = false;
+    var is_uninstalled_or_deactivated = repo.get('status').toLowerCase() === 'uninstalled' || repo.get('status').toLowerCase() === 'deactivated';
+    var is_filter_valid = (typeof repo.get('sections') !== 'undefined') && (repo.get('sections').indexOf(this.options.filter) >= 0);
+    is_visible = is_visible || (this.options.view === 'uninstalled' && is_uninstalled_or_deactivated);
+    is_visible = is_visible || ((this.options.view === 'all' || this.options.view === repo.get('type')) && !is_uninstalled_or_deactivated);
+    is_visible = is_visible && (!this.options.filter  || is_filter_valid);
+
+    if (is_visible) {
+      if (this.rowViews[repo.get('id')]){
+        repoView = this.rowViews[repo.get('id')].render();
+        this.$el.find('[data-toggle]').tooltip();
+      } else {
+        repoView = new mod_repo_row_view.AdminReposRowView({repo: repo});
+        this.rowViews[repo.get('id')] = repoView;
+        this.$el.find('[data-toggle]').tooltip();
       }
-    }
+      this.$el.find('#repos_list_body').append(repoView.el);
+  }
   },
 
   removeOne: function(){
@@ -262,7 +262,7 @@ var AdminReposListView = Backbone.View.extend({
             '</li>',
             '<li role="presentation" class="tab_tools"><a href="#repos/v/tools">With Tools</a></li>',
             '<li role="presentation" class="tab_packages"><a href="#repos/v/packages">Packages</a></li>',
-            '<li role="presentation" class="tab_uninstalled"><a href="#repos/v/uninstalled">Packages</a></li>',
+            '<li role="presentation" class="tab_uninstalled"><a href="#repos/v/uninstalled">Uninstalled or Deactivated</a></li>',
             // '<li role="presentation" class="tab_suites"><a href="#repos?view=suites">Suites</a></li>',
             // '<li role="presentation" class="tab_with_dm"><a href="#repos?view=dm">Data Managers</a></li>',
             // '<li role="presentation" class="tab_with_datatypes"><a href="#repos?view=datatypes">Datatypes</a></li>',
