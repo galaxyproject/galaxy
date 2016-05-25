@@ -84,6 +84,12 @@ class XmlToolSource(ToolSource):
             return []
         return [ edam_op.text for edam_op in edam_ops.findall("edam_operation") ]
 
+    def parse_edam_topics(self):
+        edam_topics = self.root.find("edam_topics")
+        if edam_topics is None:
+            return []
+        return [ edam_topic.text for edam_topic in edam_topics.findall("edam_topic") ]
+
     def parse_description(self):
         return xml_text(self.root, "description")
 
