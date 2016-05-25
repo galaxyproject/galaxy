@@ -212,7 +212,7 @@ def files_diff(file1, file2, attributes=None):
                     log.info('## files diff on %s and %s lines_diff=%d, found diff = %d, found pdf invalid diff = %d' % (file1, file2, allowed_diff_count, diff_lines, invalid_diff_lines))
                     if invalid_diff_lines > allowed_diff_count:
                         # Print out diff_slice so we can see what failed
-                        print "###### diff_slice ######"
+                        log.info("###### diff_slice ######")
                         raise AssertionError( "".join( diff_slice ) )
                 else:
                     log.info('## files diff on %s and %s lines_diff=%d, found diff = %d' % (file1, file2, allowed_diff_count, diff_lines))
