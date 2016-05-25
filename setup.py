@@ -48,6 +48,8 @@ PACKAGES = [
     'galaxy.tools.linters',
     'galaxy.tools.deps',
     'galaxy.tools.deps.resolvers',
+    'galaxy.tools.verify',
+    'galaxy.tools.verify.asserts',
     'galaxy.util', # Incomplete
 ]
 ENTRY_POINTS = '''
