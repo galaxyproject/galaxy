@@ -12,7 +12,7 @@ assertion_module_names = ['text', 'tabular', 'xml']
 # <MODULE_NAME> to the list of assertion module names defined above.
 assertion_modules = []
 for assertion_module_name in assertion_module_names:
-    full_assertion_module_name = 'base.asserts.' + assertion_module_name
+    full_assertion_module_name = 'galaxy.tools.verify.asserts.' + assertion_module_name
     log.debug(full_assertion_module_name)
     try:
         # Dynamically import module

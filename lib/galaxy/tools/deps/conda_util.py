@@ -286,6 +286,27 @@ def install_conda_target(conda_target, conda_context=None):
     conda_context.exec_create(create_args)
 
 
+def is_target_available(conda_target, conda_context=None):
+    """ Checks if a specified target is available for installation.
+        If the package name exists return "True". If in addition the version matches exactly return "exact".
+        Otherwise return False.
+    """
+    conda_context = _ensure_conda_context(conda_context)
+    conda_context.ensure_channels_configured()
+    search_cmd = [conda_context.conda_exec, "search", "--full-name", "--json", conda_target.package]
+    res = commands.execute(search_cmd)
+    hits = json.loads(res).get(conda_target.package, [])
+
+    if len(hits) > 0:
+        if conda_target.version:
+            for hit in hits:
+                if hit['version'] == conda_target.version:
+                    return 'exact'
+        return True
+    else:
+        return False
+
+
 def is_conda_target_installed(conda_target, conda_context=None):
     conda_context = _ensure_conda_context(conda_context)
     return conda_context.has_env(conda_target.install_environment)
