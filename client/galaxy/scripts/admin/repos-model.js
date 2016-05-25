@@ -33,6 +33,30 @@ define([], function() {
       return 0; // equal
     },
 
+    statusComparator: function(repoA, repoB){
+      var name_A = repoA.get("status").toLowerCase();
+      var name_B = repoB.get("status").toLowerCase();
+      var state_order = [
+        'error',
+        'installing',
+        'cloning',
+        'setting tool versions',
+        'installing repository dependencies',
+        'installing tool dependencies',
+        'loading proprietary datatypes',
+        'new',
+        'installed',
+        'deactivated',
+        'uninstalled'
+      ]
+      if (state_order.indexOf(name_A) > state_order.indexOf(name_B)) {
+        return -1;
+      }
+      if (state_order.indexOf(name_A) < state_order.indexOf(name_B)) {
+        return 1;
+      }
+      return 0;
+    },
 
     switchComparator: function(comparator_name){
       switch (comparator_name){
@@ -46,7 +70,10 @@ define([], function() {
           this.comparator = 'owner';
           break;
         case 'installation':
-          this.comparator = 'status';
+          this.comparator = this.statusComparator;
+          break;
+        case 'version':
+          this.comparator = 'update';
           break;
       }
     }

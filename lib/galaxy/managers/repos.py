@@ -43,14 +43,14 @@ class RepositorySerializer( base.ModelSerializer ):
             'status',
             'create_time',
             'tool_shed',
+            'tool_shed_status',
 
         ])
         self.add_view( 'detailed', [
+            'uninstalled',
             'changeset_revision',
             'ctx_rev',
-            'tool_shed_status',
             'deleted',
-            'uninstalled',
             'error_message',
             'installed_changeset_revision',
             'update_time',
