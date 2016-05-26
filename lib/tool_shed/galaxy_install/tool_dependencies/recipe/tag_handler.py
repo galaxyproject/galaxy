@@ -22,7 +22,7 @@ class RecipeTag( object ):
 
     def process_tag_set( self, tool_shed_repository, tool_dependency, package_elem, package_name, package_version,
                          from_tool_migration_manager=False, tool_dependency_db_records=None ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
 
 class SyncDatabase( object ):

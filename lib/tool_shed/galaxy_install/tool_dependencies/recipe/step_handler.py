@@ -239,10 +239,10 @@ class RecipeStep( object ):
 
     def execute_step( self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
                       install_environment, work_dir, current_dir=None, initial_download=False ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method")
 
     def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
 
 class AssertDirectoryExecutable( RecipeStep ):

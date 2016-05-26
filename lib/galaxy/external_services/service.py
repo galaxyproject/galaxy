@@ -218,7 +218,7 @@ class PopulatedExternalService( object ):
             elif isinstance( item, ExternalServiceActionsGroup ):
                 item.prepare_actions( param_dict, param_dict, action_list )
             else:
-                raise 'unknown item type found'
+                raise Exception( 'unknown item type found' )
         self.param_dict = param_dict
         self.actions = action_list
 

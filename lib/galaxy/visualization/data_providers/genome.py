@@ -1483,7 +1483,7 @@ class ENCODEPeakDataProvider( GenomeDataProvider ):
     """
 
     def get_iterator( self, data_file, chrom, start, end, **kwargs ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
         """
