@@ -78,7 +78,7 @@ class DefaultToolAction( object ):
                             data = new_data
 
                 if not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
-                    raise "User does not have permission to use a dataset (%s) provided for input." % data.id
+                    raise Exception( "User does not have permission to use a dataset (%s) provided for input." % data.id )
                 return data
             if isinstance( input, DataToolParameter ):
                 if isinstance( value, list ):

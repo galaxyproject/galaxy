@@ -1572,7 +1572,7 @@ class LibraryPermissions( object ):
         if isinstance( library_item, Library ):
             self.library = library_item
         else:
-            raise "Invalid Library specified: %s" % library_item.__class__.__name__
+            raise Exception( "Invalid Library specified: %s" % library_item.__class__.__name__ )
         self.role = role
 
 
@@ -1582,7 +1582,7 @@ class LibraryFolderPermissions( object ):
         if isinstance( library_item, LibraryFolder ):
             self.folder = library_item
         else:
-            raise "Invalid LibraryFolder specified: %s" % library_item.__class__.__name__
+            raise Exception( "Invalid LibraryFolder specified: %s" % library_item.__class__.__name__ )
         self.role = role
 
 
@@ -1592,7 +1592,7 @@ class LibraryDatasetPermissions( object ):
         if isinstance( library_item, LibraryDataset ):
             self.library_dataset = library_item
         else:
-            raise "Invalid LibraryDataset specified: %s" % library_item.__class__.__name__
+            raise Exception( "Invalid LibraryDataset specified: %s" % library_item.__class__.__name__ )
         self.role = role
 
 
@@ -1602,7 +1602,7 @@ class LibraryDatasetDatasetAssociationPermissions( object ):
         if isinstance( library_item, LibraryDatasetDatasetAssociation ):
             self.library_dataset_dataset_association = library_item
         else:
-            raise "Invalid LibraryDatasetDatasetAssociation specified: %s" % library_item.__class__.__name__
+            raise Exception( "Invalid LibraryDatasetDatasetAssociation specified: %s" % library_item.__class__.__name__ )
         self.role = role
 
 
@@ -2079,7 +2079,7 @@ class DatasetInstance( object ):
                 return fake_hda
 
     def clear_associated_files( self, metadata_safe=False, purge=False ):
-        raise 'Unimplemented'
+        raise Exception( "Unimplemented" )
 
     def get_child_by_designation(self, designation):
         for child in self.children:
