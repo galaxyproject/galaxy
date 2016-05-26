@@ -1300,8 +1300,8 @@ class GalaxyRBACAgent( RBACAgent ):
                         self.sa_session.add( lp )
                         self.sa_session.flush()
             else:
-                raise Exception( 'Invalid class (%s) specified for target_library_item (%s)' % \ )
-                    ( target_library_item.__class__, target_library_item.__class__.__name__ )
+                raise Exception( 'Invalid class (%s) specified for target_library_item (%s)' %
+                                 ( target_library_item.__class__, target_library_item.__class__.__name__ ) )
 
     def get_permitted_libraries( self, trans, user, actions ):
         """
