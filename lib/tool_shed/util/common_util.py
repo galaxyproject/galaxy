@@ -161,7 +161,7 @@ def get_repository_dependencies( app, tool_shed_url, repository_name, repository
         tool_shed_accessible = True
     except Exception as e:
         tool_shed_accessible = False
-        log.warn( "The URL\n%s\nraised the exception:\n%s\n", util.build_url( tool_shed_url, pathspec=pathspec, params=params ), e )
+        log.warning( "The URL\n%s\nraised the exception:\n%s\n", util.build_url( tool_shed_url, pathspec=pathspec, params=params ), e )
     if tool_shed_accessible:
         if len( raw_text ) > 2:
             encoded_text = json.loads( raw_text )
@@ -193,7 +193,7 @@ def get_tool_dependencies( app, tool_shed_url, repository_name, repository_owner
         tool_shed_accessible = True
     except Exception as e:
         tool_shed_accessible = False
-        log.warn( "The URL\n%s\nraised the exception:\n%s\n", util.build_url( tool_shed_url, pathspec=pathspec, params=params ), e )
+        log.warning( "The URL\n%s\nraised the exception:\n%s\n", util.build_url( tool_shed_url, pathspec=pathspec, params=params ), e )
     if tool_shed_accessible:
         if text:
             tool_dependencies_dict = encoding_util.tool_shed_decode( text )

@@ -428,7 +428,7 @@ class Tool( object, Dictifiable ):
         if self.profile >= 16.04 and VERSION_MAJOR < self.profile:
             template = "The tool %s targets version %s of Galaxy, you should upgrade Galaxy to ensure proper functioning of this tool."
             message = template % (self.id, self.profile)
-            log.warn(message)
+            log.warning(message)
 
         # Get the (user visible) name of the tool
         self.name = tool_source.parse_name()

@@ -74,7 +74,7 @@ class DirectoryModuleChecker(object):
         self.module_dependency_resolver = module_dependency_resolver
         self.directories = modulepath.split(pathsep)
         if prefetch:
-            log.warn("Created module dependency resolver with prefetch enabled, but directory module checker does not support this.")
+            log.warning("Created module dependency resolver with prefetch enabled, but directory module checker does not support this.")
 
     def has_module(self, module, version):
         has_module = False

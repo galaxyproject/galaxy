@@ -473,7 +473,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                         assert trans.user.id == hda.history.user_id, "HistoryDatasetAssocation does not belong to current user"
                     hdas.append( hda )
                 else:
-                    log.warn( "Invalid history_dataset_association id '%r' passed to list", hda_id )
+                    log.warning( "Invalid history_dataset_association id '%r' passed to list", hda_id )
 
             if hdas:
                 if operation == "switch" or operation == "switch_history":

@@ -491,7 +491,7 @@ class DynamicOptions( object ):
                     self.missing_index_file = self.tool_data_table.missing_index_file
             else:
                 self.missing_tool_data_table_name = tool_data_table_name
-                log.warn( "Data table named '%s' is required by tool but not configured" % tool_data_table_name )
+                log.warning( "Data table named '%s' is required by tool but not configured" % tool_data_table_name )
         # Options are defined by parsing tabular text data from a data file
         # on disk, a dataset, or the value of another parameter
         elif data_file is not None or dataset_file is not None or from_parameter is not None:
@@ -556,7 +556,7 @@ class DynamicOptions( object ):
                         except AttributeError:
                             name = "a configuration file"
                         # Perhaps this should be an error, but even a warning is useful.
-                        log.warn( "Inconsistent number of fields (%i vs %i) in %s using separator %r, check line: %r" %
+                        log.warning( "Inconsistent number of fields (%i vs %i) in %s using separator %r, check line: %r" %
                                   ( field_count, len( fields ), name, self.separator, line ) )
                     rval.append( fields )
         return rval
@@ -587,7 +587,7 @@ class DynamicOptions( object ):
             else:
                 # Pass just the first megabyte to parse_file_fields.
                 import StringIO
-                log.warn( "Attempting to load options from large file, reading just first megabyte" )
+                log.warning( "Attempting to load options from large file, reading just first megabyte" )
                 contents = open( path, 'r' ).read( 1048576 )
                 options = self.parse_file_fields( StringIO.StringIO( contents ) )
         elif self.tool_data_table:
