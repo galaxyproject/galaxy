@@ -2,6 +2,7 @@
 
 import difflib
 import filecmp
+import hashlib
 import logging
 import os
 import re
@@ -18,15 +19,18 @@ DEFAULT_TEST_DATA_RESOLVER = TestDataResolver()
 
 
 def verify(
+    item_label,
     output_content,
     attributes,
     filename=None,
-    hid=None,
     get_filename=None,
     keep_outputs_dir=None,
     verify_extra_files=None,
 ):
-    """Verify the content of a test output using test definitions described by attributes."""
+    """Verify the content of a test output using test definitions described by attributes.
+
+    Throw an informative assertion error if any of these tests fail.
+    """
     if get_filename is None:
         get_filename = DEFAULT_TEST_DATA_RESOLVER.get_filename
 
@@ -36,17 +40,27 @@ def verify(
         try:
             verify_assertions(output_content, attributes["assert_list"])
         except AssertionError as err:
-            errmsg = 'History item %s different than expected\n' % (hid)
+            errmsg = '%s different than expected\n' % (item_label)
             errmsg += str( err )
             raise AssertionError( errmsg )
 
-    # Check md5sum...
+    # Verify checksum attributes...
+    # works with older Galaxy style md5=<expected_sum> or cwltest
+    # style checksum=<hash_type>$<hash>.
+    expected_checksum_type = None
+    expected_checksum = None
     if attributes is not None and attributes.get("md5", None) is not None:
-        md5 = attributes.get("md5")
+        expected_checksum_type = "md5"
+        expected_checksum = attributes.get("md5")
+    elif attributes is not None and attributes.get("checksum", None) is not None:
+        checksum_value = attributes.get("checksum", None)
+        expected_checksum_type, expected_checksum = checksum_value.split("$", 1)
+
+    if expected_checksum_type:
         try:
-            _verify_md5(output_content, md5)
+            _verify_checksum(output_content, expected_checksum_type, expected_checksum)
         except AssertionError as err:
-            errmsg = 'History item %s different than expected\n' % (hid)
+            errmsg = '%s different than expected\n' % (item_label)
             errmsg += str( err )
             raise AssertionError( errmsg )
 
@@ -86,7 +100,7 @@ def verify(
                 s1 = len(output_content)
                 s2 = os.path.getsize(local_name)
                 if abs(s1 - s2) > int(delta):
-                    raise Exception( 'Files %s=%db but %s=%db - compare (delta=%s) failed' % (temp_name, s1, local_name, s2, delta) )
+                    raise AssertionError( 'Files %s=%db but %s=%db - compare by size (delta=%s) failed' % (temp_name, s1, local_name, s2, delta) )
             elif compare == "contains":
                 files_contains( local_name, temp_name, attributes=attributes )
             else:
@@ -96,7 +110,7 @@ def verify(
                 if extra_files:
                     verify_extra_files(extra_files)
         except AssertionError as err:
-            errmsg = 'History item %s different than expected, difference (using %s):\n' % ( hid, compare )
+            errmsg = '%s different than expected, difference (using %s):\n' % ( item_label, compare )
             errmsg += "( %s v. %s )\n" % ( local_name, temp_name )
             errmsg += str( err )
             raise AssertionError( errmsg )
@@ -124,15 +138,17 @@ def _bam_to_sam(local_name, temp_name):
     return temp_local, temp_temp
 
 
-def _verify_md5(data, expected_md5):
-    import md5
-    m = md5.new()
-    m.update( data )
-    actual_md5 = m.hexdigest()
-    if expected_md5 != actual_md5:
-        template = "Output md5sum [%s] does not match expected [%s]."
-        message = template % (actual_md5, expected_md5)
-        assert False, message
+def _verify_checksum(data, checksum_type, expected_checksum_value):
+    if checksum_type not in ["md5", "sha1", "sha256", "sha512"]:
+        raise Exception("Unimplemented hash algorithm [%s] encountered." % checksum_type)
+
+    h = hashlib.new(checksum_type)
+    h.update( data )
+    actual_checksum_value = h.hexdigest()
+    if expected_checksum_value != actual_checksum_value:
+        template = "Output checksum [%s] does not match expected [%s] (using hash algorithm %s)."
+        message = template % (actual_checksum_value, actual_checksum_value, checksum_type)
+        raise AssertionError(message)
 
 
 def check_command(command, description):
