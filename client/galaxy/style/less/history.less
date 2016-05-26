@@ -3,39 +3,17 @@
     .flex-vertical-container;
 
     > .controls {
-        // .flex-column;
-        // min-height: 113px;
-        // min-height: 0px;
     }
 
     > .list-items {
         .flex-column;
-        .flex-horizontal-container;
-        overflow-x: auto;
-        overflow-y: hidden;
-    }
-
-    .list-items .list-items-section {
-        display: inline-block;
-        flex: 1 0 auto;
         overflow-x: hidden;
         overflow-y: auto;
     }
 
     > .controls {
-        .clear;
-        margin: 0px;
-        padding: 10px 10px 8px 10px;
-
-        .messages {
-            margin-bottom: 0px;
-            & > * {
-                cursor: pointer;
-                &:last-child {
-                    margin-bottom: 8px;
-                }
-            }
-        }
+        margin: 8px 8px 1px;
+        padding: 0px;
 
         .title {
             margin-bottom: 4px;
@@ -46,26 +24,36 @@
                 font-weight: bold;
             }
         }
-        .subtitle:not(:empty){
-            margin-top: -4px;
-            margin-bottom: 6px;
+        // .subtitle:not(:empty){
+        .subtitle {
+            min-height: 15px;
+            margin: -4px 0px 8px;
             span+span:before {
-                content: ', '
+                content: ', ';
             }
         }
         .history-size {
             float: left;
-            margin: 4px 0px;
-            color: black;
+            margin: 4px 0 0;
         }
         .actions {
-            // display: block;
-            margin-bottom: 0px;
+            margin-bottom: 8px;
         }
 
-        .quota-message {
-            display: none;
-            margin: 8px 0px 5px 0px;
+        // TODO: remove
+        .messages {
+            clear: both;
+            margin-bottom: 0px;
+            & > * {
+                cursor: pointer;
+                &:last-child {
+                    margin-bottom: 8px;
+                }
+            }
+            .quota-message {
+                display: none;
+                margin: 8px 0px 5px 0px;
+            }
         }
 
         //TODO: move these out
@@ -137,9 +125,11 @@
         border-radius : 3px;
     }
 
-
-    .list-items {
+    .list-items:not(:empty) {
         border-top: 1px solid @border-default-color;
+    }
+    .list-items:empty {
+        flex-grow: 0;
     }
 
     // display only a top border on all
@@ -172,6 +162,7 @@
         margin: 0px 10px 0px 10px;
     }
 
+    .loading-indicator,
     .contents-loading-indicator {
         margin-top: 4px;
         text-align: center;
@@ -236,37 +227,22 @@
 .annotated-history-panel {
     & > .controls {
         margin: 0px;
+
         .name {
             font-size: 150%;
             margin-bottom: 4px;
         }
-        .subtitle {
-            color: black;
-            &:not(:empty) {
-                margin: 0px 0px 0px 4px;
-            }
-        }
-        .messages {
-            &:not(:empty) {
-                margin-top: 16px;
-            }
-        }
         // annotations are displayed by default in this view
-        .annotation-display {
+        .subtitle {
             display: block;
-            border: 1px solid lightgrey;
-            border-width: 1px 0px 0px 0px;
-            padding: 4px 0px 4px 0px;
-            margin: 4px 4px 0px 4px;
             white-space: pre-wrap;
             &:empty {
                 display: none;
             }
         }
-
-        .search {
-            padding: 16px 0px 0px 0px;
-            margin-bottom: 0px;
+        .history-size {
+            float: none;
+            margin: 0;
         }
     }
 
@@ -312,6 +288,7 @@
 
 // ---------------------------------------------------------------------------- current-history-panel
 .current-history-panel {
+
     // .current-content is added to dataset/collection when displayed/edited/visualized, etc.
     //  (roughly: when it's being used in the center panel)
     .list-item.history-content.current-content {
@@ -361,11 +338,11 @@
 
     > .middle {
         overflow: auto;
-        background: #DFE5F9;
     }
 
     > .footer {
         border-top-width: 1px;
+        max-height: 25px;
         // drag icon used as handle for changing width of panel
         .drag {
             height: @panel_footer_height;
@@ -374,6 +351,11 @@
             cursor: ew-resize;
         }
     }
+}
+
+// yay! specificity wars!
+#right.history-right-panel {
+    background-color: @panel-bg-color;
 }
 
 // ---------------------------------------------------------------------------- panel header buttons
@@ -635,8 +617,8 @@
             width: 100%;
 
             border: @mph-border_width solid grey;
-            border-radius: 3px;
-            background-color: #DFE5F9;
+            border-radius: 3px 3px 0px 0px;
+            background-color: @panel-bg-color;
 
             overflow: auto;
         }

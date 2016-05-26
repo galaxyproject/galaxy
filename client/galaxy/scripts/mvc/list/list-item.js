@@ -168,14 +168,8 @@ var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
         this.debug( this + '(ExpandableView).collapse' );
         var view = this;
         view.expanded = false;
-        this.$details().slideUp({
-            duration : view.fxSpeed,
-            step: function(){
-                view.trigger( 'collapsing', view );
-            },
-            complete: function(){
-                view.trigger( 'collapsed', view );
-            }
+        this.$details().slideUp( view.fxSpeed, function(){
+            view.trigger( 'collapsed', view );
         });
     }
 
@@ -288,7 +282,6 @@ var ListItemView = ExpandableView.extend(
 
     /** expand when the title bar is clicked */
     _clickTitleBar : function( event ){
-        console.log( '_clickTitleBar' );
         event.stopPropagation();
         if( event.altKey ){
             this.toggleSelect( event );

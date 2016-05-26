@@ -146,7 +146,6 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
     /** create and return a collection for when none is initially passed */
     _createDefaultCollection : function(){
         // override
-// console.log( '(_createDefaultCollection)' );
         return new this.collectionClass([]);
     },
 
@@ -160,11 +159,20 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
             error   : function( model, xhr, options, msg, details ){
                 this.trigger( 'error', model, xhr, options, msg, details );
             },
-            reset   : function(){
-                this.renderItems();
-            },
-            add     : this.addItemView,
-            remove  : this.removeItemView,
+            update  : function( collection, options ){
+                // console.info( 'update:', arguments );
+                var changes = options.changes;
+                var changeCount = changes.added.length + changes.removed.length;
+                if( changes.added.length === 1 ){
+                    return this.addItemView( _.first( changes.added ), collection, options );
+                }
+                if( changes.removed.length === 1 ){
+                    return this.removeItemView( _.first( changes.removed ), collection, options );
+                }
+                if( changes.added.length + changes.removed.length > 1 ){
+                    return this.renderItems();
+                }
+            }
         });
 
         // debugging
@@ -197,7 +205,6 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
 
             'view:de-selected': function( view, ev ){
                 this.selected = _.without( this.selected, view.model.id );
-                //this.lastSelected = view.model.id;
             }
         });
     },
@@ -516,19 +523,14 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
     // ------------------------------------------------------------------------ collection/views syncing
     _modelsToViews : function( models ){
         var self = this;
-        var reused = 0;
-        // var viewMap = _.indexBy( self.views, function( v ){ return v.model.id; });
-        var views = _.map( models, function( m ){
-            reused += self.viewMap[ m.id ]? 1 : 0;
+        return _.map( models, function( m ){
             return self.viewMap[ m.id ] || self._createItemView( m );
         });
-        // console.log( reused, 'reused', views.length - reused, 'created' );
-        return views;
     },
 
     /** Add a view (if the model should be viewable) to the panel */
     addItemView : function( model, collection, options ){
-        console.log( this + '.addItemView:', model );
+        // console.log( this + '.addItemView:', model );
         var panel = this;
         // get the index of the model in the list of filtered models shown by this list
         // in order to insert the view in the proper place
@@ -808,7 +810,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
 
     /** return a collection of the models of all currenly selected items */
     getSelectedModels : function(){
-        console.log( '(getSelectedModels)' );
+        // console.log( '(getSelectedModels)' );
         return new this.collection.constructor( _.map( this.getSelectedViews(), function( view ){
             return view.model;
         }));

@@ -38,7 +38,7 @@ var AnnotatedHistoryView = _super.extend(/** @lends AnnotatedHistoryView.prototy
     renderHistoryAnnotation : function( $newRender ){
         var annotation = this.model.get( 'annotation' );
         if( !annotation ){ return; }
-        $newRender.find( '.controls .annotation-display' ).text( annotation );
+        $newRender.find( '> .controls .subtitle' ).text( annotation );
     },
 
     /** override to add table header cells to indicate the dataset, annotation columns */

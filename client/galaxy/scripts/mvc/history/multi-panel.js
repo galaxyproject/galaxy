@@ -8,7 +8,6 @@ define([
     "ui/mode-button",
     "ui/search-input"
 ], function( HISTORY_MODEL, HISTORY_VIEW_EDIT, historyCopyDialog, ERROR_MODAL, baseMVC, ajaxQueue ){
-
 'use strict';
 
 var logNamespace = 'history';
@@ -687,7 +686,6 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         // console.log( 'queueHdaFetch:', column, column.model.get( 'contents_active' ) );
         // if the history model says it has hdas but none are present, queue an ajax req for them
         if( contents.length === 0 && column.model.contentsShown() ){
-            console.log( 'fetch needed: ' + column );
             var fetchOptions = { silent: true };
             var ids = _.values( contents.storage.allExpanded() ).join();
             if( ids ){ fetchOptions.details = ids; }

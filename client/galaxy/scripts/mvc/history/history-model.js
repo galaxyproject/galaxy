@@ -101,7 +101,8 @@ var History = Backbone.Model
 
     /** convert size in bytes to a more human readable version */
     nice_size : function(){
-        return UTILS.bytesToString( this.get( 'size' ), true, 2 );
+        var size = this.get( 'size' );
+        return size? UTILS.bytesToString( size, true, 2 ) : _l( '(empty)' );
     },
 
     /** override to add nice_size */

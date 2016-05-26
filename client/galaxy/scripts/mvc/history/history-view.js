@@ -10,8 +10,7 @@ define([
     "ui/fa-icon-button",
     "mvc/base-mvc",
     "utils/localization",
-    "ui/search-input",
-    "ui/scrollable-pages"
+    "ui/search-input"
 ], function(
     LIST_VIEW,
     HISTORY_MODEL,
@@ -78,7 +77,7 @@ var HistoryView = _super.extend(
     /** create and return a collection for when none is initially passed */
     _createDefaultCollection : function(){
         // override
-        console.log( '((history-view)_createDefaultCollection)' );
+        // console.log( '((history-view)_createDefaultCollection)' );
         return new this.collectionClass([], { history: this.model });
     },
 
@@ -128,12 +127,12 @@ var HistoryView = _super.extend(
         self.trigger( 'loading' );
         return self.model
             .fetchWithContents( options, contentsOptions )
-            // .done( function(){
-            //     // after the initial load, decorate with more time consuming fields (like HDCA element_counts)
-            //     _.delay( function(){
-            //         // self.model.contents.fetchCollectionCounts();
-            //     }, self.FETCH_COLLECTION_COUNTS_DELAY );
-            // })
+            .done( function(){
+                // after the initial load, decorate with more time consuming fields (like HDCA element_counts)
+                _.delay( function(){
+                    self.model.contents.fetchCollectionCounts();
+                }, self.FETCH_COLLECTION_COUNTS_DELAY );
+            })
             .always( function(){
                 self.trigger( 'loading-done' );
             });
@@ -159,38 +158,6 @@ var HistoryView = _super.extend(
     },
 
     // ------------------------------------------------------------------------ panel rendering
-    /** In this override, add a btn to toggle the selectors */
-    render : function( speed ){
-        _super.prototype.render.call( this, speed );
-
-        if( this.model.contents._countSections() > 2 ){
-            console.log( 'list len:',  this.$list().length );
-            this.$list().scrollablePages();
-            this.$list().on( 'scrollable-pages.page-change', _.bind( this.onPageChange, this ));
-        }
-        return this;
-    },
-
-    onPageChange : function( ev ){
-        console.log( '_pageScroll', ev );
-        var section = this.model.contents._lastSection() - ev.newPage;
-        this.model.contents.currentSection = section;
-        console.log( 'section:', section );
-        this.loadAndRenderSection( section );
-    },
-
-    loadAndRenderSection : function( section, options ){
-        options = options || {};
-        var self = this;
-        var contents = self.model.contents;
-        return self.model.contents.fetchSection( section, { silent: true })
-            .done( function(){
-                if( !self.$section( section ).children( '.history-content' ).length ){
-                    self._renderSection( section );
-                }
-            });
-    },
-
     /** In this override, add a btn to toggle the selectors */
     _buildNewRender : function(){
         var $newRender = _super.prototype._buildNewRender.call( this );
@@ -239,76 +206,92 @@ var HistoryView = _super.extend(
         }).prependTo( $where.find( '.controls .actions' ) );
     },
 
+    /** hide the $el and display a loading indicator (in the $el's parent) when loading new data */
+    _showLoadingIndicator : function( msg, speed, callback ){
+        var $indicator = $( '<div class="loading-indicator"/>' );
+        this.$el.html( $indicator.text( msg ).show( !_.isUndefined( speed )? speed : this.fxSpeed ) );
+    },
+
+    /** hide the loading indicator */
+    _hideLoadingIndicator : function( speed ){
+        this.$( '.loading-indicator' ).hide( !_.isUndefined( speed )? speed : this.fxSpeed, function(){
+            $( this ).remove();
+        });
+    },
+
+    /** show the user that the contents are loading/contacting the server */
+    showContentsLoadingIndicator : function( speed ){
+        speed = _.isNumber( speed )? speed : this.fxSpeed;
+
+        this.$emptyMessage().hide();
+        // look for an existing indicator and stop all animations on it, otherwise make one
+        var $indicator = this.$( '.contents-loading-indicator' );
+        if( $indicator.size() ){
+            return $indicator.stop().clearQueue();
+        }
+
+        // move it to the bottom and fade it in
+        // $indicator = $( '<div class="contents-loading-indicator">' + _l( 'Loading...' ) + '</div>' ).hide();
+        $indicator = $( this.templates.contentsLoadingIndicator( {}, this )).hide();
+        return $indicator
+            .insertAfter( this.$list() )
+            .slideDown( speed );
+    },
+
+    /** show the user we're done loading */
+    hideContentsLoadingIndicator : function( speed ){
+        speed = _.isNumber( speed )? speed : this.fxSpeed;
+        this.$( '> .contents-loading-indicator' ).slideUp({ duration: 100, complete: function _complete(){
+            $( this ).remove();
+        }});
+    },
+
     // ------------------------------------------------------------------------ client-side pagination
     /**  */
     renderItems : function( $whereTo ){
-        $( '.tooltip' ).remove();
-
         // console.log( 'renderItems -----------------------------------------------------------' );
         $whereTo = $whereTo || this.$el;
         var self = this;
-        var contents = self.model.contents;
-        var hidsPerSection = contents.hidsPerSection;
-        var empty = self.model.get( 'contents_active' ).active <= 0;
+        var $list = self.$list( $whereTo );
 
-        // self.freeViews();
-        self.views = [];
-        // render sections
-        // console.log( 'renderItems:', self.$list( $whereTo ) );
-        self.$list( $whereTo ).html( contents._mapSectionRanges( function( section ){
-            // console.log( 'renderItems:', section );
-            return self.templates.listItemsSection( section, self );
-        }).join( '\n' ));
-        // render content views into (only) the current section
-        // self.views = self._renderSection( this.model.contents.currentSection, $whereTo );
-        self.views = self._renderSection( contents.currentSection, $whereTo );
+        // TODO: bootstrap hack to remove orphaned tooltips
+        $( '.tooltip' ).remove();
+        self.freeViews();
+        $list.empty();
 
-        if( empty ){
-            self.$list( $whereTo ).hide();
-            self._renderEmptyMessage( $whereTo );
+        var models = self._filterCollection();
+        if( models.length ){
+            if( models.length < 1000 ){
+                self.views = self._renderSomeItems( models, $list );
+
+            } else {
+                // meh
+                var renderSliceSize = 250;
+                _.range( Math.ceil( models.length / renderSliceSize ) ).forEach( function( i ){
+                    var start = i * renderSliceSize;
+                    var stop = Math.min( start + renderSliceSize, models.length ) - 1;
+                    var someModels = models.slice( start, stop );
+                    _.defer( function(){
+                        self.views = self.views.concat( self._renderSomeItems( someModels, $list ) );
+                    });
+                });
+            }
         }
-        self.$list().scrollablePages( 'updateViewport' );
+        self._renderEmptyMessage( $whereTo ).toggle( !models.length );
 
         self.trigger( 'views:ready', self.views );
         // console.log( '----------------------------------------------------------- renderItems' );
         return self.views;
     },
 
-    _renderSection : function( section, $whereTo ){
-        // // console.debug( this + '._renderSection', section, $whereTo );
-        // var self = this;
-        // // render views from collection for the current section, replacing that section marker with them
-        // // note: shows only one section's worth of views at a time
-        // var views = [];
-        // var sectionModels = self.model.contents._filterSectionCollection( section, _.bind( this._filterItem, this ) );
-        // self.$section( section, $whereTo ).append( sectionModels.map( function( itemModel ){
-        //     var view = self._createItemView( itemModel );
-        //     views.push( view );
-        //     return self._renderItemView$el( view );
-        // }));
-        // return views;
-
-        // console.debug( this + '._renderSection', section, $whereTo );
+    _renderSomeItems: function( models, $list ){
         var self = this;
-        // render views from collection for the current section, replacing that section marker with them
-        // note: shows only one section's worth of views at a time
-        var sectionModels = self.model.contents._filterSectionCollection( section, _.bind( this._filterItem, this ) );
-        var views = self._modelsToViews( sectionModels );
-        self.$section( section, $whereTo ).append( views.map( function( view ){
-            // console.log( 'view.$el.children()', view.el.children.length );
-            return view.delegateEvents().el.children.length? view.$el : self._renderItemView$el( view );
+        var views = self._modelsToViews( models );
+        // TODO: html() doesn't play well with delegateEvents for some reason? need to empty and use append
+        $list.append( views.map( function( view ){
+            return view.el.children.length? view.delegateEvents().$el : self._renderItemView$el( view );
         }));
         return views;
-    },
-
-    /**  */
-    $section : function( section, $where ){
-        return this.$list( $where ).find( '.list-items-section[data-section="' + section + '"]' );
-    },
-
-    /**  */
-    $currentSection : function( $where ){
-        return this.$list( $where ).find( '.list-items-section.current-section' );
     },
 
     // ------------------------------------------------------------------------ sub-views
@@ -349,7 +332,7 @@ var HistoryView = _super.extend(
     _setUpItemViewListeners : function( view ){
         var panel = this;
         _super.prototype._setUpItemViewListeners.call( panel, view );
-//TODO: send from content view: this.model.collection.storage.addExpanded
+        //TODO: send from content view: this.model.collection.storage.addExpanded
         // maintain a list of items whose bodies are expanded
         return panel.listenTo( view, {
             'expanded': function( v ){
@@ -367,105 +350,6 @@ var HistoryView = _super.extend(
         _super.prototype.collapseAll.call( this );
     },
 
-// TODO: should we try to make the distinction between new contents and old that haven't been added yet?
-
-    /**  */
-    addItemView : function( model, collection, options ){
-        console.log( this + '(historyView).addItemView:', model, collection, options );
-        var self = this;
-        var contents = self.model.contents;
-        var lastSection = contents._lastSection();
-        var isNotLastSection = contents.currentSection !== lastSection;
-
-        // open and show the most recent section before adding anything there
-        if( isNotLastSection ){
-            // we need to set this now (instead of after the fetch) so that the
-            // if statement above isn't triggered more than once
-            self.model.contents.setCurrentSection( lastSection );
-            self.model.contents.fetchSection( lastSection, { silent: true })
-                .done( function(){
-                    self.renderItems();
-                    self.addItemView( model, collection, options );
-                });
-            return;
-        }
-        self.scrollTo( 0 );
-
-        // console.log( 'contains?', contents.contains( model ) );
-        // console.log( 'get:', contents.get( model.id ) + '' );
-        // console.log( contents.length );
-        // contents.on( 'all', console.info, console );
-
-        // console.log( '^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^' );
-        var hid = model.get( 'hid' );
-        var insertionIndex = contents._indexOfHidInSection( hid, contents.currentSection );
-        // console.log( hid, insertionIndex, contents.at( insertionIndex ) + '' );
-        // console.log( contents.at( insertionIndex - 1 ) + '', contents.at( insertionIndex + 1 ) + '' );
-        if( insertionIndex === null ){ return null; }
-
-//TODO: this should happen elsewhere
-        // have to manually update the hid_counter
-        self.model.set( 'hid_counter', self.model.get( 'hid_counter' ) + 1 );
-        // console.log( 'hid_counter:', self.model.get( 'hid_counter' ) );
-
-        // console.log( 'at index', insertionIndex, 'adding: ' + model );
-        var view = self._createItemView( model );
-        self.$list().show();
-        self.$emptyMessage().fadeOut( self.fxSpeed );
-        self._attachView( view, insertionIndex );
-        // console.log( '^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^' );
-
-        return view;
-    },
-
-    /**  */
-    _attachView : function( view, modelIndex, useFx ){
-        // console.log( '_attachView:', view, modelIndex, useFx );
-        useFx = _.isUndefined( useFx )? true : useFx;
-        var self = this;
-        var $el = self._renderItemView$el( view ).hide();
-
-// Im not sure any of this shit is needed - (it prob. isn't *when adding to the last section*)
-        var viewIndex = 0;
-        var prevModel = self.model.contents.at( modelIndex - 1 );
-        // console.log( 'prevModel: ' + prevModel, prevModel );
-        if( prevModel ){
-            var found = _.findIndex( self.views, function( v ){
-                // console.log( '       ', v + '', v.model + '' );
-                // console.log( '       ', v.model === prevModel );
-                return v.model === prevModel;
-            });
-            // console.log( 'found:', found );
-            if( found !== -1 ){ viewIndex = found + 1; }
-        }
-        // var viewIndex = Math.max( 0, _.findIndex( self.views, function( v ){ return v.model === prevModel; }) );
-        // console.log( 'viewIndex:', viewIndex );
-
-        self.views.splice( viewIndex, 0, view );
-        if( viewIndex === 0 ){
-            self.$currentSection().prepend( $el );
-
-        } else {
-            var prevView = self.views[ viewIndex ];
-            // console.log( 'prevView:', prevView + '', prevView.$el.get(0) );
-            // console.log( prevView.$el.parent().get(0) );
-            // $el.insertAfter( prevView.$el );
-            self.$currentSection().children( '.history-content' ).eq( viewIndex - 1 ).after( $el );
-        }
-        // console.log( 'self.views[ viewIndex ]:', self.views[ viewIndex ] );
-        self.trigger( 'view:attached', view );
-
-        if( useFx ){
-            view.$el.slideDown( self.fxSpeed, function(){
-                self.trigger( 'view:attached:rendered' );
-            });
-        } else {
-            self.trigger( 'view:attached:rendered' );
-        }
-        return view;
-    },
-
-
     // ------------------------------------------------------------------------ selection
     /** Override to correctly set the historyId of the new collection */
     getSelectedModels : function(){
@@ -474,33 +358,6 @@ var HistoryView = _super.extend(
         return collection;
     },
 
-    /** show the user that the contents are loading/contacting the server */
-    showContentsLoadingIndicator : function( speed ){
-        speed = _.isNumber( speed )? speed : this.fxSpeed;
-        if( this.$emptyMessage().is( ':visible' ) ){
-            this.$emptyMessage().hide();
-        }
-        // look for an existing indicator and stop all animations on it, otherwise make one
-        var $indicator = this.$( '.contents-loading-indicator' );
-        if( $indicator.size() ){
-            return $indicator.stop().clearQueue();
-        }
-
-        // move it to the bottom and fade it in
-        // $indicator = $( '<div class="contents-loading-indicator">' + _l( 'Loading...' ) + '</div>' ).hide();
-        $indicator = $( this.templates.contentsLoadingIndicator( {}, this )).hide();
-        return $indicator
-            .insertAfter( this.$list() )
-            .slideDown( speed );
-    },
-
-    /** show the user we're done loading */
-    hideContentsLoadingIndicator : function( speed ){
-        speed = _.isNumber( speed )? speed : this.fxSpeed;
-        this.$( '> .contents-loading-indicator' ).slideUp({ duration: 100, complete: function _complete(){
-            $( this ).remove();
-        }});
-    },
 
     // ------------------------------------------------------------------------ panel events
     /** event map */
@@ -509,36 +366,7 @@ var HistoryView = _super.extend(
         'click .show-selectors-btn'         : 'toggleSelectors',
         // allow (error) messages to be clicked away
         'click .messages [class$=message]'  : 'clearMessages',
-        'click .list-items-section-link'    : '_clickSectionLink',
     }),
-
-    _clickSectionLink : function( ev ){
-        var sectionNumber = $( ev.currentTarget ).parent().data( 'section' );
-        this.openSection( sectionNumber );
-    },
-
-    /** loads a section and re-renders items */
-    openSection : function( section, options ){
-        options = options || {};
-        var self = this;
-        var contents = self.model.contents;
-        var isLastSection = section === contents._lastSection();
-        return contents.fetchSection( section, { silent: true })
-            .done( function(){
-                contents.setCurrentSection( section );
-                self.renderItems();
-
-                var sectionElement = self.$section( section ).get(0);
-                var sectionTop = sectionElement.offsetTop;
-                var sectionBottom = sectionElement.offsetTop + sectionElement.offsetHeight;
-                if( options.startAtBottom ){
-                    // place bottom of scroll container at bottom of section
-                    self.scrollTo( sectionBottom - self.$scrollContainer().height() );
-                } else {
-                    self.scrollTo( isLastSection? 0 : sectionElement.offsetTop );
-                }
-            });
-    },
 
     /** Toggle and store the deleted visibility and re-render items
      * @returns {Boolean} new setting
@@ -550,9 +378,9 @@ var HistoryView = _super.extend(
         contents.setIncludeDeleted( show, options );
         self.trigger( 'show-deleted', show );
 
-        var fetch = show? contents.fetchDeletedInSection( contents.currentSection ) : jQuery.when();
+        var fetch = show? contents.fetchDeleted({ silent: true }) : jQuery.when();
         fetch.done( function(){ self.renderItems(); });
-        return contents.includeDeleted;
+        return show;
     },
 
     /** Toggle and store whether to render explicity hidden contents
@@ -565,9 +393,9 @@ var HistoryView = _super.extend(
         contents.setIncludeHidden( show, options );
         self.trigger( 'show-hidden', show );
 
-        var fetch = show? contents.fetchHiddenInSection( contents.currentSection ) : jQuery.when();
+        var fetch = show? contents.fetchHidden({ silent: true }) : jQuery.when();
         fetch.done( function(){ self.renderItems(); });
-        return contents.includeHidden;
+        return show;
     },
 
     /** On the first search, if there are no details - load them, then search */
@@ -588,13 +416,8 @@ var HistoryView = _super.extend(
         // TODO?: self.$( inputSelector + ' input' ).prop( 'disabled', true ) ?? not disabling could cause trouble here
         self.model.contents.progressivelyFetchDetails({ silent: true })
             .progress( function( response, limit, offset ){
-                // if we're still only merging new attrs to what the contents already have,
-                // just render what's there again
                 if( offset + response.length <= initialContentsLength ){
                     self.renderItems();
-                // if we're adding new items, then listen for sync'ing and bulk add those views
-                } else {
-                    self.listenToOnce( self.model.contents, 'sync', self.bulkAppendItemViews );
                 }
             })
             .always( function(){
@@ -687,21 +510,21 @@ HistoryView.prototype.templates = (function(){
 
             '<div class="actions"></div>',
 
-            '<% if( history.deleted && history.purged ){ %>',
-                '<div class="deleted-msg warningmessagesmall">',
-                    _l( 'This history has been purged and deleted' ),
-                '</div>',
-            '<% } else if( history.deleted ){ %>',
-                '<div class="deleted-msg warningmessagesmall">',
-                    _l( 'This history has been deleted' ),
-                '</div>',
-            '<% } else if( history.purged ){ %>',
-                '<div class="deleted-msg warningmessagesmall">',
-                    _l( 'This history has been purged' ),
-                '</div>',
-            '<% } %>',
-
             '<div class="messages">',
+                '<% if( history.deleted && history.purged ){ %>',
+                    '<div class="deleted-msg warningmessagesmall">',
+                        _l( 'This history has been purged and deleted' ),
+                    '</div>',
+                '<% } else if( history.deleted ){ %>',
+                    '<div class="deleted-msg warningmessagesmall">',
+                        _l( 'This history has been deleted' ),
+                    '</div>',
+                '<% } else if( history.purged ){ %>',
+                    '<div class="deleted-msg warningmessagesmall">',
+                        _l( 'This history has been purged' ),
+                    '</div>',
+                '<% } %>',
+
                 '<% if( history.message ){ %>',
                     // should already be localized
                     '<div class="<%= history.message.level || "info" %>messagesmall">',
@@ -737,32 +560,10 @@ HistoryView.prototype.templates = (function(){
         '</span></div>'
     ], 'history' );
 
-    var paginationTemplate = BASE_MVC.wrapTemplate([
-        '<button class="prev">previous</button>',
-        '<% function getHid( content ){ return content? content.get( "hid" ) : "?"; } %>',
-        '<button class="pages">',
-            '<%- getHid( view.model.contents.last() ) %> to <%- getHid( view.model.contents.first() ) %>',
-        '</button>',
-        '<button class="next">next</button>',
-    ], 'history' );
-
-    var listItemsSectionTemplate = BASE_MVC.wrapTemplate([
-        '<% var currClass = section.number === view.model.contents.currentSection? " current-section" : ""; %>',
-        '<li class="list-items-section<%- currClass %>" data-section="<%- section.number %>">',
-            '<% if( view.model.contents._countSections() > 2 ){ %>',
-                '<a class="list-items-section-link" href="javascript:void(0)">',
-                    '<%- section.first %>  ', _l( "to" ), ' <%- section.last %>',
-                '</a>',
-            '<% } %>',
-        '</li>',
-    ], 'section' );
-
     return _.extend( _.clone( _super.prototype.templates ), {
         el                      : mainTemplate,
         controls                : controlsTemplate,
         contentsLoadingIndicator: contentsLoadingIndicatorTemplate,
-        pagination              : paginationTemplate,
-        listItemsSection        : listItemsSectionTemplate
     });
 }());
 

@@ -9,9 +9,7 @@ define([
 'use strict';
 
 //==============================================================================
-var _super = CONTROLLED_FETCH_COLLECTION.ControlledFetchCollection;
-// var _super = CONTROLLED_FETCH_COLLECTION.PaginatedCollection;
-// var _super = CONTROLLED_FETCH_COLLECTION.InfinitelyScrollingCollection;
+var _super = CONTROLLED_FETCH_COLLECTION.PaginatedCollection;
 /** @class Backbone collection for history content.
  *      NOTE: history content seems like a dataset collection, but differs in that it is mixed:
  *          each element can be either an HDA (dataset) or a DatasetCollection and co-exist on
@@ -48,10 +46,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     },
 
     // ........................................................................ set up
-    /** @type {Number} limit used for the first fetch (or a reset) */
-    limitOnFirstFetch   : 500,
-    /** @type {Number} limit used for each subsequent fetch */
-    limitPerFetch       : 500,
+    limitPerPage: null,
 
     /** @type {String} order used here and when fetching from server */
     order : 'hid',
@@ -201,7 +196,9 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         options = options || {};
         if( this.historyId && !options.details ){
             var prefs = HISTORY_PREFS.HistoryPrefs.get( this.historyId ).toJSON();
-            options.details = _.values( prefs.expandedIds ).join( ',' );
+            if( !_.isEmpty( prefs.expandedIds ) ){
+                options.details = _.values( prefs.expandedIds ).join( ',' );
+            }
         }
         return _super.prototype.fetch.call( this, options );
     },
@@ -291,16 +288,13 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return this.fetch( options );
     },
 
-
     /** specialty fetch method for retrieving the element_counts of all hdcas in the history */
     fetchCollectionCounts : function( options ){
         options = options || {};
-        options.data = _.defaults({
-            keys : [ 'type_id', 'element_count' ].join( ',' ),
-            q    : 'history_content_type',
-            qv   : 'dataset_collection',
-        }, options.data || {} );
-        options.merge = true;
+        options.keys = [ 'type_id', 'element_count' ].join( ',' );
+        options.filters = _.extend( options.filters || {}, {
+            history_content_type: 'dataset_collection',
+        });
         options.remove = false;
         return this.fetch( options );
     },
@@ -347,18 +341,6 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         var searchAttributes = HDA_MODEL.HistoryDatasetAssociation.prototype.searchAttributes;
         var detailKeys = searchAttributes.join( ',' );
 
-        // TODO: remove the need to maintain allFetched/lastFetched here
-        // by using fetchFirst/More here
-        function _notifyAndContinue( response, offset ){
-            console.log( 'rcvd:', response.length );
-            deferred.notify( response, limit, offset );
-            if( self.allFetched ){
-                deferred.resolve( response, limit, offset );
-                return;
-            }
-            _recursivelyFetch( offset + limit );
-        }
-
         function _recursivelyFetch( offset ){
             offset = offset || 0;
             // console.log( '_recursivelyFetch:', offset );
@@ -367,15 +349,24 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
                 keys    : detailKeys,
                 limit   : limit,
                 offset  : offset,
-                reset   : offset === 0
+                reset   : offset === 0,
+                remove  : false
             });
-            var fetchFn = offset === 0? self.fetchFirst : self.fetchMore;
             // console.log( 'fetching:', _options.limit, _options.offset );
             _.defer( function(){
-                fetchFn.call( self, _options )
-                    .always( function(){ console.log( 'always:', arguments ); })
+                self.fetch.call( self, _options )
                     .fail( deferred.reject )
-                    .done( function( r ){ _notifyAndContinue( r, offset ); });
+                    .done( function( response ){
+                        deferred.notify( response, limit, offset );
+
+                        // console.log( 'received:', response.length );
+                        if( response.length !== limit ){
+                            deferred.resolve( response, limit, offset );
+
+                        } else {
+                            _recursivelyFetch( offset + limit );
+                        }
+                    });
             });
         }
         _recursivelyFetch();
@@ -479,292 +470,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
 
 
 //==============================================================================
-var HidSectionedHistoryContents = HistoryContents.extend({
-    // /** @type {Number} limit used for the first fetch (or a reset) */
-    // limitOnFirstFetch   : 500,
-    // /** @type {Number} limit used for each subsequent fetch */
-    // limitPerFetch       : 500,
-
-    /** @type {String} order used here and when fetching from server */
-    order : 'hid',
-
-    /** Set up */
-    initialize : function( models, options ){
-        HistoryContents.prototype.initialize.call( this, models, options );
-        // this.currentSection = null;
-        this.currentSection = 0;
-        this.sectionsFetched = [];
-    },
-
-    // ........................................................................ common queries
-    /** @type {Object} restrict to hid ordering only */
-    comparators : {
-        'hid'        : BASE_MVC.buildComparator( 'hid',  { ascending: false }),
-        'hid-asc'    : BASE_MVC.buildComparator( 'hid',  { ascending: true }),
-    },
-
-    /**  */
-    _getLastHid : function(){
-        return ( this.history.get( 'hid_counter' ) || 1 ) - 1;
-    },
-
-    /**  */
-    _mapSectionRanges : function( mapFn ){
-        var self = this;
-        var sectionCount = self._countSections();
-        var sectionNumbers = _.range( sectionCount );
-        if( this.order === 'hid' ){
-            sectionNumbers.reverse();
-        }
-        return sectionNumbers.map( function( sectionNumber ){
-            return mapFn( _.extend( self._getSectionRange( sectionNumber ), {
-                number: sectionNumber,
-            }));
-        });
-    },
-
-    /**  */
-    _countSections : function(){
-        // always have at least one section
-        return Math.max( 1, Math.floor( this._getLastHid() / this.hidsPerSection ) );
-    },
-
-    _lastSection : function(){
-        return Math.max( 0, this._countSections() - 1 );
-    },
-
-    /**  */
-    _lastFullSection : function(){
-        // console.log( '_lastFullSection:' );
-        var count = this._countSections();
-        // console.log( '_lastFullSection, count:', count );
-        // console.log( '_lastFullSection, hid:', this._getLastHid(), this.hidsPerSection, ( this._getLastHid() % this.hidsPerSection ) );
-        var hasNonFullSection = ( this._getLastHid() % this.hidsPerSection ) > 0;
-        // console.log( '_lastFullSection, hasNonFullSection:', hasNonFullSection );
-        // console.log( '_lastFullSection:', hasNonFullSection? ( count - 1 ) : count );
-        return hasNonFullSection? ( count - 1 ) : count;
-    },
-
-    /**  */
-    _getSectionRange : function( sectionNumber ){
-        // note: ranges are both first and last inclusive
-        var lastHid = this._getLastHid();
-        var hidsPerSection = this.hidsPerSection;
-        var first = sectionNumber * hidsPerSection;
-        var last  = sectionNumber === this._lastSection()? lastHid : ( first + hidsPerSection - 1 );
-        return {
-            first : first,
-            last  : last
-        };
-    },
-
-    /** Filter the collection to only those models that should be currently viewed */
-    _filterSectionCollection : function( section, filterFn ){
-        return this._sectionCollection( section ).filter( filterFn );
-    },
-
-    /**  */
-    _sectionCollection : function( section ){
-        // preconditon: assumes collection *has loaded* the range and is sorted
-        var self = this;
-        var range = self._getSectionRange( section );
-        // console.log( 'range:', range );
-        var descending = this.order === 'hid';
-        // console.log( 'descending:', descending );
-
-        var subcollection = [];
-        var startingIndex = self._indexOfHid( descending? range.last : range.first );
-        // console.log( 'startingIndex:', startingIndex );
-        for( var index = startingIndex; index < this.length; index++ ){
-            var content = this.at( index );
-            var hid = content.get( 'hid' );
-
-            if( descending ){
-                if( hid < range.first ){ break; }
-            } else {
-                if( hid > range.last  ){ break; }
-            }
-            subcollection.push( content );
-        }
-        return subcollection;
-    },
-
-    _indexOfHid : function( hid ){
-        return this._indexOfHidInModelArray( hid, this.models, { descending: this.order === 'hid' });
-    },
-
-    _indexOfHidInModelArray : function( hid, modelArray, options ){
-        var descending = _.result( options, 'descending', true );
-        function test( index ){
-            var otherHid = modelArray[ index ].get( 'hid' );
-            return descending? ( otherHid > hid ):( otherHid < hid );
-        }
-        return this._binarySearch({
-            low     : 0,
-            high    : modelArray.length,
-            testFn  : test
-        });
-    },
-
-    _binarySearch : function( options ){
-        // preconditon: assumes collection is sorted
-        var low = options.low, high = options.high;
-        while( low < high ){
-            var mid = Math.floor( ( low + high ) / 2 );
-            if( options.testFn( mid ) ){
-                low = mid + 1;
-            } else {
-                high = mid;
-            }
-        }
-        return low;
-    },
-
-    /**  */
-    _indexOfHidInSection : function( hid, section ){
-        // preconditon: assumes section has been loaded and that collection is sorted
-        var self = this;
-        var range = self._getSectionRange( section );
-        var lastSection = section === self._lastSection();
-        var descending = this.order === 'hid';
-        // console.log( '_indexOfHidInSection:', hid, section, range, lastSection, descending );
-        var pastEndOfClosedSection = !lastSection && hid > range.last;
-        if( pastEndOfClosedSection || hid < range.first ){ return null; }
-        return self._indexOfHid( hid );
-    },
-
-    /**  */
-    _getCurrentSectionRange : function(){
-        return this._getSectionRange( this.currentSection );
-    },
-
-    /**  */
-    _filterCurrentSectionCollection : function( filterFn ){
-        return this._filterSectionCollection( this.currentSection, filterFn );
-    },
-
-    /**  */
-    setCurrentSection : function( section ){
-        this.currentSection = section;
-    },
-
-    // ------------------------------------------------------------------------ sectioned fetching
-    /** @type {Integer} number of contents/hid entries per section/page displayed */
-    hidsPerSection : 100,
-
-    fetchFirst : function( options ){
-_.extend( options || {}, { silent: true });
-        // console.log( 'fetchFirst?', options );
-        this.currentSection = 0;
-        if( this.order === 'hid' && this._countSections() > 1 ){
-            this.currentSection = this._lastFullSection();
-        }
-        // console.log( 'currentSection', this.currentSection );
-        return this.fetchSection( this.currentSection, options );
-    },
-
-    fetchSection : function( section, options ){
-        options = options || {};
-        // console.log( this + '.fetchSection:', section, options );
-        if( !options.bypassCache && _.contains( this.sectionsFetched, section, this ) ){
-            this.trigger( 'fetching-section-done', section, this );
-            return jQuery.when();
-        }
-
-        var self = this;
-        self.trigger( 'fetching-section', section, self );
-
-        var range = self._getSectionRange( section );
-        // console.log( this + '.fetchSection:', range );
-        return self.fetch( _.extend( options, {
-silent: true,
-            remove: false,
-            filters: _.extend( options.filters || {}, {
-                'hid-ge' : Math.max( range.first - 1, 0 ),
-                'hid-le' : range.last
-            })
-
-        })).always( function(){
-            self.trigger( 'fetching-section-done', section, self );
-
-        }).done( function(){
-            self.sectionsFetched.push( section );
-            self.sectionsFetched.sort();
-        });
-    },
-
-    fetchDeletedInSection : function( section, options ){
-        options = options || {};
-        var self = this;
-        options.filters = _.extend( options.filters, {
-            // all deleted, purged or not
-            deleted : true,
-            purged  : undefined
-        });
-        options.bypassCache = true;
-        self.trigger( 'fetching-deleted', self );
-        return self.fetchSection( section, options )
-            .always( function(){ self.trigger( 'fetching-deleted-done', self ); });
-    },
-
-    fetchHiddenInSection : function( section, options ){
-        options = options || {};
-        var self = this;
-        options.filters = _.extend( options.filters, {
-            visible : false
-        });
-        options.bypassCache = true;
-        self.trigger( 'fetching-deleted', self );
-        return self.fetchSection( section, options )
-            .always( function(){ self.trigger( 'fetching-deleted-done', self ); });
-    },
-
-    /** fetch contents' details in batches of limitPerCall - note: only get searchable details here */
-    progressivelyFetchDetails : function( options ){
-        // console.log( 'progressivelyFetchDetails:', options );
-        options = options || {};
-        var deferred = jQuery.Deferred();
-        var self = this;
-        var startingSection = this._countSections();
-        var searchAttributes = HDA_MODEL.HistoryDatasetAssociation.prototype.searchAttributes;
-        var detailKeys = searchAttributes.join( ',' );
-
-        // TODO: remove the need to maintain allFetched/lastFetched here
-        // by using fetchFirst/More here
-        function _notifyAndContinue( response, section ){
-            deferred.notify( response, section );
-            if( section === 0 ){
-                deferred.resolve( response );
-                return;
-            }
-            _recursivelyFetch( section - 1 );
-        }
-
-        function _recursivelyFetch( section ){
-            // console.log( '_recursivelyFetch:', offset );
-            var _options = _.extend( _.clone( options ), {
-                view    : 'summary',
-                keys    : detailKeys,
-                reset   : section === 0,
-                bypassCache : true
-            });
-            _.defer( function(){
-                return self.fetchSection( section, _options )
-                    .fail( deferred.reject )
-                    .done( function( r ){
-                        _notifyAndContinue( r, section );
-                    });
-            });
-        }
-        _recursivelyFetch( startingSection );
-        return deferred;
-    },
-
-});
-
-
-//==============================================================================
     return {
-        HistoryContents : HidSectionedHistoryContents
+        HistoryContents : HistoryContents
     };
 });
