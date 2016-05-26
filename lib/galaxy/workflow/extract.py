@@ -97,7 +97,7 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
     # Tool steps
     for job_id in job_ids:
         if job_id not in jobs_by_id:
-            log.warn( "job_id %s not found in jobs_by_id %s" % ( job_id, jobs_by_id ) )
+            log.warning( "job_id %s not found in jobs_by_id %s" % ( job_id, jobs_by_id ) )
             raise AssertionError( "Attempt to create workflow with job not connected to current history" )
         job = jobs_by_id[ job_id ]
         tool_inputs, associations = step_inputs( trans, job )
@@ -141,7 +141,7 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
                 if hid is None:
                     template = "Failed to find matching implicit job - job is %s, jobs are %s, assoc_name is %s."
                     message = template % ( job.id, jobs, assoc.name )
-                    log.warn( message )
+                    log.warning( message )
                     raise Exception( "Failed to extract job." )
             else:
                 if hasattr( assoc, "dataset" ):
@@ -241,7 +241,7 @@ class WorkflowSummary( object ):
 
             job_hda = self.__original_hda( dataset_instance )
             if not job_hda.creating_job_associations:
-                log.warn( "An implicitly create output dataset collection doesn't have a creating_job_association, should not happen!" )
+                log.warning( "An implicitly create output dataset collection doesn't have a creating_job_association, should not happen!" )
                 job = DatasetCollectionCreationJob( dataset_collection )
                 self.jobs[ job ] = [ ( None, dataset_collection ) ]
 

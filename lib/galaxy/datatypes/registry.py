@@ -129,11 +129,11 @@ class Registry( object ):
                 make_subclass = galaxy.util.string_as_bool( elem.get( 'subclass', False ) )
                 edam_format = elem.get( 'edam_format', None )
                 if edam_format and not make_subclass:
-                    self.log.warn("Cannot specify edam_format without setting subclass to True, skipping datatype.")
+                    self.log.warning("Cannot specify edam_format without setting subclass to True, skipping datatype.")
                     continue
                 edam_data = elem.get( 'edam_data', None )
                 if edam_data and not make_subclass:
-                    self.log.warn("Cannot specify edam_data without setting subclass to True, skipping datatype.")
+                    self.log.warning("Cannot specify edam_data without setting subclass to True, skipping datatype.")
                     continue
                 # Proprietary datatypes included in installed tool shed repositories will include two special attributes
                 # (proprietary_path and proprietary_datatype_module) if they depend on proprietary datatypes classes.

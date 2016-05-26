@@ -283,7 +283,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                         assert trans.user.id == history.user_id, "History does not belong to current user"
                     histories.append( history )
                 else:
-                    log.warn( "Invalid history id '%r' passed to list", history_id )
+                    log.warning( "Invalid history id '%r' passed to list", history_id )
             if histories:
                 if operation == "switch":
                     status, message = self._list_switch( trans, histories )

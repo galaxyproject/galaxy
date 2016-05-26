@@ -82,7 +82,7 @@ class CompressedFile( object ):
                     if os.path.exists( absolute_filepath ):
                         os.chmod( absolute_filepath, unix_permissions )
                     else:
-                        log.warn("Unable to change permission on extracted file '%s' as it does not exist" % absolute_filepath)
+                        log.warning("Unable to change permission on extracted file '%s' as it does not exist" % absolute_filepath)
         return os.path.abspath( os.path.join( extraction_path, common_prefix ) )
 
     def getmembers_tar( self ):
