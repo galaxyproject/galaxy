@@ -108,7 +108,8 @@ template = """<!DOCTYPE HTML>
 	}  
 
         #clear_messages{
-		cursor: pointer;	
+		cursor: pointer;
+		color: black;	
 	}
 
         .messages {
@@ -119,18 +120,42 @@ template = """<!DOCTYPE HTML>
         .send_message{
 		margin-top:5px;
 	}
+
+	.conn_msg {
+		color: #00FF00;
+		font-style: italic;
+		font-size: 14px;
+	}
+
+	.disconn_msg {
+		color: #FF0000;
+		font-style: italic;
+		font-size: 14px;
+	}
+	
+	.user_name {
+		font-style: italic;
+		font-size: 13px;
+	}
+
+	.user_message {
+		font-size: 14px;
+		background-color: #DFE5F9;
+		width: 790px;
+	}
+	
   
     </style>
 </head>
 <body style="overflow: hidden";> 
     <div class="right_icons">
-    	<i id="online_status" class="fa fa-circle" aria-hidden="true" style="" title=""></i>
-    	<i id="clear_messages" class="fa fa-eraser" aria-hidden="true" title="Clear all messages"></i>
+    	<i id="online_status" class="fa fa-comments" aria-hidden="true" style="" title=""></i>
+    	<i id="clear_messages" class="fa fa-trash-o" aria-hidden="true" title="Clear all messages"></i>
     </div>
     <div id="all_messages" class="messages"></div>
     <div class="send_message">
 	    <form id="broadcast" method="POST" action='#'>
-		<input id="send_data" class="size clearable" type="text" name="" value="" placeholder="type your message..." autocomplete="off" />
+		<input id="send_data" class="size clearable" type="text" name="" value="" placeholder="Type your message..." autocomplete="off" />
 		<button id="btn-send" type="submit" title="Send message">
 			<i class="icon fa fa fa-paper-plane"></i>&nbsp;<span class="title">Send Message</span>
 		</button>
@@ -220,6 +245,7 @@ template = """<!DOCTYPE HTML>
 						send_data.data = "disconnected" + ":" + utils.get_username();
 						socket.emit( 'event disconnect', send_data );
 						sessionStorage.removeItem(uid);
+                                                disconnected_message = "<div class='disconn_msg'>" + disconnected_message + "</div>";
 						utils.append_message( $el_all_messages,  disconnected_message);
 				                this.is_connected = false;
 						utils.update_online_status( $el_online_status, this.is_connected );
@@ -231,6 +257,7 @@ template = """<!DOCTYPE HTML>
 				else if ( id === "btn-connect" ) {
 		                        socket.connect();
 		                        this.is_connected = true;
+					connected_message = "<div class='conn_msg'>" + connected_message + "</div>";
 					utils.append_message( $el_all_messages, connected_message );
 	utils.switch_connect_disconnect( $el_connect_disconnect, "btn-disconnect", "Disconnect", "fa-stop", "fa-play",  disconnect_tooltip);
 					utils.update_online_status( $el_online_status, this.is_connected );
@@ -297,18 +324,30 @@ template = """<!DOCTYPE HTML>
 
 		// append message 
 		append_message: function($el, message) {
-			$el.append( $('<div' + '/' + '>' ).text( message ).html() );
-		        $el.append('<br><br>');
+			//$el.append( $('<div' + '/' + '>' ).text( message ).html() );
+		        //$el.append('<br><br>');
+			message = "<div>" + message + "</div>";
+			$el.append( message );
+			$el.append('<br>')
 		},
                 // builds message 
                 build_message: function(original_message, uid) {
-	                var from_uid = original_message[1].split('-')[1];
+	                var from_uid = original_message[1].split('-')[1],
+			    message_user = "",
+			    message_text = "";
+				
+                        // for user's own messages
                         if ( from_uid === uid ) {
-				return "me" + ": " + unescape(original_message[0]);
+                                message_user = "<span class='user_name'> me <br> </span>";
+				message_text = "<div class='user_message'>" + unescape( original_message[0] ) + "</div>";
+				
 			}
+			// for other user's messages
 			else {
-				return unescape(original_message[1].split('-')[0]) + ": " + unescape(original_message[0]);
+				message_user = "<span class='user_name'>" + unescape(original_message[1].split('-')[0]) + "<br></span>";
+				message_text = "<div class='user_message'>" + unescape(original_message[0]) + "</div>";
 			}
+			return message_user + message_text;
 		},
                 // adds an information about the online status
                 update_online_status: function( $el, connected ) {
