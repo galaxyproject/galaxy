@@ -80,215 +80,285 @@ template = """<!DOCTYPE HTML>
 <html>
 <head>
     <title>Chat</title>
-</head>
-<body overflow="hidden"> 
-    <div id="all_messages" class="messages" style="overflow: auto; height: 295px;"></div>
+    <script src="https://use.fontawesome.com/89a733ecb7.js"></script>
+    <style>
+        /* Styles for message text box */
+        .clearable{
+	  background: #fff url(http://i.stack.imgur.com/mJotv.gif) no-repeat right -10px center;
+	  border: 1px solid #999;
+	  padding: 3px 18px 3px 4px;
+          border-radius: 3px;
+	  transition: background 0.4s;
+	}
 
-    <div class="send_message" style="margin-top:15px;">
-    <form id="broadcast" method="POST" action='#'>
-        <textarea rows="4" cols="100" name="broadcast_data" id="broadcast_data" placeholder="type your message..."></textarea>
-        <input type="submit" value="Send Message">
-        <input type="button" value="Clear" id="clear">
-        <input type="button" value="Clear All Messages" id="clear_messages">
-        <input type="button" value="Disconnect" id="disconnect">
-        <label id="online_status" style="margin-left:5px;"><label>
-    </form>
-    
+	.clearable.x  { background-position: right 5px center; } 
+	.clearable.onX{ cursor: pointer; }             
+	.clearable::-ms-clear {display: none; width:0; height:0;} 
+       
+	.size {
+		height: 30px;
+                width: 790px;
+		margin-bottom:5px;
+		
+	} 
+
+        /* Styles for top right icons */
+        .right_icons {
+                margin: 0px 0px 10px 780px;
+	}  
+
+        #clear_messages{
+		cursor: pointer;	
+	}
+
+        .messages {
+		overflow: auto; 
+		height: 330px;
+	}
+
+        .send_message{
+		margin-top:5px;
+	}
+  
+    </style>
+</head>
+<body style="overflow: hidden";> 
+    <div class="right_icons">
+    	<i id="online_status" class="fa fa-circle" aria-hidden="true" style="" title=""></i>
+    	<i id="clear_messages" class="fa fa-eraser" aria-hidden="true" title="Clear all messages"></i>
+    </div>
+    <div id="all_messages" class="messages"></div>
+    <div class="send_message">
+	    <form id="broadcast" method="POST" action='#'>
+		<input id="send_data" class="size clearable" type="text" name="" value="" placeholder="type your message..." autocomplete="off" />
+		<button id="btn-send" type="submit" title="Send message">
+			<i class="icon fa fa fa-paper-plane"></i>&nbsp;<span class="title">Send Message</span>
+		</button>
+                <button id="btn-disconnect" type="submit" title="Disconnect from server" class="connect_disconnect">
+			<i class="icon fa fa fa-stop"></i>&nbsp;<span class="title">Disconnect</span>
+		</button>
+		<!-- <button id="btn-connect" type="submit" title="Connect again" >
+			<i class="icon fa fa fa-play"></i>&nbsp;<span class="title">Re-connect</span>
+		</button> -->
+	    </form>
     </div>
 
     <script type="text/javascript" src="https://code.jquery.com/jquery-1.10.2.js"></script>
     <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
     <script type="text/javascript" charset="utf-8">
         
+       
         // the namespace events connect to 
-        var namespace = '/chat';
+        var namespace = '/chat',
+	socket = io.connect( window.location.protocol + '//' + document.domain + ':' + location.port + namespace); 
       
         // socketio events
         var events_module = {
-                // makes socket connection 
-        connect_socket: function( namespace ) {
-            var socket = io.connect( window.location.protocol + '//' + document.domain + ':' + location.port + namespace );
-                return socket;
-        },
-        // event handler for sent data from server
-        event_response: function( socket ) {
-            socket.on('event response', function( msg ) {
-                var orig_message = msg.data.split(':'),
-                    message = "",
-                    uid = utils.get_userid(),
-                    $all_messages = $('#all_messages');
+		// event handler for sent data from server 	
+		event_response: function( socket ) {
+		    socket.on('event response', function( msg ) {
+		        var orig_message = msg.data.split(':'),
+		            message = "",
+		            uid = utils.get_userid(),
+		            $all_messages = $('#all_messages');
                             // builds the message to be displayed
                             message = utils.build_message( orig_message, uid );
-                // append only for non empty messages
-                if( orig_message[0].length > 0 ) {
-                        utils.append_message($all_messages, message);
-            }
-                // updates the user session storage with all the messages
-                sessionStorage[uid]  = $all_messages.html();
-                // show the last item by scrolling to the end
-                utils.scroll_to_last($all_messages);
-            });
-        },
-        // event handler for new connections
+		        // append only for non empty messages
+		        if( orig_message[0].length > 0 ) {
+		                utils.append_message($all_messages, message);
+			}
+		        // updates the user session storage with all the messages
+		        sessionStorage[uid]  = $all_messages.html();
+		        // show the last item by scrolling to the end
+		        utils.scroll_to_last($all_messages);                
+		    });
+		},
+		// event handler for new connections
                 event_connect: function( socket ) {
-            socket.on( 'connect', function() {
-                var send_data = { };
-                send_data.data = 'connected' + ':' + utils.get_username();
-                socket.emit( 'event connect', send_data );
-            });
-        }
-    }
+		    socket.on( 'connect', function() {
+		        var send_data = { };
+		        send_data.data = 'connected' + ':' + utils.get_username();
+		        socket.emit( 'event connect', send_data );
+		    });
+		}
+	}
 
         // all the click events of buttons
         var click_events = {
                 // on form load, user is connected, so the value is true
                 is_connected: true,
 
-        broadcast_data: function(socket) {
-            $( 'form#broadcast' ).submit( function( event ) {
+		broadcast_data: function(socket) {
+			$( '#btn-send' ).click( function( event ) {
                                 // send data only when connected
                                 if( click_events.is_connected ) {
-                    var send_data = { };
-                    send_data.data = escape( $( '#broadcast_data' ).val() ) + ':' + utils.get_userdata();
-                    socket.emit( 'event broadcast', send_data );
-                    $( '#broadcast_data' ).val('');
-                }
-                return false;
-                    });
-        },
-        
-                disconnect: function(socket) {
-            $( '#disconnect' ).click(function( event ){
-                                // disconnect only if connected
-                if (click_events.is_connected) {
-                    var send_data = { }
-                        uid = utils.get_userid(),
-                        $all_messages = $( '#all_messages' );
-                    send_data.data = "disconnected" + ":" + utils.get_username();
-                    socket.emit( 'event disconnect', send_data );
-                    sessionStorage.removeItem(uid);
-                    utils.append_message( $all_messages, "You are disconnected and can't send/receive messages..." );
-                    utils.scroll_to_last( $all_messages );
-                                click_events.is_connected = false;
-                    utils.update_online_status( $('#online_status'), click_events.is_connected );
-                }
-                return false;
-                });
-        },
-
-        clear: function() {
-            $( '#clear' ).click(function( event ){
-                                // clears the textarea
-                        $("#broadcast_data").val("");
-                        return false;
-                });
-        },
-
-        clear_messages: function() {
-            $( '#clear_messages' ).click(function( event ){
+					var send_data = { };
+					send_data.data = escape( $( '#send_data' ).val() ) + ':' + utils.get_userdata();
+					socket.emit( 'event broadcast', send_data );
+					$( '#send_data' ).val('');
+				}
+				return false;
+            		});
+		},
+		// event for connected and disconnect buttons
+                connect_disconnect: function(socket) {
+			$( '.connect_disconnect' ).click(function( event ){
+				var $el = $( '.connect_disconnect' ),
+                                    id = $el.prop("id"),
+				    send_data = { },
+				    uid = utils.get_userid(),
+				    $el_all_messages = $( '#all_messages' ),
+				    $el_online_status = $('#online_status'),
+			            $el_connect_disconnect = $('.connect_disconnect'),
+				    disconnected_message = "You are disconnected and can't send/receive messages...",
+				    connected_message = "You are connected again...",
+				    disconnect_tooltip = "Disconnect from server",
+				    connect_tooltip = "Connect again";
+                                if( id === "btn-disconnect" ) {
+					// disconnect only if connected
+					if (click_events.is_connected) {
+						send_data.data = "disconnected" + ":" + utils.get_username();
+						socket.emit( 'event disconnect', send_data );
+						sessionStorage.removeItem(uid);
+						utils.append_message( $el_all_messages,  disconnected_message);
+				                this.is_connected = false;
+						utils.update_online_status( $el_online_status, this.is_connected );
+		  utils.switch_connect_disconnect( $el_connect_disconnect, "btn-connect", "Re-connect", "fa-play", "fa-stop", connect_tooltip );
+		                                //$el, btn_id, btn_text, fa_class_add, fa_class_remove, btn_tooltip
+		                                utils.scroll_to_last( $el_all_messages );
+					}
+				}
+				else if ( id === "btn-connect" ) {
+		                        socket.connect();
+		                        this.is_connected = true;
+					utils.append_message( $el_all_messages, connected_message );
+	utils.switch_connect_disconnect( $el_connect_disconnect, "btn-disconnect", "Disconnect", "fa-stop", "fa-play",  disconnect_tooltip);
+					utils.update_online_status( $el_online_status, this.is_connected );
+		                        // show the last item by scrolling to the end
+					utils.scroll_to_last( $el_all_messages ); 
+				}
+				return false;
+	    		});
+		},
+		// clear all the messages
+		clear_messages: function() {
+			$( '#clear_messages' ).click(function( event ){
                                 // clears all the messages
-                        $("#all_messages").html("");
-                        return false;
-                });
-        },
-    
-    }
+                		$("#all_messages").html("");
+                		return false;
+	    		});
+		},
+	
+	}
 
         // utility methods
         var utils = {
                 // get the current username of logged in user
-            // from the querystring of the URL
-        get_userdata: function() {
-                var user_data = $('.modal-body').context.URL.split('?')[1],
-                    data = user_data.split('&'),
-                    userid_data = data[1],
-                    username_data = data[0];
-                if(data) {
-                return unescape( username_data.split('=')[1] + "-" + userid_data.split('=')[1] );
-            }
-            else {
-                return "";
-            }
-        },
+        	// from the querystring of the URL
+		get_userdata: function() {
+		        var user_data = $('.modal-body').context.URL.split('?')[1],
+		            data = user_data.split('&'),
+		            userid_data = data[1],
+		            username_data = data[0];
+		        if(data) {
+				return unescape( username_data.split('=')[1] + "-" + userid_data.split('=')[1] );
+			}
+			else {
+				return "";	
+			}
+		},
 
                 // fill in all messages
-        fill_messages: function () {
-            var uid = utils.get_userid(),
-                message_html = $.parseHTML( sessionStorage[uid] ),
-                $all_messages = $('#all_messages');
-            if(sessionStorage[uid]) {
-                $all_messages.append( $( '<div/>' ).html( message_html ) );
-            }
-            // show the last item by scrolling to the end
-            utils.scroll_to_last($all_messages);
-        },
+		fill_messages: function () {
+			var uid = utils.get_userid(),
+			    message_html = $.parseHTML( sessionStorage[uid] ),
+			    $all_messages = $('#all_messages');
+			if(sessionStorage[uid]) {
+				$all_messages.append( $( '<div' + '/' + '>' ).html( message_html ) );
+			}
+			// show the last item by scrolling to the end
+			utils.scroll_to_last($all_messages);
+		},
 
-        // gets the user id
-        get_userid: function() {
-            return utils.get_userdata().split('-')[1];
-        },
+		// gets the user id
+		get_userid: function() {
+			return utils.get_userdata().split('-')[1];
+		},
 
-        // gets the user name
-        get_username: function() {
-            return utils.get_userdata().split('-')[0];
-        },
+		// gets the user name
+		get_username: function() {
+			return utils.get_userdata().split('-')[0];
+		},
 
-        // scrolls to the last of element
-        scroll_to_last: function($el) {
-            $el.scrollTop( $el[0].scrollHeight );
-        },
+		// scrolls to the last of element
+		scroll_to_last: function($el) {
+			$el.scrollTop( $el[0].scrollHeight );
+		},
 
-        // append message 
-        append_message: function($el, message) {
-            $el.append( $('<div' + '/' + '>' ).text( message ).html() );
-                $el.append('<br><br>');
-        },
+		// append message 
+		append_message: function($el, message) {
+			$el.append( $('<div' + '/' + '>' ).text( message ).html() );
+		        $el.append('<br><br>');
+		},
                 // builds message 
                 build_message: function(original_message, uid) {
-                    var from_uid = original_message[1].split('-')[1];
+	                var from_uid = original_message[1].split('-')[1];
                         if ( from_uid === uid ) {
-                return "Me: " + unescape(original_message[0]);
-            }
-            else {
-                return unescape(original_message[1].split('-')[0]) + ": " + unescape(original_message[0]);
-            }
-        },
+				return "me" + ": " + unescape(original_message[0]);
+			}
+			else {
+				return unescape(original_message[1].split('-')[0]) + ": " + unescape(original_message[0]);
+			}
+		},
                 // adds an information about the online status
                 update_online_status: function( $el, connected ) {
-            if( connected ) {
-                $el.text( "You are online!" );
-                $el.css( "color", "#006400" );
-            }
-            else {
-                $el.text("You are offline!");
-                    $el.css( "color", "#B22222 ");
-            }
-        }
-    }
+			if( connected ) {
+				$el.prop( "title", "You are online!" ).css( "color", "#00FF00" );
+			}
+			else {
+				$el.prop( "title", "You are offline!" ).css( "color", "#FF0000");
+			}
+		},
+             
+                // switch buttons connect and disconnect
+		switch_connect_disconnect: function( $el, btn_id, btn_text, fa_class_add, fa_class_remove, btn_tooltip) {
+                        $el.prop("id", btn_id).prop("title", btn_tooltip);
+                        $el.find('i').removeClass(fa_class_remove).addClass(fa_class_add);
+			$el.find('span').text(btn_text);
+		},
+	}
+
+	// this snippet is for adding a clear icon in the message textbox
+	function tog(v){return v?'addClass':'removeClass';} 
+	$(document).on('input', '.clearable', function(){
+	    $(this)[tog(this.value)]('x');
+	}).on('mousemove', '.x', function( e ){
+	    $(this)[tog(this.offsetWidth-18 < e.clientX-this.getBoundingClientRect().left)]('onX');
+	}).on('touchstart click', '.onX', function( ev ){
+	    ev.preventDefault();
+	    $(this).removeClass('x onX').val('').change();
+	});
 
         // registers the events when this document is ready
         $(document).ready(function(){
-        // connect io socket to the current server
-        var socket =  events_module.connect_socket( namespace );
+		// fill the messages if user is already connected 
+		// and comes back to the chat window
+		utils.fill_messages();
+		// updates online status text
+		utils.update_online_status( $('#online_status'), true );
+		// registers response event
+		events_module.event_response(socket);
+		// registers connect event
+		events_module.event_connect(socket);
 
-        // fill the messages if user is already connected 
-        // and comes back to the chat window
-        utils.fill_messages();
-        // updates online status text
-        utils.update_online_status( $('#online_status'), true );
-        // registers response event
-        events_module.event_response(socket);
-        // registers connect event
-        events_module.event_connect(socket);
+		// broadcast the data
+		click_events.broadcast_data(socket);
+		// disconnet the user from the chat server
+		click_events.connect_disconnect(socket);
 
-        // broadcast the data
-        click_events.broadcast_data(socket);
-        // disconnet the user from the chat server
-        click_events.disconnect(socket);
-        // clears the textarea
-        click_events.clear();
-        // clears all the messages
-        click_events.clear_messages();
+                //click_events.connect(socket);
+		// clears all the messages
+		click_events.clear_messages();
         });
 
     </script>
