@@ -101,194 +101,194 @@ template = """<!DOCTYPE HTML>
     <script type="text/javascript" charset="utf-8">
         
         // the namespace events connect to 
-        var namespace = '/chat'; 
+        var namespace = '/chat';
       
         // socketio events
         var events_module = {
                 // makes socket connection 
-		connect_socket: function( namespace ) {
-			var socket = io.connect( window.location.protocol + '//' + document.domain + ':' + location.port + namespace );
-		        return socket;
-		},
-		// event handler for sent data from server 	
-		event_response: function( socket ) {
-		    socket.on('event response', function( msg ) {
-		        var orig_message = msg.data.split(':'),
-		            message = "",
-		            uid = utils.get_userid(),
-		            $all_messages = $('#all_messages');
+        connect_socket: function( namespace ) {
+            var socket = io.connect( window.location.protocol + '//' + document.domain + ':' + location.port + namespace );
+                return socket;
+        },
+        // event handler for sent data from server
+        event_response: function( socket ) {
+            socket.on('event response', function( msg ) {
+                var orig_message = msg.data.split(':'),
+                    message = "",
+                    uid = utils.get_userid(),
+                    $all_messages = $('#all_messages');
                             // builds the message to be displayed
                             message = utils.build_message( orig_message, uid );
-		        // append only for non empty messages
-		        if( orig_message[0].length > 0 ) {
-		                utils.append_message($all_messages, message);
-			}
-		        // updates the user session storage with all the messages
-		        sessionStorage[uid]  = $all_messages.html();
-		        // show the last item by scrolling to the end
-		        utils.scroll_to_last($all_messages);                
-		    });
-		},
-		// event handler for new connections
+                // append only for non empty messages
+                if( orig_message[0].length > 0 ) {
+                        utils.append_message($all_messages, message);
+            }
+                // updates the user session storage with all the messages
+                sessionStorage[uid]  = $all_messages.html();
+                // show the last item by scrolling to the end
+                utils.scroll_to_last($all_messages);
+            });
+        },
+        // event handler for new connections
                 event_connect: function( socket ) {
-		    socket.on( 'connect', function() {
-		        var send_data = { };
-		        send_data.data = 'connected' + ':' + utils.get_username();
-		        socket.emit( 'event connect', send_data );
-		    });
-		}
-	}
+            socket.on( 'connect', function() {
+                var send_data = { };
+                send_data.data = 'connected' + ':' + utils.get_username();
+                socket.emit( 'event connect', send_data );
+            });
+        }
+    }
 
         // all the click events of buttons
         var click_events = {
                 // on form load, user is connected, so the value is true
                 is_connected: true,
 
-		broadcast_data: function(socket) {
-			$( 'form#broadcast' ).submit( function( event ) {
+        broadcast_data: function(socket) {
+            $( 'form#broadcast' ).submit( function( event ) {
                                 // send data only when connected
                                 if( click_events.is_connected ) {
-					var send_data = { };
-					send_data.data = escape( $( '#broadcast_data' ).val() ) + ':' + utils.get_userdata();
-					socket.emit( 'event broadcast', send_data );
-					$( '#broadcast_data' ).val('');
-				}
-				return false;
-            		});
-		},
-		
+                    var send_data = { };
+                    send_data.data = escape( $( '#broadcast_data' ).val() ) + ':' + utils.get_userdata();
+                    socket.emit( 'event broadcast', send_data );
+                    $( '#broadcast_data' ).val('');
+                }
+                return false;
+                    });
+        },
+        
                 disconnect: function(socket) {
-			$( '#disconnect' ).click(function( event ){
+            $( '#disconnect' ).click(function( event ){
                                 // disconnect only if connected
-				if (click_events.is_connected) {
-					var send_data = { }
-					    uid = utils.get_userid(),
-					    $all_messages = $( '#all_messages' );
-					send_data.data = "disconnected" + ":" + utils.get_username();
-					socket.emit( 'event disconnect', send_data );
-					sessionStorage.removeItem(uid);
-					utils.append_message( $all_messages, "You are disconnected and can't send/receive messages..." );
-					utils.scroll_to_last( $all_messages );
-		                        click_events.is_connected = false;
-					utils.update_online_status( $('#online_status'), click_events.is_connected );
-				}
-				return false;
-	    		});
-		},
+                if (click_events.is_connected) {
+                    var send_data = { }
+                        uid = utils.get_userid(),
+                        $all_messages = $( '#all_messages' );
+                    send_data.data = "disconnected" + ":" + utils.get_username();
+                    socket.emit( 'event disconnect', send_data );
+                    sessionStorage.removeItem(uid);
+                    utils.append_message( $all_messages, "You are disconnected and can't send/receive messages..." );
+                    utils.scroll_to_last( $all_messages );
+                                click_events.is_connected = false;
+                    utils.update_online_status( $('#online_status'), click_events.is_connected );
+                }
+                return false;
+                });
+        },
 
-		clear: function() {
-			$( '#clear' ).click(function( event ){
+        clear: function() {
+            $( '#clear' ).click(function( event ){
                                 // clears the textarea
-                		$("#broadcast_data").val("");
-                		return false;
-	    		});
-		},
+                        $("#broadcast_data").val("");
+                        return false;
+                });
+        },
 
-		clear_messages: function() {
-			$( '#clear_messages' ).click(function( event ){
+        clear_messages: function() {
+            $( '#clear_messages' ).click(function( event ){
                                 // clears all the messages
-                		$("#all_messages").html("");
-                		return false;
-	    		});
-		},
-	
-	}
+                        $("#all_messages").html("");
+                        return false;
+                });
+        },
+    
+    }
 
         // utility methods
         var utils = {
                 // get the current username of logged in user
-        	// from the querystring of the URL
-		get_userdata: function() {
-		        var user_data = $('.modal-body').context.URL.split('?')[1],
-		            data = user_data.split('&'),
-		            userid_data = data[1],
-		            username_data = data[0];
-		        if(data) {
-				return unescape( username_data.split('=')[1] + "-" + userid_data.split('=')[1] );
-			}
-			else {
-				return "";	
-			}
-		},
+            // from the querystring of the URL
+        get_userdata: function() {
+                var user_data = $('.modal-body').context.URL.split('?')[1],
+                    data = user_data.split('&'),
+                    userid_data = data[1],
+                    username_data = data[0];
+                if(data) {
+                return unescape( username_data.split('=')[1] + "-" + userid_data.split('=')[1] );
+            }
+            else {
+                return "";
+            }
+        },
 
                 // fill in all messages
-		fill_messages: function () {
-			var uid = utils.get_userid(),
-			    message_html = $.parseHTML( sessionStorage[uid] ),
-			    $all_messages = $('#all_messages');
-			if(sessionStorage[uid]) {
-				$all_messages.append( $( '<div' + '/' + '>' ).html( message_html ) );
-			}
-			// show the last item by scrolling to the end
-			utils.scroll_to_last($all_messages);
-		},
+        fill_messages: function () {
+            var uid = utils.get_userid(),
+                message_html = $.parseHTML( sessionStorage[uid] ),
+                $all_messages = $('#all_messages');
+            if(sessionStorage[uid]) {
+                $all_messages.append( $( '<div/>' ).html( message_html ) );
+            }
+            // show the last item by scrolling to the end
+            utils.scroll_to_last($all_messages);
+        },
 
-		// gets the user id
-		get_userid: function() {
-			return utils.get_userdata().split('-')[1];
-		},
+        // gets the user id
+        get_userid: function() {
+            return utils.get_userdata().split('-')[1];
+        },
 
-		// gets the user name
-		get_username: function() {
-			return utils.get_userdata().split('-')[0];
-		},
+        // gets the user name
+        get_username: function() {
+            return utils.get_userdata().split('-')[0];
+        },
 
-		// scrolls to the last of element
-		scroll_to_last: function($el) {
-			$el.scrollTop( $el[0].scrollHeight );
-		},
+        // scrolls to the last of element
+        scroll_to_last: function($el) {
+            $el.scrollTop( $el[0].scrollHeight );
+        },
 
-		// append message 
-		append_message: function($el, message) {
-			$el.append( $('<div' + '/' + '>' ).text( message ).html() );
-		        $el.append('<br><br>');
-		},
+        // append message 
+        append_message: function($el, message) {
+            $el.append( $('<div' + '/' + '>' ).text( message ).html() );
+                $el.append('<br><br>');
+        },
                 // builds message 
                 build_message: function(original_message, uid) {
-	                var from_uid = original_message[1].split('-')[1];
+                    var from_uid = original_message[1].split('-')[1];
                         if ( from_uid === uid ) {
-				return "you" + ": " + unescape(original_message[0]);
-			}
-			else {
-				return unescape(original_message[1].split('-')[0]) + ": " + unescape(original_message[0]);
-			}
-		},
+                return "Me: " + unescape(original_message[0]);
+            }
+            else {
+                return unescape(original_message[1].split('-')[0]) + ": " + unescape(original_message[0]);
+            }
+        },
                 // adds an information about the online status
                 update_online_status: function( $el, connected ) {
-			if( connected ) {
-				$el.text( "You are online!" );
-				$el.css( "color", "#006400" );
-			}
-			else {
-				$el.text("You are offline!");
-			        $el.css( "color", "#B22222 ");
-			}
-		}
-	}
+            if( connected ) {
+                $el.text( "You are online!" );
+                $el.css( "color", "#006400" );
+            }
+            else {
+                $el.text("You are offline!");
+                    $el.css( "color", "#B22222 ");
+            }
+        }
+    }
 
         // registers the events when this document is ready
         $(document).ready(function(){
-		// connect io socket to the current server
-		var socket =  events_module.connect_socket( namespace );
+        // connect io socket to the current server
+        var socket =  events_module.connect_socket( namespace );
 
-		// fill the messages if user is already connected 
-		// and comes back to the chat window
-		utils.fill_messages();
-		// updates online status text
-		utils.update_online_status( $('#online_status'), true );
-		// registers response event
-		events_module.event_response(socket);
-		// registers connect event
-		events_module.event_connect(socket);
+        // fill the messages if user is already connected 
+        // and comes back to the chat window
+        utils.fill_messages();
+        // updates online status text
+        utils.update_online_status( $('#online_status'), true );
+        // registers response event
+        events_module.event_response(socket);
+        // registers connect event
+        events_module.event_connect(socket);
 
-		// broadcast the data
-		click_events.broadcast_data(socket);
-		// disconnet the user from the chat server
-		click_events.disconnect(socket);
-		// clears the textarea
-		click_events.clear();
-		// clears all the messages
-		click_events.clear_messages();
+        // broadcast the data
+        click_events.broadcast_data(socket);
+        // disconnet the user from the chat server
+        click_events.disconnect(socket);
+        // clears the textarea
+        click_events.clear();
+        // clears all the messages
+        click_events.clear_messages();
         });
 
     </script>
