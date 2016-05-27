@@ -16,6 +16,7 @@ class Otu(Text):
     file_ext = 'mothur.otu'
     MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True, visible=True, no_value=0)
     MetadataElement(name="labels", default=[], desc="Label Names", readonly=True, visible=True, no_value=[])
+    MetadataElement(name="otulabels", default=[], desc="OTU Names", readonly=True, visible=True, no_value=[])
 
     def __init__(self, **kwd):
         Text.__init__(self, **kwd)
@@ -23,11 +24,16 @@ class Otu(Text):
     def set_meta(self, dataset, overwrite=True, **kwd):
         if dataset.has_data():
             label_names = set()
+            otulabel_names = set()
             ncols = 0
             data_lines = 0
             comment_lines = 0
 
             headers = get_headers(dataset.file_name, sep='\t', count=-1)
+            # set otulabels
+            if len(headers[0]) > 2:
+                otulabel_names = headers[0][2:]
+            # set label names and number of lines
             for line in headers:
                 if len(line) >= 2 and not line[0].startswith('@'):
                     data_lines += 1
@@ -40,6 +46,8 @@ class Otu(Text):
             dataset.metadata.columns = ncols
             dataset.metadata.labels = list(label_names)
             dataset.metadata.labels.sort()
+            dataset.metadata.otulabels = list(otulabel_names)
+            dataset.metadata.otulabels.sort()
 
     def sniff(self, filename):
         """
