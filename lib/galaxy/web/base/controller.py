@@ -238,7 +238,7 @@ class JSAppLauncher( BaseUIController ):
     DEFAULT_ENTRY_FN = "app"
     #: keys used when serializing current user for bootstrapped data
     USER_BOOTSTRAP_KEYS = ( 'id', 'email', 'username', 'is_admin', 'tags_used', 'requests',
-                            'total_disk_usage', 'nice_total_disk_usage', 'quota_percent' )
+                            'total_disk_usage', 'nice_total_disk_usage', 'quota_percent', 'preferences' )
 
     def __init__( self, app ):
         super( JSAppLauncher, self ).__init__( app )
