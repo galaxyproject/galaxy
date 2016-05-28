@@ -1200,8 +1200,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             trans.sa_session.add( user )
             trans.sa_session.flush()
         else:
-            log.warn("######### %s" % user.preferences['communication_server'])
-            log.warn("######### %s" % string_as_bool(user.preferences['communication_server']))
             if string_as_bool( user.preferences.get('communication_server', '0') ):
                 activated = 'checked'
 
