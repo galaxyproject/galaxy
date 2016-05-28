@@ -104,10 +104,10 @@ template = """<!DOCTYPE HTML>
 
         /* Styles for top right icons */
         .right_icons {
-                margin: 0px 0px 10px 780px;
+                margin: 0px 0px 10px 745px;
 	}  
 
-        #clear_messages{
+        .anchor{
 		cursor: pointer;
 		color: black;	
 	}
@@ -150,21 +150,20 @@ template = """<!DOCTYPE HTML>
 <body style="overflow: hidden";> 
     <div class="right_icons">
     	<i id="online_status" class="fa fa-comments" aria-hidden="true" style="" title=""></i>
-    	<i id="clear_messages" class="fa fa-trash-o" aria-hidden="true" title="Clear all messages"></i>
+	<i id="chat_history" class="anchor fa fa-history" aria-hidden="true" style="" title="Show chat history"></i>
+	<i id="settings" class="anchor fa fa-cog" aria-hidden="true" style="" title="All settings"></i>
+    	<i id="clear_messages" class="anchor fa fa-trash-o" aria-hidden="true" title="Clear all messages"></i>
     </div>
     <div id="all_messages" class="messages"></div>
     <div class="send_message">
 	    <form id="broadcast" method="POST" action='#'>
 		<input id="send_data" class="size clearable" type="text" name="" value="" placeholder="Type your message..." autocomplete="off" />
 		<button id="btn-send" type="submit" title="Send message">
-			<i class="icon fa fa fa-paper-plane"></i>&nbsp;<span class="title">Send Message</span>
+			<i class="icon fa fa fa-paper-plane" style="color:#00FF00"></i>&nbsp;<span class="title">Send Message</span>
 		</button>
                 <button id="btn-disconnect" type="submit" title="Disconnect from server" class="connect_disconnect">
-			<i class="icon fa fa fa-stop"></i>&nbsp;<span class="title">Disconnect</span>
+			<i class="icon fa fa fa-stop" style="color:#FF0000"></i>&nbsp;<span class="title">Disconnect</span>
 		</button>
-		<!-- <button id="btn-connect" type="submit" title="Connect again" >
-			<i class="icon fa fa fa-play"></i>&nbsp;<span class="title">Re-connect</span>
-		</button> -->
 	    </form>
     </div>
 
@@ -193,7 +192,14 @@ template = """<!DOCTYPE HTML>
 		                utils.append_message($all_messages, message);
 			}
 		        // updates the user session storage with all the messages
-		        sessionStorage[uid]  = $all_messages.html();
+		        sessionStorage[uid] = $all_messages.html();
+			if(localStorage[uid]) {
+				localStorage[uid] = localStorage[uid] + " " + $all_messages.html();
+			}
+			else {
+				localStorage[uid] = $all_messages.html();
+			}
+			
 		        // show the last item by scrolling to the end
 		        utils.scroll_to_last($all_messages);                
 		    });
@@ -249,7 +255,7 @@ template = """<!DOCTYPE HTML>
 						utils.append_message( $el_all_messages,  disconnected_message);
 				                this.is_connected = false;
 						utils.update_online_status( $el_online_status, this.is_connected );
-		  utils.switch_connect_disconnect( $el_connect_disconnect, "btn-connect", "Re-connect", "fa-play", "fa-stop", connect_tooltip );
+		  utils.switch_connect_disconnect( $el_connect_disconnect, "btn-connect", "Re-connect", "fa-play", "fa-stop", connect_tooltip, "#00FF00" );
 		                                //$el, btn_id, btn_text, fa_class_add, fa_class_remove, btn_tooltip
 		                                utils.scroll_to_last( $el_all_messages );
 					}
@@ -259,7 +265,7 @@ template = """<!DOCTYPE HTML>
 		                        this.is_connected = true;
 					connected_message = "<div class='conn_msg'>" + connected_message + "</div>";
 					utils.append_message( $el_all_messages, connected_message );
-	utils.switch_connect_disconnect( $el_connect_disconnect, "btn-disconnect", "Disconnect", "fa-stop", "fa-play",  disconnect_tooltip);
+	utils.switch_connect_disconnect( $el_connect_disconnect, "btn-disconnect", "Disconnect", "fa-stop", "fa-play",  disconnect_tooltip, "#FF0000");
 					utils.update_online_status( $el_online_status, this.is_connected );
 		                        // show the last item by scrolling to the end
 					utils.scroll_to_last( $el_all_messages ); 
@@ -275,6 +281,14 @@ template = """<!DOCTYPE HTML>
                 		return false;
 	    		});
 		},
+
+		// shows full chat history
+		show_chat_history: function() {
+			$( '#chat_history' ).click( function( events ) {
+				utils.fill_messages(localStorage[utils.get_userid()]);
+			});
+			
+		}
 	
 	}
 
@@ -296,15 +310,17 @@ template = """<!DOCTYPE HTML>
 		},
 
                 // fill in all messages
-		fill_messages: function () {
+		fill_messages: function ( collection ) {
 			var uid = utils.get_userid(),
-			    message_html = $.parseHTML( sessionStorage[uid] ),
-			    $all_messages = $('#all_messages');
-			if(sessionStorage[uid]) {
-				$all_messages.append( $( '<div' + '/' + '>' ).html( message_html ) );
+			    message_html = $.parseHTML( collection ),
+			    $el_all_messages = $('#all_messages');
+			// clears the previous items
+                        $('#all_messages').html("");
+			if(collection) {
+				$el_all_messages.append( $( '<div' + '/' + '>' ).html( message_html ) );
 			}
 			// show the last item by scrolling to the end
-			utils.scroll_to_last($all_messages);
+			utils.scroll_to_last($el_all_messages);
 		},
 
 		// gets the user id
@@ -360,9 +376,9 @@ template = """<!DOCTYPE HTML>
 		},
              
                 // switch buttons connect and disconnect
-		switch_connect_disconnect: function( $el, btn_id, btn_text, fa_class_add, fa_class_remove, btn_tooltip) {
+		switch_connect_disconnect: function( $el, btn_id, btn_text, fa_class_add, fa_class_remove, btn_tooltip, icon_color) {
                         $el.prop("id", btn_id).prop("title", btn_tooltip);
-                        $el.find('i').removeClass(fa_class_remove).addClass(fa_class_add);
+                        $el.find('i').removeClass(fa_class_remove).addClass(fa_class_add).css("color", icon_color);
 			$el.find('span').text(btn_text);
 		},
 	}
@@ -382,7 +398,9 @@ template = """<!DOCTYPE HTML>
         $(document).ready(function(){
 		// fill the messages if user is already connected 
 		// and comes back to the chat window
-		utils.fill_messages();
+		var uid = utils.get_userid();
+		//alert(uid);
+		utils.fill_messages(sessionStorage[uid]);
 		// updates online status text
 		utils.update_online_status( $('#online_status'), true );
 		// registers response event
@@ -395,7 +413,7 @@ template = """<!DOCTYPE HTML>
 		// disconnet the user from the chat server
 		click_events.connect_disconnect(socket);
 
-                //click_events.connect(socket);
+                click_events.show_chat_history();
 		// clears all the messages
 		click_events.clear_messages();
         });
