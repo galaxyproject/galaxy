@@ -1202,6 +1202,7 @@ use_interactive = True
 #amqp_internal_connection = sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE
 
 # Galaxy real time communication server settings
+#enable_communication_server = False
 #communication_server_host = http://localhost
 #communication_server_port = 7070
 
