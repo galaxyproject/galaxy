@@ -198,20 +198,19 @@ template = """<!DOCTYPE HTML>
                             message = utils.build_message( orig_message, uid );
 		        // append only for non empty messages
 		        if( orig_message[0].length > 0 ) {
-		                utils.append_message($el_all_messages, message);
+		                utils.append_message( $el_all_messages, message );
+				// adding message to build full chat history
+				if( !localStorage[uid] ) {
+					localStorage[uid] = message + '<br>';
+				}
+				else {
+					localStorage[uid] = localStorage[uid] + message + '<br>';
+				}
 			}
 		        // updates the user session storage with all the messages
 		        sessionStorage[uid] = $el_all_messages.html();
-			// adding message to build full chat history
-			if(!localStorage[uid]) {
-				localStorage[uid] = message + '<br>';
-			}
-			else {
-				localStorage[uid] = localStorage[uid]  + message + '<br>';
-			}
-			
 		        // show the last item by scrolling to the end
-		        utils.scroll_to_last($el_all_messages);                
+		        utils.scroll_to_last( $el_all_messages );                
 		    });
 		},
 		// event handler for new connections
