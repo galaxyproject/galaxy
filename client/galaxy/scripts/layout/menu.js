@@ -10,7 +10,7 @@ var Collection = Backbone.Collection.extend({
     fetch: function( options ){
         options = options || {};
         this.reset();
-      
+
         //
         // Chat server tab
         //
@@ -27,23 +27,24 @@ var Collection = Backbone.Collection.extend({
                     uid = escape(window.Galaxy.user.id),
                     query_string = "?username=" + username + "&uid=" + uid,
                     src = host + ":" + port + query_string,
-		    template = "<iframe class='f-iframe' src=" + src + " style='width:100%; height:100%;'> </iframe>";
+                    template = "<iframe class='f-iframe' src=" + src + " style='width:100%; height:100%;'> </iframe>";
                 // shows the modal if already present, otherwise create one
                 if( $(".modal.ui-modal").length > 0 ) {
-			$(".modal.ui-modal").remove();
-		}
-		this.modal = new Modal.View({
-			title           : 'Chat with online users',
-			body            : template,
-			height          : 500,
-			width           : 900,
-			closing_events  : true,
-			title_separator : false
-		});
-		// show modal
-		this.modal.show();
-             }
+                    $(".modal.ui-modal").remove();
+                }
+                this.modal = new Modal.View({
+                    title           : 'Chat with other users',
+                    body            : template,
+                    height          : 500,
+                    width           : 900,
+                    closing_events  : true,
+                    title_separator : false
+                });
+                // show modal
+                this.modal.show();
+            }
         });
+
         //
         // Analyze data tab.
         //
