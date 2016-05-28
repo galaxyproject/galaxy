@@ -143,6 +143,15 @@ template = """<!DOCTYPE HTML>
 		background-color: #DFE5F9;
 		width: 790px;
 	}
+
+	.date_time {
+		font-style: italic;
+		font-size: 13px;
+		background-color: #DFE5F9;
+	}
+	.date_time span {
+		float:right;
+	}
 	
   
     </style>
@@ -184,24 +193,25 @@ template = """<!DOCTYPE HTML>
 		        var orig_message = msg.data.split(':'),
 		            message = "",
 		            uid = utils.get_userid(),
-		            $all_messages = $('#all_messages');
+		            $el_all_messages = $('#all_messages');
                             // builds the message to be displayed
                             message = utils.build_message( orig_message, uid );
 		        // append only for non empty messages
 		        if( orig_message[0].length > 0 ) {
-		                utils.append_message($all_messages, message);
+		                utils.append_message($el_all_messages, message);
 			}
 		        // updates the user session storage with all the messages
-		        sessionStorage[uid] = $all_messages.html();
-			if(localStorage[uid]) {
-				localStorage[uid] = localStorage[uid] + " " + $all_messages.html();
+		        sessionStorage[uid] = $el_all_messages.html();
+			// adding message to build full chat history
+			if(!localStorage[uid]) {
+				localStorage[uid] = message + '<br>';
 			}
 			else {
-				localStorage[uid] = $all_messages.html();
+				localStorage[uid] = localStorage[uid]  + message + '<br>';
 			}
 			
 		        // show the last item by scrolling to the end
-		        utils.scroll_to_last($all_messages);                
+		        utils.scroll_to_last($el_all_messages);                
 		    });
 		},
 		// event handler for new connections
@@ -255,17 +265,18 @@ template = """<!DOCTYPE HTML>
 						utils.append_message( $el_all_messages,  disconnected_message);
 				                this.is_connected = false;
 						utils.update_online_status( $el_online_status, this.is_connected );
-		  utils.switch_connect_disconnect( $el_connect_disconnect, "btn-connect", "Re-connect", "fa-play", "fa-stop", connect_tooltip, "#00FF00" );
+		  				utils.switch_connect_disconnect( $el_connect_disconnect, "btn-connect", "Re-connect", "fa-play", "fa-stop", connect_tooltip, "#00FF00" );
 		                                //$el, btn_id, btn_text, fa_class_add, fa_class_remove, btn_tooltip
 		                                utils.scroll_to_last( $el_all_messages );
 					}
 				}
 				else if ( id === "btn-connect" ) {
+					// connects to socket again
 		                        socket.connect();
 		                        this.is_connected = true;
-					connected_message = "<div class='conn_msg'>" + connected_message + "</div>";
+					connected_message = "<div class='conn_msg'>" + connected_message + "<i class='fa fa-smile-o' aria-hidden='true'></i></div>";
 					utils.append_message( $el_all_messages, connected_message );
-	utils.switch_connect_disconnect( $el_connect_disconnect, "btn-disconnect", "Disconnect", "fa-stop", "fa-play",  disconnect_tooltip, "#FF0000");
+					utils.switch_connect_disconnect( $el_connect_disconnect, "btn-disconnect", "Disconnect", "fa-stop", "fa-play",  disconnect_tooltip, "#FF0000");
 					utils.update_online_status( $el_online_status, this.is_connected );
 		                        // show the last item by scrolling to the end
 					utils.scroll_to_last( $el_all_messages ); 
@@ -340,11 +351,8 @@ template = """<!DOCTYPE HTML>
 
 		// append message 
 		append_message: function($el, message) {
-			//$el.append( $('<div' + '/' + '>' ).text( message ).html() );
-		        //$el.append('<br><br>');
-			message = "<div>" + message + "</div>";
 			$el.append( message );
-			$el.append('<br>')
+			$el.append('<br>');
 		},
                 // builds message 
                 build_message: function(original_message, uid) {
@@ -354,15 +362,14 @@ template = """<!DOCTYPE HTML>
 				
                         // for user's own messages
                         if ( from_uid === uid ) {
-                                message_user = "<span class='user_name'> me <br> </span>";
-				message_text = "<div class='user_message'>" + unescape( original_message[0] ) + "</div>";
-				
+                                message_user = "<span class='user_name'> me <br> </span>"; //	
 			}
 			// for other user's messages
 			else {
 				message_user = "<span class='user_name'>" + unescape(original_message[1].split('-')[0]) + "<br></span>";
-				message_text = "<div class='user_message'>" + unescape(original_message[0]) + "</div>";
 			}
+			message_text = "<div class='user_message'> <i class='fa fa-quote-left' aria-hidden='true'></i> " +
+				       unescape( original_message[0] ) + " <i class='fa fa-quote-right' aria-hidden='true'></i><div class='date_time'><span>sent on "+ this.get_date_time() + "</span></div></div>";
 			return message_user + message_text;
 		},
                 // adds an information about the online status
@@ -381,6 +388,27 @@ template = """<!DOCTYPE HTML>
                         $el.find('i').removeClass(fa_class_remove).addClass(fa_class_add).css("color", icon_color);
 			$el.find('span').text(btn_text);
 		},
+		
+		// gets the current date and time
+		get_date_time: function() {
+			var currentdate = new Date(),
+			    datetime = "",
+			    month = 0,
+			    day = 0,
+			    hours = 0,
+			    minutes = 0;
+			    month = ( (currentdate.getMonth()+1 ) < 10) ? ( "0" + (currentdate.getMonth()+1) ) : ( currentdate.getMonth()+1 );
+			    day = ( currentdate.getDate() < 10 ) ? ( "0" + currentdate.getDate() ) : currentdate.getDate();
+			    hours = ( currentdate.getHours() < 10 ) ? ( "0" + currentdate.getHours() ) : currentdate.getHours();
+			    minutes = ( currentdate.getMinutes() < 10 ) ? ( "0" + currentdate.getMinutes() ) : currentdate.getMinutes();
+			   
+			    datetime = month + "/"
+				+ day  + "/" 
+				+ currentdate.getFullYear() + " @ "  
+				+ hours + ":"  
+				+ minutes;
+			return datetime;
+		}
 	}
 
 	// this snippet is for adding a clear icon in the message textbox
@@ -399,8 +427,8 @@ template = """<!DOCTYPE HTML>
 		// fill the messages if user is already connected 
 		// and comes back to the chat window
 		var uid = utils.get_userid();
-		//alert(uid);
 		utils.fill_messages(sessionStorage[uid]);
+		
 		// updates online status text
 		utils.update_online_status( $('#online_status'), true );
 		// registers response event
@@ -416,6 +444,8 @@ template = """<!DOCTYPE HTML>
                 click_events.show_chat_history();
 		// clears all the messages
 		click_events.clear_messages();
+		utils.get_date_time();
+		utils.scroll_to_last( $('#all_messages') );
         });
 
     </script>
