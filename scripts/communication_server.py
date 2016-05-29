@@ -107,7 +107,7 @@ template = """<!DOCTYPE HTML>
 
     /* Styles for top right icons */
     .right_icons {
-        margin: 0px 0px 0px 443px;
+        margin: 0px 0px 0px 463px;
     }
     .user,
     .anchor {
