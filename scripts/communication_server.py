@@ -86,11 +86,11 @@ template = """<!DOCTYPE HTML>
 <html>
 <head>
    <title>Chat</title>
-   <link href="../static/style/base.css" media="screen" rel="stylesheet" type="text/css">
+   <script src="https://use.fontawesome.com/89a733ecb7.js"></script>
     <style>
         /* Styles for message text box */
         .clearable{
-      background: #fff url(/static/images/delete_tag_icon_gray.png) no-repeat right -10px center;
+      background: #fff url(http://i.stack.imgur.com/mJotv.gif) no-repeat right -10px center;
       border: 1px solid #999;
       padding: 3px 18px 3px 4px;
       border-radius: 3px;
@@ -101,23 +101,23 @@ template = """<!DOCTYPE HTML>
     .clearable::-ms-clear {display: none; width:0; height:0;}
     .size {
         height: 30px;
-        width: 795px;
+        width: 492px;
         margin-bottom:5px;
     }
 
     /* Styles for top right icons */
     .right_icons {
-        margin: 0px 0px 10px 705px;
+        margin: 0px 0px 10px 405px;
     }
     .user,
     .connect_disconnect,
-    anchor {
+    .anchor {
         cursor: pointer;
         color: black;
     }
     .messages {
         overflow: auto;
-        height: 365px;
+        height: 265px;
     }
     .send_message {
         margin-top: 5px;
@@ -139,7 +139,7 @@ template = """<!DOCTYPE HTML>
     .user_message {
         font-size: 14px;
         background-color: #DFE5F9;
-        width: 790px;
+        width: 490px;
     }
     .date_time {
         font-style: italic;
@@ -167,7 +167,7 @@ template = """<!DOCTYPE HTML>
         <input id="send_data" class="size clearable" type="text" name="" value="" placeholder="Type your message..." autocomplete="off" />
     </div>
 
-    <script src="../static/scripts/libs/jquery/jquery.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.10.2.js"></script>
     <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
     <script type="text/javascript" charset="utf-8">
     // the namespace events connect to
@@ -187,6 +187,7 @@ template = """<!DOCTYPE HTML>
                 // append only for non empty messages
                 if( orig_message[0].length > 0 ) {
                     utils.append_message( $el_all_messages, message );
+                    $('.date_time').find('span').prop('title', utils.get_date());
                     // adding message to build full chat history
                     if( !localStorage[uid] ) {
                         localStorage[uid] = message + '<br>';
@@ -344,7 +345,7 @@ template = """<!DOCTYPE HTML>
                 message_user = "<span class='user_name'>" + unescape(original_message[1].split('-')[0]) + "<br></span>";
             }
             message_text = "<div class='user_message'> <i class='fa fa-quote-left' aria-hidden='true'></i> " +
-                unescape( original_message[0] ) + " <i class='fa fa-quote-right' aria-hidden='true'></i><div class='date_time'><span><i class='fa fa-clock-o' aria-hidden='true'></i> "+ this.get_date_time() + "</span></div></div>";
+                unescape( original_message[0] ) + " <i class='fa fa-quote-right' aria-hidden='true'></i><div class='date_time'><span title=''><i class='fa fa-clock-o' aria-hidden='true'></i> "+ this.get_time() + "</span></div></div>";
             return message_user + message_text;
         },
         // adds an information about the online status
@@ -361,23 +362,23 @@ template = """<!DOCTYPE HTML>
             $el.prop("id", btn_id).prop("title", btn_tooltip);
         },
         // gets the current date and time
-        get_date_time: function() {
+        get_time: function() {
             var currentdate = new Date(),
                 datetime = "",
-                month = 0,
-                day = 0,
                 hours = 0,
                 minutes = 0;
-                month = ( (currentdate.getMonth()+1 ) < 10) ? ( "0" + (currentdate.getMonth()+1) ) : ( currentdate.getMonth()+1 );
-                day = ( currentdate.getDate() < 10 ) ? ( "0" + currentdate.getDate() ) : currentdate.getDate();
                 hours = ( currentdate.getHours() < 10 ) ? ( "0" + currentdate.getHours() ) : currentdate.getHours();
                 minutes = ( currentdate.getMinutes() < 10 ) ? ( "0" + currentdate.getMinutes() ) : currentdate.getMinutes();
-                datetime = month + "/"
-                + day  + "/"
-                + currentdate.getFullYear() + " @ "
-                + hours + ":"
-                + minutes;
+                datetime = hours + ":" + minutes;
                 return datetime;
+        },
+        get_date: function() {
+            var currentdate = new Date(),
+                day,
+                month;
+            month = ( (currentdate.getMonth()+1 ) < 10) ? ( "0" + (currentdate.getMonth()+1) ) : ( currentdate.getMonth()+1 );
+            day = ( currentdate.getDate() < 10 ) ? ( "0" + currentdate.getDate() ) : currentdate.getDate();
+            return month + "/" + day + "/" + currentdate.getFullYear();
         },
         set_user_info: function() {
             $( '.user' ).prop( 'title', this.get_username() );
@@ -414,7 +415,7 @@ template = """<!DOCTYPE HTML>
             click_events.show_chat_history();
             // clears all the messages
             click_events.clear_messages();
-            utils.get_date_time();
+            utils.get_time();
             utils.scroll_to_last( $('#all_messages') );
        });
     </script>

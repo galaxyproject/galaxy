@@ -33,10 +33,10 @@ var Collection = Backbone.Collection.extend({
                     $(".modal.ui-modal").remove();
                 }
                 this.modal = new Modal.View({
-                    title           : 'Chat with other users',
+                    title           : 'Communicate with online users',
                     body            : template,
-                    height          : 500,
-                    width           : 900,
+                    height          : 400,
+                    width           : 600,
                     closing_events  : true,
                     title_separator : false
                 });
