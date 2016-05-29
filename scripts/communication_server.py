@@ -101,16 +101,15 @@ template = """<!DOCTYPE HTML>
     .clearable::-ms-clear {display: none; width:0; height:0;}
     .size {
         height: 30px;
-        width: 492px;
+        width: 530px;
         margin-bottom:5px;
     }
 
     /* Styles for top right icons */
     .right_icons {
-        margin: 0px 0px 10px 405px;
+        margin: 0px 0px 0px 443px;
     }
     .user,
-    .connect_disconnect,
     .anchor {
         cursor: pointer;
         color: black;
@@ -139,7 +138,7 @@ template = """<!DOCTYPE HTML>
     .user_message {
         font-size: 14px;
         background-color: #DFE5F9;
-        width: 490px;
+        width: 530px;
     }
     .date_time {
         font-style: italic;
@@ -155,10 +154,9 @@ template = """<!DOCTYPE HTML>
 </head>
 <body style="overflow: hidden";>
     <div class="right_icons">
-        <i id="online_status" class="fa fa-comments" aria-hidden="true"title=""></i>
+        <i id="online_status" class="anchor fa fa-comments" aria-hidden="true" title=""></i>
         <i class="user fa fa-user" aria-hidden="true" title=""></i>
         <i id="chat_history" class="anchor fa fa-history" aria-hidden="true" title="Show chat history"></i>
-        <i id="btn-disconnect" class="connect_disconnect fa fa-plug" title="Disconnect from server"></i>
         <i id="settings" class="anchor fa fa-cog" aria-hidden="true" title="All settings"></i>
         <i id="clear_messages" class="anchor fa fa-trash-o" aria-hidden="true" title="Clear all messages"></i>
     </div>
@@ -228,46 +226,29 @@ template = """<!DOCTYPE HTML>
                 }
             });
         },
-        // event for connected and disconnect buttons
+        // event for connected and disconneted states
         connect_disconnect: function(socket) {
-            $( '.connect_disconnect' ).click(function( event ){
-                var $el = $( '.connect_disconnect' ),
-                    id = $el.prop("id"),
+            $('#online_status').click(function(){
+                var $el_online_status = $('#online_status'),
+                    $el_input_text = $('#send_data'),
                     send_data = { },
-                    uid = utils.get_userid(),
-                    $el_all_messages = $( '#all_messages' ),
-                    $el_online_status = $('#online_status'),
-                    $el_connect_disconnect = $('.connect_disconnect'),
-                    disconnected_message = "You are disconnected and can't send/receive messages...",
-                    connected_message = "You are connected again...",
-                    disconnect_tooltip = "Disconnect from server",
-                    connect_tooltip = "Connect to server";
-                                if( id === "btn-disconnect" ) {
-                    // disconnect only if connected
-                    if (click_events.is_connected) {
-                        send_data.data = "disconnected" + ":" + utils.get_username();
-                        socket.emit( 'event disconnect', send_data );
-                        sessionStorage.removeItem(uid);
-                        disconnected_message = "<div class='disconn_msg'>" + disconnected_message + "</div>";
-                        utils.append_message( $el_all_messages,  disconnected_message);
-                        this.is_connected = false;
-                        utils.update_online_status( $el_online_status, this.is_connected );
-                        utils.switch_connect_disconnect( $el_connect_disconnect, "btn-connect", connect_tooltip );
-                        utils.scroll_to_last( $el_all_messages );
-                    }
+                    uid = utils.get_userid();
+                if( click_events.is_connected ){
+                    click_events.is_connected = false;
+                    send_data.data = "disconnected" + ":" + utils.get_username();
+                    socket.emit( 'event disconnect', send_data );
+                    sessionStorage.removeItem(uid);
+                    utils.update_online_status( $el_online_status, click_events.is_connected );
+                    $el_input_text.prop('placeholder', 'You are now disconnected. To send/receive messages, please connect');
+                    $el_input_text.prop('disabled', true);
                 }
-                else if ( id === "btn-connect" ) {
-                // connects to socket again
+                else {
                     socket.connect();
-                    this.is_connected = true;
-                    connected_message = "<div class='conn_msg'>" + connected_message + "<i class='fa fa-smile-o' aria-hidden='true'></i></div>";
-                    utils.append_message( $el_all_messages, connected_message );
-                    utils.switch_connect_disconnect( $el_connect_disconnect, "btn-disconnect", disconnect_tooltip );
-                    utils.update_online_status( $el_online_status, this.is_connected );
-                    // show the last item by scrolling to the end
-                    utils.scroll_to_last( $el_all_messages );
+                    click_events.is_connected = true;
+                    utils.update_online_status( $el_online_status, click_events.is_connected );
+                    $el_input_text.prop('disabled', false);
+                    $el_input_text.prop('placeholder', 'Type your message...');
                 }
-                return false;
             });
         },
         // clear all the messages

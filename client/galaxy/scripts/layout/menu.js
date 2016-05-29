@@ -35,13 +35,16 @@ var Collection = Backbone.Collection.extend({
                 this.modal = new Modal.View({
                     title           : 'Communicate with online users',
                     body            : template,
-                    height          : 400,
+                    height          : 350,
                     width           : 600,
                     closing_events  : true,
                     title_separator : false
                 });
+
                 // show modal
                 this.modal.show();
+		$('.modal-header').css('padding', '2px');
+                $('.modal-body').css('padding', '2px');
             }
         });
 
