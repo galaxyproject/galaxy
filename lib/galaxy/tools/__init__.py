@@ -428,7 +428,7 @@ class Tool( object, Dictifiable ):
         if self.profile >= 16.04 and VERSION_MAJOR < self.profile:
             template = "The tool %s targets version %s of Galaxy, you should upgrade Galaxy to ensure proper functioning of this tool."
             message = template % (self.id, self.profile)
-            log.warn(message)
+            log.warning(message)
 
         # Get the (user visible) name of the tool
         self.name = tool_source.parse_name()
@@ -444,6 +444,7 @@ class Tool( object, Dictifiable ):
                 raise Exception( "Missing tool 'version' for tool with id '%s' at '%s'" % (self.id, tool_source) )
 
         self.edam_operations = tool_source.parse_edam_operations()
+        self.edam_topics = tool_source.parse_edam_topics()
 
         # Support multi-byte tools
         self.is_multi_byte = tool_source.parse_is_multi_byte()
@@ -1542,6 +1543,7 @@ class Tool( object, Dictifiable ):
         tool_dict = super( Tool, self ).to_dict()
 
         tool_dict["edam_operations"] = self.edam_operations
+        tool_dict["edam_topics"] = self.edam_topics
 
         # Fill in ToolShedRepository info
         if hasattr(self, 'tool_shed') and self.tool_shed:

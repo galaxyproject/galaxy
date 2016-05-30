@@ -260,7 +260,7 @@ class ShedTwillTestCase( TwillTestCase ):
         commands.commit( ui.ui(), hgrepo, **options )
         #  Try pushing multiple times as it transiently fails on Jenkins.
         #  TODO: Figure out why that happens
-        for i in range(2):
+        for i in range(5):
             try:
                 commands.push( ui.ui(), hgrepo, dest=url )
             except Exception as e:

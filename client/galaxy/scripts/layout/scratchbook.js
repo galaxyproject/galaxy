@@ -41,45 +41,82 @@ return Backbone.View.extend({
         }).on( 'show hide ', function() {
             self.buttonLoad.set( { 'toggle': this.visible, 'icon': this.visible && 'fa-eye' || 'fa-eye-slash' } );
         });
+        this.history_cache = {};
     },
 
     /** Add a dataset to the frames */
     addDataset: function( dataset_id ) {
         var self = this;
+        var current_dataset = null;
+        if ( Galaxy && Galaxy.currHistoryPanel ) {
+            var history_id = Galaxy.currHistoryPanel.collection.historyId;
+            this.history_cache[ history_id ] = { name: Galaxy.currHistoryPanel.model.get( 'name' ), dataset_ids: [] };
+            Galaxy.currHistoryPanel.collection.each( function( model ) {
+                !model.get( 'deleted' ) && model.get( 'visible' ) && self.history_cache[ history_id ].dataset_ids.push( model.get( 'id' ) );
+            });
+        }
+        var _findDataset = function( dataset, offset ) {
+            if ( dataset ) {
+                var history_details = self.history_cache[ dataset.get( 'history_id' ) ];
+                if ( history_details && history_details.dataset_ids ) {
+                    var dataset_list = history_details.dataset_ids;
+                    var pos = dataset_list.indexOf( dataset.get( 'id' ) );
+                    if ( pos !== -1 && pos + offset >= 0 && pos + offset < dataset_list.length ) {
+                        return dataset_list[ pos + offset ];
+                    }
+                }
+            }
+        };
+        var _loadDatasetOffset = function( dataset, offset, frame ) {
+            var new_dataset_id = _findDataset( dataset, offset );
+            if ( new_dataset_id ) {
+                self._loadDataset( new_dataset_id, function( new_dataset, config ) {
+                    current_dataset = new_dataset;
+                    frame.model.set( config );
+                });
+            } else {
+                frame.model.trigger( 'change' );
+            }
+        }
+        this._loadDataset( dataset_id, function( dataset, config ) {
+            current_dataset = dataset;
+            self.add( _.extend( { menu: [ { icon     : 'fa fa-chevron-circle-left',
+                                            tooltip  : 'Previous in History',
+                                            onclick  : function( frame ) { _loadDatasetOffset( current_dataset, -1, frame ) },
+                                            disabled : function() { return !_findDataset( current_dataset, -1 ) } },
+                                          { icon     : 'fa fa-chevron-circle-right',
+                                            tooltip  : 'Next in History',
+                                            onclick  : function( frame ) { _loadDatasetOffset( current_dataset, 1, frame ) },
+                                            disabled : function() { return !_findDataset( current_dataset, 1 ) } } ] }, config ) )
+        });
+    },
+
+    _loadDataset: function( dataset_id, callback ) {
+        var self = this;
         require([ 'mvc/dataset/data' ], function( DATA ) {
             var dataset = new DATA.Dataset( { id : dataset_id } );
             $.when( dataset.fetch() ).then( function() {
-                // Construct frame config based on dataset's type.
-                var frame_config = {
-                        title: dataset.get('name')
-                    },
-                    // HACK: For now, assume 'tabular' and 'interval' are the only
-                    // modules that contain tabular files. This needs to be replaced
-                    // will a is_datatype() function.
-                    is_tabular = _.find( [ 'tabular', 'interval' ] , function( data_type ) {
-                        return dataset.get( 'data_type' ).indexOf( data_type ) !== -1;
-                    });
-
-                // Use tabular chunked display if dataset is tabular; otherwise load via URL.
-                if ( is_tabular ) {
-                    var tabular_dataset = new DATA.TabularDataset( dataset.toJSON() );
-                    _.extend( frame_config, {
-                        content: function( parent_elt ) {
-                            DATA.createTabularDatasetChunkedView({
-                                model       : tabular_dataset,
-                                parent_elt  : parent_elt,
-                                embedded    : true,
-                                height      : '100%'
-                            });
-                        }
-                    });
+                var is_tabular = _.find( [ 'tabular', 'interval' ] , function( data_type ) {
+                    return dataset.get( 'data_type' ).indexOf( data_type ) !== -1;
+                });
+                var title = dataset.get( 'name' );
+                var history_details = self.history_cache[ dataset.get( 'history_id' ) ];
+                if ( history_details ) {
+                    title = history_details.name + ': ' + title;
                 }
-                else {
-                    _.extend( frame_config, {
-                        url: Galaxy.root + 'datasets/' + dataset.id + '/display/?preview=True'
-                    });
-                }
-                self.add( frame_config );
+                callback( dataset, is_tabular ? {
+                    title   : title,
+                    url     : null,
+                    content : DATA.createTabularDatasetChunkedView({
+                        model       : new DATA.TabularDataset( dataset.toJSON() ),
+                        embedded    : true,
+                        height      : '100%'
+                    }).$el
+                } : {
+                    title   : title,
+                    url     : Galaxy.root + 'datasets/' + dataset_id + '/display/?preview=True',
+                    content : null
+                } );
             });
         });
     },
@@ -136,15 +173,9 @@ return Backbone.View.extend({
             window.location = options.url;
         } else if ( !this.active ) {
             var $galaxy_main = $( window.parent.document ).find( '#galaxy_main' );
-            if ( options.target == 'galaxy_main' || options.target == 'center' ){
-                if ( $galaxy_main.length === 0 ){
-                    var href = options.url;
-                    if ( href.indexOf( '?' ) == -1 )
-                        href += '?';
-                    else
-                        href += '&';
-                    href += 'use_panels=True';
-                    window.location = href;
+            if ( options.target == 'galaxy_main' || options.target == 'center' ) {
+                if ( $galaxy_main.length === 0 ) {
+                    window.location = options.url + ( href.indexOf( '?' ) == -1 ? '?' : '&' ) + 'use_panels=True';
                 } else {
                     $galaxy_main.attr( 'src', options.url );
                 }
