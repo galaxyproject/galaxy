@@ -729,7 +729,7 @@ def rst_to_html( s ):
     class FakeStream( object ):
         def write( self, str ):
             if len( str ) > 0 and not str.isspace():
-                log.warn( str )
+                log.warning( str )
 
     settings_overrides = {
         "embed_stylesheet": False,
@@ -1351,7 +1351,7 @@ def config_directories_from_setting( directories_setting, galaxy_root=galaxy_roo
         if not directory.startswith( '/' ):
             directory = os.path.join( galaxy_root, directory )
         if not os.path.exists( directory ):
-            log.warn( 'directory not found: %s', directory )
+            log.warning( 'directory not found: %s', directory )
             continue
         directories.append( directory )
     return directories

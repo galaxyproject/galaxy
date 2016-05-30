@@ -465,7 +465,7 @@ class InstallRepositoryManager( object ):
             message = "Error attempting to retrieve installation information from tool shed "
             message += "%s for revision %s of repository %s owned by %s: %s" % \
                 ( str( tool_shed_url ), str( changeset_revision ), str( name ), str( owner ), str( e ) )
-            log.warn( message )
+            log.warning( message )
             raise exceptions.InternalServerError( message )
         if raw_text:
             # If successful, the response from get_repository_revision_install_info will be 3
@@ -478,7 +478,7 @@ class InstallRepositoryManager( object ):
         else:
             message = "Unable to retrieve installation information from tool shed %s for revision %s of repository %s owned by %s: %s" % \
                 ( str( tool_shed_url ), str( changeset_revision ), str( name ), str( owner ), str( e ) )
-            log.warn( message )
+            log.warning( message )
             raise exceptions.InternalServerError( message )
         # Make sure the tool shed returned everything we need for installing the repository.
         if not repository_revision_dict or not repo_info_dict:

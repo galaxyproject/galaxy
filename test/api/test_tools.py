@@ -5,7 +5,7 @@ from .helpers import DatasetPopulator
 from .helpers import DatasetCollectionPopulator
 from .helpers import LibraryPopulator
 from .helpers import skip_without_tool
-from base.test_data import TestDataResolver
+from galaxy.tools.verify.test_data import TestDataResolver
 
 
 class ToolsTestCase( api.ApiTestCase ):

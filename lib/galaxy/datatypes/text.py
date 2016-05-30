@@ -528,14 +528,14 @@ class SnpSiftDbNSFP( Text ):
                             headers = lines[0].split('\t')
                             dataset.metadata.annotation = headers[4:]
                         except Exception as e:
-                            log.warn("set_meta fname: %s  %s" % (fname, str(e)))
+                            log.warning("set_meta fname: %s  %s" % (fname, str(e)))
                         finally:
                             fh.close()
                     if fname.endswith('.tbi'):
                         dataset.metadata.index = fname
             self.regenerate_primary_file(dataset)
         except Exception as e:
-            log.warn("set_meta fname: %s  %s" % (dataset.file_name if dataset and dataset.file_name else 'Unkwown', str(e)))
+            log.warning("set_meta fname: %s  %s" % (dataset.file_name if dataset and dataset.file_name else 'Unkwown', str(e)))
 
         def set_peek( self, dataset, is_multi_byte=False ):
             if not dataset.dataset.purged:

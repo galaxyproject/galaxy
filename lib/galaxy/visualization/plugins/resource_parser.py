@@ -78,7 +78,7 @@ class ResourceParser( object ):
                     if trans.debug:
                         raise
                     else:
-                        log.warn( 'Exception parsing visualization param from query: %s, %s, (%s) %s',
+                        log.warning( 'Exception parsing visualization param from query: %s, %s, (%s) %s',
                                   param_name, query_val, str( type( exception ) ), str( exception ) )
                     resource = None
 
@@ -109,7 +109,7 @@ class ResourceParser( object ):
                     config_val = self.parse_parameter( trans, param_config, config_val )
 
                 except Exception as exception:
-                    log.warn( 'Exception parsing visualization param from query: ' +
+                    log.warning( 'Exception parsing visualization param from query: ' +
                               '%s, %s, (%s) %s' % ( param_name, config_val, str( type( exception ) ), str( exception ) ))
                     config_val = None
 

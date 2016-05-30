@@ -283,7 +283,7 @@ class DataSourceParser( object ):
             test_type = test_elem.get( 'type', 'eq' )
             test_result = test_elem.text.strip() if test_elem.text else None
             if not test_type or not test_result:
-                log.warn( 'Skipping test. Needs both type attribute and text node to be parsed: ' +
+                log.warning( 'Skipping test. Needs both type attribute and text node to be parsed: ' +
                           '%s, %s' % ( test_type, test_elem.text ) )
                 continue
             test_result = test_result.strip()

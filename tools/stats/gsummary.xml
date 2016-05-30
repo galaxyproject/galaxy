@@ -1,5 +1,8 @@
 <tool id="Summary_Statistics1" name="Summary Statistics" version="1.1.0">
   <description>for any numerical column</description>
+  <edam_topics>
+    <edam_topic>topic_2269</edam_topic>
+  </edam_topics>
   <command interpreter="python">gsummary.py $input $out_file1 "$cond"</command>
   <inputs>
     <param format="tabular" name="input" type="data" label="Summary statistics on" help="Dataset missing? See TIP below"/>
