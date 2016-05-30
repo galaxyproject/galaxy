@@ -500,7 +500,7 @@ class Fasta( Sequence ):
 
 class csFasta( Sequence ):
     """ Class representing the SOLID Color-Space sequence ( csfasta ) """
-    edam_format = "format_1929"
+    edam_format = "format_3589"
     file_ext = "csfasta"
 
     def sniff( self, filename ):
@@ -848,6 +848,7 @@ class Axt( data.Text ):
     # from data.Text eliminates managing metadata elements inherited from the Alignemnt class.
 
     edam_data = "data_0863"
+    edam_format = "format_3013"
     file_ext = "axt"
 
     def sniff( self, filename ):
