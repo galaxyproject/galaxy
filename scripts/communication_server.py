@@ -88,8 +88,11 @@ template = """<!DOCTYPE HTML>
    <title>Chat</title>
    <script src="https://use.fontawesome.com/89a733ecb7.js"></script>
     <style>
-        /* Styles for message text box */
-        .clearable{
+    html, body {
+        height: 100%;
+    }
+    /* Styles for message text box */
+    .clearable{
       background: #fff url(http://i.stack.imgur.com/mJotv.gif) no-repeat right -10px center;
       border: 1px solid #999;
       padding: 3px 18px 3px 4px;
@@ -101,13 +104,13 @@ template = """<!DOCTYPE HTML>
     .clearable::-ms-clear {display: none; width:0; height:0;}
     .size {
         height: 30px;
-        width: 530px;
+        width: 96%;
         margin-bottom:5px;
     }
 
     /* Styles for top right icons */
     .right_icons {
-        margin: 0px 0px 0px 463px;
+        margin-left: 83.5%;
     }
     .user,
     .anchor {
@@ -115,8 +118,8 @@ template = """<!DOCTYPE HTML>
         color: black;
     }
     .messages {
-        overflow: auto;
-        height: 265px;
+        overflow-y: auto;
+        height: 72%;
     }
     .send_message {
         margin-top: 5px;
@@ -138,21 +141,19 @@ template = """<!DOCTYPE HTML>
     .user_message {
         font-size: 14px;
         background-color: #DFE5F9;
-        width: 530px;
+        width: 99%;
     }
     .date_time {
         font-style: italic;
         font-size: 13px;
     }
     .date_time span {
-        float:right;
-    }
-    .btn-send {
-        visibility: hidden;
+        float: right;
     }
     </style>
 </head>
-<body style="overflow: hidden";>
+<body style="overflow: hidden; height: 100%";>
+    <div style="float: left"></div>
     <div class="right_icons">
         <i id="online_status" class="anchor fa fa-comments" aria-hidden="true" title=""></i>
         <i class="user fa fa-user" aria-hidden="true" title=""></i>
@@ -162,7 +163,7 @@ template = """<!DOCTYPE HTML>
     </div>
     <div id="all_messages" class="messages"></div>
     <div class="send_message">
-        <input id="send_data" class="size clearable" type="text" name="" value="" placeholder="Type your message..." autocomplete="off" />
+        <input id="send_data" class="size clearable" type="text" placeholder="Type your message..." autocomplete="off" />
     </div>
 
     <script type="text/javascript" src="https://code.jquery.com/jquery-1.10.2.js"></script>
@@ -234,19 +235,15 @@ template = """<!DOCTYPE HTML>
                     send_data = { },
                     uid = utils.get_userid();
                 if( click_events.is_connected ){
-                    click_events.is_connected = false;
-                    send_data.data = "disconnected" + ":" + utils.get_username();
-                    socket.emit( 'event disconnect', send_data );
-                    sessionStorage.removeItem(uid);
-                    utils.update_online_status( $el_online_status, click_events.is_connected );
-                    $el_input_text.prop('placeholder', 'You are now disconnected. To send/receive messages, please connect');
-                    $el_input_text.prop('disabled', true);
+                    click_events.make_disconnect(uid, $el_input_text, $el_online_status);
                 }
                 else {
                     socket.connect();
                     click_events.is_connected = true;
+                    sessionStorage['connected'] = true;
                     utils.update_online_status( $el_online_status, click_events.is_connected );
                     $el_input_text.prop('disabled', false);
+                    $el_input_text.val('');
                     $el_input_text.prop('placeholder', 'Type your message...');
                 }
             });
@@ -264,12 +261,25 @@ template = """<!DOCTYPE HTML>
             $( '#chat_history' ).click( function( events ) {
                 utils.fill_messages(localStorage[utils.get_userid()]);
             });
+        },
+        // makes disconnect
+        make_disconnect: function(uid, $el_input_text, $el_online_status) {
+            var send_data = {};
+            click_events.is_connected = false;
+            send_data.data = "disconnected" + ":" + utils.get_username();
+            socket.emit( 'event disconnect', send_data );
+            sessionStorage.removeItem(uid);
+            sessionStorage['connected'] = false;
+            utils.update_online_status( $el_online_status, click_events.is_connected );
+            $el_input_text.val('');
+            $el_input_text.prop('placeholder', 'You are now disconnected. To send/receive messages, please connect');
+            $el_input_text.prop('disabled', true);
         }
     }
     // utility methods
     var utils = {
-    // get the current username of logged in user
-    // from the querystring of the URL
+        // get the current username of logged in user
+        // from the querystring of the URL
         get_userdata: function() {
             var user_data = $('.modal-body').context.URL.split('?')[1],
                data = user_data.split('&'),
@@ -382,7 +392,21 @@ template = """<!DOCTYPE HTML>
             var uid = utils.get_userid();
             utils.fill_messages(sessionStorage[uid]);
             // updates online status text
-            utils.update_online_status( $('#online_status'), true );
+            // by checking if user was connected or not
+            if(sessionStorage['connected']) {
+                if(sessionStorage['connected'] === 'true' || sessionStorage['connected'] === true) {
+                    utils.update_online_status( $('#online_status'), true );
+                    click_events.is_connected = true;
+                }
+                else {
+                    click_events.make_disconnect(uid, $el_input_text = $('#send_data'), $('#online_status'));
+                    $('#all_messages').html("");
+                }
+            }
+            else {
+                utils.update_online_status( $('#online_status'), true );
+                click_events.is_connected = true;
+            }
             // set user info to the user icon
             utils.set_user_info();
             // registers response event

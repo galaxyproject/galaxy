@@ -27,24 +27,37 @@ var Collection = Backbone.Collection.extend({
                     uid = escape(window.Galaxy.user.id),
                     query_string = "?username=" + username + "&uid=" + uid,
                     src = host + ":" + port + query_string,
+                    $el_chat_modal_header = null,
+                    $el_chat_modal_body = null,
+                    header_template = "",
                     template = "<iframe class='f-iframe' src=" + src + " style='width:100%; height:100%;'> </iframe>";
-                // shows the modal if already present, otherwise create one
-                if( $(".modal.ui-modal").length > 0 ) {
-                    $(".modal.ui-modal").remove();
+                // deletes the chat modal if already present and create one
+                if( $( '.modal-dialog' ).find( 'iframe' ).parent().parent().parent().length > 0 ) {
+                    $el_chat_modal = $( '.modal-dialog' ).find( 'iframe' ).parent().parent().parent().parent().remove();
                 }
                 this.modal = new Modal.View({
-                    title           : 'Communicate with online users',
                     body            : template,
                     height          : 350,
                     width           : 600,
                     closing_events  : true,
                     title_separator : false
                 });
-
                 // show modal
                 this.modal.show();
-		$('.modal-header').css('padding', '2px');
-                $('.modal-body').css('padding', '2px');
+                $el_chat_modal_header = $($('.modal-dialog').find('iframe').parent().parent().children()[0]);
+                $el_chat_modal_body = $($('.modal-dialog').find('iframe').parent().parent().children()[1]);
+                // adjusts the css of bootstrap modal for chat 
+                header_template  = '<i class="fa fa-comment" aria-hidden="true" title="Communicate with other users"></i>' + 
+                              '<i class="fa fa-times close-modal" aria-hidden="true" style="float: right; cursor: pointer;" title="Close"></i>';
+	        $el_chat_modal_header.css( 'padding', '3px' );
+                $el_chat_modal_body.css( 'padding', '2px' );
+                $el_chat_modal_header.find( 'h4' ).remove();
+	        $el_chat_modal_header.removeAttr( 'min-height' ).removeAttr( 'padding' ).removeAttr( 'border' );
+                $el_chat_modal_header.append(header_template);
+                // click event of the close button for chat
+                $( '.close-modal' ).click(function( e ) {
+                    $( '.modal' ).css( 'display', 'none' );
+	        });
             }
         });
 
