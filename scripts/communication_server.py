@@ -103,7 +103,7 @@ template = """<!DOCTYPE HTML>
     .clearable.onX{ cursor: pointer; }
     .clearable::-ms-clear {display: none; width:0; height:0;}
     .size {
-        height: 30px;
+        height: 40px;
         width: 96%;
         margin-bottom:5px;
     }
@@ -158,7 +158,7 @@ template = """<!DOCTYPE HTML>
         <i id="online_status" class="anchor fa fa-comments" aria-hidden="true" title=""></i>
         <i class="user fa fa-user" aria-hidden="true" title=""></i>
         <i id="chat_history" class="anchor fa fa-history" aria-hidden="true" title="Show chat history"></i>
-        <i id="settings" class="anchor fa fa-cog" aria-hidden="true" title="All settings"></i>
+        <i id="delete_history" class="anchor fa fa-chain-broken" aria-hidden="true" title="Delete full history"></i>
         <i id="clear_messages" class="anchor fa fa-trash-o" aria-hidden="true" title="Clear all messages"></i>
     </div>
     <div id="all_messages" class="messages"></div>
@@ -186,7 +186,6 @@ template = """<!DOCTYPE HTML>
                 // append only for non empty messages
                 if( orig_message[0].length > 0 ) {
                     utils.append_message( $el_all_messages, message );
-                    $('.date_time').find('span').prop('title', utils.get_date());
                     // adding message to build full chat history
                     if( !localStorage[uid] ) {
                         localStorage[uid] = message + '<br>';
@@ -215,65 +214,76 @@ template = """<!DOCTYPE HTML>
         // on form load, user is connected, so the value is true
         is_connected: true,
         broadcast_data: function(socket) {
-            $('#send_data').keydown(function(event) {
-                if( event.keyCode == 13 || event.which == 13 ){
+            $('#send_data').keydown(function( event ) {
+                if( event.keyCode == 13 || event.which == 13 ) {
                     if( click_events.is_connected ) {
                         var send_data = { };
                         send_data.data = escape( $( '#send_data' ).val() ) + ':' + utils.get_userdata();
                         socket.emit( 'event broadcast', send_data );
-                        $( '#send_data' ).val('');
+                        $( '#send_data' ).val( '' );
                     }
                     return false;
                 }
             });
         },
         // event for connected and disconneted states
-        connect_disconnect: function(socket) {
-            $('#online_status').click(function(){
-                var $el_online_status = $('#online_status'),
-                    $el_input_text = $('#send_data'),
-                    send_data = { },
+        connect_disconnect: function( socket ) {
+            $( '#online_status' ).click(function() {
+                var $el_online_status = $( '#online_status' ),
+                    $el_input_text = $( '#send_data' ),
+                    send_data = { }
+                    connected_message = 'Type your message...',
                     uid = utils.get_userid();
-                if( click_events.is_connected ){
-                    click_events.make_disconnect(uid, $el_input_text, $el_online_status);
+                if( click_events.is_connected ) {
+                    click_events.make_disconnect( uid, $el_input_text, $el_online_status );
                 }
                 else {
                     socket.connect();
                     click_events.is_connected = true;
                     sessionStorage['connected'] = true;
                     utils.update_online_status( $el_online_status, click_events.is_connected );
-                    $el_input_text.prop('disabled', false);
-                    $el_input_text.val('');
-                    $el_input_text.prop('placeholder', 'Type your message...');
+                    $el_input_text.prop( 'disabled', false );
+                    $el_input_text.val( '' );
+                    $el_input_text.prop( 'placeholder', connected_message );
                 }
             });
         },
         // clear all the messages
         clear_messages: function() {
-        $( '#clear_messages' ).click(function( event ){
-            // clears all the messages
-                $("#all_messages").html("");
+        $( '#clear_messages' ).click(function( event ) {
+                // clears all the messages
+                utils.clear_message_area();
                 return false;
             });
         },
         // shows full chat history
         show_chat_history: function() {
             $( '#chat_history' ).click( function( events ) {
-                utils.fill_messages(localStorage[utils.get_userid()]);
+                utils.fill_messages( localStorage[utils.get_userid()] );
+            });
+        },
+        // delete full history
+        delete_history: function() {
+            $( '#delete_history' ).click( function() {
+                var uid = utils.get_userid();
+                localStorage.removeItem(uid);
+                sessionStorage.removeItem( uid );
+                utils.clear_message_area();
             });
         },
         // makes disconnect
         make_disconnect: function(uid, $el_input_text, $el_online_status) {
-            var send_data = {};
+            var send_data = {}
+                disconnected_message = 'You are now disconnected. To send/receive messages, please connect';
             click_events.is_connected = false;
             send_data.data = "disconnected" + ":" + utils.get_username();
             socket.emit( 'event disconnect', send_data );
-            sessionStorage.removeItem(uid);
+            sessionStorage.removeItem( uid );
             sessionStorage['connected'] = false;
             utils.update_online_status( $el_online_status, click_events.is_connected );
-            $el_input_text.val('');
-            $el_input_text.prop('placeholder', 'You are now disconnected. To send/receive messages, please connect');
-            $el_input_text.prop('disabled', true);
+            $el_input_text.val( '' );
+            $el_input_text.prop( 'placeholder', disconnected_message );
+            $el_input_text.prop( 'disabled', true );
         }
     }
     // utility methods
@@ -281,15 +291,16 @@ template = """<!DOCTYPE HTML>
         // get the current username of logged in user
         // from the querystring of the URL
         get_userdata: function() {
-            var user_data = $('.modal-body').context.URL.split('?')[1],
-               data = user_data.split('&'),
-               userid_data = data[1],
-               username_data = data[0];
-               if(data) {
-                   return unescape( username_data.split('=')[1] + "-" + userid_data.split('=')[1] );
-               }
-               else {
-                  return "";
+            var $el_modal_body = $('.modal-body'),
+                user_data = $el_modal_body.context.URL.split('?')[1],
+                data = user_data.split('&'),
+                userid_data = data[1],
+                username_data = data[0];
+                if( data ) {
+                    return unescape( username_data.split('=')[1] + "-" + userid_data.split('=')[1] );
+                }
+                else {
+                   return "";
                }
         },
         // fill in all messages
@@ -298,7 +309,7 @@ template = """<!DOCTYPE HTML>
             message_html = $.parseHTML( collection ),
             $el_all_messages = $('#all_messages');
             // clears the previous items
-            $('#all_messages').html("");
+            this.clear_message_area();
             if(collection) {
                 $el_all_messages.append( $( '<div' + '/' + '>' ).html( message_html ) );
             }
@@ -318,9 +329,9 @@ template = """<!DOCTYPE HTML>
             $el.scrollTop( $el[0].scrollHeight );
         },
         // append message
-        append_message: function($el, message) {
+        append_message: function( $el, message ) {
             $el.append( message );
-            $el.append('<br>');
+            $el.append( '<br>' );
         },
         // builds message
         build_message: function(original_message, uid) {
@@ -329,15 +340,27 @@ template = """<!DOCTYPE HTML>
                 message_text = "";
             // for user's own messages
             if ( from_uid === uid ) {
-                message_user = "<span class='user_name'> me <br> </span>"; //
+                message_user = this.build_message_username_template( 'me' );
             }
             // for other user's messages
             else {
-                message_user = "<span class='user_name'>" + unescape(original_message[1].split('-')[0]) + "<br></span>";
+                message_user = this.build_message_username_template( unescape( original_message[1].split('-')[0] ) );
             }
-            message_text = "<div class='user_message'> <i class='fa fa-quote-left' aria-hidden='true'></i> " +
-                unescape( original_message[0] ) + " <i class='fa fa-quote-right' aria-hidden='true'></i><div class='date_time'><span title=''><i class='fa fa-clock-o' aria-hidden='true'></i> "+ this.get_time() + "</span></div></div>";
+            message_text = this.build_message_template( original_message );
             return message_user + message_text;
+        },
+        // builds message template
+        build_message_template: function( original_message ) {
+            return "<div class='user_message'>" +
+                       "<i class='fa fa-quote-left' aria-hidden='true'></i> " + unescape( original_message[0] ) +
+                       "<i class='fa fa-quote-right' aria-hidden='true'></i>" +
+                       "<div class='date_time'><span title=" + this.get_date() + ">" +
+                       "<i class='fa fa-clock-o' aria-hidden='true'></i> " + this.get_time() + "</span>" +
+                   "</div></div>";
+        },
+        // builds template for username for message display
+        build_message_username_template: function(username) {
+            return "<span class='user_name'>" + username + "<br></span>";
         },
         // adds an information about the online status
         update_online_status: function( $el, connected ) {
@@ -347,10 +370,6 @@ template = """<!DOCTYPE HTML>
             else {
                 $el.prop( "title", "You are offline!" ).css( "color", "#FF0000");
             }
-        },
-        // switch buttons connect and disconnect
-        switch_connect_disconnect: function( $el, btn_id, btn_tooltip) {
-            $el.prop("id", btn_id).prop("title", btn_tooltip);
         },
         // gets the current date and time
         get_time: function() {
@@ -373,7 +392,10 @@ template = """<!DOCTYPE HTML>
         },
         set_user_info: function() {
             $( '.user' ).prop( 'title', this.get_username() );
-        }
+        },
+        clear_message_area: function() {
+            $('#all_messages').html("");
+        },
     }
     // this snippet is for adding a clear icon in the message textbox
     function tog(v){return v?'addClass':'removeClass';}
@@ -399,8 +421,8 @@ template = """<!DOCTYPE HTML>
                     click_events.is_connected = true;
                 }
                 else {
-                    click_events.make_disconnect(uid, $el_input_text = $('#send_data'), $('#online_status'));
-                    $('#all_messages').html("");
+                    click_events.make_disconnect( uid, $('#send_data'), $('#online_status') );
+                    utils.clear_message_area();
                 }
             }
             else {
@@ -417,10 +439,13 @@ template = """<!DOCTYPE HTML>
             click_events.broadcast_data(socket);
             // disconnet the user from the chat server
             click_events.connect_disconnect(socket);
+            // show chat history
             click_events.show_chat_history();
             // clears all the messages
             click_events.clear_messages();
-            utils.get_time();
+            // deletes full chat history
+            click_events.delete_history();
+            //utils.get_time();
             utils.scroll_to_last( $('#all_messages') );
        });
     </script>
