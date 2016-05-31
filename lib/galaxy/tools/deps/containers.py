@@ -148,12 +148,14 @@ class AppInfo(object):
         default_file_path=None,
         outputs_to_working_directory=False,
         container_image_cache_path=None,
+        library_import_dir=None
     ):
         self.galaxy_root_dir = galaxy_root_dir
         self.default_file_path = default_file_path
         # TODO: Vary default value for docker_volumes based on this...
         self.outputs_to_working_directory = outputs_to_working_directory
         self.container_image_cache_path = container_image_cache_path
+        self.library_import_dir = library_import_dir
 
 
 class ToolInfo(object):
@@ -291,6 +293,7 @@ class DockerContainer(Container):
         add_var("tool_directory", self.job_info.tool_directory)
         add_var("galaxy_root", self.app_info.galaxy_root_dir)
         add_var("default_file_path", self.app_info.default_file_path)
+        add_var("library_import_dir", self.app_info.library_import_dir)
 
         if self.job_info.job_directory:
             # We have a job directory, so everything needed (excluding index
@@ -302,6 +305,9 @@ class DockerContainer(Container):
             defaults = "$galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:ro"
         else:
             defaults = "$galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:rw"
+
+        if self.app_info.library_import_dir:
+            defaults = defaults + ",$library_import_dir:ro"
 
         # Define $defaults that can easily be extended with external library and
         # index data without deployer worrying about above details.
