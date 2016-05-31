@@ -15,7 +15,7 @@ def main():
         lav_file = open(sys.argv[1], 'r')
         bed_file1 = open(sys.argv[2], 'w')
         bed_file2 = open(sys.argv[3], 'w')
-    except Exception, e:
+    except Exception as e:
         stop_err( str( e ) )
 
     lavsRead = 0

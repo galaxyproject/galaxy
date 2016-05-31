@@ -145,7 +145,7 @@ def parse_spec(spec):
 def read_lengths(fileName):
     chromToLength = {}
 
-    f = file(fileName, "r")
+    f = open(fileName, "r")
 
     for lineNumber, line in enumerate(f):
         line = line.strip()

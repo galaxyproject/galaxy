@@ -34,7 +34,7 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         UserAction_table.create()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Creating user_action table failed: %s" % str( e ) )
 
@@ -44,6 +44,6 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         UserAction_table.drop()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Dropping user_action table failed: %s" % str( e ) )

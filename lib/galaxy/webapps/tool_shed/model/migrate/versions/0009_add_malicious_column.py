@@ -34,7 +34,7 @@ def upgrade( migrate_engine ):
         elif migrate_engine.name in ['postgresql', 'postgres']:
             default_false = "false"
         migrate_engine.execute( "UPDATE repository_metadata SET malicious=%s" % default_false )
-    except Exception, e:
+    except Exception as e:
         print "Adding malicious column to the repository_metadata table failed: %s" % str( e )
         log.debug( "Adding malicious column to the repository_metadata table failed: %s" % str( e ) )
 
@@ -46,6 +46,6 @@ def downgrade( migrate_engine ):
     Repository_metadata_table = Table( "repository_metadata", metadata, autoload=True )
     try:
         Repository_metadata_table.c.malicious.drop()
-    except Exception, e:
+    except Exception as e:
         print "Dropping column malicious from the repository_metadata table failed: %s" % str( e )
         log.debug( "Dropping column malicious from the repository_metadata table failed: %s" % str( e ) )

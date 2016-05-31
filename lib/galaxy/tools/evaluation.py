@@ -427,25 +427,25 @@ class ToolEvaluator( object ):
 
         try:
             self.__build_config_files( )
-        except Exception, e:
+        except Exception as e:
             # capture and log parsing errors
             global_tool_errors.add_error(self.tool.config_file, "Building Config Files", e)
             raise e
         try:
             self.__build_param_file( )
-        except Exception, e:
+        except Exception as e:
             # capture and log parsing errors
             global_tool_errors.add_error(self.tool.config_file, "Building Param File", e)
             raise e
         try:
             self.__build_command_line( )
-        except Exception, e:
+        except Exception as e:
             # capture and log parsing errors
             global_tool_errors.add_error(self.tool.config_file, "Building Command Line", e)
             raise e
         try:
             self.__build_environment_variables()
-        except Exception, e:
+        except Exception as e:
             global_tool_errors.add_error(self.tool.config_file, "Building Environment Variables", e)
             raise e
 

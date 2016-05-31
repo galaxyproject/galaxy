@@ -505,11 +505,11 @@ class CRAM( Binary ):
 
     def get_cram_version( self, filename):
         try:
-            with open( filename , "r") as fh:
+            with open( filename, "r") as fh:
                 header = fh.read(6)
                 return ord( header[4] ), ord( header[5] )
         except Exception as exc:
-            log.warn( '%s, get_cram_version Exception: %s', self, exc )
+            log.warning( '%s, get_cram_version Exception: %s', self, exc )
             return -1, -1
 
     def set_index_file(self, dataset, index_file):
@@ -530,10 +530,10 @@ class CRAM( Binary ):
                 return index_file.file_name
             else:
                 os.unlink( dataset_symlink )
-                log.warn( '%s, expected crai index not created for: %s', self, dataset.file_name )
+                log.warning( '%s, expected crai index not created for: %s', self, dataset.file_name )
                 return False
         except Exception as exc:
-            log.warn( '%s, set_index_file Exception: %s', self, exc )
+            log.warning( '%s, set_index_file Exception: %s', self, exc )
             return False
 
     def set_peek( self, dataset, is_multi_byte=False ):
@@ -770,7 +770,7 @@ class TwoBit (Binary):
             # All twobit files start with a 16-byte header. If the file is smaller than 16 bytes, it's obviously not a valid twobit file.
             if os.path.getsize(filename) < 16:
                 return False
-            input = file(filename)
+            input = open(filename)
             magic = struct.unpack(">L", input.read(TWOBIT_MAGIC_SIZE))[0]
             if magic == TWOBIT_MAGIC_NUMBER or magic == TWOBIT_MAGIC_NUMBER_SWAP:
                 return True
@@ -821,18 +821,18 @@ class SQlite ( Binary ):
                     cols = [col[0] for col in cur.description]
                     columns[table] = cols
                 except Exception as exc:
-                    log.warn( '%s, set_meta Exception: %s', self, exc )
+                    log.warning( '%s, set_meta Exception: %s', self, exc )
             for table in tables:
                 try:
                     row_query = "SELECT count(*) FROM %s" % table
                     rowcounts[table] = c.execute(row_query).fetchone()[0]
                 except Exception as exc:
-                    log.warn( '%s, set_meta Exception: %s', self, exc )
+                    log.warning( '%s, set_meta Exception: %s', self, exc )
             dataset.metadata.tables = tables
             dataset.metadata.table_columns = columns
             dataset.metadata.table_row_count = rowcounts
         except Exception as exc:
-            log.warn( '%s, set_meta Exception: %s', self, exc )
+            log.warning( '%s, set_meta Exception: %s', self, exc )
 
     def sniff( self, filename ):
         # The first 16 bytes of any SQLite3 database file is 'SQLite format 3\0', and the file is binary. For details
@@ -888,7 +888,7 @@ class SQlite ( Binary ):
 
 class GeminiSQLite( SQlite ):
     """Class describing a Gemini Sqlite database """
-    MetadataElement( name="gemini_version", default='0.10.0' , param=MetadataParameter, desc="Gemini Version",
+    MetadataElement( name="gemini_version", default='0.10.0', param=MetadataParameter, desc="Gemini Version",
                      readonly=True, visible=True, no_value='0.10.0' )
     file_ext = "gemini.sqlite"
 
@@ -903,7 +903,7 @@ class GeminiSQLite( SQlite ):
                 dataset.metadata.gemini_version = version
             # TODO: Can/should we detect even more attributes, such as use of PED file, what was input annotation type, etc.
         except Exception as e:
-            log.warn( '%s, set_meta Exception: %s', self, e )
+            log.warning( '%s, set_meta Exception: %s', self, e )
 
     def sniff( self, filename ):
         if super( GeminiSQLite, self ).sniff( filename ):
@@ -920,7 +920,7 @@ class GeminiSQLite( SQlite ):
                         return False
                 return True
             except Exception as e:
-                log.warn( '%s, sniff Exception: %s', self, e )
+                log.warning( '%s, sniff Exception: %s', self, e )
         return False
 
     def set_peek( self, dataset, is_multi_byte=False ):
@@ -958,8 +958,8 @@ class MzSQlite( SQlite ):
                     if table_name not in result:
                         return False
                 return True
-            except Exception, e:
-                log.warn( '%s, sniff Exception: %s', self, e )
+            except Exception as e:
+                log.warning( '%s, sniff Exception: %s', self, e )
         return False
 
 
@@ -993,8 +993,8 @@ class IdpDB( SQlite ):
                     if table_name not in result:
                         return False
                 return True
-            except Exception, e:
-                log.warn( '%s, sniff Exception: %s', self, e )
+            except Exception as e:
+                log.warning( '%s, sniff Exception: %s', self, e )
         return False
 
     def set_peek( self, dataset, is_multi_byte=False ):
@@ -1253,9 +1253,9 @@ Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
 
 class SearchGuiArchive ( CompressedArchive ):
     """Class describing a SearchGUI archive """
-    MetadataElement( name="searchgui_version", default='1.28.0' , param=MetadataParameter, desc="SearchGui Version",
+    MetadataElement( name="searchgui_version", default='1.28.0', param=MetadataParameter, desc="SearchGui Version",
                      readonly=True, visible=True, no_value=None )
-    MetadataElement( name="searchgui_major_version", default='1' , param=MetadataParameter, desc="SearchGui Major Version",
+    MetadataElement( name="searchgui_major_version", default='1', param=MetadataParameter, desc="SearchGui Major Version",
                      readonly=True, visible=True, no_value=None )
     file_ext = "searchgui_archive"
 
@@ -1274,7 +1274,7 @@ class SearchGuiArchive ( CompressedArchive ):
                     fh.close()
                 tempzip.close()
         except Exception as e:
-            log.warn( '%s, set_meta Exception: %s', self, e )
+            log.warning( '%s, set_meta Exception: %s', self, e )
 
     def sniff( self, filename ):
         try:
@@ -1284,7 +1284,7 @@ class SearchGuiArchive ( CompressedArchive ):
                 tempzip.close()
                 return is_searchgui
         except Exception as e:
-            log.warn( '%s, sniff Exception: %s', self, e )
+            log.warning( '%s, sniff Exception: %s', self, e )
         return False
 
     def set_peek( self, dataset, is_multi_byte=False ):

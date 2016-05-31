@@ -5,7 +5,7 @@ from collections import namedtuple
 from uuid import uuid4
 
 from base import api
-from base.test_data import TestDataResolver
+from galaxy.tools.verify.test_data import TestDataResolver
 from galaxy.exceptions import error_codes
 from .helpers import WorkflowPopulator
 from .helpers import DatasetPopulator

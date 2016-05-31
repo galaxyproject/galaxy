@@ -991,7 +991,7 @@ class ModelFilterParser( HasAModelManager ):
                 return orm_filter
 
         # by convention, assume most val parsers raise ValueError
-        except ValueError, val_err:
+        except ValueError as val_err:
             raise exceptions.RequestParameterInvalidException( 'unparsable value for filter',
                 column=attr, operation=op, value=val, ValueError=str( val_err ) )
 

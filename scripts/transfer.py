@@ -121,7 +121,7 @@ class ListenerServer( SocketServer.ThreadingTCPServer ):
                 SocketServer.ThreadingTCPServer.__init__( self, ( 'localhost', random_port ), RequestHandlerClass )
                 log.info( 'Listening on port %s' % random_port )
                 break
-            except Exception, e:
+            except Exception as e:
                 log.warning( 'Tried binding port %s: %s' % ( random_port, str( e ) ) )
         transfer_job.socket = random_port
         app.sa_session.add( transfer_job )
@@ -162,7 +162,7 @@ def transfer( app, transfer_job_id ):
     port_range = app.config.get( 'app:main', 'transfer_worker_port_range' )
     try:
         port_range = [ int( p ) for p in port_range.split( '-' ) ]
-    except Exception, e:
+    except Exception as e:
         log.error( 'Invalid port range set in transfer_worker_port_range: %s: %s' % ( port_range, str( e ) ) )
         return False
     protocol = transfer_job.params[ 'protocol' ]
@@ -217,7 +217,7 @@ def http_transfer( transfer_job ):
     url = transfer_job.params['url']
     try:
         f = urllib2.urlopen( url )
-    except urllib2.URLError, e:
+    except urllib2.URLError as e:
         yield dict( state=transfer_job.states.ERROR, info='Unable to open URL: %s' % str( e ) )
         return
     size = f.info().getheader( 'Content-Length' )
@@ -230,7 +230,7 @@ def http_transfer( transfer_job ):
     last = 0
     try:
         fh, fn = tempfile.mkstemp()
-    except Exception, e:
+    except Exception as e:
         yield dict( state=transfer_job.states.ERROR, info='Unable to create temporary file for transfer: %s' % str( e ) )
         return
     log.debug( 'Writing %s to %s, size is %s' % ( url, fn, size or 'unknown' ) )
@@ -252,7 +252,7 @@ def http_transfer( transfer_job ):
                 time.sleep( 1 )
         os.close( fh )
         yield dict( state=transfer_job.states.DONE, path=fn )
-    except Exception, e:
+    except Exception as e:
         yield dict( state=transfer_job.states.ERROR, info='Error during file transfer: %s' % str( e ) )
         return
     return
@@ -270,7 +270,7 @@ def scp_transfer( transfer_job ):
         return dict( state=transfer_job.states.ERROR, info=PEXPECT_IMPORT_MESSAGE )
     try:
         fh, fn = tempfile.mkstemp()
-    except Exception, e:
+    except Exception as e:
         return dict( state=transfer_job.states.ERROR, info='Unable to create temporary file for transfer: %s' % str( e ) )
     try:
         # TODO: add the ability to determine progress of the copy here like we do in the http_transfer above.
@@ -282,7 +282,7 @@ def scp_transfer( transfer_job ):
                                    pexpect.TIMEOUT: print_ticks },
                      timeout=10 )
         return dict( state=transfer_job.states.DONE, path=fn )
-    except Exception, e:
+    except Exception as e:
         return dict( state=transfer_job.states.ERROR, info='Error during file transfer: %s' % str( e ) )
 
 if __name__ == '__main__':

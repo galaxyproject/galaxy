@@ -1060,7 +1060,7 @@ class ToolModule( WorkflowModule ):
             try:
                 # Replace DummyDatasets with historydatasetassociations
                 visit_input_values( tool.inputs, execution_state.inputs, callback, no_replacement_value=NO_REPLACEMENT )
-            except KeyError, k:
+            except KeyError as k:
                 message_template = "Error due to input mapping of '%s' in '%s'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review your workflow."
                 message = message_template % (tool.name, k.message)
                 raise exceptions.MessageException( message )

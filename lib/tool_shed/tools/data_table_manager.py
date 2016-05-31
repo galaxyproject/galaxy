@@ -107,7 +107,7 @@ class ToolDataTableManager( object ):
                                                    persist=persist )
             if message:
                 error = True
-        except Exception, e:
+        except Exception as e:
             message = str( e )
             error = True
         return error, message

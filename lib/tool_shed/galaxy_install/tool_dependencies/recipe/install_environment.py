@@ -59,7 +59,7 @@ class InstallEnvironment( object ):
             try:
                 fd.close()
                 break
-            except IOError, e:
+            except IOError as e:
                 # Undoubtedly close() was called during a concurrent operation on the same file object.
                 log.debug( 'Error closing file descriptor: %s' % str( e ) )
                 time.sleep( .5 )
@@ -119,10 +119,10 @@ class InstallEnvironment( object ):
         stdout = output.stdout
         stderr = output.stderr
         if len( stdout ) > DATABASE_MAX_STRING_SIZE:
-            log.warn( "Length of stdout > %s, so only a portion will be saved in the database." % str( DATABASE_MAX_STRING_SIZE_PRETTY ) )
+            log.warning( "Length of stdout > %s, so only a portion will be saved in the database." % str( DATABASE_MAX_STRING_SIZE_PRETTY ) )
             stdout = shrink_string_by_size( stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
         if len( stderr ) > DATABASE_MAX_STRING_SIZE:
-            log.warn( "Length of stderr > %s, so only a portion will be saved in the database." % str( DATABASE_MAX_STRING_SIZE_PRETTY ) )
+            log.warning( "Length of stderr > %s, so only a portion will be saved in the database." % str( DATABASE_MAX_STRING_SIZE_PRETTY ) )
             stderr = shrink_string_by_size( stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
         if output.return_code not in [ 0 ]:
             status = self.app.install_model.ToolDependency.installation_status.ERROR
@@ -265,7 +265,7 @@ class InstallEnvironment( object ):
         if os.path.exists( work_dir ):
             try:
                 shutil.rmtree( work_dir )
-            except Exception, e:
+            except Exception as e:
                 log.exception( str( e ) )
 
     def __setup_environment( self ):

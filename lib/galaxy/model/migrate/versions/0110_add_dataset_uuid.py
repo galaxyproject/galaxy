@@ -27,7 +27,7 @@ def upgrade(migrate_engine):
         dataset_table = Table( "dataset", metadata, autoload=True )
         dataset_uuid_column.create( dataset_table )
         assert dataset_uuid_column is dataset_table.c.uuid
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.error( "Adding column 'uuid' to dataset table failed: %s" % str( e ) )
         return
@@ -43,5 +43,5 @@ def downgrade(migrate_engine):
         dataset_table = Table( "dataset", metadata, autoload=True )
         dataset_uuid = dataset_table.c.uuid
         dataset_uuid.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping 'uuid' column from dataset table failed: %s" % ( str( e ) ) )

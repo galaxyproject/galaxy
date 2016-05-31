@@ -193,7 +193,7 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         RequestType_table = Table( "request_type", metadata, autoload=True )
-    except NoSuchTableError, e:
+    except NoSuchTableError:
         RequestType_table = None
         log.debug( "Failed loading table 'request_type'" )
     if RequestType_table is None:
@@ -201,7 +201,7 @@ def upgrade(migrate_engine):
     # load the sequencer table
     try:
         Sequencer_table = Table( "sequencer", metadata, autoload=True )
-    except NoSuchTableError, e:
+    except NoSuchTableError:
         Sequencer_table = None
         log.debug( "Failed loading table 'sequencer'" )
     if Sequencer_table is None:
@@ -211,7 +211,7 @@ def upgrade(migrate_engine):
         col = Column( "sequencer_id", Integer, ForeignKey( "sequencer.id" ), nullable=True )
         col.create( RequestType_table )
         assert col is RequestType_table.c.sequencer_id
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating column 'sequencer_id' in the 'request_type' table failed: %s" % ( str( e ) ) )
     # copy the sequencer information contained in the 'datatx_info' column
     # of the request_type table to the form values referenced in the sequencer table
@@ -249,7 +249,7 @@ def upgrade(migrate_engine):
     # Finally delete the 'datatx_info' column from the request_type table
     try:
         RequestType_table.c.datatx_info.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Deleting column 'datatx_info' in the 'request_type' table failed: %s" % ( str( e ) ) )
 
 
@@ -258,7 +258,7 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         RequestType_table = Table( "request_type", metadata, autoload=True )
-    except NoSuchTableError, e:
+    except NoSuchTableError:
         RequestType_table = None
         log.debug( "Failed loading table 'request_type'" )
     if RequestType_table is not None:
@@ -267,7 +267,7 @@ def downgrade(migrate_engine):
             col = Column( "datatx_info", JSONType() )
             col.create( RequestType_table )
             assert col is RequestType_table.c.datatx_info
-        except Exception, e:
+        except Exception as e:
             log.debug( "Creating column 'datatx_info' in the 'request_type' table failed: %s" % ( str( e ) ) )
         # restore the datatx_info column data in the request_type table with data from
         # the sequencer and the form_values table
@@ -291,5 +291,5 @@ def downgrade(migrate_engine):
         # delete foreign key field to the sequencer table in the request_type table
         try:
             RequestType_table.c.sequencer_id.drop()
-        except Exception, e:
+        except Exception as e:
             log.debug( "Deleting column 'sequencer_id' in the 'request_type' table failed: %s" % ( str( e ) ) )

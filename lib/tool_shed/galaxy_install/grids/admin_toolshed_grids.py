@@ -115,7 +115,7 @@ class InstalledRepositoryGrid( grids.Grid ):
 
             def get_accepted_filters( self ):
                 """ Returns a list of accepted filters for this column. """
-                accepted_filter_labels_and_vals = { "Active" : "False", "Deactivated or uninstalled" : "True", "All": "All" }
+                accepted_filter_labels_and_vals = { "Active": "False", "Deactivated or uninstalled": "True", "All": "All" }
                 accepted_filters = []
                 for label, val in accepted_filter_labels_and_vals.items():
                     args = { self.key: val }

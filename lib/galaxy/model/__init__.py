@@ -2170,14 +2170,14 @@ class DatasetInstance( object ):
                 if cp_from_ldda:
                     lst.append( (cp_from_ldda, "(Data Library)") )
                     return _source_dataset_chain( cp_from_ldda, lst )
-            except Exception, e:
+            except Exception as e:
                 log.warning( e )
             try:
                 cp_from_hda = dataset.copied_from_history_dataset_association
                 if cp_from_hda:
                     lst.append( (cp_from_hda, cp_from_hda.history.name) )
                     return _source_dataset_chain( cp_from_hda, lst )
-            except Exception, e:
+            except Exception as e:
                 log.warning( e )
             return lst
         return _source_dataset_chain( self, [] )
@@ -2247,7 +2247,7 @@ class DatasetInstance( object ):
             converted_dataset = self.get_converted_dataset( trans, target_type )
         except NoConverterException:
             return self.conversion_messages.NO_CONVERTER
-        except ConverterDependencyException, dep_error:
+        except ConverterDependencyException as dep_error:
             return { 'kind': self.conversion_messages.ERROR, 'message': dep_error.value }
 
         # Check dataset state and return any messages.
@@ -3076,7 +3076,7 @@ class ImplicitlyConvertedDatasetAssociation( object ):
             self.purged = True
             try:
                 os.unlink( self.file_name )
-            except Exception, e:
+            except Exception as e:
                 log.error( "Failed to purge associated file (%s) from disk: %s" % ( self.file_name, e ) )
 
 
@@ -4119,7 +4119,7 @@ class MetadataFile( StorableObject ):
             # Create directory if it does not exist
             try:
                 os.makedirs( path )
-            except OSError, e:
+            except OSError as e:
                 # File Exists is okay, otherwise reraise
                 if e.errno != errno.EEXIST:
                     raise
@@ -4418,7 +4418,7 @@ All samples in state:     %(sample_state)s
             try:
                 send_mail( frm, to, subject, body, trans.app.config )
                 comments = "Email notification sent to %s." % ", ".join( to ).strip().strip( ',' )
-            except Exception, e:
+            except Exception as e:
                 comments = "Email notification failed. (%s)" % str(e)
             # update the request history with the email notification event
         elif not trans.app.config.smtp_server:

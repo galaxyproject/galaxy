@@ -497,7 +497,7 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
             ok ( select.$( '.ui-select' ).length == options.selectfields, 'Found ' + options.selectfields + ' select fields' );
             ok ( select.button_type.$( '.ui-option' ).length == options.selectfields, 'Found ' + options.selectfields + ' radio button options' );
             ok ( select.$( '.ui-select-multiple' ).length == options.totalmultiple, 'Contains ' + options.totalmultiple + ' multiselect fields' );
-            ok ( select.$( '.ui-radiobutton' ).length === ( options.selectfields > 1 ? 1 : 0 ), 'Radio button visibility' );
+            ok ( select.$el.children( '.ui-options' ).find( '.ui-option' ).length === ( options.selectfields > 1 ? options.selectfields : 0 ), 'Radio button count' );
             ok ( select.$( '.ui-select:first' ).css( 'display' ) == 'block', 'Check select visibility' );
             ok ( select.$( '.ui-select:last' ).css( 'display' ) == ( options.selectfields == 1 ? 'block' : 'none' ), 'Last select visibility' );
             _testSelect( 'first', options );
@@ -549,7 +549,7 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
                 lastlength      : 3,
                 lastmultiple    : false });
 
-        select.model.set( 'type', 'workflow_collection' );
+        select.model.set( 'type', 'module_data_collection' );
         _test({ selectfields    : 2,
                 firstlength     : 3,
                 firstvalue      : 'id2',
@@ -561,7 +561,7 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
                 lastlength      : 3,
                 lastmultiple    : true });
 
-        select.model.set( 'type', 'workflow_data' );
+        select.model.set( 'type', 'module_data' );
         _test({ selectfields    : 2,
                 firstlength     : 2,
                 firstvalue      : 'id0',
@@ -586,15 +586,16 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
         ok ( select.$( 'option:first' ).prop( 'value' ) != '__null__', 'First option is not optional value' );
 
         select.model.set( 'value', { values: [ { id: 'id1', src: 'hda' } ] } );
-        ok( JSON.stringify( select.value() ) == '{"batch":false,"values":[{"id":"id1","name":"name1","hid":"hid1"}]}', 'Checking single value' );
+        ok( JSON.stringify( select.value() ) == '{"values":[{"id":"id1","name":"name1","hid":"hid1"}],"batch":false}', 'Checking single value' );
+
         ok( select.config[ select.model.get( 'current' ) ].src == 'hda', 'Matched dataset field' );
         ok( !select.config[ select.model.get( 'current' ) ].multiple, 'Matched single select field' );
         select.model.set( 'value', { values: [ { id: 'id0', src: 'hda' }, { id: 'id1', src: 'hda' } ] } );
         ok( select.config[ select.model.get( 'current' ) ].multiple, 'Matched multiple field' );
-        ok( JSON.stringify( select.value() ) == '{"batch":true,"values":[{"id":"id0","name":"name0","hid":"hid0"},{"id":"id1","name":"name1","hid":"hid1"}]}', 'Checking multiple values' );
+        ok( JSON.stringify( select.value() ) == '{"values":[{"id":"id0","name":"name0","hid":"hid0"},{"id":"id1","name":"name1","hid":"hid1"}],"batch":true}', 'Checking multiple values' );
         select.model.set( 'value', { values: [ { id: 'id2', src: 'hdca' } ] } );
         ok( select.config[ select.model.get( 'current' ) ].src == 'hdca', 'Matched collection field' );
-        ok( JSON.stringify( select.value() ) == '{"batch":true,"values":[{"id":"id2","name":"name2","hid":"hid2"}]}', 'Checking collection value' );
+        ok( JSON.stringify( select.value() ) == '{"values":[{"id":"id2","name":"name2","hid":"hid2"}],"batch":true}', 'Checking collection value' );
 
         select = new SelectContent.View({});
         $( 'body' ).prepend( select.$el );

@@ -926,7 +926,7 @@ def get_tool_shed_status_for_installed_repository( app, repository ):
         encoded_tool_shed_status_dict = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
         tool_shed_status_dict = encoding_util.tool_shed_decode( encoded_tool_shed_status_dict )
         return tool_shed_status_dict
-    except HTTPError, e:
+    except HTTPError as e:
         # This should handle backward compatility to the Galaxy 12/20/12 release.  We used to only handle updates for an installed revision
         # using a boolean value.
         log.debug( "Error attempting to get tool shed status for installed repository %s: %s\nAttempting older 'check_for_updates' method.\n" %
@@ -937,10 +937,10 @@ def get_tool_shed_status_for_installed_repository( app, repository ):
             # The value of text will be 'true' or 'false', depending upon whether there is an update available for the installed revision.
             text = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
             return dict( revision_update=text )
-        except Exception, e:
+        except Exception as e:
             # The required tool shed may be unavailable, so default the revision_update value to 'false'.
             return dict( revision_update='false' )
-    except Exception, e:
+    except Exception as e:
         log.exception( "Error attempting to get tool shed status for installed repository %s: %s" % ( str( repository.name ), str( e ) ) )
         return {}
 
@@ -1169,7 +1169,7 @@ def open_repository_files_folder( app, folder_path, repository_id, is_admin=Fals
         return []
     try:
         files_list = get_repository_files( folder_path )
-    except OSError, e:
+    except OSError as e:
         if str( e ).find( 'No such file or directory' ) >= 0:
             # We have a repository with no contents.
             return []
@@ -1308,7 +1308,7 @@ def set_repository_attributes( app, repository, status, error_message, deleted, 
             try:
                 shutil.rmtree( clone_dir )
                 log.debug( "Removed repository installation directory: %s" % str( clone_dir ) )
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Error removing repository installation directory %s: %s" % ( str( clone_dir ), str( e ) ) )
     repository.error_message = error_message
     repository.status = status

@@ -283,7 +283,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                         assert trans.user.id == history.user_id, "History does not belong to current user"
                     histories.append( history )
                 else:
-                    log.warn( "Invalid history id '%r' passed to list", history_id )
+                    log.warning( "Invalid history id '%r' passed to list", history_id )
             if histories:
                 if operation == "switch":
                     status, message = self._list_switch( trans, histories )
@@ -628,7 +628,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             history_dictionary = self.history_serializer.serialize_to_view( history_to_view,
                 view='dev-detailed', user=trans.user, trans=trans )
 
-        except Exception, exc:
+        except Exception as exc:
             user_id = str( trans.user.id ) if trans.user else '(anonymous)'
             log.exception( 'Error bootstrapping history for user %s: %s', user_id, exc )
             if isinstance( exc, exceptions.ItemAccessibilityException ):
@@ -1242,9 +1242,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         if self.create_item_slug( trans.sa_session, history ):
             trans.sa_session.flush()
         return_dict = {
-            "name" : history.name,
-            "link" : url_for(controller='history', action="display_by_username_and_slug",
-                             username=history.user.username, slug=history.slug ) }
+            "name": history.name,
+            "link": url_for(controller='history', action="display_by_username_and_slug",
+                            username=history.user.username, slug=history.slug ) }
         return return_dict
         # TODO: used in page/editor.mako
 

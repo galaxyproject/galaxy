@@ -303,7 +303,7 @@ class RepositoriesController( BaseAPIController ):
         try:
             # Open for reading with transparent compression.
             tar_archive = tarfile.open( capsule_file_path, 'r:*' )
-        except tarfile.ReadError, e:
+        except tarfile.ReadError as e:
             log.debug( 'Error opening capsule file %s: %s' % ( str( capsule_file_name ), str( e ) ) )
             return {}
         irm = capsule_manager.ImportRepositoryManager( self.app,
@@ -579,7 +579,7 @@ class RepositoriesController( BaseAPIController ):
                     message = "Successfully reset metadata on repository %s owned by %s" % \
                         ( str( repository.name ), str( repository.user.username ) )
                     results[ 'successful_count' ] += 1
-            except Exception, e:
+            except Exception as e:
                 message = "Error resetting metadata on repository %s owned by %s: %s" % \
                     ( str( repository.name ), str( repository.user.username ), str( e ) )
                 results[ 'unsuccessful_count' ] += 1
@@ -669,7 +669,7 @@ class RepositoriesController( BaseAPIController ):
                     message = "Successfully reset metadata on repository %s owned by %s" % \
                         ( str( repository.name ), str( repository.user.username ) )
                     results[ 'status' ] = 'ok'
-            except Exception, e:
+            except Exception as e:
                 message = "Error resetting metadata on repository %s owned by %s: %s" % \
                     ( str( repository.name ), str( repository.user.username ), str( e ) )
                 results[ 'status' ] = 'error'

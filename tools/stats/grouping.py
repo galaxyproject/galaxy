@@ -85,7 +85,7 @@ def main():
         if ignorecase == 1:
             case = '-f'
         command_line = "sort -t '	' %s -k%s,%s -o %s %s" % (case, group_col + 1, group_col + 1, tmpfile.name, inputfile)
-    except Exception, exc:
+    except Exception as exc:
         stop_err( 'Initialization error -> %s' % str(exc) )
 
     error_code, stdout = commands.getstatusoutput(command_line)

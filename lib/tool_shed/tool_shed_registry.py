@@ -34,7 +34,7 @@ class Registry( object ):
                             pass_mgr = urlrequest.HTTPPasswordMgrWithDefaultRealm()
                             pass_mgr.add_password( None, url, username, password )
                             self.tool_sheds_auth[ name ] = pass_mgr
-                    except Exception, e:
+                    except Exception as e:
                         log.warning( 'Error loading reference to tool shed "%s", problem: %s' % ( name, str( e ) ) )
 
     def password_manager_for_url( self, url ):

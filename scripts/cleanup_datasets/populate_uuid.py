@@ -16,7 +16,7 @@ from galaxy.model.orm.scripts import get_config
 assert sys.version_info[:2] >= ( 2, 4 )
 
 
-def usage(prog) :
+def usage(prog):
     print "usage: %s galaxy.ini" % prog
     print """
 Populates blank uuid fields in datasets with randomly generated values.
@@ -27,7 +27,7 @@ script fixes datasets that were generated before the change.
 
 
 def main():
-    if len(sys.argv) != 2 or sys.argv == "-h" or sys.argv == "--help" :
+    if len(sys.argv) != 2 or sys.argv == "-h" or sys.argv == "--help":
         usage(sys.argv[0])
         sys.exit()
     ini_file = sys.argv.pop(1)

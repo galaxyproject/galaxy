@@ -32,31 +32,31 @@ def upgrade(migrate_engine):
     i = Index( 'ix_galaxy_user_deleted', User_table.c.deleted )
     try:
         i.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Adding index 'ix_galaxy_user_deleted' to galaxy_user table failed: %s" % ( str( e ) ) )
     i = Index( 'ix_galaxy_user_purged', User_table.c.purged )
     try:
         i.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Adding index 'ix_galaxy_user_purged' to galaxy_user table failed: %s" % ( str( e ) ) )
     # Set the default data in the galaxy_user table, but only for null values
     cmd = "UPDATE galaxy_user SET deleted = %s WHERE deleted is null"
     cmd = cmd % boolean_false()
     try:
         migrate_engine.execute( cmd )
-    except Exception, e:
+    except Exception as e:
         log.debug( "Setting default data for galaxy_user.deleted column failed: %s" % ( str( e ) ) )
     cmd = "UPDATE galaxy_user SET purged = %s WHERE purged is null"
     cmd = cmd % boolean_false()
     try:
         migrate_engine.execute( cmd )
-    except Exception, e:
+    except Exception as e:
         log.debug( "Setting default data for galaxy_user.purged column failed: %s" % ( str( e ) ) )
     # Add 1 index to the history_dataset_association table
     i = Index( 'ix_hda_copied_from_library_dataset_dataset_association_id', HistoryDatasetAssociation_table.c.copied_from_library_dataset_dataset_association_id )
     try:
         i.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Adding index 'ix_hda_copied_from_library_dataset_dataset_association_id' to history_dataset_association table failed: %s" % ( str( e ) ) )
 
 

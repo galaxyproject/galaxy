@@ -79,7 +79,7 @@ try:
         stderr = proc.stderr.read()
         if returncode != 0:
             raise Exception(stderr)
-    except Exception, e:
+    except Exception as e:
         raise Exception('Exception caught attempting conversion: ' + str( e ))
 finally:
     os.remove(safe_infile)

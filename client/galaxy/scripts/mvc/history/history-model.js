@@ -383,7 +383,6 @@ var HistoryCollection = _collectionSuper.extend( BASE_MVC.LoggableMixin ).extend
     },
 
     urlRoot : Galaxy.root + 'api/histories',
-
     url     : function(){ return this.urlRoot; },
 
     /** set up reflexive event handlers */

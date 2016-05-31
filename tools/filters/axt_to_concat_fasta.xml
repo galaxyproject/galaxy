@@ -1,5 +1,8 @@
 <tool id="axt_to_concat_fasta" name="AXT to concatenated FASTA" version="1.0.0">
   <description>Converts an AXT formatted file to a concatenated FASTA alignment</description>
+  <edam_operations>
+    <edam_operation>operation_3434</edam_operation>
+  </edam_operations>
   <command interpreter="python">axt_to_concat_fasta.py $dbkey_1 $dbkey_2 &lt; $axt_input &gt; $out_file1</command>
   <inputs>
     <param format="axt" name="axt_input" type="data" label="AXT file"/>

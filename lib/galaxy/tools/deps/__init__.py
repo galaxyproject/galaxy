@@ -78,9 +78,9 @@ class DependencyManager( object ):
         in `base_paths`.  The default base path is app.config.tool_dependency_dir.
         """
         if not os.path.exists( default_base_path ):
-            log.warn( "Path '%s' does not exist, ignoring", default_base_path )
+            log.warning( "Path '%s' does not exist, ignoring", default_base_path )
         if not os.path.isdir( default_base_path ):
-            log.warn( "Path '%s' is not directory, ignoring", default_base_path )
+            log.warning( "Path '%s' is not directory, ignoring", default_base_path )
         self.extra_config = extra_config
         self.default_base_path = os.path.abspath( default_base_path )
         self.resolver_classes = self.__resolvers_dict()
@@ -98,7 +98,7 @@ class DependencyManager( object ):
                                             **kwds )
             dependency_commands = dependency.shell_commands( requirement )
             if not dependency_commands:
-                log.warn( "Failed to resolve dependency on '%s', ignoring", requirement.name )
+                log.warning( "Failed to resolve dependency on '%s', ignoring", requirement.name )
             else:
                 commands.append( dependency_commands )
         return commands

@@ -24,7 +24,7 @@ def assert_is_valid_xml(output):
     is valid XML."""
     try:
         to_xml(output)
-    except Exception, e:
+    except Exception as e:
         # TODO: Narrow caught exception to just parsing failure
         raise AssertionError("Expected valid XML, but could not parse output. %s" % str(e))
 

@@ -1,5 +1,8 @@
 <tool id="gff2bed1" name="GFF-to-BED" version="1.0.1">
   <description>converter</description>
+  <edam_operations>
+    <edam_operation>operation_3434</edam_operation>
+  </edam_operations>
   <command interpreter="python">gff_to_bed_converter.py $input $out_file1</command>
   <inputs>
     <param format="gff" name="input" type="data" label="Convert this dataset"/>

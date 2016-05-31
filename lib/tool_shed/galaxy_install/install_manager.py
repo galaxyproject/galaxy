@@ -122,7 +122,7 @@ class InstallToolDependencyManager( object ):
         try:
             # There is currently only one fabric method.
             tool_dependency = self.install_and_build_package( install_environment, tool_dependency, actions_dict )
-        except Exception, e:
+        except Exception as e:
             log.exception( 'Error installing tool dependency %s version %s.', str( tool_dependency.name ), str( tool_dependency.version ) )
             # Since there was an installation error, update the tool dependency status to Error. The remove_installation_path option must
             # be left False here.
@@ -177,7 +177,7 @@ class InstallToolDependencyManager( object ):
                 attr_tup = ( name, version, type )
                 try:
                     index = attr_tups_of_dependencies_for_install.index( attr_tup )
-                except Exception, e:
+                except Exception as e:
                     index = None
                 if index is not None:
                     tool_dependency = tool_dependencies[ index ]
@@ -197,7 +197,7 @@ class InstallToolDependencyManager( object ):
                                                                     tool_shed_repository,
                                                                     tool_dependencies=tool_dependencies,
                                                                     from_tool_migration_manager=from_tool_migration_manager )
-                        except Exception, e:
+                        except Exception as e:
                             error_message = "Error installing tool dependency %s version %s: %s" % \
                                 ( str( name ), str( version ), str( e ) )
                             log.exception( error_message )
@@ -461,11 +461,11 @@ class InstallRepositoryManager( object ):
         pathspec = [ 'api', 'repositories', 'get_repository_revision_install_info' ]
         try:
             raw_text = util.url_get( tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
-        except Exception, e:
+        except Exception as e:
             message = "Error attempting to retrieve installation information from tool shed "
             message += "%s for revision %s of repository %s owned by %s: %s" % \
                 ( str( tool_shed_url ), str( changeset_revision ), str( name ), str( owner ), str( e ) )
-            log.warn( message )
+            log.warning( message )
             raise exceptions.InternalServerError( message )
         if raw_text:
             # If successful, the response from get_repository_revision_install_info will be 3
@@ -478,7 +478,7 @@ class InstallRepositoryManager( object ):
         else:
             message = "Unable to retrieve installation information from tool shed %s for revision %s of repository %s owned by %s: %s" % \
                 ( str( tool_shed_url ), str( changeset_revision ), str( name ), str( owner ), str( e ) )
-            log.warn( message )
+            log.warning( message )
             raise exceptions.InternalServerError( message )
         # Make sure the tool shed returned everything we need for installing the repository.
         if not repository_revision_dict or not repo_info_dict:

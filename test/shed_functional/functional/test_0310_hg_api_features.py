@@ -109,8 +109,8 @@ class TestHgWebFeatures( ShedTwillTestCase ):
         assert 'filtering.py' in files_in_repository, 'File not found in repository: filtering.py'
         filepath = os.path.join( clone_path, 'filtering.py' )
         file_contents = [ '# This is another dummy comment to generate a new changeset.' ]
-        file_contents.extend( file( filepath, 'r' ).readlines() )
-        file( filepath, 'w' ).write( '\n'.join( file_contents ) )
+        file_contents.extend( open( filepath, 'r' ).readlines() )
+        open( filepath, 'w' ).write( '\n'.join( file_contents ) )
         commit_options = dict( user=common.test_user_1_name, message='Added another line to filtering.py.' )
         success = self.commit_and_push( repository, hgrepo, commit_options, username=common.test_user_1_name, password='testuser' )
         assert success is False, 'Test user 1 (repo owner) was able to commit and push to the remote repository.'
