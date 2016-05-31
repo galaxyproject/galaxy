@@ -147,7 +147,7 @@ def _verify_checksum(data, checksum_type, expected_checksum_value):
     actual_checksum_value = h.hexdigest()
     if expected_checksum_value != actual_checksum_value:
         template = "Output checksum [%s] does not match expected [%s] (using hash algorithm %s)."
-        message = template % (actual_checksum_value, actual_checksum_value, checksum_type)
+        message = template % (actual_checksum_value, expected_checksum_value, checksum_type)
         raise AssertionError(message)
 
 
