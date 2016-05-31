@@ -110,7 +110,7 @@ template = """<!DOCTYPE HTML>
 
     /* Styles for top right icons */
     .right_icons {
-        margin-left: 83.5%;
+        margin-left: 86.8%;
     }
     .user,
     .anchor {
@@ -156,7 +156,6 @@ template = """<!DOCTYPE HTML>
     <div style="float: left"></div>
     <div class="right_icons">
         <i id="online_status" class="anchor fa fa-comments" aria-hidden="true" title=""></i>
-        <i class="user fa fa-user" aria-hidden="true" title=""></i>
         <i id="chat_history" class="anchor fa fa-history" aria-hidden="true" title="Show chat history"></i>
         <i id="delete_history" class="anchor fa fa-chain-broken" aria-hidden="true" title="Delete full history"></i>
         <i id="clear_messages" class="anchor fa fa-trash-o" aria-hidden="true" title="Clear all messages"></i>
@@ -351,11 +350,8 @@ template = """<!DOCTYPE HTML>
         },
         // builds message template
         build_message_template: function( original_message ) {
-            return "<div class='user_message'>" +
-                       "<i class='fa fa-quote-left' aria-hidden='true'></i> " + unescape( original_message[0] ) +
-                       "<i class='fa fa-quote-right' aria-hidden='true'></i>" +
-                       "<div class='date_time'><span title=" + this.get_date() + ">" +
-                       "<i class='fa fa-clock-o' aria-hidden='true'></i> " + this.get_time() + "</span>" +
+            return "<div class='user_message'>" + unescape( original_message[0] ) +
+                       "<div class='date_time'><span title=" + this.get_date() + ">" + this.get_time() + "</span>" +
                    "</div></div>";
         },
         // builds template for username for message display
