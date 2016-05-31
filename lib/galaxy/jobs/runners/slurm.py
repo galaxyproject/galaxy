@@ -2,6 +2,7 @@
 SLURM job control via the DRMAA API.
 """
 
+import os
 import time
 import logging
 import subprocess
@@ -16,6 +17,7 @@ __all__ = [ 'SlurmJobRunner' ]
 SLURM_MEMORY_LIMIT_EXCEEDED_MSG = 'slurmstepd: error: Exceeded job memory limit'
 SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS = [': Exceeded job memory limit at some point.',
                                                 ': Exceeded step memory limit at some point.']
+SLURM_MEMORY_LIMIT_SCAN_SIZE = 16 * 1024 * 1024 # 16MB
 
 
 class SlurmJobRunner( DRMAAJobRunner ):
@@ -88,6 +90,8 @@ class SlurmJobRunner( DRMAAJobRunner ):
                     return
             if drmaa_state == self.drmaa_job_states.DONE:
                 with open(ajs.error_file, 'r+') as f:
+                    if os.path.getsize(ajs.error_file) > SLURM_MEMORY_LIMIT_SCAN_SIZE:
+                        f.seek(-SLURM_MEMORY_LIMIT_SCAN_SIZE, os.SEEK_END)
                     lines = f.readlines()
                     f.seek(0)
                     for line in lines:
