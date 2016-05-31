@@ -75,7 +75,7 @@ def execute(cmds):
 
     Return the standard output if the commands are successful
     """
-    return _wait(cmds, shell=False)
+    return _wait(cmds, shell=False, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
 
 def argv_to_str(command_argv, quote=True):

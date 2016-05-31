@@ -129,7 +129,7 @@ class XmlToolSource(ToolSource):
         command_el = self._command_el
         interpreter = (command_el is not None) and command_el.get("interpreter", None)
         if not self.legacy_defaults:
-            log.warn("Deprecated interpeter attribute on command element is now ignored.")
+            log.warning("Deprecated interpeter attribute on command element is now ignored.")
             interpreter = None
 
         return interpreter

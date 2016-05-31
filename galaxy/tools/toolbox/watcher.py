@@ -23,19 +23,23 @@ def get_observer_class(config_value, default, monitor_what_str):
     config_value = config_value or default
     config_value = str(config_value).lower()
     if config_value in ("true", "yes", "on", "auto"):
-        expect_observer = config_value != "auto"
+        expect_observer = True
         observer_class = Observer
     elif config_value == "polling":
         expect_observer = True
         observer_class = PollingObserver
-    else:
+    elif config_value in ('false', 'no', 'off'):
         expect_observer = False
         observer_class = None
+    else:
+        message = "Unrecognized value for watch_tools config option: %s" % config_value
+        raise Exception(message)
 
-    if observer_class is None:
-        message = "Watchdog library unavailble, cannot monitor %s." % monitor_what_str
-        log.info(message)
-        if expect_observer:
+    if expect_observer and observer_class is None:
+        message = "Watchdog library unavailable, cannot monitor %s." % monitor_what_str
+        if config_value == "auto":
+            log.info(message)
+        else:
             raise Exception(message)
 
     return observer_class
