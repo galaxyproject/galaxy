@@ -265,14 +265,11 @@ class AlignCheck(Tabular):
         self.comment_lines = 1
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        data_lines = 0
-        headers = get_headers(dataset.file_name, sep='\t', count=-1)
-        for line in headers:
-            data_lines += 1
-        dataset.metadata.comment_lines = 1
-        dataset.metadata.data_lines = data_lines - 1 if data_lines > 0 else 0
+        Tabular.set_meta(self, dataset, overwrite=overwrite, **kwd)
         dataset.metadata.column_names = self.column_names
         dataset.metadata.column_types = self.column_types
+        dataset.metadata.comment_lines = self.comment_lines
+        dataset.metadata.data_lines -= self.comment_lines
 
 
 class AlignReport(Tabular):
@@ -302,7 +299,7 @@ class DistanceMatrix(Text):
     def set_meta(self, dataset, overwrite=True, skip=0, **kwd):
         Text.set_meta(self, dataset, overwrite=overwrite, skip=skip, **kwd)
 
-        headers = get_headers(dataset.file_name, sep='\t', count=-1)
+        headers = get_headers(dataset.file_name, sep='\t')
         for line in headers:
             if not line[0].startswith('@'):
                 try:
@@ -714,7 +711,7 @@ class CountTable(Tabular):
         U68595  1
         U68600  1
         # Example 2 (with group columns):
-        Representative_Sequence total   forest  pastur
+        Representative_Sequence total   forest  pasture
         U68630  1       1       0
         U68595  1       1       0
         U68600  1       1       0
@@ -725,19 +722,17 @@ class CountTable(Tabular):
         self.column_names = ['name', 'total']
 
     def set_meta(self, dataset, overwrite=True, skip=1, max_data_lines=None, **kwd):
-        data_lines = 0
-        headers = get_headers(dataset.file_name, sep='\t', count=-1)
+        Tabular.set_meta(self, dataset, overwrite=overwrite, **kwd)
+        headers = get_headers(dataset.file_name, sep='\t', count=1)
         colnames = headers[0]
         dataset.metadata.column_types = ['str'] + (['int'] * ( len(headers[0]) - 1))
         if len(colnames) > 1:
             dataset.metadata.columns = len(colnames)
         if len(colnames) > 2:
             dataset.metadata.groups = colnames[2:]
-        for line in headers[1:]:
-            data_lines += 1
 
         dataset.metadata.comment_lines = 1
-        dataset.metadata.data_lines = data_lines
+        dataset.metadata.data_lines -= 1
 
 
 class RefTaxonomy(Tabular):
@@ -905,7 +900,7 @@ class SffFlow(Tabular):
     def set_meta(self, dataset, overwrite=True, skip=1, max_data_lines=None, **kwd):
         Tabular.set_meta(self, dataset, overwrite, 1, max_data_lines)
 
-        headers = get_headers(dataset.file_name, sep='\t', count=-1)
+        headers = get_headers(dataset.file_name, sep='\t', count=1)
         try:
             flow_values = int(headers[0][0])
             dataset.metadata.flow_values = flow_values
