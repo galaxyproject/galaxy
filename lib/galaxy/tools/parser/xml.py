@@ -461,16 +461,19 @@ def __parse_test_attributes( output_elem, attrib, parse_elements=False ):
     for metadata_elem in output_elem.findall( 'metadata' ):
         metadata[ metadata_elem.get('name') ] = metadata_elem.get( 'value' )
     md5sum = attrib.get("md5", None)
+    checksum = attrib.get("checksum", None)
     element_tests = {}
     if parse_elements:
         element_tests = __parse_element_tests( output_elem )
 
-    if not (assert_list or file or extra_files or metadata or md5sum or element_tests):
-        raise Exception( "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or md5 tests, etc...)")
+    has_checksum = md5sum or checksum
+    if not (assert_list or file or extra_files or metadata or has_checksum or element_tests):
+        raise Exception( "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or checksum tests, etc...)")
     attributes['assert_list'] = assert_list
     attributes['extra_files'] = extra_files
     attributes['metadata'] = metadata
     attributes['md5'] = md5sum
+    attributes['checksum'] = checksum
     attributes['elements'] = element_tests
     return file, attributes
 
