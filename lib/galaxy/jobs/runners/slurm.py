@@ -17,7 +17,7 @@ __all__ = [ 'SlurmJobRunner' ]
 SLURM_MEMORY_LIMIT_EXCEEDED_MSG = 'slurmstepd: error: Exceeded job memory limit'
 SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS = [': Exceeded job memory limit at some point.',
                                                 ': Exceeded step memory limit at some point.']
-SLURM_MEMORY_LIMIT_SCAN_SIZE = 16 * 1024 * 1024 # 16MB
+SLURM_MEMORY_LIMIT_SCAN_SIZE = 16 * 1024 * 1024  # 16MB
 
 
 class SlurmJobRunner( DRMAAJobRunner ):
