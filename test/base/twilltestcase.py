@@ -2073,17 +2073,18 @@ class TwillTestCase( unittest.TestCase ):
             return self.get_filename(test_filename, shed_tool_id=shed_tool_id)
 
         data = dataset_fetcher( hda_id, base_name )
+        item_label = "History item %s" % hda_id
         try:
             verify(
+                item_label,
                 data,
                 attributes=attributes,
                 filename=file_name,
-                hid=hda_id,
                 get_filename=get_filename,
                 keep_outputs_dir=self.keepOutdir,
             )
         except AssertionError, err:
-            errmsg = 'Composite file (%s) of History item %s different than expected, difference:\n' % ( base_name, hda_id )
+            errmsg = 'Composite file (%s) of %s different than expected, difference:\n' % ( base_name, item_label )
             errmsg += str( err )
             raise AssertionError( errmsg )
 
@@ -2142,11 +2143,12 @@ class TwillTestCase( unittest.TestCase ):
             self.verify_extra_files_content(extra_files, hda_id, shed_tool_id=shed_tool_id, dataset_fetcher=dataset_fetcher)
 
         data = dataset_fetcher( hda_id )
+        item_label = "History item %s" % hid
         verify(
+            item_label,
             data,
             attributes=attributes,
             filename=filename,
-            hid=hid,
             get_filename=get_filename,
             keep_outputs_dir=self.keepOutdir,
             verify_extra_files=verify_extra_files,
