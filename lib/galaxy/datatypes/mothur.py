@@ -301,7 +301,7 @@ class DistanceMatrix(Text):
                     dataset.metadata.sequence_count = int(''.join(line))  # seq count sometimes preceded by tab
                     break
                 except Exception as e:
-                    log.warn("DistanceMatrix set_meta %s" % e)
+                    log.warning("DistanceMatrix set_meta %s" % e)
 
 
 class LowerTriangleDistanceMatrix(DistanceMatrix):
@@ -902,7 +902,7 @@ class SffFlow(Tabular):
             flow_values = int(headers[0][0])
             dataset.metadata.flow_values = flow_values
         except Exception as e:
-            log.warn("SffFlow set_meta %s" % e)
+            log.warning("SffFlow set_meta %s" % e)
 
     def make_html_table(self, dataset, skipchars=[]):
         """Create HTML table, used for displaying peek"""

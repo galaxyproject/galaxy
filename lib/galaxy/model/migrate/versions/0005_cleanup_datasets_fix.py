@@ -274,7 +274,7 @@ class DatasetInstance( object ):
         return valid
 
     def clear_associated_files( self, metadata_safe=False, purge=False ):
-        raise 'Unimplemented'
+        raise Exception( 'Unimplemented' )
 
     def get_child_by_designation(self, designation):
         for child in self.children:

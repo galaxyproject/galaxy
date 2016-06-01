@@ -1,0 +1,29 @@
+<tool id="composite_output_tests" name="composite_output_tests" version="1.0.0">
+  <command>
+    mkdir $output.extra_files_path;
+    cp $input.extra_files_path/* $output.extra_files_path;
+    echo "1 2 3" > $output.extra_files_path/md5out;
+  </command>
+  <inputs>
+    <param name="input" type="data" format="velvet" label="Velvet Dataset" help="Prepared by velveth."/>
+  </inputs>
+  <outputs>
+    <data format="velvet" name="output" label="">
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="velveth_test1/output.html" ftype="velvet" >
+        <composite_data value='velveth_test1/Sequences' ftype="Sequences"/>
+        <composite_data value='velveth_test1/Roadmaps' ftype="Roadmaps"/>
+        <composite_data value='velveth_test1/Log'/>
+      </param>
+      <output name="output" file="velveth_test1/output.html">
+        <extra_files type="file" name="Sequences" value="velveth_test1/Sequences" />
+        <extra_files type="file" name="Roadmaps" value="velveth_test1/Roadmaps" />
+        <extra_files type="file" name="Log" value="composite_output_expected_log" />
+        <extra_files type="file" name="md5out" md5="f2b33fb7b3d0eb95090a16060e6a24f9" /><!-- md5sum or "1 2 3" -->
+      </output>
+    </test>
+  </tests>
+</tool>

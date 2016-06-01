@@ -102,7 +102,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
 
         job_directory = kwds.get("job_directory", None)
         if job_directory is None:
-            log.warn("Conda dependency resolver not sent job directory.")
+            log.warning("Conda dependency resolver not sent job directory.")
             return INDETERMINATE_DEPENDENCY
 
         exact = not self.versionless or version is None

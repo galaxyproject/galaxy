@@ -1133,12 +1133,21 @@ class JobWrapper( object ):
             self.app.config, key, default
         )
 
-    def finish( self, stdout, stderr, tool_exit_code=None, remote_working_directory=None ):
+    def finish(
+        self,
+        stdout,
+        stderr,
+        tool_exit_code=None,
+        remote_working_directory=None,
+        remote_metadata_directory=None,
+    ):
         """
         Called to indicate that the associated command has been run. Updates
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files.
         """
+        # remote_working_directory not used with updated (7.0+ pulsar and 16.04+
+        # originated Galaxy job - keep for a few releases for older jobs)
         finish_timer = util.ExecutionTimer()
 
         # default post job setup
@@ -1266,12 +1275,15 @@ class JobWrapper( object ):
                         output_filename = self.external_output_metadata.get_output_filenames_by_dataset( dataset, self.sa_session ).filename_out
 
                         def path_rewriter( path ):
-                            if not remote_working_directory or not path:
+                            if not path:
                                 return path
-                            normalized_remote_working_directory = os.path.normpath( remote_working_directory )
+                            normalized_remote_working_directory = remote_working_directory and os.path.normpath( remote_working_directory )
+                            normalized_remote_metadata_directory = remote_metadata_directory and os.path.normpath( remote_metadata_directory )
                             normalized_path = os.path.normpath( path )
-                            if normalized_path.startswith( normalized_remote_working_directory ):
+                            if remote_working_directory and normalized_path.startswith( normalized_remote_working_directory ):
                                 return normalized_path.replace( normalized_remote_working_directory, self.working_directory, 1 )
+                            if remote_metadata_directory and normalized_path.startswith( normalized_remote_metadata_directory ):
+                                return normalized_path.replace( normalized_remote_metadata_directory, self.working_directory, 1 )
                             return path
 
                         dataset.metadata.from_JSON_dict( output_filename, path_rewriter=path_rewriter )

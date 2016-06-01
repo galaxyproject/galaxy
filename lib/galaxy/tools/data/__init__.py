@@ -340,7 +340,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 self._update_version()
             else:
                 self.missing_index_file = filename
-                log.warn( "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name ) )
+                log.warning( "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name ) )
 
             if filename not in self.filenames or not self.filenames[ filename ][ 'found' ]:
                 self.filenames[ filename ] = dict( found=found, filename=filename, from_shed_config=from_shed_config, tool_data_path=tool_data_path,
@@ -461,7 +461,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                     line_error = "Line %i in tool data table '%s' is invalid (HINT: '%s' characters must be used to separate fields):\n%s" % ( ( i + 1 ), self.name, separator_char, line )
                     if errors is not None:
                         errors.append( line_error )
-                    log.warn( line_error )
+                    log.warning( line_error )
         return rval
 
     def get_column_name_list( self ):
@@ -590,7 +590,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 values = self._replace_field_separators( values )
                 self.filter_file_fields( filename, values )
             else:
-                log.warn( "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name ) )
+                log.warning( "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name ) )
 
         self.reload_from_files()
 

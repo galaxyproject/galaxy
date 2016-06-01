@@ -26,7 +26,7 @@ CWL_EXTENSIONS = YAML_EXTENSIONS + [".cwl"]
 
 def load_exception_handler(path, exc_info):
     """Default exception handler for use by load_tool_elements_from_path."""
-    log.warn(LOAD_FAILURE_ERROR % path, exc_info=exc_info)
+    log.warning(LOAD_FAILURE_ERROR % path, exc_info=exc_info)
 
 
 def find_possible_tools_from_path(

@@ -2,6 +2,13 @@ id: simple_constructs_y
 name: simple_constructs_y
 class: GalaxyTool
 version: 1.0
+description: Simple constructs
+edam_operations:
+  - operation_0004
+  - operation_0336
+edam_topics:
+  - topic_0003
+  - topic_3372
 command:
   >
     echo "$booltest"  >> $out_file1;

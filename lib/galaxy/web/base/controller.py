@@ -80,7 +80,7 @@ class BaseController( object ):
     # this should be here - but catching errors from sharable item controllers that *should* have SharableItemMixin
     #   but *don't* then becomes difficult
     # def security_check( self, trans, item, check_ownership=False, check_accessible=False ):
-    #    log.warn( 'BaseController.security_check: %s, %b, %b', str( item ), check_ownership, check_accessible )
+    #    log.warning( 'BaseController.security_check: %s, %b, %b', str( item ), check_ownership, check_accessible )
     #    # meant to be overridden in SharableSecurityMixin
     #    return item
 

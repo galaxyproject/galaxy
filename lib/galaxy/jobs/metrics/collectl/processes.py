@@ -185,7 +185,7 @@ class CollectlProcessSummarizer( object ):
             if column == "AccumT":
                 # Only thing that makes sense is sum
                 if statistic_type != "max":
-                    log.warn( "Only statistic max makes sense for AccumT" )
+                    log.warning( "Only statistic max makes sense for AccumT" )
                     continue
 
                 value = sum( [ v.max for v in self.process_accum_statistics.itervalues() ] )

@@ -203,7 +203,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
                     if not test_result:
                         # but continue (with other tests) if can't find class by that name
                         # if self.debug:
-                        #    log.warn( 'visualizations_registry cannot find class (%s)' +
+                        #    log.warning( 'visualizations_registry cannot find class (%s)' +
                         #              ' for applicability test on: %s, id: %s', datatype_class_name,
                         #              target_object, getattr( target_object, 'id', '' ) )
                         continue
