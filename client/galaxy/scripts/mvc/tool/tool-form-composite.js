@@ -446,23 +446,8 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
         /** Templates */
         _templateSuccess: function( response ) {
             if ( response && response.length > 0 ) {
-                var $message = $( '<div/>' ).addClass( 'donemessagelarge' )
-                                .append( $( '<p/>' ).text( 'Successfully ran workflow \'' + this.model.get( 'name' ) + '\'. The following datasets have been added to the queue:' ) );
-                for ( var i in response ) {
-                    var invocation = response[ i ];
-                    var $invocation = $( '<div/>' ).addClass( 'workflow-invocation-complete' );
-                    invocation.history && $invocation.append( $( '<p/>' ).text( 'These datasets will appear in a new history: ' )
-                                                     .append( $( '<a/>' ).addClass( 'new-history-link' )
-                                                                         .attr( 'data-history-id', invocation.history.id )
-                                                                         .attr( 'target', '_top' )
-                                                                         .attr( 'href', '/history/switch_to_history?hist_id=' + invocation.history.id )
-                                                                         .text( invocation.history.name ) ) );
-                    _.each( invocation.outputs, function( output ) {
-                        $invocation.append( $( '<div/>' ).addClass( 'messagerow' ).html( '<b>' + output.hid + '</b>: ' + output.name ) );
-                    });
-                    $message.append( $invocation );
-                }
-                return $message;
+                return $( '<div/>' ).addClass( 'donemessagelarge' )
+                                    .append( $( '<p/>' ).text( 'The requested workflows have been queued and datasets will appear as jobs are created - you will need to refresh your history panel to see these.' ) );
             } else {
                 return this._templateError( response );
             }
