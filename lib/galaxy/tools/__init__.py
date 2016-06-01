@@ -428,7 +428,7 @@ class Tool( object, Dictifiable ):
         if self.profile >= 16.04 and VERSION_MAJOR < self.profile:
             template = "The tool %s targets version %s of Galaxy, you should upgrade Galaxy to ensure proper functioning of this tool."
             message = template % (self.id, self.profile)
-            log.warn(message)
+            log.warning(message)
 
         # Get the (user visible) name of the tool
         self.name = tool_source.parse_name()
@@ -442,6 +442,9 @@ class Tool( object, Dictifiable ):
                 self.version = "1.0.0"
             else:
                 raise Exception( "Missing tool 'version' for tool with id '%s' at '%s'" % (self.id, tool_source) )
+
+        self.edam_operations = tool_source.parse_edam_operations()
+        self.edam_topics = tool_source.parse_edam_topics()
 
         # Support multi-byte tools
         self.is_multi_byte = tool_source.parse_is_multi_byte()
@@ -1240,9 +1243,10 @@ class Tool( object, Dictifiable ):
             if error:
                 if update_values:
                     try:
+                        previous_value = value
                         value = input.get_initial_value( request_context, context )
                         if not prefixed_name.startswith( '__' ):
-                            messages[ prefixed_name ] = '%s Using default: \'%s\'.' % ( error, value )
+                            messages[ prefixed_name ] = error if previous_value == value else '%s Using default: \'%s\'.' % ( error, value )
                         parent[ input.name ] = value
                     except:
                         messages[ prefixed_name ] = 'Attempt to replace invalid value for \'%s\' failed.' % ( prefixed_label )
@@ -1538,6 +1542,9 @@ class Tool( object, Dictifiable ):
         # Basic information
         tool_dict = super( Tool, self ).to_dict()
 
+        tool_dict["edam_operations"] = self.edam_operations
+        tool_dict["edam_topics"] = self.edam_topics
+
         # Fill in ToolShedRepository info
         if hasattr(self, 'tool_shed') and self.tool_shed:
             tool_dict['tool_shed_repository'] = {
@@ -1573,7 +1580,7 @@ class Tool( object, Dictifiable ):
 
         return tool_dict
 
-    def to_json( self, trans, kwd={}, job=None, workflow_mode=False ):
+    def to_json( self, trans, kwd={}, job=None, workflow_building_mode=False ):
         """
         Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
         """
@@ -1590,7 +1597,7 @@ class Tool( object, Dictifiable ):
             raise exceptions.MessageException( '[history_id=%s] Failed to retrieve history. %s.' % ( history_id, str( e ) ) )
 
         # build request context
-        request_context = WorkRequestContext( app=trans.app, user=trans.user, history=history, workflow_building_mode=workflow_mode )
+        request_context = WorkRequestContext( app=trans.app, user=trans.user, history=history, workflow_building_mode=workflow_building_mode )
 
         # load job parameters into incoming
         tool_message = ''

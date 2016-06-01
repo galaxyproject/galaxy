@@ -97,7 +97,7 @@ class GalaxyPackageDependency(Dependency):
     def shell_commands( self, requirement ):
         base_path = self.path
         if self.script is None and base_path is None:
-            log.warn( "Failed to resolve dependency on '%s', ignoring", requirement.name )
+            log.warning( "Failed to resolve dependency on '%s', ignoring", requirement.name )
             commands = None
         elif requirement.type == 'package' and self.script is None:
             commands = 'PACKAGE_BASE=%s; export PACKAGE_BASE; PATH="%s/bin:$PATH"; export PATH' % ( base_path, base_path )

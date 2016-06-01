@@ -377,7 +377,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
         for key, value in self.destination_defaults.iteritems():
             if key in params:
                 if value is PARAMETER_SPECIFICATION_IGNORED:
-                    log.warn( "Pulsar runner in selected configuration ignores parameter %s" % key )
+                    log.warning( "Pulsar runner in selected configuration ignores parameter %s" % key )
                 continue
             # if self.runner_params.get( key, None ):
             #    # Let plugin define defaults for some parameters -
@@ -451,6 +451,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             client = self.get_client_from_state(job_state)
             run_results = client.full_status()
             remote_working_directory = run_results.get("working_directory", None)
+            remote_metadata_directory = run_results.get("metadata_directory", None)
             stdout = run_results.get('stdout', '')
             stderr = run_results.get('stderr', '')
             exit_code = run_results.get('returncode', None)
@@ -482,7 +483,8 @@ class PulsarJobRunner( AsynchronousJobRunner ):
                 stdout,
                 stderr,
                 exit_code,
-                remote_working_directory=remote_working_directory
+                remote_working_directory=remote_working_directory,
+                remote_metadata_directory=remote_metadata_directory,
             )
         except Exception:
             log.exception("Job wrapper finish method failed")
@@ -666,7 +668,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             if PulsarJobRunner.__use_remote_datatypes_conf( client ):
                 remote_datatypes_config = remote_system_properties.get('galaxy_datatypes_config_file', None)
                 if not remote_datatypes_config:
-                    log.warn(NO_REMOTE_DATATYPES_CONFIG)
+                    log.warning(NO_REMOTE_DATATYPES_CONFIG)
                     remote_datatypes_config = os.path.join(remote_galaxy_home, 'datatypes_conf.xml')
                 metadata_kwds['datatypes_config'] = remote_datatypes_config
             else:

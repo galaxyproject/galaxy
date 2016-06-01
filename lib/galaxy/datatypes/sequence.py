@@ -38,6 +38,8 @@ class SequenceSplitLocations( data.Text ):
       ]}
 
     """
+    file_ext = "fqtoc"
+
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             try:
@@ -51,8 +53,6 @@ class SequenceSplitLocations( data.Text ):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
-
-    file_ext = "fqtoc"
 
     def sniff( self, filename ):
         if os.path.getsize(filename) < 50000:
@@ -70,6 +70,7 @@ class SequenceSplitLocations( data.Text ):
 
 class Sequence( data.Text ):
     """Class describing a sequence"""
+    edam_data = "data_2044"
 
     """Add metadata elements"""
     MetadataElement( name="sequences", default=0, desc="Number of sequences", readonly=True, visible=False, optional=True, no_value=0 )
@@ -294,6 +295,7 @@ class Sequence( data.Text ):
 
 class Alignment( data.Text ):
     """Class describing an alignment"""
+    edam_data = "data_0863"
 
     """Add metadata elements"""
     MetadataElement( name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None )
@@ -498,7 +500,7 @@ class Fasta( Sequence ):
 
 class csFasta( Sequence ):
     """ Class representing the SOLID Color-Space sequence ( csfasta ) """
-    edam_format = "format_1929"
+    edam_format = "format_3589"
     file_ext = "csfasta"
 
     def sniff( self, filename ):
@@ -841,11 +843,12 @@ class MafCustomTrack( data.Text ):
 
 class Axt( data.Text ):
     """Class describing an axt alignment"""
-
     # gvk- 11/19/09 - This is really an alignment, but we no longer have tools that use this data type, and it is
     # here simply for backward compatibility ( although it is still in the datatypes registry ).  Subclassing
     # from data.Text eliminates managing metadata elements inherited from the Alignemnt class.
 
+    edam_data = "data_0863"
+    edam_format = "format_3013"
     file_ext = "axt"
 
     def sniff( self, filename ):
@@ -895,12 +898,13 @@ class Axt( data.Text ):
 
 class Lav( data.Text ):
     """Class describing a LAV alignment"""
-    edam_format = "format_3014"
-    file_ext = "lav"
-
     # gvk- 11/19/09 - This is really an alignment, but we no longer have tools that use this data type, and it is
     # here simply for backward compatibility ( although it is still in the datatypes registry ).  Subclassing
     # from data.Text eliminates managing metadata elements inherited from the Alignemnt class.
+
+    edam_data = "data_0863"
+    edam_format = "format_3014"
+    file_ext = "lav"
 
     def sniff( self, filename ):
         """
@@ -963,6 +967,7 @@ class RNADotPlotMatrix( data.Data ):
 
 
 class DotBracket ( Sequence ):
+    edam_data = "data_0880"
     edam_format = "format_1457"
     file_ext = "dbn"
 

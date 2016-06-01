@@ -93,7 +93,7 @@ class PluginManager( object ):
                 # NOTE: prevent silent, implicit overwrite here (two plugins in two diff directories)
                 # TODO: overwriting may be desired
                 elif plugin and plugin.name in self.plugins:
-                    log.warn( '%s, plugin with name already exists: %s. Skipping...', self, plugin.name )
+                    log.warning( '%s, plugin with name already exists: %s. Skipping...', self, plugin.name )
 
             except Exception:
                 if not self.skip_bad_plugins:

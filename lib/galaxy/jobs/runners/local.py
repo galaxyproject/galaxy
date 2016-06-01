@@ -107,7 +107,7 @@ class LocalJobRunner( BaseJobRunner ):
             try:
                 exit_code = int( open( exit_code_path, 'r' ).read() )
             except Exception:
-                log.warn( "Failed to read exit code from path %s" % exit_code_path )
+                log.warning( "Failed to read exit code from path %s" % exit_code_path )
                 pass
             stdout_file.seek( 0 )
             stderr_file.seek( 0 )

@@ -2,10 +2,10 @@ import logging
 import new
 import sys
 from base.twilltestcase import TwillTestCase
-from base.asserts import verify_assertions
 from base.interactor import build_interactor, stage_data_in_history, RunToolException
 from base.instrument import register_job_data
 from galaxy.tools import DataManagerTool
+from galaxy.tools.verify.asserts import verify_assertions
 from galaxy.util import bunch
 
 try:

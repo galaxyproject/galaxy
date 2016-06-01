@@ -62,6 +62,8 @@ class ToolOutput( ToolOutputBase ):
         if format and format != "input" and app:
             edam_format = app.datatypes_registry.edam_formats.get(self.format)
             as_dict["edam_format"] = edam_format
+            edam_data = app.datatypes_registry.edam_data.get(self.format)
+            as_dict["edam_data"] = edam_data
         return as_dict
 
 

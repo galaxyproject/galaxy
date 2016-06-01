@@ -64,6 +64,7 @@ class Data( object ):
     <class 'galaxy.model.metadata.MetadataParameter'>
 
     """
+    edam_data = "data_0006"
     edam_format = "format_1915"
     # Data is not chunkable by default.
     CHUNKABLE = False
@@ -867,6 +868,8 @@ class Text( Data ):
 
 class GenericAsn1( Text ):
     """Class for generic ASN.1 text format"""
+    edam_data = "data_0849"
+    edam_format = "format_1966"
     file_ext = 'asn1'
 
 
@@ -880,6 +883,7 @@ class LineCount( Text ):
 
 class Newick( Text ):
     """New Hampshire/Newick Format"""
+    edam_data = "data_0872"
     edam_format = "format_1910"
     file_ext = "nhx"
 
@@ -904,6 +908,7 @@ class Newick( Text ):
 
 class Nexus( Text ):
     """Nexus format as used By Paup, Mr Bayes, etc"""
+    edam_data = "data_0872"
     edam_format = "format_1912"
     file_ext = "nex"
 

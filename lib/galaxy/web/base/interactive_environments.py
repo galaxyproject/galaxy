@@ -304,8 +304,8 @@ class InteractiveEnvironmentRequest(object):
             log.debug( "Container id: %s" % container_id)
             inspect_data = self.inspect_container(container_id)
             port_mappings = self.get_container_port_mapping(inspect_data)
-            if self.attr.docker_hostname == 'localhost':
-                self.attr.docker_hostname = self.get_container_gateway_ip(inspect_data)
+            self.attr.docker_hostname = self.get_container_host(inspect_data)
+            log.debug( "Container host: %s", self.attr.docker_hostname )
             if len(port_mappings) > 1:
                 log.warning("Don't know how to handle proxies to containers with multiple exposed ports. Arbitrarily choosing first")
             elif len(port_mappings) == 0:
@@ -368,15 +368,25 @@ class InteractiveEnvironmentRequest(object):
         #             ]
         return inspect_data
 
-    def get_container_gateway_ip(self, inspect_data):
+    def get_container_host(self, inspect_data):
         """
-        Returns gateway ip from inspect_data
+        Determine the ip address on the container. If inspect_data contains
+        Node.IP return that (e.g. running in Docker Swarm). If the hostname
+        is "localhost", look for NetworkSettings.Gateway. Otherwise, just
+        return the configured docker_hostname.
+
         :type inspect_data: dict
         :param inspect_data: output of docker inspect
-        :returns: gateway_ip
+        :returns: IP address or hostname of the node the conatainer is
+                  running on.
         """
-        gateway_ip = inspect_data[0]['NetworkSettings']['Gateway']
-        return gateway_ip
+        inspect_data = inspect_data[0]
+        if 'Node' in inspect_data:
+            return inspect_data['Node']['IP']
+        elif self.attr.docker_hostname == "localhost":
+            return inspect_data['NetworkSettings']['Gateway']
+        else:
+            return self.attr.docker_hostname
 
     def get_container_port_mapping(self, inspect_data):
         """

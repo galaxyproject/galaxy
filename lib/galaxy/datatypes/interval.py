@@ -50,6 +50,7 @@ VIEWPORT_MAX_READS_PER_LINE = 10
 @dataproviders.decorators.has_dataproviders
 class Interval( Tabular ):
     """Tab delimited data containing interval information"""
+    edam_data = "data_3002"
     edam_format = "format_3475"
     file_ext = "interval"
     line_class = "region"
@@ -375,7 +376,7 @@ class Interval( Tabular ):
 
 class BedGraph( Interval ):
     """Tab delimited chrom/start/end/datavalue dataset"""
-
+    edam_format = "format_3583"
     file_ext = "bedgraph"
     track_type = "LineTrack"
     data_sources = { "data": "bigwig", "index": "bigwig" }
@@ -582,7 +583,7 @@ class Bed( Interval ):
 
 class BedStrict( Bed ):
     """Tab delimited data in strict BED format - no non-standard columns allowed"""
-
+    edam_format = "format_3584"
     file_ext = "bedstrict"
 
     # no user change of datatype allowed
@@ -613,13 +614,13 @@ class BedStrict( Bed ):
 
 class Bed6( BedStrict ):
     """Tab delimited data in strict BED format - no non-standard columns allowed; column count forced to 6"""
-
+    edam_format = "format_3585"
     file_ext = "bed6"
 
 
 class Bed12( BedStrict ):
     """Tab delimited data in strict BED format - no non-standard columns allowed; column count forced to 12"""
-
+    edam_format = "format_3586"
     file_ext = "bed12"
 
 
@@ -641,6 +642,7 @@ class _RemoteCallMixin:
 @dataproviders.decorators.has_dataproviders
 class Gff( Tabular, _RemoteCallMixin ):
     """Tab delimited data in Gff format"""
+    edam_data = "data_1255"
     edam_format = "format_2305"
     file_ext = "gff"
     column_names = [ 'Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Group' ]
@@ -1288,6 +1290,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
 
 class CustomTrack ( Tabular ):
     """UCSC CustomTrack"""
+    edam_format = "format_3588"
     file_ext = "customtrack"
 
     def __init__(self, **kwd):
@@ -1440,7 +1443,7 @@ class ENCODEPeak( Interval ):
     This format is used to provide called peaks of signal enrichment based on
     pooled, normalized (interpreted) data. It is a BED6+4 format.
     '''
-
+    edam_format = "format_3612"
     file_ext = "encodepeak"
     column_names = [ 'Chrom', 'Start', 'End', 'Name', 'Score', 'Strand', 'SignalValue', 'pValue', 'qValue', 'Peak' ]
     data_sources = { "data": "tabix", "index": "bigwig" }
@@ -1460,11 +1463,9 @@ class ChromatinInteractions( Interval ):
     '''
     Chromatin interactions obtained from 3C/5C/Hi-C experiments.
     '''
-
     file_ext = "chrint"
     track_type = "DiagonalHeatmapTrack"
     data_sources = { "data": "tabix", "index": "bigwig" }
-
     column_names = [ 'Chrom1', 'Start1', 'End1', 'Chrom2', 'Start2', 'End2', 'Value' ]
 
     """Add metadata elements"""
