@@ -11,21 +11,7 @@
         step_models = []
         for i, step in enumerate( steps ):
             step_model = None
-            if step.type in [ 'data_input', 'data_collection_input' ]:
-                type_filter = []
-                for oc in step.output_connections:
-                    for ic in oc.input_step.module.get_data_inputs():
-                        if 'extensions' in ic and ic[ 'name' ] == oc.input_name:
-                            type_filter += ic[ 'extensions' ]
-                if not type_filter:
-                    type_filter = [ 'data' ]
-                d = step.module.get_runtime_inputs( type_filter )
-                input = d[ 'input' ].to_dict( trans );
-                step_model = {
-                    'name'   : input[ 'label' ],
-                    'inputs' : [ input ]
-                }
-            elif step.type == 'tool':
+            if step.type == 'tool':
                 incoming = {}
                 tool = trans.app.toolbox.get_tool( step.tool_id )
                 params_to_incoming( incoming, tool.inputs, step.state.inputs, trans.app )
@@ -37,7 +23,18 @@
                     'action_arguments'  : pja.action_arguments
                 } for pja in step.post_job_actions ]
             else:
-                continue
+                type_filter = []
+                for oc in step.output_connections:
+                    for ic in oc.input_step.module.get_data_inputs():
+                        if 'extensions' in ic and ic[ 'name' ] == oc.input_name:
+                            type_filter += ic[ 'extensions' ]
+                if not type_filter:
+                    type_filter = [ 'data' ]
+                inputs = step.module.get_runtime_inputs( filter_set=type_filter )
+                step_model = {
+                    'name'   : step.module.name,
+                    'inputs' : [ input.to_dict( trans ) for input in inputs.itervalues() ]
+                }
             step_model[ 'step_id' ] = step.id
             step_model[ 'step_type' ] = step.type
             step_model[ 'output_connections' ] = [ {
