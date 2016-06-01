@@ -44,19 +44,23 @@ var AdminReposRowView = Backbone.View.extend({
         $row = $(event.target.parentElement);
         checkbox = $row.find(':checkbox')[0];
         source = 'td';
+    } else if (event.target.localName === 'div') {
+        $row = $(event.target.parentElement.parentElement);
+        checkbox = $row.find(':checkbox')[0];
+        source = 'div';
     }
     if (checkbox.checked){
-        if (source==='td'){
+        if (source === 'td' || source === 'div'){
             checkbox.checked = '';
             this.turnLight($row);
-        } else if (source==='input') {
+        } else if (source === 'input') {
             this.turnDark($row);
         }
     } else {
-        if (source==='td'){
+        if (source === 'td' || source === 'div'){
             checkbox.checked = 'selected';
             this.turnDark($row);
-        } else if (source==='input') {
+        } else if (source === 'input') {
             this.turnLight($row);
         }
       }
@@ -73,9 +77,11 @@ var AdminReposRowView = Backbone.View.extend({
   templateRepoRow: function(){
     return _.template([
     '<tr class="repo-row light" style="display:none; " data-id="<%- repo.get("id") %>">',
+      // Checkbox column
       '<td style="text-align: center; " class="checkbox-cell">',
         '<input style="margin: 0;" type="checkbox">',
       '</td>',
+      // Name column
       '<td>',
         '<% if(repo.get("name")) { %>',
           '<a href="#"><%- repo.get("name") %></a>',
@@ -84,29 +90,37 @@ var AdminReposRowView = Backbone.View.extend({
           '<% } %>',
         '<% } %>',
       '</td>',
+      // Owner column
       '<td>',
         '<% if(repo.get("owner")) { %>',
           '<%- repo.get("owner") %>',
         '<% } %>',
       '</td>',
-      '<td class="status-<%- repo.get("status").toLowerCase().replace(/ /g,"-") %>">',
-        '<%- repo.get("status") %>',
-        '<% if(repo.get("collapsed_repos")) { %>',
-          '<span data-toggle="tooltip" data-placement="top" title="multiple revisions are installed" class="fa fa-compress icon-inline"/>',
-        '<% } %>',
+      // Installation column
+      '<td class="centercell">',
+        '<div class="status-<%- repo.get("status").toLowerCase().replace(/ /g,"-") %>">',
+          '<%- repo.get("status").toLowerCase() %>',
+          '<% if(repo.get("collapsed_repos")) { %>',
+            '<span data-toggle="tooltip" data-placement="top" title="multiple revisions are installed" class="fa fa-compress icon-inline"/>',
+          '<% } %>',
+        '</div>',
       '</td>',
+      // Version column
       '<% if(repo.get("status").toLowerCase() === "uninstalled") { %>',
-        '<td>',
-        'N/A',
+        '<td class="centercell">',
+          'N/A',
         '</td>',
       '<% } else{%>',
-        '<td class="update-<%- repo.get("update").toLowerCase().replace(/ /g,"-") %>">',
-          '<%- repo.get("update") %>',
+        '<td class="centercell">',
+          '<div class="update-<%- repo.get("update").toLowerCase().replace(/ /g,"-") %>">',
+            '<%- repo.get("update") %>',
             '<% if(repo.get("collapsed_repos")) { %>',
               '<span data-toggle="tooltip" data-placement="top" title="multiple revisions are installed" class="fa fa-compress icon-inline"/>',
             '<% } %>',
+          '</div>',
         '</td>',
       '<% } %>',
+      // Date installed column
       '<% if(repo.get("create_time")) { %>',
         '<td data-toggle="tooltip" data-placement="top" title="<%- repo.get("create_time").date %>" >',
           '<%- repo.get("create_time").interval %>',
