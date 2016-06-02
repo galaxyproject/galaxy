@@ -13,6 +13,7 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     <style type="text/css">
+
     </style>
 </%def>
 
@@ -41,6 +42,10 @@
 <div id="history-${ history_dict[ 'id' ] }" class="history-panel"></div>
 <script type="text/javascript">
     var historyJSON  = ${h.dumps( history_dict )};
+
+    $( '.page-body' )
+        .css( 'height', '100%' )
+        .addClass( 'flex-vertical-container' );
 
     require.config({
         baseUrl : "${h.url_for( '/static/scripts' )}",

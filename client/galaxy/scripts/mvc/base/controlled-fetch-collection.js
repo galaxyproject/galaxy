@@ -164,28 +164,38 @@ var PaginatedCollection = ControlledFetchCollection.extend({
     initialize : function( models, options ){
         ControlledFetchCollection.prototype.initialize.call( this, models, options );
         this.currentPage = options.currentPage || 0;
-        this.setTotal( options.total || 0 );
     },
 
-    setTotal : function( newTotal ){
-        this.total = newTotal;
-        this._lastPage = Math.ceil( this.total / this.limitPerPage );
-        // console.log( 'total:', this.total, '_lastPage:', this._lastPage );
+    getTotalItemCount : function(){
+        return this.length;
+    },
+
+    shouldPaginate : function(){
+        return this.getTotalItemCount() > this.limitPerPage;
+    },
+
+    getLastPage : function(){
+        return Math.floor( this.getTotalItemCount() / this.limitPerPage );
+    },
+
+    getPageCount : function(){
+        return this.getLastPage() + 1;
     },
 
     /** fetch the next page of data */
     fetchPage : function( pageNum, options ){
-        pageNum = Math.max( 0, Math.min( pageNum, this._lastPage ) );
+        pageNum = Math.max( 0, Math.min( pageNum, this.getLastPage() ) );
+        this.currentPage = pageNum;
+
         options = _.defaults( options || {}, {
             limit : this.limitPerPage,
             offset: pageNum * this.limitPerPage
         });
         options.reset = true;
-        this.currentPage = pageNum;
         return this.fetch( options );
     },
 
-    fetchFirst : function( options ){
+    fetchCurrentPage : function( options ){
         return this.fetchPage( this.currentPage );
     },
 

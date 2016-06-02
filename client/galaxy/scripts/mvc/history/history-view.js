@@ -165,21 +165,6 @@ var HistoryView = _super.extend(
         return $newRender;
     },
 
-    /** override to avoid showing intial empty message using contents_active */
-    _renderEmptyMessage : function( $whereTo ){
-        var self = this;
-        var $emptyMsg = self.$emptyMessage( $whereTo );
-
-        var empty = self.model.get( 'contents_active' ).active <= 0;
-        if( empty ){
-            return $emptyMsg.empty().append( self.emptyMsg ).show();
-
-        } else if( self.searchFor && self.model.contents.haveSearchDetails() && !self.views.length ){
-            return $emptyMsg.empty().append( self.noneFoundMsg ).show();
-        }
-        return $();
-    },
-
     /** button for starting select mode */
     _renderSelectButton : function( $where ){
         $where = $where || this.$el;
@@ -204,6 +189,21 @@ var HistoryView = _super.extend(
             classes : 'show-selectors-btn',
             faIcon  : 'fa-check-square-o'
         }).prependTo( $where.find( '.controls .actions' ) );
+    },
+
+    /** override to avoid showing intial empty message using contents_active */
+    _renderEmptyMessage : function( $whereTo ){
+        var self = this;
+        var $emptyMsg = self.$emptyMessage( $whereTo );
+
+        var empty = self.model.get( 'contents_active' ).active <= 0;
+        if( empty ){
+            return $emptyMsg.empty().append( self.emptyMsg ).show();
+
+        } else if( self.searchFor && self.model.contents.haveSearchDetails() && !self.views.length ){
+            return $emptyMsg.empty().append( self.noneFoundMsg ).show();
+        }
+        return $();
     },
 
     /** hide the $el and display a loading indicator (in the $el's parent) when loading new data */
@@ -256,26 +256,13 @@ var HistoryView = _super.extend(
 
         // TODO: bootstrap hack to remove orphaned tooltips
         $( '.tooltip' ).remove();
-        self.freeViews();
         $list.empty();
 
         var models = self._filterCollection();
+        console.log( 'models.length:', models.length );
         if( models.length ){
-            if( models.length < 1000 ){
-                self.views = self._renderSomeItems( models, $list );
-
-            } else {
-                // meh
-                var renderSliceSize = 250;
-                _.range( Math.ceil( models.length / renderSliceSize ) ).forEach( function( i ){
-                    var start = i * renderSliceSize;
-                    var stop = Math.min( start + renderSliceSize, models.length ) - 1;
-                    var someModels = models.slice( start, stop );
-                    _.defer( function(){
-                        self.views = self.views.concat( self._renderSomeItems( someModels, $list ) );
-                    });
-                });
-            }
+            self._renderPagination( $whereTo );
+            self.views = self._renderSomeItems( models, $list );
         }
         self._renderEmptyMessage( $whereTo ).toggle( !models.length );
 
@@ -284,14 +271,32 @@ var HistoryView = _super.extend(
         return self.views;
     },
 
+    /**  */
+    _renderPagination: function( $whereTo ){
+        var $paginationControls = $whereTo.find( '> .controls .pagination' );
+        if( !this.model.contents.shouldPaginate() ) return $paginationControls.empty();
+
+        return $paginationControls.html( this.templates.pagination({
+            // pagination is 1-based for the user
+            current : this.model.contents.currentPage + 1,
+            last    : this.model.contents.getLastPage() + 1,
+        }, this ));
+    },
+
+    /**  */
     _renderSomeItems: function( models, $list ){
         var self = this;
         var views = self._modelsToViews( models );
         // TODO: html() doesn't play well with delegateEvents for some reason? need to empty and use append
         $list.append( views.map( function( view ){
-            return view.el.children.length? view.delegateEvents().$el : self._renderItemView$el( view );
+            return self._renderItemView$el( view );
         }));
         return views;
+    },
+
+    /** override to not render unless it hasn't been rendered before (no children) */
+    _renderItemView$el : function( view ){
+        return view.el.children.length? view.delegateEvents().$el : view.render(0).$el;
     },
 
     // ------------------------------------------------------------------------ sub-views
@@ -362,11 +367,32 @@ var HistoryView = _super.extend(
     // ------------------------------------------------------------------------ panel events
     /** event map */
     events : _.extend( _.clone( _super.prototype.events ), {
-        // toggle list item selectors
         'click .show-selectors-btn'         : 'toggleSelectors',
+        'click > .controls .prev'           : '_clickPrevPage',
+        'click > .controls .next'           : '_clickNextPage',
+        'change > .controls .pages'         : '_changePageSelect',
         // allow (error) messages to be clicked away
         'click .messages [class$=message]'  : 'clearMessages',
     }),
+
+    _clickPrevPage : function( ev ){
+        var self = this;
+        this.model.contents.fetchPrevPage()
+            .done( function(){ self.renderItems(); });
+    },
+
+    _clickNextPage : function( ev ){
+        var self = this;
+        this.model.contents.fetchNextPage()
+            .done( function(){ self.renderItems(); });
+    },
+
+    _changePageSelect : function( ev ){
+        var self = this;
+        var page = $( ev.currentTarget ).val();
+        this.model.contents.fetchPage( page )
+            .done( function(){ self.renderItems(); });
+    },
 
     /** Toggle and store the deleted visibility and re-render items
      * @returns {Boolean} new setting
@@ -378,8 +404,8 @@ var HistoryView = _super.extend(
         contents.setIncludeDeleted( show, options );
         self.trigger( 'show-deleted', show );
 
-        var fetch = show? contents.fetchDeleted({ silent: true }) : jQuery.when();
-        fetch.done( function(){ self.renderItems(); });
+        contents.fetchCurrentPage({ silent: true })
+            .done( function(){ self.renderItems(); });
         return show;
     },
 
@@ -393,8 +419,8 @@ var HistoryView = _super.extend(
         contents.setIncludeHidden( show, options );
         self.trigger( 'show-hidden', show );
 
-        var fetch = show? contents.fetchHidden({ silent: true }) : jQuery.when();
-        fetch.done( function(){ self.renderItems(); });
+        contents.fetchCurrentPage({ silent: true })
+            .done( function(){ self.renderItems(); });
         return show;
     },
 
@@ -541,6 +567,7 @@ HistoryView.prototype.templates = (function(){
                 '<div class="search-input"></div>',
             '</div>',
 
+            '<div class="pagination form-group form-inline"></div>',
             '<div class="list-actions">',
                 '<div class="btn-group">',
                     '<button class="select-all btn btn-default"',
@@ -554,7 +581,19 @@ HistoryView.prototype.templates = (function(){
         '</div>'
     ], 'history' );
 
-    var contentsLoadingIndicatorTemplate = BASE_MVC.wrapTemplate([
+    var paginationTemplate = BASE_MVC.wrapTemplate([
+        '<button class="prev" <%- pages.current === 1 ? "disabled" : "" %>>previous</button>',
+        '<select class="pages form-control">',
+            '<% _.range( 1, pages.last + 1 ).forEach( function( i ){ %>',
+                '<option value="<%- i - 1 %>" <%- i === pages.current ? "selected" : "" %>>',
+                    '<%- i %> of <%- pages.last %> pages',
+                '</option>',
+            '<% }); %>',
+        '</select>',
+        '<button class="next" <%- pages.current === pages.last ? "disabled" : "" %>>next</button>',
+    ], 'pages' );
+
+     var contentsLoadingIndicatorTemplate = BASE_MVC.wrapTemplate([
         '<div class="contents-loading-indicator">',
             '<span class="fa fa-2x fa-spin fa-spinner">',
         '</span></div>'
@@ -563,6 +602,7 @@ HistoryView.prototype.templates = (function(){
     return _.extend( _.clone( _super.prototype.templates ), {
         el                      : mainTemplate,
         controls                : controlsTemplate,
+        pagination              : paginationTemplate,
         contentsLoadingIndicator: contentsLoadingIndicatorTemplate,
     });
 }());

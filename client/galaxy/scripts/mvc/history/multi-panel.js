@@ -17,17 +17,6 @@ TODO:
 ============================================================================== */
 /** A history view that  */
 var HistoryInnerView = HISTORY_VIEW_EDIT.HistoryViewEdit.extend({
-
-    /** override because (unlike other histories) $el is also the container for these views */
-    _scrollDistanceToBottom : function(){
-        var SLOP = 3;
-        var innerViewHeight = this.$el.children().toArray()
-            .map( function( e ){ return $( e ).outerHeight(); })
-            .reduce( function( a, c ){ return a + c; });
-        var scrollBottom = this.$el.scrollTop() + this.$el.innerHeight();
-        var distanceToBottom = ( SLOP + innerViewHeight ) - scrollBottom;
-        return distanceToBottom;
-    },
 });
 
 
@@ -693,7 +682,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
             this.hdaQueue.add({
                 name : column.model.id,
                 fn : function(){
-                    return contents.fetchFirst( fetchOptions )
+                    return contents.fetchCurrentPage( fetchOptions )
                         .done( function(){ column.panel.renderItems(); });
                 }
             });

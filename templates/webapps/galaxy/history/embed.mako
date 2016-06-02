@@ -54,6 +54,8 @@
         'mvc/history/copy-dialog'
     ], function( viewMod, historyCopyDialog ){
         var $embeddedHistory = $( thisScript ).prev();
+        console.log( $embeddedHistory.get(0) );
+        console.log( $embeddedHistory.find( '.item-content' ).addClass( 'flex-vertical-container' ) );
 
         $(function(){
             var historyMod = require( 'mvc/history/history-model' ),
@@ -64,7 +66,11 @@
                 view = new viewMod.AnnotatedHistoryView({
                     el      : $embeddedHistory.find( ".history-panel" ),
                     model   : historyModel
-                }).render();
+                });
+
+            historyModel.fetchContents()
+                .fail( function(){ alert( 'Galaxy history failed to load' ); })
+                .done( function(){ view.render(); })
 
             function toggleExpanded( ev ){
                 ev.preventDefault();

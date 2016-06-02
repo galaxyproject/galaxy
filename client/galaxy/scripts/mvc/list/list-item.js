@@ -213,9 +213,6 @@ var ListItemView = ExpandableView.extend(
                 this.$( '.primary-actions' ).show();
             }
         }, this );
-        //this.on( 'all', function( event ){
-        //    this.log( event );
-        //}, this );
         return this;
     },
 
@@ -272,11 +269,6 @@ var ListItemView = ExpandableView.extend(
         // expand the body when the title is clicked or when in focus and space or enter is pressed
         'click .title-bar'      : '_clickTitleBar',
         'keydown .title-bar'    : '_keyDownTitleBar',
-
-        // dragging - don't work, originalEvent === null
-        //'dragstart .dataset-title-bar'  : 'dragStartHandler',
-        //'dragend .dataset-title-bar'    : 'dragEndHandler'
-
         'click .selector'       : 'toggleSelect'
     },
 

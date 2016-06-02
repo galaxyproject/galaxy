@@ -60,14 +60,15 @@
         .tags-display, .annotation-display {
             display: none;
             margin-bottom: 8px;
-            label {
+            .prompt {
                 display: block;
                 margin: 0px;
                 padding: 0px;
+                font-size: 90%;
                 font-weight: normal;
                 color: #555;
             }
-            label:after {
+            .prompt:after {
                 content: ':';
             }
         }
@@ -84,11 +85,10 @@
         }
         .annotation-display {
             .annotation {
-                //display: inline-block;
+                background: white;
                 border-radius: 3px;
                 border: 1px solid fadeout( @layout-border-color, 50% );
                 padding: 4px;
-                //white-space: pre-line;
                 white-space: pre-wrap;
                 overflow: auto;
             }
@@ -109,6 +109,43 @@
                 width: 100%;
             }
         }
+
+        .pagination {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 0px;
+            button {
+                margin: 0;
+                padding: 0;
+            }
+            .prev, .next {
+                width: 25%;
+                max-width: 128px;
+            }
+            .prev {
+                border-radius: @border-radius-small 0px 0px @border-radius-small;
+                border-right-width: 0;
+            }
+            .next {
+                border-radius: 0px @border-radius-small @border-radius-small 0px;
+                border-left-width: 0;
+            }
+            .pages {
+                appearance: none;
+                -moz-appearance: none;
+                padding: 0;
+                width: 48%;
+                max-width: 256px;
+                height: 20px;
+                border-radius: 0;
+                border: 1px solid @btn-default-border;
+                background: @btn-default-bg;
+                text-align: center;
+            }
+            &:empty {
+                display: none;
+            }
+        }
     }
 
     // the help text that appears above the drop target
@@ -125,37 +162,16 @@
         border-radius : 3px;
     }
 
-    .list-items:not(:empty) {
-        border-top: 1px solid @border-default-color;
-    }
-    .list-items:empty {
-        flex-grow: 0;
-    }
-
-    // display only a top border on all
-    .list-items .list-items-section,
-    .list-item.history-content {
-        border-width: 1px 0px 0px 0px;
-        &:first-child {
-            border-top: none;
+    .list-items {
+        &:not(:empty) {
+            border-top: 1px solid @border-default-color;
         }
-        // add a bottom border on the last
-        &:last-child {
-            border-width: 1px 0px 1px 0px;
+        &:empty {
+            flex-grow: 0;
         }
-        &.current-section {
-            border-width: 0px;
+        .list-item:first-child {
+            border-top-width: 0px;
         }
-    }
-
-    .list-items .list-items-section-link {
-        display: inline-block;
-        width: 100%;
-        text-decoration: none;
-        font-size: 80%;
-        color: grey;
-        text-align: center;
-        // margin-left: 8px;
     }
 
     > .empty-message {
@@ -246,42 +262,61 @@
         }
     }
 
-    table.list-items {
-        width: 100%;
-        table-layout: fixed;
-
-        .headers {
-            border-bottom: 2px solid grey;
-        }
-        .headers th {
+    // defined outside of list-items because .headers is actually added to controls
+    // so that it will stay in place despite scrolling
+    .headers.contents-container {
+        margin-bottom: 0;
+        border-bottom: 2px solid grey;
+        & > * {
+            vertical-align: middle;
             padding: 8px;
+            font-weight: bold;
         }
-        & > tbody > tr {
-            // tr is clickable for expansion
-            cursor: pointer;
-            border-bottom: 1px solid grey;
-            & > td {
-                margin: 0px;
-                padding: 0px;
-                vertical-align: top;
-                &:nth-child(1) {
-                    width: 50%;
-                }
-                &:nth-child(2) {
-                    /* top and bottom should be == title-bar padding */
-                    padding: 8px 16px 8px 16px;
-                    // do not html format
-                    white-space: pre-wrap;
-                }
-                // tr has border - remove from items
-                & > .list-item {
-                    border: 0px;
-                }
+        .additional-info {
+            text-align: right;
+        }
+    }
+    .contents-container {
+        display: table;
+        table-layout: fixed;
+        width: 100%;
+
+        // show clickable for expansion
+        cursor: pointer;
+        border-bottom: 1px solid fade(grey, %50);
+        & > * {
+            display: table-cell;
+            width: 50%;
+            // max-width: 50%;
+
+            &.additional-info:not(.header) {
+                /* top and bottom should be == title-bar padding */
+                padding: 8px 16px 8px 16px;
+                // do not html format
+                white-space: pre-wrap;
+                text-align: right;
             }
         }
     }
+
+
+    & > .list-items {
+        width: 100%;
+        border-bottom: 1px solid lightgrey;
+    }
+
     .empty-message {
         margin-top: 8px;
+    }
+}
+
+
+// ---------------------------------------------------------------------------- embedded in pages
+.embedded-item.display.history .annotated-history-panel {
+    & > .controls {
+        .name {
+            display: none;
+        }
     }
 }
 

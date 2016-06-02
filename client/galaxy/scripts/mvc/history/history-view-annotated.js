@@ -41,40 +41,37 @@ var AnnotatedHistoryView = _super.extend(/** @lends AnnotatedHistoryView.prototy
         $newRender.find( '> .controls .subtitle' ).text( annotation );
     },
 
-    /** override to add table header cells to indicate the dataset, annotation columns */
+    /** override to add headers to indicate the dataset, annotation columns */
     renderItems : function( $whereTo ){
         $whereTo = $whereTo || this.$el;
         _super.prototype.renderItems.call( this, $whereTo );
-        var $headers = $( '<tr/>' ).addClass( 'headers' ).append([
-                $( '<th/>' ).text( _l( 'Dataset' ) ),
-                $( '<th/>' ).text( _l( 'Annotation' ) )
-            ]);
-        $headers = $( '<tbody/>' ).html( $headers );
-        $whereTo.find( '> .list-items' ).prepend( $headers );
+
+        var $controls = $whereTo.find( '> .controls' );
+        $controls.find( '.contents-container.headers' ).remove();
+
+        var $headers = $( '<div class="contents-container headers"/>' )
+            .append([
+                $( '<div class="history-content header"/>' ).text( _l( 'Dataset' ) ),
+                $( '<div class="additional-info header"/>' ).text( _l( 'Annotation' ) )
+            ]).appendTo( $controls );
+
         return self.views;
     },
 
-    // // ------------------------------------------------------------------------ sub-views
-    /** override to wrap each subview in a row */
+    // ------------------------------------------------------------------------ sub-views
+    /** override to wrap each subview */
     _renderItemView$el : function( view ){
-        //TODO:?? possibly make this more flexible: instead of annotation use this._additionalInfo()
-        // build a row around the dataset with the std itemView in the first cell and the annotation in the next
-        var stateClass = _.find( view.el.classList, function( c ){ return ( /^state\-/ ).test( c ); });
-        var annotation = view.model.get( 'annotation' ) || '';
-        return $( '<tr/>' ).append([
-                $( '<td/>' ).addClass( 'contents-container' ).append( view.render(0).$el )
-                    // visually match the cell bg to the dataset at runtime (prevents the empty space)
-                    // (getting bg via jq on hidden elem doesn't work on chrome/webkit - so use states)
-                    //.css( 'background-color', view.$el.css( 'background-color' ) ),
-                    .addClass( stateClass? stateClass.replace( '-', '-color-' ): '' ),
-                $( '<td/>' ).addClass( 'additional-info' ).text( annotation )
-            ]);
+        console.log( view.model.get( 'annotation' ) );
+        return $( '<div class="contents-container"/>' ).append([
+            view.render(0).$el,
+            $( '<div class="addtional-info"/>' ).text( view.model.get( 'annotation' ) || '' )
+        ]);
     },
 
     // ------------------------------------------------------------------------ panel events
     events : _.extend( _.clone( _super.prototype.events ), {
         // clicking on any part of the row will expand the items
-        'click tr' : function( ev ){
+        'click .contents-container' : function( ev ){
             $( ev.currentTarget ).find( '.title-bar' ).click();
         },
         // prevent propagation on icon btns so they won't bubble up to tr and toggleBodyVisibility
@@ -100,39 +97,6 @@ var AnnotatedHistoryView = _super.extend(/** @lends AnnotatedHistoryView.prototy
         return 'AnnotatedHistoryView(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });
-
-
-//------------------------------------------------------------------------------ TEMPLATES
-AnnotatedHistoryView.prototype.templates = (function(){
-
-    var mainTemplate = BASE_MVC.wrapTemplate([
-        '<div>',
-            '<div class="controls"></div>',
-            '<table class="list-items"></table>',
-            '<div class="empty-message infomessagesmall"></div>',
-        '</div>'
-    ]);
-
-    var listItemsSectionTemplate = BASE_MVC.wrapTemplate([
-        '<% if( section.number === view.model.contents.currentSection ){ %>',
-            '<tbody class="list-items-section current-section" data-section="<%- section.number %>"></tbody>',
-        '<% } else { %>',
-            '<tbody class="list-items-section" data-section="<%- section.number %>">',
-                // HACK: the repeat of data-section allows the same
-                '<tr data-section="<%- section.number %>">',
-                    '<td><a class="list-items-section-link" href="javascript:void(0)">',
-                        '<%- section.first %>  ', _l( "to" ), ' <%- section.last %>',
-                    '</a></td>',
-                '</tr>',
-            '</tbody>',
-        '<% } %>',
-    ], 'section' );
-
-    return _.extend( _.clone( _super.prototype.templates ), {
-        el                      : mainTemplate,
-        listItemsSection        : listItemsSectionTemplate
-    });
-}());
 
 
 //==============================================================================

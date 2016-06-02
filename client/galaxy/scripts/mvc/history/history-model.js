@@ -272,7 +272,7 @@ var History = Backbone.Model
 
         // we're updating, reset the update time
         self.lastUpdateTime = new Date();
-        return self.contents.fetchFirst( options );
+        return self.contents.fetchCurrentPage( options );
     },
 
     /** save this history, _Mark_ing it as deleted (just a flag) */

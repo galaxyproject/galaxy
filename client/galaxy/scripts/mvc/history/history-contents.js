@@ -46,7 +46,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     },
 
     // ........................................................................ set up
-    limitPerPage: null,
+    limitPerPage : 500,
 
     /** @type {String} order used here and when fetching from server */
     order : 'hid',
@@ -75,12 +75,6 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         //  and either merged or replaced. In this case, our 'model' is a function so we need to add idAttribute
         //  manually here - if we don't, contents will not merge but be replaced/swapped.
         this.model.prototype.idAttribute = 'type_id';
-
-        // this.on( 'all', function(){
-        //     var args = _.toArray( arguments );
-        //     if( /^change:*/.test( args[0] ) ){ return; }
-        //     console.log.apply( console, [ this + '' ].concat( args ) );
-        // });
     },
 
     setHistoryId : function( newId ){
@@ -98,10 +92,10 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         this.trigger( 'new-storage', this.storage, this );
 
         this.on({
-            'change:include-deleted' : function( newVal ){
+            'include-deleted' : function( newVal ){
                 this.storage.includeDeleted( newVal );
             },
-            'change:include-hidden' : function( newVal ){
+            'include-hidden' : function( newVal ){
                 this.storage.includeHidden( newVal );
             }
         });
@@ -174,8 +168,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         if( _.isBoolean( setting ) && setting !== this.includeDeleted ){
             this.includeDeleted = setting;
             if( _.result( options, 'silent' ) ){ return; }
-// TODO: change from change:
-            this.trigger( 'change:include-deleted', setting, this );
+            this.trigger( 'include-deleted', setting, this );
         }
     },
 
@@ -185,12 +178,12 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
             this.includeHidden = setting;
             options = options || {};
             if( _.result( options, 'silent' ) ){ return; }
-// TODO: change from change:
-            this.trigger( 'change:include-hidden', setting, this );
+            this.trigger( 'include-hidden', setting, this );
         }
     },
 
     // ........................................................................ ajax
+    // ............ controlled fetch collection
     /** override to get expanded ids from sessionStorage and pass to API as details */
     fetch : function( options ){
         options = options || {};
@@ -234,6 +227,12 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return _.defaults( superFilters, filters );
     },
 
+    // ............ paginated collection
+    getTotalItemCount : function(){
+        return this.history.contentsShown();
+    },
+
+    // ............ history contents specific ajax
     /** override to filter requested contents to those updated after the Date 'since' */
     fetchUpdated : function( since, options ){
         if( since ){
