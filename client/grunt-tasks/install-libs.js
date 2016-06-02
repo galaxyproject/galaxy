@@ -12,7 +12,6 @@ module.exports = function( grunt ){
         libraryLocations = {
             'jquery':         [ 'dist/jquery.js', 'jquery/jquery.js' ],
             'jquery-migrate': [ 'jquery-migrate.js', 'jquery/jquery.migrate.js' ],
-            'traceKit':       [ 'tracekit.js', 'tracekit.js' ],
             'ravenjs':        [ 'dist/raven.js', 'raven.js' ],
             'underscore':     [ 'underscore.js', 'underscore.js' ],
             'backbone':       [ 'backbone.js', 'backbone.js' ],
