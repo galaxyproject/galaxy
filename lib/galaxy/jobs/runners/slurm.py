@@ -32,6 +32,7 @@ class SlurmJobRunner( DRMAAJobRunner ):
             stdout, stderr = p.communicate()
             if p.returncode != 0:
                 if stderr == 'SLURM accounting storage is disabled':
+                    log.warning('SLURM accounting storage is not properly configured, unable to run sacct')
                     return
                 raise Exception( '`%s` returned %s, stderr: %s' % ( ' '.join( cmd ), p.returncode, stderr ) )
             return stdout.strip()
