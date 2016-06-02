@@ -92,8 +92,10 @@ class SlurmJobRunner( DRMAAJobRunner ):
                 with open(ajs.error_file, 'r+') as f:
                     if os.path.getsize(ajs.error_file) > SLURM_MEMORY_LIMIT_SCAN_SIZE:
                         f.seek(-SLURM_MEMORY_LIMIT_SCAN_SIZE, os.SEEK_END)
+                        f.readline()
+                    pos = f.tell()
                     lines = f.readlines()
-                    f.seek(0)
+                    f.seek(pos)
                     for line in lines:
                         stripped_line = line.strip()
                         if any([_ in stripped_line for _ in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS]):
@@ -114,21 +116,12 @@ class SlurmJobRunner( DRMAAJobRunner ):
         try:
             log.debug( 'Checking %s for exceeded memory message from slurm', efile_path )
             with open( efile_path ) as f:
-                pos = 2
-                bof = False
-                while pos < 2048:
-                    try:
-                        f.seek(-pos, 2)
-                        pos += 1
-                    except:
-                        f.seek(-pos + 1, 2)
-                        bof = True
-
-                    if (bof or f.read(1) == '\n') and f.readline().strip() == SLURM_MEMORY_LIMIT_EXCEEDED_MSG:
+                if os.path.getsize(efile_path) > 2048:
+                    f.seek(-2048, os.SEEK_END)
+                    f.readline()
+                for line in f.readlines():
+                    if line.strip() == SLURM_MEMORY_LIMIT_EXCEEDED_MSG:
                         return True
-
-                    if bof:
-                        break
         except:
             log.exception('Error reading end of %s:', efile_path)
 
