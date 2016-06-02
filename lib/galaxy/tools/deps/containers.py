@@ -307,7 +307,7 @@ class DockerContainer(Container):
             defaults = "$galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:rw"
 
         if self.app_info.library_import_dir:
-            defaults = defaults + ",$library_import_dir:ro"
+            defaults += ",$library_import_dir:ro"
 
         # Define $defaults that can easily be extended with external library and
         # index data without deployer worrying about above details.
