@@ -822,10 +822,11 @@ class ConfiguresGalaxyMixin:
         galaxy_root_dir = os.path.abspath(self.config.root)
         file_path = os.path.abspath(getattr(self.config, "file_path"))
         app_info = containers.AppInfo(
-            galaxy_root_dir,
+            galaxy_root_dir=galaxy_root_dir,
             default_file_path=file_path,
             outputs_to_working_directory=self.config.outputs_to_working_directory,
             container_image_cache_path=self.config.container_image_cache_path,
+            library_import_dir=self.config.library_import_dir
         )
         self.container_finder = containers.ContainerFinder(app_info)
 
