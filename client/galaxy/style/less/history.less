@@ -114,33 +114,38 @@
             width: 100%;
             text-align: center;
             margin-bottom: 0px;
+
             button {
                 margin: 0;
                 padding: 0;
+                height: 20px;
+                &[disabled] {
+                    background-color: transparent;
+                }
+                overflow: hidden;
             }
             .prev, .next {
                 width: 25%;
                 max-width: 128px;
             }
-            .prev {
-                border-radius: @border-radius-small 0px 0px @border-radius-small;
-                border-right-width: 0;
-            }
-            .next {
-                border-radius: 0px @border-radius-small @border-radius-small 0px;
-                border-left-width: 0;
-            }
             .pages {
-                appearance: none;
-                -moz-appearance: none;
-                padding: 0;
                 width: 48%;
                 max-width: 256px;
+
+                // restyle closer to button
+                -moz-appearance: none;
+                -webkit-appearance: none;
+                appearance: none;
+
                 height: 20px;
-                border-radius: 0;
+                margin: 0px 2px 0px 2px;
                 border: 1px solid @btn-default-border;
                 background: @btn-default-bg;
+                box-shadow: none;
+                padding: 0;
+                color: @btn-default-color;
                 text-align: center;
+                text-align-last: center;
             }
             &:empty {
                 display: none;
@@ -163,6 +168,14 @@
     }
 
     .list-items {
+        .loading-indicator {
+            display: inline-block;
+            width: 100%;
+            padding: 8px;
+            text-align: center;
+            color: @btn-default-color;
+        }
+
         &:not(:empty) {
             border-top: 1px solid @border-default-color;
         }
@@ -267,6 +280,7 @@
     .headers.contents-container {
         margin-bottom: 0;
         border-bottom: 2px solid grey;
+        cursor: unset;
         & > * {
             vertical-align: middle;
             padding: 8px;
@@ -323,6 +337,13 @@
 
 // ---------------------------------------------------------------------------- current-history-panel
 .current-history-panel {
+
+    & > .controls .pagination {
+        font-size: 90%;
+        & > * {
+            font-size: inherit;
+        }
+    }
 
     // .current-content is added to dataset/collection when displayed/edited/visualized, etc.
     //  (roughly: when it's being used in the center panel)

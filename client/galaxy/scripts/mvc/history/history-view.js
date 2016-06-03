@@ -377,21 +377,32 @@ var HistoryView = _super.extend(
 
     _clickPrevPage : function( ev ){
         var self = this;
-        this.model.contents.fetchPrevPage()
+        self._togglePageLoadingIndicator( true );
+        self.model.contents.fetchPrevPage()
             .done( function(){ self.renderItems(); });
     },
 
     _clickNextPage : function( ev ){
         var self = this;
-        this.model.contents.fetchNextPage()
+        self._togglePageLoadingIndicator( true );
+        self.model.contents.fetchNextPage()
             .done( function(){ self.renderItems(); });
     },
 
     _changePageSelect : function( ev ){
         var self = this;
+        self._togglePageLoadingIndicator( true );
         var page = $( ev.currentTarget ).val();
-        this.model.contents.fetchPage( page )
+        self.model.contents.fetchPage( page )
             .done( function(){ self.renderItems(); });
+    },
+
+    _togglePageLoadingIndicator : function( show ){
+        if( !show ){
+            this.$list().find( '.loading-indicator' ).remove();
+        } else {
+            this.$list().html( '<div class="loading-indicator"><span class="fa fa-2x fa-spinner fa-spin"/></div>' );
+        }
     },
 
     /** Toggle and store the deleted visibility and re-render items

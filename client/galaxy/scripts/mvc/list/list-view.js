@@ -288,7 +288,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
      */
     _setUpBehaviors : function( $where ){
         $where = $where || this.$el;
-        $where.find( '.controls [title]' ).tooltip({ placement: 'bottom' });
+        this.$controls( $where ).find('[title]').tooltip({ placement: 'bottom' });
         // set up the pupup for actions available when multi selecting
         this._renderMultiselectActionMenu( $where );
         return this;
@@ -337,12 +337,17 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         // override or set via attributes.$scrollContainer
         return this.$el.parent().parent();
     },
+    /** convenience selector for the section that displays the list controls */
+    $controls : function( $where ){
+        return ( $where || this.$el ).find( '> .controls' );
+    },
     /** list-items: where the subviews are contained in the view's dom */
     $list : function( $where ){
         return ( $where || this.$el ).find( '> .list-items' );
     },
     /** container where list messages are attached */
     $messages : function( $where ){
+        //TODO: controls isn't really correct here (only for ModelListPanel)
         return ( $where || this.$el ).find( '> .controls .messages' );
     },
     /** the message displayed when no views can be shown (no views, none matching search) */
