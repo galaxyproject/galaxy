@@ -536,10 +536,10 @@ class PDBQT(GenericMolFile):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            atom_numbers = count_special_lines("^ATOM", dataset.file_name)
-            hetatm_numbers = count_special_lines("^HETATM", dataset.file_name)
+            root_numbers = count_special_lines("^ROOT", dataset.file_name)
+            branch_numbers = count_special_lines("^BRANCH", dataset.file_name)
             dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
-            dataset.blurb = "%s atoms and %s HET-atoms" % (atom_numbers, hetatm_numbers)
+            dataset.blurb = "%s roots and %s branches" % (root_numbers, branch_numbers)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
