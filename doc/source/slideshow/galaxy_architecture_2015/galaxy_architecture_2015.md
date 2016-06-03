@@ -26,19 +26,15 @@ We're here to answer your question about Galaxy architecture!
 <br />
 .special2[**GitHub**].special[:] github.com/galaxyproject
 <br />
-**Trello**: https://trello.com/b/75c1kASa/
-<br />
 **Twitter**: #usegalaxy, @galaxyproject
 
 ---
 
 ### Contributing
 
-All Galaxy development has moved to GitHub
-<br />
-over the last year
-<br />
-New official contribution guidelines:  https://github.git com/galaxyproject/galaxy/blob/dev/CONTRIBUTING.md
+All Galaxy development happens on GitHub
+
+Contribution guidelines: https://github.com/galaxyproject/galaxy/blob/dev/CONTRIBUTING.md
 
 ---
 
@@ -57,17 +53,20 @@ github.com/galaxyproject/**galaxy**
 
 ---
 
+github.com/galaxyproject/**cloudman**
+#### Galaxy CloudMan 
+
 github.com/galaxyproject/**cloudlaunch**
-#### CloudLaunch web application to make it wasy to launch images on a cloud, drives *http://launch.usegalaxy.org*
+#### CloudLaunch web application to make it wasy to launch images on a cloud, drives *https://launch.usegalaxy.org*
 
 ---
 
 github.com/galaxyproject/**tools-{devteam,iuc}**
-#### Galaxy tools maintained by *devteam* (ths PSU/Hopkins group) and *iuc* (the "Intergalactic Utilities Commission"). A variety of tools, generally of high qualitym including the core tools for Galaxy main. Demonstrates **current tool development best practices** - development on github and then deployed to test/main ToolSheds
+#### Galaxy tools maintained by *devteam* (ths PSU/Hopkins group) and *iuc* (the "Intergalactic Utilities Commission"). A variety of tools, generally of high quality including the core tools for Galaxy main. Demonstrates **current tool development best practices** - development on github and then deployed to test/main ToolSheds
 
 ---
 
-github.com/galaxyproject/**docker-build**
+github.com/galaxyproject/**starforge**
 #### Build Galaxy Tool dependencies for the ToolShed in Docker containers
 #### Build Galaxy framework dependencies as Python wheels
 
