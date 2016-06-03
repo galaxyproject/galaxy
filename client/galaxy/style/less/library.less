@@ -1,10 +1,21 @@
 @import "galaxy_bootstrap/variables.less";
 @import "galaxy_variables.less";
 
-.library_style_container .fa{
+.library_style_container{
+
+width: 95%;
+margin: auto;
+margin-top:2em;
+overflow: auto !important;
+
+tr {
+    height: 32px;
+}
+
+.fa{
     font-size: 12px;
 }
-.library_style_container .fa-globe{
+.fa-globe{
     font-size: initial;
     margin-left: 0.6em;
 }
@@ -61,15 +72,6 @@ td.right-center {
         &:hover{
             color: maroon;
         }
-    }
-}
-.library_style_container {
-    width: 95%;
-    margin: auto;
-    margin-top:2em;
-    overflow: auto !important;
-    tr {
-        height: 32px;
     }
 }
 
@@ -237,12 +239,6 @@ span.expandLink {
 .library-paginator {
     margin-left: 2em;
 }
-.paginator-bottom{
-    width: 27em;
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 2em;
-}
 .import-type-switch{
     text-decoration: underline;
 }
@@ -254,4 +250,13 @@ span.expandLink {
     width:90%;
     margin-left: 1em;
     margin-right: 1em;
+}
+.paginator-bottom{
+    width: 27em;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 2em;
+    margin-bottom: 2em;
+}
+
 }
