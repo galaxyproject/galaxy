@@ -3,6 +3,7 @@
 check_galaxy can be run by hand, although it is meant to run from cron
 via the check_galaxy.sh script in Galaxy's cron/ directory.
 """
+from __future__ import print_function
 
 import filecmp
 import formatter
@@ -63,7 +64,7 @@ def usage():
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'n' )
 except getopt.GetoptError as e:
-    print str(e)
+    print(str(e))
     usage()
 if len( args ) < 1:
     usage()
@@ -75,7 +76,7 @@ new_history = False
 for o, a in opts:
     if o == "-n":
         if debug:
-            print "Specified -n, will create a new history"
+            print("Specified -n, will create a new history")
         new_history = True
     else:
         usage()
@@ -83,7 +84,7 @@ for o, a in opts:
 # state information
 var_dir = os.path.join( os.path.expanduser('~'), ".check_galaxy", server )
 if not os.access( var_dir, os.F_OK ):
-    os.makedirs( var_dir, 0700 )
+    os.makedirs( var_dir, 0o700 )
 
 # default timeout for twill browser is never
 socket.setdefaulttimeout(300)
@@ -256,7 +257,7 @@ class Browser:
     def check_state(self):
         if self.hda_state != "ok":
             self.get("/datasets/%s/stderr" % self.hda_id)
-            print tc.browser.get_html()
+            print(tc.browser.get_html())
             raise Exception("HDA %s NOT OK: %s" % (self.hda_id, self.hda_state))
 
     def diff(self):
@@ -281,7 +282,7 @@ class Browser:
             self.get('/datasets/%s/delete' % hda['id'])
         hdas = [hda['id'] for hda in self.undeleted_hdas]
         if hdas:
-            print "Remaining datasets ids:", " ".join(hdas)
+            print("Remaining datasets ids:", " ".join(hdas))
             raise Exception("History still contains datasets after attempting to delete them")
 
     def check_if_logged_in(self):
@@ -344,7 +345,7 @@ class loggedinParser(htmllib.HTMLParser):
 
 def dprint(str):
     if debug:
-        print str
+        print(str)
 
 # do stuff here
 if __name__ == "__main__":
@@ -360,7 +361,7 @@ if __name__ == "__main__":
         dprint("not logged in... logging in")
         b.login(username, password)
 
-    for tool, params in tools.iteritems():
+    for tool, params in tools.items():
 
         check_file = ""
 
@@ -388,5 +389,5 @@ if __name__ == "__main__":
         b.diff()
         b.delete_datasets()
 
-    print "OK"
+    print("OK")
     sys.exit(0)

@@ -36,9 +36,10 @@ Email Template Variables:
 
 Author: Lance Parsons (lparsons@princeton.edu)
 """
-import ConfigParser
-import os
+from __future__ import print_function
+
 import logging
+import os
 import shutil
 import sys
 import time
@@ -47,15 +48,16 @@ from datetime import datetime, timedelta
 from optparse import OptionParser
 from time import strftime
 
-from cleanup_datasets import CleanupDatasetsApplication
-
 import sqlalchemy as sa
-from sqlalchemy import and_, false
 from mako.template import Template
+from six.moves import configparser
+from sqlalchemy import and_, false
 
 import galaxy.config
 import galaxy.model.mapping
 import galaxy.util
+
+from cleanup_datasets import CleanupDatasetsApplication
 
 log = logging.getLogger()
 log.setLevel(10)
@@ -102,7 +104,7 @@ def main():
         sys.exit()
     ini_file = args[0]
 
-    config_parser = ConfigParser.ConfigParser({'here': os.getcwd()})
+    config_parser = configparser.ConfigParser({'here': os.getcwd()})
     config_parser.read(ini_file)
     config_dict = {}
     for key, value in config_parser.items("app:main"):
@@ -130,7 +132,7 @@ def main():
         if os.path.exists(default_template):
             template_file = default_template
         elif os.path.exists(sample_template_file):
-            print "Copying %s to %s" % (sample_template_file, default_template)
+            print("Copying %s to %s" % (sample_template_file, default_template))
             shutil.copyfile(sample_template_file, default_template)
             template_file = default_template
         else:
@@ -147,13 +149,13 @@ def main():
     cutoff_time = datetime.utcnow() - timedelta(days=options.days)
     now = strftime("%Y-%m-%d %H:%M:%S")
 
-    print "##########################################"
-    print "\n# %s - Handling stuff older than %i days" % (now, options.days)
+    print("##########################################")
+    print("\n# %s - Handling stuff older than %i days" % (now, options.days))
 
     if options.info_only:
-        print "# Displaying info only ( --info_only )\n"
+        print("# Displaying info only ( --info_only )\n")
     elif options.email_only:
-        print "# Sending emails only, not deleting ( --email_only )\n"
+        print("# Sending emails only, not deleting ( --email_only )\n")
 
     administrative_delete_datasets(
         app, cutoff_time, options.days, tool_id=options.tool_id,
@@ -225,33 +227,33 @@ def administrative_delete_datasets(app, cutoff_time, cutoff_days,
                     # Mark the HistoryDatasetAssociation as deleted
                     hda.deleted = True
                     app.sa_session.add(hda)
-                    print ("Marked HistoryDatasetAssociation id %d as "
-                           "deleted" % hda.id)
+                    print("Marked HistoryDatasetAssociation id %d as "
+                          "deleted" % hda.id)
                 app.sa_session.flush()
 
     emailtemplate = Template(filename=template_file)
-    for (email, dataset_list) in user_notifications.iteritems():
+    for (email, dataset_list) in user_notifications.items():
         msgtext = emailtemplate.render(email=email,
                                        datasets=dataset_list,
                                        cutoff=cutoff_days)
         subject = "Galaxy Server Cleanup " \
             "- %d datasets DELETED" % len(dataset_list)
         fromaddr = config.email_from
-        print ""
-        print "From: %s" % fromaddr
-        print "To: %s" % email
-        print "Subject: %s" % subject
-        print "----------"
-        print msgtext
+        print()
+        print("From: %s" % fromaddr)
+        print("To: %s" % email)
+        print("Subject: %s" % subject)
+        print("----------")
+        print(msgtext)
         if not info_only:
             galaxy.util.send_mail(fromaddr, email, subject,
                                   msgtext, config)
 
     stop = time.time()
-    print ""
-    print "Marked %d dataset instances as deleted" % deleted_instance_count
-    print "Total elapsed time: ", stop - start
-    print "##########################################"
+    print()
+    print("Marked %d dataset instances as deleted" % deleted_instance_count)
+    print("Total elapsed time: ", stop - start)
+    print("##########################################")
 
 
 def _get_tool_id_for_hda(app, hda_id):
