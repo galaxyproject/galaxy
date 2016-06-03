@@ -19,6 +19,9 @@ docs: ## generate Sphinx HTML documentation, including API docs
 	$(IN_VENV) $(MAKE) -C doc clean
 	$(IN_VENV) $(MAKE) -C doc html
 
+ready-slides:
+	$(IN_VENV) python scripts/slideshow/build_slideshow.py 'Galaxy Architecture' doc/source/slideshow/galaxy_architecture_2015/galaxy_architecture_2015.md
+
 _open-docs:
 	open doc/_build/html/index.html || xdg-open doc/_build/html/index.html
 
