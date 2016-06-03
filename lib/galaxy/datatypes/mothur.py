@@ -16,18 +16,26 @@ class Otu(Text):
     file_ext = 'mothur.otu'
     MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True, visible=True, no_value=0)
     MetadataElement(name="labels", default=[], desc="Label Names", readonly=True, visible=True, no_value=[])
+    MetadataElement(name="otulabels", default=[], desc="OTU Names", readonly=True, visible=True, no_value=[])
 
     def __init__(self, **kwd):
-        Text.__init__(self, **kwd)
+        super(Otu, self).__init__(**kwd)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
+        super(Otu, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
         if dataset.has_data():
             label_names = set()
+            otulabel_names = set()
             ncols = 0
             data_lines = 0
             comment_lines = 0
 
             headers = get_headers(dataset.file_name, sep='\t', count=-1)
+            # set otulabels
+            if len(headers[0]) > 2:
+                otulabel_names = headers[0][2:]
+            # set label names and number of lines
             for line in headers:
                 if len(line) >= 2 and not line[0].startswith('@'):
                     data_lines += 1
@@ -40,6 +48,8 @@ class Otu(Text):
             dataset.metadata.columns = ncols
             dataset.metadata.labels = list(label_names)
             dataset.metadata.labels.sort()
+            dataset.metadata.otulabels = list(otulabel_names)
+            dataset.metadata.otulabels.sort()
 
     def sniff(self, filename):
         """
@@ -80,10 +90,10 @@ class Sabund(Otu):
         """
         http://www.mothur.org/wiki/Sabund_file
         """
-        Otu.__init__(self, **kwd)
+        super(Sabund, self).__init__(**kwd)
 
     def init_meta(self, dataset, copy_from=None):
-        Otu.init_meta(self, dataset, copy_from=copy_from)
+        super(Sabund, self).init_meta(dataset, copy_from=copy_from)
 
     def sniff(self, filename):
         """
@@ -124,16 +134,18 @@ class GroupAbund(Otu):
     MetadataElement(name="groups", default=[], desc="Group Names", readonly=True, visible=True, no_value=[])
 
     def __init__(self, **kwd):
-        Otu.__init__(self, **kwd)
+        super(GroupAbund, self).__init__(**kwd)
 
     """
     def init_meta(self, dataset, copy_from=None):
         Otu.init_meta(self, dataset, copy_from=copy_from)
     """
     def init_meta(self, dataset, copy_from=None):
-        Otu.init_meta(self, dataset, copy_from=copy_from)
+        super(GroupAbund, self).init_meta(dataset, copy_from=copy_from)
 
-    def set_meta(self, dataset, overwrite=True, skip=1, max_data_lines=100000, **kwd):
+    def set_meta(self, dataset, overwrite=True, skip=1, **kwd):
+        super(GroupAbund, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
         # See if file starts with header line
         if dataset.has_data():
             label_names = set()
@@ -142,7 +154,7 @@ class GroupAbund(Otu):
             comment_lines = 0
             ncols = 0
 
-            headers = get_headers(dataset.file_name, sep='\t', count=max_data_lines)
+            headers = get_headers(dataset.file_name, sep='\t', count=-1)
             for line in headers:
                 if line[0] == 'label' and line[1] == 'Group':
                     skip = 1
@@ -207,7 +219,7 @@ class SecondaryStructureMap(Tabular):
 
     def __init__(self, **kwd):
         """Initialize secondary structure map datatype"""
-        Tabular.__init__(self, **kwd)
+        super(SecondaryStructureMap, self).__init__(**kwd)
         self.column_names = ['Map']
 
     def sniff(self, filename):
@@ -251,20 +263,18 @@ class AlignCheck(Tabular):
 
     def __init__(self, **kwd):
         """Initialize AlignCheck datatype"""
-        Tabular.__init__(self, **kwd)
+        super(AlignCheck, self).__init__(**kwd)
         self.column_names = ['name', 'pound', 'dash', 'plus', 'equal', 'loop', 'tilde', 'total']
         self.column_types = ['str', 'int', 'int', 'int', 'int', 'int', 'int', 'int']
         self.comment_lines = 1
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        data_lines = 0
-        headers = get_headers(dataset.file_name, sep='\t', count=-1)
-        for line in headers:
-            data_lines += 1
-        dataset.metadata.comment_lines = 1
-        dataset.metadata.data_lines = data_lines - 1 if data_lines > 0 else 0
+        super(AlignCheck, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
         dataset.metadata.column_names = self.column_names
         dataset.metadata.column_types = self.column_types
+        dataset.metadata.comment_lines = self.comment_lines
+        dataset.metadata.data_lines -= self.comment_lines
 
 
 class AlignReport(Tabular):
@@ -276,7 +286,7 @@ class AlignReport(Tabular):
 
     def __init__(self, **kwd):
         """Initialize AlignCheck datatype"""
-        Tabular.__init__(self, **kwd)
+        super(AlignReport, self).__init__(**kwd)
         self.column_names = ['QueryName', 'QueryLength', 'TemplateName', 'TemplateLength', 'SearchMethod', 'SearchScore',
                              'AlignmentMethod', 'QueryStart', 'QueryEnd', 'TemplateStart', 'TemplateEnd',
                              'PairwiseAlignmentLength', 'GapsInQuery', 'GapsInTemplate', 'LongestInsert', 'SimBtwnQuery&Template'
@@ -289,12 +299,12 @@ class DistanceMatrix(Text):
     MetadataElement(name="sequence_count", default=0, desc="Number of sequences", readonly=True, visible=True, optional=True, no_value='?')
 
     def init_meta(self, dataset, copy_from=None):
-        Text.init_meta(self, dataset, copy_from=copy_from)
+        super(DistanceMatrix, self).init_meta(self, dataset, copy_from=copy_from)
 
     def set_meta(self, dataset, overwrite=True, skip=0, **kwd):
-        Text.set_meta(self, dataset, overwrite=overwrite, skip=skip, **kwd)
+        super(DistanceMatrix, self).set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
 
-        headers = get_headers(dataset.file_name, sep='\t', count=-1)
+        headers = get_headers(dataset.file_name, sep='\t')
         for line in headers:
             if not line[0].startswith('@'):
                 try:
@@ -309,10 +319,10 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
 
     def __init__(self, **kwd):
         """Initialize secondary structure map datatype"""
-        DistanceMatrix.__init__(self, **kwd)
+        super(LowerTriangleDistanceMatrix, self).__init__(**kwd)
 
     def init_meta(self, dataset, copy_from=None):
-        DistanceMatrix.init_meta(self, dataset, copy_from=copy_from)
+        super(LowerTriangleDistanceMatrix, self).init_meta(dataset, copy_from=copy_from)
 
     def sniff(self, filename):
         """
@@ -371,10 +381,10 @@ class SquareDistanceMatrix(DistanceMatrix):
     file_ext = 'mothur.square.dist'
 
     def __init__(self, **kwd):
-        DistanceMatrix.__init__(self, **kwd)
+        super(SquareDistanceMatrix, self).__init__(**kwd)
 
     def init_meta(self, dataset, copy_from=None):
-        DistanceMatrix.init_meta(self, dataset, copy_from=copy_from)
+        super(SquareDistanceMatrix, self).init_meta(self, dataset, copy_from=copy_from)
 
     def sniff(self, filename):
         """
@@ -432,12 +442,12 @@ class PairwiseDistanceMatrix(DistanceMatrix, Tabular):
 
     def __init__(self, **kwd):
         """Initialize secondary structure map datatype"""
-        Tabular.__init__(self, **kwd)
+        super(PairwiseDistanceMatrix, self).__init__(**kwd)
         self.column_names = ['Sequence', 'Sequence', 'Distance']
         self.column_types = ['str', 'str', 'float']
 
     def set_meta(self, dataset, overwrite=True, skip=None, **kwd):
-        Tabular.set_meta(self, dataset, overwrite=overwrite, skip=skip, **kwd)
+        super(PairwiseDistanceMatrix, self).set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
 
     def sniff(self, filename):
         """
@@ -484,7 +494,7 @@ class Names(Tabular):
         http://www.mothur.org/wiki/Name_file
         Name file shows the relationship between a representative sequence(col 1)  and the sequences(comma-separated) it represents(col 2)
         """
-        Tabular.__init__(self, **kwd)
+        super(Names, self).__init__(**kwd)
         self.column_names = ['name', 'representatives']
         self.columns = 2
 
@@ -494,7 +504,7 @@ class Summary(Tabular):
 
     def __init__(self, **kwd):
         """summarizes the quality of sequences in an unaligned or aligned fasta-formatted sequence file"""
-        Tabular.__init__(self, **kwd)
+        super(Summary, self).__init__(**kwd)
         self.column_names = ['seqname', 'start', 'end', 'nbases', 'ambigs', 'polymer']
         self.columns = 6
 
@@ -508,15 +518,15 @@ class Group(Tabular):
         http://www.mothur.org/wiki/Groups_file
         Group file assigns sequence (col 1)  to a group (col 2)
         """
-        Tabular.__init__(self, **kwd)
+        super(Group, self).__init__(**kwd)
         self.column_names = ['name', 'group']
         self.columns = 2
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=None, **kwd):
-        Tabular.set_meta(self, dataset, overwrite, skip, max_data_lines)
-        group_names = set()
+        super(Group, self).set_meta(dataset, overwrite, skip, max_data_lines)
 
-        headers = get_headers(dataset.file_name, sep='\t')
+        group_names = set()
+        headers = get_headers(dataset.file_name, sep='\t', count=-1)
         for line in headers:
             if len(line) > 1:
                 group_names.add(line[1])
@@ -528,7 +538,7 @@ class AccNos(Tabular):
 
     def __init__(self, **kwd):
         """A list of names"""
-        Tabular.__init__(self, **kwd)
+        super(AccNos, self).__init__(**kwd)
         self.column_names = ['name']
         self.columns = 1
 
@@ -572,7 +582,7 @@ class Frequency(Tabular):
 
     def __init__(self, **kwd):
         """A list of names"""
-        Tabular.__init__(self, **kwd)
+        super(Frequency, self).__init__(**kwd)
         self.column_names = ['position', 'frequency']
         self.column_types = ['int', 'float']
 
@@ -624,7 +634,7 @@ class Quantile(Tabular):
 
     def __init__(self, **kwd):
         """Quantiles for chimera analysis"""
-        Tabular.__init__(self, **kwd)
+        super(Quantile, self).__init__(**kwd)
         self.column_names = ['num', 'ten', 'twentyfive', 'fifty', 'seventyfive', 'ninetyfive', 'ninetynine']
         self.column_types = ['int', 'float', 'float', 'float', 'float', 'float', 'float']
 
@@ -706,37 +716,36 @@ class CountTable(Tabular):
         U68595  1
         U68600  1
         # Example 2 (with group columns):
-        Representative_Sequence total   forest  pastur
+        Representative_Sequence total   forest  pasture
         U68630  1       1       0
         U68595  1       1       0
         U68600  1       1       0
         U68591  1       1       0
         U68647  1       0       1
         """
-        Tabular.__init__(self, **kwd)
+        super(CountTable, self).__init__(**kwd)
         self.column_names = ['name', 'total']
 
     def set_meta(self, dataset, overwrite=True, skip=1, max_data_lines=None, **kwd):
-        data_lines = 0
-        headers = get_headers(dataset.file_name, sep='\t', count=-1)
+        super(CountTable, self).set_meta(dataset, overwrite=overwrite, **kwd)
+
+        headers = get_headers(dataset.file_name, sep='\t', count=1)
         colnames = headers[0]
         dataset.metadata.column_types = ['str'] + (['int'] * ( len(headers[0]) - 1))
         if len(colnames) > 1:
             dataset.metadata.columns = len(colnames)
         if len(colnames) > 2:
             dataset.metadata.groups = colnames[2:]
-        for line in headers[1:]:
-            data_lines += 1
 
         dataset.metadata.comment_lines = 1
-        dataset.metadata.data_lines = data_lines
+        dataset.metadata.data_lines -= 1
 
 
 class RefTaxonomy(Tabular):
     file_ext = 'mothur.ref.taxonomy'
 
     def __init__(self, **kwd):
-        Tabular.__init__(self, **kwd)
+        super(RefTaxonomy, self).__init__(**kwd)
         self.column_names = ['name', 'taxonomy']
 
     def sniff(self, filename):
@@ -796,7 +805,7 @@ class ConsensusTaxonomy(Tabular):
 
     def __init__(self, **kwd):
         """A list of names"""
-        Tabular.__init__(self, **kwd)
+        super(ConsensusTaxonomy, self).__init__(**kwd)
         self.column_names = ['OTU', 'count', 'taxonomy']
 
 
@@ -805,7 +814,7 @@ class TaxonomySummary(Tabular):
 
     def __init__(self, **kwd):
         """A Summary of taxon classification"""
-        Tabular.__init__(self, **kwd)
+        super(TaxonomySummary, self).__init__(**kwd)
         self.column_names = ['taxlevel', 'rankID', 'taxon', 'daughterlevels', 'total']
 
 
@@ -814,7 +823,7 @@ class Axes(Tabular):
 
     def __init__(self, **kwd):
         """Initialize axes datatype"""
-        Tabular.__init__(self, **kwd)
+        super(Axes, self).__init__(**kwd)
 
     def sniff(self, filename):
         """
@@ -892,12 +901,12 @@ class SffFlow(Tabular):
           GQY1XT001CF5YW 88 1.02 0.02 1.01 0.04 0.06 1.02 0.03 ...
     """
     def __init__(self, **kwd):
-        Tabular.__init__(self, **kwd)
+        super(SffFlow, self).__init__(**kwd)
 
     def set_meta(self, dataset, overwrite=True, skip=1, max_data_lines=None, **kwd):
-        Tabular.set_meta(self, dataset, overwrite, 1, max_data_lines)
+        super(SffFlow, self).set_meta(dataset, overwrite, 1, max_data_lines)
 
-        headers = get_headers(dataset.file_name, sep='\t')
+        headers = get_headers(dataset.file_name, sep='\t', count=1)
         try:
             flow_values = int(headers[0][0])
             dataset.metadata.flow_values = flow_values
