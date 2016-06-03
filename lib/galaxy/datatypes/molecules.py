@@ -514,23 +514,21 @@ class PDBQT(GenericMolFile):
         False
         """
         headers = get_headers(filename, sep=' ', count=300)
-        h = t = c = s = k = e = False
+        h = t = c = s = k = False
         for line in headers:
             section_name = line[0].strip()
-            if section_name == 'COMPND':
+            if section_name == 'REMARK':
                 h = True
-            elif section_name == 'REMARK':
-                t = True
             elif section_name == 'ROOT':
-                c = True
+                t = True
             elif section_name == 'ENDROOT':
-                s = True
+                c = True
             elif section_name == 'BRANCH':
-                k = True
+                s = True
             elif section_name == 'TORSDOF':
-                e = True
+                k = True
 
-        if h * t * c * s * k * e:
+        if h * t * c * s * k:
             return True
         else:
             return False
