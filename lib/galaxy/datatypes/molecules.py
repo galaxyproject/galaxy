@@ -492,6 +492,57 @@ class PDB(GenericMolFile):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
+class PDBQT(GenericMolFile):
+    """
+    PDBQT Autodock and Autodock Vina format
+    http://autodock.scripps.edu/faqs-help/faq/what-is-the-format-of-a-pdbqt-file
+    """
+    file_ext = "pdbqt"
+
+    def sniff(self, filename):
+        """
+        Try to guess if the file is a PDBQT file.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('NuBBE_1_obabel_3D.pdbqt')
+        >>> PDBQT().sniff(fname)
+        True
+
+        >>> fname = get_test_fname('drugbank_drugs.cml')
+        >>> PDBQT().sniff(fname)
+        False
+        """
+        headers = get_headers(filename, sep=' ', count=300)
+        h = t = c = s = k = e = False
+        for line in headers:
+            section_name = line[0].strip()
+            if section_name == 'COMPND':
+                h = True
+            elif section_name == 'REMARK':
+                t = True
+            elif section_name == 'ROOT':
+                c = True
+            elif section_name == 'ENDROOT':
+                s = True
+            elif section_name == 'BRANCH':
+                k = True
+            elif section_name == 'TORSDOF':
+                e = True
+
+        if h * t * c * s * k * e:
+            return True
+        else:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            atom_numbers = count_special_lines("^ATOM", dataset.file_name)
+            hetatm_numbers = count_special_lines("^HETATM", dataset.file_name)
+            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.blurb = "%s atoms and %s HET-atoms" % (atom_numbers, hetatm_numbers)
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
 
 class grd(data.Text):
     file_ext = "grd"
