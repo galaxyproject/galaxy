@@ -85,7 +85,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         tool = self._get_tool( id, user=trans.user )
         return tool.to_dict( trans, io_details=io_details, link_details=link_details )
 
-    @expose_api_anonymous
+    @expose_api_anonymous_and_sessionless
     def build( self, trans, id, **kwd ):
         """
         GET /api/tools/{tool_id}/build
