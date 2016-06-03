@@ -598,7 +598,6 @@ def populate_api_routes( webapp, app ):
                            action='index',
                            conditions=dict( method=["GET"] ) )
 
-
     # =====================
     # ===== ADMIN API =====
     # =====================
@@ -607,6 +606,12 @@ def populate_api_routes( webapp, app ):
                            '/api/admin/repos',
                            controller='repositories',
                            action='index',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'repo detail',
+                           '/api/admin/repos/{id}',
+                           controller='repositories',
+                           action='show',
                            conditions=dict( method=["GET"] ) )
 
     # ====================
