@@ -1,0 +1,2 @@
+define(["libs/toastr","admin/repos-model","utils/utils"],function(){var a=Backbone.View.extend({el:"#center",defaults:{},events:{},initialize:function(a){this.options=_.defaults(this.options||{},a,this.defaults),this.model=this.render()},render:function(a){this.options=_.extend(this.options,a);var b=this.templateRepoDetail();this.$el.html(b({}))},fetchRepo:function(){},templateRepoDetail:function(){return _.template(["<div>","TRALALA","</div>"].join(""))}});return{AdminReposDetailView:a}});
+//# sourceMappingURL=../../maps/admin/repos-detail-view.js.map

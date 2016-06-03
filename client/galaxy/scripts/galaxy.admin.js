@@ -1,9 +1,11 @@
 define([
   "libs/toastr",
+  "admin/repos-detail-view",
   "admin/repos-list-view"
   ],
   function(
     mod_toastr,
+    mod_repos_detail_view,
     mod_repos_list_view
    ) {
 
@@ -60,6 +62,7 @@ var GalaxyAdminApp = Backbone.View.extend({
     });
     this.admin_router.on('route:repodetail', function(id) {
       console.log('detail id:'+id);
+      Galaxy.adminapp.adminRepoDetailView = new mod_repos_detail_view.AdminReposDetailView({id: id});
     });
 
     Backbone.history.start({pushState: false});

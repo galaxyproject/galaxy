@@ -1,12 +1,13 @@
 """
 API operations on Galaxy's installed tools.
 """
+import logging
+from galaxy import exceptions
 from galaxy.managers import repos
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import require_admin
 from galaxy.web.base.controller import BaseAPIController
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -21,12 +22,11 @@ class RepositoriesController( BaseAPIController ):
     @require_admin
     def index( self, trans, **kwd ):
         """
-        * GET /api/admin/repositories:
+        * GET /api/admin/repos:
             Return a list of all installed repositories on this instance.
 
         :returns:   list of repos
         :rtype:     list
-
         """
         repos = self.repo_manager.list( trans, view='tools' )
         repo_list = []
@@ -36,8 +36,6 @@ class RepositoriesController( BaseAPIController ):
                 repo_dict['type'] = 'tools'
             if repo.provides_only_tool_dependencies:
                 repo_dict['type'] = 'packages'
-            # log.debug('***********************')
-            # log.debug(repo_dict['name'])
             repo_dict['update'] = 'up to date'
             if repo.revision_update_available:
                 repo_dict['update'] = 'minor update'
@@ -48,6 +46,25 @@ class RepositoriesController( BaseAPIController ):
         unique_dicts_w_sections = self._add_all_sections_for_repo( trans, unique_dicts )
         return self._strip_dicts( unique_dicts_w_sections.values() )
 
+    @expose_api
+    @require_admin
+    def show( self, trans, id, **kwd ):
+        """
+        * GET /api/admin/repos/{encoded_id}:
+            Return a detail of the installed repository identified
+            by the given id.
+
+        :param  id:      the encoded id of the repo
+        :type   id:      an encoded id string
+
+        :returns:   detailed repo information
+        :rtype:     dictionary
+        """
+        # TODO respect `view` that is requested
+        repo = self.repo_manager.get( trans, self.__decode_id( trans, id, 'repository' ) )
+        repo_dict = self.repo_serializer.serialize_to_view( repo, view='summary')
+        return repo_dict
+
     def _strip_dicts( self, repo_dicts ):
         """
         Minimize the size of returning dicts.
@@ -57,9 +74,7 @@ class RepositoriesController( BaseAPIController ):
                 repo['sections'] = list(repo['sections'])
             repo.pop('tool_shed', '')
             if 'collapsed_repos' in repo.keys():
-                # updates = 'latest'
                 for r in repo['collapsed_repos']:
-                    # repo['updates']
                     # drop this unwanted key
                     r.pop('tool_shed', '')
         return repo_dicts
@@ -117,3 +132,19 @@ class RepositoriesController( BaseAPIController ):
                     # different sections - ignored as extreme cornercase
                     pass
         return unique_dicts
+
+    def __decode_id( self, trans, encoded_id, object_name=None ):
+        """
+        Try to decode the id.
+
+        :param  object_name:      Name of the object the id belongs to. (optional)
+        :type   object_name:      str
+
+        :raises: MalformedId
+        """
+        try:
+            return trans.security.decode_id( encoded_id )
+        except TypeError:
+            raise exceptions.MalformedId( 'Malformed %s id specified, unable to decode.' % object_name if object_name is not None else '' )
+        except ValueError:
+            raise exceptions.MalformedId( 'Wrong %s id specified, unable to decode.' % object_name if object_name is not None else '' )

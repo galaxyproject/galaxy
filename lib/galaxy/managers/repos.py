@@ -2,12 +2,14 @@
 Manager and Serializer for Repositories.
 """
 
+import logging
 from galaxy import exceptions
 from galaxy.util import pretty_print_time_interval
 from galaxy.model import tool_shed_install
 from galaxy.managers import base
+from sqlalchemy.orm.exc import MultipleResultsFound
+from sqlalchemy.orm.exc import NoResultFound
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -18,11 +20,44 @@ class RepoManager( base.ModelManager ):
         super( RepoManager, self ).__init__( app, *args, **kwargs )
 
     def list( self, trans, view='all' ):
+        """
+        Retrieve all installed repositories from the database.
+
+        :returns:   all ToolShedRepository objects in the database
+        :rtype:     list
+
+        :raises: ItemAccessibilityException
+        """
         if not trans.user_is_admin():
             raise exceptions.ItemAccessibilityException( 'Only administrators can see repos.' )
         # TODO respect `view` that is requested
         repos = trans.sa_session.query( self.model_class ).all()
         return repos
+
+    def get( self, trans, decoded_repo_id ):
+        """
+        Retrieve the repo identified by the given id from the database.
+
+        :param  id:      the decoded id of the repo
+        :type   id:      an decoded id string
+
+        :returns:   installed repository object
+        :rtype:     ToolShedRepository
+
+        :raises: ItemAccessibilityException, InconsistentDatabase,
+            RequestParameterInvalidException, InternalServerError
+        """
+        if not trans.user_is_admin():
+            raise exceptions.ItemAccessibilityException( 'Only administrators can see repos.' )
+        try:
+            repo = trans.sa_session.query( self.model_class ).filter( self.model_class.table.c.id == decoded_repo_id ).one()
+        except MultipleResultsFound:
+            raise exceptions.InconsistentDatabase( 'Multiple repositories found with the same id.' )
+        except NoResultFound:
+            raise exceptions.RequestParameterInvalidException( 'No repository found with the id provided.' )
+        except Exception as e:
+            raise exceptions.InternalServerError( 'Error loading from the database.', e )
+        return repo
 
 
 class RepositorySerializer( base.ModelSerializer ):

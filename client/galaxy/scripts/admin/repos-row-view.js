@@ -84,7 +84,7 @@ var AdminReposRowView = Backbone.View.extend({
       // Name column
       '<td>',
         '<% if(repo.get("name")) { %>',
-          '<a href="#"><%- repo.get("name") %></a>',
+          '<a href="#repos/<%- repo.get("id") %>"><%- repo.get("name") %></a>',
           '<% if(repo.get("collapsed_repos")) { %>',
             '<span data-toggle="tooltip" data-placement="top" title="multiple revisions are installed" class="fa fa-compress icon-inline"/>',
           '<% } %>',
