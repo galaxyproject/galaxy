@@ -5,14 +5,7 @@ Datatype classes for tracks/track views within galaxy.
 import binary
 import logging
 
-# For UCSCTrackHub
-import galaxy.version as version
-
-# Support for Galaxy <= 16.01
-if version.VERSION_MAJOR <= "16.01":
-    from galaxy.datatypes.images import Html
-else:
-    from galaxy.datatypes.text import Html
+from galaxy.datatypes.text import Html
 
 log = logging.getLogger(__name__)
 
