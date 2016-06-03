@@ -492,6 +492,7 @@ class PDB(GenericMolFile):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
+
 class PDBQT(GenericMolFile):
     """
     PDBQT Autodock and Autodock Vina format
@@ -543,6 +544,7 @@ class PDBQT(GenericMolFile):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
+
 
 class grd(data.Text):
     file_ext = "grd"
