@@ -107,7 +107,6 @@ if __name__ == '__main__':
         }
         grt_jobs_data.append(job_data)
 
-
     grt_report_data = {
         'meta': {
             'version': 1,
