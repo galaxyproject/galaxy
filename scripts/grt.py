@@ -11,9 +11,7 @@ import sqlalchemy as sa
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
 import galaxy.config
-from galaxy.model.util import pgcalc
 from galaxy.objectstore import build_object_store_from_config
-from galaxy.util import nice_size
 from galaxy.model import mapping
 
 default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'config/galaxy.ini'))
@@ -49,7 +47,7 @@ def init(config):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('instance_id', help='Galactic Radio Telescope Instance ID')
-    parser.add_argument('api_key',     help='Galactic Radio Telescope API Key')
+    parser.add_argument('api_key', help='Galactic Radio Telescope API Key')
 
     parser.add_argument('-c', '--config', dest='config', help='Path to Galaxy config file (config/galaxy.ini)', default=default_config)
     parser.add_argument('--dry-run', dest='dryrun', help='Dry run (show data to be sent, but do not send)', action='store_true', default=False)
@@ -60,15 +58,14 @@ if __name__ == '__main__':
     model, object_store, engine = init(args.config)
     sa_session = model.context.current
 
-
     # Fetch jobs COMPLETED with status OK in the past week.
     since = datetime.datetime.now() - datetime.timedelta(hours=24 * 14)
     jobs = sa_session.query(model.Job)\
-            .filter(sa.and_(
-                model.Job.table.c.state == "ok",
-                model.Job.table.c.update_time > since
-            ))\
-            .all()
+        .filter(sa.and_(
+            model.Job.table.c.state == "ok",
+            model.Job.table.c.update_time > since
+        ))\
+        .all()
 
     # Set up our arrays
     active_users = []
@@ -111,7 +108,7 @@ if __name__ == '__main__':
 
 
     grt_report_data = {
-        'meta':{
+        'meta': {
             'instance_uuid': args.instance_id,
             'instance_api_key': args.api_key,
             # We do not record ANYTHING about your users other than count.
