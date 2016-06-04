@@ -52,6 +52,7 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--config', dest='config', help='Path to Galaxy config file (config/galaxy.ini)', default=default_config)
     parser.add_argument('--dry-run', dest='dryrun', help='Dry run (show data to be sent, but do not send)', action='store_true', default=False)
     parser.add_argument('--grt-url', dest='grt_url', help='GRT Server (You can run your own!)', default='https://radio-telescope.galaxyproject.org/api/v1/upload')
+    parser.add_argument('--days', type=int, help="Number of days of data to submit", default=7)
     args = parser.parse_args()
 
     print 'Loading Galaxy...'
@@ -59,7 +60,7 @@ if __name__ == '__main__':
     sa_session = model.context.current
 
     # Fetch jobs COMPLETED with status OK in the past week.
-    since = datetime.datetime.now() - datetime.timedelta(hours=24 * 14)
+    since = datetime.datetime.now() - datetime.timedelta(days=args.days)
     jobs = sa_session.query(model.Job)\
         .filter(sa.and_(
             model.Job.table.c.state == "ok",
