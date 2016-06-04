@@ -110,12 +110,14 @@ if __name__ == '__main__':
 
     grt_report_data = {
         'meta': {
+            'version': 1,
             'instance_uuid': args.instance_id,
             'instance_api_key': args.api_key,
             # We do not record ANYTHING about your users other than count.
             'active_users': len(set(active_users)),
             'total_users': sa_session.query(model.User).count(),
             'recent_jobs': len(jobs),
+            'days': args.days,
         },
         'tools': [
             {
