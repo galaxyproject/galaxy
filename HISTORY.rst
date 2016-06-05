@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-16.7.8.dev0
+16.7.8 (2016-06-05)
 ---------------------
 
 * Updates to include Galaxy library for verifying test outputs
