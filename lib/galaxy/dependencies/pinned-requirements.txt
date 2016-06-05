@@ -67,3 +67,7 @@ ecdsa==0.13
 
 # Flexible BAM index naming
 pysam==0.8.4+gx1
+
+# Kubernetes runner pykube requirement
+-e git+https://github.com/pcm32/pykube.git@feature/allMergedFeatures#egg=pykube
+
