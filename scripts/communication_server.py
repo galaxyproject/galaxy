@@ -29,7 +29,7 @@ The communication server feature of Galaxy can be controlled on three different 
 import sys
 import argparse
 from flask import Flask, request, make_response, current_app
-from flask_socketio import SocketIO, emit, disconnect
+from flask_socketio import SocketIO, emit, disconnect, join_room, leave_room, close_room, rooms
 from datetime import timedelta
 from functools import update_wrapper
 
@@ -86,10 +86,11 @@ template = """<!DOCTYPE HTML>
 <html>
 <head>
    <title>Chat</title>
-   <script src="https://use.fontawesome.com/89a733ecb7.js"></script>
+   <link rel="stylesheet" type="text/css" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
     <style>
     html, body {
         height: 100%;
+        font-size: 13px;
     }
     /* Styles for message text box */
     .clearable{
@@ -102,16 +103,22 @@ template = """<!DOCTYPE HTML>
     .clearable.x  { background-position: right 5px center; }
     .clearable.onX{ cursor: pointer; }
     .clearable::-ms-clear {display: none; width:0; height:0;}
-    .size {
-        height: 40px;
-        width: 96%;
-        margin-bottom:5px;
+    .size-message {
+        height: 60px;
+        width: 99.5%;
+        margin-top: 2px;
     }
-
     /* Styles for top right icons */
     .right_icons {
-        margin-left: 86.8%;
+        margin-left: 92%;
+        position: fixed;
     }
+    #chat_tabs,
+    #txtbox_chat_room {
+        margin-top: 2px;
+        margin-left: 2px;
+    }
+    ul, li,
     .user,
     .anchor {
         cursor: pointer;
@@ -119,54 +126,75 @@ template = """<!DOCTYPE HTML>
     }
     .messages {
         overflow-y: auto;
-        height: 72%;
+        height: 100%;
+        margin-left: 2px;
     }
     .send_message {
         margin-top: 5px;
-   }
-    .conn_msg {
-        color: #00FF00;
-        font-style: italic;
-        font-size: 14px;
-    }
-    .disconn_msg {
-        color: #FF0000;
-        font-style: italic;
-        font-size: 14px;
+        margin-left: 2px;
     }
     .user_name {
         font-style: italic;
-        font-size: 13px;
     }
     .user_message {
-        font-size: 14px;
         background-color: #DFE5F9;
         width: 99%;
     }
     .date_time {
         font-style: italic;
-        font-size: 13px;
+        font-size: 12px;
     }
     .date_time span {
         float: right;
     }
+    .tab-content {
+        height: 65%;
+    }
+    .tab-pane {
+        height: 100%;
+    }
+
+    ul>li i {
+        padding-left: 4px;
+        font-size: 12px;
+    }
     </style>
 </head>
 <body style="overflow: hidden; height: 100%";>
-    <div style="float: left"></div>
     <div class="right_icons">
         <i id="online_status" class="anchor fa fa-comments" aria-hidden="true" title=""></i>
         <i id="chat_history" class="anchor fa fa-history" aria-hidden="true" title="Show chat history"></i>
-        <i id="delete_history" class="anchor fa fa-chain-broken" aria-hidden="true" title="Delete full history"></i>
+        <!-- <i id="group_chat" class="anchor fa fa-users" aria-hidden="true" title=""></i> -->
         <i id="clear_messages" class="anchor fa fa-trash-o" aria-hidden="true" title="Clear all messages"></i>
     </div>
-    <div id="all_messages" class="messages"></div>
+    <ul class="nav nav-tabs" id="chat_tabs">
+        <li class="active">
+            <a data-target="#all_chat_tab" data-toggle="tab" aria-expanded='true'>All Chats</a>
+        </li>
+        <li>
+            <a data-target="#chat_room_tab" data-toggle="tab" aria-expanded='false'>Chat Room</a>
+        </li>
+    </ul>
+    <div class="tab-content">
+        <div class="tab-pane active fade in" id="all_chat_tab">
+            <div id="all_messages" class="messages"></div>
+        </div>
+    <div class="tab-pane fade" id="chat_room_tab">
+            <div id="join_room">
+                <input id="txtbox_chat_room" type="text" class="chat-room-textbx" value="" placeholder="Enter room name to join...">
+            </div>
+            <!-- <div id="all_messages_room" class="messages"></div> -->
+        </div>
+    </div>
     <div class="send_message">
-        <input id="send_data" class="size clearable" type="text" placeholder="Type your message..." autocomplete="off" />
+        <textarea id="send_data" class="size-message clearable" placeholder="Type your message...">
+        </textarea>
     </div>
 
     <script type="text/javascript" src="https://code.jquery.com/jquery-1.10.2.js"></script>
+    <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
     <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
+    <script src="https://use.fontawesome.com/89a733ecb7.js"></script>
     <script type="text/javascript" charset="utf-8">
     // the namespace events connect to
     var namespace = '/chat',
@@ -179,7 +207,8 @@ template = """<!DOCTYPE HTML>
                 var orig_message = msg.data.split(':'),
                     message = "",
                     uid = utils.get_userid(),
-                    $el_all_messages = $('#all_messages');
+                    $el_all_messages = $('#all_messages'),
+                    $el_tab_li = $( "a[data-target='#all_chat_tab']" );
                 // builds the message to be displayed
                 message = utils.build_message( orig_message, uid );
                 // append only for non empty messages
@@ -197,8 +226,55 @@ template = """<!DOCTYPE HTML>
                 sessionStorage[uid] = $el_all_messages.html();
                 // show the last item by scrolling to the end
                 utils.scroll_to_last( $el_all_messages );
+                if( uid !== orig_message[1].split('-')[1] ) {
+                    utils.show_notification( $el_tab_li );
+                }
            });
        },
+       // event handler for room messages
+       event_response_room: function( socket ) {
+           socket.on('event response room', function( msg ) {
+               var $el_all_messages = $( '#all_messages' ),
+                   message = '',
+                   uid = utils.get_userid(),
+                   tab_counter = 0,
+                   $el_tab_li = null;
+               // response when user joins
+               if( msg.userjoin ) {
+                   message = msg.userjoin.split("-")[0] + " has joined " + msg.data + ":" + msg.userjoin;
+                   utils.append_message( $el_all_messages, utils.build_message( message.split(":"), uid ) );
+                   utils.scroll_to_last( $el_all_messages );
+                   if( uid !== msg.userjoin.split('-')[1] ) {
+                       $el_tab_li = $( "a[data-target='#all_chat_tab']" );
+                       utils.show_notification( $el_tab_li );
+                   }
+               } // response when user leaves
+               else if( msg.userleave ) {
+                   message = msg.userleave.split("-")[0] + " has left " + msg.data + ":" + msg.userleave;
+                   utils.append_message( $el_all_messages, utils.build_message( message.split(":"), uid ) );
+                   utils.scroll_to_last( $el_all_messages );
+                   if( uid !== msg.userleave.split('-')[1] ) {
+                       $el_tab_li = $( "a[data-target='#all_chat_tab']" );
+                       utils.show_notification( $el_tab_li );
+                   }
+               }
+               else { // normal message sharing when connected
+                   for(var counter = 0; counter < click_events.connected_room.length; counter++) {
+                       if(msg.chatroom === click_events.connected_room[counter]) {
+                           tab_counter = counter;
+                           break;
+                       }
+                   };
+                   $el_room_msg = $( "#all_messages_" + tab_counter );
+                   utils.append_message( $el_room_msg, utils.build_message( msg.data.split(':'), uid ) );
+                   utils.scroll_to_last( $el_room_msg );
+                   if( uid !== msg.data.split(':')[1].split('-')[1] ) {
+                       $el_tab_li = $( "a[data-target='#tabroom_" + tab_counter + "'" + " ]" );
+                       utils.show_notification( $el_tab_li );
+                   }
+               }
+           });
+        },
         // event handler for new connections
         event_connect: function( socket ) {
             socket.on( 'connect', function() {
@@ -212,16 +288,45 @@ template = """<!DOCTYPE HTML>
     var click_events = {
         // on form load, user is connected, so the value is true
         is_connected: true,
-        broadcast_data: function(socket) {
+        active_tab: "#all_chat_tab",
+        connected_room: [],
+        tab_id_number: 0,
+        broadcast_data: function( socket ) {
             $('#send_data').keydown(function( event ) {
-                if( event.keyCode == 13 || event.which == 13 ) {
-                    if( click_events.is_connected ) {
-                        var send_data = { };
-                        send_data.data = escape( $( '#send_data' ).val() ) + ':' + utils.get_userdata();
-                        socket.emit( 'event broadcast', send_data );
+                if( click_events.is_connected ) {
+                    var send_data = {},
+                        tab_counter = 0,
+                        event_name = "";
+                    if( event.keyCode == 13 || event.which == 13 ) {
+                        // if the tab is all chats
+                        if( click_events.active_tab === '#all_chat_tab' ) {
+                            send_data.data = escape( $( '#send_data' ).val() ) + ':' + utils.get_userdata();
+                            event_name = 'event broadcast';
+                        }
+                        else { // if the tab belongs to room
+                            tab_counter = $('.nav-tabs>li.active').children().attr("data-target").split('_')[1];
+                            send_data.data = escape( $( '#send_data' ).val() ) + ':' + utils.get_userdata();
+                            send_data.room = click_events.connected_room[tab_counter];
+                            event_name = 'event room';
+                        }
+                        socket.emit( event_name, send_data );
                         $( '#send_data' ).val( '' );
+                        return false;
                     }
-                    return false;
+                }
+            });
+        },
+        // sets the current active tab
+        active_element: function() {
+            $('.nav-tabs>li').click(function( e ){
+                click_events.active_tab = e.target.attributes['data-target'].nodeValue;
+                $(this).children().css('background-color', '');
+                // hides the message textarea for create room tab
+                if( $(this).children().attr("data-target") === "#chat_room_tab" ) {
+                    $( '#send_data' ).css( 'display', 'none' );
+                }
+                else {
+                     $( '#send_data' ).css( 'display', 'block' );
                 }
             });
         },
@@ -271,7 +376,7 @@ template = """<!DOCTYPE HTML>
             });
         },
         // makes disconnect
-        make_disconnect: function(uid, $el_input_text, $el_online_status) {
+        make_disconnect: function( uid, $el_input_text, $el_online_status ) {
             var send_data = {}
                 disconnected_message = 'You are now disconnected. To send/receive messages, please connect';
             click_events.is_connected = false;
@@ -283,7 +388,66 @@ template = """<!DOCTYPE HTML>
             $el_input_text.val( '' );
             $el_input_text.prop( 'placeholder', disconnected_message );
             $el_input_text.prop( 'disabled', true );
-        }
+        },
+        // for creating/joining chat room
+        create_chat_room: function( socket ) {
+            var $el_txtbox_chat_room = $( '#txtbox_chat_room' ),
+                tab_room_header_template = "",
+                tab_room_body_template = "",
+                tab_id = "",
+                self = this;
+            $el_txtbox_chat_room.keydown(function( e ) {
+                if( e.which === 13 || e.keyCode === 13 ) {
+                    socket.emit('join', { room: $el_txtbox_chat_room.val(), userjoin: utils.get_userdata() });
+                    self.connected_room.push( $el_txtbox_chat_room.val() );
+
+                    // removes the active class from the chat creating tab
+                    $( '#chat_room_tab' ).removeClass( 'fade active in' ).addClass( 'fade' );
+                    $( 'ul>li.active' ).removeClass( 'active' );
+
+                    // sets new tab id
+                    tab_id = "tabroom_" + self.tab_id_number;
+
+                    // create chat room tab header for new room
+                    tab_room_header_template = "<li class='active'><a data-target=" + "#" + tab_id + " data-toggle='tab' aria-expanded='false'>" + self.connected_room[self.connected_room.length-1] + "<i class='fa fa-times anchor close-room' title='Close room'></i></a></li>";
+                    $( '#chat_tabs' ).append( tab_room_header_template );
+
+                    // create chat room tab body for new room
+                    tab_room_body_template = "<div class='tab-pane active fade in' id=" + tab_id + "><div id='all_messages_" + self.tab_id_number + "'" + " class='messages'></div></div>";
+                    $( '.tab-content' ).append( tab_room_body_template );
+                    self.leave_close_room();
+                    self.active_element();
+                    $el_txtbox_chat_room.val("");
+                    self.tab_id_number++;
+                    // displays the textarea
+                    $( '#send_data' ).css( 'display', 'block' );
+                    return false;
+                }
+            });
+        },
+        // for chat rooms/ group chat
+        leave_close_room: function() {
+            var tab_counter = "";
+            $( '.close-room' ).click(function( e ) {
+                e.stopPropagation();
+                tab_counter = $(this).parent().attr('data-target').split("_")[1];
+                // leaves room
+                socket.emit('leave', {room: click_events.connected_room[tab_counter], userleave: utils.get_userdata() });
+                // removes tab and its content
+                $('.tab-content ' + $(this).parent().attr('data-target')).remove();
+                $(this).parent().parent().remove();
+                // selects the last tab and makes it active
+                $('#chat_tabs a:last').tab('show');
+                // hides or shows textarea
+                if( $('#chat_tabs a:last').attr("data-target") === "#chat_room_tab" ) {
+                    $( '#send_data' ).css( 'display', 'none' );
+                }
+                else {
+                     $( '#send_data' ).css( 'display', 'block' );
+                }
+                return false;
+            });
+        },
     }
     // utility methods
     var utils = {
@@ -324,8 +488,10 @@ template = """<!DOCTYPE HTML>
             return utils.get_userdata().split('-')[0];
         },
         // scrolls to the last of element
-        scroll_to_last: function($el) {
-            $el.scrollTop( $el[0].scrollHeight );
+        scroll_to_last: function( $el ) {
+            if( $el[0] ) {
+                $el.scrollTop( $el[0].scrollHeight );
+            }
         },
         // append message
         append_message: function( $el, message ) {
@@ -355,7 +521,7 @@ template = """<!DOCTYPE HTML>
                    "</div></div>";
         },
         // builds template for username for message display
-        build_message_username_template: function(username) {
+        build_message_username_template: function( username ) {
             return "<span class='user_name'>" + username + "<br></span>";
         },
         // adds an information about the online status
@@ -391,6 +557,14 @@ template = """<!DOCTYPE HTML>
         },
         clear_message_area: function() {
             $('#all_messages').html("");
+        },
+        show_notification: function( $el ) {
+            if( !$el.parent().hasClass('active') ) {
+                $el.css('background-color', '#FCD116');
+                for (var i = 2; i >= 1; i--) { 
+                    $el.fadeOut(200).fadeIn(200);
+                }
+            } 
         },
     }
     // this snippet is for adding a clear icon in the message textbox
@@ -429,8 +603,12 @@ template = """<!DOCTYPE HTML>
             utils.set_user_info();
             // registers response event
             events_module.event_response(socket);
+            // registers room response event
+            events_module.event_response_room(socket);
             // registers connect event
             events_module.event_connect(socket);
+            // registers create room event
+            click_events.create_chat_room(socket);
             // broadcast the data
             click_events.broadcast_data(socket);
             // disconnet the user from the chat server
@@ -441,8 +619,13 @@ template = """<!DOCTYPE HTML>
             click_events.clear_messages();
             // deletes full chat history
             click_events.delete_history();
+            click_events.active_element();
+            click_events.leave_close_room();
             //utils.get_time();
             utils.scroll_to_last( $('#all_messages') );
+            // build tabs
+            $('#chat_tabs').tab();
+            $('#send_data').val("");
        });
     </script>
 </body>
@@ -476,6 +659,24 @@ def event_disconnect(message):
 def event_disconnect():
     print("disconnected")
 
+
+@socketio.on('join', namespace='/chat')
+def join(message):
+    join_room(message['room'])
+    emit('event response room', {'data': message['room'], 'userjoin': message['userjoin']}, broadcast=True)
+
+
+@socketio.on('leave', namespace='/chat')
+def leave(message):
+    leave_room(message['room'])
+    emit('event response room',
+         {'data': message['room'], 'userleave': message['userleave']}, broadcast=True)
+
+
+@socketio.on('event room', namespace='/chat')
+def send_room_message(message):
+    emit('event response room',
+         {'data': message['data'], 'chatroom': message['room']}, room=message['room'])
 
 if __name__ == '__main__':
 

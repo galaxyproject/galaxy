@@ -30,7 +30,7 @@ var Collection = Backbone.Collection.extend({
                     $el_chat_modal_header = null,
                     $el_chat_modal_body = null,
                     header_template = "",
-                    template = "<iframe class='f-iframe' src=" + src + " style='width:100%; height:100%;'> </iframe>";
+                    template = "<iframe class='f-iframe fade in' src=" + src + " style='width:100%; height:100%;'> </iframe>";
                 // deletes the chat modal if already present and create one
                 if( $( '.modal-dialog' ).find( 'iframe' ).parent().parent().parent().length > 0 ) {
                     $el_chat_modal = $( '.modal-dialog' ).find( 'iframe' ).parent().parent().parent().parent().remove();
