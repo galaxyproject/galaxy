@@ -136,10 +136,6 @@ class GroupAbund(Otu):
     def __init__(self, **kwd):
         super(GroupAbund, self).__init__(**kwd)
 
-    """
-    def init_meta(self, dataset, copy_from=None):
-        Otu.init_meta(self, dataset, copy_from=copy_from)
-    """
     def init_meta(self, dataset, copy_from=None):
         super(GroupAbund, self).init_meta(dataset, copy_from=copy_from)
 
@@ -299,7 +295,7 @@ class DistanceMatrix(Text):
     MetadataElement(name="sequence_count", default=0, desc="Number of sequences", readonly=True, visible=True, optional=True, no_value='?')
 
     def init_meta(self, dataset, copy_from=None):
-        super(DistanceMatrix, self).init_meta(self, dataset, copy_from=copy_from)
+        super(DistanceMatrix, self).init_meta(dataset, copy_from=copy_from)
 
     def set_meta(self, dataset, overwrite=True, skip=0, **kwd):
         super(DistanceMatrix, self).set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
@@ -384,7 +380,7 @@ class SquareDistanceMatrix(DistanceMatrix):
         super(SquareDistanceMatrix, self).__init__(**kwd)
 
     def init_meta(self, dataset, copy_from=None):
-        super(SquareDistanceMatrix, self).init_meta(self, dataset, copy_from=copy_from)
+        super(SquareDistanceMatrix, self).init_meta(dataset, copy_from=copy_from)
 
     def sniff(self, filename):
         """
