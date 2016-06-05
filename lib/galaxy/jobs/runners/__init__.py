@@ -318,10 +318,6 @@ class BaseJobRunner( object ):
     def write_executable_script( self, path, contents, mode=0o755 ):
         write_script( path, contents, self.app.config, mode=mode )
 
-    def _complete_terminal_job( self, ajs, **kwargs ):
-        if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
-            self.work_queue.put( ( self.finish_job, ajs ) )
-
     def _find_container(
         self,
         job_wrapper,
