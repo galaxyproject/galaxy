@@ -92,11 +92,61 @@ github.com/galaxyproject/**pulsar**
 ---
 
 github.com/galaxyproject/**bioblend**
-#### Official Python client for the Galaxy and CloudMan APIs
+#### Official Python client for the Galaxy, ToolShed, and CloudMan APIs
 
 ---
 
 ## 2. Galaxy app architecture
+
+---
+
+### Aspirational Principles of Galaxy Architecture
+
+Whereas the architecture of the frontend (Web UI) aims for consistency and is
+highly opinionated, the backend (Python server) is guided by flexibility and is meant to be driven by plugins whenever possible.
+
+???
+
+Though an imperfect abstraction... i none light, the organizational principles
+that guide frontend and backend development of Galaxy could be seen as
+diametrically opposite.
+
+The frontend architecture is guided by the principle that the end user experience
+should be as simple and consistent as possible. The backend has been deployed at
+so many different sites and targetting so many different technologies - that 
+flexibility is paramount.
+
+---
+
+### An Opinionated Frontend
+
+- The target audience is a bench scientist - no knowledge of programming, paths, or command lines should be assumed.
+- Consistent colors, fonts, themes, etc...
+- Reusable libraris for presenting common widgets such as forms and grids.
+- Tied to specific technologies:
+  - JavaScript driven.
+  - Backbone for MVC.
+  - RequireJS for module loading.
+
+---
+
+### A Plugin Driven Backend
+
+A deployer of Galaxy can plug
+
+---
+
+### A Plugin Driven Backend but...
+
+Galaxy has long been guided by the principle that cloning it and calling
+the ``run.sh`` should "just work" and should work quickly.
+
+So by default Galaxy does not require:
+
+ - Compilation - it fetches binary wheels.
+ - A job manager - Galaxy can act as one.
+ - An external database server - Galaxy can use an sqlite database.
+ - A web proxy or external Python web server.
 
 ---
 
