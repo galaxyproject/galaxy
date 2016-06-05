@@ -9,7 +9,8 @@ History
 16.7.8.dev0
 ---------------------
 
-    
+* Updates to include Galaxy library for verifying test outputs
+  and the latest dev changes to Galaxy.
 
 ---------------------
 16.7.7 (2016-05-23)
