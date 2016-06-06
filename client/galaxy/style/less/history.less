@@ -3,15 +3,6 @@
     .flex-vertical-container;
 
     > .controls {
-    }
-
-    > .list-items {
-        .flex-column;
-        overflow-x: hidden;
-        overflow-y: auto;
-    }
-
-    > .controls {
         margin: 8px 8px 1px;
         padding: 0px;
 
@@ -167,7 +158,11 @@
         border-radius : 3px;
     }
 
-    .list-items {
+    > .list-items {
+        .flex-column;
+        overflow-x: hidden;
+        overflow-y: auto;
+
         .loading-indicator {
             display: inline-block;
             width: 100%;

@@ -263,12 +263,16 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         panel.log( '_queueNewRender:', $newRender, speed );
 
         $( panel ).queue( 'fx', [
-            function( next ){ this.$el.fadeOut( speed, next ); },
+            function( next ){
+                panel.$el.fadeOut( speed, next );
+            },
             function( next ){
                 panel._swapNewRender( $newRender );
                 next();
             },
-            function( next ){ this.$el.fadeIn( speed, next ); },
+            function( next ){
+                panel.$el.fadeIn( speed, next );
+            },
             function( next ){
                 panel.trigger( 'rendered', panel );
                 next();

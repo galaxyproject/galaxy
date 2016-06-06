@@ -308,7 +308,6 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
         this.panelStack.push( drilldown );
         // hide this panel's controls and list, set the name for back navigation, and attach to the $el
         this.$controls().add( this.$list() ).hide();
-        // this.$( '> .controls' ).add( this.$list() ).hide();
         drilldown.parentName = this.model.get( 'name' );
         drilldown.delegateEvents().render().$el.appendTo( this.$el );
     },

@@ -13342,7 +13342,6 @@ webpackJsonp([0,1],[
 	        this.panelStack.push( drilldown );
 	        // hide this panel's controls and list, set the name for back navigation, and attach to the $el
 	        this.$controls().add( this.$list() ).hide();
-	        // this.$( '> .controls' ).add( this.$list() ).hide();
 	        drilldown.parentName = this.model.get( 'name' );
 	        drilldown.delegateEvents().render().$el.appendTo( this.$el );
 	    },
@@ -18906,12 +18905,16 @@ webpackJsonp([0,1],[
 	        panel.log( '_queueNewRender:', $newRender, speed );
 	
 	        $( panel ).queue( 'fx', [
-	            function( next ){ this.$el.fadeOut( speed, next ); },
+	            function( next ){
+	                panel.$el.fadeOut( speed, next );
+	            },
 	            function( next ){
 	                panel._swapNewRender( $newRender );
 	                next();
 	            },
-	            function( next ){ this.$el.fadeIn( speed, next ); },
+	            function( next ){
+	                panel.$el.fadeIn( speed, next );
+	            },
 	            function( next ){
 	                panel.trigger( 'rendered', panel );
 	                next();
@@ -21650,6 +21653,18 @@ webpackJsonp([0,1],[
 	        this.parentName = attributes.parentName;
 	        /** foldout or drilldown */
 	        this.foldoutStyle = attributes.foldoutStyle || 'foldout';
+	    },
+	
+	    _queueNewRender : function( $newRender, speed ) {
+	        speed = ( speed === undefined )?( this.fxSpeed ):( speed );
+	        var panel = this;
+	        panel.log( '_queueNewRender:', $newRender, speed );
+	
+	        // TODO: jquery@1.12 doesn't change display when the elem has display: flex
+	        // this causes display: block for those elems after the use of show/hide animations
+	        // animations are removed from this view for now until fixed
+	        panel._swapNewRender( $newRender );
+	        panel.trigger( 'rendered', panel );
 	    },
 	
 	    // ------------------------------------------------------------------------ sub-views
