@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import logging
 
 from tool_shed.util import common_util
@@ -62,8 +64,8 @@ def print_folders( pad, folder ):
     pad_str = ''
     for i in range( 1, pad ):
         pad_str += ' '
-    print '%sid: %s key: %s' % ( pad_str, str( folder.id ), folder.key )
+    print('%sid: %s key: %s' % ( pad_str, str( folder.id ), folder.key ))
     for repository_dependency in folder.repository_dependencies:
-        print '    %s%s' % ( pad_str, repository_dependency.listify )
+        print('    %s%s' % ( pad_str, repository_dependency.listify ))
     for sub_folder in folder.folders:
         print_folders( pad + 5, sub_folder )

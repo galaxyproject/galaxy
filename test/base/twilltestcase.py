@@ -1,21 +1,22 @@
+from __future__ import print_function
+
 import logging
 import os
 import pprint
 import shutil
-import StringIO
 import tarfile
 import tempfile
 import time
 import unittest
-import urllib
 import zipfile
 from json import loads
-from urlparse import urlparse
 from xml.etree import ElementTree
 
-from markupsafe import escape
 import twill
 import twill.commands as tc
+from markupsafe import escape
+from six import string_types, StringIO
+from six.moves.urllib.parse import unquote, urlencode, urlparse
 from twill.other_packages._mechanize_dist import ClientForm
 
 from galaxy.web import security
@@ -31,7 +32,7 @@ from galaxy.tools.verify import (
 
 
 # Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
-buffer = StringIO.StringIO()
+buffer = StringIO()
 twill.set_output( buffer )
 tc.config( 'use_tidy', 0 )
 
@@ -422,7 +423,7 @@ class TwillTestCase( unittest.TestCase ):
         try:
             json_data = self.get_history_from_api( show_deleted=show_deleted, show_details=True )
             check_result = check_fn( json_data )
-            assert check_result, 'failed check_fn: %s (got %s)' % ( check_fn.func_name, str( check_result ) )
+            assert check_result, 'failed check_fn: %s (got %s)' % ( check_fn.__name__, str( check_result ) )
         except Exception as e:
             log.exception( e )
             log.debug( 'json_data: %s', ( '\n' + pprint.pformat( json_data ) if json_data else '(no match)' ) )
@@ -1616,7 +1617,7 @@ class TwillTestCase( unittest.TestCase ):
     def rename_history( self, id, old_name, new_name ):
         """Rename an existing history"""
         self.visit_url( "/history/rename", params=dict( id=id, name=new_name ) )
-        check_str = 'History: %s renamed to: %s' % ( old_name, urllib.unquote( new_name ) )
+        check_str = 'History: %s renamed to: %s' % ( old_name, unquote( new_name ) )
         self.check_page_for_string( check_str )
 
     def rename_sample_datasets( self, sample_id, sample_dataset_ids, new_sample_dataset_names, strings_displayed=[], strings_displayed_after_submit=[] ):
@@ -1748,7 +1749,7 @@ class TwillTestCase( unittest.TestCase ):
             if i == form_no:
                 break
         # To help with debugging a tool, print out the form controls when the test fails
-        print "form '%s' contains the following controls ( note the values )" % f.name
+        print("form '%s' contains the following controls ( note the values )" % f.name)
         controls = {}
         formcontrols = self.get_form_controls( f )
         hc_prefix = '<HiddenControl('
@@ -1813,12 +1814,12 @@ class TwillTestCase( unittest.TestCase ):
                                     return True
                                 if isinstance( value, list ):
                                     value = value[0]
-                                return isinstance( value, basestring ) and value.lower() in ( "yes", "true", "on" )
+                                return isinstance( value, string_types ) and value.lower() in ( "yes", "true", "on" )
                             try:
                                 checkbox = control.get()
                                 checkbox.selected = is_checked( control_value )
                             except Exception as e1:
-                                print "Attempting to set checkbox selected value threw exception: ", e1
+                                print("Attempting to set checkbox selected value threw exception: ", e1)
                                 # if there's more than one checkbox, probably should use the behaviour for
                                 # ClientForm.ListControl ( see twill code ), but this works for now...
                                 for elem in control_value:
@@ -2083,7 +2084,7 @@ class TwillTestCase( unittest.TestCase ):
                 get_filename=get_filename,
                 keep_outputs_dir=self.keepOutdir,
             )
-        except AssertionError, err:
+        except AssertionError as err:
             errmsg = 'Composite file (%s) of %s different than expected, difference:\n' % ( base_name, item_label )
             errmsg += str( err )
             raise AssertionError( errmsg )
@@ -2240,7 +2241,7 @@ class TwillTestCase( unittest.TestCase ):
                 key, value = query_parameter.split( '=' )
                 params[ key ] = value
         if params:
-            url += '?%s' % urllib.urlencode( params, doseq=doseq )
+            url += '?%s' % urlencode( params, doseq=doseq )
         new_url = tc.go( url )
         return_code = tc.browser.get_code()
         assert return_code in allowed_codes, 'Invalid HTTP return code %s, allowed codes: %s' % \
