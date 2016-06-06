@@ -431,6 +431,27 @@ var HistoryCollection = _collectionSuper.extend( BASE_MVC.LoggableMixin ).extend
         return _.defaults( superFilters, filters );
     },
 
+    /** override to fetch current as well (as it may be outside the first 10, etc.) */
+    fetchFirst : function( options ){
+        var self = this;
+        // TODO: batch?
+        var xhr = $.when();
+        if( this.currentHistoryId ){
+            xhr = _collectionSuper.prototype.fetchFirst.call( self, {
+                silent: true,
+                limit : 1,
+                filters: {
+                    'encoded_id-in' : this.currentHistoryId,
+                }
+            });
+        }
+        return xhr.then( function(){
+            options = options || {};
+            options.offset = 0;
+            return self.fetchMore( options );
+        });
+    },
+
     /** @type {Object} map of collection available sorting orders containing comparator fns */
     comparators : _.extend( _.clone( _collectionSuper.prototype.comparators ), {
         'name'       : BASE_MVC.buildComparator( 'name', { ascending: true }),

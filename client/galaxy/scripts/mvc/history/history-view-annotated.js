@@ -61,7 +61,6 @@ var AnnotatedHistoryView = _super.extend(/** @lends AnnotatedHistoryView.prototy
     // ------------------------------------------------------------------------ sub-views
     /** override to wrap each subview */
     _renderItemView$el : function( view ){
-        console.log( view.model.get( 'annotation' ) );
         return $( '<div class="contents-container"/>' ).append([
             view.render(0).$el,
             $( '<div class="addtional-info"/>' ).text( view.model.get( 'annotation' ) || '' )
@@ -72,7 +71,8 @@ var AnnotatedHistoryView = _super.extend(/** @lends AnnotatedHistoryView.prototy
     events : _.extend( _.clone( _super.prototype.events ), {
         // clicking on any part of the row will expand the items
         'click .contents-container' : function( ev ){
-            $( ev.currentTarget ).find( '.title-bar' ).click();
+            ev.stopPropagation();
+            $( ev.currentTarget ).find( '.list-item .title-bar' ).click();
         },
         // prevent propagation on icon btns so they won't bubble up to tr and toggleBodyVisibility
         'click .icon-btn' : function( ev ){

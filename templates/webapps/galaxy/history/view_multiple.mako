@@ -43,7 +43,8 @@ define( 'app', function(){
                 el                          : $( '#center' ).get(0),
                 histories                   : histories,
             })
-            histories.fetchFirst().done( function(){
+            histories.fetchFirst({ silent: true }).done( function(){
+                console.log( 'histories:', histories.length );
                 multipanel.createColumns();
                 multipanel.render( 0 );
             });

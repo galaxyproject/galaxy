@@ -114,12 +114,12 @@ var CollectionView = _super.extend(
     // ------------------------------------------------------------------------ panel events
     /** event map */
     events : {
-        'click .navigation .back'       : 'close'
+        'click .navigation .back' : 'close'
     },
 
     /** close/remove this collection panel */
     close : function( event ){
-        this.$el.remove();
+        this.remove();
         this.trigger( 'close' );
     },
 
