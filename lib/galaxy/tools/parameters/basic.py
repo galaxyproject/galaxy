@@ -898,6 +898,7 @@ class SelectToolParameter( ToolParameter ):
         for context_value in other_values.itervalues():
             if isinstance( context_value, RuntimeValue ):
                 workflow_building_mode = True
+                break
         if len( list( legal_values ) ) == 0 and workflow_building_mode:
             if self.multiple:
                 # While it is generally allowed that a select value can be '',
