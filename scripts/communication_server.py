@@ -29,6 +29,10 @@ import os
 import sys
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
+import logging
+logging.basicConfig()
+log = logging.getLogger(__name__)
+
 from flask import Flask, request, make_response, current_app, send_file
 from flask_socketio import SocketIO, emit, disconnect, join_room, leave_room, close_room, rooms
 import flask.ext.login as flask_login
@@ -41,6 +45,7 @@ from galaxy.model.orm.scripts import get_config
 from galaxy.model import mapping
 from galaxy.util.properties import load_app_properties
 from galaxy.web.security import SecurityHelper
+from galaxy.util.sanitize_html import sanitize_html
 
 # Get config file and load up SA session
 config = get_config( sys.argv )
@@ -138,48 +143,61 @@ def static_style():
 
 @socketio.on('event connect', namespace='/chat')
 def event_connect(message):
-    print(current_user.username + " connected")
+    log.info("%s connected" % (current_user.username,))
 
 
 @socketio.on('event broadcast', namespace='/chat')
 def event_broadcast(message):
-    print("broadcast")
+    message = sanitize_html(message['data'])
+
+    log.debug("%s broadcast '%s'" % (current_user.username, message))
+
     emit('event response',
-            {'data': message['data'], 'user': current_user.username}, broadcast=True)
+            {'data': message, 'user': current_user.username}, broadcast=True)
 
 
 @socketio.on('event room', namespace='/chat')
 def send_room_message(message):
-    print("message")
+    message = sanitize_html(message['data'])
+    room = sanitize_html(message['room'])
+
+    log.debug("%s sent '%s' to %s" % (current_user.username, message, room))
+
     emit('event response room',
-            {'data': message['data'], 'user': current_user.username, 'chatroom': message['room']}, room=message['room'])
+            {'data': message, 'user': current_user.username, 'chatroom': room}, room=room)
 
 
 @socketio.on('event disconnect', namespace='/chat')
 def event_disconnect(message):
-    print(current_user.username + " disconnected")
+    log.info("%s disconnected" % current_user.username)
     disconnect()
 
 
 @socketio.on('disconnect', namespace='/chat')
 def event_disconnect():
-    print(current_user.username + " disconnected")
+    log.info("%s disconnected" % current_user.username)
 
 
 @socketio.on('join', namespace='/chat')
 def join(message):
-    print(current_user.username + " join " + message['room'])
-    join_room(message['room'])
+    room = sanitize_html(message['room'])
+
+    log.debug("%s joined %s" % (current_user.username, room))
+    join_room(room)
+
     emit('event response room',
-            {'data': message['room'], 'userjoin': current_user.username}, broadcast=True)
+            {'data': room, 'userjoin': current_user.username}, broadcast=True)
 
 
 @socketio.on('leave', namespace='/chat')
 def leave(message):
-    print(current_user.username + " left")
-    leave_room(message['room'])
+    room = sanitize_html(message['room'])
+
+    log.debug("%s left %s" % (current_user.username, room))
+    leave_room(room)
+
     emit('event response room',
-            {'data': message['room'], 'userleave': current_user.username}, broadcast=True)
+            {'data': room, 'userleave': current_user.username}, broadcast=True)
 
 
 if __name__ == '__main__':
