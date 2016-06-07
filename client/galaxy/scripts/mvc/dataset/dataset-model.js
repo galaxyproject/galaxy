@@ -161,6 +161,13 @@ var DatasetAssociation = Backbone.Model
         return parsed;
     },
 
+    /** override to wait by default */
+    save : function( attrs, options ){
+        options = options || {};
+        options.wait = _.isUndefined( options.wait ) ? true : options.wait;
+        return Backbone.Model.prototype.save.call( this, attrs, options );
+    },
+
     //NOTE: subclasses of DA's will need to implement url and urlRoot in order to have these work properly
     /** save this dataset, _Mark_ing it as deleted (just a flag) */
     'delete' : function( options ){

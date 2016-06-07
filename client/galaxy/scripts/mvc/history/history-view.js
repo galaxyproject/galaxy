@@ -160,6 +160,7 @@ var HistoryView = _super.extend(
     // ------------------------------------------------------------------------ panel rendering
     /** In this override, add a btn to toggle the selectors */
     _buildNewRender : function(){
+        this.viewMap = {};
         var $newRender = _super.prototype._buildNewRender.call( this );
         this._renderSelectButton( $newRender );
         return $newRender;
@@ -256,6 +257,8 @@ var HistoryView = _super.extend(
 
         // TODO: bootstrap hack to remove orphaned tooltips
         $( '.tooltip' ).remove();
+        // using detach here allows us to retain the events hash (empty would have cleared them)
+        $list.children( '.list-item' ).detach();
         $list.empty();
 
         var models = self._filterCollection();
@@ -296,7 +299,7 @@ var HistoryView = _super.extend(
 
     /** override to not render unless it hasn't been rendered before (no children) */
     _renderItemView$el : function( view ){
-        return view.el.children.length? view.delegateEvents().$el : view.render(0).$el;
+        return view.el.children.length ? view.$el.show() : view.render(0).$el;
     },
 
     // ------------------------------------------------------------------------ sub-views

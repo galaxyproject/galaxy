@@ -15042,6 +15042,13 @@ webpackJsonp([0,1],[
 	        return parsed;
 	    },
 	
+	    /** override to wait by default */
+	    save : function( attrs, options ){
+	        options = options || {};
+	        options.wait = _.isUndefined( options.wait ) ? true : options.wait;
+	        return Backbone.Model.prototype.save.call( this, attrs, options );
+	    },
+	
 	    //NOTE: subclasses of DA's will need to implement url and urlRoot in order to have these work properly
 	    /** save this dataset, _Mark_ing it as deleted (just a flag) */
 	    'delete' : function( options ){
@@ -16385,11 +16392,14 @@ webpackJsonp([0,1],[
 	    _setUpCollectionListeners : function(){
 	        _super.prototype._setUpCollectionListeners.call( this );
 	        this.listenTo( this.collection, {
-	            'change:deleted': this._handleItemDeletionChange,
+	            'change:deleted': this._handleItemDeletedChange,
 	            'change:visible': this._handleItemVisibleChange,
 	            'change:purged' : function( model ){
 	                // hafta get the new nice-size w/o the purged model
 	                this.model.fetch();
+	            },
+	            'change': function( model ){
+	                console.log( 'change:', arguments );
 	            },
 	            // loading indicators for deleted/hidden
 	            'fetching-deleted'      : function( collection ){
@@ -16590,25 +16600,35 @@ webpackJsonp([0,1],[
 	    /** If this item is deleted and we're not showing deleted items, remove the view
 	     *  @param {Model} the item model to check
 	     */
-	    _handleItemDeletionChange : function( itemModel ){
+	    _handleItemDeletedChange : function( itemModel ){
 	        var contents = this.model.contents;
 	        var contentsShown = this.model.get( 'contents_active' );
-	        // console.log( '_handleItemDeletionChange:', contentsShown, itemModel.get( 'deleted' ), contents.includeDeleted );
 	        if( itemModel.get( 'deleted' ) ){
-	            contentsShown.deleted += 1;
-	            if( !contents.includeDeleted ){
-	                this.removeItemView( itemModel );
-	            }
-	            contentsShown.active -= 1;
+	            this._handleItemDeletion();
 	        } else {
-	            contentsShown.deleted -= 1;
-	            if( !contents.includeDeleted ){
-	                contentsShown.active -= 1;
-	            }
+	            this._handleItemUndeletion();
 	        }
-	        // console.log( 'contentsShown:', contentsShown.active, contentsShown.deleted );
-	        this.model.set( 'contents_active', contentsShown );
+	
 	        this._renderCounts();
+	    },
+	
+	    _handleItemDeletion : function( itemModel ){
+	        var contentsShown = this.model.get( 'contents_active' );
+	        contentsShown.deleted += 1;
+	        contentsShown.active -= 1;
+	        if( !this.contents.includeDeleted ){
+	            this.removeItemView( itemModel );
+	        }
+	        this.model.set( 'contents_active', contentsShown );
+	    },
+	
+	    _handleItemUndeletion : function( itemModel ){
+	        var contentsShown = this.model.get( 'contents_active' );
+	        contentsShown.deleted -= 1;
+	        if( !this.contents.includeDeleted ){
+	            contentsShown.active -= 1;
+	        }
+	        this.model.set( 'contents_active', contentsShown );
 	    },
 	
 	    /** If this item is hidden and we're not showing hidden items, remove the view
@@ -16617,7 +16637,7 @@ webpackJsonp([0,1],[
 	    _handleItemVisibleChange : function( itemModel ){
 	        var contents = this.model.contents;
 	        var contentsShown = this.model.get( 'contents_active' );
-	        // console.log( '_handleItemDeletionChange:', contentsShown, itemModel.get( 'deleted' ), contents.includeHidden );
+	        console.log( '_handleItemVisibleChange:', contentsShown, itemModel.get( 'deleted' ), contents.includeHidden );
 	        if( itemModel.hidden() ){
 	            contentsShown.hidden += 1;
 	            if( !contents.includeHidden ){
@@ -18166,6 +18186,7 @@ webpackJsonp([0,1],[
 	    // ------------------------------------------------------------------------ panel rendering
 	    /** In this override, add a btn to toggle the selectors */
 	    _buildNewRender : function(){
+	        this.viewMap = {};
 	        var $newRender = _super.prototype._buildNewRender.call( this );
 	        this._renderSelectButton( $newRender );
 	        return $newRender;
@@ -18262,6 +18283,8 @@ webpackJsonp([0,1],[
 	
 	        // TODO: bootstrap hack to remove orphaned tooltips
 	        $( '.tooltip' ).remove();
+	        // using detach here allows us to retain the events hash (empty would have cleared them)
+	        $list.children( '.list-item' ).detach();
 	        $list.empty();
 	
 	        var models = self._filterCollection();
@@ -18302,7 +18325,7 @@ webpackJsonp([0,1],[
 	
 	    /** override to not render unless it hasn't been rendered before (no children) */
 	    _renderItemView$el : function( view ){
-	        return view.el.children.length? view.delegateEvents().$el : view.render(0).$el;
+	        return view.el.children.length ? view.$el.show() : view.render(0).$el;
 	    },
 	
 	    // ------------------------------------------------------------------------ sub-views
@@ -19280,15 +19303,18 @@ webpackJsonp([0,1],[
 	    removeItemView : function( model, collection, options ){
 	        this.log( this + '.removeItemView:', model );
 	        var panel = this,
-	            view = panel.viewFromModel( model );
+	            view = panel.viewMap( model.id );
 	        if( !view ){ return undefined; }
 	        panel.views = _.without( panel.views, view );
+	        delete panel.viewMap[ model.id ];
 	        panel.trigger( 'view:removed', view );
 	
 	        // potentially show the empty message if no views left
 	        // use anonymous queue here - since remove can happen multiple times
 	        $({}).queue( 'fx', [
-	            function( next ){ view.$el.fadeOut( panel.fxSpeed, next ); },
+	            function( next ){
+	                view.$el.fadeOut( panel.fxSpeed, next );
+	            },
 	            function( next ){
 	                view.remove();
 	                panel.trigger( 'view:removed:rendered' );
@@ -19819,14 +19845,14 @@ webpackJsonp([0,1],[
 	        } else {
 	            $( view ).queue( 'fx', [
 	                function( next ){
-	                    this.$el.fadeOut( speed, '', next );
+	                    view.$el.fadeOut( speed, next );
 	                },
 	                function( next ){
 	                    view._swapNewRender( $newRender );
 	                    next();
 	                },
 	                function( next ){
-	                    this.$el.fadeIn( speed, '', next );
+	                    view.$el.fadeIn( speed, next );
 	                },
 	                function( next ){
 	                    view.trigger( 'rendered', view );
@@ -20727,17 +20753,6 @@ webpackJsonp([0,1],[
 	        I've considered (a couple of times) - creating a view for each state
 	            - but recreating the view during an update...seems wrong
 	    */
-	    /** Render this HDA, set up ui.
-	     *  @param {Number or String} speed jq fx speed
-	     *  @returns {Object} this
-	     */
-	    render : function( speed ){
-	        //HACK: hover exit doesn't seem to be called on prev. tooltips when RE-rendering - so: no tooltip hide
-	        // handle that here by removing previous view's tooltips
-	        //this.$el.find("[title]").tooltip( "destroy" );
-	        return _super.prototype.render.call( this, speed );
-	    },
-	
 	    /** In this override, add the dataset state as a class for use with state-based CSS */
 	    _swapNewRender : function( $newRender ){
 	        _super.prototype._swapNewRender.call( this, $newRender );
@@ -21963,13 +21978,9 @@ webpackJsonp([0,1],[
 	var DatasetListItemEdit = _super.extend(
 	/** @lends DatasetListItemEdit.prototype */{
 	
-	    /** logger used to record this.log messages, commonly set to console */
-	    //logger              : console,
-	
 	    /** set up: options */
 	    initialize  : function( attributes ){
 	        _super.prototype.initialize.call( this, attributes );
-	//TODO: shouldn't this err if false?
 	        this.hasUser = attributes.hasUser;
 	
 	        /** allow user purge of dataset files? */
@@ -22232,7 +22243,6 @@ webpackJsonp([0,1],[
 	        'click .visualization-btn' : function( ev ){ this.trigger( 'visualize', this, ev ); },
 	        'click .dbkey a'        : function( ev ){ this.trigger( 'edit', this, ev ); }
 	    }),
-	
 	
 	    /** listener for item undelete (in the messages section) */
 	    _clickUndeleteLink : function( ev ){

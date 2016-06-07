@@ -110,11 +110,14 @@ var HistoryViewEdit = _super.extend(
     _setUpCollectionListeners : function(){
         _super.prototype._setUpCollectionListeners.call( this );
         this.listenTo( this.collection, {
-            'change:deleted': this._handleItemDeletionChange,
+            'change:deleted': this._handleItemDeletedChange,
             'change:visible': this._handleItemVisibleChange,
             'change:purged' : function( model ){
                 // hafta get the new nice-size w/o the purged model
                 this.model.fetch();
+            },
+            'change': function( model ){
+                console.log( 'change:', arguments );
             },
             // loading indicators for deleted/hidden
             'fetching-deleted'      : function( collection ){
@@ -315,25 +318,35 @@ var HistoryViewEdit = _super.extend(
     /** If this item is deleted and we're not showing deleted items, remove the view
      *  @param {Model} the item model to check
      */
-    _handleItemDeletionChange : function( itemModel ){
+    _handleItemDeletedChange : function( itemModel ){
         var contents = this.model.contents;
         var contentsShown = this.model.get( 'contents_active' );
-        // console.log( '_handleItemDeletionChange:', contentsShown, itemModel.get( 'deleted' ), contents.includeDeleted );
         if( itemModel.get( 'deleted' ) ){
-            contentsShown.deleted += 1;
-            if( !contents.includeDeleted ){
-                this.removeItemView( itemModel );
-            }
-            contentsShown.active -= 1;
+            this._handleItemDeletion();
         } else {
-            contentsShown.deleted -= 1;
-            if( !contents.includeDeleted ){
-                contentsShown.active -= 1;
-            }
+            this._handleItemUndeletion();
         }
-        // console.log( 'contentsShown:', contentsShown.active, contentsShown.deleted );
-        this.model.set( 'contents_active', contentsShown );
+
         this._renderCounts();
+    },
+
+    _handleItemDeletion : function( itemModel ){
+        var contentsShown = this.model.get( 'contents_active' );
+        contentsShown.deleted += 1;
+        contentsShown.active -= 1;
+        if( !this.contents.includeDeleted ){
+            this.removeItemView( itemModel );
+        }
+        this.model.set( 'contents_active', contentsShown );
+    },
+
+    _handleItemUndeletion : function( itemModel ){
+        var contentsShown = this.model.get( 'contents_active' );
+        contentsShown.deleted -= 1;
+        if( !this.contents.includeDeleted ){
+            contentsShown.active -= 1;
+        }
+        this.model.set( 'contents_active', contentsShown );
     },
 
     /** If this item is hidden and we're not showing hidden items, remove the view
@@ -342,7 +355,7 @@ var HistoryViewEdit = _super.extend(
     _handleItemVisibleChange : function( itemModel ){
         var contents = this.model.contents;
         var contentsShown = this.model.get( 'contents_active' );
-        // console.log( '_handleItemDeletionChange:', contentsShown, itemModel.get( 'deleted' ), contents.includeHidden );
+        console.log( '_handleItemVisibleChange:', contentsShown, itemModel.get( 'deleted' ), contents.includeHidden );
         if( itemModel.hidden() ){
             contentsShown.hidden += 1;
             if( !contents.includeHidden ){

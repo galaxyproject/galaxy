@@ -638,15 +638,18 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
     removeItemView : function( model, collection, options ){
         this.log( this + '.removeItemView:', model );
         var panel = this,
-            view = panel.viewFromModel( model );
+            view = panel.viewMap( model.id );
         if( !view ){ return undefined; }
         panel.views = _.without( panel.views, view );
+        delete panel.viewMap[ model.id ];
         panel.trigger( 'view:removed', view );
 
         // potentially show the empty message if no views left
         // use anonymous queue here - since remove can happen multiple times
         $({}).queue( 'fx', [
-            function( next ){ view.$el.fadeOut( panel.fxSpeed, next ); },
+            function( next ){
+                view.$el.fadeOut( panel.fxSpeed, next );
+            },
             function( next ){
                 view.remove();
                 panel.trigger( 'view:removed:rendered' );

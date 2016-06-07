@@ -100,17 +100,6 @@ var DatasetListItemView = _super.extend(
         I've considered (a couple of times) - creating a view for each state
             - but recreating the view during an update...seems wrong
     */
-    /** Render this HDA, set up ui.
-     *  @param {Number or String} speed jq fx speed
-     *  @returns {Object} this
-     */
-    render : function( speed ){
-        //HACK: hover exit doesn't seem to be called on prev. tooltips when RE-rendering - so: no tooltip hide
-        // handle that here by removing previous view's tooltips
-        //this.$el.find("[title]").tooltip( "destroy" );
-        return _super.prototype.render.call( this, speed );
-    },
-
     /** In this override, add the dataset state as a class for use with state-based CSS */
     _swapNewRender : function( $newRender ){
         _super.prototype._swapNewRender.call( this, $newRender );

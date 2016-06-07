@@ -16,13 +16,9 @@ var _super = DATASET_LI.DatasetListItemView;
 var DatasetListItemEdit = _super.extend(
 /** @lends DatasetListItemEdit.prototype */{
 
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
-
     /** set up: options */
     initialize  : function( attributes ){
         _super.prototype.initialize.call( this, attributes );
-//TODO: shouldn't this err if false?
         this.hasUser = attributes.hasUser;
 
         /** allow user purge of dataset files? */
@@ -285,7 +281,6 @@ var DatasetListItemEdit = _super.extend(
         'click .visualization-btn' : function( ev ){ this.trigger( 'visualize', this, ev ); },
         'click .dbkey a'        : function( ev ){ this.trigger( 'edit', this, ev ); }
     }),
-
 
     /** listener for item undelete (in the messages section) */
     _clickUndeleteLink : function( ev ){
