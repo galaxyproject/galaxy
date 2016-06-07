@@ -1,0 +1,11 @@
+table_rows: __ob__u__sq__2__sq__, u__sq__3__sq__, u__sq__4__sq__, u__sq__5__sq__, u__sq__8__sq__, u__sq__9__sq__, u__sq__10__sq__, u__sq__11__sq__, u__sq__12__sq__, u__sq__14__sq__, u__sq__15__sq__, u__sq__16__sq__, u__sq__17__sq__, u__sq__18__sq__, u__sq__22__sq__, u__sq__23__sq__, u__sq__25__sq__, u__sq__28__sq__, u__sq__29__sq____cb__
+table_matrix_element_type: float
+table_format: Biological Observation Matrix 1.0.0
+table_generated_by: BIOM-Format 2.1.5
+table_matrix_type: sparse
+table_shape: __ob__19, 2__cb__
+table_format_url: http://biom-format.org
+table_date: 2016-05-26T16:43:45.614267
+table_type: OTU table
+table_id: None
+table_columns: __ob__u__sq__SAMPLE_1__sq__, u__sq__SAMPLE_2__sq____cb__
