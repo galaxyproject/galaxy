@@ -21,8 +21,9 @@ class BasicToolShedFeatures( ShedTwillTestCase ):
 
     def test_0005_ensure_repositories_and_categories_exist( self ):
         '''Create the 0000 category and upload the filtering repository to it, if necessary.'''
-        category = self.create_category( name='Test 0000 Basic Repository Features 1', description='Test 0000 Basic Repository Features 1' )
-        self.create_category( name='Test 0000 Basic Repository Features 2', description='Test 0000 Basic Repository Features 2' )
+        self.login( email=common.admin_email, username=common.admin_username )
+        category = self.create_category( name='Test 0000 Basic Repository Features 2', description='Test Description 0000 Basic Repository Features 2' )
+        category = self.create_category( name='Test 0000 Basic Repository Features 1', description='Test Description 0000 Basic Repository Features 1' )
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name='filtering_0000',
                                                     description="Galaxy's filtering tool",

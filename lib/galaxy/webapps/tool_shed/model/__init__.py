@@ -10,7 +10,7 @@ from galaxy.util.hash_util import new_secure_hash
 from galaxy.util.dictifiable import Dictifiable
 import tool_shed.repository_types.util as rt_util
 from tool_shed.dependencies.repository import relation_builder
-from tool_shed.util import shed_util_common as suc
+from tool_shed.util import metadata_util
 
 from mercurial import hg
 from mercurial import ui
@@ -230,9 +230,9 @@ class Repository( object, Dictifiable ):
         # have repository dependencies. However, if a readme file is uploaded, or some other change
         # is made that does not create a new downloadable changeset revision but updates the existing
         # one, we still want to be able to get repository dependencies.
-        repository_metadata = suc.get_current_repository_metadata_for_changeset_revision( app,
-                                                                                          self,
-                                                                                          changeset )
+        repository_metadata = metadata_util.get_current_repository_metadata_for_changeset_revision( app,
+                                                                                                    self,
+                                                                                                    changeset )
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
@@ -252,9 +252,9 @@ class Repository( object, Dictifiable ):
         return []
 
     def installable_revisions( self, app, sort_revisions=True ):
-        return suc.get_metadata_revisions( self,
-                                           hg.repository( ui.ui(), self.repo_path( app ) ),
-                                           sort_revisions=sort_revisions )
+        return metadata_util.get_metadata_revisions( self,
+                                                     hg.repository( ui.ui(), self.repo_path( app ) ),
+                                                     sort_revisions=sort_revisions )
 
     def is_new( self, app ):
         repo = hg.repository( ui.ui(), self.repo_path( app ) )

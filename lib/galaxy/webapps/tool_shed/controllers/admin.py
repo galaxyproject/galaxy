@@ -56,7 +56,7 @@ class AdminController( BaseUIController, Admin ):
                     # The received id is the repository id, so we need to get the id of the user
                     # that uploaded the repository.
                     repository_id = kwd.get( 'id', None )
-                    repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
+                    repository = repository_util.get_repository_in_tool_shed( trans.app, repository_id )
                     kwd[ 'f-email' ] = repository.user.email
             elif operation == "repositories_by_category":
                 # Eliminate the current filters if any exist.
@@ -88,7 +88,7 @@ class AdminController( BaseUIController, Admin ):
             changeset_revision_str = 'changeset_revision_'
             if k.startswith( changeset_revision_str ):
                 repository_id = trans.security.encode_id( int( k.lstrip( changeset_revision_str ) ) )
-                repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
+                repository = repository_util.get_repository_in_tool_shed( trans.app, repository_id )
                 if repository.tip( trans.app ) != v:
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action='browse_repositories',
@@ -164,7 +164,7 @@ class AdminController( BaseUIController, Admin ):
             count = 0
             deleted_repositories = ""
             for repository_id in ids:
-                repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
+                repository = repository_util.get_repository_in_tool_shed( trans.app, repository_id )
                 if repository:
                     if not repository.deleted:
                         # Mark all installable repository_metadata records as not installable.
@@ -376,7 +376,7 @@ class AdminController( BaseUIController, Admin ):
             count = 0
             undeleted_repositories = ""
             for repository_id in ids:
-                repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
+                repository = repository_util.get_repository_in_tool_shed( trans.app, repository_id )
                 if repository:
                     if repository.deleted:
                         # Inspect all repository_metadata records to determine those that are installable, and mark
