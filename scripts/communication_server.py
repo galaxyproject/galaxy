@@ -65,12 +65,16 @@ socketio = SocketIO(app)
 def findUserByCookie(request):
     cookie_value = request.cookies.get('galaxysession')
     if not cookie_value:
-        return
+        return None
 
     session_key = security_helper.decode_guid(cookie_value)
     user_session = sa_session.query(model.GalaxySession) \
-            .filter_by(session_key=session_key, is_valid=True).first()
-    return user_session.user
+            .filter_by(session_key=session_key).first()
+
+    if user_session:
+        return user_session.user
+
+    return None
 
 # Taken from flask.pocoo.org/snippets/56/
 def crossdomain(origin=None, methods=None, headers=None,

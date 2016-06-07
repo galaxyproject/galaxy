@@ -1,0 +1,110 @@
+html, body {
+    height: 100%;
+    font-size: 13px;
+}
+
+/* Styles for message text box */
+.size-message {
+    height: 50px;
+    width: 99.5%;
+}
+
+/* Styles for top right icons */
+.right_icons {
+    margin-left: 92%;
+}
+
+ul, li,
+.anchor {
+    cursor: pointer;
+    color: black;
+}
+
+.messages {
+    overflow-y: auto;
+    height: 100%;
+    margin-left: 2px;
+}
+
+.send_message {
+    margin-top: 5px;
+    margin-left: 2px;
+}
+
+.user_name {
+    font-style: italic;
+}
+
+.user_message {
+    background-color: #DFE5F9;
+    width: 99%;
+}
+
+.date_time {
+    font-style: italic;
+    font-size: 12px;
+}
+
+.date_time span {
+    float: right;
+}
+
+.tab-content {
+    height: 65%;
+}
+
+.tab-pane {
+    height: 100%;
+}
+
+.nav li a {
+    padding: 7px 7px;
+}
+
+ul > li i {
+    padding-left: 4px;
+    font-size: 12px;
+}
+
+/****styles for overflow tabs****/
+.wrapper {
+    position: relative;
+    margin: 0 auto;
+    overflow: hidden;
+height: 45px;
+}
+
+.list {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+min-width: 3000px;
+    margin-top: 0px;
+}
+
+.list li {
+display: table-cell;
+    position: relative;
+    text-align: center;
+    color: #efefef;
+    vertical-align: middle;
+}
+
+.scroller {
+    text-align: center;
+    cursor: pointer;
+    display: none;
+    padding: 5px;
+    padding-top: 9px;
+    vertical-align: middle;
+    background-color: #fff;
+}
+
+.scroller-right {
+   float: right;
+}
+
+.scroller-left {
+   float: left;
+}
+
