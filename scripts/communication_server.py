@@ -147,35 +147,40 @@ def event_broadcast(message):
     emit('event response',
             {'data': message['data'], 'user': current_user.username}, broadcast=True)
 
+
+@socketio.on('event room', namespace='/chat')
+def send_room_message(message):
+    print("message")
+    emit('event response room',
+            {'data': message['data'], 'user': current_user.username, 'chatroom': message['room']}, room=message['room'])
+
+
 @socketio.on('event disconnect', namespace='/chat')
 def event_disconnect(message):
-    print("disconnected")
+    print(current_user.username + " disconnected")
     disconnect()
 
 
 @socketio.on('disconnect', namespace='/chat')
 def event_disconnect():
-    print("disconnected")
+    print(current_user.username + " disconnected")
 
 
 @socketio.on('join', namespace='/chat')
 def join(message):
-    print("join")
+    print(current_user.username + " join " + message['room'])
     join_room(message['room'])
-    emit('event response room', {'data': message['room'], 'userjoin': message['userjoin']}, broadcast=True)
+    emit('event response room',
+            {'data': message['room'], 'userjoin': current_user.username}, broadcast=True)
 
 
 @socketio.on('leave', namespace='/chat')
 def leave(message):
+    print(current_user.username + " left")
     leave_room(message['room'])
     emit('event response room',
-         {'data': message['room'], 'userleave': message['userleave']}, broadcast=True)
+            {'data': message['room'], 'userleave': current_user.username}, broadcast=True)
 
-
-@socketio.on('event room', namespace='/chat')
-def send_room_message(message):
-    emit('event response room',
-         {'data': message['data'], 'chatroom': message['room']}, room=message['room'])
 
 if __name__ == '__main__':
 
