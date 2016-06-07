@@ -7,7 +7,7 @@ from six import string_types
 from galaxy import model
 from galaxy.exceptions import ObjectInvalid
 from galaxy.model import LibraryDatasetDatasetAssociation
-from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter
+from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue
 from galaxy.tools.parameters.wrapped import WrappedParameters
 from galaxy.tools.parameters import update_param
 from galaxy.util import ExecutionTimer
@@ -54,8 +54,8 @@ class DefaultToolAction( object ):
         def visitor( input, value, prefix, parent=None, **kwargs ):
 
             def process_dataset( data, formats=None ):
-                if not data:
-                    return data
+                if not data or isinstance( data, RuntimeValue ):
+                    return None
                 if formats is None:
                     formats = input.formats
                 if not data.datatype.matches_any( formats ):
