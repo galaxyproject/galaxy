@@ -13,10 +13,10 @@
     <data name="reverse" label="${on_string} (reverse)" />
   </outputs>
   <help>
-    This tool takes a paired dataset collction and builds two datasets
+    This tool takes a paired dataset collection and builds two datasets
     from it. If mapped over a list of paired datasets, this tool will
     produce two lists of datasets.
-    
+
     This tool will create new history datasets from your collection
     but your quota usage will not increase.
   </help>
