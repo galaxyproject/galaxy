@@ -29,7 +29,7 @@ import os
 import sys
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
-from flask import Flask, request, make_response, current_app
+from flask import Flask, request, make_response, current_app, send_file
 from flask_socketio import SocketIO, emit, disconnect, join_room, leave_room, close_room, rooms
 import flask.ext.login as flask_login
 from flask.ext.login import current_user
@@ -114,17 +114,22 @@ def crossdomain(origin=None, methods=None, headers=None,
         return update_wrapper(wrapped_function, f)
     return decorator
 
-dir = os.path.dirname( __file__ )
-communication_directory = os.path.join( dir, 'communication' )
-template_html_path = os.path.join( communication_directory, 'template/communication.html' )
-template = open(template_html_path, 'r').read()
+script_dir = os.path.dirname(os.path.realpath( __file__))
+communication_directory = os.path.join( script_dir, 'communication', 'template' )
 
 @app.route('/')
 @crossdomain(origin='*')
 def index():
-    if app.debug:
-        return open(template_html_path, 'r').read()
-    return template
+    return send_file(os.path.join(communication_directory, 'communication.html'))
+
+@app.route('/communication.js')
+def static_script():
+    return send_file(os.path.join(communication_directory, 'communication.js'))
+
+@app.route('/communication.css')
+def static_style():
+    return send_file(os.path.join(communication_directory, 'communication.css'))
+
 
 
 @socketio.on('event connect', namespace='/chat')
