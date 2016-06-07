@@ -6,29 +6,26 @@ var events_module = {
     // event handler for sent data from server
     event_response: function (socket) {
         socket.on('event response', function (msg) {
-            var orig_message = msg.data.split(':'),
-                    message = "",
+            var message = "",
                     uid = utils.get_userid(),
                     $el_all_messages = $('#all_messages'),
                     $el_tab_li = $("a[data-target='#all_chat_tab']");
+
             // builds the message to be displayed
-            message = utils.build_message(orig_message, uid);
+            message = utils.build_message(msg);
+
             // append only for non empty messages
-            if (orig_message[0].length > 0) {
+            if (msg.data.length > 0) {
                 utils.append_message($el_all_messages, message);
                 // adding message to build full chat history
-                if (!localStorage[uid]) {
-                    localStorage[uid] = message + '<br>';
-                }
-                else {
-                    localStorage[uid] = localStorage[uid] + message + '<br>';
-                }
+                utils.store_append_message('broadcast', message);
             }
             // updates the user session storage with all the messages
-            sessionStorage[uid] = $el_all_messages.html();
+            sessionStorage['broadcast'] = $el_all_messages.html();
             // show the last item by scrolling to the end
             utils.scroll_to_last($el_all_messages);
-            if (uid !== orig_message[1].split('-')[1]) {
+            // Alert user if needed
+            if (uid !== msg.user) {
                 utils.show_notification($el_tab_li);
             }
         });
@@ -37,25 +34,32 @@ var events_module = {
     event_response_room: function (socket) {
         socket.on('event response room', function (msg) {
             var $el_all_messages = $('#all_messages'),
-                    message = '',
+                    message = {},
                     uid = utils.get_userid(),
                     tab_counter = 0,
                     $el_tab_li = null;
             // response when user joins
             if (msg.userjoin) {
-                message = msg.userjoin.split("-")[0] + " has joined " + msg.data + ":" + msg.userjoin;
-                utils.append_message($el_all_messages, utils.build_message(message.split(":"), uid));
+                message = {
+                    data: msg.userjoin + " has joined " + msg.data,
+                    user: 'Server',
+                };
+                utils.append_message($el_all_messages, utils.build_message(message));
                 utils.scroll_to_last($el_all_messages);
-                if (uid !== msg.userjoin.split('-')[1]) {
+
+                if (uid !== msg.userjoin) {
                     $el_tab_li = $("a[data-target='#all_chat_tab']");
                     utils.show_notification($el_tab_li);
                 }
             } // response when user leaves
             else if (msg.userleave) {
-                message = msg.userleave.split("-")[0] + " has left " + msg.data + ":" + msg.userleave;
-                utils.append_message($el_all_messages, utils.build_message(message.split(":"), uid));
+                message = {
+                    data: msg.userleave + " has left " + msg.data,
+                    user: 'Server',
+                };
+                utils.append_message($el_all_messages, utils.build_message(message));
                 utils.scroll_to_last($el_all_messages);
-                if (uid !== msg.userleave.split('-')[1]) {
+                if (uid !== msg.userleave) {
                     $el_tab_li = $("a[data-target='#all_chat_tab']");
                     utils.show_notification($el_tab_li);
                 }
@@ -68,9 +72,10 @@ var events_module = {
                     }
                 }
                 $el_room_msg = $("#all_messages_" + tab_counter);
-                utils.append_message($el_room_msg, utils.build_message(msg.data.split(':'), uid));
+                utils.append_message($el_room_msg, utils.build_message(msg));
                 utils.scroll_to_last($el_room_msg);
-                if (uid !== msg.data.split(':')[1].split('-')[1]) {
+
+                if (uid !== msg.data) {
                     $el_tab_li = $("a[data-target='#tabroom_" + tab_counter + "'" + " ]");
                     utils.show_notification($el_tab_li);
                 }
@@ -81,7 +86,7 @@ var events_module = {
     event_connect: function (socket) {
         socket.on('connect', function () {
             var send_data = {};
-            send_data.data = 'connected' + ':' + utils.get_username();
+            send_data.data = 'connected';
             socket.emit('event connect', send_data);
         });
     }
@@ -102,12 +107,12 @@ var click_events = {
                 if (event.keyCode == 13 || event.which == 13) {
                     // if the tab is all chats
                     if (click_events.active_tab === '#all_chat_tab') {
-                        send_data.data = escape($('#send_data').val()) + ':' + utils.get_userdata();
+                        send_data.data = $('#send_data').val();
                         event_name = 'event broadcast';
                     }
                     else { // if the tab belongs to room
                         tab_counter = $('.nav-tabs>li.active').children().attr("data-target").split('_')[1];
-                        send_data.data = escape($('#send_data').val()) + ':' + utils.get_userdata();
+                        send_data.data = $('#send_data').val();
                         send_data.room = click_events.connected_room[tab_counter];
                         event_name = 'event room';
                     }
@@ -184,7 +189,6 @@ var click_events = {
         var send_data = {}
         disconnected_message = 'You are now disconnected. To send/receive messages, please connect';
         click_events.is_connected = false;
-        send_data.data = "disconnected" + ":" + utils.get_username();
         socket.emit('event disconnect', send_data);
         sessionStorage.removeItem(uid);
         sessionStorage['connected'] = false;
@@ -206,7 +210,7 @@ var click_events = {
             var chat_room_name = $el_txtbox_chat_room.val();
             if (e.which === 13 || e.keyCode === 13) {
                 if( chat_room_name.length > 0 ) {
-                    socket.emit('join', {room: chat_room_name, userjoin: utils.get_userdata()});
+                    socket.emit('join', {room: chat_room_name});
                     self.connected_room.push( chat_room_name );
                     // removes the active class from the chat creating tab
                     $el_chat_room_tab.removeClass('fade active in').addClass('fade');
@@ -245,7 +249,7 @@ var click_events = {
             e.stopPropagation();
             tab_counter = $(this).parent().attr('data-target').split("_")[1];
             // leaves room
-            socket.emit('leave', {room: click_events.connected_room[tab_counter], userleave: utils.get_userdata()});
+            socket.emit('leave', {room: click_events.connected_room[tab_counter]});
             // removes tab and its content
             $('.tab-content ' + $(this).parent().attr('data-target')).remove();
             $(this).parent().parent().remove();
@@ -279,21 +283,6 @@ var click_events = {
 }
 // utility methods
 var utils = {
-    // get the current username of logged in user
-    // from the querystring of the URL
-    get_userdata: function () {
-        var $el_modal_body = $('.modal-body'),
-                user_data = $el_modal_body.context.URL.split('?')[1],
-                data = user_data.split('&'),
-                userid_data = data[1],
-                username_data = data[0];
-        if (data) {
-            return unescape(username_data.split('=')[1] + "-" + userid_data.split('=')[1]);
-        }
-        else {
-            return "";
-        }
-    },
     // fill in all messages
     fill_messages: function (collection) {
         var uid = utils.get_userid(),
@@ -307,13 +296,9 @@ var utils = {
         // show the last item by scrolling to the end
         utils.scroll_to_last($el_all_messages);
     },
-    // gets the user id
+    // get the current username of logged in user
     get_userid: function () {
-        return utils.get_userdata().split('-')[1];
-    },
-    // gets the user name
-    get_username: function () {
-        return utils.get_userdata().split('-')[0];
+        return location.search.split('username=')[1];
     },
     // scrolls to the last of element
     scroll_to_last: function ($el) {
@@ -326,25 +311,28 @@ var utils = {
         $el.append(message);
         $el.append('<br>');
     },
-    // builds message
-    build_message: function (original_message, uid) {
-        var from_uid = original_message[1].split('-')[1],
+    // builds message for self
+    build_message: function (original_message) {
+        var from_uid = original_message.user,
+                message_data = original_message.data,
                 message_user = "",
-                message_text = "";
+                message_text = "",
+                uid = utils.get_userid();
+
         // for user's own messages
         if (from_uid === uid) {
             message_user = this.build_message_username_template('me');
         }
         // for other user's messages
         else {
-            message_user = this.build_message_username_template(unescape(original_message[1].split('-')[0]));
+            message_user = this.build_message_username_template(from_uid);
         }
-        message_text = this.build_message_template(original_message);
+        message_text = this.build_message_template(message_data);
         return message_user + message_text;
     },
     // builds message template
     build_message_template: function (original_message) {
-        return "<div class='user_message'>" + unescape(original_message[0]) +
+        return "<div class='user_message'>" + unescape(original_message) +
                 "<div class='date_time'><span title=" + this.get_date() + ">" + this.get_time() + "</span>" +
                 "</div></div>";
     },
@@ -456,6 +444,15 @@ var utils = {
              $('#send_data').css('display', 'block');
          }
     },
+    store_append_message(key, data){
+        if (!localStorage[key]) {
+            localStorage[key] = data + '<br>';
+        }
+        else {
+            localStorage[key] = localStorage[key] + data + '<br>';
+        }
+        sessionStorage[key] = localStorage[key]
+    }
 }
 
 // registers the events when this document is ready
@@ -491,7 +488,7 @@ $(document).ready(function () {
     // build tabs
     $('#chat_tabs').tab();
     $('#send_data').val("");
-    utils.fill_messages(sessionStorage[uid]);
+    utils.fill_messages(sessionStorage['broadcast']);
     // updates online status text
     // by checking if user was connected or not
     utils.checks_session_storage();
