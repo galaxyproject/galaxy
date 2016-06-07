@@ -7,7 +7,7 @@ Server for realtime Galaxy communication.
 At first you need to install a few requirements.
 
 . GALAXY_ROOT/.venv/bin/activate    # activate Galaxy's virtualenv
-pip install flask flask-socketio eventlet   # install the requirements
+pip install flask flask-login flask-socketio eventlet   # install the requirements
 
 
 
@@ -31,6 +31,8 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 from flask import Flask, request, make_response, current_app
 from flask_socketio import SocketIO, emit, disconnect, join_room, leave_room, close_room, rooms
+import flask.ext.login as flask_login
+from flask.ext.login import current_user
 from datetime import timedelta
 from functools import update_wrapper
 
@@ -51,12 +53,20 @@ app_properties = load_app_properties(ini_file=config['config_file'])
 # galaxysession cookies.
 security_helper = SecurityHelper(id_secret=app_properties['id_secret'])
 # And get access to the models
+# Login manager to manager current_user functionality
+login_manager = flask_login.LoginManager()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = app_properties['id_secret']
+login_manager.init_app(app)
 socketio = SocketIO(app)
 
-def findUserByCookie(cookie_value):
+@login_manager.request_loader
+def findUserByCookie(request):
+    cookie_value = request.cookies.get('galaxysession')
+    if not cookie_value:
+        return
+
     session_key = security_helper.decode_guid(cookie_value)
     user_session = sa_session.query(model.GalaxySession) \
             .filter_by(session_key=session_key, is_valid=True).first()
@@ -112,24 +122,21 @@ template = open(template_html_path, 'r').read()
 @app.route('/')
 @crossdomain(origin='*')
 def index():
+    if app.debug:
+        return open(template_html_path, 'r').read()
     return template
 
 
 @socketio.on('event connect', namespace='/chat')
 def event_connect(message):
-    user = findUserByCookie(request.cookies.get('galaxysession'))
-    if user is None:
-        # Prevent from connecting
-        # http://flask-socketio.readthedocs.io/en/latest/
-        return False
-
-    print(user.username + " connected")
+    print(current_user.username + " connected")
 
 
 @socketio.on('event broadcast', namespace='/chat')
 def event_broadcast(message):
+    print("broadcast")
     emit('event response',
-         {'data': message['data']}, broadcast=True)
+            {'data': message['data'], 'user': current_user.username}, broadcast=True)
 
 @socketio.on('event disconnect', namespace='/chat')
 def event_disconnect(message):
@@ -144,6 +151,7 @@ def event_disconnect():
 
 @socketio.on('join', namespace='/chat')
 def join(message):
+    print("join")
     join_room(message['room'])
     emit('event response room', {'data': message['room'], 'userjoin': message['userjoin']}, broadcast=True)
 
@@ -167,4 +175,4 @@ if __name__ == '__main__':
     parser.add_argument('--host', default='localhost', help='Hostname of the communication server.')
 
     args = parser.parse_args()
-    socketio.run(app, host=args.host, port=args.port)
+    socketio.run(app, host=args.host, port=args.port, debug=True)
