@@ -24,23 +24,45 @@ The communication server feature of Galaxy can be controlled on three different 
 
 
 """
-
-
 import argparse
 import os
 import sys
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
+
 from flask import Flask, request, make_response, current_app
 from flask_socketio import SocketIO, emit, disconnect, join_room, leave_room, close_room, rooms
 from datetime import timedelta
 from functools import update_wrapper
 
+import galaxy.config
+from galaxy.model.orm.scripts import get_config
+from galaxy.model import mapping
+from galaxy.util.properties import load_app_properties
+from galaxy.web.security import SecurityHelper
+
+# Get config file and load up SA session
+config = get_config( sys.argv )
+model = mapping.init( '/tmp/', config['db_url'] )
+sa_session = model.context.current
+
+# With the config file we can load the full app properties
+app_properties = load_app_properties(ini_file=config['config_file'])
+# We need the ID secret for configuring the security helper to decrypt
+# galaxysession cookies.
+security_helper = SecurityHelper(id_secret=app_properties['id_secret'])
+# And get access to the models
+
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'notscret'
+app.config['SECRET_KEY'] = app_properties['id_secret']
 socketio = SocketIO(app)
 
+def findUserByCookie(cookie_value):
+    session_key = security_helper.decode_guid(cookie_value)
+    user_session = sa_session.query(model.GalaxySession) \
+            .filter_by(session_key=session_key, is_valid=True).first()
+    return user_session.user
 
 # Taken from flask.pocoo.org/snippets/56/
-
 def crossdomain(origin=None, methods=None, headers=None,
                 max_age=21600, attach_to_all=True,
                 automatic_options=True):
@@ -95,7 +117,13 @@ def index():
 
 @socketio.on('event connect', namespace='/chat')
 def event_connect(message):
-    print("connected")
+    user = findUserByCookie(request.cookies.get('galaxysession'))
+    if user is None:
+        # Prevent from connecting
+        # http://flask-socketio.readthedocs.io/en/latest/
+        return False
+
+    print(user.username + " connected")
 
 
 @socketio.on('event broadcast', namespace='/chat')
@@ -140,4 +168,3 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     socketio.run(app, host=args.host, port=args.port)
-
