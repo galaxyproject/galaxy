@@ -636,9 +636,9 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
 
     /** Remove a view from the panel (if found) */
     removeItemView : function( model, collection, options ){
-        this.log( this + '.removeItemView:', model );
+        console.log( this + '.removeItemView:', model );
         var panel = this,
-            view = panel.viewMap( model.id );
+            view = panel.viewMap[ model.id ];
         if( !view ){ return undefined; }
         panel.views = _.without( panel.views, view );
         delete panel.viewMap[ model.id ];

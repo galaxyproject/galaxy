@@ -1132,7 +1132,13 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     trans.app.job_manager.job_stop_queue.put( job.id )
 
         # Regardless of whether it was previously deleted, get the most recent history or create a new one.
-        most_recent_history = self.history_manager.most_recent( user=trans.user )
+        most_recent_history = self.history_manager.most_recent(
+            user=trans.user,
+            filters=[
+                model.History.deleted == false(),
+                model.History.purged == false(),
+            ]
+        )
         if most_recent_history:
             trans.set_history( most_recent_history )
             return trans.show_ok_message( "History deleted, your most recent history is now active",

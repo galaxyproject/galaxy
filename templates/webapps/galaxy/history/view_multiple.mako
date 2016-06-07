@@ -44,7 +44,6 @@ define( 'app', function(){
                 histories                   : histories,
             })
             histories.fetchFirst({ silent: true }).done( function(){
-                console.log( 'histories:', histories.length );
                 multipanel.createColumns();
                 multipanel.render( 0 );
             });

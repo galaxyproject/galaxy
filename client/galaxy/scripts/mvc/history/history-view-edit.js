@@ -319,14 +319,11 @@ var HistoryViewEdit = _super.extend(
      *  @param {Model} the item model to check
      */
     _handleItemDeletedChange : function( itemModel ){
-        var contents = this.model.contents;
-        var contentsShown = this.model.get( 'contents_active' );
         if( itemModel.get( 'deleted' ) ){
-            this._handleItemDeletion();
+            this._handleItemDeletion( itemModel );
         } else {
-            this._handleItemUndeletion();
+            this._handleItemUndeletion( itemModel );
         }
-
         this._renderCounts();
     },
 
@@ -334,7 +331,7 @@ var HistoryViewEdit = _super.extend(
         var contentsShown = this.model.get( 'contents_active' );
         contentsShown.deleted += 1;
         contentsShown.active -= 1;
-        if( !this.contents.includeDeleted ){
+        if( !this.model.contents.includeDeleted ){
             this.removeItemView( itemModel );
         }
         this.model.set( 'contents_active', contentsShown );
@@ -343,7 +340,7 @@ var HistoryViewEdit = _super.extend(
     _handleItemUndeletion : function( itemModel ){
         var contentsShown = this.model.get( 'contents_active' );
         contentsShown.deleted -= 1;
-        if( !this.contents.includeDeleted ){
+        if( !this.model.contents.includeDeleted ){
             contentsShown.active -= 1;
         }
         this.model.set( 'contents_active', contentsShown );
