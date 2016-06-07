@@ -4,10 +4,6 @@ log = logging.getLogger( __name__ )
 SPECIAL_TOOLS = {
     "history export": "galaxy/tools/imp_exp/exp_history_to_archive.xml",
     "history import": "galaxy/tools/imp_exp/imp_history_from_archive.xml",
-    "collection unzip": "galaxy/tools/unzip_collection.xml",
-    "collection zip": "galaxy/tools/zip_collection.xml",
-    "filter failed datasets": "galaxy/tools/filter_failed_collection.xml",
-    "flatten collection": "galaxy/tools/flatten_collection.xml",
 }
 
 

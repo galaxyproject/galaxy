@@ -66,6 +66,7 @@ import galaxy.jobs
 log = logging.getLogger( __name__ )
 
 HELP_UNINITIALIZED = threading.Lock()
+MODEL_TOOLS_PATH = os.path.dirname(__file__)
 
 
 class ToolErrorLog:
@@ -165,6 +166,11 @@ class ToolBox( BaseGalaxyToolBox ):
                     tool_version_select_field = self.__build_tool_version_select_field( tools, tool.id, set_selected )
                 break
         return tool_version_select_field, tools, tool
+
+    def _path_template_kwds( self ):
+        return {
+            "model_tools_path": MODEL_TOOLS_PATH,
+        }
 
     def _get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
         # Abstract toolbox doesn't have a dependency on the the database, so
@@ -1585,6 +1591,10 @@ class Tool( object, Dictifiable ):
             tool_dict[ 'outputs' ] = [ output.to_dict( app=self.app ) for output in self.outputs.values() ]
 
         tool_dict[ 'panel_section_id' ], tool_dict[ 'panel_section_name' ] = self.get_panel_section()
+
+        tool_class = self.__class__
+        regular_form = tool_class == Tool or isinstance(self, DatabaseOperationTool)
+        tool_dict["form_style"] = "regular" if regular_form else "special"
 
         return tool_dict
 

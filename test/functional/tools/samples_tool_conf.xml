@@ -106,4 +106,12 @@
 
   <tool file="simple_constructs.yml" />
 
+  <!-- Load collection operation tools - I consider these part of the
+       "framework" and they are used to in API tests to test the underlying
+       ToolActions. -->
+  <tool file="${model_tools_path}/unzip_collection.xml" />
+  <tool file="${model_tools_path}/zip_collection.xml" />
+  <tool file="${model_tools_path}/filter_failed_collection.xml" />
+  <tool file="${model_tools_path}/flatten_collection.xml" />
+
 </toolbox>
