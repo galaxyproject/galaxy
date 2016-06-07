@@ -207,4 +207,4 @@ if __name__ == '__main__':
     parser.add_argument('--host', default='localhost', help='Hostname of the communication server.')
 
     args = parser.parse_args()
-    socketio.run(app, host=args.host, port=args.port, debug=True)
+    socketio.run(app, host=args.host, port=args.port)
