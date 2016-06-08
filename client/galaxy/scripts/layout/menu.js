@@ -24,8 +24,7 @@ var Collection = Backbone.Collection.extend({
                 var host =  window.Galaxy.config.communication_server_host,
                     port = window.Galaxy.config.communication_server_port,
                     username = escape(window.Galaxy.user.attributes.username),
-                    uid = escape(window.Galaxy.user.id),
-                    query_string = "?username=" + username + "&uid=" + uid,
+                    query_string = "?username=" + username,
                     src = host + ":" + port + query_string,
                     $el_chat_modal_header = null,
                     $el_chat_modal_body = null,
@@ -46,18 +45,18 @@ var Collection = Backbone.Collection.extend({
                 this.modal.show();
                 $el_chat_modal_header = $($('.modal-dialog').find('iframe').parent().parent().children()[0]);
                 $el_chat_modal_body = $($('.modal-dialog').find('iframe').parent().parent().children()[1]);
-                // adjusts the css of bootstrap modal for chat 
-                header_template  = '<i class="fa fa-comment" aria-hidden="true" title="Communicate with other users"></i>' + 
+                // adjusts the css of bootstrap modal for chat
+                header_template  = '<i class="fa fa-comment" aria-hidden="true" title="Communicate with other users"></i>' +
                               '<i class="fa fa-times close-modal" aria-hidden="true" style="float: right; cursor: pointer;" title="Close"></i>';
-	        $el_chat_modal_header.css( 'padding', '3px' );
+                $el_chat_modal_header.css( 'padding', '3px' );
                 $el_chat_modal_body.css( 'padding', '2px' );
                 $el_chat_modal_header.find( 'h4' ).remove();
-	        $el_chat_modal_header.removeAttr( 'min-height' ).removeAttr( 'padding' ).removeAttr( 'border' );
+                $el_chat_modal_header.removeAttr( 'min-height' ).removeAttr( 'padding' ).removeAttr( 'border' );
                 $el_chat_modal_header.append(header_template);
                 // click event of the close button for chat
                 $( '.close-modal' ).click(function( e ) {
                     $( '.modal' ).css( 'display', 'none' );
-	        });
+                });
             }
         });
 
