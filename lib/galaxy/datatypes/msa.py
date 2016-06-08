@@ -11,6 +11,8 @@ log = logging.getLogger(__name__)
 
 
 class Hmmer( Text ):
+    edam_data = "data_1364"
+    edam_format = "format_1370"
     file_ext = "hmm"
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -29,6 +31,7 @@ class Hmmer( Text ):
 
 
 class Hmmer2( Hmmer ):
+    edam_format = "format_3328"
 
     def sniff(self, filename):
         """HMMER2 files start with HMMER2.0
@@ -39,6 +42,7 @@ class Hmmer2( Hmmer ):
 
 
 class Hmmer3( Hmmer ):
+    edam_format = "format_3329"
 
     def sniff(self, filename):
         """HMMER3 files start with HMMER3/f
@@ -85,6 +89,8 @@ Binary.register_unsniffable_binary_ext("hmmpress")
 
 
 class Stockholm_1_0( Text ):
+    edam_data = "data_0863"
+    edam_format = "format_1961"
     file_ext = "stockholm"
 
     MetadataElement( name="number_of_models", default=0, desc="Number of multiple alignments", readonly=True, visible=True, optional=True, no_value=0 )

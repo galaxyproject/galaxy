@@ -166,7 +166,10 @@ class WorkflowInvoker( object ):
                     workflow_invocation_step = model.WorkflowInvocationStep()
                     workflow_invocation_step.workflow_invocation = workflow_invocation
                     workflow_invocation_step.workflow_step = step
-                    workflow_invocation_step.job = job
+                    # Job may not be generated in this thread if bursting is enabled
+                    # https://github.com/galaxyproject/galaxy/issues/2259
+                    if job:
+                        workflow_invocation_step.job_id = job.id
             except modules.DelayedWorkflowEvaluation:
                 step_delayed = delayed_steps = True
                 self.progress.mark_step_outputs_delayed( step )

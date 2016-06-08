@@ -35,7 +35,7 @@ class DatasetsApiTestCase( api.ApiTestCase, TestsDatasets ):
         """ )
         hda1 = self._new_dataset( self.history_id, content=contents )
         display_response = self._get( "histories/%s/contents/%s/display" % ( self.history_id, hda1[ "id" ] ), {
-            'raw' : 'True'
+            'raw': 'True'
         })
         self._assert_status_code_is( display_response, 200 )
         # TODO: doesn't work

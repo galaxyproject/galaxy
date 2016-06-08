@@ -185,7 +185,6 @@ def test_determine_output_format():
     __assert_output_format_is("fastqillumina", change_on_metadata_output, [("i1", "txt"), ("i2", "txt")] )
 
     change_on_metadata_solexa = change_on_metadata_xml_template.safe_substitute({'input': "i1"})
-    print change_on_metadata_solexa
     change_on_metadata_output = quick_output("fastq", change_format_xml=change_on_metadata_solexa)
     __assert_output_format_is("fastqsolexa", change_on_metadata_output, [("i1", "txt"), ("i2", "txt")] )
 

@@ -25,7 +25,7 @@ def upgrade(migrate_engine):
     # Create history_dataset_association_subset.
     try:
         HistoryDatasetAssociationSubset_table.create()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Creating history_dataset_association_subset table failed: %s" % str( e ) )
 
@@ -35,7 +35,7 @@ def upgrade(migrate_engine):
     try:
         i1.create()
         i2.create()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Adding indices to table 'history_dataset_association_subset' table failed: %s" % str( e ) )
 
@@ -47,6 +47,6 @@ def downgrade(migrate_engine):
     # Drop history_dataset_association_subset table.
     try:
         HistoryDatasetAssociationSubset_table.drop()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Dropping history_dataset_association_subset table failed: %s" % str( e ) )

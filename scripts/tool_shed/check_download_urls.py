@@ -29,9 +29,9 @@ def main():
                             url = element.text.strip()
                             try:
                                 urllib2.urlopen( urllib2.Request( url ) )
-                            except Exception, e:
+                            except Exception as e:
                                 print "Bad URL '%s' in file '%s': %s" % ( url, path, e )
-                except Exception, e:
+                except Exception as e:
                     print "Unable to check XML file '%s': %s" % ( path, e )
 
 if __name__ == "__main__":

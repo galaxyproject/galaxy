@@ -154,7 +154,7 @@ class SDF(GenericMolFile):
                     sdf_lines_accumulated = []
             if sdf_lines_accumulated:
                 _write_part_sdf_file(sdf_lines_accumulated)
-        except Exception, e:
+        except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             raise
     split = classmethod(split)
@@ -236,7 +236,7 @@ class MOL2(GenericMolFile):
                     mol2_lines_accumulated = []
             if mol2_lines_accumulated:
                 _write_part_mol2_file(mol2_lines_accumulated)
-        except Exception, e:
+        except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             raise
     split = classmethod(split)
@@ -316,7 +316,7 @@ class FPS(GenericMolFile):
                     lines_accumulated = []
             if lines_accumulated:
                 _write_part_fingerprint_file(header_lines + lines_accumulated)
-        except Exception, e:
+        except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             raise
     split = classmethod(split)
@@ -488,6 +488,57 @@ class PDB(GenericMolFile):
             hetatm_numbers = count_special_lines("^HETATM", dataset.file_name)
             dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
             dataset.blurb = "%s atoms and %s HET-atoms" % (atom_numbers, hetatm_numbers)
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+
+class PDBQT(GenericMolFile):
+    """
+    PDBQT Autodock and Autodock Vina format
+    http://autodock.scripps.edu/faqs-help/faq/what-is-the-format-of-a-pdbqt-file
+    """
+    file_ext = "pdbqt"
+
+    def sniff(self, filename):
+        """
+        Try to guess if the file is a PDBQT file.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('NuBBE_1_obabel_3D.pdbqt')
+        >>> PDBQT().sniff(fname)
+        True
+
+        >>> fname = get_test_fname('drugbank_drugs.cml')
+        >>> PDBQT().sniff(fname)
+        False
+        """
+        headers = get_headers(filename, sep=' ', count=300)
+        h = t = c = s = k = False
+        for line in headers:
+            section_name = line[0].strip()
+            if section_name == 'REMARK':
+                h = True
+            elif section_name == 'ROOT':
+                t = True
+            elif section_name == 'ENDROOT':
+                c = True
+            elif section_name == 'BRANCH':
+                s = True
+            elif section_name == 'TORSDOF':
+                k = True
+
+        if h * t * c * s * k:
+            return True
+        else:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            root_numbers = count_special_lines("^ROOT", dataset.file_name)
+            branch_numbers = count_special_lines("^BRANCH", dataset.file_name)
+            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.blurb = "%s roots and %s branches" % (root_numbers, branch_numbers)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -727,7 +778,7 @@ class CML(GenericXml):
                     cml_lines_accumulated = []
             if cml_lines_accumulated:
                 _write_part_cml_file(cml_lines_accumulated)
-        except Exception, e:
+        except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             raise
     split = classmethod(split)

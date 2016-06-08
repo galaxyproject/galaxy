@@ -22,7 +22,7 @@ def S3_METHODS( all="key" ):
         "cumsum", "cumprod", "cummax", "cummin", "c" ]
     Group_Ops = [ "+", "-", "*", "/", "^", "%%", "%/%", "&", "|", "!", "==", "!=", "<", "<=", ">=", ">", "(", ")", "~", "," ]
     if all is "key":
-        return { 'Math' : Group_Math, 'Ops' : Group_Ops }
+        return { 'Math': Group_Math, 'Ops': Group_Ops }
 
 
 def main():
@@ -65,7 +65,7 @@ def main():
     skipped_lines = 0
     first_invalid_line = 0
     i = 0
-    for i, line in enumerate( file( datafile ) ):
+    for i, line in enumerate( open( datafile ) ):
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( '#' ):
             valid = True
@@ -102,7 +102,7 @@ def main():
             r.assign( col, r[ "$" ]( r_data_frame, col ) )
         try:
             summary = summary_func( r( expression ) )
-        except RException, s:
+        except RException as s:
             outfile.close()
             stop_err( "Computation resulted in the following error: %s" % str( s ) )
         summary = summary.as_py( BASIC_CONVERSION )

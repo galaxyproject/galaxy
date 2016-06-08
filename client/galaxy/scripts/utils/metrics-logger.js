@@ -242,7 +242,7 @@ MetricsLogger.prototype._postCache = function _postCache( options ){
             self._postSize = self.options.maxCacheSize;
 //TODO:??
             // log this failure to explain any gap in metrics
-            this.emit( 'error', 'MetricsLogger', [ '_postCache error:',
+            self.emit( 'error', 'MetricsLogger', [ '_postCache error:',
                 xhr.readyState, xhr.status, xhr.responseJSON || xhr.responseText ]);
 //TODO: still doesn't solve the problem that when cache == max, post will be tried on every emit
 //TODO: see _delayPost

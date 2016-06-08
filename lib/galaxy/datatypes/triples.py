@@ -14,6 +14,7 @@ class Triples( data.Text ):
     """
     The abstract base class for the file format that can contain triples
     """
+    edam_data = "data_0582"
     edam_format = "format_2376"
     file_ext = "triples"
 

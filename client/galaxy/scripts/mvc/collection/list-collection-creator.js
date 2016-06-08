@@ -700,7 +700,7 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
         //TODO: no need to re-create - move instead
         this.$( '.element-drop-placeholder' ).remove();
         var $placeholder = $( '<div class="element-drop-placeholder"></div>' );
-        if( !$nearest.size() ){
+        if( !$nearest.length ){
             $list.append( $placeholder );
         } else {
             $nearest.before( $placeholder );
@@ -747,7 +747,7 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
 
         // insert before the nearest element or after the last.
         var $nearest = this._getNearestElement( ev.clientY );
-        if( $nearest.size() ){
+        if( $nearest.length ){
             this.$dragging.insertBefore( $nearest );
         } else {
             // no nearest before - insert after last element

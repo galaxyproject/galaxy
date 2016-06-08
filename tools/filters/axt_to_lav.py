@@ -145,7 +145,7 @@ def parse_spec(spec):
 def read_lengths(fileName):
     chromToLength = {}
 
-    f = file(fileName, "r")
+    f = open(fileName, "r")
 
     for lineNumber, line in enumerate(f):
         line = line.strip()
@@ -156,17 +156,16 @@ def read_lengths(fileName):
 
         fields = line.split()
         if len(fields) != 2:
-            raise "bad lengths line (%s:%d): %s" % (fileName, lineNumber, line)
+            raise Exception( "bad lengths line (%s:%d): %s" % (fileName, lineNumber, line) )
 
         chrom = fields[0]
         try:
             length = int(fields[1])
         except:
-            raise "bad lengths line (%s:%d): %s" % (fileName, lineNumber, line)
+            raise Exception( "bad lengths line (%s:%d): %s" % (fileName, lineNumber, line) )
 
         if chrom in chromToLength:
-            raise "%s appears more than once (%s:%d): %s" \
-                % (chrom, fileName, lineNumber)
+            raise Exception( "%s appears more than once (%s:%d): %s" % (chrom, fileName, lineNumber) )
 
         chromToLength[chrom] = length
 

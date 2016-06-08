@@ -1,7 +1,9 @@
+"""This module contains a linting function for a tool's help."""
 from galaxy.util import rst_to_html
 
 
 def lint_help(tool_xml, lint_ctx):
+    """Ensure tool contains exactly one valid RST help block."""
     root = tool_xml.getroot()
     helps = root.findall("help")
     if len(helps) > 1:
@@ -30,6 +32,11 @@ def lint_help(tool_xml, lint_ctx):
 
 
 def rst_invalid(text):
+    """Predicate to determine if text is invalid reStructuredText.
+
+    Return False if the supplied text is valid reStructuredText or
+    a string indicating the problem.
+    """
     invalid_rst = False
     try:
         rst_to_html(text)

@@ -5,6 +5,7 @@ RELEASE_NEXT:=16.04
 #RELEASE_NEXT_BRANCH:=release_$(RELEASE_NEXT)
 RELEASE_NEXT_BRANCH:=dev
 RELEASE_UPSTREAM:=upstream
+MY_UPSTREAM:=origin
 # Location of virtualenv used for development.
 VENV?=.venv
 # Source virtualenv to execute command (flake8, sphinx, twine, etc...)
@@ -63,10 +64,7 @@ grunt: npm-deps ## Calls out to Grunt to build client
 style: npm-deps ## Calls the style task of Grunt
 	cd client && node_modules/grunt-cli/bin/grunt style
 
-webpack: npm-deps ## Pack javascript
-	cd client && node_modules/webpack/bin/webpack.js -p
-
-client: grunt style webpack ## Rebuild all client-side artifacts
+client: grunt style ## Rebuild all client-side artifacts
 
 grunt-docker-image: ## Build docker image for running grunt
 	docker build -t ${GRUNT_DOCKER_NAME} client
@@ -79,12 +77,12 @@ clean-grunt-docker-image: ## Remove grunt docker image
 
 
 # Release Targets
-release-create-rc: release-ensure-upstream ## Create a release-candidate branch 
+release-create-rc: release-ensure-upstream ## Create a release-candidate branch
 	git checkout dev
 	git pull --ff-only $(RELEASE_UPSTREAM) dev
-	git push origin dev
+	git push $(MY_UPSTREAM) dev
 	git checkout -b release_$(RELEASE_CURR)
-	git push origin release_$(RELEASE_CURR)
+	git push $(MY_UPSTREAM) release_$(RELEASE_CURR)
 	git push $(RELEASE_UPSTREAM) release_$(RELEASE_CURR)
 	git checkout -b version-$(RELEASE_CURR)
 	sed -i "s/^VERSION_MAJOR = .*/VERSION_MAJOR = \"$(RELEASE_CURR)\"/" lib/galaxy/version.py
@@ -102,24 +100,25 @@ release-create-rc: release-ensure-upstream ## Create a release-candidate branch
 	git checkout --ours lib/galaxy/version.py
 	git add lib/galaxy/version.py
 	git commit -m "Merge branch 'version-$(RELEASE_CURR)' into version-$(RELEASE_NEXT).dev"
-	git push origin version-$(RELEASE_CURR):version-$(RELEASE_CURR)
-	git push origin version-$(RELEASE_NEXT).dev:version-$(RELEASE_NEXT).dev
+	git push $(MY_UPSTREAM) version-$(RELEASE_CURR):version-$(RELEASE_CURR)
+	git push $(MY_UPSTREAM) version-$(RELEASE_NEXT).dev:version-$(RELEASE_NEXT).dev
 	git branch -d version-$(RELEASE_CURR)
 	git branch -d version-$(RELEASE_NEXT).dev
 	# TODO: Use hub to automate these PR creations or push directly.
 	@echo "Open a PR from version-$(RELEASE_CURR) of your fork to release_$(RELEASE_CURR)"
 	@echo "Open a PR from version-$(RELEASE_NEXT).dev of your fork to dev"
 
-create_release: release-ensure-upstream ## Create a release branch
+release-create: release-ensure-upstream ## Create a release branch
+	git checkout master
 	git pull --ff-only $(RELEASE_UPSTREAM) master
-	git push origin master
+	git push $(MY_UPSTREAM) master
 	git checkout release_$(RELEASE_CURR)
 	git pull --ff-only $(RELEASE_UPSTREAM) release_$(RELEASE_CURR)
-	#git push origin release_$(RELEASE_CURR)
+	#git push $(MY_UPSTREAM) release_$(RELEASE_CURR)
 	git checkout dev
 	git pull --ff-only $(RELEASE_UPSTREAM) dev
-	#git push origin dev
-	# Test run of merging. If there are conflicts, it will fail here here.
+	#git push $(MY_UPSTREAM) dev
+	# Test run of merging. If there are conflicts, it will fail here.
 	git merge release_$(RELEASE_CURR)
 	git checkout release_$(RELEASE_CURR)
 	sed -i "s/^VERSION_MINOR = .*/VERSION_MINOR = None/" lib/galaxy/version.py
@@ -134,20 +133,20 @@ create_release: release-ensure-upstream ## Create a release branch
 	git commit -m "Merge branch 'release_$(RELEASE_CURR)' into dev"
 	git checkout master
 	git merge release_$(RELEASE_CURR)
-	#git push origin release_$(RELEASE_CURR):release_$(RELEASE_CURR)
-	#git push origin dev:dev
-	#git push origin master:master
-	#git push origin --tags
+	#git push $(RELEASE_UPSTREAM) release_$(RELEASE_CURR):release_$(RELEASE_CURR)
+	#git push $(RELEASE_UPSTREAM) dev:dev
+	#git push $(RELEASE_UPSTREAM) master:master
+	#git push $(RELEASE_UPSTREAM) --tags
 
-create_point_release: ## Create a point release
+release-create-point: ## Create a point release
 	git pull --ff-only $(RELEASE_UPSTREAM) master
-	git push origin master
+	git push $(MY_UPSTREAM) master
 	git checkout release_$(RELEASE_CURR)
 	git pull --ff-only $(RELEASE_UPSTREAM) release_$(RELEASE_CURR)
-	#git push origin release_$(RELEASE_CURR)
+	#git push $(MY_UPSTREAM) release_$(RELEASE_CURR)
 	git checkout $(RELEASE_NEXT_BRANCH)
 	git pull --ff-only $(RELEASE_UPSTREAM) $(RELEASE_NEXT_BRANCH)
-	#git push origin $(RELEASE_NEXT_BRANCH)
+	#git push $(MY_UPSTREAM) $(RELEASE_NEXT_BRANCH)
 	git merge release_$(RELEASE_CURR)
 	git checkout release_$(RELEASE_CURR)
 	sed -i "s/^VERSION_MINOR = .*/VERSION_MINOR = \"$(RELEASE_CURR_MINOR_NEXT)\"/" lib/galaxy/version.py

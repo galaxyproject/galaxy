@@ -1,5 +1,8 @@
 <tool id="axt_to_lav_1" name="AXT to LAV" version="1.0.0">
   <description>Converts an AXT formatted file to LAV format</description>
+  <edam_operations>
+    <edam_operation>operation_3434</edam_operation>
+  </edam_operations>
   <command interpreter="python">axt_to_lav.py /galaxy/data/$dbkey_1/seq/%s.nib:$dbkey_1:${GALAXY_DATA_INDEX_DIR}/shared/ucsc/chrom/${dbkey_1}.len /galaxy/data/$dbkey_2/seq/%s.nib:$dbkey_2:${GALAXY_DATA_INDEX_DIR}/shared/ucsc/chrom/${dbkey_2}.len $align_input $lav_file $seq_file1 $seq_file2</command>
   <inputs>
     <param name="align_input" type="data" format="axt" label="Alignment File" optional="False"/>

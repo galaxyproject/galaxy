@@ -60,7 +60,7 @@ def delete( api_key, url, data, return_formatted=True ):
         opener, request = build_request_with_data( url, data, api_key, 'DELETE' )
         delete_request = opener.open( request )
         response = json.loads( delete_request.read() )
-    except urllib2.HTTPError, e:
+    except urllib2.HTTPError as e:
         if return_formatted:
             print e
             print e.read( 1024 )
@@ -79,7 +79,7 @@ def display( url, api_key=None, return_formatted=True ):
     """Sends an API GET request and acts as a generic formatter for the JSON response."""
     try:
         r = get( url, api_key=api_key )
-    except urllib2.HTTPError, e:
+    except urllib2.HTTPError as e:
         print e
         # Only return the first 1K of errors.
         print e.read( 1024 )
@@ -193,7 +193,7 @@ def json_from_url( url ):
     url_contents = url_handle.read()
     try:
         parsed_json = json.loads( url_contents )
-    except Exception, e:
+    except Exception as e:
         error_message = str( url_contents )
         print 'Error parsing JSON data in json_from_url(): ', str( e )
         return None, error_message
@@ -219,7 +219,7 @@ def post( url, data, api_key=None ):
         opener, request = build_request_with_data( url, data, api_key, 'POST' )
         post_request = opener.open( request )
         return json.loads( post_request.read() )
-    except urllib2.HTTPError, e:
+    except urllib2.HTTPError as e:
         return dict( status='error', message=str( e.read( 1024 ) ) )
 
 
@@ -229,7 +229,7 @@ def put( url, data, api_key=None ):
         opener, request = build_request_with_data( url, data, api_key, 'PUT' )
         put_request = opener.open( request )
         return json.loads( put_request.read() )
-    except urllib2.HTTPError, e:
+    except urllib2.HTTPError as e:
         return dict( status='error', message=str( e.read( 1024 ) ) )
 
 
@@ -240,7 +240,7 @@ def submit( url, data, api_key=None, return_formatted=True ):
     """
     try:
         response = post( url, data, api_key=api_key )
-    except urllib2.HTTPError, e:
+    except urllib2.HTTPError as e:
         if return_formatted:
             print e
             print e.read( 1024 )
@@ -277,7 +277,7 @@ def update( api_key, url, data, return_formatted=True ):
     """
     try:
         response = put( url, data, api_key=api_key )
-    except urllib2.HTTPError, e:
+    except urllib2.HTTPError as e:
         if return_formatted:
             print e
             print e.read( 1024 )

@@ -23,19 +23,19 @@ class PageServingPluginManager_TestCase( test_utils.unittest.TestCase ):
     def test_plugin_load( self ):
         """should attempt load if criteria met"""
         mock_app_dir = galaxy_mock.MockDir({
-            'plugins'   : {
-                'plugin1'   : {
-                    'templates' : {},
-                    'static'    : {}
+            'plugins': {
+                'plugin1': {
+                    'templates': {},
+                    'static': {}
                 },
-                'plugin2'   : {
-                    'static'    : {}
+                'plugin2': {
+                    'static': {}
                 },
-                'plugin3'   : {
-                    'templates' : {}
+                'plugin3': {
+                    'templates': {}
                 },
-                'not_a_plugin1'     : 'blerbler',
-                'not_a_plugin2'     : {},
+                'not_a_plugin1': 'blerbler',
+                'not_a_plugin2': {},
             }
         })
         mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
@@ -82,10 +82,10 @@ class PageServingPluginManager_TestCase( test_utils.unittest.TestCase ):
     def test_plugin_static_map( self ):
         """"""
         mock_app_dir = galaxy_mock.MockDir({
-            'plugins'   : {
-                'plugin1'   : {
-                    'templates' : {},
-                    'static'    : {}
+            'plugins': {
+                'plugin1': {
+                    'templates': {},
+                    'static': {}
                 }
             }
         })
@@ -101,10 +101,10 @@ class PageServingPluginManager_TestCase( test_utils.unittest.TestCase ):
     def test_plugin_templates( self ):
         """"""
         mock_app_dir = galaxy_mock.MockDir({
-            'plugins'   : {
-                'plugin1'   : {
-                    'templates' : {
-                        'test.mako' : contents1
+            'plugins': {
+                'plugin1': {
+                    'templates': {
+                        'test.mako': contents1
                     },
                 }
             }

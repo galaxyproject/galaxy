@@ -69,7 +69,7 @@ class FormDefinitionFieldFactory( object ):
     type = None
 
     def __get_stored_field_type( self, **kwds ):
-        raise 'not implemented'
+        raise Exception( 'not implemented' )
 
     def new( self, name=None, label=None, required=False, helptext=None, default=None, visible=True, layout=None ):
         """

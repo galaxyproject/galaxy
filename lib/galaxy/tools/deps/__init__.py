@@ -20,7 +20,7 @@ EXTRA_CONFIG_KWDS = {
     'conda_prefix': None,
     'conda_exec': None,
     'conda_debug': None,
-    'conda_channels': 'r,bioconda',
+    'conda_ensure_channels': 'r,bioconda',
     'conda_auto_install': False,
     'conda_auto_init': False,
 }
@@ -78,9 +78,9 @@ class DependencyManager( object ):
         in `base_paths`.  The default base path is app.config.tool_dependency_dir.
         """
         if not os.path.exists( default_base_path ):
-            log.warn( "Path '%s' does not exist, ignoring", default_base_path )
+            log.warning( "Path '%s' does not exist, ignoring", default_base_path )
         if not os.path.isdir( default_base_path ):
-            log.warn( "Path '%s' is not directory, ignoring", default_base_path )
+            log.warning( "Path '%s' is not directory, ignoring", default_base_path )
         self.extra_config = extra_config
         self.default_base_path = os.path.abspath( default_base_path )
         self.resolver_classes = self.__resolvers_dict()
@@ -98,7 +98,7 @@ class DependencyManager( object ):
                                             **kwds )
             dependency_commands = dependency.shell_commands( requirement )
             if not dependency_commands:
-                log.warn( "Failed to resolve dependency on '%s', ignoring", requirement.name )
+                log.warning( "Failed to resolve dependency on '%s', ignoring", requirement.name )
             else:
                 commands.append( dependency_commands )
         return commands
@@ -113,10 +113,7 @@ class DependencyManager( object ):
         for i, resolver in enumerate(self.dependency_resolvers):
             if index is not None and i != index:
                 continue
-
             dependency = resolver.resolve( name, version, type, **kwds )
-            log.debug('Resolver %s returned %s (isnull? %s)' % (resolver.resolver_type, dependency,
-                                                                dependency == INDETERMINATE_DEPENDENCY))
             if require_exact and not dependency.exact:
                 dependency = INDETERMINATE_DEPENDENCY
             if dependency != INDETERMINATE_DEPENDENCY:

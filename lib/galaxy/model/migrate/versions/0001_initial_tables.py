@@ -41,7 +41,7 @@ HistoryDatasetAssociation_table = Table( "history_dataset_association", metadata
     Column( "name", TrimmedString( 255 ) ),
     Column( "info", TrimmedString( 255 ) ),
     Column( "blurb", TrimmedString( 255 ) ),
-    Column( "peek" , TEXT ),
+    Column( "peek", TEXT ),
     Column( "extension", TrimmedString( 64 ) ),
     Column( "metadata", MetadataType(), key="_metadata" ),
     Column( "parent_id", Integer, ForeignKey( "history_dataset_association.id" ), nullable=True ),
@@ -57,7 +57,7 @@ Dataset_table = Table( "dataset", metadata,
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ),
     Column( "purgable", Boolean, default=True ),
-    Column( "external_filename" , TEXT ),
+    Column( "external_filename", TEXT ),
     Column( "_extra_files_path", TEXT ),
     Column( 'file_size', Numeric( 15, 0 ) ) )
 

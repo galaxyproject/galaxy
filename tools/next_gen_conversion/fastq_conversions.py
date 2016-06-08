@@ -37,7 +37,7 @@ def __main__():
         cmd = cmd % (options.command, options.input, options.outputFasta)
     try:
         os.system(cmd)
-    except Exception, eq:
+    except Exception as eq:
         stop_err("Error converting data format.\n" + str(eq))
 
 if __name__ == "__main__":

@@ -4,8 +4,10 @@
 import os
 import socket
 import sys
-import urllib
 from json import loads, dumps
+
+from six.moves.urllib.parse import urlencode
+from six.moves.urllib.request import urlopen
 
 from galaxy.jobs import TOOL_PROVIDED_JOB_METADATA_FILE
 from galaxy.datatypes import sniff
@@ -82,13 +84,13 @@ def __main__():
             open( cur_filename, 'w' ).write( "" )
             stop_err( 'The remote data source application has not sent back a URL parameter in the request.' )
 
-        # The following calls to urllib.urlopen() will use the above default timeout
+        # The following calls to urlopen() will use the above default timeout
         try:
             if not URL_method or URL_method == 'get':
-                page = urllib.urlopen( cur_URL )
+                page = urlopen( cur_URL )
             elif URL_method == 'post':
-                page = urllib.urlopen( cur_URL, urllib.urlencode( params ) )
-        except Exception, e:
+                page = urlopen( cur_URL, urlencode( params ) )
+        except Exception as e:
             stop_err( 'The remote data source application may be off line, please try again later. Error: %s' % str( e ) )
         if max_file_size:
             file_size = int( page.info().get( 'Content-Length', 0 ) )
@@ -97,14 +99,14 @@ def __main__():
         # do sniff stream for multi_byte
         try:
             cur_filename, is_multi_byte = sniff.stream_to_open_named_file( page, os.open( cur_filename, os.O_WRONLY | os.O_CREAT ), cur_filename, source_encoding=get_charset_from_http_headers( page.headers ) )
-        except Exception, e:
+        except Exception as e:
             stop_err( 'Unable to fetch %s:\n%s' % ( cur_URL, e ) )
 
         # here import checks that upload tool performs
         if enhanced_handling:
             try:
                 ext = sniff.handle_uploaded_dataset_file( filename, datatypes_registry, ext=data_dict[ 'ext' ], is_multi_byte=is_multi_byte )
-            except Exception, e:
+            except Exception as e:
                 stop_err( str( e ) )
             info = dict( type='dataset',
                          dataset_id=data_dict[ 'dataset_id' ],

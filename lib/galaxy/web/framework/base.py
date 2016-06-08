@@ -192,7 +192,7 @@ class WebApplication( object ):
         kwargs.pop( '_', None )
         try:
             body = method( trans, **kwargs )
-        except Exception, e:
+        except Exception as e:
             body = self.handle_controller_exception( e, trans, **kwargs )
             if not body:
                 raise

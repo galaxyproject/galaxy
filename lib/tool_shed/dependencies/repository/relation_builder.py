@@ -2,6 +2,7 @@ import logging
 
 from galaxy.util import asbool, listify
 
+import tool_shed.util.repository_util
 from tool_shed.util import common_util, container_util, hg_util, metadata_util
 from tool_shed.util import shed_util_common as suc
 
@@ -80,10 +81,10 @@ class RelationBuilder( object ):
             current_changeset_revision = str( self.repository_metadata.changeset_revision )
             # Get the changeset revision to which the current value of required_repository_changeset_revision
             # should be updated if it's not current.
-            text = suc.get_updated_changeset_revisions( self.app,
-                                                        name=str( self.repository.name ),
-                                                        owner=str( self.repository.user.username ),
-                                                        changeset_revision=current_changeset_revision )
+            text = metadata_util.get_updated_changeset_revisions( self.app,
+                                                                  name=str( self.repository.name ),
+                                                                  owner=str( self.repository.user.username ),
+                                                                  changeset_revision=current_changeset_revision )
             if text:
                 valid_changeset_revisions = listify( text )
                 if current_changeset_revision not in valid_changeset_revisions:
@@ -181,7 +182,7 @@ class RelationBuilder( object ):
                 rd_only_if_compiling_contained_td = \
                 common_util.parse_repository_dependency_tuple( repository_dependency )
             if suc.tool_shed_is_this_tool_shed( rd_toolshed ):
-                repository = suc.get_repository_by_name_and_owner( self.app, rd_name, rd_owner )
+                repository = tool_shed.util.repository_util.get_repository_by_name_and_owner( self.app, rd_name, rd_owner )
                 if repository:
                     repository_id = self.app.security.encode_id( repository.id )
                     repository_metadata = \
@@ -196,11 +197,12 @@ class RelationBuilder( object ):
                     else:
                         # The repository changeset_revision is no longer installable, so see if there's been an update.
                         repo = hg_util.get_repo_for_repository( self.app, repository=repository, repo_path=None, create=False )
-                        changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, rd_changeset_revision )
-                        repository_metadata = \
-                            metadata_util.get_repository_metadata_by_repository_id_changeset_revision( self.app,
-                                                                                                       repository_id,
-                                                                                                       changeset_revision )
+                        changeset_revision = metadata_util.get_next_downloadable_changeset_revision( repository, repo, rd_changeset_revision )
+                        if changeset_revision != rd_changeset_revision:
+                            repository_metadata = \
+                                metadata_util.get_repository_metadata_by_repository_id_changeset_revision( self.app,
+                                                                                                           repository_id,
+                                                                                                           changeset_revision )
                         if repository_metadata:
                             new_key_rd_dict = {}
                             new_key_rd_dict[ key ] = \
@@ -214,7 +216,7 @@ class RelationBuilder( object ):
                             updated_key_rd_dicts.append( new_key_rd_dict )
                         else:
                             repository_components_tuple = container_util.get_components_from_key( key )
-                            components_list = suc.extract_components_from_tuple( repository_components_tuple )
+                            components_list = tool_shed.util.repository_util.extract_components_from_tuple( repository_components_tuple )
                             toolshed, repository_name, repository_owner, repository_changeset_revision = components_list[ 0:4 ]
                             # For backward compatibility to the 12/20/12 Galaxy release.
                             if len( components_list ) in (4, 5):
@@ -225,7 +227,7 @@ class RelationBuilder( object ):
                             log.debug( message )
                 else:
                     repository_components_tuple = container_util.get_components_from_key( key )
-                    components_list = suc.extract_components_from_tuple( repository_components_tuple )
+                    components_list = tool_shed.util.repository_util.extract_components_from_tuple( repository_components_tuple )
                     toolshed, repository_name, repository_owner, repository_changeset_revision = components_list[ 0:4 ]
                     message = "The revision %s defined for repository %s owned by %s is invalid, so repository " % \
                         ( str( rd_changeset_revision ), str( rd_name ), str( rd_owner ) )
@@ -259,7 +261,7 @@ class RelationBuilder( object ):
         toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
             common_util.parse_repository_dependency_tuple( repository_dependency )
         if suc.tool_shed_is_this_tool_shed( toolshed ):
-            required_repository = suc.get_repository_by_name_and_owner( self.app, name, owner )
+            required_repository = tool_shed.util.repository_util.get_repository_by_name_and_owner( self.app, name, owner )
             self.repository = required_repository
             repository_id = self.app.security.encode_id( required_repository.id )
             required_repository_metadata = \

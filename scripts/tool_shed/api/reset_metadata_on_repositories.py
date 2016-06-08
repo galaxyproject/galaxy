@@ -64,7 +64,7 @@ def main( options ):
                 url = '%s/api/repositories/reset_metadata_on_repository' % base_tool_shed_url
                 try:
                     submit( url, data, options.api )
-                except Exception, e:
+                except Exception as e:
                     log.exception( ">>>>>>>>>>>>>>>Blew up on data: %s, exception: %s" % ( str( data ), str( e ) ) )
                     # An nginx timeout undoubtedly occurred.
                     sys.exit( 1 )
@@ -74,7 +74,7 @@ def main( options ):
         url = '%s/api/repositories/reset_metadata_on_repositories' % base_tool_shed_url
         try:
             submit( url, data, options.api )
-        except Exception, e:
+        except Exception as e:
             log.exception( str( e ) )
             # An nginx timeout undoubtedly occurred.
             sys.exit( 1 )

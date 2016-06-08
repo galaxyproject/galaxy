@@ -7,6 +7,7 @@ from galaxy.web import require_admin as require_admin
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
+from tool_shed.util import repository_util
 import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
@@ -81,7 +82,7 @@ class CategoriesController( BaseAPIController ):
         category_dict[ 'url' ] = web.url_for( controller='categories',
                                               action='show',
                                               id=trans.security.encode_id( category.id ) )
-        repositories = suc.get_repositories_by_category( self.app, category.id )
+        repositories = repository_util.get_repositories_by_category( self.app, category.id )
         category_dict[ 'repositories' ] = repositories
         return category_dict
 

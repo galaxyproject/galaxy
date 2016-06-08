@@ -16,6 +16,8 @@ from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import hg_util
 from tool_shed.util import readme_util
+from tool_shed.util import metadata_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
@@ -446,7 +448,7 @@ class MetadataGenerator( object ):
                                 valid_exported_galaxy_workflow = True
                                 try:
                                     exported_workflow_dict = json.loads( workflow_text )
-                                except Exception, e:
+                                except Exception as e:
                                     log.exception( "Skipping file %s since it does not seem to be a valid exported Galaxy workflow: %s"
                                                    % ( str( relative_path ), str( e ) ) )
                                     valid_exported_galaxy_workflow = False
@@ -847,7 +849,7 @@ class MetadataGenerator( object ):
                             sample_file_copy_paths.append( relative_path_to_sample_file )
                             if tool_path and relative_install_dir:
                                 if relative_path_to_sample_file.startswith( os.path.join( tool_path, relative_install_dir ) ):
-                                    relative_path_to_sample_file = relative_path_to_sample_file[ len( tool_path ) + 1 :]
+                                    relative_path_to_sample_file = relative_path_to_sample_file[ len( tool_path ) + 1:]
                         sample_file_metadata_paths.append( relative_path_to_sample_file )
         return sample_file_metadata_paths, sample_file_copy_paths
 
@@ -903,30 +905,30 @@ class MetadataGenerator( object ):
             # the changeset_revision defined in the repository_elem (it may be outdated).  If
             # we're successful in locating an installed repository with the attributes defined
             # in the repository_elem, we know it is valid.
-            repository = suc.get_repository_for_dependency_relationship( self.app,
-                                                                         toolshed,
-                                                                         name,
-                                                                         owner,
-                                                                         changeset_revision )
+            repository = repository_util.get_repository_for_dependency_relationship( self.app,
+                                                                                     toolshed,
+                                                                                     name,
+                                                                                     owner,
+                                                                                     changeset_revision )
             if repository:
                 return repository_dependency_tup, is_valid, error_message
             else:
                 # Send a request to the tool shed to retrieve appropriate additional changeset
                 # revisions with which the repository
                 # may have been installed.
-                text = suc.get_updated_changeset_revisions_from_tool_shed( self.app,
-                                                                           toolshed,
-                                                                           name,
-                                                                           owner,
-                                                                           changeset_revision )
-                if text:
-                    updated_changeset_revisions = util.listify( text )
-                    for updated_changeset_revision in updated_changeset_revisions:
-                        repository = suc.get_repository_for_dependency_relationship( self.app,
+                text = metadata_util.get_updated_changeset_revisions_from_tool_shed( self.app,
                                                                                      toolshed,
                                                                                      name,
                                                                                      owner,
-                                                                                     updated_changeset_revision )
+                                                                                     changeset_revision )
+                if text:
+                    updated_changeset_revisions = util.listify( text )
+                    for updated_changeset_revision in updated_changeset_revisions:
+                        repository = repository_util.get_repository_for_dependency_relationship( self.app,
+                                                                                                 toolshed,
+                                                                                                 name,
+                                                                                                 owner,
+                                                                                                 updated_changeset_revision )
                         if repository:
                             return repository_dependency_tup, is_valid, error_message
                         if self.updating_installed_repository:
@@ -1063,7 +1065,7 @@ class MetadataGenerator( object ):
             else:
                 self.set_changeset_revision( changeset_revision )
             self.shed_config_dict = repository.get_shed_config_dict( self.app )
-            self.metadata_dict = { 'shed_config_filename' : self.shed_config_dict.get( 'config_filename', None ) }
+            self.metadata_dict = { 'shed_config_filename': self.shed_config_dict.get( 'config_filename', None ) }
         else:
             if relative_install_dir is None and self.repository is not None:
                 relative_install_dir = repository.repo_path( self.app )

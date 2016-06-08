@@ -291,7 +291,7 @@ class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
                 # Cleanup.
                 if os.path.exists( archive_dir ):
                     shutil.rmtree( archive_dir )
-            except Exception, e:
+            except Exception as e:
                 jiha.job.stderr += "Error cleaning up history import job: %s" % e
                 self.sa_session.flush()
                 raise
@@ -525,10 +525,10 @@ class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):
             for filename in [ jeha.history_attrs_filename, jeha.datasets_attrs_filename, jeha.jobs_attrs_filename ]:
                 try:
                     os.remove( filename )
-                except Exception, e:
+                except Exception as e:
                     log.debug( 'Failed to cleanup attributes file (%s): %s' % ( filename, e ) )
             temp_dir = os.path.split( jeha.history_attrs_filename )[0]
             try:
                 shutil.rmtree( temp_dir )
-            except Exception, e:
+            except Exception as e:
                 log.debug( 'Error deleting directory containing attribute files (%s): %s' % ( temp_dir, e ) )

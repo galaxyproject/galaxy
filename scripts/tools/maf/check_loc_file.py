@@ -48,7 +48,7 @@ def __main__():
             for spec in species_found_in_maf:
                 if spec not in species_exist:
                     print "Line %i, %s contains %s, but is not listed in loc file." % ( i, uid, spec )
-        except Exception, e:
+        except Exception as e:
             print "Line %i is invalid: %s" % ( i, e )
 
 if __name__ == "__main__":

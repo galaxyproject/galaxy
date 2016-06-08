@@ -33,25 +33,25 @@ if __name__ == "__main__":
     rg = RemoteGalaxy(server, api_key)
 
     print "select name, id, file_size from hda"
-    print rg.post("/api/search", { "query" : "select name, id, file_size from hda" })
+    print rg.post("/api/search", { "query": "select name, id, file_size from hda" })
 
     print "select name from hda"
-    print rg.post("/api/search", { "query" : "select name from hda" })
+    print rg.post("/api/search", { "query": "select name from hda" })
 
     print "select name, model_class from ldda"
-    print rg.post("/api/search", { "query" : "select name, model_class from ldda" })
+    print rg.post("/api/search", { "query": "select name, model_class from ldda" })
 
     print "select * from history"
-    print rg.post("/api/search", { "query" : "select * from history" })
+    print rg.post("/api/search", { "query": "select * from history" })
 
     print "select * from tool"
-    print rg.post("/api/search", { "query" : "select * from tool" })
+    print rg.post("/api/search", { "query": "select * from tool" })
 
     print "select * from workflow"
-    print rg.post("/api/search", { "query" : "select * from workflow" })
+    print rg.post("/api/search", { "query": "select * from workflow" })
 
     print "select id, name from history where name='Unnamed history'"
-    print rg.post("/api/search", {"query" : "select id, name from history where name='Unnamed history'"})
+    print rg.post("/api/search", {"query": "select id, name from history where name='Unnamed history'"})
 
     print "select * from history where name='Unnamed history'"
-    print rg.post("/api/search", {"query" : "select * from history where name='Unnamed history'"})
+    print rg.post("/api/search", {"query": "select * from history where name='Unnamed history'"})
