@@ -54,15 +54,21 @@ sa_session = model.context.current
 
 # With the config file we can load the full app properties
 app_properties = load_app_properties(ini_file=config['config_file'])
+
 # We need the ID secret for configuring the security helper to decrypt
 # galaxysession cookies.
-security_helper = SecurityHelper(id_secret=app_properties['id_secret'])
+if not "id_secret" in app_properties:
+    log.warn('No ID_SECRET specified. Please set the "id_secret" in your galaxy.ini.')
+
+id_secret = app_properties.get('id_secret', 'dangerous_default')
+
+security_helper = SecurityHelper(id_secret=id_secret)
 # And get access to the models
 # Login manager to manager current_user functionality
 login_manager = flask_login.LoginManager()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = app_properties['id_secret']
+app.config['SECRET_KEY'] = id_secret
 login_manager.init_app(app)
 socketio = SocketIO(app)
 
