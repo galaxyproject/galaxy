@@ -15,7 +15,6 @@ from galaxy.jobs import JobDestination
 from galaxy.jobs.handler import DEFAULT_JOB_PUT_FAILURE_MESSAGE
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 from galaxy.util import asbool
-from pulsar.managers.util.drmaa import DrmaaSessionFactory
 
 drmaa = None
 
@@ -62,6 +61,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                                 'feature, please install it or correct the '
                                 'following error:\n%s: %s' %
                                 (exc.__class__.__name__, str(exc)))
+        from pulsar.managers.util.drmaa import DrmaaSessionFactory
 
         # Subclasses may need access to state constants
         self.drmaa_job_states = drmaa.JobState
