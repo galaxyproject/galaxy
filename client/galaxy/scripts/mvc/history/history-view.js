@@ -108,6 +108,9 @@ var HistoryView = _super.extend(
             },
             'views:ready view:attached view:removed' : function( view ){
                 this._renderSelectButton();
+            },
+            'search:searching' : function(){
+                this.$( '> .controls .pagination' ).empty();
             }
         });
         // this.on( 'all', function(){ console.debug( arguments ); });
@@ -152,15 +155,30 @@ var HistoryView = _super.extend(
         _super.prototype._setUpCollectionListeners.call( this );
         return this.listenTo( this.collection, {
             // 'all' : function(){ console.log( this.collection + ':', arguments ); },
-            'fetching-more'     : this.showContentsLoadingIndicator,
-            'fetching-more-done': this.hideContentsLoadingIndicator,
+            'fetching-more'     : function(){
+                this._toggleContentsLoadingIndicator( true );
+                this.$emptyMessage().hide();
+            },
+            'fetching-more-done': function(){ this._toggleContentsLoadingIndicator( false ); },
         });
     },
 
     // ------------------------------------------------------------------------ panel rendering
+    /** hide the $el and display a loading indicator (in the $el's parent) when loading new data */
+    _showLoadingIndicator : function( msg, speed, callback ){
+        var $indicator = $( '<div class="loading-indicator"/>' );
+        this.$el.html( $indicator.text( msg ).show( !_.isUndefined( speed )? speed : this.fxSpeed ) );
+    },
+
+    /** hide the loading indicator */
+    _hideLoadingIndicator : function( speed ){
+        this.$( '.loading-indicator' ).hide( !_.isUndefined( speed )? speed : this.fxSpeed, function(){
+            $( this ).remove();
+        });
+    },
+
     /** In this override, add a btn to toggle the selectors */
     _buildNewRender : function(){
-        this.viewMap = {};
         var $newRender = _super.prototype._buildNewRender.call( this );
         this._renderSelectButton( $newRender );
         return $newRender;
@@ -204,65 +222,33 @@ var HistoryView = _super.extend(
         } else if( self.searchFor && self.model.contents.haveSearchDetails() && !self.views.length ){
             return $emptyMsg.empty().append( self.noneFoundMsg ).show();
         }
+        $emptyMsg.hide();
         return $();
     },
 
-    /** hide the $el and display a loading indicator (in the $el's parent) when loading new data */
-    _showLoadingIndicator : function( msg, speed, callback ){
-        var $indicator = $( '<div class="loading-indicator"/>' );
-        this.$el.html( $indicator.text( msg ).show( !_.isUndefined( speed )? speed : this.fxSpeed ) );
-    },
-
-    /** hide the loading indicator */
-    _hideLoadingIndicator : function( speed ){
-        this.$( '.loading-indicator' ).hide( !_.isUndefined( speed )? speed : this.fxSpeed, function(){
-            $( this ).remove();
-        });
-    },
-
-    /** show the user that the contents are loading/contacting the server */
-    showContentsLoadingIndicator : function( speed ){
-        speed = _.isNumber( speed )? speed : this.fxSpeed;
-
-        this.$emptyMessage().hide();
-        // look for an existing indicator and stop all animations on it, otherwise make one
-        var $indicator = this.$( '.contents-loading-indicator' );
-        if( $indicator.size() ){
-            return $indicator.stop().clearQueue();
+    // ------------------------------------------------------------------------ subviews
+    _toggleContentsLoadingIndicator : function( show ){
+        if( !show ){
+            this.$list().find( '.contents-loading-indicator' ).remove();
+        } else {
+            this.$list().html( '<div class="contents-loading-indicator">'
+                + '<span class="fa fa-2x fa-spinner fa-spin"/></div>' );
         }
-
-        // move it to the bottom and fade it in
-        // $indicator = $( '<div class="contents-loading-indicator">' + _l( 'Loading...' ) + '</div>' ).hide();
-        $indicator = $( this.templates.contentsLoadingIndicator( {}, this )).hide();
-        return $indicator
-            .insertAfter( this.$list() )
-            .slideDown( speed );
     },
 
-    /** show the user we're done loading */
-    hideContentsLoadingIndicator : function( speed ){
-        speed = _.isNumber( speed )? speed : this.fxSpeed;
-        this.$( '> .contents-loading-indicator' ).slideUp({ duration: 100, complete: function _complete(){
-            $( this ).remove();
-        }});
-    },
-
-    // ------------------------------------------------------------------------ client-side pagination
     /**  */
     renderItems : function( $whereTo ){
-        // console.log( 'renderItems -----------------------------------------------------------' );
+        // console.log( this + '.renderItems-----------------' );
         $whereTo = $whereTo || this.$el;
         var self = this;
         var $list = self.$list( $whereTo );
 
         // TODO: bootstrap hack to remove orphaned tooltips
         $( '.tooltip' ).remove();
-        // using detach here allows us to retain the events hash (empty would have cleared them)
-        $list.children( '.list-item' ).detach();
         $list.empty();
+        self.views = [];
 
         var models = self._filterCollection();
-        console.log( 'models.length:', models.length );
         if( models.length ){
             self._renderPagination( $whereTo );
             self.views = self._renderSomeItems( models, $list );
@@ -270,14 +256,13 @@ var HistoryView = _super.extend(
         self._renderEmptyMessage( $whereTo ).toggle( !models.length );
 
         self.trigger( 'views:ready', self.views );
-        // console.log( '----------------------------------------------------------- renderItems' );
         return self.views;
     },
 
     /**  */
     _renderPagination: function( $whereTo ){
         var $paginationControls = $whereTo.find( '> .controls .pagination' );
-        if( !this.model.contents.shouldPaginate() ) return $paginationControls.empty();
+        if( this.searchFor || !this.model.contents.shouldPaginate() ) return $paginationControls.empty();
 
         return $paginationControls.html( this.templates.pagination({
             // pagination is 1-based for the user
@@ -289,17 +274,13 @@ var HistoryView = _super.extend(
     /**  */
     _renderSomeItems: function( models, $list ){
         var self = this;
-        var views = self._modelsToViews( models );
-        // TODO: html() doesn't play well with delegateEvents for some reason? need to empty and use append
-        $list.append( views.map( function( view ){
+        var views = [];
+        $list.append( models.map( function( m ){
+            var view = self._createItemView( m );
+            views.push( view );
             return self._renderItemView$el( view );
         }));
         return views;
-    },
-
-    /** override to not render unless it hasn't been rendered before (no children) */
-    _renderItemView$el : function( view ){
-        return view.el.children.length ? view.$el.show() : view.render(0).$el;
     },
 
     // ------------------------------------------------------------------------ sub-views
@@ -380,32 +361,21 @@ var HistoryView = _super.extend(
 
     _clickPrevPage : function( ev ){
         var self = this;
-        self._togglePageLoadingIndicator( true );
         self.model.contents.fetchPrevPage()
             .done( function(){ self.renderItems(); });
     },
 
     _clickNextPage : function( ev ){
         var self = this;
-        self._togglePageLoadingIndicator( true );
         self.model.contents.fetchNextPage()
             .done( function(){ self.renderItems(); });
     },
 
     _changePageSelect : function( ev ){
         var self = this;
-        self._togglePageLoadingIndicator( true );
         var page = $( ev.currentTarget ).val();
         self.model.contents.fetchPage( page )
             .done( function(){ self.renderItems(); });
-    },
-
-    _togglePageLoadingIndicator : function( show ){
-        if( !show ){
-            this.$list().find( '.loading-indicator' ).remove();
-        } else {
-            this.$list().html( '<div class="loading-indicator"><span class="fa fa-2x fa-spinner fa-spin"/></div>' );
-        }
     },
 
     /** Toggle and store the deleted visibility and re-render items
@@ -453,12 +423,11 @@ var HistoryView = _super.extend(
 
         // otherwise, load the details progressively here
         self.$( inputSelector ).searchInput( 'toggle-loading' );
+        // remove any existing pagination
         // TODO?: self.$( inputSelector + ' input' ).prop( 'disabled', true ) ?? not disabling could cause trouble here
-        self.model.contents.progressivelyFetchDetails({ silent: true })
+        var xhr = self.model.contents.progressivelyFetchDetails({ silent: true })
             .progress( function( response, limit, offset ){
-                if( offset + response.length <= initialContentsLength ){
-                    self.renderItems();
-                }
+                self.renderItems();
             })
             .always( function(){
                 self.$el.find( inputSelector ).searchInput( 'toggle-loading' );
@@ -466,6 +435,18 @@ var HistoryView = _super.extend(
             .done( function(){
                 self.searchItems( self.searchFor );
             });
+    },
+
+    /** clear the search filters and show all views that are normally shown */
+    clearSearch : function( searchFor ){
+        var self = this;
+        //self.log( 'onSearchClear', self );
+        self.searchFor = '';
+        self.trigger( 'search:clear', self );
+        self.$( '> .controls .search-query' ).val( '' );
+        self.model.contents.fetchCurrentPage()
+            .done( function(){ self.renderItems(); });
+        return self;
     },
 
     // ........................................................................ error handling
@@ -521,6 +502,17 @@ var HistoryView = _super.extend(
     },
 
     // ........................................................................ misc
+    /** utility for adding -st, -nd, -rd, -th to numbers */
+    ordinalIndicator : function( number ){
+        var numStr = number + '';
+        switch( numStr.charAt( numStr.length - 1 )){
+            case '1': return numStr + 'st';
+            case '2': return numStr + 'nd';
+            case '3': return numStr + 'rd';
+            default : return numStr + 'th';
+        }
+    },
+
     /** Return a string rep of the history */
     toString : function(){
         return 'HistoryView(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
@@ -581,7 +573,6 @@ HistoryView.prototype.templates = (function(){
                 '<div class="search-input"></div>',
             '</div>',
 
-            '<div class="pagination form-group form-inline"></div>',
             '<div class="list-actions">',
                 '<div class="btn-group">',
                     '<button class="select-all btn btn-default"',
@@ -592,6 +583,7 @@ HistoryView.prototype.templates = (function(){
                 '<div class="list-action-menu btn-group">',
                 '</div>',
             '</div>',
+            '<div class="pagination form-inline"></div>',
         '</div>'
     ], 'history' );
 
@@ -600,24 +592,17 @@ HistoryView.prototype.templates = (function(){
         '<select class="pages form-control">',
             '<% _.range( 1, pages.last + 1 ).forEach( function( i ){ %>',
                 '<option value="<%- i - 1 %>" <%- i === pages.current ? "selected" : "" %>>',
-                    '<%- i %> of <%- pages.last %> pages',
+                    '<%- view.ordinalIndicator( i ) %> of <%- pages.last %> pages',
                 '</option>',
             '<% }); %>',
         '</select>',
         '<button class="next" <%- pages.current === pages.last ? "disabled" : "" %>>next</button>',
     ], 'pages' );
 
-     var contentsLoadingIndicatorTemplate = BASE_MVC.wrapTemplate([
-        '<div class="contents-loading-indicator">',
-            '<span class="fa fa-2x fa-spin fa-spinner">',
-        '</span></div>'
-    ], 'history' );
-
     return _.extend( _.clone( _super.prototype.templates ), {
         el                      : mainTemplate,
         controls                : controlsTemplate,
         pagination              : paginationTemplate,
-        contentsLoadingIndicator: contentsLoadingIndicatorTemplate,
     });
 }());
 

@@ -116,9 +116,6 @@ var HistoryViewEdit = _super.extend(
                 // hafta get the new nice-size w/o the purged model
                 this.model.fetch();
             },
-            'change': function( model ){
-                console.log( 'change:', arguments );
-            },
             // loading indicators for deleted/hidden
             'fetching-deleted'      : function( collection ){
                 this.$( '> .controls .deleted-count' )
@@ -350,24 +347,31 @@ var HistoryViewEdit = _super.extend(
      *  @param {Model} the item model to check
      */
     _handleItemVisibleChange : function( itemModel ){
-        var contents = this.model.contents;
-        var contentsShown = this.model.get( 'contents_active' );
-        console.log( '_handleItemVisibleChange:', contentsShown, itemModel.get( 'deleted' ), contents.includeHidden );
         if( itemModel.hidden() ){
-            contentsShown.hidden += 1;
-            if( !contents.includeHidden ){
-                this.removeItemView( itemModel );
-            }
-            contentsShown.active -= 1;
+            this._handleItemHidden( itemModel );
         } else {
-            contentsShown.hidden -= 1;
-            if( !contents.includeHidden ){
-                contentsShown.active -= 1;
-            }
+            this._handleItemUnhidden( itemModel );
         }
-        // console.log( 'contentsShown:', contentsShown.active, contentsShown.hidden );
-        this.model.set( 'contents_active', contentsShown );
         this._renderCounts();
+    },
+
+    _handleItemHidden : function( itemModel ){
+        var contentsShown = this.model.get( 'contents_active' );
+        contentsShown.hidden += 1;
+        contentsShown.active -= 1;
+        if( !this.model.contents.includeHidden ){
+            this.removeItemView( itemModel );
+        }
+        this.model.set( 'contents_active', contentsShown );
+    },
+
+    _handleItemUnhidden : function( itemModel ){
+        var contentsShown = this.model.get( 'contents_active' );
+        contentsShown.hidden -= 1;
+        if( !this.model.contents.includeHidden ){
+            contentsShown.active -= 1;
+        }
+        this.model.set( 'contents_active', contentsShown );
     },
 
     /** toggle the visibility of each content's tagsEditor applying all the args sent to this function */

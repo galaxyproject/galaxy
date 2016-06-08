@@ -171,7 +171,7 @@ var PaginatedCollection = ControlledFetchCollection.extend({
     },
 
     shouldPaginate : function(){
-        return this.getTotalItemCount() > this.limitPerPage;
+        return this.getTotalItemCount() >= this.limitPerPage;
     },
 
     getLastPage : function(){
@@ -182,17 +182,30 @@ var PaginatedCollection = ControlledFetchCollection.extend({
         return this.getLastPage() + 1;
     },
 
-    /** fetch the next page of data */
-    fetchPage : function( pageNum, options ){
-        pageNum = Math.max( 0, Math.min( pageNum, this.getLastPage() ) );
-        this.currentPage = pageNum;
-
-        options = _.defaults( options || {}, {
+    getPageLimitOffset : function( pageNum ){
+        pageNum = this.constrainPageNum( pageNum );
+        return {
             limit : this.limitPerPage,
             offset: pageNum * this.limitPerPage
-        });
-        options.reset = true;
-        return this.fetch( options );
+        };
+    },
+
+    constrainPageNum : function( pageNum ){
+        return Math.max( 0, Math.min( pageNum, this.getLastPage() ));
+    },
+
+    /** fetch the next page of data */
+    fetchPage : function( pageNum, options ){
+        var self = this;
+        pageNum = self.constrainPageNum( pageNum );
+        self.currentPage = pageNum;
+        options = _.defaults( options || {}, self.getPageLimitOffset( pageNum ) );
+// options.reset = true;
+        self.trigger( 'fetching-more' );
+        return self.fetch( options )
+            .always( function(){
+                self.trigger( 'fetching-more-done' );
+            });
     },
 
     fetchCurrentPage : function( options ){

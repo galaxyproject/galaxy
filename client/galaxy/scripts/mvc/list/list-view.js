@@ -170,7 +170,8 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
                     return this.removeItemView( _.first( changes.removed ), collection, options );
                 }
                 if( changes.added.length + changes.removed.length > 1 ){
-                    return this.renderItems();
+//TODO: here or in individual fetch promisses?
+                    // return this.renderItems();
                 }
             }
         });
@@ -419,7 +420,6 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         });
         var view = new ViewClass( options );
         this._setUpItemViewListeners( view );
-        this.viewMap[ model.id ] = view;
         return view;
     },
 
@@ -427,7 +427,6 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
     _destroyItemView : function( view ){
         this.stopListening( view );
         this.views = _.without( this.views, view );
-        delete this.viewMap[ view.model.id ];
     },
 
     _destroyItemViews : function( view ){
@@ -436,7 +435,6 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
             self.stopListening( v );
         });
         self.views = [];
-        self.viewMap = {};
         return self;
     },
 
@@ -515,7 +513,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         return this.$emptyMessage( $whereTo ).text( text );
     },
 
-    /** collapse all item views */
+    /** expand all item views */
     expandAll : function(){
         _.each( this.views, function( view ){
             view.expand();
@@ -530,13 +528,6 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
     },
 
     // ------------------------------------------------------------------------ collection/views syncing
-    _modelsToViews : function( models ){
-        var self = this;
-        return _.map( models, function( m ){
-            return self.viewMap[ m.id ] || self._createItemView( m );
-        });
-    },
-
     /** Add a view (if the model should be viewable) to the panel */
     addItemView : function( model, collection, options ){
         // console.log( this + '.addItemView:', model );
@@ -636,12 +627,10 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
 
     /** Remove a view from the panel (if found) */
     removeItemView : function( model, collection, options ){
-        console.log( this + '.removeItemView:', model );
-        var panel = this,
-            view = panel.viewMap[ model.id ];
+        var panel = this;
+        var view = _.find( panel.views, function( v ){ return v.model === model; });
         if( !view ){ return undefined; }
         panel.views = _.without( panel.views, view );
-        delete panel.viewMap[ model.id ];
         panel.trigger( 'view:removed', view );
 
         // potentially show the empty message if no views left
@@ -665,18 +654,12 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
 
     /** get views based on model.id */
     viewFromModelId : function( id ){
-        for( var i = 0; i < this.views.length; i++ ){
-            if( this.views[i].model.id === id ){
-                return this.views[i];
-            }
-        }
-        return undefined;
+        return _.find( this.views, function( v ){ return v.model.id === id; });
     },
 
     /** get views based on model */
     viewFromModel : function( model ){
-        if( !model ){ return undefined; }
-        return this.viewFromModelId( model.id );
+        return model ? this.viewFromModelId( model.id ) : undefined;
     },
 
     /** get views based on model properties */

@@ -54,8 +54,7 @@
         'mvc/history/copy-dialog'
     ], function( viewMod, historyCopyDialog ){
         var $embeddedHistory = $( thisScript ).prev();
-        console.log( $embeddedHistory.get(0) );
-        console.log( $embeddedHistory.find( '.item-content' ).addClass( 'flex-vertical-container' ) );
+        $embeddedHistory.find( '.item-content' ).addClass( 'flex-vertical-container' );
 
         $(function(){
             var historyMod = require( 'mvc/history/history-model' ),

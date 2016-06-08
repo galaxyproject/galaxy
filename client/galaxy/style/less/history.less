@@ -166,14 +166,6 @@
         overflow-x: hidden;
         overflow-y: auto;
 
-        .loading-indicator {
-            display: inline-block;
-            width: 100%;
-            padding: 8px;
-            text-align: center;
-            color: @btn-default-color;
-        }
-
         &:not(:empty) {
             border-top: 1px solid @border-default-color;
         }
@@ -191,7 +183,9 @@
 
     .loading-indicator,
     .contents-loading-indicator {
-        margin-top: 4px;
+        display: inline-block;
+        width: 100%;
+        padding: 8px;
         text-align: center;
         color: grey;
     }

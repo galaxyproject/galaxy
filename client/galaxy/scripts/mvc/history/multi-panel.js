@@ -107,6 +107,8 @@ var HistoryViewColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         var modelData = this.model? this.model.toJSON(): {};
         this.$el.html( this.template( modelData ) );
         this.renderPanel( speed );
+        // jq 1.12 doesn't fade/show properly when display: flex, re-set here
+        this.panel.$el.css( 'display', 'flex' );
         // if model and not children
             // template
             // render controls
@@ -623,33 +625,39 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         speed = _.isNumber( speed )? speed: this.fxSpeed;
         // console.log( 'renderColumns:', speed );
         // render columns and track the total number rendered, firing an event when all are rendered
-        var multipanel = this,
-            sortedAndFiltered = multipanel.sortedFilteredColumns();
+        var self = this;
+        var sortedAndFiltered = self.sortedFilteredColumns();
         // console.log( '\t sortedAndFiltered:', sortedAndFiltered );
+        var $middle = self.$( '.middle' ).empty();
 
-        // set up width based on collection size
-        var $middle = multipanel.$( '.middle' ).empty()
-            .width( multipanel._calcMiddleWidth( sortedAndFiltered.length ) );
-
-        sortedAndFiltered.forEach( function( column, i ){
-            column.$el.appendTo( $middle );
-            column.delegateEvents();
-            column.render( speed );
-        });
-        if( !multipanel.collection.allFetched ){
-            $middle.append( multipanel.loadingIndicatorTemplate( multipanel ) );
+        self._addColumns( sortedAndFiltered, speed );
+        if( !self.collection.allFetched ){
+            $middle.append( self.loadingIndicatorTemplate( self ) );
         }
         //TODO: sorta - at least their fx queue has started the re-rendering
-        multipanel.trigger( 'columns-rendered', sortedAndFiltered, multipanel );
+        self.trigger( 'columns-rendered', sortedAndFiltered, self );
 
-        if( multipanel.datasetSearch && sortedAndFiltered.length <= 1 ){
+        if( self.datasetSearch && sortedAndFiltered.length <= 1 ){
+
         } else {
             // check for in-view, hda lazy-loading if so
-            multipanel.checkColumnsInView();
+            self.checkColumnsInView();
             // the first, current column has position: fixed and flex css will not apply - adjust height manually
-            multipanel._recalcFirstColumnHeight();
+            self._recalcFirstColumnHeight();
         }
         return sortedAndFiltered;
+    },
+
+    _addColumns : function( columns, speed ){
+        speed = _.isNumber( speed )? speed: this.fxSpeed;
+        var $middle = this.$( '.middle' );
+
+        var numExisting = $middle.children( '.history-column' ).length;
+        $middle.width( this._calcMiddleWidth( columns.length + numExisting ) );
+
+        columns.forEach( function( column, i ){
+            column.delegateEvents().render( speed ).$el.appendTo( $middle );
+        });
     },
 
     _calcMiddleWidth : function( numColumns ){

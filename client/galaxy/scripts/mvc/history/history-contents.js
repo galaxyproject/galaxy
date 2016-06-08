@@ -331,7 +331,6 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
 
     /** fetch contents' details in batches of limitPerCall - note: only get searchable details here */
     progressivelyFetchDetails : function( options ){
-        // console.log( 'progressivelyFetchDetails:', options );
         options = options || {};
         var deferred = jQuery.Deferred();
         var self = this;
@@ -342,7 +341,6 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
 
         function _recursivelyFetch( offset ){
             offset = offset || 0;
-            // console.log( '_recursivelyFetch:', offset );
             var _options = _.extend( _.clone( options ), {
                 view    : 'summary',
                 keys    : detailKeys,
@@ -351,15 +349,14 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
                 reset   : offset === 0,
                 remove  : false
             });
-            // console.log( 'fetching:', _options.limit, _options.offset );
+
             _.defer( function(){
                 self.fetch.call( self, _options )
                     .fail( deferred.reject )
                     .done( function( response ){
                         deferred.notify( response, limit, offset );
-
-                        // console.log( 'received:', response.length );
                         if( response.length !== limit ){
+                            self.allFetched = true;
                             deferred.resolve( response, limit, offset );
 
                         } else {
