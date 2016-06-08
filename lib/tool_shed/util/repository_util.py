@@ -1,10 +1,10 @@
-import ConfigParser
 import logging
 import os
 import re
 import shutil
-from urllib2 import HTTPError
 
+from six.moves import configparser
+from six.moves.urllib.error import HTTPError
 from sqlalchemy import false, and_, or_
 
 from galaxy import util
@@ -39,7 +39,7 @@ def build_allow_push_select_field( trans, current_push_list, selected_value='non
 
 
 def change_repository_name_in_hgrc_file( hgrc_file, new_name ):
-    config = ConfigParser.ConfigParser()
+    config = configparser.ConfigParser()
     config.read( hgrc_file )
     config.read( hgrc_file )
     config.set( 'web', 'name', new_name )
@@ -522,7 +522,7 @@ def get_repository_admin_role_name( repository_name, repository_owner ):
 
 def get_repository_and_repository_dependencies_from_repo_info_dict( app, repo_info_dict ):
     """Return a tool_shed_repository or repository record defined by the information in the received repo_info_dict."""
-    repository_name = repo_info_dict.keys()[ 0 ]
+    repository_name = list(repo_info_dict.keys())[ 0 ]
     repo_info_tuple = repo_info_dict[ repository_name ]
     description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
         get_repo_info_tuple_contents( repo_info_tuple )
@@ -802,7 +802,7 @@ def get_tool_shed_status_for_installed_repository( app, repository ):
         encoded_tool_shed_status_dict = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
         tool_shed_status_dict = encoding_util.tool_shed_decode( encoded_tool_shed_status_dict )
         return tool_shed_status_dict
-    except HTTPError, e:
+    except HTTPError as e:
         # This should handle backward compatility to the Galaxy 12/20/12 release.  We used to only handle updates for an installed revision
         # using a boolean value.
         log.debug( "Error attempting to get tool shed status for installed repository %s: %s\nAttempting older 'check_for_updates' method.\n" %
@@ -813,10 +813,10 @@ def get_tool_shed_status_for_installed_repository( app, repository ):
             # The value of text will be 'true' or 'false', depending upon whether there is an update available for the installed revision.
             text = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
             return dict( revision_update=text )
-        except Exception, e:
+        except Exception as e:
             # The required tool shed may be unavailable, so default the revision_update value to 'false'.
             return dict( revision_update='false' )
-    except Exception, e:
+    except Exception as e:
         log.exception( "Error attempting to get tool shed status for installed repository %s: %s" % ( str( repository.name ), str( e ) ) )
         return {}
 
@@ -937,7 +937,7 @@ def set_repository_attributes( app, repository, status, error_message, deleted, 
             try:
                 shutil.rmtree( clone_dir )
                 log.debug( "Removed repository installation directory: %s" % str( clone_dir ) )
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Error removing repository installation directory %s: %s" % ( str( clone_dir ), str( e ) ) )
     repository.error_message = error_message
     repository.status = status
