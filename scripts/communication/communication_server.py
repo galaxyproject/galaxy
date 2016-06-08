@@ -13,9 +13,10 @@ pip install flask flask-login flask-socketio eventlet   # install the requiremen
 
 As a next step start the communication server with something like this:
 
-./scripts/communication_server.py --port 7070 --host localhost
+./scripts/communication/communication_server.py --port 7070 --host localhost
 
-Please make sure the host and the port matches the ones on config/galaxy.ini
+Please make sure the host and the port matches the ones on config/galaxy.ini and
+set the "secret_id".
 
 The communication server feature of Galaxy can be controlled on three different levels:
   1. Admin can activate/deactivate communication (config/galaxy.ini)
@@ -64,7 +65,7 @@ id_secret = app_properties.get('id_secret', 'dangerous_default')
 
 security_helper = SecurityHelper(id_secret=id_secret)
 # And get access to the models
-# Login manager to manager current_user functionality
+# Login manager to manage current_user functionality
 login_manager = flask_login.LoginManager()
 
 app = Flask(__name__)
@@ -130,7 +131,7 @@ def crossdomain(origin=None, methods=None, headers=None,
     return decorator
 
 script_dir = os.path.dirname(os.path.realpath( __file__))
-communication_directory = os.path.join( script_dir, 'communication', 'template' )
+communication_directory = os.path.join( script_dir, 'template' )
 
 @app.route('/')
 @crossdomain(origin='*')
@@ -164,13 +165,13 @@ def event_broadcast(message):
 
 @socketio.on('event room', namespace='/chat')
 def send_room_message(message):
-    message = sanitize_html(message['data'])
+    data = sanitize_html(message['data'])
     room = sanitize_html(message['room'])
 
     log.debug("%s sent '%s' to %s" % (current_user.username, message, room))
 
     emit('event response room',
-            {'data': message, 'user': current_user.username, 'chatroom': room}, room=room)
+            {'data': data, 'user': current_user.username, 'chatroom': room}, room=room)
 
 
 @socketio.on('event disconnect', namespace='/chat')
