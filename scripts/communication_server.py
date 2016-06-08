@@ -7,7 +7,7 @@ Server for realtime Galaxy communication.
 At first you need to install a few requirements.
 
 . GALAXY_ROOT/.venv/bin/activate    # activate Galaxy's virtualenv
-pip install flask flask-socketio eventlet   # install the requirements
+pip install flask flask-login flask-socketio eventlet   # install the requirements
 
 
 
@@ -24,23 +24,64 @@ The communication server feature of Galaxy can be controlled on three different 
 
 
 """
-
-
 import argparse
 import os
 import sys
-from flask import Flask, request, make_response, current_app
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
+
+import logging
+logging.basicConfig()
+log = logging.getLogger(__name__)
+
+from flask import Flask, request, make_response, current_app, send_file
 from flask_socketio import SocketIO, emit, disconnect, join_room, leave_room, close_room, rooms
+import flask.ext.login as flask_login
+from flask.ext.login import current_user
 from datetime import timedelta
 from functools import update_wrapper
 
+import galaxy.config
+from galaxy.model.orm.scripts import get_config
+from galaxy.model import mapping
+from galaxy.util.properties import load_app_properties
+from galaxy.web.security import SecurityHelper
+from galaxy.util.sanitize_html import sanitize_html
+
+# Get config file and load up SA session
+config = get_config( sys.argv )
+model = mapping.init( '/tmp/', config['db_url'] )
+sa_session = model.context.current
+
+# With the config file we can load the full app properties
+app_properties = load_app_properties(ini_file=config['config_file'])
+# We need the ID secret for configuring the security helper to decrypt
+# galaxysession cookies.
+security_helper = SecurityHelper(id_secret=app_properties['id_secret'])
+# And get access to the models
+# Login manager to manager current_user functionality
+login_manager = flask_login.LoginManager()
+
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'notscret'
+app.config['SECRET_KEY'] = app_properties['id_secret']
+login_manager.init_app(app)
 socketio = SocketIO(app)
 
+@login_manager.request_loader
+def findUserByCookie(request):
+    cookie_value = request.cookies.get('galaxysession')
+    if not cookie_value:
+        return None
+
+    session_key = security_helper.decode_guid(cookie_value)
+    user_session = sa_session.query(model.GalaxySession) \
+            .filter_by(session_key=session_key).first()
+
+    if user_session:
+        return user_session.user
+
+    return None
 
 # Taken from flask.pocoo.org/snippets/56/
-
 def crossdomain(origin=None, methods=None, headers=None,
                 max_age=21600, attach_to_all=True,
                 automatic_options=True):
@@ -82,55 +123,82 @@ def crossdomain(origin=None, methods=None, headers=None,
         return update_wrapper(wrapped_function, f)
     return decorator
 
-dir = os.path.dirname( __file__ )
-communication_directory = os.path.join( dir, 'communication' )
-template_html_path = os.path.join( communication_directory, 'template/communication.html' )
-template = open(template_html_path, 'r').read()
+script_dir = os.path.dirname(os.path.realpath( __file__))
+communication_directory = os.path.join( script_dir, 'communication', 'template' )
 
 @app.route('/')
 @crossdomain(origin='*')
 def index():
-    return template
+    return send_file(os.path.join(communication_directory, 'communication.html'))
+
+@app.route('/communication.js')
+def static_script():
+    return send_file(os.path.join(communication_directory, 'communication.js'))
+
+@app.route('/communication.css')
+def static_style():
+    return send_file(os.path.join(communication_directory, 'communication.css'))
+
 
 
 @socketio.on('event connect', namespace='/chat')
 def event_connect(message):
-    print("connected")
+    log.info("%s connected" % (current_user.username,))
 
 
 @socketio.on('event broadcast', namespace='/chat')
 def event_broadcast(message):
+    message = sanitize_html(message['data'])
+
+    log.debug("%s broadcast '%s'" % (current_user.username, message))
+
     emit('event response',
-         {'data': message['data']}, broadcast=True)
+            {'data': message, 'user': current_user.username}, broadcast=True)
+
+
+@socketio.on('event room', namespace='/chat')
+def send_room_message(message):
+    message = sanitize_html(message['data'])
+    room = sanitize_html(message['room'])
+
+    log.debug("%s sent '%s' to %s" % (current_user.username, message, room))
+
+    emit('event response room',
+            {'data': message, 'user': current_user.username, 'chatroom': room}, room=room)
+
 
 @socketio.on('event disconnect', namespace='/chat')
 def event_disconnect(message):
-    print("disconnected")
+    log.info("%s disconnected" % current_user.username)
     disconnect()
 
 
 @socketio.on('disconnect', namespace='/chat')
 def event_disconnect():
-    print("disconnected")
+    log.info("%s disconnected" % current_user.username)
 
 
 @socketio.on('join', namespace='/chat')
 def join(message):
-    join_room(message['room'])
-    emit('event response room', {'data': message['room'], 'userjoin': message['userjoin']}, broadcast=True)
+    room = sanitize_html(message['room'])
+
+    log.debug("%s joined %s" % (current_user.username, room))
+    join_room(room)
+
+    emit('event response room',
+            {'data': room, 'userjoin': current_user.username}, broadcast=True)
 
 
 @socketio.on('leave', namespace='/chat')
 def leave(message):
-    leave_room(message['room'])
-    emit('event response room',
-         {'data': message['room'], 'userleave': message['userleave']}, broadcast=True)
+    room = sanitize_html(message['room'])
 
+    log.debug("%s left %s" % (current_user.username, room))
+    leave_room(room)
 
-@socketio.on('event room', namespace='/chat')
-def send_room_message(message):
     emit('event response room',
-         {'data': message['data'], 'chatroom': message['room']}, room=message['room'])
+            {'data': room, 'userleave': current_user.username}, broadcast=True)
+
 
 if __name__ == '__main__':
 
@@ -140,4 +208,3 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     socketio.run(app, host=args.host, port=args.port)
-
