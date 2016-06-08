@@ -27,7 +27,7 @@ The communication server feature of Galaxy can be controlled on three different 
 import argparse
 import os
 import sys
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
 import logging
 logging.basicConfig()
