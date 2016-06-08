@@ -64,7 +64,7 @@
                     <i>select at runtime</i>
                 %endif
             %else:
-                ${cgi.escape( param.value_to_display_text( value, app ) )}
+                ${cgi.escape( param.value_to_display_text( value, app ) or 'Unavailable.' )}
             %endif
         </div>
         %if hasattr( step, 'upgrade_messages' ) and step.upgrade_messages and param.name in step.upgrade_messages:
