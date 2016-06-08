@@ -77,7 +77,7 @@ define([], function() {
             this.field.collapsed ? this.$field.hide() : this.$field.fadeIn( 'fast' );
             // render preview view for collapsed fields
             this.$preview[ this.field.collapsed && this.model.get( 'collapsible_preview' ) ? 'show' : 'hide' ]()
-                         .html( this.model.get( 'text_value' ) );
+                         .html( _.escape( this.model.get( 'text_value' ) ) );
             // render error messages
             var error_text = this.model.get( 'error_text' );
             this.$error[ error_text ? 'show' : 'hide' ]();
