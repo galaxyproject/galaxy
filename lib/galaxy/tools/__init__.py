@@ -2217,9 +2217,16 @@ class UnzipCollectionTool( DatabaseOperationTool ):
     tool_type = 'unzip_collection'
 
     def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
-        hdca = incoming[ "input" ]
-        assert hdca.collection.collection_type == "paired"
-        forward_o, reverse_o = hdca.collection.dataset_instances
+        has_collection = incoming[ "input" ]
+        if hasattr(has_collection, "element_type"):
+            # It is a DCE
+            collection = has_collection.element_object
+        else:
+            # It is an HDCA
+            collection = has_collection.collection
+
+        assert collection.collection_type == "paired"
+        forward_o, reverse_o = collection.dataset_instances
         forward, reverse = forward_o.copy(), reverse_o.copy()
         # TODO: rename...
         history.add_dataset( forward, set_hid=True )

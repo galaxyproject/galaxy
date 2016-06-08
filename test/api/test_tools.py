@@ -139,6 +139,18 @@ class ToolsTestCase( api.ApiTestCase ):
         assert output_forward["history_id"] == history_id
         assert output_reverse["history_id"] == history_id
 
+    def test_unzip_nested( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca_list_id = self.__build_nested_list( history_id )
+        inputs = {
+            "input": {
+                'batch': True,
+                'values': [ { 'src': 'hdca', 'map_over_type': 'paired', 'id': hdca_list_id }],
+            }
+        }
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        response = self._run( "__UNZIP_COLLECTION__", history_id, inputs, assert_ok=True )
+
     def test_zip_inputs( self ):
         history_id = self.dataset_populator.new_history()
         hda1 = dataset_to_param( self.dataset_populator.new_dataset( history_id, content='1\t2\t3' ) )
