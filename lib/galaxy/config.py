@@ -311,8 +311,13 @@ class Configuration( object ):
         self.tool_help_boost = kwargs.get( "tool_help_boost", 0.5 )
         self.tool_search_limit = kwargs.get( "tool_search_limit", 20 )
         # Location for tool dependencies.
-        if 'tool_dependency_dir' in kwargs:
-            self.tool_dependency_dir = resolve_path( kwargs.get( "tool_dependency_dir" ), self.root )
+        # Location for tool dependencies.
+        tool_dependency_dir = kwargs.get( "tool_dependency_dir", "database/dependencies" )
+        if tool_dependency_dir.lower() == "none":
+            tool_dependency_dir = None
+
+        if tool_dependency_dir is not None:
+            self.tool_dependency_dir = resolve_path( tool_dependency_dir, self.root )
             # Setting the following flag to true will ultimately cause tool dependencies
             # to be located in the shell environment and used by the job that is executing
             # the tool.
