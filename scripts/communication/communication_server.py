@@ -1,30 +1,27 @@
 #!/usr/bin/env python
 
 """
-Server for realtime Galaxy communication.
-
+Server for realtime communication between Galaxy uers.
 
 At first you need to install a few requirements.
 
-. GALAXY_ROOT/.venv/bin/activate    # activate Galaxy's virtualenv
+. GALAXY_ROOT/.venv/bin/activate                        # activate Galaxy's virtualenv
 pip install flask flask-login flask-socketio eventlet   # install the requirements
-
-
 
 As a next step start the communication server with something like this:
 
 ./scripts/communication/communication_server.py --port 7070 --host localhost
 
-Please make sure the host and the port matches the ones on config/galaxy.ini and
-set the "secret_id".
+Please make sure the host and the port matches the ones in ./config/galaxy.ini and
+to set the `secret_id`.
 
-The communication server feature of Galaxy can be controlled on three different levels:
-  1. Admin can activate/deactivate communication (config/galaxy.ini)
-  2. User can actrivate/deactivate for one session (in the communication window)
-  3. User can actrivate/deactivate as personal-setting for ever (Galaxy user preferences)
-
+This communication server can be controlled on three different levels:
+  1. The admin can activate/deactivate the communication server via ./config/galaxy.ini. [off by default]
+  2. The user can activate/deactivate it in their own personal-settings via Galaxy user preferences. [off by default]
+  3. The user can activate/deactivate communications for a session directly in the communication window. [on by default]
 
 """
+
 import argparse
 import os
 import sys
