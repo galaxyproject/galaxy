@@ -1647,6 +1647,16 @@ class Dataset( StorableObject ):
         states.SETTING_METADATA
     )
     ready_states = tuple( set( states.__dict__.values() ) - set( non_ready_states ) )
+    valid_input_states = tuple(
+        set( states.__dict__.values() ) - set( [states.ERROR, states.DISCARDED] )
+    )
+    terminal_states = (
+        states.OK,
+        states.EMPTY,
+        states.ERROR,
+        states.DISCARDED,
+        states.FAILED_METADATA,
+    )
 
     conversion_messages = Bunch( PENDING="pending",
                                  NO_DATA="no data",

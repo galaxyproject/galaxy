@@ -364,6 +364,10 @@ class Tool( object, Dictifiable ):
 
         return any( map( output_is_dynamic, self.outputs.values() ) )
 
+    @property
+    def valid_input_states( self ):
+        return model.Dataset.valid_input_states
+
     def __get_job_tool_configuration(self, job_params=None):
         """Generalized method for getting this tool's job configuration.
 
@@ -2187,6 +2191,17 @@ class DataManagerTool( OutputParameterJSONTool ):
 class DatabaseOperationTool( Tool ):
     default_tool_action = ModelOperationToolAction
     require_dataset_ok = True
+
+    @property
+    def valid_input_states( self ):
+        if self.require_dataset_ok:
+            return (model.Dataset.states.OK,)
+        else:
+            return model.Dataset.terminal_states
+
+    @property
+    def allow_errored_inputs( self ):
+        return not self.require_dataset_ok
 
     def check_inputs_ready( self, input_datasets, input_dataset_collections ):
         def check_dataset_instance( input_dataset ):
