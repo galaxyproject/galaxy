@@ -444,7 +444,7 @@ var utils = {
              $('#send_data').css('display', 'block');
          }
     },
-    store_append_message(key, data){
+    store_append_message: function(key, data){
         if (!localStorage[key]) {
             localStorage[key] = data + '<br>';
         }
