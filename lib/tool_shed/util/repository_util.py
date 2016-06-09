@@ -269,7 +269,7 @@ def create_repository( app, name, type, description, long_description, user_id, 
     # Create an admin role for the repository.
     create_repository_admin_role( app, repository )
     # Determine the repository's repo_path on disk.
-    dir = os.path.join( app.config.file_path, *galaxy.webapps.tool_shed.model.directory_hash_id( repository.id ) )
+    dir = os.path.join( app.config.file_path, *util.directory_hash_id( repository.id ) )
     # Create directory if it does not exist.
     if not os.path.exists( dir ):
         os.makedirs( dir )

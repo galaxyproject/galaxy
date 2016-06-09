@@ -34,11 +34,10 @@ from galaxy.util.dictifiable import Dictifiable
 from galaxy.security import get_permitted_actions
 from galaxy.util import Params, restore_text, send_mail
 from galaxy.util import ready_name_for_url, unique_id
-from galaxy.util import unicodify
+from galaxy.util import unicodify, directory_hash_id
 from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.util.bunch import Bunch
-from galaxy.util.directory_hash import directory_hash_id
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
