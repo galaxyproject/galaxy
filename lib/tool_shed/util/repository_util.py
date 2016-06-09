@@ -16,8 +16,8 @@ from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
 import tool_shed.util.metadata_util as metadata_util
 from tool_shed.util.web_util import escape
-from galaxy.webapps.tool_shed.model import directory_hash_id
-from tool_shed.dependencies.repository import relation_builder
+import galaxy.webapps.tool_shed.model
+import tool_shed.dependencies.repository
 
 log = logging.getLogger( __name__ )
 
@@ -200,7 +200,7 @@ def create_repo_info_dict( app, repository_clone_url, changeset_revision, ctx_re
             metadata = repository_metadata.metadata
             if metadata:
                 tool_shed_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
-                rb = relation_builder.RelationBuilder( app, repository, repository_metadata, tool_shed_url )
+                rb = tool_shed.dependencies.repository.relation_builder.RelationBuilder( app, repository, repository_metadata, tool_shed_url )
                 # Get a dictionary of all repositories upon which the contents of the received repository depends.
                 repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
                 tool_dependencies = metadata.get( 'tool_dependencies', {} )
@@ -269,7 +269,7 @@ def create_repository( app, name, type, description, long_description, user_id, 
     # Create an admin role for the repository.
     create_repository_admin_role( app, repository )
     # Determine the repository's repo_path on disk.
-    dir = os.path.join( app.config.file_path, *directory_hash_id( repository.id ) )
+    dir = os.path.join( app.config.file_path, *galaxy.webapps.tool_shed.model.directory_hash_id( repository.id ) )
     # Create directory if it does not exist.
     if not os.path.exists( dir ):
         os.makedirs( dir )
