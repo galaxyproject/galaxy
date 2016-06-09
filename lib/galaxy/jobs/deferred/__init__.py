@@ -105,14 +105,14 @@ class DeferredJobQueue( object ):
             if job.is_check_time:
                 try:
                     job_state = self.plugins[job.plugin].check_job( job )
-                except Exception, e:
+                except Exception as e:
                     self.__fail_job( job )
                     log.exception( 'Set deferred job %s to error because of an exception in check_job(): %s' % ( job.id, str( e ) ) )
                     continue
                 if job_state == self.job_states.READY:
                     try:
                         self.plugins[job.plugin].run_job( job )
-                    except Exception, e:
+                    except Exception as e:
                         self.__fail_job( job )
                         log.exception( 'Set deferred job %s to error because of an exception in run_job(): %s' % ( job.id, str( e ) ) )
                         continue

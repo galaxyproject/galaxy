@@ -32,7 +32,7 @@ def upgrade(migrate_engine):
     # Create tool_tag_association table
     try:
         ToolTagAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         log.error( "Creating tool_tag_association table failed: %s" % str( e ) )
 
 
@@ -43,5 +43,5 @@ def downgrade(migrate_engine):
     # Drop tool_tag_association table
     try:
         ToolTagAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.error( "Dropping tool_tag_association table failed: %s" % str( e ) )

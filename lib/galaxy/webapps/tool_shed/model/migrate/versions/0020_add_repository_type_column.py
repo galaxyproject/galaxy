@@ -28,7 +28,7 @@ def upgrade( migrate_engine ):
         # Create
         c.create( Repository_table, index_name="ix_repository_type" )
         assert c is Repository_table.c.type
-    except Exception, e:
+    except Exception as e:
         print "Adding type column to the repository table failed: %s" % str( e )
     # Update the type column to have the default unrestricted value.
     cmd = "UPDATE repository SET type = 'unrestricted'"
@@ -42,5 +42,5 @@ def downgrade( migrate_engine ):
     Repository_table = Table( "repository", metadata, autoload=True )
     try:
         Repository_table.c.type.drop()
-    except Exception, e:
+    except Exception as e:
         print "Dropping column type from the repository table failed: %s" % str( e )

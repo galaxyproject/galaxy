@@ -129,7 +129,7 @@ def generate_message_for_invalid_tools( app, invalid_file_tups, repository, meta
 def get_headers( fname, sep, count=60, is_multi_byte=False ):
     """Returns a list with the first 'count' lines split by 'sep'."""
     headers = []
-    for idx, line in enumerate( file( fname ) ):
+    for idx, line in enumerate( open( fname ) ):
         line = line.rstrip( '\n\r' )
         if is_multi_byte:
             line = unicodify( line, 'utf-8' )
@@ -241,7 +241,7 @@ def new_state( trans, tool, invalid=False ):
     try:
         # Attempt to generate the tool state using the standard Galaxy-side code
         return tool.new_state( trans )
-    except Exception, e:
+    except Exception as e:
         # Fall back to building tool state as below
         log.debug( 'Failed to build tool state for tool "%s" using standard method, will try to fall back on custom method: %s', tool.id, e )
     inputs = tool.inputs_by_page[ 0 ]

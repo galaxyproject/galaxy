@@ -1,5 +1,8 @@
 <tool id="Filter1" name="Filter" version="1.1.0">
   <description>data on any column using simple expressions</description>
+  <edam_operations>
+    <edam_operation>operation_0335</edam_operation>
+  </edam_operations>
   <command interpreter="python">
     filtering.py $input $out_file1 "$cond" ${input.metadata.columns} "${input.metadata.column_types}" $header_lines
   </command>

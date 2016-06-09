@@ -19,11 +19,11 @@ then
 fi
 
 
-tool_shed=`./lib/tool_shed/scripts/bootstrap_tool_shed/parse_run_sh_args.sh $@`
+tool_shed=`./scripts/tool_shed/bootstrap_tool_shed/parse_run_sh_args.sh $@`
 args=$@
 
 if [ $? -eq 0 ] ; then
-	bash ./lib/tool_shed/scripts/bootstrap_tool_shed/bootstrap_tool_shed.sh $@
+	bash ./scripts/tool_shed/bootstrap_tool_shed/parse_run_sh_args.sh $@
 	args=`echo $@ | sed "s#-\?-bootstrap_from_tool_shed $tool_shed##"`
 fi
 

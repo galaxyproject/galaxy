@@ -408,6 +408,7 @@ class Taxonomy( Tabular ):
 @dataproviders.decorators.has_dataproviders
 class Sam( Tabular ):
     edam_format = "format_2573"
+    edam_data = "data_0863"
     file_ext = 'sam'
     track_type = "ReadTrack"
     data_sources = { "data": "bam", "index": "bigwig" }
@@ -875,15 +876,18 @@ class FeatureLocationIndex( Tabular ):
 
 
 @dataproviders.decorators.has_dataproviders
-class CSV( TabularData ):
+class BaseCSV( TabularData ):
     """
     Delimiter-separated table data.
     This includes CSV, TSV and other dialects understood by the
     Python 'csv' module https://docs.python.org/2/library/csv.html
+    Must be extended to define the dialect to use, strict_width: and file_ext.
+    See Python module csv for documentation of dialect settings
     """
     delimiter = ','
     file_ext = 'csv'  # File extension
     peek_size = 1024  # File chunk used for sniffing CSV dialect
+    big_peek_size = 10240  # Large File chunk used for sniffing CSV dialect
 
     def is_int( self, column_text ):
         try:
@@ -911,18 +915,63 @@ class CSV( TabularData ):
 
     def sniff( self, filename ):
         """ Return True if if recognizes dialect and header. """
-        if not csv.Sniffer().has_header(open(filename, 'r').read(self.peek_size)):
+        try:
+            # check the dialect works
+            reader = csv.reader(open(filename, 'r'), self.dialect)
+            # Check we can read header and get columns
+            header_row = reader.next()
+            if len(header_row) < 2:
+                # No columns so not separated by this dialect.
+                return False
+
+            # Check that there is a second row as it is used by set_meta and
+            # that all rows can be read
+            if self.strict_width:
+                num_columns = len(header_row)
+                found_second_line = False
+                for data_row in reader:
+                    found_second_line = True
+                    # All columns must be the same length
+                    if num_columns != len(data_row):
+                        return False
+                if not found_second_line:
+                    return False
+            else:
+                data_row = reader.next()
+                if len(data_row) < 2:
+                    # No columns so not separated by this dialect.
+                    return False
+                # ignore the length in the rest
+                for data_row in reader:
+                    pass
+
+            # Optional: Check Python's csv comes up with a similar dialect
+            auto_dialect = csv.Sniffer().sniff(open(filename, 'r').read(self.big_peek_size))
+            if (auto_dialect.delimiter != self.dialect.delimiter):
+                return False
+            if (auto_dialect.quotechar != self.dialect.quotechar):
+                return False
+            """
+            Not checking for other dialect options
+            They may be mis detected from just the sample.
+            Or not effect the read such as doublequote
+
+            Optional: Check for headers as in the past.
+            Note No way around Python's csv calling Sniffer.sniff again.
+            Note Without checking the dialect returned by sniff
+                  this test may be checking the wrong dialect.
+            """
+            if not csv.Sniffer().has_header(open(filename, 'r').read(self.big_peek_size)):
+                return False
+            return True
+        except:
+            # Not readable by Python's csv using this dialect
             return False
-        # Fetch at least three consecutive lines to be reasonably sure
-        reader = csv.reader(open(filename, 'r'))
-        for i in range(0, 3):
-            reader.next()
-        return True
 
     def set_meta( self, dataset, **kwd ):
         with open(dataset.file_name, 'r') as csvfile:
-            # Parse file
-            reader = csv.reader(csvfile)
+            # Parse file with the correct dialect
+            reader = csv.reader(csvfile, self.dialect)
             data_row = None
             header_row = None
             try:
@@ -947,6 +996,42 @@ class CSV( TabularData ):
             dataset.metadata.delimiter = reader.dialect.delimiter
 
 
+@dataproviders.decorators.has_dataproviders
+class CSV( BaseCSV ):
+    """
+    Comma-separated table data.
+    Only sniffs comma-separated files with at least 2 rows and 2 columns.
+    """
+
+    def __init__(self, **kwd):
+        BaseCSV.__init__( self, **kwd )
+        self.dialect = csv.excel  # This is the default
+        self.file_ext = 'csv'  # File extension
+        self.strict_width = False  # Previous csv type did not check column width
+
+
+@dataproviders.decorators.has_dataproviders
+class TSV( BaseCSV ):
+    """
+    Tab-separated table data.
+    Only sniff tab-separated files with at least 2 rows and 2 columns.
+
+    Note: Use of this datatype is optional as the general tabular datatype will
+    handle most tab-separated files. This datatype is only required for datasets
+    with tabs INSIDE double quotes.
+
+    This datatype currently does not support TSV files where the header has one
+    column less to indicate first column is row names. This kind of file is
+    handled fine by the tabular datatype.
+    """
+
+    def __init__(self, **kwd):
+        BaseCSV.__init__( self, **kwd )
+        self.dialect = csv.excel_tab
+        self.file_ext = 'tsv'  # File extension
+        self.strict_width = True  # Leave files with different width to tabular
+
+
 class ConnectivityTable( Tabular ):
     edam_format = "format_3309"
     file_ext = "ct"
@@ -963,7 +1048,7 @@ class ConnectivityTable( Tabular ):
     def set_meta( self, dataset, **kwd ):
         data_lines = 0
 
-        for line in file( dataset.file_name ):
+        for line in open( dataset.file_name ):
             data_lines += 1
 
         dataset.metadata.data_lines = data_lines

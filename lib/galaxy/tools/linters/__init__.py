@@ -1,2 +1,1 @@
-""" Framework for linting tools.
-"""
+"""This package contains linting functions for Galaxy tools."""

@@ -38,7 +38,7 @@ def upgrade(migrate_engine):
         try:
             table.create()
         except:
-            log.warn( "Failed to create table '%s', ignoring (might result in wrong schema)" % table.name )
+            log.warning( "Failed to create table '%s', ignoring (might result in wrong schema)" % table.name )
 
 
 def downgrade(migrate_engine):

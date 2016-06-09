@@ -130,6 +130,8 @@ var DatasetAssociation = Backbone.Model
 
     /** Does this model already contain detailed data (as opposed to just summary level data)? */
     hasDetails : function(){
+        // if it's inaccessible assume it has everything it needs
+        if( !this.get( 'accessible' ) ){ return true; }
         //?? this may not be reliable
         return _.has( this.attributes, 'genome_build' );
     },

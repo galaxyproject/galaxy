@@ -24,10 +24,14 @@ else:
     DATASET_HID = None
 
 # Add all environment variables collected from Galaxy's IE infrastructure
-ie_request.launch(env_override={
-    'notebook_password': PASSWORD,
-    'dataset_hid': DATASET_HID,
-})
+ie_request.launch(
+    image=trans.request.params.get('image_tag', None),
+    additional_ids=trans.request.params.get('additional_dataset_ids', None),
+    env_override={
+        'notebook_password': PASSWORD,
+        'dataset_hid': DATASET_HID,
+    }
+)
 
 ## General IE specific
 # Access URLs for the notebook from within galaxy.

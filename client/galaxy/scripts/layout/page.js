@@ -28,13 +28,13 @@ var PageLayoutView = Backbone.View.extend( BaseMVC.LoggableMixin ).extend({
         // TODO: remove globals
         this.log( this + '.initialize:', options );
         _.extend( this, _.pick( options, this._panelIds ) );
-        this.options = _.defaults( _.omit( options, this._panelIds ), this.defaultOptions );
+        this.options = _.defaults( _.omit( options.config, this._panelIds ), this.defaultOptions );
         Galaxy.modal = this.modal = new Modal.View();
-        this.masthead = new Masthead.View( this.options.config );
+        this.masthead = new Masthead.View( this.options );
         this.$el.attr( 'scroll', 'no' );
         this.$el.html( this._template() );
         this.$el.append( this.masthead.frame.$el );
-        this.$el.append( this.masthead.$el );
+        this.$( '#masthead' ).replaceWith( this.masthead.$el );
         this.$el.append( this.modal.$el );
         this.$messagebox = this.$( '#messagebox' );
         this.$inactivebox = this.$( '#inactivebox' );
@@ -110,6 +110,7 @@ var PageLayoutView = Backbone.View.extend( BaseMVC.LoggableMixin ).extend({
         return [
             '<div id="everything">',
                 '<div id="background"/>',
+                '<div id="masthead"/>',
                 '<div id="messagebox"/>',
                 '<div id="inactivebox" class="panel-warning-message" />',
                 this.left?   '<div id="left" />' : '',

@@ -4,7 +4,6 @@ Universe configuration builder.
 # absolute_import needed for tool_shed package.
 from __future__ import absolute_import
 
-import ConfigParser
 import logging
 import logging.config
 import os
@@ -16,7 +15,9 @@ import sys
 import tempfile
 import threading
 from datetime import timedelta
+
 from six import string_types
+from six.moves import configparser
 
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
@@ -57,7 +58,7 @@ class Configuration( object ):
         self.__parse_config_file_options( kwargs )
 
         # Collect the umask and primary gid from the environment
-        self.umask = os.umask( 077 )  # get the current umask
+        self.umask = os.umask( 0o77 )  # get the current umask
         os.umask( self.umask )  # can't get w/o set, so set it back
         self.gid = os.getgid()  # if running under newgrp(1) we'll need to fix the group of data created on the cluster
 
@@ -151,7 +152,8 @@ class Configuration( object ):
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         self.retry_metadata_internally = string_as_bool( kwargs.get( "retry_metadata_internally", "True" ) )
         self.max_metadata_value_size = int( kwargs.get( "max_metadata_value_size", 5242880 ) )
-        self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
+        self.single_user = kwargs.get( "single_user", None )
+        self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) ) or self.single_user
         self.normalize_remote_user_email = string_as_bool( kwargs.get( "normalize_remote_user_email", "False" ) )
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
         self.remote_user_header = kwargs.get( "remote_user_header", 'HTTP_REMOTE_USER' )
@@ -226,6 +228,9 @@ class Configuration( object ):
         self.commands_in_new_shell = string_as_bool( kwargs.get( 'enable_beta_tool_command_isolation', "True" ) )
         self.tool_submission_burst_threads = int( kwargs.get( 'tool_submission_burst_threads', '1' ) )
         self.tool_submission_burst_at = int( kwargs.get( 'tool_submission_burst_at', '10' ) )
+        # Enable new interface for API installations from TS.
+        # Admin menu will list both if enabled.
+        self.enable_beta_ts_api_install = string_as_bool( kwargs.get( 'enable_beta_ts_api_install', 'False' ) )
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool( kwargs.get( 'enable_beta_job_managers', 'False' ) )
         # These workflow modules should not be considered part of Galaxy's
@@ -289,6 +294,8 @@ class Configuration( object ):
         self.whoosh_index_dir = resolve_path( kwargs.get( "whoosh_index_dir", "database/whoosh_indexes" ), self.root )
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
         self.ftp_upload_dir_identifier = kwargs.get( 'ftp_upload_dir_identifier', 'email' )  # attribute on user - email, username, id, etc...
+        self.ftp_upload_dir_template = kwargs.get( 'ftp_upload_dir_template', '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep )
+        self.ftp_upload_purge = string_as_bool(  kwargs.get( 'ftp_upload_purge', 'True' ) )
         self.ftp_upload_site = kwargs.get( 'ftp_upload_site', None )
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
@@ -299,6 +306,8 @@ class Configuration( object ):
         self.tool_name_boost = kwargs.get( "tool_name_boost", 9 )
         self.tool_section_boost = kwargs.get( "tool_section_boost", 3 )
         self.tool_description_boost = kwargs.get( "tool_description_boost", 2 )
+        self.tool_labels_boost = kwargs.get( "tool_labels_boost", 1 )
+        self.tool_stub_boost = kwargs.get( "tool_stub_boost", 5 )
         self.tool_help_boost = kwargs.get( "tool_help_boost", 0.5 )
         self.tool_search_limit = kwargs.get( "tool_search_limit", 20 )
         # Location for tool dependencies.
@@ -348,7 +357,7 @@ class Configuration( object ):
         self.irods_default_resource = kwargs.get( 'irods_default_resource', None )
         # Parse global_conf and save the parser
         global_conf = kwargs.get( 'global_conf', None )
-        global_conf_parser = ConfigParser.ConfigParser()
+        global_conf_parser = configparser.ConfigParser()
         self.config_file = None
         self.global_conf_parser = global_conf_parser
         if global_conf and "__file__" in global_conf:
@@ -407,7 +416,7 @@ class Configuration( object ):
         self.amqp = {}
         try:
             amqp_config = global_conf_parser.items("galaxy_amqp")
-        except ConfigParser.NoSectionError:
+        except configparser.NoSectionError:
             amqp_config = {}
         for k, v in amqp_config:
             self.amqp[k] = v
@@ -443,6 +452,7 @@ class Configuration( object ):
         # Statistics and profiling with statsd
         self.statsd_host = kwargs.get( 'statsd_host', '')
         self.statsd_port = int( kwargs.get( 'statsd_port', 8125 ) )
+        self.statsd_prefix = kwargs.get( 'statsd_prefix', 'galaxy' )
         # Logging with fluentd
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
@@ -451,6 +461,7 @@ class Configuration( object ):
         self.visualization_plugins_directory = kwargs.get(
             'visualization_plugins_directory', 'config/plugins/visualizations' )
         ie_dirs = kwargs.get( 'interactive_environment_plugins_directory', None )
+        self.gie_dirs = [d.strip() for d in (ie_dirs.split(",") if ie_dirs else [])]
         if ie_dirs and not self.visualization_plugins_directory:
             self.visualization_plugins_directory = ie_dirs
         elif ie_dirs:
@@ -463,6 +474,12 @@ class Configuration( object ):
         self.dynamic_proxy_bind_ip = kwargs.get( "dynamic_proxy_bind_ip", "0.0.0.0" )
         self.dynamic_proxy_external_proxy = string_as_bool( kwargs.get( "dynamic_proxy_external_proxy", "False" ) )
         self.dynamic_proxy_prefix = kwargs.get( "dynamic_proxy_prefix", "gie_proxy" )
+
+        self.dynamic_proxy = kwargs.get( "dynamic_proxy", "node" )
+        self.dynamic_proxy_golang_noaccess = kwargs.get( "dynamic_proxy_golang_noaccess", 60 )
+        self.dynamic_proxy_golang_clean_interval = kwargs.get( "dynamic_proxy_golang_clean_interval", 10 )
+        self.dynamic_proxy_golang_docker_address = kwargs.get( "dynamic_proxy_golang_docker_address", "unix:///var/run/docker.sock" )
+        self.dynamic_proxy_golang_api_key = kwargs.get( "dynamic_proxy_golang_api_key", None )
 
         # Default chunk size for chunkable datatypes -- 64k
         self.display_chunk_size = int( kwargs.get( 'display_chunk_size', 65536) )
@@ -597,7 +614,7 @@ class Configuration( object ):
                 rval[ tool ].append( runner_dict )
 
             return rval
-        except ConfigParser.NoSectionError:
+        except configparser.NoSectionError:
             return {}
 
     def get( self, key, default ):
@@ -616,7 +633,7 @@ class Configuration( object ):
         if path not in [ None, False ] and not os.path.isdir( path ):
             try:
                 os.makedirs( path )
-            except Exception, e:
+            except Exception as e:
                 raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
 
     def check( self ):
@@ -626,7 +643,7 @@ class Configuration( object ):
             if path not in [ None, False ] and not os.path.isdir( path ):
                 try:
                     os.makedirs( path )
-                except Exception, e:
+                except Exception as e:
                     raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
         # Create the directories that it makes sense to create
         if self.object_store_config_file is None:
@@ -669,7 +686,7 @@ class Configuration( object ):
 
     def guess_galaxy_port(self):
         # Code derived from IPython work ie.mako
-        config = ConfigParser.SafeConfigParser({'port': '8080'})
+        config = configparser.SafeConfigParser({'port': '8080'})
         if self.config_file:
             config.read( self.config_file )
 
@@ -718,7 +735,7 @@ def get_database_engine_options( kwargs, model_prefix='' ):
     prefix = "%sdatabase_engine_option_" % model_prefix
     prefix_len = len( prefix )
     rval = {}
-    for key, value in kwargs.iteritems():
+    for key, value in kwargs.items():
         if key.startswith( prefix ):
             key = key[prefix_len:]
             if key in conversions:
@@ -806,10 +823,11 @@ class ConfiguresGalaxyMixin:
         galaxy_root_dir = os.path.abspath(self.config.root)
         file_path = os.path.abspath(getattr(self.config, "file_path"))
         app_info = containers.AppInfo(
-            galaxy_root_dir,
+            galaxy_root_dir=galaxy_root_dir,
             default_file_path=file_path,
             outputs_to_working_directory=self.config.outputs_to_working_directory,
             container_image_cache_path=self.config.container_image_cache_path,
+            library_import_dir=self.config.library_import_dir
         )
         self.container_finder = containers.ContainerFinder(app_info)
 

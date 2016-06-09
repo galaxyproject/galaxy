@@ -1,10 +1,14 @@
 # Dan Blankenberg
+from __future__ import print_function
+
 import math
 import string
-import transform
-from six import string_types
-from sequence import SequencingRead
-from fasta import fastaSequence
+
+from six import Iterator, string_types
+
+from . import transform
+from .fasta import fastaSequence
+from .sequence import SequencingRead
 
 
 class fastqSequencingRead( SequencingRead ):
@@ -27,19 +31,19 @@ class fastqSequencingRead( SequencingRead ):
             if score <= 0:  # can't take log10( 1 - 1 ); make <= 0 into -5
                 return -5
             return int( round( 10.0 * math.log10( math.pow( 10.0, ( float( score ) / 10.0 ) ) - 1.0 ) ) )
-        return map( phred_to_solexa, decimal_score_list )
+        return [phred_to_solexa(_) for _ in decimal_score_list]
 
     @classmethod
     def convert_score_solexa_to_phred( cls, decimal_score_list ):
         def solexa_to_phred( score ):
             return int( round( 10.0 * math.log10( math.pow( 10.0, ( float( score ) / 10.0 ) ) + 1.0 ) ) )
-        return map( solexa_to_phred, decimal_score_list )
+        return [solexa_to_phred(_) for _ in decimal_score_list]
 
     @classmethod
     def restrict_scores_to_valid_range( cls, decimal_score_list ):
         def restrict_score( score ):
             return max( min( score, cls.quality_max ), cls.quality_min )
-        return map( restrict_score, decimal_score_list )
+        return [restrict_score(_) for _ in decimal_score_list]
 
     @classmethod
     def transform_scores_to_valid_range( cls, decimal_score_list):
@@ -96,7 +100,7 @@ class fastqSequencingRead( SequencingRead ):
                 try:
                     to_quality = self.ascii_min - self.quality_min
                     return [ chr( int( val ) + to_quality ) for val in quality.split() ]
-                except ValueError, e:
+                except ValueError as e:
                     raise ValueError( 'Error Parsing quality String. ASCII quality strings cannot contain spaces (%s): %s' % ( self.quality, e ) )
             else:
                 return []
@@ -113,7 +117,7 @@ class fastqSequencingRead( SequencingRead ):
             if quality:
                 try:
                     return len( quality.split() )
-                except ValueError, e:
+                except ValueError as e:
                     raise ValueError( 'Error Parsing quality String. ASCII quality strings cannot contain spaces (%s): %s' % ( self.quality, e ) )
             else:
                 return 0
@@ -180,7 +184,7 @@ class fastqSequencingRead( SequencingRead ):
         if self.is_ascii_encoded():
             new_read.quality = self.quality[left_column_offset:right_column_offset]
         else:
-            quality = map( str, self.get_decimal_quality_scores()[left_column_offset:right_column_offset] )
+            quality = [str(_) for _ in self.get_decimal_quality_scores()[left_column_offset:right_column_offset]]
             if quality:
                 new_read.quality = "%s " % " ".join( quality )
             else:
@@ -271,7 +275,7 @@ class fastqCSSangerRead( fastqSequencingRead ):
     quality_max = 93
     score_system = 'phred'
     sequence_space = 'color'
-    valid_sequence_list = map( str, range( 7 ) ) + [ '.' ]
+    valid_sequence_list = [str(_) for _ in range(7)] + [ '.' ]
 
     def __len__( self ):
         if self.has_adapter_base():  # Adapter base is not counted in length of read
@@ -366,7 +370,7 @@ for format in [ fastqIlluminaRead, fastqSolexaRead, fastqSangerRead, fastqCSSang
 
 
 class fastqAggregator( object ):
-    VALID_FORMATS = FASTQ_FORMATS.keys()
+    VALID_FORMATS = list(FASTQ_FORMATS.keys())
 
     def __init__( self ):
         self.ascii_values_used = []  # quick lookup of all ascii chars used
@@ -444,7 +448,7 @@ class fastqAggregator( object ):
         return self.nuc_index_base[ column ]
 
     def get_score_list_for_column( self, column ):
-        return self.nuc_index_quality[ column ].keys()
+        return list(self.nuc_index_quality[ column ].keys())
 
     def get_score_min_for_column( self, column ):
         return min( self.nuc_index_quality[ column ].keys() )
@@ -453,7 +457,7 @@ class fastqAggregator( object ):
         return max( self.nuc_index_quality[ column ].keys() )
 
     def get_score_sum_for_column( self, column ):
-        return sum( score * count for score, count in self.nuc_index_quality[ column ].iteritems() )
+        return sum( score * count for score, count in self.nuc_index_quality[ column ].items() )
 
     def get_score_at_position_for_column( self, column, position ):
         score_value_dict = self.nuc_index_quality[ column ]
@@ -529,7 +533,7 @@ class fastqAggregator( object ):
         return column_stats
 
 
-class fastqReader( object ):
+class fastqReader( Iterator ):
     def __init__( self, fh, format='sanger', apply_galaxy_conventions=False ):
         self.file = fh
         self.format = format
@@ -538,7 +542,7 @@ class fastqReader( object ):
     def close( self ):
         return self.file.close()
 
-    def next(self):
+    def __next__(self):
         while True:
             fastq_header = self.file.readline()
             if not fastq_header:
@@ -572,7 +576,7 @@ class fastqReader( object ):
 
     def __iter__( self ):
         while True:
-            yield self.next()
+            yield next(self)
 
 
 class ReadlineCountFile( object ):
@@ -595,27 +599,27 @@ class fastqVerboseErrorReader( fastqReader ):
         super( fastqVerboseErrorReader, self ).__init__( ReadlineCountFile( fh ), **kwds  )
         self.last_good_identifier = None
 
-    def next( self ):
+    def __next__( self ):
         last_good_end_offset = self.file.tell()
         last_readline_count = self.file.readline_count
         try:
-            block = super( fastqVerboseErrorReader, self ).next()
+            block = super( fastqVerboseErrorReader, self ).__next__()
             self.last_good_identifier = block.identifier
             return block
-        except StopIteration, e:
+        except StopIteration as e:
             raise e
-        except Exception, e:
-            print "There was an error reading your input file. Your input file is likely malformed.\nIt is suggested that you double-check your original input file for errors -- helpful information for this purpose has been provided below.\nHowever, if you think that you have encountered an actual error with this tool, please do tell us by using the bug reporting mechanism.\n\nThe reported error is: '%s'." % e
+        except Exception as e:
+            print("There was an error reading your input file. Your input file is likely malformed.\nIt is suggested that you double-check your original input file for errors -- helpful information for this purpose has been provided below.\nHowever, if you think that you have encountered an actual error with this tool, please do tell us by using the bug reporting mechanism.\n\nThe reported error is: '%s'." % e)
             if self.last_good_identifier is not None:
-                print "The last valid FASTQ read had an identifier of '%s'." % self.last_good_identifier
+                print("The last valid FASTQ read had an identifier of '%s'." % self.last_good_identifier)
             else:
-                print "The error occurred at the start of your file and no valid FASTQ reads were found."
+                print("The error occurred at the start of your file and no valid FASTQ reads were found.")
             error_offset = self.file.tell()
             error_byte_count = error_offset - last_good_end_offset
             print_error_bytes = min( self.MAX_PRINT_ERROR_BYTES, error_byte_count )
-            print "The error in your file occurs between lines '%i' and '%i', which corresponds to byte-offsets '%i' and '%i', and contains the text (%i of %i bytes shown):\n" % ( last_readline_count + 1, self.file.readline_count, last_good_end_offset, error_offset, print_error_bytes, error_byte_count )
+            print("The error in your file occurs between lines '%i' and '%i', which corresponds to byte-offsets '%i' and '%i', and contains the text (%i of %i bytes shown):\n" % ( last_readline_count + 1, self.file.readline_count, last_good_end_offset, error_offset, print_error_bytes, error_byte_count ))
             self.file.seek( last_good_end_offset )
-            print self.file.read( print_error_bytes )
+            print(self.file.read( print_error_bytes ))
             raise e
 
 
@@ -646,14 +650,14 @@ class fastqNamedReader( object ):
             if not self.offset_dict[ sequence_id ]:
                 del self.offset_dict[ sequence_id ]
             self.file.seek( seq_offset )
-            rval = self.reader.next()
+            rval = next(self.reader)
             # assert rval.id == sequence_id, 'seq id mismatch' #should be able to remove this
             self.file.seek( initial_offset )
         else:
             while True:
                 offset = self.file.tell()
                 try:
-                    fastq_read = self.reader.next()
+                    fastq_read = next(self.reader)
                 except StopIteration:
                     self.eof = True
                     break  # eof, id not found, will return None
@@ -679,7 +683,7 @@ class fastqNamedReader( object ):
         if not eof:
             offset = self.file.tell()
             try:
-                self.reader.next()
+                next(self.reader)
             except StopIteration:
                 eof = True
             self.file.seek( offset )

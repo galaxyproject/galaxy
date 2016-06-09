@@ -9,6 +9,7 @@ import socket
 import tarfile
 import tempfile
 import types
+import time
 
 import routes
 import webob
@@ -23,6 +24,9 @@ from paste.response import HeaderDict
 
 
 log = logging.getLogger( __name__ )
+
+#: time of the most recent server startup
+server_starttime = int( time.time() )
 
 
 def __resource_with_deleted( self, member_name, collection_name, **kwargs ):
@@ -188,7 +192,7 @@ class WebApplication( object ):
         kwargs.pop( '_', None )
         try:
             body = method( trans, **kwargs )
-        except Exception, e:
+        except Exception as e:
             body = self.handle_controller_exception( e, trans, **kwargs )
             if not body:
                 raise

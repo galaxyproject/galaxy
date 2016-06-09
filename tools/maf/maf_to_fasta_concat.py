@@ -15,15 +15,15 @@ from galaxy.tools.util import maf_utilities
 def __main__():
     try:
         species = maf_utilities.parse_species_option( sys.argv[1] )
-    except Exception, e:
+    except Exception as e:
         maf_utilities.tool_fail( "Error determining species value: %s" % e )
     try:
         input_filename = sys.argv[2]
-    except Exception, e:
+    except Exception as e:
         maf_utilities.tool_fail( "Error reading MAF filename: %s" % e )
     try:
         file_out = open( sys.argv[3], 'w' )
-    except Exception, e:
+    except Exception as e:
         maf_utilities.tool_fail( "Error opening file for output: %s" % e )
 
     if species:
@@ -34,7 +34,7 @@ def __main__():
     if not species:
         try:
             species = maf_utilities.get_species_in_maf( input_filename )
-        except Exception, e:
+        except Exception as e:
             maf_utilities.tool_fail( "Error determining species in input MAF: %s" % e )
 
     for spec in species:
@@ -48,7 +48,7 @@ def __main__():
                         file_out.write( component.text )
                     else:
                         file_out.write( "-" * block.text_size )
-        except Exception, e:
+        except Exception as e:
             maf_utilities.tool_fail( "Your MAF file appears to be malformed: %s" % e )
         file_out.write( "\n" )
     file_out.close()

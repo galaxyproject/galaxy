@@ -156,7 +156,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                 id=id,
             )
             return self.__collection_dict( trans, dataset_collection_instance, view="element" )
-        except Exception, e:
+        except Exception as e:
             log.exception( "Error in history API at listing dataset collection: %s", e )
             trans.response.status = 500
             return { 'error': str( e ) }

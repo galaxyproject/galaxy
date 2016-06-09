@@ -165,7 +165,7 @@ def galaxy_code_get_genomespace_folders( genomespace_site='prod', trans=None, va
         # get url to upload to
         try:
             cur_directory = url_opener.open( cur_directory ).read()
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             log.debug( 'GenomeSpace export tool failed reading a directory "%s": %s' % ( url, e ) )
             return  # bad url, go to next
         cur_directory = json.loads( cur_directory )

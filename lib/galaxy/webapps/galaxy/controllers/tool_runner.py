@@ -39,16 +39,18 @@ class ToolRunner( BaseUIController ):
 
     @web.expose
     def index( self, trans, tool_id=None, from_noframe=None, **kwd ):
+        def __tool_404__():
+            log.error( 'index called with tool id \'%s\' but no such tool exists', tool_id )
+            trans.log_event( 'Tool id \'%s\' does not exist' % tool_id )
+            trans.response.status = 404
+            return trans.show_error_message('Tool \'%s\' does not exist.' % ( escape(tool_id) ))
         # tool id not available, redirect to main page
         if tool_id is None:
             return trans.response.send_redirect( url_for( controller='root', action='welcome' ) )
         tool = self.__get_tool( tool_id )
         # tool id is not matching, display an error
-        if not tool or not tool.allow_user_access( trans.user ):
-            log.error( 'index called with tool id \'%s\' but no such tool exists', tool_id )
-            trans.log_event( 'Tool id \'%s\' does not exist' % tool_id )
-            trans.response.status = 404
-            return trans.show_error_message('Tool \'%s\' does not exist.' % ( escape(tool_id) ))
+        if not tool:
+            return __tool_404__()
         if tool.require_login and not trans.user:
             redirect = url_for( controller='tool_runner', action='index', tool_id=tool_id, **kwd )
             return trans.response.send_redirect( url_for( controller='user',
@@ -57,6 +59,8 @@ class ToolRunner( BaseUIController ):
                                                           status='info',
                                                           message='You must be logged in to use this tool.',
                                                           redirect=redirect ) )
+        if not tool.allow_user_access( trans.user ):
+            return __tool_404__()
         if tool.tool_type == 'default':
             return trans.response.send_redirect( url_for( controller='root', tool_id=tool_id ) )
 
@@ -65,12 +69,14 @@ class ToolRunner( BaseUIController ):
         # do param translation here, used by datasource tools
         if tool.input_translator:
             tool.input_translator.translate( params )
+        if 'runtool_btn' not in params.__dict__ and 'URL' not in params.__dict__:
+            error( 'Tool execution through the `tool_runner` requires a `runtool_btn` flag or `URL` parameter.' )
         # We may be visiting Galaxy for the first time ( e.g., sending data from UCSC ),
         # so make sure to create a new history if we've never had one before.
         history = tool.get_default_history_by_trans( trans, create=True )
         try:
             vars = tool.handle_input( trans, params.__dict__, history=history )
-        except Exception, e:
+        except Exception as e:
             error( str( e ) )
         if len( params ) > 0:
             trans.log_event( 'Tool params: %s' % ( str( params ) ), tool_id=tool_id )

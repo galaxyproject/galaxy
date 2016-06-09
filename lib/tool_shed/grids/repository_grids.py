@@ -7,10 +7,9 @@ from sqlalchemy import and_, false, or_, true
 import tool_shed.grids.util as grids_util
 import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
-from galaxy.util import listify
 from galaxy.web.framework.helpers import grids
 from galaxy.webapps.tool_shed import model
-from tool_shed.util import hg_util, metadata_util
+from tool_shed.util import hg_util, metadata_util, repository_util
 
 log = logging.getLogger( __name__ )
 
@@ -141,48 +140,6 @@ class RepositoryGrid( grids.Grid ):
             """Display the repository tip revision label."""
             return escape_html( repository.revision( trans.app ) )
 
-    class ToolsFunctionallyCorrectColumn( grids.BooleanColumn ):
-
-        def get_value( self, trans, grid, repository ):
-            # This column will display the value associated with the currently displayed metadata revision.
-            if repository.type == rt_util.UNRESTRICTED:
-                try:
-                    if len( repository.metadata_revisions ) > 0:
-                        displayed_metadata_revision = repository.metadata_revisions[ -1 ]
-                        if displayed_metadata_revision.includes_tools:
-                            if displayed_metadata_revision.tools_functionally_correct:
-                                return 'yes'
-                            else:
-                                return 'no'
-                    return 'n/a'
-                except Exception, e:
-                    log.exception( str( e ) )
-                    return 'unknown'
-            else:
-                # Here repository.type must be either rt_util.REPOSITORY_SUITE_DEFINITION or
-                # rt_util.TOOL_DEPENDENCY_DEFINITION.
-                try:
-                    if len( repository.metadata_revisions ) > 0:
-                        displayed_metadata_revision = repository.metadata_revisions[ -1 ]
-                        if displayed_metadata_revision.test_install_error:
-                            return 'no'
-                        tool_test_results = listify( displayed_metadata_revision.tool_test_results )
-                        if len( tool_test_results ) > 0:
-                            last_tool_test_result = tool_test_results[ 0 ]
-                            installation_error_dict = last_tool_test_result.get( 'installation_errors', {} )
-                            if len( installation_error_dict ) > 0:
-                                current_repository_installation_error_dicts = installation_error_dict.get( 'current_repository', [] )
-                                if len( current_repository_installation_error_dicts ) > 0:
-                                    return 'no'
-                                else:
-                                    return 'yes'
-                            else:
-                                return 'yes'
-                    return 'no'
-                except Exception, e:
-                    log.exception( str( e ) )
-                    return 'unknown'
-
     class DescriptionColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, repository ):
@@ -253,7 +210,6 @@ class RepositoryGrid( grids.Grid ):
                            attach_popup=False ),
         TypeColumn( "Type" ),
         MetadataRevisionColumn( "Metadata<br/>Revisions" ),
-        ToolsFunctionallyCorrectColumn( "Tools or<br/>Package<br/>Verified" ),
         UserColumn( "Owner",
                     model_class=model.User,
                     link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
@@ -444,7 +400,6 @@ class MyWritableRepositoriesGrid( RepositoryGrid ):
                                    attach_popup=False ),
         RepositoryGrid.TypeColumn( "Type" ),
         RepositoryGrid.MetadataRevisionColumn( "Metadata<br/>Revisions" ),
-        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools or<br/>Package<br/>Verified" ),
         RepositoryGrid.UserColumn( "Owner",
                                    model_class=model.User,
                                    link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
@@ -492,7 +447,6 @@ class RepositoriesByUserGrid( RepositoryGrid ):
                                           attach_popup=False ),
         RepositoryGrid.TypeColumn( "Type" ),
         RepositoryGrid.MetadataRevisionColumn( "Metadata<br/>Revisions" ),
-        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools or<br/>Package<br/>Verified" ),
         RepositoryGrid.CategoryColumn( "Category",
                                        model_class=model.Category,
                                        key="Category.name",
@@ -549,7 +503,6 @@ class RepositoriesInCategoryGrid( RepositoryGrid ):
                                           attach_popup=False ),
         RepositoryGrid.TypeColumn( "Type" ),
         RepositoryGrid.MetadataRevisionColumn( "Metadata<br/>Revisions" ),
-        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools or<br/>Package<br/>Verified" ),
         RepositoryGrid.UserColumn( "Owner",
                                    model_class=model.User,
                                    link=( lambda item: dict( controller="repository", operation="repositories_by_user", id=item.id ) ),
@@ -637,7 +590,6 @@ class RepositoriesIOwnGrid( RepositoryGrid ):
                                    attach_popup=False ),
         RepositoryGrid.TypeColumn( "Type" ),
         RepositoryGrid.MetadataRevisionColumn( "Metadata<br/>Revisions" ),
-        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools or<br/>Package<br/>Verified" ),
         RepositoryGrid.DeprecatedColumn( "Deprecated" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name",
@@ -666,7 +618,6 @@ class RepositoriesICanAdministerGrid( RepositoryGrid ):
                                    attach_popup=False ),
         RepositoryGrid.UserColumn( "Owner" ),
         RepositoryGrid.MetadataRevisionColumn( "Metadata<br/>Revisions" ),
-        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools or<br/>Package<br/>Verified" ),
         RepositoryGrid.DeprecatedColumn( "Deprecated" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name",
@@ -793,184 +744,6 @@ class MyWritableRepositoriesMissingToolTestComponentsGrid( RepositoriesMissingTo
                                .filter( model.Repository.table.c.id < 0 )
 
 
-class RepositoriesWithTestInstallErrorsGrid( RepositoryGrid ):
-    # This grid displays only the latest installable revision of each repository.
-    title = "Repositories with tool test installation errors"
-    columns = [
-        RepositoryGrid.NameColumn( "Name",
-                                   key="name",
-                                   link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
-                                   attach_popup=False ),
-        RepositoryGrid.LatestInstallableRevisionColumn( "Latest Installable Revision" ),
-        RepositoryGrid.UserColumn( "Owner",
-                                   key="User.username",
-                                   model_class=model.User,
-                                   link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
-                                   attach_popup=False )
-    ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name",
-                                                cols_to_filter=[ columns[0] ],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard" ) )
-    operations = []
-    use_paging = False
-
-    def build_initial_query( self, trans, **kwd ):
-        # Filter by latest installable revisions that contain tools with missing tool test components.
-        revision_clause_list = []
-        for repository in trans.sa_session.query( model.Repository ) \
-                                          .filter( and_( model.Repository.table.c.deprecated == false(),
-                                                         model.Repository.table.c.deleted == false() ) ):
-            changeset_revision = \
-                grids_util.filter_by_latest_downloadable_changeset_revision_that_has_test_install_errors( trans, repository )
-            if changeset_revision:
-                revision_clause_list.append( model.RepositoryMetadata.table.c.changeset_revision == changeset_revision )
-        if revision_clause_list:
-            return trans.sa_session.query( model.Repository ) \
-                                   .filter( and_( model.Repository.table.c.deprecated == false(),
-                                                  model.Repository.table.c.deleted == false() ) ) \
-                                   .join( model.RepositoryMetadata ) \
-                                   .filter( or_( *revision_clause_list ) ) \
-                                   .join( model.User.table )
-        # Return an empty query.
-        return trans.sa_session.query( model.Repository ) \
-                               .filter( model.Repository.table.c.id < 0 )
-
-
-class MyWritableRepositoriesWithTestInstallErrorsGrid( RepositoriesWithTestInstallErrorsGrid ):
-    # This grid displays only the latest installable revision of each repository.
-    title = "Repositories I can change with tool test installation errors"
-    columns = [ col for col in RepositoriesWithTestInstallErrorsGrid.columns ]
-    operations = []
-    use_paging = False
-
-    def build_initial_query( self, trans, **kwd ):
-        # First get all repositories that the current user is authorized to update.
-        username = trans.user.username
-        user_clause_list = []
-        for repository in trans.sa_session.query( model.Repository ) \
-                                          .filter( and_( model.Repository.table.c.deprecated == false(),
-                                                         model.Repository.table.c.deleted == false() ) ):
-            allow_push = repository.allow_push( trans.app )
-            if allow_push:
-                allow_push_usernames = allow_push.split( ',' )
-                if username in allow_push_usernames:
-                    user_clause_list.append( model.Repository.table.c.id == repository.id )
-        if user_clause_list:
-            # We have the list of repositories that the current user is authorized to update, so filter
-            # further by latest installable revisions that contain tools with missing tool test components.
-            revision_clause_list = []
-            for repository in trans.sa_session.query( model.Repository ) \
-                                              .filter( and_( model.Repository.table.c.deprecated == false(),
-                                                             model.Repository.table.c.deleted == false() ) ) \
-                                              .filter( or_( *user_clause_list ) ):
-                changeset_revision = \
-                    grids_util.filter_by_latest_downloadable_changeset_revision_that_has_test_install_errors( trans, repository )
-                if changeset_revision:
-                    revision_clause_list.append( model.RepositoryMetadata.table.c.changeset_revision == changeset_revision )
-            if revision_clause_list:
-                return trans.sa_session.query( model.Repository ) \
-                                       .filter( and_( model.Repository.table.c.deprecated == false(),
-                                                      model.Repository.table.c.deleted == false() ) ) \
-                                       .join( model.User.table ) \
-                                       .filter( or_( *user_clause_list ) ) \
-                                       .join( model.RepositoryMetadata ) \
-                                       .filter( or_( *revision_clause_list ) )
-        # Return an empty query.
-        return trans.sa_session.query( model.Repository ) \
-                               .filter( model.Repository.table.c.id < 0 )
-
-
-class RepositoriesWithSkipTestsCheckedGrid( RepositoryGrid ):
-    # This grid displays only the latest installable revision of each repository.
-    title = "Repositories with skip tool tests checked"
-    columns = [
-        RepositoryGrid.NameColumn( "Name",
-                                   key="name",
-                                   link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
-                                   attach_popup=False ),
-        RepositoryGrid.LatestInstallableRevisionColumn( "Latest Installable Revision" ),
-        RepositoryGrid.UserColumn( "Owner",
-                                   key="User.username",
-                                   model_class=model.User,
-                                   link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
-                                   attach_popup=False )
-    ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name",
-                                                cols_to_filter=[ columns[0] ],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard" ) )
-    operations = []
-    use_paging = False
-
-    def build_initial_query( self, trans, **kwd ):
-        # Filter by latest installable revisions that contain tools with missing tool test components.
-        revision_clause_list = []
-        for repository in trans.sa_session.query( model.Repository ) \
-                                          .filter( and_( model.Repository.table.c.deprecated == false(),
-                                                         model.Repository.table.c.deleted == false() ) ):
-            changeset_revision = \
-                grids_util.filter_by_latest_downloadable_changeset_revision_with_skip_tests_checked( trans, repository )
-            if changeset_revision:
-                revision_clause_list.append( model.RepositoryMetadata.table.c.changeset_revision == changeset_revision )
-        if revision_clause_list:
-            return trans.sa_session.query( model.Repository ) \
-                                   .filter( and_( model.Repository.table.c.deprecated == false(),
-                                                  model.Repository.table.c.deleted == false() ) ) \
-                                   .join( model.RepositoryMetadata ) \
-                                   .filter( or_( *revision_clause_list ) ) \
-                                   .join( model.User.table )
-        # Return an empty query.
-        return trans.sa_session.query( model.Repository ) \
-                               .filter( model.Repository.table.c.id < 0 )
-
-
-class MyWritableRepositoriesWithSkipTestsCheckedGrid( RepositoriesWithSkipTestsCheckedGrid ):
-    # This grid displays only the latest installable revision of each repository.
-    title = "Repositories I can change with skip tool tests checked"
-    columns = [ col for col in RepositoriesWithSkipTestsCheckedGrid.columns ]
-    operations = []
-    use_paging = False
-
-    def build_initial_query( self, trans, **kwd ):
-        # First get all repositories that the current user is authorized to update.
-        username = trans.user.username
-        user_clause_list = []
-        for repository in trans.sa_session.query( model.Repository ) \
-                                          .filter( and_( model.Repository.table.c.deprecated == false(),
-                                                         model.Repository.table.c.deleted == false() ) ):
-            allow_push = repository.allow_push( trans.app )
-            if allow_push:
-                allow_push_usernames = allow_push.split( ',' )
-                if username in allow_push_usernames:
-                    user_clause_list.append( model.Repository.table.c.id == repository.id )
-        if user_clause_list:
-            # We have the list of repositories that the current user is authorized to update, so filter
-            # further by latest installable revisions that contain tools with missing tool test components.
-            revision_clause_list = []
-            for repository in trans.sa_session.query( model.Repository ) \
-                                              .filter( and_( model.Repository.table.c.deprecated == false(),
-                                                             model.Repository.table.c.deleted == false() ) ) \
-                                              .filter( or_( *user_clause_list ) ):
-                changeset_revision = \
-                    grids_util.filter_by_latest_downloadable_changeset_revision_with_skip_tests_checked( trans, repository )
-                if changeset_revision:
-                    revision_clause_list.append( model.RepositoryMetadata.table.c.changeset_revision == changeset_revision )
-            if revision_clause_list:
-                return trans.sa_session.query( model.Repository ) \
-                                       .filter( and_( model.Repository.table.c.deprecated == false(),
-                                                      model.Repository.table.c.deleted == false() ) ) \
-                                       .join( model.User.table ) \
-                                       .filter( or_( *user_clause_list ) ) \
-                                       .join( model.RepositoryMetadata ) \
-                                       .filter( or_( *revision_clause_list ) )
-        # Return an empty query.
-        return trans.sa_session.query( model.Repository ) \
-                               .filter( model.Repository.table.c.id < 0 )
-
-
 class DeprecatedRepositoriesIOwnGrid( RepositoriesIOwnGrid ):
     title = "Deprecated repositories I own"
     columns = [
@@ -980,7 +753,6 @@ class DeprecatedRepositoriesIOwnGrid( RepositoriesIOwnGrid ):
                                          attach_popup=False ),
         RepositoryGrid.TypeColumn( "Type" ),
         RepositoriesIOwnGrid.MetadataRevisionColumn( "Metadata<br/>Revisions" ),
-        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools or<br/>Package<br/>Verified" ),
         RepositoriesIOwnGrid.CategoryColumn( "Category",
                                              model_class=model.Category,
                                              key="Category.name",
@@ -1001,186 +773,6 @@ class DeprecatedRepositoriesIOwnGrid( RepositoriesIOwnGrid ):
                                .join( model.User.table ) \
                                .outerjoin( model.RepositoryCategoryAssociation.table ) \
                                .outerjoin( model.Category.table )
-
-
-class RepositoriesWithFailingToolTestsGrid( RepositoryGrid ):
-    # This grid displays only the latest installable revision of each repository.
-    title = "Repositories with failing tool tests"
-    columns = [
-        RepositoryGrid.NameColumn( "Name",
-                                   key="name",
-                                   link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
-                                   attach_popup=False ),
-        RepositoryGrid.LatestInstallableRevisionColumn( "Latest Installable Revision" ),
-        RepositoryGrid.UserColumn( "Owner",
-                                   key="User.username",
-                                   model_class=model.User,
-                                   link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
-                                   attach_popup=False )
-    ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name",
-                                                cols_to_filter=[ columns[0] ],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard" ) )
-    operations = []
-    use_paging = False
-
-    def build_initial_query( self, trans, **kwd ):
-        # Filter by latest installable revisions that contain tools with at least 1 failing tool test.
-        revision_clause_list = []
-        for repository in trans.sa_session.query( model.Repository ) \
-                                          .filter( and_( model.Repository.table.c.deprecated == false(),
-                                                         model.Repository.table.c.deleted == false() ) ):
-            changeset_revision = \
-                grids_util.filter_by_latest_downloadable_changeset_revision_that_has_failing_tool_tests( trans, repository )
-            if changeset_revision:
-                revision_clause_list.append( model.RepositoryMetadata.table.c.changeset_revision == changeset_revision )
-        if revision_clause_list:
-            return trans.sa_session.query( model.Repository ) \
-                                   .filter( and_( model.Repository.table.c.deprecated == false(),
-                                                  model.Repository.table.c.deleted == false() ) ) \
-                                   .join( model.RepositoryMetadata ) \
-                                   .filter( or_( *revision_clause_list ) ) \
-                                   .join( model.User.table )
-        # Return an empty query.
-        return trans.sa_session.query( model.Repository ) \
-                               .filter( model.Repository.table.c.id < 0 )
-
-
-class MyWritableRepositoriesWithFailingToolTestsGrid( RepositoriesWithFailingToolTestsGrid ):
-    # This grid displays only the latest installable revision of each repository.
-    title = "Repositories I can change with failing tool tests"
-    columns = [ col for col in RepositoriesWithFailingToolTestsGrid.columns ]
-    operations = []
-    use_paging = False
-
-    def build_initial_query( self, trans, **kwd ):
-        # First get all repositories that the current user is authorized to update.
-        username = trans.user.username
-        user_clause_list = []
-        for repository in trans.sa_session.query( model.Repository ) \
-                                          .filter( and_( model.Repository.table.c.deprecated == false(),
-                                                         model.Repository.table.c.deleted == false() ) ):
-            allow_push = repository.allow_push( trans.app )
-            if allow_push:
-                allow_push_usernames = allow_push.split( ',' )
-                if username in allow_push_usernames:
-                    user_clause_list.append( model.Repository.table.c.id == repository.id )
-        if user_clause_list:
-            # We have the list of repositories that the current user is authorized to update, so filter
-            # further by latest installable revisions that contain tools with at least 1 failing tool test.
-            revision_clause_list = []
-            for repository in trans.sa_session.query( model.Repository ) \
-                                              .filter( and_( model.Repository.table.c.deprecated == false(),
-                                                             model.Repository.table.c.deleted == false() ) ) \
-                                              .filter( or_( *user_clause_list ) ):
-                changeset_revision = \
-                    grids_util.filter_by_latest_downloadable_changeset_revision_that_has_failing_tool_tests( trans, repository )
-                if changeset_revision:
-                    revision_clause_list.append( model.RepositoryMetadata.table.c.changeset_revision == changeset_revision )
-            if revision_clause_list:
-                return trans.sa_session.query( model.Repository ) \
-                                       .filter( and_( model.Repository.table.c.deprecated == false(),
-                                                      model.Repository.table.c.deleted == false() ) ) \
-                                       .join( model.User.table ) \
-                                       .filter( or_( *user_clause_list ) ) \
-                                       .join( model.RepositoryMetadata ) \
-                                       .filter( or_( *revision_clause_list ) )
-        # Return an empty query.
-        return trans.sa_session.query( model.Repository ) \
-                               .filter( model.Repository.table.c.id < 0 )
-
-
-class RepositoriesWithNoFailingToolTestsGrid( RepositoryGrid ):
-    # This grid displays only the latest installable revision of each repository.
-    title = "Repositories with no failing tool tests"
-    columns = [
-        RepositoryGrid.NameColumn( "Name",
-                                   key="name",
-                                   link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
-                                   attach_popup=False ),
-        RepositoryGrid.LatestInstallableRevisionColumn( "Latest Installable Revision" ),
-        RepositoryGrid.UserColumn( "Owner",
-                                   key="User.username",
-                                   model_class=model.User,
-                                   link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
-                                   attach_popup=False )
-    ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name",
-                                                cols_to_filter=[ columns[0] ],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard" ) )
-    operations = []
-    use_paging = False
-
-    def build_initial_query( self, trans, **kwd ):
-        # We have the list of repositories that the current user is authorized to update, so filter
-        # further by latest installable revisions that contain tools with at least 1 failing tool test.
-        revision_clause_list = []
-        for repository in trans.sa_session.query( model.Repository ) \
-                                          .filter( and_( model.Repository.table.c.deprecated == false(),
-                                                         model.Repository.table.c.deleted == false() ) ):
-            changeset_revision = \
-                grids_util.filter_by_latest_downloadable_changeset_revision_that_has_no_failing_tool_tests( trans, repository )
-            if changeset_revision:
-                revision_clause_list.append( model.RepositoryMetadata.table.c.changeset_revision == changeset_revision )
-        if revision_clause_list:
-            return trans.sa_session.query( model.Repository ) \
-                                   .filter( and_( model.Repository.table.c.deprecated == false(),
-                                                  model.Repository.table.c.deleted == false() ) ) \
-                                   .join( model.RepositoryMetadata ) \
-                                   .filter( or_( *revision_clause_list ) ) \
-                                   .join( model.User.table )
-        # Return an empty query.
-        return trans.sa_session.query( model.Repository ) \
-                               .filter( model.Repository.table.c.id < 0 )
-
-
-class MyWritableRepositoriesWithNoFailingToolTestsGrid( RepositoriesWithNoFailingToolTestsGrid ):
-    # This grid displays only the latest installable revision of each repository.
-    title = "Repositories I can change with no failing tool tests"
-    columns = [ col for col in RepositoriesWithNoFailingToolTestsGrid.columns ]
-    operations = []
-    use_paging = False
-
-    def build_initial_query( self, trans, **kwd ):
-        # First get all repositories that the current user is authorized to update.
-        username = trans.user.username
-        user_clause_list = []
-        for repository in trans.sa_session.query( model.Repository ) \
-                                          .filter( and_( model.Repository.table.c.deprecated == false(),
-                                                         model.Repository.table.c.deleted == false() ) ):
-            allow_push = repository.allow_push( trans.app )
-            if allow_push:
-                allow_push_usernames = allow_push.split( ',' )
-                if username in allow_push_usernames:
-                    user_clause_list.append( model.Repository.table.c.id == repository.id )
-        if user_clause_list:
-            # We have the list of repositories that the current user is authorized to update, so filter
-            # further by latest installable revisions that contain at least 1 tool, no missing tool test
-            # components, and no failing tool tests.
-            revision_clause_list = []
-            for repository in trans.sa_session.query( model.Repository ) \
-                                              .filter( and_( model.Repository.table.c.deprecated == false(),
-                                                             model.Repository.table.c.deleted == false() ) ) \
-                                              .filter( or_( *user_clause_list ) ):
-                changeset_revision = \
-                    grids_util.filter_by_latest_downloadable_changeset_revision_that_has_no_failing_tool_tests( trans, repository )
-                if changeset_revision:
-                    revision_clause_list.append( model.RepositoryMetadata.table.c.changeset_revision == changeset_revision )
-            if revision_clause_list:
-                return trans.sa_session.query( model.Repository ) \
-                                       .filter( and_( model.Repository.table.c.deprecated == false(),
-                                                      model.Repository.table.c.deleted == false() ) ) \
-                                       .join( model.User.table ) \
-                                       .filter( or_( *user_clause_list ) ) \
-                                       .join( model.RepositoryMetadata ) \
-                                       .filter( or_( *revision_clause_list ) )
-        # Return an empty query.
-        return trans.sa_session.query( model.Repository ) \
-                               .filter( model.Repository.table.c.id < 0 )
 
 
 class RepositoriesWithInvalidToolsGrid( RepositoryGrid ):
@@ -1332,31 +924,6 @@ class RepositoryMetadataGrid( grids.Grid ):
                 return 'yes'
             return ''
 
-    class ToolsFunctionallyCorrectColumn( grids.BooleanColumn ):
-
-        def get_value( self, trans, grid, repository ):
-            # This column will display the value associated with the currently displayed metadata revision.
-            try:
-                displayed_metadata_revision = repository.metadata_revisions[ -1 ]
-                if displayed_metadata_revision.includes_tools:
-                    if displayed_metadata_revision.tools_functionally_correct:
-                        return 'yes'
-                    else:
-                        return 'no'
-                return 'n/a'
-            except:
-                return 'n/a'
-
-    class DoNotTestColumn( grids.BooleanColumn ):
-        def get_value( self, trans, grid, repository_metadata ):
-            if repository_metadata.do_not_test:
-                return 'yes'
-            return ''
-
-    class TimeLastTestedColumn( grids.DateTimeColumn ):
-        def get_value( self, trans, grid, repository_metadata ):
-            return repository_metadata.time_last_tested
-
     class HasRepositoryDependenciesColumn( grids.BooleanColumn ):
         def get_value( self, trans, grid, repository_metadata ):
             if repository_metadata.has_repository_dependencies:
@@ -1440,7 +1007,7 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                         for rd_tup in sorted_rd_tups:
                             name, owner, changeset_revision = rd_tup[1:4]
                             rd_line = ''
-                            required_repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+                            required_repository = repository_util.get_repository_by_name_and_owner( trans.app, name, owner )
                             if required_repository and not required_repository.deleted:
                                 required_repository_id = trans.security.encode_id( required_repository.id )
                                 required_repository_metadata = \
@@ -1453,9 +1020,9 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                                                                             repo_path=None,
                                                                             create=False )
                                     updated_changeset_revision = \
-                                        suc.get_next_downloadable_changeset_revision( required_repository,
-                                                                                      repo,
-                                                                                      changeset_revision )
+                                        metadata_util.get_next_downloadable_changeset_revision( required_repository,
+                                                                                                repo,
+                                                                                                changeset_revision )
                                     required_repository_metadata = \
                                         metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans.app,
                                                                                                                    required_repository_id,
@@ -1783,7 +1350,6 @@ class ValidRepositoryGrid( RepositoryGrid ):
                                           attach_popup=False ),
         RepositoryGrid.TypeColumn( "Type" ),
         InstallableRevisionColumn( "Installable Revisions" ),
-        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools or<br/>Package<br/>Verified" ),
         RepositoryGrid.UserColumn( "Owner",
                                    model_class=model.User,
                                    attach_popup=False ),

@@ -5,7 +5,7 @@ from .helpers import DatasetPopulator
 from .helpers import DatasetCollectionPopulator
 from .helpers import LibraryPopulator
 from .helpers import skip_without_tool
-from base.test_data import TestDataResolver
+from galaxy.tools.verify.test_data import TestDataResolver
 
 
 class ToolsTestCase( api.ApiTestCase ):
@@ -930,6 +930,38 @@ class ToolsTestCase( api.ApiTestCase ):
             "f2": { 'src': 'hdca', 'id': hdca2_id },
         }
         self._check_simple_reduce_job( history_id, inputs )
+
+    @skip_without_tool( "multi_data_repeat" )
+    def test_reduce_collections_in_repeat( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca1_id = self.__build_pair( history_id, [ "123", "456" ] )
+        inputs = {
+            "outer_repeat_0|f1": { 'src': 'hdca', 'id': hdca1_id },
+        }
+        create = self._run( "multi_data_repeat", history_id, inputs, assert_ok=True )
+        outputs = create[ 'outputs' ]
+        jobs = create[ 'jobs' ]
+        self.assertEquals( len( jobs ), 1 )
+        self.assertEquals( len( outputs ), 1 )
+        output1 = outputs[0]
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        assert output1_content.strip() == "123\n456", output1_content
+
+    @skip_without_tool( "multi_data_repeat" )
+    def test_reduce_collections_in_repeat_legacy( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca1_id = self.__build_pair( history_id, [ "123", "456" ] )
+        inputs = {
+            "outer_repeat_0|f1": "__collection_reduce__|%s" % hdca1_id,
+        }
+        create = self._run( "multi_data_repeat", history_id, inputs, assert_ok=True )
+        outputs = create[ 'outputs' ]
+        jobs = create[ 'jobs' ]
+        self.assertEquals( len( jobs ), 1 )
+        self.assertEquals( len( outputs ), 1 )
+        output1 = outputs[0]
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        assert output1_content.strip() == "123\n456", output1_content
 
     @skip_without_tool( "multi_data_param" )
     def test_reduce_multiple_lists_on_multi_data( self ):

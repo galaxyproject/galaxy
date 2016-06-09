@@ -136,7 +136,7 @@ class TagManager( object ):
             # Create tag; if None, skip the tag (and log error).
             tag = self._get_or_create_tag( lc_name )
             if not tag:
-                log.warn( "Failed to create tag with name %s" % lc_name )
+                log.warning( "Failed to create tag with name %s" % lc_name )
                 return
             # Create tag association based on item class.
             item_tag_assoc_class = self.get_tag_assoc_class( item.__class__ )

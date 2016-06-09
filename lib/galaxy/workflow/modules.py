@@ -772,7 +772,7 @@ class ToolModule( WorkflowModule ):
             if tool_id != module.tool_id:
                 message += "The tool (id '%s') specified in this step is not available. Using the tool with id %s instead." % (tool_id, module.tool_id)
             if d.get('tool_version', 'Unspecified') != module.get_tool_version():
-                message += "%s: using version '%s' instead of version '%s' specified in this workflow." % ( tool_id, d.get( 'tool_version', 'Unspecified' ), module.get_tool_version() )
+                message += "%s: using version '%s' instead of version '%s' specified in this workflow." % ( tool_id, module.get_tool_version(), d.get( 'tool_version', 'Unspecified' ) )
             if message:
                 log.debug(message)
                 module.version_changes.append(message)
@@ -904,22 +904,23 @@ class ToolModule( WorkflowModule ):
         data_inputs = []
 
         def callback( input, prefixed_name, prefixed_label, **kwargs ):
-            if isinstance( input, DataToolParameter ):
-                data_inputs.append( dict(
-                    name=prefixed_name,
-                    label=prefixed_label,
-                    multiple=input.multiple,
-                    extensions=input.extensions,
-                    input_type="dataset", ) )
-            if isinstance( input, DataCollectionToolParameter ):
-                data_inputs.append( dict(
-                    name=prefixed_name,
-                    label=prefixed_label,
-                    multiple=input.multiple,
-                    input_type="dataset_collection",
-                    collection_types=input.collection_types,
-                    extensions=input.extensions,
-                ) )
+            if not hasattr( input, 'hidden' ) or not input.hidden:
+                if isinstance( input, DataToolParameter ):
+                    data_inputs.append( dict(
+                        name=prefixed_name,
+                        label=prefixed_label,
+                        multiple=input.multiple,
+                        extensions=input.extensions,
+                        input_type="dataset", ) )
+                elif isinstance( input, DataCollectionToolParameter ):
+                    data_inputs.append( dict(
+                        name=prefixed_name,
+                        label=prefixed_label,
+                        multiple=input.multiple,
+                        input_type="dataset_collection",
+                        collection_types=input.collection_types,
+                        extensions=input.extensions,
+                    ) )
 
         visit_input_values( self.tool.inputs, self.state.inputs, callback )
         return data_inputs
@@ -1059,7 +1060,7 @@ class ToolModule( WorkflowModule ):
             try:
                 # Replace DummyDatasets with historydatasetassociations
                 visit_input_values( tool.inputs, execution_state.inputs, callback, no_replacement_value=NO_REPLACEMENT )
-            except KeyError, k:
+            except KeyError as k:
                 message_template = "Error due to input mapping of '%s' in '%s'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review your workflow."
                 message = message_template % (tool.name, k.message)
                 raise exceptions.MessageException( message )

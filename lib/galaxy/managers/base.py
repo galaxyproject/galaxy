@@ -931,7 +931,7 @@ class ModelFilterParser( HasAModelManager ):
         self.app = app
 
         #: regex for testing/dicing iso8601 date strings, with optional time and ms, but allowing only UTC timezone
-        self.date_string_re = re.compile( r'^(\d{4}\-\d{2}\-\d{2})[T| ]{0,1}(\d{2}:\d{2}:\d{2}\.*\d*)*Z{0,1}$' )
+        self.date_string_re = re.compile( r'^(\d{4}\-\d{2}\-\d{2})[T| ]{0,1}(\d{2}:\d{2}:\d{2}(?:\.\d{1,6}){0,1}){0,1}Z{0,1}$' )
 
         # dictionary containing parsing data for ORM/SQLAlchemy-based filters
         # ..note: although kind of a pain in the ass and verbose, opt-in/whitelisting allows more control
@@ -990,7 +990,7 @@ class ModelFilterParser( HasAModelManager ):
                 return orm_filter
 
         # by convention, assume most val parsers raise ValueError
-        except ValueError, val_err:
+        except ValueError as val_err:
             raise exceptions.RequestParameterInvalidException( 'unparsable value for filter',
                 column=attr, operation=op, value=val, ValueError=str( val_err ) )
 

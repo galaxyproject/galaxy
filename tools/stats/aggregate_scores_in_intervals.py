@@ -42,7 +42,7 @@ class PositionalScoresOnDisk:
         try:
             self.file.seek( i * self.fmt_size )
             return struct.unpack( self.fmt, self.file.read( self.fmt_size ) )[0]
-        except Exception, e:
+        except Exception as e:
             raise IndexError(e)
 
     def __setitem__( self, i, value ):

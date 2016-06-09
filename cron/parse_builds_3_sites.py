@@ -2,9 +2,11 @@
 """
 Connects to sites and determines which builds are available at each.
 """
+from __future__ import print_function
 
-import urllib
 import xml.etree.ElementTree as ElementTree
+
+from six.moves.urllib.request import urlopen
 
 sites = ['http://genome.ucsc.edu/cgi-bin/',
          'http://archaea.ucsc.edu/cgi-bin/',
@@ -18,17 +20,17 @@ def main():
         trackurl = sites[i] + "hgTracks?"
         builds = []
         try:
-            page = urllib.urlopen(site)
+            page = urlopen(site)
         except:
-            print "#Unable to connect to " + site
+            print("#Unable to connect to " + site)
             continue
         text = page.read()
         try:
             tree = ElementTree.fromstring(text)
         except:
-            print "#Invalid xml passed back from " + site
+            print("#Invalid xml passed back from " + site)
             continue
-        print "#Harvested from", site
+        print("#Harvested from", site)
 
         for dsn in tree:
             build = dsn.find("SOURCE").attrib['id']
@@ -36,9 +38,9 @@ def main():
             build_dict = {}
         for build in builds:
             build_dict[build] = 0
-            builds = build_dict.keys()
+            builds = list(build_dict.keys())
         yield [names[i], trackurl, builds]
 
 if __name__ == "__main__":
     for site in main():
-        print site[0] + "\t" + site[1] + "\t" + ",".join(site[2])
+        print(site[0] + "\t" + site[1] + "\t" + ",".join(site[2]))

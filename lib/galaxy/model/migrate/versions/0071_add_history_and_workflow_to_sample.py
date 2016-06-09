@@ -23,7 +23,7 @@ def upgrade(migrate_engine):
         c2.create( Sample_table )
         assert c1 is Sample_table.c.workflow
         assert c2 is Sample_table.c.history_id
-    except Exception, e:
+    except Exception as e:
         print "Adding history and workflow columns to sample table failed: %s" % str( e )
         log.debug( "Adding history and workflow columns to sample table failed: %s" % str( e ) )
 
@@ -34,12 +34,12 @@ def downgrade(migrate_engine):
     try:
         Sample_table = Table( "sample", metadata, autoload=True )
         Sample_table.c.workflow.drop()
-    except Exception, e:
+    except Exception as e:
         print "Dropping workflow column from sample table failed: %s" % str( e )
         log.debug( "Dropping workflow column from sample table failed: %s" % str( e ) )
     try:
         Sample_table = Table( "sample", metadata, autoload=True )
         Sample_table.c.history_id.drop()
-    except Exception, e:
+    except Exception as e:
         print "Dropping history column from sample table failed: %s" % str( e )
         log.debug( "Dropping history column from sample table failed: %s" % str( e ) )

@@ -126,13 +126,10 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         log.info( "Parsing the tool configuration %s" % config_filename )
         tool_conf_source = get_toolbox_parser(config_filename)
         tool_path = tool_conf_source.parse_tool_path()
-        if tool_path:
-            # We're parsing a shed_tool_conf file since we have a tool_path attribute.
-            parsing_shed_tool_conf = True
+        parsing_shed_tool_conf = tool_conf_source.is_shed_tool_conf()
+        if parsing_shed_tool_conf:
             # Keep an in-memory list of xml elements to enable persistence of the changing tool config.
             config_elems = []
-        else:
-            parsing_shed_tool_conf = False
         tool_path = self.__resolve_tool_path(tool_path, config_filename)
         # Only load the panel_dict under certain conditions.
         load_panel_dict = not self._integrated_tool_panel_config_has_contents
@@ -403,6 +400,8 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             # exact tool id match not found, or all versions requested, search for other options, e.g. migrated tools or different versions
             rval = []
             tool_lineage = self._lineage_map.get( tool_id )
+            if not tool_lineage:
+                tool_lineage = self._lineage_map.get_versionless( tool_id )
             if tool_lineage:
                 lineage_tool_versions = tool_lineage.get_versions( )
                 for lineage_tool_version in lineage_tool_versions:

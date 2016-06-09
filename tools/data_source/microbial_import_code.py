@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from shutil import copyfile
 
 from galaxy import tools
@@ -88,17 +90,17 @@ def load_microbial_data( GALAXY_DATA_INDEX_DIR, sep='\t' ):
 
 # post processing, set build for data and add additional data to history
 def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr):
-    base_dataset = out_data.items()[0][1]
+    base_dataset = list(out_data.items())[0][1]
     history = base_dataset.history
     if history is None:
-        print "unknown history!"
+        print("unknown history!")
         return
     kingdom = param_dict.get( 'kingdom', None )
     org = param_dict.get( 'org', None )
 
     # if not (kingdom or group or org):
     if not (kingdom or org):
-        print "Parameters are not available."
+        print("Parameters are not available.")
     # workflow passes galaxy.tools.parameters.basic.UnvalidatedValue instead of values
     if isinstance( kingdom, tools.parameters.basic.UnvalidatedValue ):
         kingdom = kingdom.value
@@ -116,7 +118,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             chr = fields[2]
             dbkey = fields[3]
             file_type = fields[4]
-            name, data = out_data.items()[0]
+            name, data = list(out_data.items())[0]
             data.set_size()
             basic_name = data.name
             data.name = data.name + " (" + microbe_info[kingdom][org]['chrs'][chr]['data'][description]['feature'] + " for " + microbe_info[kingdom][org]['name'] + ":" + chr + ")"

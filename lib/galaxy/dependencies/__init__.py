@@ -3,7 +3,6 @@ Determine what optional dependencies are needed.
 """
 import pkg_resources
 
-from sys import version_info
 from os.path import dirname, join
 from xml.etree import ElementTree
 
@@ -66,6 +65,9 @@ class ConditionalDependencies( object ):
     def check_raven( self ):
         return self.config.get("sentry_dsn", None) is not None
 
+    def check_statsd( self ):
+        return self.config.get("statsd_host", None) is not None
+
     def check_weberror( self ):
         return ( asbool( self.config["debug"] ) and
                  asbool( self.config["use_interactive"] ) )
@@ -73,12 +75,6 @@ class ConditionalDependencies( object ):
     def check_pygments( self ):
         # pygments is a dependency of weberror and only weberror
         return self.check_weberror()
-
-    def check_importlib( self ):
-        return version_info < (2, 7)
-
-    def check_ordereddict( self ):
-        return version_info < (2, 7)
 
 
 def optional( config_file ):

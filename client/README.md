@@ -91,13 +91,15 @@ Grunt can also do an automatic, partial rebuild of any files you change *as you 
 
 1. opening a new terminal session
 2. `cd client`
-3. `grunt watch`
+3. Watch with:
+    1. `grunt watch` to watch the *scripts/* folder
+    2. `grunt watch-style` to watch the *style/* folder
 
-This starts a new grunt watch process that will monitor the files in `client/galaxy/scripts` for changes and copy and
-pack them when they change.
+This starts a new grunt watch process that will monitor the files, in the corresponding folder, for changes and copy and
+rebuild them when they change.
 
-You can stop the `grunt watch` task by pressing `Ctrl+C`. Note: you should also be able to background that task if you
-prefer.
+You can stop the watch task by pressing `Ctrl+C`. Note: you should also be able to background that task
+if you prefer.
 
 
 Using a Locally Installed Version of Grunt

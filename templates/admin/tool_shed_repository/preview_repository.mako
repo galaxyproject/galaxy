@@ -238,10 +238,30 @@ function show_create_html() {
     $('#select_existing_' + clean_name).click(show_select_html);
     $('#cancel_' + clean_name).click(show_picker_button);
 }
+function check_if_installed(name, owner, changeset) {
+    params = {name: name, owner: owner}
+    $.get('${h.url_for(controller='api', action='tool_shed_repositories')}', params, function(data) {
+        for (var index = 0; index < data.length; index++) {
+            var repository = data[index];
+            var installed = !repository.deleted && !repository.uninstalled;
+            var changeset_match = repository.changeset_revision == changeset ||
+                                  repository.installed_changeset_revision == changeset;
+            if (repository.name == name && repository.owner == owner && installed && changeset_match) {
+                $('#install_repository').prop('disabled', true);
+                $('#install_repository').val('This revision is already installed');
+            }
+            else {
+                $('#install_repository').prop('disabled', false);
+                $('#install_repository').val('Install this revision');
+            }
+        }
+    });
+}
 function changeset_metadata() {
-    metadata_key = $('#changeset').find("option:selected").text();
-    $("#current_changeset").text(metadata_key);
-    var repository_metadata = repository_information.metadata[metadata_key];
+    var changeset = $('#changeset').find("option:selected").text();
+    $("#current_changeset").text(changeset);
+    var repository_metadata = repository_information.metadata[changeset];
+    check_if_installed(repository_information.name, repository_information.owner, changeset.split(':')[1]);
     $(".repository_dependency_row").remove();
     $(".tool_dependency_row").remove();
     process_dependencies(repository_metadata);

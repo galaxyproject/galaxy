@@ -73,7 +73,7 @@ def build_tests( tmp_dir=None, testing_shed_tools=False, master_api_key=None, us
             new_filename = tempfile.NamedTemporaryFile( prefix=os.path.basename( filename ), dir=tmp_dir ).name
             try:
                 shutil.copy( filename, new_filename )
-            except IOError, e:
+            except IOError as e:
                 log.warning( "Failed to copy '%s' to '%s', will create empty file at '%s': %s", filename, new_filename, new_filename, e )
                 open( new_filename, 'wb' ).close()
             if 'filename' in value:

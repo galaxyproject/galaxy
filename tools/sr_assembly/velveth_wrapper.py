@@ -52,10 +52,9 @@ def __main__():
     rval.append( '<li><a href="%s" type="text/plain">%s </a>%s</li>' % (sequences_path, 'Sequences', 'Sequences' ) )
     rval.append( '<li><a href="%s" type="text/plain">%s </a>%s</li>' % (roadmaps_path, 'Roadmaps', 'Roadmaps' ) )
     rval.append( '</ul></div></html>' )
-    f = file(html_file, 'w')
-    f.write("\n".join( rval ))
-    f.write('\n')
-    f.close()
+    with open(html_file, 'w') as f:
+        f.write("\n".join( rval ))
+        f.write('\n')
 
 if __name__ == "__main__":
     __main__()

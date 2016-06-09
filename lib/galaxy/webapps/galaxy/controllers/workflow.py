@@ -247,7 +247,11 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         # Get workflow by username and slug. Security is handled by the display methods below.
         session = trans.sa_session
         user = session.query( model.User ).filter_by( username=username ).first()
+        if not user:
+            raise web.httpexceptions.HTTPNotFound()
         stored_workflow = trans.sa_session.query( model.StoredWorkflow ).filter_by( user=user, slug=slug, deleted=False ).first()
+        if not stored_workflow:
+            raise web.httpexceptions.HTTPNotFound()
         encoded_id = trans.security.encode_id( stored_workflow.id )
 
         # Display workflow in requested format.
@@ -344,7 +348,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                     use_panels=use_panels )
 
     @web.expose
-    @web.require_login( "use Galaxy workflows" )
+    @web.require_login( "Share or export Galaxy workflows" )
     def sharing( self, trans, id, **kwargs ):
         """ Handle workflow sharing. """
         session = trans.sa_session
@@ -712,16 +716,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             rval = dict( message="Workflow saved" )
         rval['name'] = workflow.name
         return rval
-
-    @web.expose
-    @web.require_login( "use workflows" )
-    def export( self, trans, id=None, **kwd ):
-        """
-        Handles download/export workflow command.
-        """
-        stored = self.get_stored_workflow( trans, id, check_ownership=False, check_accessible=True )
-
-        return trans.fill_template( "/workflow/export.mako", item=stored, use_panels=True )
 
     @web.expose
     @web.require_login( "use workflows" )

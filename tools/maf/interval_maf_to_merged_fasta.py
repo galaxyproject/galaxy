@@ -141,7 +141,7 @@ def __main__():
                         overwrite_with_gaps=overwrite_with_gaps )
                     primary_name = secondary_name = fields[3]
                     alignment_strand = fields[5]
-                except Exception, e:
+                except Exception as e:
                     print "Error loading exon positions from input line %i: %s" % ( line_count, e )
                     continue
             else:  # Process as standard intervals
@@ -154,7 +154,7 @@ def __main__():
                     primary_name = "%s(%s):%s-%s" % ( line.chrom, line.strand, line.start, line.end )
                     secondary_name = ""
                     alignment_strand = line.strand
-                except Exception, e:
+                except Exception as e:
                     print "Error loading region positions from input line %i: %s" % ( line_count, e )
                     continue
 
@@ -181,7 +181,7 @@ def __main__():
 
             output.write( "\n" )
             regions_extracted += 1
-        except Exception, e:
+        except Exception as e:
             print "Unexpected error from input line %i: %s" % ( line_count, e )
             continue
 

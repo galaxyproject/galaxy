@@ -36,19 +36,19 @@ def upgrade(migrate_engine):
     i = Index( 'ix_library_folder_name', LibraryFolder_table.c.name, mysql_length=200 )
     try:
         i.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Adding index 'ix_library_folder_name' to library_folder table failed: %s" % ( str( e ) ) )
     # Add 1 index to the library_dataset_dataset_association table
     i = Index( 'ix_library_dataset_dataset_association_name', LibraryDatasetDatasetAssociation_table.c.name )
     try:
         i.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Adding index 'ix_library_dataset_dataset_association_name' to library_dataset_dataset_association table failed: %s" % ( str( e ) ) )
     # Add 1 index to the library_dataset table
     i = Index( 'ix_library_dataset_name', LibraryDataset_table.c.name )
     try:
         i.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Adding index 'ix_library_dataset_name' to library_dataset table failed: %s" % ( str( e ) ) )
 
 

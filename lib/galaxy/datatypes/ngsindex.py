@@ -41,10 +41,9 @@ class BowtieIndex( Html ):
             sfname = os.path.split(fname)[-1]
             rval.append( '<li><a href="%s">%s</a>' % ( sfname, sfname ) )
         rval.append( '</ul></html>' )
-        f = file(dataset.file_name, 'w')
-        f.write("\n".join( rval ))
-        f.write('\n')
-        f.close()
+        with open(dataset.file_name, 'w') as f:
+            f.write("\n".join( rval ))
+            f.write('\n')
 
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:

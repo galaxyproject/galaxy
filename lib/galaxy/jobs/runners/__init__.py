@@ -89,8 +89,11 @@ class BaseJobRunner( object ):
                 return
             # id and name are collected first so that the call of method() is the last exception.
             try:
-                # arg should be a JobWrapper/TaskWrapper
-                job_id = arg.get_id_tag()
+                if isinstance(arg, AsynchronousJobState):
+                    job_id = arg.job_wrapper.get_id_tag()
+                else:
+                    # arg should be a JobWrapper/TaskWrapper
+                    job_id = arg.get_id_tag()
             except:
                 job_id = 'unknown'
             try:
@@ -142,7 +145,8 @@ class BaseJobRunner( object ):
         """
         raise NotImplementedError()
 
-    def prepare_job(self, job_wrapper, include_metadata=False, include_work_dir_outputs=True):
+    def prepare_job(self, job_wrapper, include_metadata=False, include_work_dir_outputs=True,
+                    modify_command_for_container=True):
         """Some sanity checks that all runners' queue_job() methods are likely to want to do
         """
         job_id = job_wrapper.get_id_tag()
@@ -168,6 +172,7 @@ class BaseJobRunner( object ):
                 job_wrapper,
                 include_metadata=include_metadata,
                 include_work_dir_outputs=include_work_dir_outputs,
+                modify_command_for_container=modify_command_for_container
             )
         except Exception as e:
             log.exception("(%s) Failure preparing job" % job_id)
@@ -190,13 +195,15 @@ class BaseJobRunner( object ):
     def recover(self, job, job_wrapper):
         raise NotImplementedError()
 
-    def build_command_line( self, job_wrapper, include_metadata=False, include_work_dir_outputs=True ):
+    def build_command_line( self, job_wrapper, include_metadata=False, include_work_dir_outputs=True,
+                            modify_command_for_container=True ):
         container = self._find_container( job_wrapper )
         return build_command(
             self,
             job_wrapper,
             include_metadata=include_metadata,
             include_work_dir_outputs=include_work_dir_outputs,
+            modify_command_for_container=modify_command_for_container,
             container=container
         )
 
@@ -273,6 +280,7 @@ class BaseJobRunner( object ):
             log.debug( 'executing external set_meta script for job %d: %s' % ( job_wrapper.job_id, external_metadata_script ) )
             external_metadata_proc = subprocess.Popen( args=external_metadata_script,
                                                        shell=True,
+                                                       cwd=job_wrapper.working_directory,
                                                        env=os.environ,
                                                        preexec_fn=os.setpgrp )
             job_wrapper.external_output_metadata.set_job_runner_external_pid( external_metadata_proc.pid, self.sa_session )
@@ -309,10 +317,6 @@ class BaseJobRunner( object ):
 
     def write_executable_script( self, path, contents, mode=0o755 ):
         write_script( path, contents, self.app.config, mode=mode )
-
-    def _complete_terminal_job( self, ajs, **kwargs ):
-        if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
-            self.work_queue.put( ( self.finish_job, ajs ) )
 
     def _find_container(
         self,
@@ -556,8 +560,8 @@ class AsynchronousJobRunner( BaseJobRunner ):
         which_try = 0
         while which_try < (self.app.config.retry_job_output_collection + 1):
             try:
-                stdout = shrink_stream_by_size( file( job_state.output_file, "r" ), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
-                stderr = shrink_stream_by_size( file( job_state.error_file, "r" ), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+                stdout = shrink_stream_by_size( open( job_state.output_file, "r" ), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+                stderr = shrink_stream_by_size( open( job_state.error_file, "r" ), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
                 which_try = (self.app.config.retry_job_output_collection + 1)
             except Exception as e:
                 if which_try == self.app.config.retry_job_output_collection:
@@ -570,7 +574,7 @@ class AsynchronousJobRunner( BaseJobRunner ):
 
         try:
             # This should be an 8-bit exit code, but read ahead anyway:
-            exit_code_str = file( job_state.exit_code_file, "r" ).read(32)
+            exit_code_str = open( job_state.exit_code_file, "r" ).read(32)
         except:
             # By default, the exit code is 0, which typically indicates success.
             exit_code_str = "0"

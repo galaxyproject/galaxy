@@ -1,3 +1,4 @@
+"""This module contains a linting functions for tool tests."""
 from ..lint_util import is_datasource
 
 

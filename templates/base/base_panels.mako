@@ -41,7 +41,7 @@
 <%def name="javascripts()">
     ## Send errors to Sentry server if configured
     %if app.config.sentry_dsn:
-        ${h.js( "libs/tracekit", "libs/raven" )}
+        ${h.js( "libs/raven" )}
         <script>
             Raven.config('${app.config.sentry_dsn_public}').install();
             %if trans.user:
@@ -203,9 +203,11 @@
             <div id="masthead" class="navbar navbar-fixed-top navbar-inverse">
                 ${self.masthead()}
             </div>
-            <div id="messagebox" class="panel-${app.config.message_box_class}-message">
-                ${app.config.message_box_content}
-            </div>
+            %if self.message_box_visible:
+                <div id="messagebox" class="panel-${app.config.message_box_class}-message" style="display:block">
+                    ${app.config.message_box_content}
+                </div>
+            %endif
             %if self.show_inactivity_warning:
                 <div id="inactivebox" class="panel-warning-message">
                     ${app.config.inactivity_box_content} <a href="${h.url_for( controller='user', action='resend_verification' )}">Resend verification.</a>
