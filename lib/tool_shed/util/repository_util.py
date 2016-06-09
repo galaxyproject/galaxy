@@ -16,7 +16,6 @@ from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
 import tool_shed.util.metadata_util as metadata_util
 from tool_shed.util.web_util import escape
-import galaxy.webapps.tool_shed.model
 import tool_shed.dependencies.repository
 
 log = logging.getLogger( __name__ )
