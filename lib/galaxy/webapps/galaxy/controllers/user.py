@@ -571,7 +571,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                                              message='Your time is up! Change your password to access galaxy',
                                                              redirect_home=True,
                                                              status='error'))
-                elif user.last_password_change < datetime.today() - timedelta(days=pw_expires.days/10):
+                elif user.last_password_change < datetime.today() - timedelta(days=pw_expires.days / 10):
                     expiredate = datetime.today() - user.last_password_change + pw_expires
                     message = 'You are now logged in as %s. Your password will expire in %s days.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
                               (expiredate.days, user.email, redirect, url_for('/'))
