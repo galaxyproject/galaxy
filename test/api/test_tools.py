@@ -149,7 +149,7 @@ class ToolsTestCase( api.ApiTestCase ):
             }
         }
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        response = self._run( "__UNZIP_COLLECTION__", history_id, inputs, assert_ok=True )
+        self._run( "__UNZIP_COLLECTION__", history_id, inputs, assert_ok=True )
 
     def test_zip_inputs( self ):
         history_id = self.dataset_populator.new_history()
