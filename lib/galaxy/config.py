@@ -222,6 +222,7 @@ class Configuration( object ):
         self.enable_communication_server = string_as_bool( kwargs.get( 'enable_communication_server', 'False' ) )
         self.communication_server_host = kwargs.get( 'communication_server_host', 'http://localhost' )
         self.communication_server_port = int( kwargs.get( 'communication_server_port', '7070' ) )
+        self.persistent_communication_rooms = listify( kwargs.get( "persistent_communication_rooms", [] ), do_strip=True )
         # External Service types used in sample tracking
         self.external_service_type_path = resolve_path( kwargs.get( 'external_service_type_path', 'external_service_types' ), self.root )
         # Tasked job runner.

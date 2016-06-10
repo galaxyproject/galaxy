@@ -1205,6 +1205,8 @@ use_interactive = True
 #enable_communication_server = False
 #communication_server_host = http://localhost
 #communication_server_port = 7070
+# persistent_communication_rooms is a comma-separated list of rooms that should be always available.
+#persistent_communication_rooms = 
 
 
 # ---- Galaxy External Message Queue -------------------------------------------------
