@@ -1,5 +1,5 @@
 """
-Migration script to add a last_password_change field to
+Migration script to add a last_password_change field to the user table
 """
 
 from sqlalchemy import Table, MetaData, DateTime, Column

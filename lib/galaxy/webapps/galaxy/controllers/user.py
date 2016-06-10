@@ -568,7 +568,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 if user.last_password_change < datetime.today() - pw_expires:
                     trans.response.send_redirect(web.url_for(controller='user',
                                                              action='change_password',
-                                                             message='Your time is up! Change your password to access galaxy',
+                                                             message='Your password has expired. Please change it to access Galaxy.',
                                                              redirect_home=True,
                                                              status='error'))
                 elif user.last_password_change < datetime.today() - timedelta(days=pw_expires.days / 10):
