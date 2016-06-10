@@ -1,6 +1,7 @@
 // the namespace events connect to
 var namespace = '/chat',
-        socket = io.connect(window.location.protocol + '//' + document.domain + ':' + location.port + namespace);
+        socket = io.connect(window.location.protocol + '//' + document.domain + ':' + location.port + namespace),
+        global_chat_rooms = ['Room1', 'Room2', 'Room3', 'Room4', 'Room5'];
 // socketio events
 var events_module = {
     // event handler for sent data from server
@@ -18,7 +19,7 @@ var events_module = {
             if (msg.data.length > 0) {
                 utils.append_message($el_all_messages, message);
                 // adding message to build full chat history
-                utils.store_append_message('broadcast', message);
+                utils.store_append_message(uid, message);
             }
             // updates the user session storage with all the messages
             sessionStorage['broadcast'] = $el_all_messages.html();
@@ -65,18 +66,12 @@ var events_module = {
                 }
             }
             else { // normal message sharing when connected
-                for (var counter = 0; counter < click_events.connected_room.length; counter++) {
-                    if (msg.chatroom === click_events.connected_room[counter]) {
-                        tab_counter = counter;
-                        break;
-                    }
-                }
-                $el_room_msg = $("#all_messages_" + tab_counter);
+                $el_room_msg = $("#all_messages_" + msg.chatroom);
                 utils.append_message($el_room_msg, utils.build_message(msg));
                 utils.scroll_to_last($el_room_msg);
-
+                // if the pushed message is for some other user, show notification
                 if (uid !== msg.data) {
-                    $el_tab_li = $("a[data-target='#tabroom_" + tab_counter + "'" + " ]");
+                    $el_tab_li = $("a[data-target='#galaxy_tabroom_" + msg.chatroom + "'" + " ]");
                     utils.show_notification($el_tab_li);
                 }
             }
@@ -97,29 +92,31 @@ var click_events = {
     is_connected: true,
     active_tab: "#all_chat_tab",
     connected_room: [],
-    tab_id_number: 0,
-    broadcast_data: function (socket) {
-        $('#send_data').keydown(function (event) {
-            if (click_events.is_connected) {
-                var send_data = {},
-                        tab_counter = 0,
-                        event_name = "";
-                if (event.keyCode == 13 || event.which == 13) {
-                    // if the tab is all chats
-                    if (click_events.active_tab === '#all_chat_tab') {
-                        send_data.data = $('#send_data').val();
-                        event_name = 'event broadcast';
-                    }
-                    else { // if the tab belongs to room
-                        tab_counter = $('.nav-tabs>li.active').children().attr("data-target").split('_')[1];
-                        send_data.data = $('#send_data').val();
-                        send_data.room = click_events.connected_room[tab_counter];
-                        event_name = 'event room';
-                    }
-                    socket.emit(event_name, send_data);
-                    $('#send_data').val('');
-                    return false;
-                }
+    broadcast_data: function ( socket ) {
+        $('#send_data').keydown(function ( e ) {
+            var $el_active_li = $( '.nav-tabs>li.active' ),
+                $el_send_data = $( '#send_data' ),
+                message = "";
+            message = $el_send_data.val();
+            message = message.trim(); // removes whitespaces
+            if( message.length > 0 && click_events.is_connected ) {
+	        var send_data = {},
+		        event_name = "";
+		if ( e.keyCode == 13 || e.which == 13 ) { // if enter is pressed
+		    // if the tab is all chats
+		    if ( click_events.active_tab === '#all_chat_tab' ) {
+		        send_data.data = message;
+		        event_name = 'event broadcast';
+		    }
+		    else { // if the tab belongs to room
+                        send_data.data = message;
+		        send_data.room = $el_active_li.children().attr("title");
+		        event_name = 'event room';
+		    }
+		    socket.emit(event_name, send_data);
+		    $el_send_data.val('');
+		    return false;
+		}
             }
         });
     },
@@ -140,14 +137,14 @@ var click_events = {
         });
     },
     // event for connected and disconneted states
-    connect_disconnect: function (socket) {
+    connect_disconnect: function ( socket ) {
         $('#online_status').click(function () {
             var $el_online_status = $('#online_status'),
                     $el_input_text = $('#send_data'),
-                    send_data = {}
-            connected_message = 'Type your message...',
+                    send_data = {},
+                    connected_message = 'Type your message...',
                     uid = utils.get_userid();
-            if (click_events.is_connected) {
+            if ( click_events.is_connected ) {
                 click_events.make_disconnect(uid, $el_input_text, $el_online_status);
             }
             else {
@@ -197,62 +194,37 @@ var click_events = {
         $el_input_text.prop('placeholder', disconnected_message);
         $el_input_text.prop('disabled', true);
     },
-    // for creating/joining chat room
-    create_chat_room: function (socket) {
+    // for creating/joining user created chat room
+    create_chat_room: function () {
         var $el_txtbox_chat_room = $('#txtbox_chat_room'),
             $el_chat_room_tab = $('#chat_room_tab'),
-            tab_room_header_template = "",
-            tab_room_body_template = "",
-            tab_id = "",
-            tab_name = "",
-            self = this;
-        $el_txtbox_chat_room.keydown(function (e) {
+            $el_chat_tabs = $('#chat_tabs'),
+            $el_tab_content = $('.tab-content'),
+            $el_msg_box = $('#send_data');
+        $el_txtbox_chat_room.keydown(function ( e ) {
             var chat_room_name = $el_txtbox_chat_room.val();
-            if (e.which === 13 || e.keyCode === 13) {
-                if( chat_room_name.length > 0 ) {
-                    socket.emit('join', {room: chat_room_name});
-                    self.connected_room.push( chat_room_name );
-                    // removes the active class from the chat creating tab
-                    $el_chat_room_tab.removeClass('fade active in').addClass('fade');
-                    $('ul>li.active').removeClass('active');
-                    // sets new tab id
-                    tab_id = "tabroom_" + self.tab_id_number;
-                    tab_name = self.connected_room[self.connected_room.length - 1];
-                    // create chat room tab header for new room
-                    tab_room_header_template = "<li class='active'><a title=" + tab_name + " data-target=" + "#" + tab_id +
-                                               " data-toggle='tab' aria-expanded='false'>" + tab_name +
-                                               "<i class='fa fa-times anchor close-room' title='Close room'></i></a></li>";
-                    $('#chat_tabs').append( tab_room_header_template );
-
-                    // create chat room tab body for new room
-                    tab_room_body_template = "<div class='tab-pane active fade in' id=" + tab_id +
-                                             "><div id='all_messages_" + self.tab_id_number + "'" + " class='messages'></div></div>";
-                    $('.tab-content').append(tab_room_body_template);
-                    self.leave_close_room();
-                    self.active_element();
-                    $el_txtbox_chat_room.val("");
-                    self.tab_id_number++;
-                    // displays the textarea
-                    $('#send_data').css('display', 'block');
-                    // adjusts the left/right scrollers
-                    // when a tab is created
-                    utils.adjust_scrollers();
-                    return false;
-                }
+            if ( ( e.which === 13 || e.keyCode === 13 ) && chat_room_name.length > 0 ) { // if enter is pressed
+                utils.create_new_tab(chat_room_name, $el_txtbox_chat_room, $el_chat_room_tab, $el_chat_tabs, $el_tab_content, $el_msg_box);
+                return false;
             }
         });
     },
     // for chat rooms/ group chat
     leave_close_room: function () {
-        var tab_counter = "";
-        $('.close-room').click(function (e) {
+        var tab_counter = "",
+            room_name = "",
+            room_index = 0;
+        $('.close-room').click(function ( e ) {
+            //$el_last_chat_tab = ;
             e.stopPropagation();
-            tab_counter = $(this).parent().attr('data-target').split("_")[1];
             // leaves room
-            socket.emit('leave', {room: click_events.connected_room[tab_counter]});
+            room_name = e.target.parentElement.title;
+            socket.emit( 'leave', {room: room_name} );
             // removes tab and its content
-            $('.tab-content ' + $(this).parent().attr('data-target')).remove();
+            $( '.tab-content ' + $(this).parent().attr('data-target') ).remove();
             $(this).parent().parent().remove();
+            room_index = click_events.connected_room.indexOf(room_name);
+            click_events.connected_room.splice(room_index, 1);
             // selects the last tab and makes it active
             $('#chat_tabs a:last').tab('show');
             // hides or shows textarea
@@ -265,19 +237,36 @@ var click_events = {
     },
     // registers overflow tabs left/right click events
     overflow_left_right_scroll: function() {
+        var $el_scroll_right = $('.scroller-right'),
+            $el_scroll_left = $('.scroller-left');
         $('.scroller-right').click(function() {
-            $('.scroller-left').fadeIn('slow');
-            $('.scroller-right').fadeOut('slow');
+            $el_scroll_left.fadeIn('slow');
+            $el_scroll_right.fadeOut('slow');
             // performs animation when the scroller is clicked
             // and shifts the tab list to the right end
             $('.list').animate({left: "+=" + utils.get_width_hidden_list() + "px"}, 'slow', function() { });
         });
-        $('.scroller-left').click(function() {
-        $('.scroller-right').fadeIn('slow');
-        $('.scroller-left').fadeOut('slow');
+        $el_scroll_left.click(function() {
+            $el_scroll_right.fadeIn('slow');
+            $el_scroll_left.fadeOut('slow');
             // performs animation when the scroller is clicked
             // and shifts the tab list to the left end
-        $('.list').animate({left: "-=" + utils.get_list_left_position() + "px"}, 'slow', function() { });
+            $('.list').animate({left: "-=" + utils.get_list_left_position() + "px"}, 'slow', function() { });
+        });
+    },
+    // opens a global chat room
+    open_global_chat_room: function() {
+        var $el_txtbox_chat_room = $('#txtbox_chat_room'),
+            $el_chat_room_tab = $('#chat_room_tab'),
+            $el_chat_tabs = $('#chat_tabs'),
+            $el_tab_content = $('.tab-content'),
+            $el_msg_box = $('#send_data'),
+            chat_room_name = '';
+        $('.global-room').click(function( e ) {
+            e.stopPropagation();
+            chat_room_name = e.target.parentElement.title;
+            utils.create_new_tab( chat_room_name, $el_txtbox_chat_room, $el_chat_room_tab, $el_chat_tabs, $el_tab_content, $el_msg_box);
+            return false;
         });
     },
 }
@@ -398,7 +387,7 @@ var utils = {
         }
         else {
             $('.item').animate( {left: "-=" + this.get_list_left_position() + "px"}, 'slow' );
-        $('.scroller-left').hide();
+            $('.scroller-left').hide();
         }
     },
     // gets the widht of all li elements
@@ -420,18 +409,19 @@ var utils = {
     },
     // checks the session storage on page load
     checks_session_storage: function() {
+        var uid = utils.get_userid();
         if (sessionStorage['connected']) {
             if (sessionStorage['connected'] === 'true' || sessionStorage['connected'] === true) {
-                utils.update_online_status($('#online_status'), true);
+                utils.update_online_status( $('#online_status'), true );
                 click_events.is_connected = true;
             }
             else {
-                click_events.make_disconnect(uid, $('#send_data'), $('#online_status'));
+                click_events.make_disconnect( uid, $('#send_data'), $('#online_status') );
                 utils.clear_message_area();
             }
         }
         else {
-            utils.update_online_status($('#online_status'), true);
+            utils.update_online_status( $('#online_status'), true );
             click_events.is_connected = true;
         }
     },
@@ -444,15 +434,67 @@ var utils = {
              $('#send_data').css('display', 'block');
          }
     },
-    store_append_message: function(key, data){
+    store_append_message: function( key, data ) {
         if (!localStorage[key]) {
             localStorage[key] = data + '<br>';
         }
         else {
             localStorage[key] = localStorage[key] + data + '<br>';
         }
-        sessionStorage[key] = localStorage[key]
-    }
+        //sessionStorage[key] = localStorage[key];
+    },
+    create_global_chatroom_links: function() {
+        // global_rooms
+        var $el_room_container = $('#global_rooms'),
+            room_name = "",
+            room_template = "";
+        //$el_room_container.html('');
+        for(var room_counter = 0; room_counter < global_chat_rooms.length; room_counter++ ) {
+            room_name = global_chat_rooms[room_counter];
+            room_template = "<a href='#' class='global-room' title=" + room_name + "><span>" + room_name + "</span></a><br>";
+            $el_room_container.append(room_template);
+        }
+    },
+    // creates a new tab and joins a chat room
+    create_new_tab: function( chat_room_name, $el_txtbox_chat_room, $el_chat_room_tab, $el_chat_tabs, $el_tab_content, $el_msg_box) {
+        var self = click_events,
+            tab_room_header_template = "",
+            tab_room_body_template = "",
+            tab_id = "",
+            $el_active_li = $('ul>li.active');
+        // checks if the room is already open and displays it if open
+        // otherwise create a new one
+        if(self.connected_room.indexOf(chat_room_name) > -1) {
+            $el_chat_tabs.find( "a[title='" + chat_room_name + "']" ).tab('show');
+        }
+        else {
+            // emits join room event
+            socket.emit('join', {room: chat_room_name});
+	    // removes the active class from the chat creating tab
+	    $el_chat_room_tab.removeClass('fade active in').addClass('fade');
+	    $el_active_li.removeClass('active');
+	    // sets new tab id
+            tab_id = "galaxy_tabroom_" + chat_room_name;
+            self.connected_room.push( chat_room_name );
+	    // create chat room tab header for new room
+	    tab_room_header_template = "<li class='active'><a title=" + chat_room_name + " data-target=" + "#" + tab_id +
+		               " data-toggle='tab' aria-expanded='false'>" + chat_room_name +
+		               "<i class='fa fa-times anchor close-room' title='Close room'></i></a></li>";
+	    $el_chat_tabs.append( tab_room_header_template );
+	    // create chat room tab body for new room
+	    tab_room_body_template = "<div class='tab-pane active fade in' id=" + tab_id +
+		             "><div id='all_messages_" + chat_room_name + "'" + " class='messages'></div></div>";
+	    $el_tab_content.append(tab_room_body_template);
+            // registers leave room event
+	    self.leave_close_room();
+        }
+        self.active_element();
+        // displays the textarea
+	$el_msg_box.css('display', 'block');
+        $el_txtbox_chat_room.val("");
+        // adjusts the left/right scrollers when a tab is created
+	utils.adjust_scrollers();
+    },
 }
 
 // registers the events when this document is ready
@@ -493,4 +535,8 @@ $(document).ready(function () {
     // by checking if user was connected or not
     utils.checks_session_storage();
     utils.scroll_to_last($('#all_messages'));
+    // create global chat rooom links and
+    // registers their click events
+    utils.create_global_chatroom_links();
+    click_events.open_global_chat_room();
 });

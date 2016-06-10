@@ -66,24 +66,42 @@ ul > li i {
     font-size: 12px;
 }
 
+.join-room {
+    margin-left: 1.1%;
+}
+
+.global-rooms {
+    overflow-y: auto;
+    height: 230px;
+    margin-top: 1%;
+}
+
+.room-text {
+   margin-top: 1%;
+}
+
+a:hover, a:visited {
+    text-decoration: none;
+}
+
 /****styles for overflow tabs****/
 .wrapper {
     position: relative;
     margin: 0 auto;
     overflow: hidden;
-height: 45px;
+    height: 45px;
 }
 
 .list {
     position: absolute;
     left: 0px;
     top: 0px;
-min-width: 3000px;
+    min-width: 3000px;
     margin-top: 0px;
 }
 
 .list li {
-display: table-cell;
+    display: table-cell;
     position: relative;
     text-align: center;
     color: #efefef;
