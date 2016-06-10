@@ -307,7 +307,8 @@ class DistanceMatrix(Text):
                     dataset.metadata.sequence_count = int(''.join(line))  # seq count sometimes preceded by tab
                     break
                 except Exception as e:
-                    log.warning("DistanceMatrix set_meta %s" % e)
+                    if not isinstance(self, PairwiseDistanceMatrix):
+                        log.warning("DistanceMatrix set_meta %s" % e)
 
 
 class LowerTriangleDistanceMatrix(DistanceMatrix):
