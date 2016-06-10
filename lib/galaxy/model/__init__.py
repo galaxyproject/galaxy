@@ -166,6 +166,7 @@ class User( object, Dictifiable ):
         self.active = False
         self.activation_token = None
         self.username = None
+        self.last_password_change = None
         # Relationships
         self.histories = []
         self.credentials = []
@@ -179,6 +180,7 @@ class User( object, Dictifiable ):
             self.password = galaxy.security.passwords.hash_password( cleartext )
         else:
             self.password = new_secure_hash( text_type=cleartext )
+        self.last_password_change = datetime.now()
 
     def check_password( self, cleartext ):
         """
