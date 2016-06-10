@@ -9,4 +9,4 @@ then
 fi
 
 cd `dirname $0`
-python ./scripts/manage_tools.py $@
+python ./lib/tool_shed/galaxy_install/migrate/scripts/manage_tools.py $@

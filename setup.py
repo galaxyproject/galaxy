@@ -43,9 +43,11 @@ setup(
             'tools/imp_exp/exp_history_to_archive.xml',
             'model/migrate/migrate.cfg',
             'dependencies/*.txt',
+            'util/docutils_template.txt',
         ],
         'tool_shed': [
             'galaxy_install/migrate/migrate.cfg',
+            'galaxy_install/migrate/scripts/*',
             'scripts/bootstrap_tool_shed/parse_run_sh_args.sh',
             'scripts/bootstrap_tool_shed/bootstrap_tool_shed.sh',
             'scripts/bootstrap_tool_shed/user_info.xml',

@@ -23,7 +23,10 @@ def accumulate_tool_dependencies( tool_shed_accessible, tool_dependencies, all_t
 
 def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_script_number ):
     # Get the 000x_tools.xml file associated with the current migrate_tools version number.
-    tools_xml_file_path = os.path.abspath( os.path.join( 'scripts', 'migrate_tools', '%04d_tools.xml' % latest_tool_migration_script_number ) )
+    tools_xml_file_path = os.path.abspath( os.path.join( os.path.dirname( __file__ ),
+                                                         os.pardir, 'galaxy_install',
+                                                         'migrate', 'scripts',
+                                                         '%04d_tools.xml' % latest_tool_migration_script_number) )
     # Parse the XML and load the file attributes for later checking against the proprietary tool_panel_config.
     migrated_tool_configs_dict = odict()
     tree, error_message = xml_util.parse_xml( tools_xml_file_path )

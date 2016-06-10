@@ -11,6 +11,17 @@ from galaxy.util import plugin_config, string_as_bool, string_as_bool_or_none
 
 log = logging.getLogger(__name__)
 
+AUTH_CONF_XML = """<?xml version="1.0"?>
+<auth>
+    <authenticator>
+        <type>localdb</type>
+        <options>
+            <allow-password-change>true</allow-password-change>
+        </options>
+    </authenticator>
+</auth>
+"""
+
 
 class AuthManager(object):
 
@@ -20,9 +31,14 @@ class AuthManager(object):
         self.__plugins_dict = plugin_config.plugins_dict(galaxy.auth.providers, 'plugin_type' )
         auth_config_file = app.config.auth_config_file
         # parse XML
-        ct = xml.etree.ElementTree.parse(auth_config_file)
-        conf_root = ct.getroot()
-
+        try:
+            ct = xml.etree.ElementTree.parse(auth_config_file)
+            conf_root = ct.getroot()
+        except (OSError, IOError):
+            if not app.config.auth_config_file_set:
+                conf_root = xml.etree.ElementTree.fromstring(AUTH_CONF_XML)
+            else:
+                raise
         authenticators = []
         # process authenticators
         for auth_elem in conf_root.getchildren():

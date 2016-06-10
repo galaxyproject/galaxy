@@ -2,6 +2,7 @@
 Manage automatic installation of tools configured in the xxx.xml files in ~/scripts/migrate_tools (e.g., 0002_tools.xml).
 All of the tools were at some point included in the Galaxy distribution, but are now hosted in the main Galaxy tool shed.
 """
+import errno
 import json
 import os
 import shutil
@@ -34,6 +35,12 @@ from tool_shed.util import xml_util
 log = logging.getLogger( __name__ )
 
 
+MIGRATED_TOOLS_CONF_XML = """<?xml version="1.0"?>
+<toolbox tool_path="{shed_tools_dir}">
+</toolbox>
+"""
+
+
 class ToolMigrationManager( object ):
 
     def __init__( self, app, latest_migration_script_number, tool_shed_install_config, migrated_tools_config,
@@ -62,7 +69,15 @@ class ToolMigrationManager( object ):
         self.proprietary_tool_panel_elems = self.get_proprietary_tool_panel_elems( latest_migration_script_number )
         # Set the location where the repositories will be installed by retrieving the tool_path
         # setting from migrated_tools_config.
-        tree, error_message = xml_util.parse_xml( migrated_tools_config )
+        try:
+            tree, error_message = xml_util.parse_xml( migrated_tools_config )
+        except (IOError, OSError) as exc:
+            if exc.errno == errno.ENOENT:
+                with open( migrated_tools_config, 'w' ) as fh:
+                    fh.write( MIGRATED_TOOLS_CONF_XML.format( shed_tools_dir=self.app.config.shed_tools_dir ) )
+                tree, error_message = xml_util.parse_xml( migrated_tools_config )
+            else:
+                raise
         if tree is None:
             log.error( error_message )
         else:

@@ -10,7 +10,7 @@ shed repository but not defined in tool_conf.xml.
 import os
 import sys
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir)))
 
 from tool_shed.galaxy_install.migrate.common import MigrateToolsApplication
 

@@ -24,7 +24,7 @@ from galaxy.util import listify
 from galaxy.util import string_as_bool
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web.formatting import expand_pretty_datetime_format
-from .version import VERSION_MAJOR
+from ..version import VERSION_MAJOR
 
 log = logging.getLogger( __name__ )
 
@@ -48,11 +48,55 @@ def resolve_path( path, root ):
 
 
 class Configuration( object ):
-    deprecated_options = ( 'database_file', )
+    deprecated_options = (None,)
 
     def __init__( self, **kwargs ):
         self.config_dict = kwargs
         self.root = kwargs.get( 'root_dir', '.' )
+
+        # Facilitate "installed" Galaxy without disturbing existing "running
+        # from source" installations and all the various assumptions/defaults
+        self.__running_from_source = None
+
+        self.config_file = None
+        global_conf = kwargs.get( 'global_conf', None )
+        # TODO: under what conditions is global_conf None, or does it not
+        # contain __file__?
+        if global_conf and "__file__" in global_conf:
+            self.config_file = global_conf['__file__']
+        elif self.running_from_source:
+            for f in ( 'config/galaxy.ini', 'config/galaxy.ini.sample' ):
+                if os.path.exists( f ):
+                    self.config_file = f
+                    break
+        else:
+            log.warning( "global_conf unset or __file__ not in global_conf and "
+                         "not running from source, unable to determine config file, "
+                         "global_conf is: %s", global_conf )
+        assert self.config_file is not None, "Unable to determine galaxy config file"
+        self.config_dir = kwargs.get( 'config_dir', os.path.dirname( self.config_file ) )
+        self.data_dir = kwargs.get( 'data_dir', None )
+        # mutable_config_dir is intentionally not configurable. You can
+        # override individual mutable configs with config options, but they
+        # should be considered Galaxy-controlled data files and will by default
+        # just live in the data dir
+        if self.running_from_source:
+            if self.data_dir is None:
+                self.data_dir = os.path.join( self.root, 'config', 'database' )
+                self.mutable_config_dir = self.config_dir
+            self.shed_tools_dir = "../shed_tools"
+        else:
+            if self.data_dir is None:
+                self.data_dir = os.path.join( self.config_dir, 'data' )
+            self.mutable_config_dir = os.path.join( self.data_dir, 'config' )
+            self.shed_tools_dir = os.path.join( self.data_dir, 'shed_tools' )
+        log.debug( "Configuration directory is %s", self.config_dir )
+        log.debug( "Data directory is %s", self.data_dir )
+
+        self.sample_config_dir = os.path.join( os.path.dirname( __file__ ), 'sample' )
+
+        # Configs no longer read from samples
+        self.migrated_tools_config = resolve_path( kwargs.get( 'migrated_tools_conf', 'migrated_tools_conf.xml' ), self.mutable_config_dir )
 
         # Resolve paths of other config files
         self.__parse_config_file_options( kwargs )
@@ -64,8 +108,8 @@ class Configuration( object ):
 
         self.version_major = VERSION_MAJOR
         # Database related configuration
-        self.database = resolve_path( kwargs.get( "database_file", "database/universe.sqlite" ), self.root )
-        self.database_connection = kwargs.get( "database_connection", False )
+        self.database_connection = kwargs.get( "database_connection",
+                                               "sqlite:///%s?isolation_level=IMMEDIATE" % resolve_path( "universe.sqlite", self.data_dir ) )
         self.database_engine_options = get_database_engine_options( kwargs )
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
         self.database_query_profiling_proxy = string_as_bool( kwargs.get( "database_query_profiling_proxy", "False" ) )
@@ -79,7 +123,7 @@ class Configuration( object ):
         self.install_database_engine_options = get_database_engine_options( kwargs, model_prefix="install_" )
 
         # Where dataset files are stored
-        self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
+        self.file_path = resolve_path( kwargs.get( "file_path", "files" ), self.data_dir )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
         tempfile.tempdir = self.new_file_path
         self.openid_consumer_cache_path = resolve_path( kwargs.get( "openid_consumer_cache_path", "database/openid_consumer_cache" ), self.root )
@@ -93,8 +137,8 @@ class Configuration( object ):
         self.builds_file_path = resolve_path( kwargs.get( "builds_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'builds.txt') ), self.root )
         self.len_file_path = resolve_path( kwargs.get( "len_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'chrom') ), self.root )
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
-        # and moved to the tool shed.
-        self.integrated_tool_panel_config = resolve_path( kwargs.get( 'integrated_tool_panel_config', 'integrated_tool_panel.xml' ), self.root )
+        # and moved to the tool shed. It is created on demand.
+        self.integrated_tool_panel_config = resolve_path( kwargs.get( 'integrated_tool_panel_config', 'integrated_tool_panel.xml' ), self.mutable_config_dir )
         integrated_tool_panel_tracking_directory = kwargs.get( 'integrated_tool_panel_tracking_directory', None )
         if integrated_tool_panel_tracking_directory:
             self.integrated_tool_panel_tracking_directory = resolve_path( integrated_tool_panel_tracking_directory, self.root )
@@ -104,6 +148,7 @@ class Configuration( object ):
         self.tool_filters = listify( kwargs.get( "tool_filters", [] ), do_strip=True )
         self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ), do_strip=True )
         self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ), do_strip=True )
+        self.tool_sheds_config_file = resolve_path( kwargs.get( "tool_sheds_config_file", "tool_sheds_conf.xml" ), self.config_dir )
 
         self.user_tool_filters = listify( kwargs.get( "user_tool_filters", [] ), do_strip=True )
         self.user_label_filters = listify( kwargs.get( "user_tool_label_filters", [] ), do_strip=True )
@@ -312,13 +357,12 @@ class Configuration( object ):
         self.tool_help_boost = kwargs.get( "tool_help_boost", 0.5 )
         self.tool_search_limit = kwargs.get( "tool_search_limit", 20 )
         # Location for tool dependencies.
-        # Location for tool dependencies.
-        tool_dependency_dir = kwargs.get( "tool_dependency_dir", "database/dependencies" )
+        tool_dependency_dir = kwargs.get( "tool_dependency_dir", "dependencies" )
         if tool_dependency_dir.lower() == "none":
             tool_dependency_dir = None
 
         if tool_dependency_dir is not None:
-            self.tool_dependency_dir = resolve_path( tool_dependency_dir, self.root )
+            self.tool_dependency_dir = resolve_path( tool_dependency_dir, self.data_dir )
             # Setting the following flag to true will ultimately cause tool dependencies
             # to be located in the shell environment and used by the job that is executing
             # the tool.
@@ -362,13 +406,10 @@ class Configuration( object ):
         self.irods_root_collection_path = kwargs.get( 'irods_root_collection_path', None )
         self.irods_default_resource = kwargs.get( 'irods_default_resource', None )
         # Parse global_conf and save the parser
-        global_conf = kwargs.get( 'global_conf', None )
         global_conf_parser = configparser.ConfigParser()
-        self.config_file = None
         self.global_conf_parser = global_conf_parser
-        if global_conf and "__file__" in global_conf:
-            self.config_file = global_conf['__file__']
-            global_conf_parser.read(global_conf['__file__'])
+        if self.config_file is not None:
+            global_conf_parser.read(self.config_file)
         # Heartbeat log file name override
         if global_conf is not None and 'heartbeat_log' in global_conf:
             self.heartbeat_log = global_conf['heartbeat_log']
@@ -436,7 +477,7 @@ class Configuration( object ):
         elif 'database_connection' in kwargs:
             self.amqp_internal_connection = "sqlalchemy+" + self.database_connection
         else:
-            self.amqp_internal_connection = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % resolve_path( "database/control.sqlite", self.root )
+            self.amqp_internal_connection = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % resolve_path( "control.sqlite", self.data_dir )
         self.biostar_url = kwargs.get( 'biostar_url', None )
         self.biostar_key_name = kwargs.get( 'biostar_key_name', None )
         self.biostar_key = kwargs.get( 'biostar_key', None )
@@ -495,6 +536,19 @@ class Configuration( object ):
         self.citation_cache_lock_dir = self.resolve_path( kwargs.get( "citation_cache_lock_dir", "database/citations/locks" ) )
 
     @property
+    def running_from_source( self ):
+        if self.__running_from_source is None:
+            try:
+                # is there a better way to do this?
+                assert os.path.exists( 'run.sh' )
+                assert os.path.exists( 'lib/galaxy/__init__.py' )
+                assert os.path.exists( 'scripts/common_startup.sh' )
+                self.__running_from_source = True
+            except AssertionError:
+                self.__running_from_source = False
+        return self.__running_from_source
+
+    @property
     def sentry_dsn_public( self ):
         """
         Sentry URL with private key removed for use in client side scripts,
@@ -516,25 +570,32 @@ class Configuration( object ):
             if explicit:
                 log.warning("Sanitize log file explicitly specified as '%s' but does not exist, continuing with no tools whitelisted.", self.sanitize_whitelist_file)
 
+    def __in_mutable_config_dir( self, path ):
+        return os.path.join( self.mutable_config_dir, path )
+
+    def __in_config_dir( self, path ):
+        return os.path.join( self.config_dir, path )
+
+    def __in_sample_dir( self, path ):
+        return os.path.join( self.sample_config_dir, path )
+
     def __parse_config_file_options( self, kwargs ):
         """
         Backwards compatibility for config files moved to the config/ dir.
         """
         defaults = dict(
-            auth_config_file=[ 'config/auth_conf.xml', 'config/auth_conf.xml.sample' ],
+            auth_config_file=[ self.__in_config_dir( 'auth_conf.xml' ) ],
             data_manager_config_file=[ 'config/data_manager_conf.xml', 'data_manager_conf.xml', 'config/data_manager_conf.xml.sample' ],
-            datatypes_config_file=[ 'config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample' ],
+            datatypes_config_file=[ self.__in_config_dir( 'datatypes_conf.xml' ), self.__in_sample_dir( 'datatypes_conf.xml.sample' ) ],
             external_service_type_config_file=[ 'config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample' ],
             job_config_file=[ 'config/job_conf.xml', 'job_conf.xml' ],
             job_metrics_config_file=[ 'config/job_metrics_conf.xml', 'job_metrics_conf.xml', 'config/job_metrics_conf.xml.sample' ],
             dependency_resolvers_config_file=[ 'config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml' ],
             job_resource_params_file=[ 'config/job_resource_params_conf.xml', 'job_resource_params_conf.xml' ],
-            migrated_tools_config=[ 'migrated_tools_conf.xml', 'config/migrated_tools_conf.xml' ],
             object_store_config_file=[ 'config/object_store_conf.xml', 'object_store_conf.xml' ],
             openid_config_file=[ 'config/openid_conf.xml', 'openid_conf.xml', 'config/openid_conf.xml.sample' ],
             shed_data_manager_config_file=[ 'shed_data_manager_conf.xml', 'config/shed_data_manager_conf.xml' ],
             shed_tool_data_table_config=[ 'shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml' ],
-            tool_sheds_config_file=[ 'config/tool_sheds_conf.xml', 'tool_sheds_conf.xml', 'config/tool_sheds_conf.xml.sample' ],
             workflow_schedulers_config_file=['config/workflow_schedulers_conf.xml', 'config/workflow_schedulers_conf.xml.sample'],
         )
 
@@ -559,6 +620,7 @@ class Configuration( object ):
         for var, defaults in defaults.items():
             if kwargs.get( var, None ) is not None:
                 path = kwargs.get( var )
+                setattr( self, var + '_set', True )
             else:
                 for default in defaults:
                     if os.path.exists( resolve_path( default, self.root ) ):
@@ -566,6 +628,7 @@ class Configuration( object ):
                         break
                 else:
                     path = defaults[-1]
+                setattr( self, var + '_set', False )
             setattr( self, var, resolve_path( path, self.root ) )
 
         for var, defaults in listify_defaults.items():
@@ -643,7 +706,9 @@ class Configuration( object ):
                 raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
 
     def check( self ):
-        paths_to_check = [ self.root, self.tool_path, self.tool_data_path, self.template_path ]
+        paths_to_check = [ self.root, self.tool_path, self.tool_data_path,
+                           self.template_path, self.data_dir,
+                           self.mutable_config_dir ]
         # Check that required directories exist
         for path in paths_to_check:
             if path not in [ None, False ] and not os.path.isdir( path ):
@@ -662,7 +727,7 @@ class Configuration( object ):
             self._ensure_directory( path )
         # Check that required files exist
         tool_configs = self.tool_configs
-        if self.migrated_tools_config not in tool_configs:
+        if self.migrated_tools_config not in tool_configs and os.path.exists( self.migrated_tools_config ):
             tool_configs.append( self.migrated_tools_config )
         for path in tool_configs:
             if not os.path.exists( path ):
@@ -887,18 +952,15 @@ class ConfiguresGalaxyMixin:
 
         # Set up the tool sheds registry
         if os.path.isfile( self.config.tool_sheds_config_file ):
-            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry( self.config.root, self.config.tool_sheds_config_file )
+            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry( self.config.tool_sheds_config_file )
         else:
-            self.tool_shed_registry = None
+            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry()
 
     def _configure_models( self, check_migrate_databases=False, check_migrate_tools=False, config_file=None ):
         """
         Preconditions: object_store must be set on self.
         """
-        if self.config.database_connection:
-            db_url = self.config.database_connection
-        else:
-            db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config.database
+        db_url = self.config.database_connection
         install_db_url = self.config.install_database_connection
         # TODO: Consider more aggressive check here that this is not the same
         # database file under the hood.
