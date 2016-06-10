@@ -87,7 +87,7 @@
                higher value (in seconds) (or `None` to use blocking connections). -->
           <!-- <param id="amqp_consumer_timeout">None</param> -->
         </plugin>
-        <plugin id="pulsar_legacy" type="runner" load="galaxy.jobs.runners.pulsar:PulsarLegacyJobRunner">
+        <plugin id="pulsar_legacy" type="runner" load="galaxy.jobs.runners.pulsar:PulsarLegacyJobRunner" shell="none">
           <!-- Pulsar job runner with default parameters matching those
                of old LWR job runner. If your Pulsar server is running on a
                Windows machine for instance this runner should still be used.
