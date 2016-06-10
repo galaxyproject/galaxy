@@ -268,6 +268,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                     if retries < self.runner_params[ retry_param ]:
                         # will retry check on next iteration
                         setattr( ajs, retry_param, retries + 1 )
+                        new_watched.append( ajs )
                         continue
                 if self.runner_params[ state_param ] == model.Job.states.OK:
                     log.info( "(%s/%s) job left DRM queue with following message: %s", galaxy_id_tag, external_job_id, e )
