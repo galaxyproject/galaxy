@@ -1,5 +1,6 @@
 layout: true
-class: inverse, center, middle
+class: inverse, middle
+
 ---
 class: special
 # Galaxy Architecture 2015
@@ -10,7 +11,7 @@ Nate, James, John, Rémi
 
 ---
 
-class: inverse, center, middle
+class: middle
 
 ### Please Interrupt!
 
@@ -100,11 +101,13 @@ github.com/galaxyproject/**bioblend**
 
 ---
 
+
 ### Aspirational Principles of Galaxy Architecture
 
 Whereas the architecture of the frontend (Web UI) aims for consistency and is
 highly opinionated, the backend (Python server) is guided by flexibility and is meant to be driven by plugins whenever possible.
 
+  
 ???
 
 Though an imperfect abstraction... i none light, the organizational principles
@@ -148,6 +151,15 @@ So by default Galaxy does not require:
  - An external database server - Galaxy can use an sqlite database.
  - A web proxy or external Python web server.
 
+---
+
+layout: false
+
+background-image: url(images/server_client.mermaid.svg)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
+ 
 ---
 
 <!-- TODO: Work again on the image -->

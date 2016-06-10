@@ -11,6 +11,7 @@ VENV?=.venv
 IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 GRUNT_DOCKER_NAME:=galaxy/client-builder:16.01
+DOC_SOURCE_DIR=doc/source
 
 all: help
 	@echo "This makefile is primarily used for building Galaxy's JS client. A sensible all target is not yet implemented."
@@ -20,6 +21,8 @@ docs: ## generate Sphinx HTML documentation, including API docs
 	$(IN_VENV) $(MAKE) -C doc html
 
 ready-slides:
+	./node_modules/mermaid/bin/mermaid.js --svg $(DOC_SOURCE_DIR)/slideshow/galaxy_architecture_2015/images/server_client.mermaid --o $(DOC_SOURCE_DIR)/slideshow/galaxy_architecture_2015/images -t ./node_modules/mermaid/dist/mermaid.forest.css -c $(DOC_SOURCE_DIR)/slideshow/galaxy_architecture_2015/images/sequence.json
+
 	$(IN_VENV) python scripts/slideshow/build_slideshow.py 'Galaxy Architecture' doc/source/slideshow/galaxy_architecture_2015/galaxy_architecture_2015.md
 
 _open-docs:

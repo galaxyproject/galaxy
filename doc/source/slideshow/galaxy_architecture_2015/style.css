@@ -1,9 +1,10 @@
+@import url(https://fonts.googleapis.com/css?family=Oxygen);
 @import url(https://fonts.googleapis.com/css?family=Droid+Serif);
 @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
 @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
 
 body {
-    font-family: 'PT Sans';
+    font-family: 'Oxygen', 'PT Sans';
 }
 h1, h2, h3 {
     font-weight: bold;
@@ -27,8 +28,12 @@ code {
     background: #e7e8e2;
     border-radius: 5px;
 }
-.remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
-.remark-code-line-highlighted     { background-color: #373832; }
+.remark-code, .remark-inline-code {
+    font-family: 'Ubuntu Mono';
+}
+.remark-code-line-highlighted     {
+    background-color: #373832;
+}
 .pull-left {
     float: left;
     width: 47%;
