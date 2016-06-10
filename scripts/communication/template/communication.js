@@ -1,7 +1,8 @@
 // the namespace events connect to
 var namespace = '/chat',
-        socket = io.connect(window.location.protocol + '//' + document.domain + ':' + location.port + namespace),
-        global_chat_rooms = ['Room1', 'Room2', 'Room3', 'Room4', 'Room5'];
+    socket = io.connect(window.location.protocol + '//' + document.domain + ':' + location.port + namespace),
+    global_chat_rooms = ['Room1', 'Room2', 'Room3', 'Room4', 'Room5']; // need to get this list from galaxy.ini
+
 // socketio events
 var events_module = {
     // event handler for sent data from server
@@ -100,23 +101,23 @@ var click_events = {
             message = $el_send_data.val();
             message = message.trim(); // removes whitespaces
             if( message.length > 0 && click_events.is_connected ) {
-	        var send_data = {},
-		        event_name = "";
-		if ( e.keyCode == 13 || e.which == 13 ) { // if enter is pressed
-		    // if the tab is all chats
-		    if ( click_events.active_tab === '#all_chat_tab' ) {
-		        send_data.data = message;
-		        event_name = 'event broadcast';
-		    }
-		    else { // if the tab belongs to room
-                        send_data.data = message;
-		        send_data.room = $el_active_li.children().attr("title");
-		        event_name = 'event room';
-		    }
-		    socket.emit(event_name, send_data);
-		    $el_send_data.val('');
-		    return false;
-		}
+            var send_data = {},
+                event_name = "";
+            if ( e.keyCode == 13 || e.which == 13 ) { // if enter is pressed
+                // if the tab is all chats
+                if ( click_events.active_tab === '#all_chat_tab' ) {
+                    send_data.data = message;
+                    event_name = 'event broadcast';
+                }
+                else { // if the tab belongs to room
+                            send_data.data = message;
+                    send_data.room = $el_active_li.children().attr("title");
+                    event_name = 'event room';
+                }
+                socket.emit(event_name, send_data);
+                $el_send_data.val('');
+                return false;
+            }
             }
         });
     },
@@ -470,30 +471,30 @@ var utils = {
         else {
             // emits join room event
             socket.emit('join', {room: chat_room_name});
-	    // removes the active class from the chat creating tab
-	    $el_chat_room_tab.removeClass('fade active in').addClass('fade');
-	    $el_active_li.removeClass('active');
-	    // sets new tab id
+            // removes the active class from the chat creating tab
+            $el_chat_room_tab.removeClass('fade active in').addClass('fade');
+            $el_active_li.removeClass('active');
+            // sets new tab id
             tab_id = "galaxy_tabroom_" + chat_room_name;
             self.connected_room.push( chat_room_name );
-	    // create chat room tab header for new room
-	    tab_room_header_template = "<li class='active'><a title=" + chat_room_name + " data-target=" + "#" + tab_id +
-		               " data-toggle='tab' aria-expanded='false'>" + chat_room_name +
-		               "<i class='fa fa-times anchor close-room' title='Close room'></i></a></li>";
-	    $el_chat_tabs.append( tab_room_header_template );
-	    // create chat room tab body for new room
-	    tab_room_body_template = "<div class='tab-pane active fade in' id=" + tab_id +
-		             "><div id='all_messages_" + chat_room_name + "'" + " class='messages'></div></div>";
-	    $el_tab_content.append(tab_room_body_template);
+            // create chat room tab header for new room
+            tab_room_header_template = "<li class='active'><a title=" + chat_room_name + " data-target=" + "#" + tab_id +
+                       " data-toggle='tab' aria-expanded='false'>" + chat_room_name +
+                       "<i class='fa fa-times anchor close-room' title='Close room'></i></a></li>";
+            $el_chat_tabs.append( tab_room_header_template );
+            // create chat room tab body for new room
+            tab_room_body_template = "<div class='tab-pane active fade in' id=" + tab_id +
+                     "><div id='all_messages_" + chat_room_name + "'" + " class='messages'></div></div>";
+            $el_tab_content.append(tab_room_body_template);
             // registers leave room event
-	    self.leave_close_room();
+            self.leave_close_room();
         }
         self.active_element();
         // displays the textarea
-	$el_msg_box.css('display', 'block');
+        $el_msg_box.css('display', 'block');
         $el_txtbox_chat_room.val("");
         // adjusts the left/right scrollers when a tab is created
-	utils.adjust_scrollers();
+        utils.adjust_scrollers();
     },
 }
 
