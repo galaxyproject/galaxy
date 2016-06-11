@@ -516,7 +516,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             svg = self._workflow_to_svg_canvas( trans, stored )
         except Exception:
             status = 'error'
-            message = 'Galaxy is unable to create the svg image. Please check your workflow, there might be missing tools.'
+            message = 'Galaxy is unable to create the SVG image. Please check your workflow, there might be missing tools.'
             return trans.fill_template( "/workflow/sharing.mako", use_panels=True, item=stored, status=status, message=message )
         trans.response.set_content_type("image/svg+xml")
         return svg.tostring()
@@ -1288,8 +1288,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         for step in workflow.steps:
             # Load from database representation
             module = module_factory.from_workflow_step( trans, step )
-            if not module:
-                raise Exception
             module_name = module.get_name()
             module_data_inputs = module.get_data_inputs()
             module_data_outputs = module.get_data_outputs()
