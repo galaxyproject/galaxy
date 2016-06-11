@@ -896,7 +896,12 @@ class SelectToolParameter( ToolParameter ):
 
     def from_json( self, value, trans, other_values={} ):
         legal_values = self.get_legal_values( trans, other_values )
-        if len(list(legal_values)) == 0 and trans.workflow_building_mode:
+        workflow_building_mode = trans.workflow_building_mode
+        for context_value in other_values.itervalues():
+            if isinstance( context_value, RuntimeValue ):
+                workflow_building_mode = True
+                break
+        if len( list( legal_values ) ) == 0 and workflow_building_mode:
             if self.multiple:
                 # While it is generally allowed that a select value can be '',
                 # we do not allow this to be the case in a dynamically
