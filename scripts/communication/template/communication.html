@@ -5,8 +5,8 @@
     <link rel="stylesheet" type="text/css" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="communication.css">
 </head>
-<body style="overflow: hidden; height: 100%" ;>
-<div class="right_icons">
+<body>
+<div class="right_icons fade in">
     <i id="online_status" class="anchor fa fa-comments" aria-hidden="true" title=""></i>
     <i id="chat_history" class="anchor fa fa-history" aria-hidden="true" title="Show chat history"></i>
     <i id="clear_messages" class="anchor fa fa-trash-o" aria-hidden="true" title="Clear all messages"></i>
@@ -15,15 +15,15 @@
 <div class="scroller scroller-left"><i class="fa fa-chevron-left" aria-hidden="true" title="Move left"></i></div>
 <div class="scroller scroller-right"><i class="fa fa-chevron-right" aria-hidden="true" title="Move right"></i></div>
 
-<div class="wrapper">
-<ul class="nav nav-tabs list" id="chat_tabs">
-    <li class="active">
-        <a data-target="#all_chat_tab" data-toggle="tab" aria-expanded='true' title="All Chats">All Chats</a>
-    </li>
-    <li>
-        <a data-target="#chat_room_tab" data-toggle="tab" aria-expanded='false' title="Chat Room">Chat Room</a>
-    </li>
-</ul>
+<div class="wrapper fade in">
+    <ul class="nav nav-tabs list" id="chat_tabs">
+        <li class="active">
+            <a data-target="#all_chat_tab" data-toggle="tab" aria-expanded='true' title="All Chats">All Chats</a>
+        </li>
+        <li class="create-room">
+            <a data-target="#chat_room_tab" data-toggle="tab" aria-expanded='false' title="Chat Room">Chat Room</a>
+        </li>
+    </ul>
 </div>
 <div class="tab-content">
     <div class="tab-pane active fade in" id="all_chat_tab">
@@ -41,8 +41,8 @@
     </div>
 </div>
 <div class="send_message">
-        <textarea id="send_data" class="size-message clearable" placeholder="Type your message...">
-        </textarea>
+    <textarea id="send_data" class="size-message clearable" placeholder="Type your message...">
+    </textarea>
 </div>
 
 <script type="text/javascript" src="https://code.jquery.com/jquery-1.10.2.js"></script>

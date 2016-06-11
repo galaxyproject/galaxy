@@ -3,6 +3,10 @@ html, body {
     font-size: 13px;
 }
 
+body {
+    overflow: hidden;
+}
+
 /* Styles for message text box */
 .size-message {
     height: 50px;

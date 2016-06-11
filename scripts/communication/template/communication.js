@@ -1,7 +1,6 @@
 // the namespace events connect to
 var namespace = '/chat',
-    socket = io.connect(window.location.protocol + '//' + document.domain + ':' + location.port + namespace),
-    global_chat_rooms = ['Room1', 'Room2', 'Room3', 'Room4', 'Room5']; // need to get this list from galaxy.ini
+    socket = io.connect(window.location.protocol + '//' + document.domain + ':' + location.port + namespace);
 
 // socketio events
 var events_module = {
@@ -9,9 +8,9 @@ var events_module = {
     event_response: function (socket) {
         socket.on('event response', function (msg) {
             var message = "",
-                    uid = utils.get_userid(),
-                    $el_all_messages = $('#all_messages'),
-                    $el_tab_li = $("a[data-target='#all_chat_tab']");
+                uid = utils.get_userid(),
+                $el_all_messages = $('#all_messages'),
+                $el_tab_li = $("a[data-target='#all_chat_tab']");
 
             // builds the message to be displayed
             message = utils.build_message(msg);
@@ -100,30 +99,34 @@ var click_events = {
                 message = "";
             message = $el_send_data.val();
             message = message.trim(); // removes whitespaces
-            if( message.length > 0 && click_events.is_connected ) {
-            var send_data = {},
-                event_name = "";
-            if ( e.keyCode == 13 || e.which == 13 ) { // if enter is pressed
-                // if the tab is all chats
-                if ( click_events.active_tab === '#all_chat_tab' ) {
-                    send_data.data = message;
-                    event_name = 'event broadcast';
-                }
-                else { // if the tab belongs to room
-                            send_data.data = message;
-                    send_data.room = $el_active_li.children().attr("title");
-                    event_name = 'event room';
-                }
-                socket.emit(event_name, send_data);
-                $el_send_data.val('');
+            // return false if entered is pressed without any message
+            if( message.length == 0 && ( e.keyCode == 13 || e.which == 13 ) ) {
                 return false;
             }
+            if( click_events.is_connected ) {
+            var send_data = {},
+                event_name = "";
+                if ( e.keyCode == 13 || e.which == 13 ) { // if enter is pressed
+                    // if the tab is all chats
+                    if ( click_events.active_tab === '#all_chat_tab' ) {
+                        send_data.data = message;
+                        event_name = 'event broadcast';
+                    }
+                    else { // if the tab belongs to room
+                        send_data.data = message;
+                        send_data.room = $el_active_li.children().attr("title");
+                        event_name = 'event room';
+                    }
+                    socket.emit(event_name, send_data);
+                    $el_send_data.val('');
+                    return false;
+                }
             }
         });
     },
     // sets the current active tab
     active_element: function () {
-        $('.nav-tabs>li').click(function (e) {
+        $('.nav-tabs>li').click(function ( e ) {
             if( e.target.attributes['data-target'] ) {
                 click_events.active_tab = e.target.attributes['data-target'].nodeValue;
                 $(this).children().css('background-color', '');
@@ -136,6 +139,15 @@ var click_events = {
                 }
             }
         });
+    },
+    create_room: function() {
+       $(".create-room").click(function( e ) {
+           // create global chat rooom links and
+           // registers their click events
+           $(".global-rooms").html("");
+           utils.create_global_chatroom_links();
+           click_events.open_global_chat_room();
+       });
     },
     // event for connected and disconneted states
     connect_disconnect: function ( socket ) {
@@ -257,11 +269,11 @@ var click_events = {
     },
     // opens a global chat room
     open_global_chat_room: function() {
-        var $el_txtbox_chat_room = $('#txtbox_chat_room'),
-            $el_chat_room_tab = $('#chat_room_tab'),
-            $el_chat_tabs = $('#chat_tabs'),
-            $el_tab_content = $('.tab-content'),
-            $el_msg_box = $('#send_data'),
+        var $el_txtbox_chat_room = $( '#txtbox_chat_room' ),
+            $el_chat_room_tab = $( '#chat_room_tab' ),
+            $el_chat_tabs = $( '#chat_tabs' ),
+            $el_tab_content = $( '.tab-content' ),
+            $el_msg_box = $( '#send_data' ),
             chat_room_name = '';
         $('.global-room').click(function( e ) {
             e.stopPropagation();
@@ -288,7 +300,10 @@ var utils = {
     },
     // get the current username of logged in user
     get_userid: function () {
-        return location.search.split('username=')[1];
+        //return location.search.split('username=')[1];
+        var query_string_start = location.search.indexOf('?') + 1,
+            query_string_list = location.search.slice(query_string_start).split('&');
+        return query_string_list[0].split('=')[1];
     },
     // scrolls to the last of element
     scroll_to_last: function ($el) {
@@ -332,11 +347,13 @@ var utils = {
     },
     // adds an information about the online status
     update_online_status: function ($el, connected) {
-        if (connected) {
-            $el.prop("title", "You are online! Press to be offline.").css("color", "#00FF00");
+        var connected_message = "You are online! Press to be offline.",
+            disconnected_message = "You are offline! Press to be online.";
+        if ( connected ) {
+            $el.prop( "title", connected_message ).css( "color", "#00FF00" );
         }
         else {
-            $el.prop("title", "You are offline! Press to be online.").css( "color", "#FF0000");
+            $el.prop( "title", disconnected_message ).css( "color", "#FF0000" );
         }
     },
     // gets the current time
@@ -411,8 +428,8 @@ var utils = {
     // checks the session storage on page load
     checks_session_storage: function() {
         var uid = utils.get_userid();
-        if (sessionStorage['connected']) {
-            if (sessionStorage['connected'] === 'true' || sessionStorage['connected'] === true) {
+        if ( sessionStorage['connected'] ) {
+            if ( sessionStorage['connected'] === 'true' || sessionStorage['connected'] === true ) {
                 utils.update_online_status( $('#online_status'), true );
                 click_events.is_connected = true;
             }
@@ -448,10 +465,11 @@ var utils = {
         // global_rooms
         var $el_room_container = $('#global_rooms'),
             room_name = "",
-            room_template = "";
-        //$el_room_container.html('');
-        for(var room_counter = 0; room_counter < global_chat_rooms.length; room_counter++ ) {
-            room_name = global_chat_rooms[room_counter];
+            room_template = "",
+            persistent_communication_rooms = [];
+        persistent_communication_rooms = this.get_persistent_rooms();
+        for(var room_counter = 0; room_counter < persistent_communication_rooms.length; room_counter++ ) {
+            room_name = persistent_communication_rooms[room_counter];
             room_template = "<a href='#' class='global-room' title=" + room_name + "><span>" + room_name + "</span></a><br>";
             $el_room_container.append(room_template);
         }
@@ -484,7 +502,7 @@ var utils = {
             $el_chat_tabs.append( tab_room_header_template );
             // create chat room tab body for new room
             tab_room_body_template = "<div class='tab-pane active fade in' id=" + tab_id +
-                     "><div id='all_messages_" + chat_room_name + "'" + " class='messages'></div></div>";
+                       "><div id='all_messages_" + chat_room_name + "'" + " class='messages'></div></div>";
             $el_tab_content.append(tab_room_body_template);
             // registers leave room event
             self.leave_close_room();
@@ -496,21 +514,24 @@ var utils = {
         // adjusts the left/right scrollers when a tab is created
         utils.adjust_scrollers();
     },
+    // returns persistent communication rooms
+    get_persistent_rooms: function() {
+        var query_string_start = location.search.indexOf('?') + 1,
+            query_string_list = location.search.slice(query_string_start).split('&');
+        return query_string_list[1].split('=')[1].split(',');
+    }
 }
 
-// registers the events when this document is ready
-$(document).ready(function () {
-    // fill the messages if user is already connected
-    // and comes back to the chat window
+$(window).load(function() {
     var uid = utils.get_userid();
-
+    // build tabs
+    $('#chat_tabs').tab();
     // registers response event
     events_module.event_response(socket);
     // registers room response event
     events_module.event_response_room(socket);
     // registers connect event
     events_module.event_connect(socket);
-
     // registers create room event
     click_events.create_chat_room(socket);
     // broadcast the data
@@ -527,17 +548,11 @@ $(document).ready(function () {
     click_events.leave_close_room();
     // register tab overflow scroll events
     click_events.overflow_left_right_scroll();
-
-    // build tabs
-    $('#chat_tabs').tab();
-    $('#send_data').val("");
-    utils.fill_messages(sessionStorage['broadcast']);
+    click_events.create_room();
     // updates online status text
     // by checking if user was connected or not
     utils.checks_session_storage();
+    utils.fill_messages(sessionStorage['broadcast']);
     utils.scroll_to_last($('#all_messages'));
-    // create global chat rooom links and
-    // registers their click events
-    utils.create_global_chatroom_links();
-    click_events.open_global_chat_room();
+    $('#send_data').val("");
 });
