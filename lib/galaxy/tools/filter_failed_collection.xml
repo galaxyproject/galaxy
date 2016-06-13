@@ -2,7 +2,7 @@
       name="Filter failed"
       version="1.0.0"
       tool_type="filter_failed_datasets_collection">
-    <description>datasets from a collection</description>
+    <description>datasets from a list</description>
     <type class="FilterFailedDatasetsTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
