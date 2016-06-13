@@ -20,7 +20,7 @@ EXTRA_CONFIG_KWDS = {
     'conda_prefix': None,
     'conda_exec': None,
     'conda_debug': None,
-    'conda_ensure_channels': 'r,bioconda',
+    'conda_ensure_channels': 'r,bioconda,iuc',
     'conda_auto_install': False,
     'conda_auto_init': False,
 }
