@@ -37,6 +37,8 @@ var History = Backbone.Model
 
     urlRoot: Galaxy.root + 'api/histories',
 
+    contentsClass : HISTORY_CONTENTS.HistoryContents,
+
     // ........................................................................ set up/tear down
     /** Set up the model
      *  @param {Object} historyJSON model data for this History
@@ -48,7 +50,7 @@ var History = Backbone.Model
         this.log( this + ".initialize:", historyJSON, options );
 
         /** HistoryContents collection of the HDAs contained in this history. */
-        this.contents = new HISTORY_CONTENTS.HistoryContents( [], {
+        this.contents = new this.contentsClass( [], {
             history     : this,
             historyId   : this.get( 'id' ),
             order       : options.order,

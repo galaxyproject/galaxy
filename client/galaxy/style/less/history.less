@@ -292,16 +292,14 @@
         border-bottom: 1px solid fade(grey, %50);
         & > * {
             display: table-cell;
+            vertical-align: top;
             width: 50%;
-            // max-width: 50%;
-
-            &.additional-info:not(.header) {
-                /* top and bottom should be == title-bar padding */
-                padding: 8px 16px 8px 16px;
-                // do not html format
-                white-space: pre-wrap;
-                text-align: right;
-            }
+        }
+        .additional-info:not(.header) {
+            /* top and bottom should be == title-bar padding */
+            padding: 8px;
+            // do not html format
+            white-space: pre-wrap;
         }
     }
 

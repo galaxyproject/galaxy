@@ -63,7 +63,7 @@ var AnnotatedHistoryView = _super.extend(/** @lends AnnotatedHistoryView.prototy
     _renderItemView$el : function( view ){
         return $( '<div class="contents-container"/>' ).append([
             view.render(0).$el,
-            $( '<div class="addtional-info"/>' ).text( view.model.get( 'annotation' ) || '' )
+            $( '<div class="additional-info"/>' ).text( view.model.get( 'annotation' ) || '' )
         ]);
     },
 

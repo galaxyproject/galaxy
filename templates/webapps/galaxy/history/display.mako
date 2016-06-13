@@ -55,11 +55,27 @@
         'mvc/history/copy-dialog',
     ], function( panelMod, historyCopyDialog ){
         // history module is already in the dpn chain from the panel. We can re-scope it here.
-        var HISTORY = require( 'mvc/history/history-model' ),
-            historyModel = new HISTORY.History( historyJSON, null, {
-                order   : 'hid-asc'
-                // order   : 'create_time-asc'
-            });
+        var HISTORY = require( 'mvc/history/history-model' );
+        var HISTORY_CONTENTS = require( 'mvc/history/history-contents' );
+
+        var HistoryContentsWithAnnotations = HISTORY_CONTENTS.HistoryContents.extend({
+            _buildFetchData : function( options ){
+                console.log( '_buildFetchData:' );
+                options = options || {};
+                if( !options.keys && !options.view ){
+                    options.view = 'summary';
+                    options.keys = 'annotation,tags';
+                }
+                return HISTORY_CONTENTS.HistoryContents.prototype._buildFetchData.call( this, options );
+            }
+        });
+        var HistoryWithAnnotations = HISTORY.History.extend({
+            contentsClass : HistoryContentsWithAnnotations
+        });
+
+        var historyModel = new HistoryWithAnnotations( historyJSON, null, {
+            order           : 'hid-asc',
+        });
 
         $( '.history-copy-link' ).click( function( ev ){
             historyCopyDialog( historyModel, { useImport: true, allowAll: false })
@@ -75,7 +91,7 @@
             el              : $( "#history-" + historyJSON.id ),
             model           : historyModel
         });
-        historyModel.fetchContents()
+        historyModel.fetchContents({ silent: true })
             .fail( function(){ alert( 'Galaxy history failed to load' ); })
             .done( function(){ historyView.render(); })
     });
