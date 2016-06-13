@@ -238,11 +238,9 @@
     <hr/>
     <h3>Export</h3>
     <div class="sharing-section">
-    <button>
-        <a href="${h.url_for( controller=self.controller, action='display_by_username_and_slug', username=item.user.username, slug=item.slug, format='json-download' )}" style="text-decoration: none;">
+        <a class="action-button" href="${h.url_for( controller=self.controller, action='display_by_username_and_slug', username=item.user.username, slug=item.slug, format='json-download' )}">
         Download
         </a>
-    </button>
     ${get_class_display_name( item.__class__ ).lower()} as a file so that it can be saved or imported into another Galaxy server.
     </div>
 </%def>
@@ -278,11 +276,11 @@
                 method="POST">
             <div class="form-row">
                 <label>myExperiment username:</label>
-                <input type="text" name="myexp_username" value="" size="25" placeholder="username"/>
+                <input type="text" name="myexp_username" value="" size="25" placeholder="username" autocomplete="off"/>
             </div>
             <div class="form-row">
                 <label>myExperiment password:</label>
-                <input type="password" name="myexp_password" value="" size="25" placeholder="password"/>
+                <input type="password" name="myexp_password" value="" size="25" placeholder="password" autocomplete="off"/>
             </div>
             <div class="form-row">
                 <input type="submit" value="Export to myExperiment"/>
@@ -295,11 +293,9 @@
 <%def name="render_more(item)">
     ## Add link to render as SVG image.
     <div class="sharing-section">
-        <button>
-            <a href="${h.url_for(controller='workflow', action='gen_image', id=trans.security.encode_id( item.id ) )}" style="text-decoration: none;">
-                Create image
-            </a>
-        </button>
+        <a class="action-button" href="${h.url_for(controller='workflow', action='gen_image', id=trans.security.encode_id( item.id ) )}">
+            Create image
+        </a>
         of ${get_class_display_name( item.__class__ ).lower()} in SVG format
     </div>
     ## Add form to export to myExperiment.
