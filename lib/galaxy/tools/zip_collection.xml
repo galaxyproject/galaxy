@@ -1,0 +1,26 @@
+<tool id="__ZIP_COLLECTION__"
+      name="Zip Collection"
+      version="1.0.0"
+      tool_type="zip_collection">
+  <type class="ZipCollectionTool" module="galaxy.tools" />
+  <action module="galaxy.tools.actions.model_operations"
+          class="ModelOperationToolAction"/>
+  <inputs>
+    <param type="data" name="input_forward" label="Input Dataset (Forward)" />
+    <param type="data" name="input_reverse" label="Input Dataset (Reverse)" />
+  </inputs>
+  <outputs>
+    <collection name="output" type="paired" label="${on_string} (zipped)">
+      <data name="forward" />
+      <data name="reverse" />
+    </collection>
+  </outputs>
+  <help>
+    This tool takes two datasets and creates a dataset pair from
+    them. Mapping over two lists, this tool can be used to build
+    a list of dataset pairs from two individual lists of datasets.
+    
+    This tool will create new history datasets for your collection
+    but your quota usage will not increase.
+  </help>
+</tool>
