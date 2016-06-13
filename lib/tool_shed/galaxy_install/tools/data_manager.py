@@ -1,3 +1,4 @@
+import errno
 import logging
 import os
 import threading
@@ -6,6 +7,11 @@ from tool_shed.galaxy_install.tools import tool_panel_manager
 from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
+
+SHED_DATA_MANAGER_CONF_XML = """<?xml version="1.0"?>
+<data_managers>
+</data_managers>
+"""
 
 
 class DataManagerHandler( object ):
@@ -41,7 +47,15 @@ class DataManagerHandler( object ):
             for tool_tup in repository_tools_tups:
                 repository_tools_by_guid[ tool_tup[ 1 ] ] = dict( tool_config_filename=tool_tup[ 0 ], tool=tool_tup[ 2 ] )
             # Load existing data managers.
-            tree, error_message = xml_util.parse_xml( shed_data_manager_conf_filename )
+            try:
+                tree, error_message = xml_util.parse_xml( shed_data_manager_conf_filename )
+            except (OSError, IOError) as exc:
+                if exc.errno == errno.ENOENT:
+                    with open( shed_data_manager_conf_filename, 'w' ) as fh:
+                        fh.write( SHED_DATA_MANAGER_CONF_XML )
+                    tree, error_message = xml_util.parse_xml( shed_data_manager_conf_filename )
+                else:
+                    raise
             if tree is None:
                 return rval
             config_elems = [ elem for elem in tree.getroot() ]

@@ -1,3 +1,4 @@
+import errno
 import logging
 import threading
 
@@ -26,7 +27,15 @@ class ToolPanelManager( object ):
         shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
         tool_path = shed_tool_conf_dict[ 'tool_path' ]
         config_elems = []
-        tree, error_message = xml_util.parse_xml( shed_tool_conf )
+        try:
+            tree, error_message = xml_util.parse_xml( shed_tool_conf )
+        except (OSError, IOError) as exc:
+            if (exc.errno == errno.ENOENT and shed_tool_conf_dict.get( 'create', None ) is not None ):
+                with open( shed_tool_conf, 'w' ) as fh:
+                    fh.write( shed_tool_conf_dict['create'] )
+                tree, error_message = xml_util.parse_xml( shed_tool_conf )
+            else:
+                raise
         if tree:
             root = tree.getroot()
             for elem in root:

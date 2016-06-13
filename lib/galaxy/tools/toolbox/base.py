@@ -1,3 +1,4 @@
+import errno
 import logging
 import os
 import string
@@ -38,6 +39,11 @@ from galaxy.tools.deps import build_dependency_manager
 
 
 log = logging.getLogger( __name__ )
+
+SHED_TOOL_CONF_XML = """<?xml version="1.0"?>
+<toolbox tool_path="{shed_tools_dir}">
+</toolbox>
+"""
 
 
 class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
@@ -124,7 +130,21 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
 
         """
         log.info( "Parsing the tool configuration %s" % config_filename )
-        tool_conf_source = get_toolbox_parser(config_filename)
+        try:
+            tool_conf_source = get_toolbox_parser(config_filename)
+        except (OSError, IOError) as exc:
+            for opt in ('shed_tool_conf', 'migrated_tools_config'):
+                if (config_filename == getattr( self.app.config, opt )
+                        and not getattr( self.app.config, opt + '_set' )
+                        and exc.errno == errno.ENOENT):
+                    log.debug( "Skipping loading missing default config file: %s", config_filename )
+                    stcd = dict( config_filename=config_filename,
+                                 tool_path=self.app.config.shed_tools_dir,
+                                 config_elems=[],
+                                 create=SHED_TOOL_CONF_XML.format(shed_tools_dir=self.app.config.shed_tools_dir) )
+                    self._dynamic_tool_confs.append( stcd )
+                    return
+            raise
         tool_path = tool_conf_source.parse_tool_path()
         parsing_shed_tool_conf = tool_conf_source.is_shed_tool_conf()
         if parsing_shed_tool_conf:

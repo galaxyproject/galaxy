@@ -2,6 +2,7 @@
 Contains implementations of the authentication logic.
 """
 
+import errno
 import logging
 import xml.etree.ElementTree
 from collections import namedtuple
@@ -34,8 +35,8 @@ class AuthManager(object):
         try:
             ct = xml.etree.ElementTree.parse(auth_config_file)
             conf_root = ct.getroot()
-        except (OSError, IOError):
-            if not app.config.auth_config_file_set:
+        except (OSError, IOError) as exc:
+            if exc.errno == errno.ENOENT and not app.config.auth_config_file_set:
                 conf_root = xml.etree.ElementTree.fromstring(AUTH_CONF_XML)
             else:
                 raise

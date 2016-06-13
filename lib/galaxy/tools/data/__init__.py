@@ -6,6 +6,7 @@ users to configure data tables for a local Galaxy instance without needing
 to modify the tool configurations.
 """
 
+import errno
 import logging
 import os
 import os.path
@@ -26,11 +27,16 @@ log = logging.getLogger( __name__ )
 
 DEFAULT_TABLE_TYPE = 'tabular'
 
+TOOL_DATA_TABLE_CONF_XML = """<?xml version="1.0"?>
+<tables>
+</tables>
+"""
+
 
 class ToolDataTableManager( object ):
     """Manages a collection of tool data tables"""
 
-    def __init__( self, tool_data_path, config_filename=None ):
+    def __init__( self, tool_data_path, config_filename=None, tool_data_table_config_path_set=None ):
         self.tool_data_path = tool_data_path
         # This stores all defined data table entries from both the tool_data_table_conf.xml file and the shed_tool_data_table_conf.xml file
         # at server startup. If tool shed repositories are installed that contain a valid file named tool_data_table_conf.xml.sample, entries
@@ -141,12 +147,20 @@ class ToolDataTableManager( object ):
         full_path = os.path.abspath( shed_tool_data_table_config )
         # FIXME: we should lock changing this file by other threads / head nodes
         try:
-            tree = util.parse_xml( full_path )
+            try:
+                tree = util.parse_xml( full_path )
+            except (OSError, IOError) as exc:
+                if exc.errno == errno.ENOENT:
+                    with open( full_path, 'w' ) as fh:
+                        fh.write( TOOL_DATA_TABLE_CONF_XML )
+                    tree = util.parse_xml( full_path )
+                else:
+                    raise
             root = tree.getroot()
             out_elems = [ elem for elem in root ]
-        except Exception as e:
+        except Exception as exc:
             out_elems = []
-            log.debug( 'Could not parse existing tool data table config, assume no existing elements: %s', e )
+            log.debug( 'Could not parse existing tool data table config, assume no existing elements: %s', exc )
         for elem in remove_elems:
             # handle multiple occurrences of remove elem in existing elems
             while elem in out_elems:
@@ -340,6 +354,12 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 self._update_version()
             else:
                 self.missing_index_file = filename
+                # TODO: some data tables need to exist (even if they are empty)
+                # for tools to load. In an installed Galaxy environment and the
+                # default tool_data_table_conf.xml, this will emit spurious
+                # warnings about missing location files that would otherwise be
+                # empty and we don't care about unless the admin chooses to
+                # populate them.
                 log.warning( "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name ) )
 
             if filename not in self.filenames or not self.filenames[ filename ][ 'found' ]:

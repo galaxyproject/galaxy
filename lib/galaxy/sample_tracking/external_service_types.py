@@ -1,10 +1,14 @@
+import errno
 import os
 import logging
+
 from galaxy.util.odict import odict
 from galaxy import util, model
 from galaxy.forms.forms import form_factory
 from galaxy.external_services.service import ExternalServiceActionsGroup
 from galaxy.sample_tracking.data_transfer import data_transfer_factories
+
+
 log = logging.getLogger( __name__ )
 
 
@@ -25,8 +29,13 @@ class ExternalServiceTypesCollection( object ):
 
     def load_all( self, config_filename ):
         self.visible_external_service_types = []
-        tree = util.parse_xml( config_filename )
-        root = tree.getroot()
+        try:
+            tree = util.parse_xml( config_filename )
+            root = tree.getroot()
+        except (OSError, IOError) as exc:
+            if exc.errno != errno.ENOENT or self.app.config.external_service_type_config_file_set:
+                raise
+            root = []
         for elem in root:
             try:
                 if elem.tag == 'external_service_type':

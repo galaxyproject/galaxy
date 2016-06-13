@@ -4,6 +4,7 @@ Universe configuration builder.
 # absolute_import needed for tool_shed package.
 from __future__ import absolute_import
 
+import errno
 import logging
 import logging.config
 import os
@@ -97,6 +98,9 @@ class Configuration( object ):
 
         # Configs no longer read from samples
         self.migrated_tools_config = resolve_path( kwargs.get( 'migrated_tools_conf', 'migrated_tools_conf.xml' ), self.mutable_config_dir )
+        self.shed_tool_conf = resolve_path( kwargs.get( 'shed_tool_conf', 'shed_tool_conf.xml' ), self.mutable_config_dir )
+        for name in ( 'migrated_tools_config', 'shed_tool_conf' ):
+            setattr( self, name + '_set', kwargs.get( name, None ) is not None )
 
         # Resolve paths of other config files
         self.__parse_config_file_options( kwargs )
@@ -134,6 +138,8 @@ class Configuration( object ):
         self.enable_unique_workflow_defaults = string_as_bool( kwargs.get( 'enable_unique_workflow_defaults', False ) )
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "tool-data" ), os.getcwd() )
+        if not self.running_from_source and kwargs.get( "tool_data_path", None ) is None:
+            self.tool_data_path = resolve_path( "tool-data", self.data_dir )
         self.builds_file_path = resolve_path( kwargs.get( "builds_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'builds.txt') ), self.root )
         self.len_file_path = resolve_path( kwargs.get( "len_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'chrom') ), self.root )
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
@@ -585,18 +591,18 @@ class Configuration( object ):
         """
         defaults = dict(
             auth_config_file=[ self.__in_config_dir( 'auth_conf.xml' ) ],
-            data_manager_config_file=[ 'config/data_manager_conf.xml', 'data_manager_conf.xml', 'config/data_manager_conf.xml.sample' ],
+            data_manager_config_file=[ self.__in_config_dir( 'data_manager_conf.xml' ) ],
             datatypes_config_file=[ self.__in_config_dir( 'datatypes_conf.xml' ), self.__in_sample_dir( 'datatypes_conf.xml.sample' ) ],
-            external_service_type_config_file=[ 'config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample' ],
+            external_service_type_config_file=[ self.__in_config_dir( 'external_service_types_conf.xml' ) ],
             job_config_file=[ 'config/job_conf.xml', 'job_conf.xml' ],
             job_metrics_config_file=[ 'config/job_metrics_conf.xml', 'job_metrics_conf.xml', 'config/job_metrics_conf.xml.sample' ],
             dependency_resolvers_config_file=[ 'config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml' ],
             job_resource_params_file=[ 'config/job_resource_params_conf.xml', 'job_resource_params_conf.xml' ],
             object_store_config_file=[ 'config/object_store_conf.xml', 'object_store_conf.xml' ],
             openid_config_file=[ 'config/openid_conf.xml', 'openid_conf.xml', 'config/openid_conf.xml.sample' ],
-            shed_data_manager_config_file=[ 'shed_data_manager_conf.xml', 'config/shed_data_manager_conf.xml' ],
-            shed_tool_data_table_config=[ 'shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml' ],
-            workflow_schedulers_config_file=['config/workflow_schedulers_conf.xml', 'config/workflow_schedulers_conf.xml.sample'],
+            shed_data_manager_config_file=[ self.__in_mutable_config_dir( 'shed_data_manager_conf.xml' ) ],
+            shed_tool_data_table_config=[ self.__in_mutable_config_dir( 'shed_tool_data_table_conf.xml' ) ],
+            workflow_schedulers_config_file=[ self.__in_config_dir( 'config/workflow_schedulers_conf.xml' ) ],
         )
 
         listify_defaults = dict(
@@ -616,6 +622,14 @@ class Configuration( object ):
                                'tool_conf.xml,shed_tool_conf.xml',
                                'config/tool_conf.xml.sample,config/shed_tool_conf.xml' ]
         )
+
+        if not self.running_from_source:
+            listify_defaults['tool_data_table_config_path'] = [
+                    self.__in_config_dir( 'tool_data_table_conf.xml' ),
+                    self.__in_sample_dir( 'tool_data_table_conf.xml.sample' ) ]
+            listify_defaults['tool_config_file'] = [
+                    self.__in_config_dir( 'tool_conf.xml' ),
+                    self.__in_sample_dir( 'tool_conf.xml.sample' ) ]
 
         for var, defaults in defaults.items():
             if kwargs.get( var, None ) is not None:
@@ -646,6 +660,12 @@ class Configuration( object ):
                 else:
                     paths = listify( defaults[-1] )
             setattr( self, var, [ resolve_path( x, self.root ) for x in paths ] )
+
+        # If the user has configured a shed tool config in tool_config_file
+        # this would add a second, but since we're not parsing them yet we
+        # don't know if that's the case.
+        if not self.running_from_source and self.shed_tool_conf not in self.tool_config_file:
+            self.tool_config_file.append( self.shed_tool_conf )
 
         # Backwards compatibility for names used in too many places to fix
         self.datatypes_config = self.datatypes_config_file
@@ -730,7 +750,7 @@ class Configuration( object ):
         if self.migrated_tools_config not in tool_configs and os.path.exists( self.migrated_tools_config ):
             tool_configs.append( self.migrated_tools_config )
         for path in tool_configs:
-            if not os.path.exists( path ):
+            if not os.path.exists( path ) and path != self.shed_tool_conf:
                 raise ConfigurationError("Tool config file not found: %s" % path )
         for datatypes_config in listify( self.datatypes_config ):
             if not os.path.isfile( datatypes_config ):
@@ -915,9 +935,14 @@ class ConfiguresGalaxyMixin:
         self.tool_data_tables = ToolDataTableManager( tool_data_path=self.config.tool_data_path,
                                                       config_filename=self.config.tool_data_table_config_path )
         # Load additional entries defined by self.config.shed_tool_data_table_config into tool data tables.
-        self.tool_data_tables.load_from_config_file( config_filename=self.config.shed_tool_data_table_config,
-                                                     tool_data_path=self.tool_data_tables.tool_data_path,
-                                                     from_shed_config=from_shed_config )
+        try:
+            self.tool_data_tables.load_from_config_file( config_filename=self.config.shed_tool_data_table_config,
+                                                         tool_data_path=self.tool_data_tables.tool_data_path,
+                                                         from_shed_config=from_shed_config )
+        except (OSError, IOError) as exc:
+            # Missing shed_tool_data_table_config is okay if it's the default
+            if exc.errno != errno.ENOENT or self.config.shed_tool_data_table_config_set:
+                raise
 
     def _configure_datatypes_registry( self, installed_repository_manager=None ):
         from galaxy.datatypes import registry

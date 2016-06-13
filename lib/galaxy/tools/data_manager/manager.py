@@ -37,6 +37,10 @@ class DataManagers( object ):
     def load_from_xml( self, xml_filename, store_tool_path=True, replace_existing=False ):
         try:
             tree = util.parse_xml( xml_filename )
+        except (IOError, OSError) as e:
+            if e.errno != errno.ENOENT or self.app.config.data_manager_config_file_set:
+                raise
+            return  # default config option and it doesn't exist, which is fine
         except Exception as e:
             log.error( 'There was an error parsing your Data Manager config file "%s": %s' % ( xml_filename, e ) )
             return  # we are not able to load any data managers
