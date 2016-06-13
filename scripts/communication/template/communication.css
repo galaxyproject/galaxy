@@ -7,15 +7,33 @@ body {
     overflow: hidden;
 }
 
+.body-container {
+    opacity: 0;
+    transition: opacity 1s;
+}
+
+.body-container-loaded {
+    opacity: 1;
+}
+
 /* Styles for message text box */
-.size-message {
-    height: 50px;
+.message-textarea {
+    height: 50px !important;
     width: 99.5%;
+    font-size: 13px;
+    padding: 6px 3px;
 }
 
 /* Styles for top right icons */
 .right_icons {
-    margin-left: 92%;
+    margin-left: 94.5%;
+}
+
+.chat-room-textbx {
+    width: 34%;
+    height: 10%;
+    font-size: 13px;
+    padding: 6px 3px;
 }
 
 ul, li,
@@ -54,7 +72,7 @@ ul, li,
 }
 
 .tab-content {
-    height: 65%;
+    height: 64%;
 }
 
 .tab-pane {
@@ -76,12 +94,8 @@ ul > li i {
 
 .global-rooms {
     overflow-y: auto;
-    height: 230px;
+    height: 200px;
     margin-top: 1%;
-}
-
-.room-text {
-   margin-top: 1%;
 }
 
 a:hover, a:visited {
