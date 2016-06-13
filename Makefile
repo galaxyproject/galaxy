@@ -80,22 +80,13 @@ clean-grunt-docker-image: ## Remove grunt docker image
 	docker rmi ${GRUNT_DOCKER_NAME}
 
 
-wheels: wheel-galaxy-lib wheel-galaxy-app wheel-galaxy
-
-wheel-galaxy-lib:
-	rm -rf build MANIFEST.in
-	GALAXY_PACKAGE=galaxy-lib python setup.py bdist_wheel
-
-wheel-galaxy-app:
-	rm -rf build MANIFEST.in
-	GALAXY_PACKAGE=galaxy-app python setup.py bdist_wheel
+wheels: wheel-galaxy
 
 # FIXME: it'd be great if client time could be compared against the wheel and
 # not rebuild client if unnecessary. But it's really only a problem in dev.
 # When this stuff goes into production it won't be as big of a deal.
 wheel-galaxy: client
-	ln -s MANIFEST.in.galaxy MANIFEST.in
-	GALAXY_PACKAGE=galaxy python setup.py bdist_wheel
+	python setup.py bdist_wheel
 
 # Release Targets
 release-create-rc: release-ensure-upstream ## Create a release-candidate branch

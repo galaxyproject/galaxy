@@ -30,6 +30,7 @@ setup(
     ''',
     package_data={
         'galaxy': [
+            'config/sample/*',
             'exceptions/error_codes.json',
             'datatypes/converters/*.xml',
             'datatypes/display_applications/configs/*/*.xml',
