@@ -131,13 +131,6 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
             this.trigger( 'rendered:initial', this );
         });
 
-        // debugging
-        if( this.logger ){
-            this.on( 'all', function( event ){
-                this.log( this + '', event, arguments );
-            });
-        }
-
         this._setUpCollectionListeners();
         this._setUpViewListeners();
         return this;
@@ -160,9 +153,8 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
                 this.trigger( 'error', model, xhr, options, msg, details );
             },
             update  : function( collection, options ){
-                // console.info( 'update:', arguments );
+                // console.info( 'update:', collection, options, '\n', options.changes );
                 var changes = options.changes;
-                var changeCount = changes.added.length + changes.removed.length;
                 if( changes.added.length === 1 ){
                     return this.addItemView( _.first( changes.added ), collection, options );
                 }
@@ -171,17 +163,10 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
                 }
                 if( changes.added.length + changes.removed.length > 1 ){
 //TODO: here or in individual fetch promisses?
-                    // return this.renderItems();
+                    return this.renderItems();
                 }
             }
         });
-
-        // debugging
-        if( this.logger ){
-            this.listenTo( this.collection, 'all', function( event ){
-                this.info( this + '(collection)', event, arguments );
-            });
-        }
         return this;
     },
 
@@ -338,9 +323,9 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
 
     // ------------------------------------------------------------------------ sub-$element shortcuts
     /** the scroll container for this panel - can be $el, $el.parent(), or grandparent depending on context */
-    $scrollContainer : function(){
+    $scrollContainer : function( $where ){
         // override or set via attributes.$scrollContainer
-        return this.$el.parent().parent();
+        return ( $where || this.$el ).parent().parent();
     },
     /** convenience selector for the section that displays the list controls */
     $controls : function( $where ){
@@ -559,6 +544,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
 
     /** internal fn to add view (to both panel.views and panel.$list) */
     _attachView : function( view, modelIndex, useFx ){
+        // console.log( this + '._attachView:', view, modelIndex, useFx );
         useFx = _.isUndefined( useFx )? true : useFx;
         modelIndex = modelIndex || 0;
         var panel = this;
@@ -581,6 +567,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
 
     /** insert a jq object as a child of list-items at the specified *DOM index* */
     _insertIntoListAt : function( index, $what ){
+        // console.log( this + '._insertIntoListAt:', index, $what );
         var $list = this.$list();
         if( index === 0 ){
             $list.prepend( $what );
@@ -665,7 +652,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
     /** get views based on model properties */
     viewsWhereModel : function( properties ){
         return this.views.filter( function( view ){
-            return view.model.matches( properties );
+            return _.isMatch( view.model.attributes, properties );
         });
     },
 
@@ -858,9 +845,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
     /** scroll to the given view in list-items */
     scrollToItem : function( view, speed ){
         if( !view ){ return this; }
-        //var itemTop = view.$el.offset().top;
-        var itemTop = view.el.offsetTop;
-        return this.scrollTo( itemTop, speed );
+        return this;
     },
 
     /** Scrolls the panel to show the content with the given id. */

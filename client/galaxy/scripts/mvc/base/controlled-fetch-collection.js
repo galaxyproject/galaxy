@@ -30,6 +30,7 @@ var ControlledFetchCollection = Backbone.Collection.extend({
      */
     fetch : function( options ){
         options = this._buildFetchOptions( options );
+        // console.log( 'fetch options:', options );
         return Backbone.Collection.prototype.fetch.call( this, options );
     },
 
@@ -200,7 +201,7 @@ var PaginatedCollection = ControlledFetchCollection.extend({
         pageNum = self.constrainPageNum( pageNum );
         self.currentPage = pageNum;
         options = _.defaults( options || {}, self.getPageLimitOffset( pageNum ) );
-// options.reset = true;
+
         self.trigger( 'fetching-more' );
         return self.fetch( options )
             .always( function(){
@@ -209,7 +210,7 @@ var PaginatedCollection = ControlledFetchCollection.extend({
     },
 
     fetchCurrentPage : function( options ){
-        return this.fetchPage( this.currentPage );
+        return this.fetchPage( this.currentPage, options );
     },
 
     fetchPrevPage : function( options ){

@@ -1061,7 +1061,6 @@ class ModelFilterParser( HasAModelManager ):
             val = val_parser( val )
 
         orm_filter = op( val )
-        print orm_filter
         return orm_filter
 
     #: these are the easier/shorter string equivalents to the python operator fn names that need '__' around them

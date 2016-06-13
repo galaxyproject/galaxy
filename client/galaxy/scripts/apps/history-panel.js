@@ -17,8 +17,7 @@ var HistoryPanel = RightPanel.extend({
         this.historyView = new CurrentHistoryView({
             className       : CurrentHistoryView.prototype.className + ' middle',
             purgeAllowed    : options.allow_user_dataset_purge,
-            linkTarget      : 'galaxy_main',
-            $scrollContainer: function(){ return this.$el.parent(); }
+            linkTarget      : 'galaxy_main'
         });
     },
 

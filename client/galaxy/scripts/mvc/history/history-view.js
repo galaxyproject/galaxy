@@ -127,6 +127,7 @@ var HistoryView = _super.extend(
         var self = this;
         self.setModel( new HISTORY_MODEL.History({ id : historyId }) );
 
+        contentsOptions.silent = true;
         self.trigger( 'loading' );
         return self.model
             .fetchWithContents( options, contentsOptions )
@@ -226,6 +227,12 @@ var HistoryView = _super.extend(
         return $();
     },
 
+    /** the scroll container for this panel - can be $el, $el.parent(), or grandparent depending on context */
+    $scrollContainer : function( $where ){
+        // override or set via attributes.$scrollContainer
+        return this.$list( $where );
+    },
+
     // ------------------------------------------------------------------------ subviews
     _toggleContentsLoadingIndicator : function( show ){
         if( !show ){
@@ -238,7 +245,7 @@ var HistoryView = _super.extend(
 
     /**  */
     renderItems : function( $whereTo ){
-        // console.log( this + '.renderItems-----------------' );
+        console.log( this + '.renderItems-----------------', new Date() );
         $whereTo = $whereTo || this.$el;
         var self = this;
         var $list = self.$list( $whereTo );
@@ -360,22 +367,16 @@ var HistoryView = _super.extend(
     }),
 
     _clickPrevPage : function( ev ){
-        var self = this;
-        self.model.contents.fetchPrevPage()
-            .done( function(){ self.renderItems(); });
+        this.model.contents.fetchPrevPage();
     },
 
     _clickNextPage : function( ev ){
-        var self = this;
-        self.model.contents.fetchNextPage()
-            .done( function(){ self.renderItems(); });
+        this.model.contents.fetchNextPage();
     },
 
     _changePageSelect : function( ev ){
-        var self = this;
         var page = $( ev.currentTarget ).val();
-        self.model.contents.fetchPage( page )
-            .done( function(){ self.renderItems(); });
+        this.model.contents.fetchPage( page );
     },
 
     /** Toggle and store the deleted visibility and re-render items
@@ -388,8 +389,7 @@ var HistoryView = _super.extend(
         contents.setIncludeDeleted( show, options );
         self.trigger( 'show-deleted', show );
 
-        contents.fetchCurrentPage({ silent: true })
-            .done( function(){ self.renderItems(); });
+        contents.fetchCurrentPage();
         return show;
     },
 
@@ -403,8 +403,7 @@ var HistoryView = _super.extend(
         contents.setIncludeHidden( show, options );
         self.trigger( 'show-hidden', show );
 
-        contents.fetchCurrentPage({ silent: true })
-            .done( function(){ self.renderItems(); });
+        contents.fetchCurrentPage();
         return show;
     },
 

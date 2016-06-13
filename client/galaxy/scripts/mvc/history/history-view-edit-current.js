@@ -156,6 +156,7 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
     /** override to add a handler to capture the scroll position when the parent scrolls */
     _setUpBehaviors : function( $where ){
         $where = $where || this.$el;
+        // console.log( '_setUpBehaviors', this.$scrollContainer( $where ).get(0), this.$list( $where ) );
         // we need to call this in _setUpBehaviors which is called after render since the $el
         // may not be attached to $el.parent and $scrollContainer() may not work
         var panel = this;
@@ -171,7 +172,7 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
             }, 40 );
         }
 
-        panel.$scrollContainer()
+        panel.$scrollContainer( $where )
             .off( 'scroll', this._debouncedScrollCaptureHandler )
             .on( 'scroll', this._debouncedScrollCaptureHandler );
         return panel;
