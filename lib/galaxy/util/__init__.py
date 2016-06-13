@@ -1350,11 +1350,16 @@ def safe_str_cmp(a, b):
         rv |= ord(x) ^ ord(y)
     return rv == 0
 
-galaxy_root_path = os.path.join(__path__[0], "..", "..", "..")
+galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)
+galaxy_samples_path = os.path.join(__path__[0], os.pardir, 'config', 'sample')
 
 
 def galaxy_directory():
     return os.path.abspath(galaxy_root_path)
+
+
+def galaxy_samples_directory():
+    return os.path.abspath(galaxy_samples_path)
 
 
 def config_directories_from_setting( directories_setting, galaxy_root=galaxy_root_path ):

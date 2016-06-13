@@ -263,7 +263,7 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
 
     >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
     >>> from galaxy.datatypes import registry
-    >>> sample_conf = os.path.join(util.galaxy_directory(), "config", "datatypes_conf.xml.sample")
+    >>> sample_conf = os.path.join(util.galaxy_samples_directory(), "datatypes_conf.xml.sample")
     >>> datatypes_registry = registry.Registry()
     >>> datatypes_registry.load_datatypes(root_dir=util.galaxy_directory(), config=sample_conf)
     >>> sniff_order = datatypes_registry.sniff_order
