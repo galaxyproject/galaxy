@@ -65,6 +65,7 @@ ul, li,
 .date_time {
     font-style: italic;
     font-size: 12px;
+    width: 99%;
 }
 
 .date_time span {

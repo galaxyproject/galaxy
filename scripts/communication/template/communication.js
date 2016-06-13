@@ -328,7 +328,7 @@ var utils = {
     // append message
     append_message: function ( $el, message ) {
         $el.append( message );
-        $el.append( '<br>' );
+        //$el.append( '<br>' );
     },
     // builds message for self
     build_message: function ( original_message ) {
@@ -353,12 +353,12 @@ var utils = {
     // builds message template
     build_message_template: function ( original_message ) {
         return "<div class='user_message'>" + unescape( original_message ) +
-                "<div class='date_time'><span title=" + this.get_date() + ">" + this.get_time() + "</span>" +
-                "</div></div>";
+               "</div>";
     },
     // builds template for username for message display
     build_message_username_template: function ( username ) {
-        return "<span class='user_name'>" + username + "<br></span>";
+        return "<div class='date_time'><span title=" + this.get_date() + ">" + this.get_time() + "</span></div>" +
+               "<span class='user_name'>" + username + ":<br></span>";
     },
     // adds an information about the online status
     update_online_status: function ( $el, connected ) {
