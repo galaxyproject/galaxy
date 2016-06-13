@@ -104,6 +104,11 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     tool_commands = commands_builder.build()
     config = job_wrapper.app.config
     integrity_injection = ""
+    # Setting shell to none in job_conf.xml disables creating a tool command script,
+    # set -e doesn't work for composite commands but this is nessecary for Windows jobs
+    # for instance.
+    if shell and shell.lower() == 'none':
+        return tool_commands
     if check_script_integrity(config):
         integrity_injection = INTEGRITY_INJECTION
     set_e = ""
