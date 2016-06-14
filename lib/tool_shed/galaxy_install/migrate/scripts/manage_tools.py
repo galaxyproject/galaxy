@@ -32,6 +32,7 @@ elif "database_connection" in properties:
 elif os.path.exists('run.sh'):
     db_url = "sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE"
 else:
-    db_url = "sqlite:///./data/universe.sqlite?isolation_level=IMMEDIATE"
+    data_dir = properties.get('data_dir', './data')
+    db_url = "sqlite:///%s/universe.sqlite?isolation_level=IMMEDIATE" % data_dir
 
 main( repository=repo, url=db_url )
