@@ -52,12 +52,13 @@ var GalaxyAdminApp = Backbone.View.extend({
     this.admin_router = new AdminRouter();
 
     this.admin_router.on('route:repolist', function(view, filter) {
-      console.log('view:'+view);
-      console.log('filter:'+filter);
+      console.log('view: '+view+' filter: '+filter);
       if (Galaxy.adminapp.adminReposListView){
-        Galaxy.adminapp.adminReposListView.repaint({view: view, filter: filter});
+        console.log('recycling reposlist view');
+        Galaxy.adminapp.adminReposListView.repaint({view: view, section_filter: filter});
       } else{
-        Galaxy.adminapp.adminReposListView = new mod_repos_list_view.AdminReposListView({view: view, filter: filter});
+        console.log('new reposlist view');
+        Galaxy.adminapp.adminReposListView = new mod_repos_list_view.AdminReposListView({view: view, section_filter: filter});
       }
     });
     this.admin_router.on('route:repodetail', function(id) {
