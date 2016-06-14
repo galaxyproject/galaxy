@@ -189,9 +189,13 @@ a.btn {
                 $scrollContainer: hasMasthead? function(){ return this.$el.parent(); } : undefined,
                 model           : historyModel
             });
-            historyModel.fetchContents()
+            historyView.trigger( 'loading' );
+            historyModel.fetchContents({ silent: true })
                 .fail( function(){ alert( 'Galaxy history failed to load' ); })
-                .done( function(){ historyView.render(); })
+                .done( function(){
+                    historyView.trigger( 'loading-done' );
+                    historyView.render();
+                });
 
             $( '#toggle-deleted' ).on( 'click', function(){
                 historyView.toggleShowDeleted();

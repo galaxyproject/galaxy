@@ -119,9 +119,11 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
             },
             // show hide the loading indicator
             loading: function(){
+                console.log( 'loading event' );
                 this._showLoadingIndicator( 'loading...', 40 );
             },
             'loading-done': function(){
+                console.log( 'loading-done event' );
                 this._hideLoadingIndicator( 40 );
             },
         });

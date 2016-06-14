@@ -46,7 +46,7 @@
         $embeddedHistory = $( thisScript ).prev();
 
     require.config({
-        baseUrl : "${h.url_for( '/static/scripts' )}",
+        baseUrl: "${h.url_for( '/static/scripts' )}",
         urlArgs: 'v=${app.server_starttime}'
     });
     require([
@@ -57,19 +57,41 @@
         $embeddedHistory.find( '.item-content' ).addClass( 'flex-vertical-container' );
 
         $(function(){
-            var historyMod = require( 'mvc/history/history-model' ),
-                historyModel = new historyMod.History(
-                    ${h.dumps( history_dict )},
-                    ${h.dumps( content_dicts )}
-                ),
-                view = new viewMod.AnnotatedHistoryView({
-                    el      : $embeddedHistory.find( ".history-panel" ),
-                    model   : historyModel
-                });
+            var HISTORY = require( 'mvc/history/history-model' );
+            var HISTORY_CONTENTS = require( 'mvc/history/history-contents' );
 
-            historyModel.fetchContents()
+            var HistoryContentsWithAnnotations = HISTORY_CONTENTS.HistoryContents.extend({
+                _buildFetchData : function( options ){
+                    console.log( '_buildFetchData:' );
+                    options = options || {};
+                    if( !options.keys && !options.view ){
+                        options.view = 'summary';
+                        options.keys = 'annotation,tags';
+                    }
+                    return HISTORY_CONTENTS.HistoryContents.prototype._buildFetchData.call( this, options );
+                }
+            });
+            var HistoryWithAnnotations = HISTORY.History.extend({
+                contentsClass : HistoryContentsWithAnnotations
+            });
+
+            var historyJSON = ${h.dumps( history_dict )};
+            var historyModel = new HistoryWithAnnotations( historyJSON, null, {
+                order           : 'hid-asc',
+            });
+
+            var historyView = new viewMod.AnnotatedHistoryView({
+                el      : $embeddedHistory.find( ".history-panel" ),
+                model   : historyModel
+            });
+
+            historyView.trigger( 'loading' );
+            historyModel.fetchContents({ silent: true })
                 .fail( function(){ alert( 'Galaxy history failed to load' ); })
-                .done( function(){ view.render(); })
+                .done( function(){
+                    historyView.trigger( 'loading-done' );
+                    historyView.render();
+                });
 
             function toggleExpanded( ev ){
                 ev.preventDefault();

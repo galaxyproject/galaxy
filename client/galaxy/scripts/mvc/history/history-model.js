@@ -177,8 +177,11 @@ var History = Backbone.Model
         var lastUpdateTime = self.lastUpdateTime;
         // if we don't flip this, then a fully-fetched list will not be re-checked via fetch
         this.contents.allFetched = false;
+        var fetchFn = self.contents.currentPage !== 0
+            ? function(){ return self.contents.fetchPage( 0 ); }
+            : function(){ return self.contents.fetchUpdated( lastUpdateTime ); };
         // note: if there was no previous update time, all summary contents will be fetched
-        return self.contents.fetchUpdated( lastUpdateTime )
+        return fetchFn()
             .done( function( response, status, xhr ){
                 var serverResponseDatetime;
                 try {

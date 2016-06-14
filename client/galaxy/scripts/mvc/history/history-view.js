@@ -101,7 +101,6 @@ var HistoryView = _super.extend(
                 this.errorHandler( model, xhr, options, msg, details );
             },
             'loading-done' : function(){
-                this.render();
                 if( !this.views.length ){
                     this.trigger( 'empty-history', this );
                 }
@@ -138,6 +137,7 @@ var HistoryView = _super.extend(
                 }, self.FETCH_COLLECTION_COUNTS_DELAY );
             })
             .always( function(){
+                self.render();
                 self.trigger( 'loading-done' );
             });
     },
@@ -167,6 +167,7 @@ var HistoryView = _super.extend(
     // ------------------------------------------------------------------------ panel rendering
     /** hide the $el and display a loading indicator (in the $el's parent) when loading new data */
     _showLoadingIndicator : function( msg, speed, callback ){
+        console.log( '_showLoadingIndicator:' );
         var $indicator = $( '<div class="loading-indicator"/>' );
         this.$el.html( $indicator.text( msg ).show( !_.isUndefined( speed )? speed : this.fxSpeed ) );
     },

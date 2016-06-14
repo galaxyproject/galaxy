@@ -91,9 +91,13 @@
             el              : $( "#history-" + historyJSON.id ),
             model           : historyModel
         });
+        historyView.trigger( 'loading' );
         historyModel.fetchContents({ silent: true })
             .fail( function(){ alert( 'Galaxy history failed to load' ); })
-            .done( function(){ historyView.render(); })
+            .done( function(){
+                historyView.trigger( 'loading-done' );
+                historyView.render();
+            });
     });
 </script>
 </%def>

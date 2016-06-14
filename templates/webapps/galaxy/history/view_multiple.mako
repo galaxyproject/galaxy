@@ -43,10 +43,11 @@ define( 'app', function(){
                 el                          : $( '#center' ).get(0),
                 histories                   : histories,
             })
-            histories.fetchFirst({ silent: true }).done( function(){
-                multipanel.createColumns();
-                multipanel.render( 0 );
-            });
+            histories.fetchFirst({ silent: true })
+                .done( function(){
+                    multipanel.createColumns();
+                    multipanel.render( 0 );
+                });
         });
     });
 });
