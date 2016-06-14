@@ -1349,12 +1349,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     def edit_toolbox_filters( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
-        user_id = params.get( 'user_id', False )
-        if not user_id:
-            # User must be logged in to create a new address
-            return trans.show_error_message( "You must be logged in to change the ToolBox filters." )
-
-        user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
 
         if params.get( 'edit_toolbox_filter_button', False ):
             tool_filters = list()
@@ -1368,11 +1362,11 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                         label_filters.append( name[2:] )
                     elif name.startswith('s_'):
                         section_filters.append( name[2:] )
-            user.preferences['toolbox_tool_filters'] = ','.join( tool_filters )
-            user.preferences['toolbox_section_filters'] = ','.join( section_filters )
-            user.preferences['toolbox_label_filters'] = ','.join( label_filters )
+            trans.user.preferences['toolbox_tool_filters'] = ','.join( tool_filters )
+            trans.user.preferences['toolbox_section_filters'] = ','.join( section_filters )
+            trans.user.preferences['toolbox_label_filters'] = ','.join( label_filters )
 
-            trans.sa_session.add( user )
+            trans.sa_session.add( trans.user )
             trans.sa_session.flush()
             message = 'ToolBox filters has been updated.'
             kwd = dict( message=message, status='done' )
