@@ -46,6 +46,16 @@ use_threadpool = True
 # (assuming it will never finish) to 3 hours.  Default is 600 (10 minutes).
 threadpool_kill_thread_limit = 10800
 
+# Alternatively, a minimal uWSGI server configuration listening for HTTP
+# requests on port 8080. For (much) more see the Galaxy configuration
+# documentation and https://uwsgi-docs.readthedocs.io/
+
+[uwsgi]
+processes = 2
+http = 127.0.0.1:8080
+threads = 2
+master = True
+
 # ---- Filters --------------------------------------------------------------
 
 # Filters sit between Galaxy and the HTTP server.
@@ -67,6 +77,19 @@ prefix = /galaxy
 # Configuration of the Galaxy application.
 
 [app:main]
+
+# Directories for relative configuration options
+
+# The directory that will be prepended to relative paths in options specifying
+# other Galaxy config files (e.g. datatypes_config_file). Defaults to the
+# directory in which galaxy.ini is located.
+#config_dir = None
+
+# The directory that will be prepended to relative paths in options specifying
+# Galaxy data/cache directories and files (such as the default SQLite database,
+# file_path, etc.). Defaults to `database/` if running Galaxy from source or
+# `<config_dir>/data` otherwise.
+#data_dir = None
 
 # -- Application and filtering
 

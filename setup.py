@@ -27,6 +27,7 @@ setup(
         [console_scripts]
         galaxy-paster=galaxy.util.pastescript.serve:run
         galaxy-main=galaxy.main:main
+        galaxy-config=galaxy.config.script:main
     ''',
     package_data={
         'galaxy': [
