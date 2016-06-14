@@ -98,7 +98,10 @@ def main(argv=None):
 def _print_config_summary(args, mode, relative_config_dir):
     _print_galaxy_ini_info(args, mode)
     print("")
-    print("For additional help on configuring Galaxy, consult the documentation at:\n ", CONFIGURE_URL)
+    print("For help on configuring Galaxy, consult the documentation at:\n ", CONFIGURE_URL)
+    print("")
+    print("Additional sample configuration files for various Galaxy components (jobs,")
+    print("datatypes, etc.) can be found in:\n ", SAMPLES_PATH)
     print("")
     print("Start Galaxy by running the command from directory [%s]:" % relative_config_dir)
     _print_galaxy_run(mode)
