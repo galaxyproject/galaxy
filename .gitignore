@@ -8,6 +8,15 @@ scripts/scramble/archives
 # Python virtualenv
 .venv
 
+# Python build artifacts
+build
+dist
+
+# Generated static content
+lib/galaxy/web/framework/static/maps
+lib/galaxy/web/framework/static/scripts
+lib/galaxy/web/framework/static/style
+
 # Database stuff
 database/beaker_sessions
 database/citations
