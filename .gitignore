@@ -11,6 +11,7 @@ scripts/scramble/archives
 # Python build artifacts
 build
 dist
+lib/galaxy.egg-info
 
 # Generated static content
 lib/galaxy/web/framework/static/maps
