@@ -1,19 +1,13 @@
-// dependencies
-define([], function() {
+define( [], function() {
+    return Backbone.Model.extend({
+        defaults : {
+            key     : 'Data label',
+            date    : ''
+        },
 
-// model
-return Backbone.Model.extend({
-    // options
-    defaults : {
-        key     : 'Data label',
-        date    : ''
-    },
-    
-    // reset
-    reset: function(){
-        this.clear({silent: true}).set(this.defaults);
-        this.trigger('reset', this);
-    }
-});
-
+        reset: function(){
+            this.clear( { silent: true } ).set( this.defaults );
+            this.trigger( 'reset', this );
+        }
+    });
 });

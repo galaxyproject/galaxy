@@ -1,9 +1,5 @@
-// dependencies
-define(['plugin/models/group'], function(Group) {
-
-// collection
-return Backbone.Collection.extend({
-    model: Group
-});
-
+define( [ 'plugin/models/group' ], function( Group ) {
+    return Backbone.Collection.extend({
+        model: Group
+    });
 });
