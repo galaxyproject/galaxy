@@ -22,6 +22,7 @@ from galaxy.security.validate_user_input import (transform_publicname,
                                                  validate_email,
                                                  validate_password,
                                                  validate_publicname)
+from galaxy.tools.toolbox.filters import FilterFactory
 from galaxy.util import biostar, hash_util, docstring_trim, listify
 from galaxy.web import url_for
 from galaxy.web.base.controller import (BaseUIController,
@@ -1269,7 +1270,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             The user can activate them and the choice is stored in user_preferences.
         """
 
-        def get_filter_mapping( db_filters, config_filters ):
+        def get_filter_mapping( db_filters, config_filters, factory ):
             """
                 Compare the allowed filters from the galaxy.ini config file with the previously saved or default filters from the database.
                 We need that to toogle the checkboxes for the formular in the right way.
@@ -1277,17 +1278,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             """
             filters = list()
             for filter_name in config_filters:
-                if ":" in filter_name:
-                    # Should be a submodule of filters (e.g. examples:restrict_development_tools)
-                    (module_name, function_name) = filter_name.rsplit(":", 1)
-                    module_name = 'galaxy.tools.filters.%s' % module_name.strip()
-                    module = __import__( module_name, globals(), fromlist=['temp_module'] )
-                    function = getattr( module, function_name.strip() )
-                else:
-                    # No module found it has to be explicitly imported.
-                    module = __import__( 'galaxy.tools.filters', globals(), fromlist=['temp_module'] )
-                    function = getattr( globals(), filter_name.strip() )
-
+                function = factory._build_filter_function(filter_name)
                 doc_string = docstring_trim( function.__doc__ )
                 split = doc_string.split('\n\n')
                 if split:
@@ -1328,9 +1319,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 elif name == 'toolbox_label_filters':
                     saved_user_label_filters = listify( value, do_strip=True )
 
-            tool_filters = get_filter_mapping( saved_user_tool_filters, trans.app.config.user_tool_filters )
-            section_filters = get_filter_mapping( saved_user_section_filters, trans.app.config.user_section_filters )
-            label_filters = get_filter_mapping( saved_user_label_filters, trans.app.config.user_label_filters )
+            ff = FilterFactory(trans.app.toolbox)
+            tool_filters = get_filter_mapping( saved_user_tool_filters, trans.app.config.user_tool_filters, ff )
+            section_filters = get_filter_mapping( saved_user_section_filters, trans.app.config.user_section_filters, ff )
+            label_filters = get_filter_mapping( saved_user_label_filters, trans.app.config.user_label_filters, ff )
 
             return trans.fill_template( 'user/toolbox_filters.mako',
                                         cntrller=cntrller,
