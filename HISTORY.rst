@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-16.7.9.dev0
+16.7.9 (2016-06-13)
 ---------------------
 
 * Updates for recent changes to Galaxy and cwltool.
