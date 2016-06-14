@@ -507,7 +507,8 @@ nglims_config_file = tool-data/nglims.yaml
 #galaxy_infrastructure_web_port = 8080
 
 # The URL of the page to display in Galaxy's middle pane when loaded.  This can
-# be an absolute or relative URL.
+# be an absolute or relative URL. Alternatively, you can modify the file that
+# /static/welcome.html points to using the `static_welcome_html` option below.
 #welcome_url = /static/welcome.html
 
 # The URL linked by the "Galaxy/brand" text.
@@ -543,7 +544,8 @@ nglims_config_file = tool-data/nglims.yaml
 # Serve static content, which must be enabled if you're not serving it via a
 # proxy server.  These options should be self explanatory and so are not
 # documented individually.  You can use these paths (or ones in the proxy
-# server) to point to your own styles.
+# server) to point to your own styles. Paths are relative to
+# galaxy/web/framework/
 #static_enabled = True
 #static_cache_time = 360
 #static_dir = static/
@@ -552,6 +554,11 @@ nglims_config_file = tool-data/nglims.yaml
 #static_scripts_dir = static/scripts/
 #static_style_dir = static/june_2007_style/blue
 #static_robots_txt = static/robots.txt
+#static_welcome_html = static/welcome.html
+
+# A directory to serve at /static_local for local static content served by
+# Galaxy
+#static_local_dir = None
 
 # Incremental Display Options
 

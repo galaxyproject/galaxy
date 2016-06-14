@@ -925,7 +925,10 @@ def build_url_map( app, global_conf, local_conf ):
     urlmap["/static"] = Static( conf.get( "static_dir", default_url_path("static/") ), cache_time )
     urlmap["/images"] = Static( conf.get( "static_images_dir", default_url_path("static/images") ), cache_time )
     urlmap["/static/scripts"] = Static( conf.get( "static_scripts_dir", default_url_path("static/scripts/") ), cache_time )
-    urlmap["/static/style"] = Static( conf.get( "static_style_dir", default_url_path("./static/style/blue") ), cache_time )
+    urlmap["/static/style"] = Static( conf.get( "static_style_dir", default_url_path("static/style/blue") ), cache_time )
+    urlmap["/static/welcome.html"] = Static( conf.get( "static_welcome_html", default_url_path("static/welcome.html") ), cache_time )
     urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir", default_url_path("./static/favicon.ico") ), cache_time )
     urlmap["/robots.txt"] = Static( conf.get( "static_robots_txt", default_url_path("./static/robots.txt") ), cache_time )
+    if 'static_local_dir' in conf:
+        urlmap["/static_local"] = Static( conf["static_local_dir"], cache_time )
     return urlmap, cache_time
