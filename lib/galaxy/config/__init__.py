@@ -605,31 +605,35 @@ class Configuration( object ):
             workflow_schedulers_config_file=[ self.__in_config_dir( 'config/workflow_schedulers_conf.xml' ) ],
         )
 
-        listify_defaults = dict(
-            tool_data_table_config_path=[ 'config/tool_data_table_conf.xml', 'tool_data_table_conf.xml', 'config/tool_data_table_conf.xml.sample' ],
-            # rationale:
-            # [0]: user has explicitly created config/tool_conf.xml but did not
-            #      move their existing shed_tool_conf.xml, don't use
-            #      config/shed_tool_conf.xml, which is probably the empty
-            #      version copied from the sample, or else their shed tools
-            #      will disappear
-            # [1]: user has created config/tool_conf.xml and, having passed
-            #      [0], probably moved their shed_tool_conf.xml as well
-            # [2]: user has done nothing, use the old files
-            # [3]: fresh install
-            tool_config_file=[ 'config/tool_conf.xml,shed_tool_conf.xml',
-                               'config/tool_conf.xml,config/shed_tool_conf.xml',
-                               'tool_conf.xml,shed_tool_conf.xml',
-                               'config/tool_conf.xml.sample,config/shed_tool_conf.xml' ]
-        )
-
-        if not self.running_from_source:
-            listify_defaults['tool_data_table_config_path'] = [
+        if self.running_from_source:
+            listify_defaults = {
+                'tool_data_table_config_path': [ 'config/tool_data_table_conf.xml',
+                                                 'tool_data_table_conf.xml',
+                                                 'lib/galaxy/config/sample/tool_data_table_conf.xml.sample' ],
+                # rationale:
+                # [0]: user has explicitly created config/tool_conf.xml but did not
+                #      move their existing shed_tool_conf.xml, don't use
+                #      config/shed_tool_conf.xml, which is probably the empty
+                #      version copied from the sample, or else their shed tools
+                #      will disappear
+                # [1]: user has created config/tool_conf.xml and, having passed
+                #      [0], probably moved their shed_tool_conf.xml as well
+                # [2]: user has done nothing, use the old files
+                # [3]: fresh install (shed_tool_conf will be added later)
+                'tool_config_file': [ 'config/tool_conf.xml,shed_tool_conf.xml',
+                                      'config/tool_conf.xml,config/shed_tool_conf.xml',
+                                      'tool_conf.xml,shed_tool_conf.xml',
+                                      'lib/galaxy/config/sample/tool_conf.xml.sample' ]
+            }
+        else:
+            listify_defaults = {
+                'tool_data_table_config_path': [
                     self.__in_config_dir( 'tool_data_table_conf.xml' ),
-                    self.__in_sample_dir( 'tool_data_table_conf.xml.sample' ) ]
-            listify_defaults['tool_config_file'] = [
+                    self.__in_sample_dir( 'tool_data_table_conf.xml.sample' ) ],
+                'tool_config_file': [
                     self.__in_config_dir( 'tool_conf.xml' ),
                     self.__in_sample_dir( 'tool_conf.xml.sample' ) ]
+            }
 
         for var, defaults in defaults.items():
             if kwargs.get( var, None ) is not None:
