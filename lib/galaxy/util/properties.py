@@ -97,4 +97,29 @@ class NicerConfigParser(ConfigParser):
                 raise
 
 
-__all__ = ['load_app_properties', 'NicerConfigParser']
+def _running_from_source():
+    try:
+        # is there a better way to do this?
+        assert os.path.exists( 'run.sh' )
+        assert os.path.exists( 'lib/galaxy/__init__.py' )
+        assert os.path.exists( 'scripts/common_startup.sh' )
+        return True
+    except AssertionError:
+        return False
+
+
+running_from_source = _running_from_source()
+
+
+def get_data_dir(properties):
+    data_dir = properties.get('data_dir', None)
+    if data_dir is None:
+        if running_from_source:
+            data_dir = './database'
+        else:
+            config_dir = properties.get('config_dir', os.path.dirname(properties['__file__']))
+            data_dir = os.path.join(config_dir, 'data')
+    return data_dir
+
+
+__all__ = ['load_app_properties', 'NicerConfigParser', 'running_from_source', 'get_data_dir']

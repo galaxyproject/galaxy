@@ -23,6 +23,7 @@ from six.moves import configparser
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
 from galaxy.util import string_as_bool
+from galaxy.util.properties import running_from_source
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web.formatting import expand_pretty_datetime_format
 from ..version import VERSION_MAJOR
@@ -55,17 +56,13 @@ class Configuration( object ):
         self.config_dict = kwargs
         self.root = kwargs.get( 'root_dir', '.' )
 
-        # Facilitate "installed" Galaxy without disturbing existing "running
-        # from source" installations and all the various assumptions/defaults
-        self.__running_from_source = None
-
         self.config_file = None
         global_conf = kwargs.get( 'global_conf', None )
         # TODO: under what conditions is global_conf None, or does it not
         # contain __file__?
         if global_conf and "__file__" in global_conf:
             self.config_file = global_conf['__file__']
-        elif self.running_from_source:
+        elif running_from_source:
             for f in ( 'config/galaxy.ini', 'config/galaxy.ini.sample' ):
                 if os.path.exists( f ):
                     self.config_file = f
@@ -81,7 +78,7 @@ class Configuration( object ):
         # override individual mutable configs with config options, but they
         # should be considered Galaxy-controlled data files and will by default
         # just live in the data dir
-        if self.running_from_source:
+        if running_from_source:
             if self.data_dir is None:
                 self.data_dir = os.path.join( self.root, 'database' )
                 self.mutable_config_dir = self.config_dir
@@ -138,7 +135,7 @@ class Configuration( object ):
         self.enable_unique_workflow_defaults = string_as_bool( kwargs.get( 'enable_unique_workflow_defaults', False ) )
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "tool-data" ), os.getcwd() )
-        if not self.running_from_source and kwargs.get( "tool_data_path", None ) is None:
+        if not running_from_source and kwargs.get( "tool_data_path", None ) is None:
             self.tool_data_path = resolve_path( "tool-data", self.data_dir )
         self.builds_file_path = resolve_path( kwargs.get( "builds_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'builds.txt') ), self.root )
         self.len_file_path = resolve_path( kwargs.get( "len_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'chrom') ), self.root )
@@ -542,19 +539,6 @@ class Configuration( object ):
         self.citation_cache_lock_dir = resolve_path( kwargs.get( "citation_cache_lock_dir", "citations/locks" ), self.data_dir )
 
     @property
-    def running_from_source( self ):
-        if self.__running_from_source is None:
-            try:
-                # is there a better way to do this?
-                assert os.path.exists( 'run.sh' )
-                assert os.path.exists( 'lib/galaxy/__init__.py' )
-                assert os.path.exists( 'scripts/common_startup.sh' )
-                self.__running_from_source = True
-            except AssertionError:
-                self.__running_from_source = False
-        return self.__running_from_source
-
-    @property
     def sentry_dsn_public( self ):
         """
         Sentry URL with private key removed for use in client side scripts,
@@ -605,7 +589,7 @@ class Configuration( object ):
             workflow_schedulers_config_file=[ self.__in_config_dir( 'config/workflow_schedulers_conf.xml' ) ],
         )
 
-        if self.running_from_source:
+        if running_from_source:
             listify_defaults = {
                 'tool_data_table_config_path': [ 'config/tool_data_table_conf.xml',
                                                  'tool_data_table_conf.xml',
@@ -668,7 +652,7 @@ class Configuration( object ):
         # If the user has configured a shed tool config in tool_config_file
         # this would add a second, but since we're not parsing them yet we
         # don't know if that's the case.
-        if not self.running_from_source and self.shed_tool_conf not in self.tool_config_file:
+        if not running_from_source and self.shed_tool_conf not in self.tool_config_file:
             self.tool_config_file.append( self.shed_tool_conf )
 
         # Backwards compatibility for names used in too many places to fix

@@ -12,6 +12,7 @@ scripts/scramble/archives
 build
 dist
 lib/galaxy.egg-info
+.eggs
 
 # Generated static content
 lib/galaxy/web/framework/static/maps

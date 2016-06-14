@@ -28,6 +28,7 @@ setup(
         galaxy-paster=galaxy.util.pastescript.serve:run
         galaxy-main=galaxy.main:main
         galaxy-config=galaxy.config.script:main
+        galaxy-manage-db=galaxy.model.orm.scripts:manage_db
     ''',
     package_data={
         'galaxy': [
