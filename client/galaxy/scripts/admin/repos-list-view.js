@@ -20,7 +20,7 @@ var AdminReposListView = Backbone.View.extend({
 
   defaults: {
     view: 'all',
-    filter: null,
+    section_filter: null,
     sort_by: 'date',
     sort_order: 'asc',
   },
@@ -45,26 +45,25 @@ var AdminReposListView = Backbone.View.extend({
     this.collection.switchComparator(this.options.sort_by);
     this.render();
     this.fetchRepos();
-    this.repaint();
+    this.adjustMenu();
   },
 
   render: function(options){
     this.options = _.extend( this.options, options );
     var repo_list_template = this.templateRepoList();
-    this.$el.html(repo_list_template({filter: this.options.filter}));
+    this.$el.html(repo_list_template({section_filter: this.options.section_filter}));
     this.fetchSections();
     $( "#center" ).css( 'overflow','auto' );
     this.$el.find('[data-toggle]').tooltip();
+    return this;
   },
 
   fetchRepos: function(){
     var that = this;
     this.collection.fetch({
       success: function(collection, response, options){
-
       },
       error: function(collection, response, options){
-
       }
     });
   },
@@ -75,6 +74,7 @@ var AdminReposListView = Backbone.View.extend({
     this.clearFilter();
     this.adjustMenu();
     this.renderAll();
+    return this;
   },
 
   adjustMenu: function(options){
@@ -111,10 +111,10 @@ var AdminReposListView = Backbone.View.extend({
     var repoView = null;
     var is_visible = false;
     var is_uninstalled_or_deactivated = repo.get('status').toLowerCase() === 'uninstalled' || repo.get('status').toLowerCase() === 'deactivated';
-    var is_filter_valid = (typeof repo.get('sections') !== 'undefined') && (repo.get('sections').indexOf(this.options.filter) >= 0);
-    is_visible = is_visible || (this.options.view === 'uninstalled' && is_uninstalled_or_deactivated);
+    var is_filter_valid = (typeof repo.get('sections') !== 'undefined') && (repo.get('sections').indexOf(this.options.section_filter) >= 0);
+    is_visible = this.options.view === 'uninstalled' && is_uninstalled_or_deactivated;
     is_visible = is_visible || ((this.options.view === 'all' || this.options.view === repo.get('type')) && !is_uninstalled_or_deactivated);
-    is_visible = is_visible && (!this.options.filter  || is_filter_valid);
+    is_visible = is_visible && (!this.options.section_filter || is_filter_valid);
 
     if (is_visible) {
       if (this.rowViews[repo.get('id')]){
@@ -226,7 +226,6 @@ var AdminReposListView = Backbone.View.extend({
   },
 
   clearFilter: function(){
-    console.log('clearing filter');
     if (this.select_section){
       this.select_section.clear();
     }
