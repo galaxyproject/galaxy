@@ -2,7 +2,7 @@ contrib/
 cron/
 lib/galaxy/actions/
 lib/galaxy/auth/
-lib/galaxy/config.py
+lib/galaxy/config/
 lib/galaxy/dataset_collections/
 lib/galaxy/datatypes/binary.py
 lib/galaxy/datatypes/converters/
@@ -25,6 +25,10 @@ lib/galaxy/quota/
 lib/galaxy/sample_tracking/
 lib/galaxy/security/
 lib/galaxy/tags/
+lib/galaxy/tools/bundled/data_source/
+lib/galaxy/tools/bundled/evolution/
+lib/galaxy/tools/bundled/sr_mapping/
+lib/galaxy/tools/bundled/visualization/
 lib/galaxy/tools/cwl/
 lib/galaxy/tools/deps/
 lib/galaxy/tools/lint.py
@@ -71,8 +75,11 @@ scripts/db_shell.py
 scripts/drmaa_external_runner.py
 test/
 tool_list.py
+<<<<<<< HEAD
 tools/data_source/
 tools/evolution/
 tools/sr_mapping/
 tools/stats/aggregate_scores_in_intervals.py
 tools/visualization/
+=======
+>>>>>>> Fix linting errors

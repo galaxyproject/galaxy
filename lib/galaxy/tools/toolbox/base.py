@@ -134,9 +134,9 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             tool_conf_source = get_toolbox_parser(config_filename)
         except (OSError, IOError) as exc:
             for opt in ('shed_tool_conf', 'migrated_tools_config'):
-                if (config_filename == getattr( self.app.config, opt )
-                        and not getattr( self.app.config, opt + '_set' )
-                        and exc.errno == errno.ENOENT):
+                if (config_filename == getattr( self.app.config, opt ) and not
+                        getattr( self.app.config, opt + '_set' ) and
+                        exc.errno == errno.ENOENT):
                     log.debug( "Skipping loading missing default config file: %s", config_filename )
                     stcd = dict( config_filename=config_filename,
                                  tool_path=self.app.config.shed_tools_dir,
