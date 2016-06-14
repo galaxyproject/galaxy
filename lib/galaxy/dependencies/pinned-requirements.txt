@@ -1,3 +1,9 @@
+# Warning: If you are modifying this file, please ensure it still parses
+# properly in setup.py
+
+# Install dependencies from Galaxy's wheels server
+--index-url https://wheels.galaxyproject.org/simple/
+
 # packages with C extensions
 bx-python==0.7.3
 MarkupSafe==0.23

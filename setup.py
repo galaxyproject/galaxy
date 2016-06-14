@@ -12,7 +12,20 @@ VERSION = None
 # sets VERSION (also VERSION_MAJOR and VERSION_MINOR)
 execfile('lib/galaxy/version.py')
 
+# Note we really shouldn't do things this way, but it makes the most sense for now:
+#   https://caremad.io/2013/07/setup-vs-requirement/
+requirements = []
+with open('requirements.txt') as fh:
+    for line in fh:
+        line = line.strip()
+        if line.startswith('#') or line.startswith('-') or line == '':
+            continue
+        if '#' in line:
+            line = line[:line.index('#')].strip()
+        requirements.append(line)
+
 scripts = ["scripts/galaxy"]
+
 
 setup(
     name='galaxy',
@@ -57,55 +70,7 @@ setup(
     include_package_data=True,
     dependency_links=['https://wheels.galaxyproject.org/packages'],
     setup_requires=['pip>=8.1'],
-    # FIXME: read requirements.txt into a list...
-    install_requires=[
-        'bx-python==0.7.3',
-        'MarkupSafe==0.23',
-        'PyYAML==3.11',
-        'SQLAlchemy==1.0.8',
-        'mercurial==3.7.3',
-        'numpy==1.9.2',
-        'pycrypto==2.6.1',
-        'Paste==2.0.2',
-        'PasteDeploy==1.5.2',
-        'docutils==0.12',
-        'wchartype==0.1',
-        'repoze.lru==0.6',
-        'Routes==2.2',
-        'WebOb==1.4.1',
-        'WebHelpers==1.3',
-        'Mako==1.0.2',
-        'pytz==2015.4',
-        'Babel==2.0',
-        'Beaker==1.7.0',
-        'dictobj==0.3.1',
-        'nose==1.3.7',
-        'Parsley==1.3',
-        'six==1.9.0',
-        'Whoosh==2.7.4',
-        'Cheetah==2.4.4',
-        'Markdown==2.6.3',
-        'bioblend==0.7.0',
-        'boto==2.38.0',
-        'requests==2.8.1',
-        'requests-toolbelt==0.4.0',
-        'kombu==3.0.30',
-        'amqp==1.4.8',
-        'anyjson==0.3.3',
-        'psutil==4.1.0',
-        'pulsar-galaxy-lib==0.7.0.dev4',
-        'sqlalchemy-migrate==0.10.0',
-        'decorator==4.0.2',
-        'Tempita==0.5.3dev',
-        'sqlparse==0.1.16',
-        'pbr==1.8.0',
-        'svgwrite==1.1.6',
-        'pyparsing==2.1.1',
-        'Fabric==1.10.2',
-        'paramiko==1.15.2',
-        'ecdsa==0.13',
-        'pysam==0.8.4+gx1',
-    ],
+    install_requires=requirements,
     extras_require={
         'postgresql': ['psycopg2==2.6.1'],
     },
