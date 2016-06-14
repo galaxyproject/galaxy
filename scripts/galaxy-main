@@ -62,7 +62,11 @@ if base_file == 'main.py':
     GALAXY_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 elif base_file == 'galaxy-main':
     GALAXY_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-GALAXY_LIB_DIR = os.path.join(GALAXY_ROOT_DIR, "lib")
+else:
+    # Galaxy is installed
+    GALAXY_ROOT_DIR = None
+if GALAXY_ROOT_DIR is not None:
+    GALAXY_LIB_DIR = os.path.join(GALAXY_ROOT_DIR, "lib")
 DEFAULT_INI_APP = "main"
 DEFAULT_INIS = ["config/galaxy.ini", "universe_wsgi.ini", "config/galaxy.ini.sample"]
 
@@ -111,9 +115,10 @@ def load_galaxy_app(
 def app_loop(args, log):
     try:
         config_builder = GalaxyConfigBuilder(args)
+        config_env = GALAXY_ROOT_DIR is not None
         galaxy_app = load_galaxy_app(
             config_builder,
-            config_env=True,
+            config_env=config_env,
             log=log,
         )
     except BaseException:
@@ -146,8 +151,11 @@ def find_ini(supplied_ini, galaxy_root):
     if supplied_ini:
         return supplied_ini
 
+    if galaxy_root is None:
+        return os.path.abspath('galaxy.ini')
+
     # If not explicitly supplied an ini, check server.ini and then
-    # just restort to sample if that has not been configured.
+    # just resort to sample if that has not been configured.
     for guess in DEFAULT_INIS:
         ini_path = os.path.join(galaxy_root, guess)
         if os.path.exists(ini_path):
@@ -176,7 +184,7 @@ class GalaxyConfigBuilder(object):
     def populate_options(cls, arg_parser):
         arg_parser.add_argument("-c", "--ini-path", default=None, help="Galaxy ini config file (defaults to config/galaxy.ini)")
         arg_parser.add_argument("--app", default=DEFAULT_INI_APP, help="app section in ini file (defaults to main)")
-        arg_parser.add_argument("-d", "--daemonize", default=False, help="Daemonzie process", action="store_true")
+        arg_parser.add_argument("-d", "--daemonize", default=False, help="Daemonize process", action="store_true")
         arg_parser.add_argument("--daemon-log-file", default=None, help="log file for daemon script ")
         arg_parser.add_argument("--log-file", default=None, help="Galaxy log file (overrides log configuration in ini_path if set)")
         arg_parser.add_argument("--pid-file", default=DEFAULT_PID, help="pid file (default is %s)" % DEFAULT_PID)
