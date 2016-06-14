@@ -24,7 +24,7 @@ var events_module = {
             // updates the user session storage with all the messages
             sessionStorage['broadcast'] = $el_all_messages.html();
             // show the last item by scrolling to the end
-            utils.scroll_to_last( $el_all_messages );
+            utils.fancyscroll_to_last( $("#all_chat_tab") );
             // Alert user if needed
             if ( uid !== msg.user ) {
                 utils.show_notification( $el_tab_li );
@@ -47,7 +47,7 @@ var events_module = {
                     user: server_text_name,
                 };
                 utils.append_message( $el_all_messages, utils.build_message( message ) );
-                utils.scroll_to_last( $el_all_messages );
+                utils.fancyscroll_to_last( $("#all_chat_tab") );
                 // shows notification when message is from other user
                 if ( uid !== msg.userjoin ) {
                     $el_tab_li = $( "a[data-target='#all_chat_tab']" );
@@ -60,7 +60,7 @@ var events_module = {
                     user: server_text_name,
                 };
                 utils.append_message( $el_all_messages, utils.build_message( message ) );
-                utils.scroll_to_last( $el_all_messages );
+                utils.fancyscroll_to_last( $("#all_chat_tab") );
                 // shows notification when message is from other user
                 if ( uid !== msg.userleave ) {
                     $el_tab_li = $( "a[data-target='#all_chat_tab']" );
@@ -71,7 +71,7 @@ var events_module = {
                 var room = utils.check_room_by_roomname( click_events.connected_room, msg.chatroom );
                 $el_room_msg = $( '#all_messages_' + room.id );
                 utils.append_message( $el_room_msg, utils.build_message( msg ) );
-                utils.scroll_to_last( $el_room_msg );
+                utils.fancyscroll_to_last( $( "#galaxy_tabroom_" + room.id ) );
                 // if the pushed message is for some other user, show notification
                 if (uid !== msg.data) {
                     $el_tab_li = $( "a[data-target='#galaxy_tabroom_" + room.id + "'" + " ]" );
@@ -138,14 +138,14 @@ var click_events = {
             if( e.target.attributes['data-target'] ) {
                 // sets the active tab
                 click_events.active_tab = e.target.attributes['data-target'].nodeValue;
+                // removes the background color
                 $( this ).children().css( 'background-color', '' );
                 // hides the message textarea for create room tab
                 utils.show_hide_textarea( $( this ).children() );
                 // finds the tab content and scrolls to last
                 message_area_div_id = $( this ).find('a').attr( 'data-target' );
-                message_area_id = $( message_area_div_id + ' .messages' ).attr( 'id' );
-                if( message_area_id ) { // if it has message area
-                    utils.scroll_to_last( $( '#' + message_area_id ) );
+                if( message_area_div_id ) { // if it has message area
+                    utils.fancyscroll_to_last( $( message_area_div_id ) );
                 }
             }
         });
@@ -275,7 +275,7 @@ var click_events = {
         // creates a tab for persistent chat room upon clicking
         $('.global-room').click(function( e ) {
             e.stopPropagation();
-            chat_room_name = e.target.parentElement.title;
+            chat_room_name = $(this)[0].title;
             utils.create_new_tab( chat_room_name, $el_txtbox_chat_room, $el_chat_room_tab, $el_chat_tabs, $el_tab_content, $el_msg_box );
             return false;
         });
@@ -300,6 +300,9 @@ var click_events = {
 }
 // utility methods
 var utils = {
+    notification_color_code: '#FFD700',
+    connected_color_code: "#00FF00",
+    disconnected_color_code: "#FF0000",
     // fill in all messages
     fill_messages: function ( collection ) {
         var uid = utils.get_userid(),
@@ -311,19 +314,13 @@ var utils = {
             $el_all_messages.append( $( '<div' + '/' + '>' ).html( message_html ) );
         }
         // show the last item by scrolling to the end
-        utils.scroll_to_last( $el_all_messages );
+        utils.fancyscroll_to_last( $("#all_chat_tab") );
     },
     // get the current username of logged in user
     get_userid: function () {
         var query_string_start = location.search.indexOf( '?' ) + 1,
             query_string_list = location.search.slice( query_string_start ).split( '&' );
         return query_string_list[0].split( '=' )[1];
-    },
-    // scrolls to the last of the element
-    scroll_to_last: function ( $el ) {
-        if ( $el[0] ) {
-            $el.scrollTop( $el[0].scrollHeight );
-        }
     },
     // append message
     append_message: function ( $el, message ) {
@@ -358,17 +355,17 @@ var utils = {
     // builds template for username for message display
     build_message_username_template: function ( username ) {
         return "<div class='date_time'><span title=" + this.get_date() + ">" + this.get_time() + "</span></div>" +
-               "<span class='user_name'>" + username + ":<br></span>";
+               "<span class='user_name'>" + username + "<br></span>";
     },
     // adds an information about the online status
     update_online_status: function ( $el, connected ) {
         var connected_message = "You are online. Press to be offline.",
             disconnected_message = "You are offline. Press to be online.";
         if ( connected ) {
-            $el.prop( "title", connected_message ).css( "color", "#00FF00" );
+            $el.prop( "title", connected_message ).css( "color", this.connected_color_code );
         }
         else {
-            $el.prop( "title", disconnected_message ).css( "color", "#FF0000" );
+            $el.prop( "title", disconnected_message ).css( "color", this.disconnected_color_code );
         }
     },
     // gets the current time
@@ -400,10 +397,10 @@ var utils = {
     // pushed to an inactive tab(s)
     show_notification: function ( $el ) {
         if ( !$el.parent().hasClass( 'active' ) ) {
-            $el.css( 'background-color', '#FCD116' );
+            $el.css( 'background-color', this.notification_color_code );
             for (var i = 2; i >= 1; i--) {
                 // shows the animation
-                $el.fadeOut( 200 ).fadeIn( 200 );
+                $el.fadeOut( 150 ).fadeIn( 150 );
             }
         }
     },
@@ -478,10 +475,10 @@ var utils = {
     // save chat logs
     store_append_message: function( key, data ) {
         if (!localStorage[key]) {
-            localStorage[key] = data + '<br>';
+            localStorage[key] = data;
         }
         else {
-            localStorage[key] = localStorage[key] + data + '<br>';
+            localStorage[key] = localStorage[key] + data;
         }
     },
     create_global_chatroom_links: function() {
@@ -495,7 +492,9 @@ var utils = {
         // creates html template for persistent rooms
         for(var room_counter = 0; room_counter < persistent_communication_rooms.length; room_counter++ ) {
             room_name = persistent_communication_rooms[room_counter];
-            room_template = "<a href='#' class='global-room' title=" + room_name + "><span>" + room_name + "</span></a><br>";
+            //room_template = "<a href='#' class='global-room' title='" + room_name + "'><span>" + room_name + "</span></a><br>";
+            room_template = "<button type='button' class='btn btn-primary global-room' title='" + room_name +
+                            "'>" + room_name + "</button>";
             $el_room_container.append(room_template);
         }
     },
@@ -539,6 +538,7 @@ var utils = {
             $el_tab_content.append(tab_room_body_template);
             // registers leave room event
             self.leave_close_room();
+            utils.create_fancy_scroll( $( '#' + tab_id ), "#"+tab_id );
             click_events.tab_counter++;
         }
         self.active_element();
@@ -552,7 +552,9 @@ var utils = {
     get_persistent_rooms: function() {
         var query_string_start = location.search.indexOf('?') + 1,
             query_string_list = location.search.slice(query_string_start).split('&');
-        return query_string_list[1].split('=')[1].split(',');
+        // unescapes the list 
+        query_string_list = unescape(query_string_list[1]);
+        return query_string_list.split('=')[1].split(',');
     },
     // returns the room information if it exists
     check_room_by_roomname: function( dictionary, room_name ) {
@@ -583,6 +585,17 @@ var utils = {
     // smooth transition of body element upon first load
     load_transition: function() {
         $('.body-container').addClass('body-container-loaded');
+    },
+    // creates fancy scroll for the messages area
+    create_fancy_scroll: function( $el, element_id ) {
+        $el.mCustomScrollbar({
+            theme:"minimal"
+        });
+        $( element_id + ' .mCSB_dragger_bar' ).css( 'background-color', 'black' );
+    },
+    // scrolls the fancy scroll to the last element
+    fancyscroll_to_last: function( $el ) {
+        $el.mCustomScrollbar( "scrollTo", "bottom" );
     }
 }
 // this event fires when all the resources of the page 
@@ -591,7 +604,8 @@ $(window).load(function() {
     var uid = utils.get_userid(),
         $el_textarea = $('#send_data'),
         $el_all_messages = $('#all_messages'),
-        $el_chat_tabs = $('#chat_tabs');
+        $el_chat_tabs = $('#chat_tabs'), 
+        main_tab_id = "#all_chat_tab";
     // build tabs
     $el_chat_tabs.tab();
     // registers response event
@@ -620,10 +634,11 @@ $(window).load(function() {
     // by checking if user was connected or not
     utils.checks_session_storage();
     utils.fill_messages(sessionStorage['broadcast']);
-    // scrolls to the last of the element
-    utils.scroll_to_last( $el_all_messages );
     // sets focus to the textarea
     utils.set_focus_textarea( $el_textarea );
     // sets smooth transition
     utils.load_transition();
+    utils.create_fancy_scroll( $( main_tab_id ), main_tab_id );
+    // scrolls to the last of the element
+    utils.fancyscroll_to_last( $( main_tab_id ) );
 });
