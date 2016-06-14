@@ -93,7 +93,7 @@ if [ -z "$GALAXY_CONFIG_FILE" ]; then
     elif [ -f config/galaxy.ini ]; then
         GALAXY_CONFIG_FILE=config/galaxy.ini
     else
-        GALAXY_CONFIG_FILE=config/galaxy.ini.sample
+        GALAXY_CONFIG_FILE=lib/galaxy/config/sample/galaxy.ini.sample
     fi
     export GALAXY_CONFIG_FILE
 fi

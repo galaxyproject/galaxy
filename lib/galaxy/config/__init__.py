@@ -83,7 +83,7 @@ class Configuration( object ):
         # just live in the data dir
         if self.running_from_source:
             if self.data_dir is None:
-                self.data_dir = os.path.join( self.root, 'config', 'database' )
+                self.data_dir = os.path.join( self.root, 'database' )
                 self.mutable_config_dir = self.config_dir
             self.shed_tools_dir = "../shed_tools"
         else:
@@ -128,9 +128,9 @@ class Configuration( object ):
 
         # Where dataset files are stored
         self.file_path = resolve_path( kwargs.get( "file_path", "files" ), self.data_dir )
-        self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
+        self.new_file_path = resolve_path( kwargs.get( "new_file_path", "tmp" ), self.data_dir )
         tempfile.tempdir = self.new_file_path
-        self.openid_consumer_cache_path = resolve_path( kwargs.get( "openid_consumer_cache_path", "database/openid_consumer_cache" ), self.root )
+        self.openid_consumer_cache_path = resolve_path( kwargs.get( "openid_consumer_cache_path", "openid_consumer_cache" ), self.data_dir )
         self.cookie_path = kwargs.get( "cookie_path", "/" )
         # Galaxy OpenID settings
         self.enable_openid = string_as_bool( kwargs.get( 'enable_openid', False ) )
@@ -219,18 +219,18 @@ class Configuration( object ):
         self.new_user_dataset_access_role_default_private = string_as_bool( kwargs.get( "new_user_dataset_access_role_default_private", "False" ) )
         self.collect_outputs_from = [ x.strip() for x in kwargs.get( 'collect_outputs_from', 'new_file_path,job_working_directory' ).lower().split(',') ]
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
-        self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates" ), self.root )
+        self.template_cache = resolve_path( kwargs.get( "template_cache_path", "compiled_templates" ), self.data_dir )
         self.local_job_queue_workers = int( kwargs.get( "local_job_queue_workers", "5" ) )
         self.cluster_job_queue_workers = int( kwargs.get( "cluster_job_queue_workers", "3" ) )
         self.job_queue_cleanup_interval = int( kwargs.get("job_queue_cleanup_interval", "5") )
-        self.cluster_files_directory = os.path.abspath( kwargs.get( "cluster_files_directory", "database/pbs" ) )
+        self.cluster_files_directory = os.path.abspath( resolve_path( kwargs.get( "cluster_files_directory", "pbs" ), self.data_dir ) )
 
         # Fall back to to legacy job_working_directory config variable if set.
-        default_jobs_directory = kwargs.get( "job_working_directory", "database/jobs_directory" )
-        self.jobs_directory = resolve_path( kwargs.get( "jobs_directory", default_jobs_directory ), self.root )
+        default_jobs_directory = kwargs.get( "job_working_directory", "jobs_directory" )
+        self.jobs_directory = resolve_path( kwargs.get( "jobs_directory", default_jobs_directory ), self.data_dir )
         self.default_job_shell = kwargs.get( "default_job_shell", "/bin/bash" )
         self.cleanup_job = kwargs.get( "cleanup_job", "always" )
-        self.container_image_cache_path = self.resolve_path( kwargs.get( "container_image_cache_path", "database/container_images" ) )
+        self.container_image_cache_path = resolve_path( kwargs.get( "container_image_cache_path", "container_images" ), self.data_dir )
         self.outputs_to_working_directory = string_as_bool( kwargs.get( 'outputs_to_working_directory', False ) )
         self.output_size_limit = int( kwargs.get( 'output_size_limit', 0 ) )
         self.retry_job_output_collection = int( kwargs.get( 'retry_job_output_collection', 0 ) )
@@ -343,7 +343,7 @@ class Configuration( object ):
         # Searching data libraries
         self.enable_lucene_library_search = string_as_bool( kwargs.get( 'enable_lucene_library_search', False ) )
         self.enable_whoosh_library_search = string_as_bool( kwargs.get( 'enable_whoosh_library_search', False ) )
-        self.whoosh_index_dir = resolve_path( kwargs.get( "whoosh_index_dir", "database/whoosh_indexes" ), self.root )
+        self.whoosh_index_dir = resolve_path( kwargs.get( "whoosh_index_dir", "whoosh_indexes" ), self.data_dir )
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
         self.ftp_upload_dir_identifier = kwargs.get( 'ftp_upload_dir_identifier', 'email' )  # attribute on user - email, username, id, etc...
         self.ftp_upload_dir_template = kwargs.get( 'ftp_upload_dir_template', '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep )
@@ -389,7 +389,7 @@ class Configuration( object ):
             self.nginx_upload_store = os.path.abspath( self.nginx_upload_store )
         self.object_store = kwargs.get( 'object_store', 'disk' )
         self.object_store_check_old_style = string_as_bool( kwargs.get( 'object_store_check_old_style', False ) )
-        self.object_store_cache_path = resolve_path( kwargs.get( "object_store_cache_path", "database/object_store_cache" ), self.root )
+        self.object_store_cache_path = resolve_path( kwargs.get( "object_store_cache_path", "object_store_cache" ), self.data_dir )
         # Handle AWS-specific config options for backward compatibility
         if kwargs.get( 'aws_access_key', None) is not None:
             self.os_access_key = kwargs.get( 'aws_access_key', None )
@@ -520,7 +520,7 @@ class Configuration( object ):
         elif ie_dirs:
             self.visualization_plugins_directory += ",%s" % ie_dirs
 
-        self.proxy_session_map = self.resolve_path( kwargs.get( "dynamic_proxy_session_map", "database/session_map.sqlite" ) )
+        self.proxy_session_map = resolve_path( kwargs.get( "dynamic_proxy_session_map", "session_map.sqlite" ), self.data_dir )
         self.manage_dynamic_proxy = string_as_bool( kwargs.get( "dynamic_proxy_manage", "True" ) )  # Set to false if being launched externally
         self.dynamic_proxy_debug = string_as_bool( kwargs.get( "dynamic_proxy_debug", "False" ) )
         self.dynamic_proxy_bind_port = int( kwargs.get( "dynamic_proxy_bind_port", "8800" ) )
@@ -538,8 +538,8 @@ class Configuration( object ):
         self.display_chunk_size = int( kwargs.get( 'display_chunk_size', 65536) )
 
         self.citation_cache_type = kwargs.get( "citation_cache_type", "file" )
-        self.citation_cache_data_dir = self.resolve_path( kwargs.get( "citation_cache_data_dir", "database/citations/data" ) )
-        self.citation_cache_lock_dir = self.resolve_path( kwargs.get( "citation_cache_lock_dir", "database/citations/locks" ) )
+        self.citation_cache_data_dir = resolve_path( kwargs.get( "citation_cache_data_dir", "citations/data" ), self.data_dir )
+        self.citation_cache_lock_dir = resolve_path( kwargs.get( "citation_cache_lock_dir", "citations/locks" ), self.data_dir )
 
     @property
     def running_from_source( self ):
@@ -594,12 +594,12 @@ class Configuration( object ):
             data_manager_config_file=[ self.__in_config_dir( 'data_manager_conf.xml' ) ],
             datatypes_config_file=[ self.__in_config_dir( 'datatypes_conf.xml' ), self.__in_sample_dir( 'datatypes_conf.xml.sample' ) ],
             external_service_type_config_file=[ self.__in_config_dir( 'external_service_types_conf.xml' ) ],
-            job_config_file=[ 'config/job_conf.xml', 'job_conf.xml' ],
-            job_metrics_config_file=[ 'config/job_metrics_conf.xml', 'job_metrics_conf.xml', 'config/job_metrics_conf.xml.sample' ],
-            dependency_resolvers_config_file=[ 'config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml' ],
-            job_resource_params_file=[ 'config/job_resource_params_conf.xml', 'job_resource_params_conf.xml' ],
-            object_store_config_file=[ 'config/object_store_conf.xml', 'object_store_conf.xml' ],
-            openid_config_file=[ 'config/openid_conf.xml', 'openid_conf.xml', 'config/openid_conf.xml.sample' ],
+            job_config_file=[ self.__in_config_dir( 'job_conf.xml' ) ],
+            job_metrics_config_file=[ self.__in_config_dir( 'job_metrics_conf.xml' ) ],
+            dependency_resolvers_config_file=[ self.__in_config_dir( 'dependency_resolvers_conf.xml' ) ],
+            job_resource_params_file=[ self.__in_config_dir( 'job_resource_params_conf.xml' ) ],
+            object_store_config_file=[ self.__in_config_dir( 'object_store_conf.xml' ) ],
+            openid_config_file=[ self.__in_config_dir( 'openid_conf.xml' ) ],
             shed_data_manager_config_file=[ self.__in_mutable_config_dir( 'shed_data_manager_conf.xml' ) ],
             shed_tool_data_table_config=[ self.__in_mutable_config_dir( 'shed_tool_data_table_conf.xml' ) ],
             workflow_schedulers_config_file=[ self.__in_config_dir( 'config/workflow_schedulers_conf.xml' ) ],
@@ -730,9 +730,7 @@ class Configuration( object ):
                 raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
 
     def check( self ):
-        paths_to_check = [ self.root, self.tool_path, self.tool_data_path,
-                           self.template_path, self.data_dir,
-                           self.mutable_config_dir ]
+        paths_to_check = [ self.root, self.tool_data_path, self.data_dir, self.mutable_config_dir ]
         # Check that required directories exist
         for path in paths_to_check:
             if path not in [ None, False ] and not os.path.isdir( path ):
