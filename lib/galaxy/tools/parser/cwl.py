@@ -60,6 +60,12 @@ class CwlToolSource(ToolSource):
 
         return environment_variables
 
+    def parse_edam_operations(self):
+        return []
+
+    def parse_edam_topics(self):
+        return []
+
     def parse_help(self):
         return self.tool_proxy.description() or ""
 
