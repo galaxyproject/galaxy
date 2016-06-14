@@ -9,7 +9,7 @@ History
 16.7.9.dev0
 ---------------------
 
-    
+* Updates for recent changes to Galaxy and cwltool.
 
 ---------------------
 16.7.8 (2016-06-05)
