@@ -37,7 +37,7 @@
 <%def name="javascripts()">
     ## Send errors to Sntry server if configured
     %if app.config.sentry_dsn:
-        ${h.js( "libs/tracekit", "libs/raven" )}
+        ${h.js( "libs/raven" )}
         <script>
             Raven.config('${app.config.sentry_dsn_public}').install();
             %if trans.user:

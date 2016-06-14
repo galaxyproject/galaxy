@@ -41,7 +41,7 @@ ${render_galaxy_repository_actions( repository )}
         <form name="repair_repository" id="repair_repository" action="${h.url_for( controller='admin_toolshed', action='repair_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
             <input type="hidden" name="repair_dict" value="${encoded_repair_dict|h}"/>
             <%
-                from tool_shed.util.shed_util_common import get_tool_shed_repository_status_label
+                from tool_shed.util.repository_util import get_tool_shed_repository_status_label
                 ordered_repo_info_dicts = repair_dict.get( 'ordered_repo_info_dicts', [] ) 
             %>
             <table class="grid">

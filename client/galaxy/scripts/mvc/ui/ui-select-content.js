@@ -37,10 +37,10 @@ var View = Backbone.View.extend({
         }).set( options );
         this.setElement( $( '<div/>' ).addClass( 'ui-select-content' ) );
         this.button_product = new Ui.RadioButton.View( {
-            value       : 'true',
-            data        : [ { icon: 'fa fa-chain', value: 'true',
+            value       : 'false',
+            data        : [ { icon: 'fa fa-chain', value: 'false',
                               tooltip: 'Linked inputs will be run in matched order with other datasets e.g. use this for matching forward and reverse reads.' },
-                            { icon: 'fa fa-chain-broken',  value: 'false',
+                            { icon: 'fa fa-chain-broken',  value: 'true',
                               tooltip: 'Unlinked dataset inputs will be run against *all* other inputs.' } ] } );
         var $batch_div = $( '<div/>' ).addClass( 'ui-form-info' )
                             .append( $( '<i/>' ).addClass( 'fa fa-sitemap' ) )

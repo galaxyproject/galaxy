@@ -516,8 +516,14 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
     @web.require_login( "use Galaxy workflows" )
     def gen_image( self, trans, id ):
         stored = self.get_stored_workflow( trans, id, check_ownership=True )
+        try:
+            svg = self._workflow_to_svg_canvas( trans, stored )
+        except Exception:
+            status = 'error'
+            message = 'Galaxy is unable to create the SVG image. Please check your workflow, there might be missing tools.'
+            return trans.fill_template( "/workflow/sharing.mako", use_panels=True, item=stored, status=status, message=message )
         trans.response.set_content_type("image/svg+xml")
-        return self._workflow_to_svg_canvas( trans, stored ).tostring()
+        return svg.tostring()
 
     @web.expose
     @web.require_login( "use Galaxy workflows" )

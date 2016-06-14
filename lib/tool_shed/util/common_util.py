@@ -242,6 +242,18 @@ def get_tool_shed_url_from_tool_shed_registry( app, tool_shed ):
     return None
 
 
+def get_user_by_username( app, username ):
+    """Get a user from the database by username."""
+    sa_session = app.model.context.current
+    try:
+        user = sa_session.query( app.model.User ) \
+                         .filter( app.model.User.table.c.username == username ) \
+                         .one()
+        return user
+    except Exception:
+        return None
+
+
 def handle_galaxy_url( trans, **kwd ):
     galaxy_url = kwd.get( 'galaxy_url', None )
     if galaxy_url:

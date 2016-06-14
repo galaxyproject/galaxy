@@ -145,7 +145,8 @@ class BaseJobRunner( object ):
         """
         raise NotImplementedError()
 
-    def prepare_job(self, job_wrapper, include_metadata=False, include_work_dir_outputs=True):
+    def prepare_job(self, job_wrapper, include_metadata=False, include_work_dir_outputs=True,
+                    modify_command_for_container=True):
         """Some sanity checks that all runners' queue_job() methods are likely to want to do
         """
         job_id = job_wrapper.get_id_tag()
@@ -171,6 +172,7 @@ class BaseJobRunner( object ):
                 job_wrapper,
                 include_metadata=include_metadata,
                 include_work_dir_outputs=include_work_dir_outputs,
+                modify_command_for_container=modify_command_for_container
             )
         except Exception as e:
             log.exception("(%s) Failure preparing job" % job_id)
@@ -193,13 +195,15 @@ class BaseJobRunner( object ):
     def recover(self, job, job_wrapper):
         raise NotImplementedError()
 
-    def build_command_line( self, job_wrapper, include_metadata=False, include_work_dir_outputs=True ):
+    def build_command_line( self, job_wrapper, include_metadata=False, include_work_dir_outputs=True,
+                            modify_command_for_container=True ):
         container = self._find_container( job_wrapper )
         return build_command(
             self,
             job_wrapper,
             include_metadata=include_metadata,
             include_work_dir_outputs=include_work_dir_outputs,
+            modify_command_for_container=modify_command_for_container,
             container=container
         )
 
@@ -313,10 +317,6 @@ class BaseJobRunner( object ):
 
     def write_executable_script( self, path, contents, mode=0o755 ):
         write_script( path, contents, self.app.config, mode=mode )
-
-    def _complete_terminal_job( self, ajs, **kwargs ):
-        if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
-            self.work_queue.put( ( self.finish_job, ajs ) )
 
     def _find_container(
         self,

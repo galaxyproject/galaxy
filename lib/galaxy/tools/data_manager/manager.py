@@ -8,7 +8,7 @@ from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.tools.data import TabularToolDataTable
 from tool_shed.util import common_util
-import tool_shed.util.shed_util_common as suc
+from tool_shed.util import repository_util
 import galaxy.queue_worker
 
 # set up logger
@@ -150,11 +150,11 @@ class DataManager( object ):
                                                         owner=repository_owner,
                                                         installed_changeset_revision=installed_changeset_revision )
             tool_shed_repository = \
-                suc.get_installed_repository( self.data_managers.app,
-                                              tool_shed=tool_shed,
-                                              name=repository_name,
-                                              owner=repository_owner,
-                                              installed_changeset_revision=installed_changeset_revision )
+                repository_util.get_installed_repository( self.data_managers.app,
+                                                          tool_shed=tool_shed,
+                                                          name=repository_name,
+                                                          owner=repository_owner,
+                                                          installed_changeset_revision=installed_changeset_revision )
             if tool_shed_repository is None:
                 log.warning( 'Could not determine tool shed repository from database. This should only ever happen when running tests.' )
                 # we'll set tool_path manually here from shed_conf_file

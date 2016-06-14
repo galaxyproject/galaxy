@@ -3,7 +3,8 @@ import logging
 from sqlalchemy import and_, or_
 
 from tool_shed.util import hg_util
-from tool_shed.util import shed_util_common as suc
+from tool_shed.util import metadata_util
+from tool_shed.util import repository_util
 
 log = logging.getLogger( __name__ )
 
@@ -36,7 +37,7 @@ class ToolVersionManager( object ):
         guid contained in the received repsitory_metadata.tool_versions.  This function
         is called only from the Tool Shed.
         """
-        repository = suc.get_repository_by_id( self.app, repository_id )
+        repository = repository_util.get_repository_by_id( self.app, repository_id )
         repo = hg_util.get_repo_for_repository( self.app, repository=repository, repo_path=None, create=False )
         # Initialize the tool lineage
         version_lineage = [ guid ]
@@ -44,7 +45,7 @@ class ToolVersionManager( object ):
         current_child_guid = guid
         for changeset in hg_util.reversed_upper_bounded_changelog( repo, repository_metadata.changeset_revision ):
             ctx = repo.changectx( changeset )
-            rm = suc.get_repository_metadata_by_changeset_revision( self.app, repository_id, str( ctx ) )
+            rm = metadata_util.get_repository_metadata_by_changeset_revision( self.app, repository_id, str( ctx ) )
             if rm:
                 parent_guid = rm.tool_versions.get( current_child_guid, None )
                 if parent_guid:
@@ -56,7 +57,7 @@ class ToolVersionManager( object ):
                                                                          repository_metadata.changeset_revision,
                                                                          repository.tip( self.app ) ):
             ctx = repo.changectx( changeset )
-            rm = suc.get_repository_metadata_by_changeset_revision( self.app, repository_id, str( ctx ) )
+            rm = metadata_util.get_repository_metadata_by_changeset_revision( self.app, repository_id, str( ctx ) )
             if rm:
                 tool_versions = rm.tool_versions
                 for child_guid, parent_guid in tool_versions.items():

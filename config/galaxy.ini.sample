@@ -168,9 +168,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # the tool shed to install dependencies and can also be used by administrators
 # to manually install or link to dependencies.  For details, see:
 #   https://wiki.galaxyproject.org/Admin/Config/ToolDependencies
-# If this option is not set to a valid path, installing tools with dependencies
-# from the Tool Shed will fail.
-#tool_dependency_dir = None
+# Set to the string none to explicitly disable tool dependency handling.
+# If this option is set to none or an invalid path, installing tools with dependencies
+# from the Tool Shed will fail. 
+#tool_dependency_dir = database/dependencies
 
 # The dependency resolves config file specifies an ordering and options for how
 # Galaxy resolves tool dependencies (requirement tags in Tool XML). The default

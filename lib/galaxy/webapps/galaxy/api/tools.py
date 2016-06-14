@@ -284,7 +284,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             # so it's possible to figure out which newly created elements
             # correspond with which tool file outputs
             output_dict[ 'output_name' ] = output_name
-            outputs.append( trans.security.encode_dict_ids( output_dict ) )
+            outputs.append( trans.security.encode_dict_ids( output_dict, skip_startswith="metadata_" ) )
 
         for job in vars.get('jobs', []):
             rval[ 'jobs' ].append( self.encode_all_ids( trans, job.to_dict( view='collection' ), recursive=True ) )

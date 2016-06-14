@@ -48,7 +48,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 }, step );
                 self.steps[ i ] = step;
                 self.links[ i ] = [];
-                self.parms[ i ] = {}
+                self.parms[ i ] = {};
             });
 
             // build linear index of step input pairs
@@ -208,14 +208,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             var current = null;
             this.deferred.execute( function( promise ) {
                 current = promise;
-                if ( self._isDataStep( step ) ) {
-                    _.each( step.inputs, function( input ) { input.flavor = 'module' } );
-                    form = new Form( Utils.merge({
-                        title    : '<b>' + step.name + '</b>',
-                        onchange : function() { _.each( self.links[ i ], function( link ) { self._refreshStep( link ) } ) }
-                    }, step ) );
-                    self._append( self.$steps, form.$el );
-                } else if ( step.step_type == 'tool' ) {
+                if ( step.step_type == 'tool' ) {
                     form = new ToolFormBase( step );
                     if ( step.post_job_actions && step.post_job_actions.length ) {
                         form.portlet.append( $( '<div/>' ).addClass( 'ui-form-element-disabled' )
@@ -226,6 +219,13 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                                 }, '' ) ) )
                             );
                     }
+                    self._append( self.$steps, form.$el );
+                } else {
+                    _.each( step.inputs, function( input ) { input.flavor = 'module' } );
+                    form = new Form( Utils.merge({
+                        title    : '<b>' + step.name + '</b>',
+                        onchange : function() { _.each( self.links[ i ], function( link ) { self._refreshStep( link ) } ) }
+                    }, step ) );
                     self._append( self.$steps, form.$el );
                 }
                 self.forms[ i ] = form;
@@ -447,7 +447,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
         _templateSuccess: function( response ) {
             if ( response && response.length > 0 ) {
                 var $message = $( '<div/>' ).addClass( 'donemessagelarge' )
-                                .append( $( '<p/>' ).text( 'Successfully ran workflow \'' + this.model.get( 'name' ) + '\'. The following datasets have been added to the queue:' ) );
+                                .append( $( '<p/>' ).text( 'Successfully ran workflow \'' + this.model.get( 'name' ) + '\' and datasets will appear as jobs are created - you may need to refresh your history panel to see these.' ) );
                 for ( var i in response ) {
                     var invocation = response[ i ];
                     var $invocation = $( '<div/>' ).addClass( 'workflow-invocation-complete' );

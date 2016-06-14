@@ -9,7 +9,6 @@
   "homepage": "usegalaxy.org",
   "dependencies": {
     "jquery": "~1.12",
-    "tracekit": "*",
     "ravenjs": "~3",
     "underscore": "~1",
     "backbone": "~1.3",
