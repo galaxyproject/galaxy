@@ -427,7 +427,7 @@ class DeleteIntermediatesAction(DefaultJobAction):
                 else:
                     log.debug("No job found yet for wfi_step %s, (step %s)" % (wfi_step, wfi_step.workflow_step))
             for j2c in jobs_to_check:
-                creating_jobs = [(x, x.dataset.creating_job) for x in j2c.input_datasets if x.dataset.creating_job]
+                creating_jobs = [(x, x.dataset.creating_job) for x in j2c.input_datasets if x.dataset and x.dataset.creating_job]
                 for (x, creating_job) in creating_jobs:
                     sa_session.refresh(creating_job)
                     sa_session.refresh(x)
