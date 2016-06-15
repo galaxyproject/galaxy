@@ -15,8 +15,7 @@
                 font-weight: bold;
             }
         }
-        // .subtitle:not(:empty){
-        .subtitle {
+        .subtitle:not(:empty){
             min-height: 15px;
             margin: -4px 0px 8px;
             span+span:before {
@@ -104,61 +103,89 @@
             }
         }
 
-        .pagination {
+        .list-pagination {
             width: 100%;
             text-align: center;
-            margin-bottom: 0px;
+            margin: 0;
+            border-top: 1px solid @btn-default-border;
+            &:not(:last-child) {
+                border-bottom: 1px solid @btn-default-border;
+            }
 
             button {
                 margin: 0;
                 padding: 0;
-                height: 20px;
-                &[disabled] {
-                    background-color: transparent;
-                }
-                overflow: hidden;
-            }
-            .prev, .next {
                 width: 25%;
                 max-width: 128px;
+                height: 20px;
+                color: transparent;
+                overflow: hidden;
             }
             .pages {
-                width: 48%;
-                max-width: 256px;
-
                 // restyle closer to button
                 -moz-appearance: none;
                 -webkit-appearance: none;
                 appearance: none;
 
-                height: 20px;
-                margin: 0px 2px 0px 2px;
-                border: 1px solid @btn-default-border;
-                background: @btn-default-bg;
-                box-shadow: none;
+                margin: 0;
                 padding: 0;
-                color: @btn-default-color;
+                width: 48%;
+                max-width: 256px;
+                height: 20px;
+                box-shadow: none;
                 text-align: center;
                 text-align-last: center;
+
+                &:focus {
+                    outline: none;
+                }
+                &:hover {
+                    cursor: pointer;
+                }
             }
             &:empty {
                 display: none;
             }
+            & > * {
+                border: none;
+                border-radius: 0px;
+                background: transparent;
+                &.pages {
+                    color: grey;
+                    text-decoration: underline;
+                }
+                &:hover,
+                &:focus,
+                &:active {
+                    background: @btn-default-bg;
+                    color: @btn-default-color;
+                    box-shadow: none;
+                    text-decoration: none;
+                }
+            }
+
+            &:hover > *:not([disabled]) {
+                color: @btn-default-color;
+            }
+        }
+        .search+.list-pagination {
+            background: blue;
         }
     }
 
     // the help text that appears above the drop target
     .history-drop-target-help {
-        margin        : 10px 10px 4px 10px;
-        color         : grey;
-        font-size     : 80%;
-        font-style    : italic;
+        margin: 10px 10px 4px 10px;
+        color: grey;
+        font-size: 80%;
+        font-style: italic;
+        text-align: center;
     }
     .history-drop-target {
         min-height: 64px;
         margin: 0px 10px 10px 10px;
         border: 1px dashed black;
-        border-radius : 3px;
+        border-radius: 3px;
     }
 
     > .list-items {
@@ -207,29 +234,33 @@
 // compact the history controls when scrolling away from the top
 .history-panel > .controls.collapsed {
     margin: 0px;
-    padding: 4px 10px 4px;
-
+    padding: 4px 8px 4px;
     flex-basis: 32px;
 
-    .messages {
-        display: none;
-    }
-    .title {
-        display: none;
-    }
-    .subtitle:not(:empty){
-        display: inline-block;
-    }
-    .history-size {
-        display: none;
-    }
-    .actions {
-        margin-top: -4px;
-    }
+    .messages,
+    .title,
+    .subtitle,
+    .history-size,
     //TODO: move these out
     .tags-display .prompt,
     .annotation-display .prompt {
         display: none;
+    }
+
+    .search {
+        margin-bottom: 4px;
+    }
+    .actions {
+        margin-bottom: 0;
+    }
+    .list-pagination {
+        .prev,
+        .next {
+            display: none;
+        }
+        .pages {
+            float: left;
+        }
     }
 }
 
@@ -339,7 +370,8 @@
 // ---------------------------------------------------------------------------- current-history-panel
 .current-history-panel {
 
-    & > .controls .pagination {
+    & > .controls .list-pagination {
+        // text a bit smaller for all
         font-size: 90%;
         & > * {
             font-size: inherit;
@@ -678,6 +710,14 @@
             background-color: @panel-bg-color;
 
             overflow: auto;
+
+            & > .controls .subtitle {
+                min-height: 15px;
+                margin: -4px 0px 8px;
+                span+span:before {
+                    content: ', ';
+                }
+            }
         }
     }
 

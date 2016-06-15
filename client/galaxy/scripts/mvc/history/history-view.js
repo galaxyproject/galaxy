@@ -109,7 +109,7 @@ var HistoryView = _super.extend(
                 this._renderSelectButton();
             },
             'search:searching' : function(){
-                this.$( '> .controls .pagination' ).empty();
+                this.$( '> .controls .list-pagination' ).empty();
             }
         });
         // this.on( 'all', function(){ console.debug( arguments ); });
@@ -269,7 +269,7 @@ var HistoryView = _super.extend(
 
     /**  */
     _renderPagination: function( $whereTo ){
-        var $paginationControls = $whereTo.find( '> .controls .pagination' );
+        var $paginationControls = $whereTo.find( '> .controls .list-pagination' );
         if( this.searchFor || !this.model.contents.shouldPaginate() ) return $paginationControls.empty();
 
         return $paginationControls.html( this.templates.pagination({
@@ -584,7 +584,7 @@ HistoryView.prototype.templates = (function(){
                 '<div class="list-action-menu btn-group">',
                 '</div>',
             '</div>',
-            '<div class="pagination form-inline"></div>',
+            '<div class="list-pagination form-inline"></div>',
         '</div>'
     ], 'history' );
 
