@@ -24,4 +24,4 @@ class ExternalServiceController( BaseUIController ):
             results = populated_action.handle_results( trans )
             return results
         else:
-            raise 'unknown item class type'
+            raise Exception( 'unknown item class type' )

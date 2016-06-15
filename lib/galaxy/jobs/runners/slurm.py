@@ -2,6 +2,7 @@
 SLURM job control via the DRMAA API.
 """
 
+import os
 import time
 import logging
 import subprocess
@@ -16,6 +17,7 @@ __all__ = [ 'SlurmJobRunner' ]
 SLURM_MEMORY_LIMIT_EXCEEDED_MSG = 'slurmstepd: error: Exceeded job memory limit'
 SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS = [': Exceeded job memory limit at some point.',
                                                 ': Exceeded step memory limit at some point.']
+SLURM_MEMORY_LIMIT_SCAN_SIZE = 16 * 1024 * 1024  # 16MB
 
 
 class SlurmJobRunner( DRMAAJobRunner ):
@@ -88,8 +90,12 @@ class SlurmJobRunner( DRMAAJobRunner ):
                     return
             if drmaa_state == self.drmaa_job_states.DONE:
                 with open(ajs.error_file, 'r+') as f:
+                    if os.path.getsize(ajs.error_file) > SLURM_MEMORY_LIMIT_SCAN_SIZE:
+                        f.seek(-SLURM_MEMORY_LIMIT_SCAN_SIZE, os.SEEK_END)
+                        f.readline()
+                    pos = f.tell()
                     lines = f.readlines()
-                    f.seek(0)
+                    f.seek(pos)
                     for line in lines:
                         stripped_line = line.strip()
                         if any([_ in stripped_line for _ in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS]):
@@ -110,21 +116,12 @@ class SlurmJobRunner( DRMAAJobRunner ):
         try:
             log.debug( 'Checking %s for exceeded memory message from slurm', efile_path )
             with open( efile_path ) as f:
-                pos = 2
-                bof = False
-                while pos < 2048:
-                    try:
-                        f.seek(-pos, 2)
-                        pos += 1
-                    except:
-                        f.seek(-pos + 1, 2)
-                        bof = True
-
-                    if (bof or f.read(1) == '\n') and f.readline().strip() == SLURM_MEMORY_LIMIT_EXCEEDED_MSG:
+                if os.path.getsize(efile_path) > 2048:
+                    f.seek(-2048, os.SEEK_END)
+                    f.readline()
+                for line in f.readlines():
+                    if line.strip() == SLURM_MEMORY_LIMIT_EXCEEDED_MSG:
                         return True
-
-                    if bof:
-                        break
         except:
             log.exception('Error reading end of %s:', efile_path)
 

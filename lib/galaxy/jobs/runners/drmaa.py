@@ -15,13 +15,14 @@ from galaxy.jobs import JobDestination
 from galaxy.jobs.handler import DEFAULT_JOB_PUT_FAILURE_MESSAGE
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 from galaxy.util import asbool
-from pulsar.managers.util.drmaa import DrmaaSessionFactory
 
 drmaa = None
 
 log = logging.getLogger( __name__ )
 
 __all__ = [ 'DRMAAJobRunner' ]
+
+RETRY_EXCEPTIONS_LOWER = frozenset(['invalidjobexception', 'internalexception'])
 
 
 class DRMAAJobRunner( AsynchronousJobRunner ):
@@ -35,12 +36,11 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         """Start the job runner"""
         global drmaa
 
-        runner_param_specs = dict(
-            drmaa_library_path=dict( map=str, default=os.environ.get( 'DRMAA_LIBRARY_PATH', None ) ),
-            invalidjobexception_state=dict( map=str, valid=lambda x: x in ( model.Job.states.OK, model.Job.states.ERROR ), default=model.Job.states.OK ),
-            invalidjobexception_retries=dict( map=int, valid=lambda x: int >= 0, default=0 ),
-            internalexception_state=dict( map=str, valid=lambda x: x in ( model.Job.states.OK, model.Job.states.ERROR ), default=model.Job.states.OK ),
-            internalexception_retries=dict( map=int, valid=lambda x: int >= 0, default=0 ) )
+        runner_param_specs = {
+            'drmaa_library_path': dict( map=str, default=os.environ.get( 'DRMAA_LIBRARY_PATH', None ) ) }
+        for retry_exception in RETRY_EXCEPTIONS_LOWER:
+            runner_param_specs[retry_exception + '_state'] = dict( map=str, valid=lambda x: x in ( model.Job.states.OK, model.Job.states.ERROR ), default=model.Job.states.OK )
+            runner_param_specs[retry_exception + '_retries'] = dict( map=int, valid=lambda x: int >= 0, default=0 )
 
         if 'runner_param_specs' not in kwargs:
             kwargs[ 'runner_param_specs' ] = dict()
@@ -62,6 +62,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                                 'feature, please install it or correct the '
                                 'following error:\n%s: %s' %
                                 (exc.__class__.__name__, str(exc)))
+        from pulsar.managers.util.drmaa import DrmaaSessionFactory
 
         # Subclasses may need access to state constants
         self.drmaa_job_states = drmaa.JobState
@@ -246,24 +247,26 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             try:
                 assert external_job_id not in ( None, 'None' ), '(%s/%s) Invalid job id' % ( galaxy_id_tag, external_job_id )
                 state = self.ds.job_status( external_job_id )
+                # Reset exception retries
+                for retry_exception in RETRY_EXCEPTIONS_LOWER:
+                    setattr( ajs, retry_exception + '_retries', 0)
             except ( drmaa.InternalException, drmaa.InvalidJobException ) as e:
-                if isinstance( e, drmaa.InvalidJobException ):
-                    ecn = "InvalidJobException".lower()
-                else:
-                    ecn = "InternalException".lower()
+                ecn = type(e).__name__
                 retry_param = ecn.lower() + '_retries'
                 state_param = ecn.lower() + '_state'
                 retries = getattr( ajs, retry_param, 0 )
+                log.warning("(%s/%s) unable to check job status because of %s exception for %d consecutive tries: %s", galaxy_id_tag, external_job_id, ecn, retries + 1, e)
                 if self.runner_params[ retry_param ] > 0:
                     if retries < self.runner_params[ retry_param ]:
                         # will retry check on next iteration
                         setattr( ajs, retry_param, retries + 1 )
+                        new_watched.append( ajs )
                         continue
                 if self.runner_params[ state_param ] == model.Job.states.OK:
-                    log.info( "(%s/%s) job left DRM queue with following message: %s", galaxy_id_tag, external_job_id, e )
+                    log.warning( "(%s/%s) job will now be finished OK", galaxy_id_tag, external_job_id )
                     self.work_queue.put( ( self.finish_job, ajs ) )
                 elif self.runner_params[ state_param ] == model.Job.states.ERROR:
-                    log.info( "(%s/%s) job check resulted in %s after %s tries: %s", galaxy_id_tag, external_job_id, ecn, retries, e )
+                    log.warning( "(%s/%s) job will now be errored", galaxy_id_tag, external_job_id )
                     self.work_queue.put( ( self.fail_job, ajs ) )
                 else:
                     raise Exception( "%s is set to an invalid value (%s), this should not be possible. See galaxy.jobs.drmaa.__init__()", state_param, self.runner_params[ state_param ] )
@@ -274,7 +277,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 continue
             except Exception as e:
                 # so we don't kill the monitor thread
-                log.exception( "(%s/%s) Unable to check job status: %s" % ( galaxy_id_tag, external_job_id, str( e ) ) )
+                log.exception( "(%s/%s) unable to check job status: %s" % ( galaxy_id_tag, external_job_id, e ) )
                 log.warning( "(%s/%s) job will now be errored" % ( galaxy_id_tag, external_job_id ) )
                 ajs.fail_message = "Cluster could not complete job"
                 self.work_queue.put( ( self.fail_job, ajs ) )

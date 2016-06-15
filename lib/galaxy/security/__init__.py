@@ -48,97 +48,97 @@ class RBACAgent:
         return self.permitted_actions.__dict__.values()
 
     def get_item_actions( self, action, item ):
-        raise 'No valid method of retrieving action (%s) for item %s.' % ( action, item )
+        raise Exception( 'No valid method of retrieving action (%s) for item %s.' % ( action, item ) )
 
     def guess_derived_permissions_for_datasets( self, datasets=[] ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def can_access_dataset( self, roles, dataset ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def can_manage_dataset( self, roles, dataset ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def can_access_library( self, roles, library ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def can_add_library_item( self, roles, item ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def can_modify_library_item( self, roles, item ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def can_manage_library_item( self, roles, item ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def associate_components( self, **kwd ):
-        raise 'No valid method of associating provided components: %s' % kwd
+        raise Exception( 'No valid method of associating provided components: %s' % kwd )
 
     def create_private_user_role( self, user ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def get_private_user_role( self, user ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def get_accessible_request_types( self, trans, user ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def user_set_default_permissions( self, user, permissions={}, history=False, dataset=False ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def history_set_default_permissions( self, history, permissions=None, dataset=False, bypass_manage_permission=False ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def set_all_dataset_permissions( self, dataset, permissions, new=False ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def set_dataset_permission( self, dataset, permission ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def set_all_library_permissions( self, trans, dataset, permissions ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def set_library_item_permission( self, library_item, permission ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def library_is_public( self, library ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def make_library_public( self, library ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def get_accessible_libraries( self, trans, user ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def get_permitted_libraries( self, trans, user, actions ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def folder_is_public( self, library ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def make_folder_public( self, folder, count=0 ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def dataset_is_public( self, dataset ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def make_dataset_public( self, dataset ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def get_permissions( self, library_dataset ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def get_all_roles( self, trans, cntrller ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def get_legitimate_roles( self, trans, item, cntrller ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def derive_roles_from_access( self, trans, item_id, cntrller, library=False, **kwd ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def get_component_associations( self, **kwd ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def components_are_associated( self, **kwd ):
         return bool( self.get_component_associations( **kwd ) )
@@ -736,7 +736,7 @@ class GalaxyRBACAgent( RBACAgent ):
         if 'action' in kwd:
             if 'dataset' in kwd and 'role' in kwd:
                 return self.associate_action_dataset_role( kwd['action'], kwd['dataset'], kwd['role'] )
-        raise 'No valid method of associating provided components: %s' % kwd
+        raise Exception( 'No valid method of associating provided components: %s' % kwd )
 
     def associate_user_group( self, user, group ):
         assoc = self.model.UserGroupAssociation( user, group )
@@ -1300,8 +1300,8 @@ class GalaxyRBACAgent( RBACAgent ):
                         self.sa_session.add( lp )
                         self.sa_session.flush()
             else:
-                raise 'Invalid class (%s) specified for target_library_item (%s)' % \
-                    ( target_library_item.__class__, target_library_item.__class__.__name__ )
+                raise Exception( 'Invalid class (%s) specified for target_library_item (%s)' %
+                                 ( target_library_item.__class__, target_library_item.__class__.__name__ ) )
 
     def get_permitted_libraries( self, trans, user, actions ):
         """
@@ -1435,7 +1435,7 @@ class GalaxyRBACAgent( RBACAgent ):
         elif 'group' in kwd:
             if 'role' in kwd:
                 return self.sa_session.query( self.model.GroupRoleAssociation ).filter_by( role_id=kwd['role'].id, group_id=kwd['group'].id ).first()
-        raise 'No valid method of associating provided components: %s' % kwd
+        raise Exception( 'No valid method of associating provided components: %s' % kwd )
 
     def check_folder_contents( self, user, roles, folder, hidden_folder_ids='' ):
         """
@@ -1567,7 +1567,7 @@ class HostAgent( RBACAgent ):
             log.debug( 'Allowing access to private dataset with hda: %i.  Remote server is: %s.' % ( hda.id, server ) )
             return True
         else:
-            raise 'The dataset access permission is the only valid permission in the host security agent.'
+            raise Exception( 'The dataset access permission is the only valid permission in the host security agent.' )
 
     def set_dataset_permissions( self, hda, user, site ):
         hdadaa = self.sa_session.query( self.model.HistoryDatasetAssociationDisplayAtAuthorization ) \

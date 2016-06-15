@@ -33,7 +33,7 @@ class SelectToolParameterTestCase( BaseParameterTestCase ):
     def test_validated_datasets( self ):
         self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
         try:
-            self.param.from_json( model.HistoryDatasetAssociation(), self.trans, { "input_bam": basic.RuntimeValue() } )
+            self.param.from_json( model.HistoryDatasetAssociation(), self.trans, { "input_bam": None } )
         except ValueError, err:
             assert str(err) == "Parameter my_name requires a value, but has no legal values defined."
             return
