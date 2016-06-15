@@ -234,6 +234,17 @@
 }
 
 
+// ---------------------------------------------------------------------------- added class for wider display
+// since these are rendered *within parts* of other pages, we need something more than a media query
+.history-panel.wide {
+    & > .controls {
+        .actions:empty {
+            height: auto;
+        }
+    }
+}
+
+
 // ---------------------------------------------------------------------------- collections nested in histories
 .history-panel {
     .dataset-collection {

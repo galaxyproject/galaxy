@@ -427,6 +427,8 @@ var HistoryView = _super.extend(
         // TODO?: self.$( inputSelector + ' input' ).prop( 'disabled', true ) ?? not disabling could cause trouble here
         var xhr = self.model.contents.progressivelyFetchDetails({ silent: true })
             .progress( function( response, limit, offset ){
+                console.log( 'progress:', limit, offset );
+                self.trigger( 'search:loading-progress', limit, offset );
                 self.renderItems();
             })
             .always( function(){
@@ -444,8 +446,7 @@ var HistoryView = _super.extend(
         self.searchFor = '';
         self.trigger( 'search:clear', self );
         self.$( '> .controls .search-query' ).val( '' );
-        self.model.contents.fetchCurrentPage()
-            .done( function(){ self.renderItems(); });
+        self.model.contents.fetchCurrentPage();
         return self;
     },
 

@@ -182,12 +182,13 @@ a.btn {
             });
 
             window.historyView = new viewClass({
+                el              : $( "#history-" + historyJSON.id ),
+                className       : viewClass.prototype.className + ' wide',
+                $scrollContainer: hasMasthead? function(){ return this.$el.parent(); } : undefined,
+                model           : historyModel,
                 show_deleted    : ${show_deleted_json},
                 show_hidden     : ${show_hidden_json},
                 purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
-                el              : $( "#history-" + historyJSON.id ),
-                $scrollContainer: hasMasthead? function(){ return this.$el.parent(); } : undefined,
-                model           : historyModel
             });
             historyView.trigger( 'loading' );
             historyModel.fetchContents({ silent: true })

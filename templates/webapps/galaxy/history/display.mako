@@ -86,10 +86,11 @@
         });
 
         window.historyView = new panelMod.AnnotatedHistoryView({
+            el              : $( "#history-" + historyJSON.id ),
+            className       : panelMod.AnnotatedHistoryView.prototype.className + ' wide',
+            model           : historyModel,
             show_deleted    : false,
             show_hidden     : false,
-            el              : $( "#history-" + historyJSON.id ),
-            model           : historyModel
         });
         historyView.trigger( 'loading' );
         historyModel.fetchContents({ silent: true })

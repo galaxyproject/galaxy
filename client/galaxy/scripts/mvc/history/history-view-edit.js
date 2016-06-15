@@ -85,16 +85,30 @@ var HistoryViewEdit = _super.extend(
 
     /** Override to handle history as drag-drop target */
     _setUpListeners : function(){
-        var panel = this;
-        _super.prototype._setUpListeners.call( panel );
-
-        panel.on( 'drop', function( ev, data ){
-            panel.dataDropped( data );
-            // remove the drop target
-            panel.dropTargetOff();
-        });
-        panel.on( 'view:attached view:removed', function(){
-            panel._renderCounts();
+        _super.prototype._setUpListeners.call( this );
+        return this.on({
+            drop: function( ev, data ){
+                // process whatever was dropped and re-hide the drop target
+                this.dataDropped( data );
+                this.dropTargetOff();
+            },
+            'view:attached view:removed': function(){
+                this._renderCounts();
+            },
+            'search:loading-progress': function( limit, offset ){
+                console.log( 'search:loading-progress handler', limit, offset );
+                var stop = limit + offset;
+                this.$( '> .controls .subtitle' ).html([
+                    '<i>',
+                        _l( 'Searching ' ), stop, '/', this.model.contentsShown(),
+                    '</i>'
+                ].join(''));
+            },
+            'search:searching': function(){
+                this.$( '> .controls .subtitle' ).html([
+                    _l( 'Found' ), this.views.length
+                ].join(' '));
+            },
         });
     },
 
@@ -147,7 +161,7 @@ var HistoryViewEdit = _super.extend(
     /** override to render counts when the items are rendered */
     renderItems : function( $whereTo ){
         var views = _super.prototype.renderItems.call( this, $whereTo );
-        this._renderCounts( $whereTo );
+        if( !this.searchFor ){ this._renderCounts( $whereTo ); }
         return views;
     },
 

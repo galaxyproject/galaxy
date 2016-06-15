@@ -81,8 +81,9 @@
             });
 
             var historyView = new viewMod.AnnotatedHistoryView({
-                el      : $embeddedHistory.find( ".history-panel" ),
-                model   : historyModel
+                el          : $embeddedHistory.find( ".history-panel" ),
+                className   : viewMod.AnnotatedHistoryView.prototype.className + ' wide',
+                model       : historyModel
             });
 
             historyView.trigger( 'loading' );
