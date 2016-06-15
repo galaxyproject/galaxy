@@ -62,6 +62,9 @@ var HistoryView = _super.extend(
     /** string used for search placeholder */
     searchPlaceholder   : _l( 'search datasets' ),
 
+    /** @type {Number} ms to wait after history load to fetch/decorate hdcas with element_count */
+    FETCH_COLLECTION_COUNTS_DELAY : 2000,
+
     // ......................................................................... SET UP
     /** Set up the view, bind listeners.
      *  @param {Object} attributes optional settings for the panel
@@ -101,9 +104,11 @@ var HistoryView = _super.extend(
                 this.errorHandler( model, xhr, options, msg, details );
             },
             'loading-done' : function(){
-                if( !this.views.length ){
-                    this.trigger( 'empty-history', this );
-                }
+                var self = this;
+                // after the initial load, decorate with more time consuming fields (like HDCA element_counts)
+                _.delay( function(){
+                    self.model.contents.fetchCollectionCounts();
+                }, self.FETCH_COLLECTION_COUNTS_DELAY );
             },
             'views:ready view:attached view:removed' : function( view ){
                 this._renderSelectButton();
@@ -116,9 +121,6 @@ var HistoryView = _super.extend(
     },
 
     // ------------------------------------------------------------------------ loading history/hda models
-    /** @type {Number} ms to wait after history load to fetch/decorate hdcas with element_count */
-    FETCH_COLLECTION_COUNTS_DELAY : 2000,
-
     /** load the history with the given id then it's contents, sending ajax options to both */
     loadHistory : function( historyId, options, contentsOptions ){
         contentsOptions = _.extend( contentsOptions || { silent: true });
@@ -130,12 +132,6 @@ var HistoryView = _super.extend(
         self.trigger( 'loading' );
         return self.model
             .fetchWithContents( options, contentsOptions )
-            .done( function(){
-                // after the initial load, decorate with more time consuming fields (like HDCA element_counts)
-                _.delay( function(){
-                    self.model.contents.fetchCollectionCounts();
-                }, self.FETCH_COLLECTION_COUNTS_DELAY );
-            })
             .always( function(){
                 self.render();
                 self.trigger( 'loading-done' );
