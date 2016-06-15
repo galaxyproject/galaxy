@@ -714,7 +714,7 @@ class Configuration( object ):
                 raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
 
     def check( self ):
-        paths_to_check = [ self.root, self.tool_data_path, self.data_dir, self.mutable_config_dir ]
+        paths_to_check = [ self.tool_data_path, self.data_dir, self.mutable_config_dir ]
         # Check that required directories exist
         for path in paths_to_check:
             if path not in [ None, False ] and not os.path.isdir( path ):
