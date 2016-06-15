@@ -28,7 +28,7 @@ from ..conda_util import (
 
 DEFAULT_BASE_PATH_DIRECTORY = "_conda"
 DEFAULT_CONDARC_OVERRIDE = "_condarc"
-DEFAULT_ENSURE_CHANNELS = "r,bioconda"
+DEFAULT_ENSURE_CHANNELS = "r,bioconda,iuc"
 
 import logging
 log = logging.getLogger(__name__)

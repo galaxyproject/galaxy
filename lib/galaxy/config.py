@@ -4,7 +4,6 @@ Universe configuration builder.
 # absolute_import needed for tool_shed package.
 from __future__ import absolute_import
 
-import ConfigParser
 import logging
 import logging.config
 import os
@@ -16,7 +15,9 @@ import sys
 import tempfile
 import threading
 from datetime import timedelta
+
 from six import string_types
+from six.moves import configparser
 
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
@@ -57,7 +58,7 @@ class Configuration( object ):
         self.__parse_config_file_options( kwargs )
 
         # Collect the umask and primary gid from the environment
-        self.umask = os.umask( 077 )  # get the current umask
+        self.umask = os.umask( 0o77 )  # get the current umask
         os.umask( self.umask )  # can't get w/o set, so set it back
         self.gid = os.getgid()  # if running under newgrp(1) we'll need to fix the group of data created on the cluster
 
@@ -310,8 +311,13 @@ class Configuration( object ):
         self.tool_help_boost = kwargs.get( "tool_help_boost", 0.5 )
         self.tool_search_limit = kwargs.get( "tool_search_limit", 20 )
         # Location for tool dependencies.
-        if 'tool_dependency_dir' in kwargs:
-            self.tool_dependency_dir = resolve_path( kwargs.get( "tool_dependency_dir" ), self.root )
+        # Location for tool dependencies.
+        tool_dependency_dir = kwargs.get( "tool_dependency_dir", "database/dependencies" )
+        if tool_dependency_dir.lower() == "none":
+            tool_dependency_dir = None
+
+        if tool_dependency_dir is not None:
+            self.tool_dependency_dir = resolve_path( tool_dependency_dir, self.root )
             # Setting the following flag to true will ultimately cause tool dependencies
             # to be located in the shell environment and used by the job that is executing
             # the tool.
@@ -356,7 +362,7 @@ class Configuration( object ):
         self.irods_default_resource = kwargs.get( 'irods_default_resource', None )
         # Parse global_conf and save the parser
         global_conf = kwargs.get( 'global_conf', None )
-        global_conf_parser = ConfigParser.ConfigParser()
+        global_conf_parser = configparser.ConfigParser()
         self.config_file = None
         self.global_conf_parser = global_conf_parser
         if global_conf and "__file__" in global_conf:
@@ -415,7 +421,7 @@ class Configuration( object ):
         self.amqp = {}
         try:
             amqp_config = global_conf_parser.items("galaxy_amqp")
-        except ConfigParser.NoSectionError:
+        except configparser.NoSectionError:
             amqp_config = {}
         for k, v in amqp_config:
             self.amqp[k] = v
@@ -613,7 +619,7 @@ class Configuration( object ):
                 rval[ tool ].append( runner_dict )
 
             return rval
-        except ConfigParser.NoSectionError:
+        except configparser.NoSectionError:
             return {}
 
     def get( self, key, default ):
@@ -685,7 +691,7 @@ class Configuration( object ):
 
     def guess_galaxy_port(self):
         # Code derived from IPython work ie.mako
-        config = ConfigParser.SafeConfigParser({'port': '8080'})
+        config = configparser.SafeConfigParser({'port': '8080'})
         if self.config_file:
             config.read( self.config_file )
 
@@ -734,7 +740,7 @@ def get_database_engine_options( kwargs, model_prefix='' ):
     prefix = "%sdatabase_engine_option_" % model_prefix
     prefix_len = len( prefix )
     rval = {}
-    for key, value in kwargs.iteritems():
+    for key, value in kwargs.items():
         if key.startswith( prefix ):
             key = key[prefix_len:]
             if key in conversions:
@@ -822,10 +828,11 @@ class ConfiguresGalaxyMixin:
         galaxy_root_dir = os.path.abspath(self.config.root)
         file_path = os.path.abspath(getattr(self.config, "file_path"))
         app_info = containers.AppInfo(
-            galaxy_root_dir,
+            galaxy_root_dir=galaxy_root_dir,
             default_file_path=file_path,
             outputs_to_working_directory=self.config.outputs_to_working_directory,
             container_image_cache_path=self.config.container_image_cache_path,
+            library_import_dir=self.config.library_import_dir
         )
         self.container_finder = containers.ContainerFinder(app_info)
 

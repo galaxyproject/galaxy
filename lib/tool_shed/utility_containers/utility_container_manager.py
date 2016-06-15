@@ -3,7 +3,7 @@ import logging
 from galaxy import util
 from tool_shed.util import common_util
 from tool_shed.util import container_util
-from tool_shed.util import shed_util_common as suc
+from tool_shed.util import repository_util
 
 log = logging.getLogger( __name__ )
 
@@ -701,8 +701,8 @@ class UtilityContainerManager( object ):
             tool_shed_repository_id = None
             installation_status = 'unknown'
         if tool_shed_repository_id:
-            tool_shed_repository = suc.get_tool_shed_repository_by_id( self.app,
-                                                                       self.app.security.encode_id( tool_shed_repository_id ) )
+            tool_shed_repository = repository_util.get_tool_shed_repository_by_id( self.app,
+                                                                                   self.app.security.encode_id( tool_shed_repository_id ) )
             if tool_shed_repository:
                 if tool_shed_repository.missing_repository_dependencies:
                     installation_status = '%s, missing repository dependencies' % installation_status
@@ -720,7 +720,7 @@ class UtilityContainerManager( object ):
     def handle_repository_dependencies_container_entry( self, repository_dependencies_folder, rd_key, rd_value, folder_id,
                                                         repository_dependency_id, folder_keys ):
         repository_components_tuple = container_util.get_components_from_key( rd_key )
-        components_list = suc.extract_components_from_tuple( repository_components_tuple )
+        components_list = repository_util.extract_components_from_tuple( repository_components_tuple )
         toolshed, repository_name, repository_owner, changeset_revision = components_list[ 0:4 ]
         # For backward compatibility to the 12/20/12 Galaxy release.
         if len( components_list ) == 4:
@@ -802,7 +802,7 @@ class UtilityContainerManager( object ):
     def key_is_current_repositorys_key( self, repository_name, repository_owner, changeset_revision,
                                         prior_installation_required, only_if_compiling_contained_td, key ):
         repository_components_tuple = container_util.get_components_from_key( key )
-        components_list = suc.extract_components_from_tuple( repository_components_tuple )
+        components_list = repository_util.extract_components_from_tuple( repository_components_tuple )
         toolshed, key_name, key_owner, key_changeset_revision = components_list[ 0:4 ]
         # For backward compatibility to the 12/20/12 Galaxy release.
         if len( components_list ) == 4:

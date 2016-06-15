@@ -3,7 +3,7 @@ from galaxy import web
 from galaxy.web.base.controller import BaseUIController
 
 from tool_shed.util.common_util import generate_clone_url_for_repository_in_tool_shed
-from tool_shed.util.shed_util_common import get_repository_by_name_and_owner
+from tool_shed.util.repository_util import get_repository_by_name_and_owner
 from tool_shed.util.hg_util import update_repository
 from tool_shed.metadata import repository_metadata_manager
 

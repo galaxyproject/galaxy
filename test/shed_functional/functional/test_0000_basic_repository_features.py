@@ -349,3 +349,10 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         strings_displayed = [ '%d:%s' % ( revision_number, revision_hash ), 'filtering_0000', 'user1', 'repos', 'added:',
                               '+These&nbsp;characters&nbsp;should&nbsp;not' ]
         self.load_changeset_in_tool_shed( repository_id, changeset_revision, strings_displayed=strings_displayed )
+
+    def test_0135_api_get_repositories_in_category( self ):
+        '''Load the api endpoint for repositories in a category.'''
+        categories = []
+        categories.append( self.test_db_util.get_category_by_name( 'Test 0000 Basic Repository Features 1' ) )
+        categories.append( self.test_db_util.get_category_by_name( 'Test 0000 Basic Repository Features 2' ) )
+        self.get_repositories_category_api( categories )

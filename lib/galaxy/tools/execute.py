@@ -46,6 +46,17 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
     burst_at = getattr( config, 'tool_submission_burst_at', 10 )
     burst_threads = getattr( config, 'tool_submission_burst_threads', 1 )
 
+    tool_action = tool.action
+    if hasattr( tool_action, "check_inputs_ready" ):
+        for params in execution_tracker.param_combinations:
+            # This will throw an exception if the tool is not ready.
+            tool_action.check_inputs_ready(
+                tool,
+                trans,
+                params,
+                history
+            )
+
     job_count = len(execution_tracker.param_combinations)
     if job_count < burst_at or burst_threads < 2:
         for params in execution_tracker.param_combinations:

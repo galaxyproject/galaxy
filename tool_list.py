@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import sys
 
@@ -66,16 +68,16 @@ flag = 0
 if len(sys.argv) == 1:
     for tool_info in tool_infos:
         if tool_info["id"].find("section") != -1:
-            print "==========================================================================================================================================="
-            print "%-45s\t%-40s\t%s" % ("id", "name", tool_info["id"])
-            print "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
+            print("===========================================================================================================================================")
+            print("%-45s\t%-40s\t%s" % ("id", "name", tool_info["id"]))
+            print("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -")
         else:
-            print "%-45s\t%-40s" % (tool_info["id"], tool_info["name"])
+            print("%-45s\t%-40s" % (tool_info["id"], tool_info["name"]))
 else:
     for tool_info in tool_infos:
         if tool_info["id"].find("section") != -1:
             flag = 0
         elif flag == 1:
-            print " functional.test_toolbox:TestForTool_%s" % tool_info["id"],
+            print(" functional.test_toolbox:TestForTool_%s" % tool_info["id"], end=' ')
         if tool_info["id"].replace('section::', '') == sys.argv[1]:
             flag = 1

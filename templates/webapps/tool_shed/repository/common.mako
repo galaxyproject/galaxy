@@ -219,7 +219,7 @@
 
 <%def name="render_sharable_str( repository, changeset_revision=None )">
     <%
-        from tool_shed.util.shed_util_common import generate_sharable_link_for_repository_in_tool_shed
+        from tool_shed.util.repository_util import generate_sharable_link_for_repository_in_tool_shed
         sharable_link = generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=changeset_revision )
     %>
     <a href="${ sharable_link }" target="_blank">${ sharable_link }</a>
@@ -575,7 +575,7 @@
 <%def name="render_repository_dependency( repository_dependency, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
     <%
         from galaxy.util import asbool
-        from tool_shed.util.shed_util_common import get_repository_by_name_and_owner
+        from tool_shed.util.repository_util import get_repository_by_name_and_owner
         encoded_id = trans.security.encode_id( repository_dependency.id )
         if trans.webapp.name == 'galaxy':
             if repository_dependency.tool_shed_repository_id:

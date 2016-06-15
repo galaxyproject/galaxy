@@ -12,10 +12,9 @@ import logging
 import threading
 from xml.etree import ElementTree
 
-from galaxy.util import umask_fix_perms, force_symlink, safe_makedirs, safe_relpath
+from galaxy.util import umask_fix_perms, force_symlink, safe_makedirs, safe_relpath, directory_hash_id
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util.sleeper import Sleeper
-from galaxy.util.directory_hash import directory_hash_id
 from galaxy.util.odict import odict
 try:
     from sqlalchemy.orm import object_session

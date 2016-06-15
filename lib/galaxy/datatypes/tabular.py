@@ -408,6 +408,7 @@ class Taxonomy( Tabular ):
 @dataproviders.decorators.has_dataproviders
 class Sam( Tabular ):
     edam_format = "format_2573"
+    edam_data = "data_0863"
     file_ext = 'sam'
     track_type = "ReadTrack"
     data_sources = { "data": "bam", "index": "bigwig" }

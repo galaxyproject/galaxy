@@ -67,7 +67,6 @@ def test_inputs_by_name():
         "input1": input1,
         "input2": input2
     }, inputs_by="name" )
-    print normalized_inputs
     assert normalized_inputs[ STEP_ID_OFFSET + 1 ]['content'] == input1[ 'content' ]
     assert normalized_inputs[ STEP_ID_OFFSET + 2 ]['content'] == input2[ 'content' ]
 
@@ -110,7 +109,7 @@ def __workflow_fixure( trans ):
 
     def add_step( **kwds ):
         workflow_step = model.WorkflowStep()
-        for key, value in kwds.iteritems():
+        for key, value in kwds.items():
             setattr(workflow_step, key, value)
         workflow.steps.append( workflow_step )
 
