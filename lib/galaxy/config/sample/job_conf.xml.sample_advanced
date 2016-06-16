@@ -1,18 +1,4 @@
 <?xml version="1.0"?>
-<!-- A sample job config that explicitly configures job running the way it is
-     configured by default (if there is no explicit config). -->
-<job_conf>
-    <plugins>
-        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="4"/>
-    </plugins>
-    <handlers>
-        <handler id="main"/>
-    </handlers>
-    <destinations>
-        <destination id="local" runner="local"/>
-    </destinations>
-</job_conf>
-
 <!-- A sample job config that describes all available options -->
 <job_conf>
     <plugins workers="4">
