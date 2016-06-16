@@ -33,6 +33,7 @@ DEFAULT_INI = "galaxy.ini"
 
 SAMPLES_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'sample'))
 GALAXY_CONFIG_TEMPLATE_FILE = os.path.join(SAMPLES_PATH, 'galaxy.ini.sample')
+STATIC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'web', 'framework', 'static'))
 
 # The sample is used as the default config file for Galaxy started without a
 # config, and we don't want to duplicate the whole thing into galaxy.config for
@@ -42,6 +43,8 @@ GALAXY_CONFIG_SUBSTITUTIONS = {
     '#port = 8080': 'port = ${port}',
     '#host = 127.0.0.1': 'host = ${host}',
     'http = 127.0.0.1:8080': '${uwsgi_transport} = ${host}:${port}',
+    'static-map = /static=/path/to/galaxy/web/framework/static': 'static-map = /static=${static_path}',
+    'static-map = /static/style=/path/to/galaxy/web/framework/static/style/blue': 'static-map = /static/style=${static_path}/style/blue',
     '#config_dir = None': 'config_dir = ${config_dir}',
     '#data_dir = None': 'data_dir = ${data_dir}',
 }
@@ -152,6 +155,7 @@ def _handle_galaxy_ini(args, config_dir, data_dir):
         uwsgi_transport=uwsgi_transport,
         config_dir=config_dir,
         data_dir=data_dir,
+        static_path=STATIC_PATH,
     )
 
     galaxy_config_template = []

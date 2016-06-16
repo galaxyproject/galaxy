@@ -55,6 +55,8 @@ processes = 2
 http = 127.0.0.1:8080
 threads = 2
 master = True
+static-map = /static=/path/to/galaxy/web/framework/static
+static-map = /static/style=/path/to/galaxy/web/framework/static/style/blue
 
 # ---- Filters --------------------------------------------------------------
 
