@@ -81,7 +81,6 @@ def main(argv=None):
     relative_config_dir = config_dir
     config_dir = os.path.abspath(config_dir)
     data_dir = args.data_dir
-    relative_data_dir = data_dir
     data_dir = os.path.abspath(data_dir)
 
     mode = _determine_mode(args)

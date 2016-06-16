@@ -9,8 +9,8 @@ from galaxy.jobs import JobConfiguration
 
 # File would be slightly more readable if contents were embedded directly, but
 # there are advantages to testing the documentation/examples.
-SIMPLE_JOB_CONF = os.path.join( os.path.dirname( __file__ ), "..", "..", "..", "config", "job_conf.xml.sample_basic" )
-ADVANCED_JOB_CONF = os.path.join( os.path.dirname( __file__ ), "..", "..", "..", "config", "job_conf.xml.sample_advanced" )
+SIMPLE_JOB_CONF = os.path.join( os.path.dirname( __file__ ), "..", "..", "..", "lib", "galaxy", "config", "sample", "job_conf.xml.sample_basic" )
+ADVANCED_JOB_CONF = os.path.join( os.path.dirname( __file__ ), "..", "..", "..", "lib", "galaxy", "config", "sample", "job_conf.xml.sample_advanced" )
 
 
 class JobConfXmlParserTestCase( unittest.TestCase ):

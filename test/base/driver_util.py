@@ -133,11 +133,13 @@ def setup_galaxy_config(
     if tool_dependency_dir is None:
         tool_dependency_dir = tempfile.mkdtemp(dir=tmpdir, prefix="tool_dependencies")
     tool_data_table_config_path = _tool_data_table_config_path(default_tool_data_table_config_path)
-    default_data_manager_config = 'config/data_manager_conf.xml.sample'
+    default_data_manager_config = None
     for data_manager_config in ['config/data_manager_conf.xml', 'data_manager_conf.xml' ]:
         if os.path.exists( data_manager_config ):
             default_data_manager_config = data_manager_config
-    data_manager_config_file = "%s,test/functional/tools/sample_data_manager_conf.xml" % default_data_manager_config
+    data_manager_config_file = "test/functional/tools/sample_data_manager_conf.xml"
+    if default_data_manager_config is not None:
+        data_manager_config_file = "%s,%s" % (default_data_manager_config, data_manager_config_file)
     master_api_key = get_master_api_key()
 
     # Data Manager testing temp path
@@ -153,8 +155,6 @@ def setup_galaxy_config(
         tool_conf = "%s,%s" % (tool_conf, shed_tool_conf)
 
     shed_tool_data_table_config = default_shed_tool_data_table_config
-    if shed_tool_data_table_config is None:
-        shed_tool_data_table_config = 'config/shed_tool_data_table_conf.xml'
 
     config = dict(
         admin_users='test@bx.psu.edu',
@@ -210,7 +210,7 @@ def _tool_data_table_config_path(default_tool_data_table_config_path=None):
     if tool_data_table_config_path is None:
         # ... otherise find whatever Galaxy would use as the default and
         # the sample data for fucntional tests to that.
-        default_tool_data_config = 'config/tool_data_table_conf.xml.sample'
+        default_tool_data_config = 'lib/galaxy/config/sample/tool_data_table_conf.xml.sample'
         for tool_data_config in ['config/tool_data_table_conf.xml', 'tool_data_table_conf.xml' ]:
             if os.path.exists( tool_data_config ):
                 default_tool_data_config = tool_data_config
@@ -455,7 +455,7 @@ def build_galaxy_app(simple_kwargs):
     """
     log.info("Galaxy database connection: %s", simple_kwargs["database_connection"])
     simple_kwargs['global_conf'] = get_webapp_global_conf()
-    simple_kwargs['global_conf']['__file__'] = "config/galaxy.ini.sample"
+    simple_kwargs['global_conf']['__file__'] = "lib/galaxy/config/sample/galaxy.ini.sample"
     simple_kwargs = load_app_properties(
         kwds=simple_kwargs
     )

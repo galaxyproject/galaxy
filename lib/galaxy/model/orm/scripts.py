@@ -78,16 +78,16 @@ def get_config( argv, cwd=None ):
     ...     with open(os.path.join(config_dir, 'config', path), 'w') as f: p.write(f)
     >>> write_ini('tool_shed.ini', 'database_connection', 'sqlite:///pg/testdb1')
     >>> config = get_config(['manage_db.py', 'tool_shed'], cwd=config_dir)
-    >>> config['repo']
-    'lib/galaxy/webapps/tool_shed/model/migrate'
+    >>> config['repo'].endswith('galaxy/webapps/tool_shed/model/migrate')
+    True
     >>> config['db_url']
     'sqlite:///pg/testdb1'
-    >>> write_ini('galaxy.ini', 'database_file', 'moo.sqlite')
+    >>> write_ini('galaxy.ini', 'data_dir', '/moo')
     >>> config = get_config(['manage_db.py'], cwd=config_dir)
     >>> config['db_url']
-    'sqlite:///moo.sqlite?isolation_level=IMMEDIATE'
-    >>> config['repo']
-    'lib/galaxy/model/migrate'
+    'sqlite:////moo/universe.sqlite?isolation_level=IMMEDIATE'
+    >>> config['repo'].endswith('galaxy/model/migrate')
+    True
     """
     if argv and (argv[-1] in DATABASE):
         database = argv.pop()  # database name tool_shed, galaxy, or install.
