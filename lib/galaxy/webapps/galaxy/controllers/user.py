@@ -562,20 +562,21 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             else:  # Grace period is off. Login is disabled and user will have the activation email resent.
                 message, status = self.resend_verification_email( trans, user.email, user.username )
         else:  # activation is OFF
-            message, success, status = self.proceed_login( trans, user, redirect )
             pw_expires = trans.app.config.password_expiration_period
-            if pw_expires:
-                if user.last_password_change < datetime.today() - pw_expires:
-                    trans.response.send_redirect(web.url_for(controller='user',
-                                                             action='change_password',
-                                                             message='Your password has expired. Please change it to access Galaxy.',
-                                                             redirect_home=True,
-                                                             status='error'))
-                elif user.last_password_change < datetime.today() - timedelta(days=pw_expires.days / 10):
-                    expiredate = datetime.today() - user.last_password_change + pw_expires
-                    message = 'You are now logged in as %s. Your password will expire in %s days.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
-                              (expiredate.days, user.email, redirect, url_for('/'))
-                    status = 'error'
+            if pw_expires and user.last_password_change < datetime.today() - pw_expires:
+                # Password is expired, we don't log them in.
+                trans.response.send_redirect(web.url_for(controller='user',
+                                                         action='change_password',
+                                                         message='Your password has expired. Please change it to access Galaxy.',
+                                                         redirect_home=True,
+                                                         status='error'))
+            message, success, status = self.proceed_login( trans, user, redirect )
+            if pw_expires and user.last_password_change < datetime.today() - timedelta(days=pw_expires.days / 10):
+                # If password is about to expire, modify message to state that.
+                expiredate = datetime.today() - user.last_password_change + pw_expires
+                message = 'You are now logged in as %s. Your password will expire in %s days.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
+                          (expiredate.days, user.email, redirect, url_for('/'))
+                status = 'warning'
         return ( message, status, user, success )
 
     def proceed_login( self, trans, user, redirect ):
