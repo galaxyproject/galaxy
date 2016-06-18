@@ -1172,8 +1172,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     @web.expose
     def change_communication( self, trans, cntrller, **kwd):
         """
-        Provides a form with which one can change their password.  If token is
-        provided, don't require current password.
+            Provides a form with which the user can activate/deactivate
+            the commnication server.
         """
         params = util.Params( kwd )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
