@@ -160,7 +160,7 @@ def event_broadcast(message):
     log.debug("%s broadcast '%s'" % (current_user.username, message))
 
     emit('event response',
-            {'data': message, 'user': current_user.username, 'gravatar': hashlib.md5(current_user.email).hexdigest()}, broadcast=True)
+        {'data': message, 'user': current_user.username, 'gravatar': hashlib.md5(current_user.email).hexdigest()}, broadcast=True)
 
 
 @socketio.on('event room', namespace='/chat')
