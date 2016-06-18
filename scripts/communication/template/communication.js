@@ -486,16 +486,24 @@ var utils = {
         var $el_room_container = $('#global_rooms'),
             room_name = "",
             room_template = "",
-            persistent_communication_rooms = [];
+            persistent_communication_rooms = [],
+            persistent_rooms_length = 0,
+            $el_persistent_rooms_visible = $(".persistent-rooms-visibility");
         // gets an array of persistent communication rooms
         persistent_communication_rooms = this.get_persistent_rooms();
-        // creates html template for persistent rooms
-        for(var room_counter = 0; room_counter < persistent_communication_rooms.length; room_counter++ ) {
-            room_name = persistent_communication_rooms[room_counter];
-            //room_template = "<a href='#' class='global-room' title='" + room_name + "'><span>" + room_name + "</span></a><br>";
-            room_template = "<button type='button' class='btn btn-primary global-room' title='" + room_name +
-                            "'>" + room_name + "</button>";
-            $el_room_container.append(room_template);
+        persistent_rooms_length = persistent_communication_rooms.length;
+        if( persistent_rooms_length > 0 ) {
+            $el_persistent_rooms_visible.css('display', 'block');
+            // creates html template for persistent rooms
+            for(var room_counter = 0; room_counter < persistent_rooms_length; room_counter++ ) {
+                room_name = persistent_communication_rooms[room_counter];
+                room_template = "<button type='button' class='btn btn-primary global-room' title='" + room_name +
+                                "'>" + room_name + "</button>";
+                $el_room_container.append(room_template);
+            }
+        }
+        else {
+            $el_persistent_rooms_visible.css('display', 'none');
         }
     },
     // creates a new tab and joins a chat room
@@ -551,10 +559,22 @@ var utils = {
     // returns persistent communication rooms from the iframe url
     get_persistent_rooms: function() {
         var query_string_start = location.search.indexOf('?') + 1,
-            query_string_list = location.search.slice(query_string_start).split('&');
-        // unescapes the list 
-        query_string_list = unescape(query_string_list[1]);
-        return query_string_list.split('=')[1].split(',');
+            query_string_list = location.search.slice(query_string_start).split('&'),
+            persistent_rooms_list = [];
+        if( query_string_list[1] ) {
+            // unescapes the list
+            query_string_list = unescape(query_string_list[1]);
+            persistent_rooms_list = query_string_list.split('=')[1];
+            if( persistent_rooms_list && persistent_rooms_list.length > 0 ) {
+                return query_string_list.split('=')[1].split(',');
+            }
+            else {
+                return [];
+            }
+        }
+        else {
+            return [];
+        }
     },
     // returns the room information if it exists
     check_room_by_roomname: function( dictionary, room_name ) {
@@ -605,7 +625,8 @@ $(window).load(function() {
         $el_textarea = $('#send_data'),
         $el_all_messages = $('#all_messages'),
         $el_chat_tabs = $('#chat_tabs'), 
-        main_tab_id = "#all_chat_tab";
+        main_tab_id = "#all_chat_tab",
+        $el_persistent_rooms_visible = $(".persistent-rooms-visibility");
     // build tabs
     $el_chat_tabs.tab();
     // registers response event
@@ -641,4 +662,5 @@ $(window).load(function() {
     utils.create_fancy_scroll( $( main_tab_id ), main_tab_id );
     // scrolls to the last of the element
     utils.fancyscroll_to_last( $( main_tab_id ) );
+    $el_persistent_rooms_visible.css('display', 'none');
 });
