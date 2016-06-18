@@ -26,6 +26,7 @@ import argparse
 import os
 import sys
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
+import hashlib
 
 import logging
 logging.basicConfig()
@@ -159,7 +160,7 @@ def event_broadcast(message):
     log.debug("%s broadcast '%s'" % (current_user.username, message))
 
     emit('event response',
-        {'data': message, 'user': current_user.username}, broadcast=True)
+            {'data': message, 'user': current_user.username, 'gravatar': hashlib.md5(current_user.email).hexdigest()}, broadcast=True)
 
 
 @socketio.on('event room', namespace='/chat')
@@ -170,7 +171,7 @@ def send_room_message(message):
     log.debug("%s sent '%s' to %s" % (current_user.username, message, room))
 
     emit('event response room',
-        {'data': data, 'user': current_user.username, 'chatroom': room}, room=room)
+        {'data': data, 'user': current_user.username, 'gravatar': hashlib.md5(current_user.email).hexdigest(), 'chatroom': room}, room=room)
 
 
 @socketio.on('event disconnect', namespace='/chat')

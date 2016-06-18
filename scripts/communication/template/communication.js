@@ -222,7 +222,7 @@ var click_events = {
     leave_close_room: function () {
         var tab_counter = "",
             room_name = "",
-            room_index = 0, 
+            room_index = 0,
             self = click_events;
         $('.close-room').click(function ( e ) {
             e.stopPropagation();
@@ -333,29 +333,61 @@ var utils = {
             message_data = original_message.data,
             message_user = "",
             message_text = "",
-            uid = utils.get_userid(),
-            my_text_name = 'me';
+            uid = utils.get_userid();
 
-        // for user's own messages
+        var user = {
+            username: original_message.user,
+            gravatar: original_message.gravatar,
+        }
+
         if (from_uid === uid) {
-            message_user = this.build_message_username_template( my_text_name );
+            // for our own user we override the text_name
+            user.username = "me";
         }
-        // for other user's messages
-        else {
-            message_user = this.build_message_username_template( from_uid );
+
+        return this.build_message_from_template( user, message_data );
+    },
+    // builds template for message display
+    build_message_from_template: function ( user, original_message ) {
+        //return "<div class='date_time'><span title=" + this.get_date() + ">" + this.get_time() + "</span></div>" +
+               //"<span class='user_name'>" + username + "<br></span>" +
+               //"<div class='user_message'>" + unescape( original_message ) +
+               //"</div>";
+        var gravatar_col_content = '' +
+               '<img src="https://s.gravatar.com/avatar/' + user.gravatar + '?s=60" />' +
+               '';
+
+        var message_col_content = '<div class="row">'+
+            '   <div class="col-xs-6 user_name">' +
+                    user.username +
+            '   </div>' +
+            '   <div class="col-xs-6 text-right date_time">' +
+                    this.get_time() +
+            '   </div>' +
+            '</div>' +
+            '<div class="row user_message">' +
+                unescape( original_message ) +
+            '</div>';
+
+        if( user === "me" ){
+            return '<div class="row message">' +
+            '<div class="col-xs-10 col-md-11">' +
+                message_col_content +
+            '</div>' +
+            '<div class="col-xs-2 col-md-1">' +
+                gravatar_col_content +
+            '</div>' +
+            '</div>';
+        } else {
+            return '<div class="row message">' +
+            '<div class="col-xs-2 col-md-1">' +
+                gravatar_col_content +
+            '</div>' +
+            '<div class="col-xs-10 col-md-11">' +
+                message_col_content +
+            '</div>' +
+            '</div>';
         }
-        message_text = this.build_message_template( message_data );
-        return message_user + message_text;
-    },
-    // builds message template
-    build_message_template: function ( original_message ) {
-        return "<div class='user_message'>" + unescape( original_message ) +
-               "</div>";
-    },
-    // builds template for username for message display
-    build_message_username_template: function ( username ) {
-        return "<div class='date_time'><span title=" + this.get_date() + ">" + this.get_time() + "</span></div>" +
-               "<span class='user_name'>" + username + "<br></span>";
     },
     // adds an information about the online status
     update_online_status: function ( $el, connected ) {
@@ -440,9 +472,9 @@ var utils = {
         return $( '.list' ).position().left;
     },
     // checks the session storage on page load
-    // and updates connected status 
+    // and updates connected status
     checks_session_storage: function() {
-        var uid = utils.get_userid(), 
+        var uid = utils.get_userid(),
             $el_all_messages = $( '#all_messages' ),
             $el_online_status = $( '#online_status' ),
             $el_textarea = $( '#send_data' );
@@ -527,11 +559,11 @@ var utils = {
             // removes the active class from the chat creating tab
             $el_chat_room_tab.removeClass('fade active in').addClass('fade');
             $el_active_li.removeClass('active');
-            // create tab and message area ids for the 
+            // create tab and message area ids for the
             // new tab header and tab content elements
             tab_id = "galaxy_tabroom_" + self.tab_counter;
             message_area_id = "all_messages_" + self.tab_counter;
-            self.connected_room.push({ 
+            self.connected_room.push({
                 id: self.tab_counter,
                 name: chat_room_name
             });
@@ -618,13 +650,13 @@ var utils = {
         $el.mCustomScrollbar( "scrollTo", "bottom" );
     }
 }
-// this event fires when all the resources of the page 
+// this event fires when all the resources of the page
 // have been loaded
 $(window).load(function() {
     var uid = utils.get_userid(),
         $el_textarea = $('#send_data'),
         $el_all_messages = $('#all_messages'),
-        $el_chat_tabs = $('#chat_tabs'), 
+        $el_chat_tabs = $('#chat_tabs'),
         main_tab_id = "#all_chat_tab",
         $el_persistent_rooms_visible = $(".persistent-rooms-visibility");
     // build tabs
