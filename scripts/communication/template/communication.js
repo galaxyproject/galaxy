@@ -354,7 +354,7 @@ var utils = {
                //"<div class='user_message'>" + unescape( original_message ) +
                //"</div>";
         var gravatar_col_content = '' +
-               '<img src="https://s.gravatar.com/avatar/' + user.gravatar + '?s=60" />' +
+               '<img src="https://s.gravatar.com/avatar/' + user.gravatar + '?s=30" />' +
                '';
 
         var message_col_content = '<div class="row">'+
@@ -369,21 +369,21 @@ var utils = {
                 unescape( original_message ) +
             '</div>';
 
-        if( user === "me" ){
+        if( user.username === "me" ){
             return '<div class="row message">' +
-            '<div class="col-xs-10 col-md-11">' +
+            '<div class="col-xs-11 col-md-12">' +
                 message_col_content +
             '</div>' +
-            '<div class="col-xs-2 col-md-1">' +
+            '<div class="col-xs-1 col-md" height="100%">' +
                 gravatar_col_content +
             '</div>' +
             '</div>';
         } else {
             return '<div class="row message">' +
-            '<div class="col-xs-2 col-md-1">' +
+            '<div class="col-xs-1 col-md">' +
                 gravatar_col_content +
             '</div>' +
-            '<div class="col-xs-10 col-md-11">' +
+            '<div class="col-xs-11 col-md-12">' +
                 message_col_content +
             '</div>' +
             '</div>';
