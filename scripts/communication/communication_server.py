@@ -32,13 +32,12 @@ logging.basicConfig()
 log = logging.getLogger(__name__)
 
 from flask import Flask, request, make_response, current_app, send_file
-from flask_socketio import SocketIO, emit, disconnect, join_room, leave_room, close_room, rooms
+from flask_socketio import SocketIO, emit, disconnect, join_room, leave_room
 import flask.ext.login as flask_login
 from flask.ext.login import current_user
 from datetime import timedelta
 from functools import update_wrapper
 
-import galaxy.config
 from galaxy.model.orm.scripts import get_config
 from galaxy.model import mapping
 from galaxy.util.properties import load_app_properties
@@ -55,7 +54,7 @@ app_properties = load_app_properties(ini_file=config['config_file'])
 
 # We need the ID secret for configuring the security helper to decrypt
 # galaxysession cookies.
-if not "id_secret" in app_properties:
+if "id_secret" not in app_properties:
     log.warn('No ID_SECRET specified. Please set the "id_secret" in your galaxy.ini.')
 
 id_secret = app_properties.get('id_secret', 'dangerous_default')
@@ -70,6 +69,7 @@ app.config['SECRET_KEY'] = id_secret
 login_manager.init_app(app)
 socketio = SocketIO(app)
 
+
 @login_manager.request_loader
 def findUserByCookie(request):
     cookie_value = request.cookies.get('galaxysession')
@@ -77,13 +77,13 @@ def findUserByCookie(request):
         return None
 
     session_key = security_helper.decode_guid(cookie_value)
-    user_session = sa_session.query(model.GalaxySession) \
-            .filter_by(session_key=session_key).first()
+    user_session = sa_session.query(model.GalaxySession).filter_by(session_key=session_key).first()
 
     if user_session:
         return user_session.user
 
     return None
+
 
 # Taken from flask.pocoo.org/snippets/56/
 def crossdomain(origin=None, methods=None, headers=None,
@@ -130,19 +130,21 @@ def crossdomain(origin=None, methods=None, headers=None,
 script_dir = os.path.dirname(os.path.realpath( __file__))
 communication_directory = os.path.join( script_dir, 'template' )
 
+
 @app.route('/')
 @crossdomain(origin='*')
 def index():
     return send_file(os.path.join(communication_directory, 'communication.html'))
 
+
 @app.route('/communication.js')
 def static_script():
     return send_file(os.path.join(communication_directory, 'communication.js'))
 
+
 @app.route('/communication.css')
 def static_style():
     return send_file(os.path.join(communication_directory, 'communication.css'))
-
 
 
 @socketio.on('event connect', namespace='/chat')
@@ -157,7 +159,7 @@ def event_broadcast(message):
     log.debug("%s broadcast '%s'" % (current_user.username, message))
 
     emit('event response',
-            {'data': message, 'user': current_user.username}, broadcast=True)
+        {'data': message, 'user': current_user.username}, broadcast=True)
 
 
 @socketio.on('event room', namespace='/chat')
@@ -168,18 +170,13 @@ def send_room_message(message):
     log.debug("%s sent '%s' to %s" % (current_user.username, message, room))
 
     emit('event response room',
-            {'data': data, 'user': current_user.username, 'chatroom': room}, room=room)
+        {'data': data, 'user': current_user.username, 'chatroom': room}, room=room)
 
 
 @socketio.on('event disconnect', namespace='/chat')
 def event_disconnect(message):
     log.info("%s disconnected" % current_user.username)
     disconnect()
-
-
-@socketio.on('disconnect', namespace='/chat')
-def event_disconnect():
-    log.info("%s disconnected" % current_user.username)
 
 
 @socketio.on('join', namespace='/chat')
@@ -190,7 +187,7 @@ def join(message):
     join_room(room)
 
     emit('event response room',
-            {'data': room, 'userjoin': current_user.username}, broadcast=True)
+        {'data': room, 'userjoin': current_user.username}, broadcast=True)
 
 
 @socketio.on('leave', namespace='/chat')
@@ -201,7 +198,7 @@ def leave(message):
     leave_room(room)
 
     emit('event response room',
-            {'data': room, 'userleave': current_user.username}, broadcast=True)
+        {'data': room, 'userleave': current_user.username}, broadcast=True)
 
 
 if __name__ == '__main__':
