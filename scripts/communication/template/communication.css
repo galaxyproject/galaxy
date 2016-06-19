@@ -49,6 +49,7 @@ ul, li,
 .messages {
     overflow-y: auto;
     height: 100%;
+    overflow-x: hidden;
     /*background-color: #F7F8FA;*/
 }
 
@@ -102,7 +103,7 @@ ul > li i {
 }
 
 .join-room {
-    margin-left: 1.1%;
+    margin-left: -2.3%;
 }
 
 .global-rooms {

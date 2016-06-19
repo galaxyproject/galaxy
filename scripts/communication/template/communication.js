@@ -290,9 +290,16 @@ var click_events = {
             // detects keypress of ctrl+l
             if ( ( e.which == 76 || e.keyCode == 76 ) && e.ctrlKey ) {
                 message_area_div_id = $el_active_li.find('a').attr( 'data-target' );
-                message_area_id = $( message_area_div_id + ' .messages' ).attr( 'id' );
-                if( message_area_id ) { // deletes the chat log
-                    utils.clear_message_area( $( '#' + message_area_id ) );
+                if( message_area_div_id === "#all_chat_tab" ) {
+                    // deletes log for the main chat tab
+                    $('#all_chat_tab').find('#all_messages').html('');
+                }
+                else {
+                    // deletes log for the other tabs
+                    message_area_id = $( message_area_div_id + ' .messages' ).attr( 'id' );
+                    if( message_area_id ) { // deletes the chat log
+                        utils.clear_message_area( $( '#' + message_area_id ) );
+                    }
                 }
             }
         });
