@@ -39,7 +39,7 @@ var events_module = {
                     uid = utils.get_userid(),
                     tab_counter = 0,
                     $el_tab_li = null,
-                    server_text_name = 'Server';
+                    server_text_name = 'Notification';
             // response when user joins
             if (msg.userjoin) {
                 message = {
@@ -375,14 +375,19 @@ var utils = {
             '<div class="row user_message">' +
                 unescape( original_message ) +
             '</div>';
-
-        if( user.username === "me" ){
+        if ( user.username === "me" ){
             return '<div class="row message">' +
             '<div class="col-xs-11 col-md-12">' +
                 message_col_content +
             '</div>' +
             '<div class="col-xs-1 col-md" height="100%">' +
                 gravatar_col_content +
+            '</div>' +
+            '</div>';
+        } else if ( user.username === "Notification" ){
+            return '<div class="row message">' +
+            '<div class="col-xs-11 col-md-12">' +
+                message_col_content +
             '</div>' +
             '</div>';
         } else {
