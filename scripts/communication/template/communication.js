@@ -520,12 +520,6 @@ var utils = {
     },
     // save chat logs
     store_append_message: function( key, data ) {
-        /*if (!localStorage[key]) {
-            localStorage[key] = data;
-        }
-        else {
-            localStorage[key] = localStorage[key] + data;
-        }*/
         localStorage[key] = data;
     },
     create_global_chatroom_links: function() {
