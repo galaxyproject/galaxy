@@ -1210,7 +1210,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                     activated=activated,
                                     message=message )
 
-
     @web.expose
     def reset_password( self, trans, email=None, **kwd ):
         """Reset the user's password. Send an email with token that allows a password change."""
