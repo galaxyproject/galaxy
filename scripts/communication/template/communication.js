@@ -14,15 +14,16 @@ var events_module = {
 
             // builds the message to be displayed
             message = utils.build_message( msg );
-
+            
             // append only for non empty messages
             if (msg.data.length > 0) {
                 utils.append_message( $el_all_messages, message );
+                utils.vertical_center_align_gravatar( '#all_messages' );
                 // adding message to build full chat history
-                utils.store_append_message( uid, message );
+                utils.store_append_message( uid, $el_all_messages.html() );
             }
             // updates the user session storage with all the messages
-            sessionStorage['broadcast'] = $el_all_messages.html();
+            sessionStorage[uid] = $el_all_messages.html();
             // show the last item by scrolling to the end
             utils.fancyscroll_to_last( $("#all_chat_tab") );
             // Alert user if needed
@@ -71,6 +72,7 @@ var events_module = {
                 var room = utils.check_room_by_roomname( click_events.connected_room, msg.chatroom );
                 $el_room_msg = $( '#all_messages_' + room.id );
                 utils.append_message( $el_room_msg, utils.build_message( msg ) );
+                utils.vertical_center_align_gravatar( '#all_messages_' + room.id );
                 utils.fancyscroll_to_last( $( "#galaxy_tabroom_" + room.id ) );
                 // if the pushed message is for some other user, show notification
                 if (uid !== msg.data) {
@@ -368,7 +370,7 @@ var utils = {
             '   <div class="col-xs-6 user_name">' +
                     user.username +
             '   </div>' +
-            '   <div class="col-xs-6 text-right date_time">' +
+            '   <div class="col-xs-6 text-right date_time" title="'+ this.get_date() +'">' +
                     this.get_time() +
             '   </div>' +
             '</div>' +
@@ -377,10 +379,10 @@ var utils = {
             '</div>';
         if ( user.username === "me" ){
             return '<div class="row message">' +
-            '<div class="col-xs-11 col-md-12">' +
+            '<div class="col-xs-11 col-md-12 message-height">' +
                 message_col_content +
             '</div>' +
-            '<div class="col-xs-1 col-md" height="100%">' +
+            '<div class="col-xs-1 col-md vertical-align">' +
                 gravatar_col_content +
             '</div>' +
             '</div>';
@@ -392,10 +394,10 @@ var utils = {
             '</div>';
         } else {
             return '<div class="row message">' +
-            '<div class="col-xs-1 col-md">' +
+            '<div class="col-xs-1 col-md vertical-align">' +
                 gravatar_col_content +
             '</div>' +
-            '<div class="col-xs-11 col-md-12">' +
+            '<div class="col-xs-11 col-md-12 message-height">' +
                 message_col_content +
             '</div>' +
             '</div>';
@@ -518,12 +520,13 @@ var utils = {
     },
     // save chat logs
     store_append_message: function( key, data ) {
-        if (!localStorage[key]) {
+        /*if (!localStorage[key]) {
             localStorage[key] = data;
         }
         else {
             localStorage[key] = localStorage[key] + data;
-        }
+        }*/
+        localStorage[key] = data;
     },
     create_global_chatroom_links: function() {
         // global_rooms
@@ -660,6 +663,14 @@ var utils = {
     // scrolls the fancy scroll to the last element
     fancyscroll_to_last: function( $el ) {
         $el.mCustomScrollbar( "scrollTo", "bottom" );
+    },
+    vertical_center_align_gravatar: function( parent ) {
+        var usermsg_length = $( parent + ' .message-height' ).length,
+            usermsg_height = ( $( $( parent + ' .message-height' )[ usermsg_length-1 ] ).height() / 2 ),
+            gravatar_length = $( parent + ' .vertical-align' ).length,
+            gravatar_height = ( $( $( parent + ' .vertical-align' )[ gravatar_length-1 ] ).height() / 2 );
+        // sets the vertical height of gravatar icon
+        $( $( parent + ' .vertical-align img' )[ gravatar_length-1 ] ).css( 'padding-top', usermsg_height - gravatar_height);
     }
 }
 // this event fires when all the resources of the page
@@ -698,7 +709,7 @@ $(window).load(function() {
     // updates online status text
     // by checking if user was connected or not
     utils.checks_session_storage();
-    utils.fill_messages(sessionStorage['broadcast']);
+    utils.fill_messages(sessionStorage[uid]);
     // sets focus to the textarea
     utils.set_focus_textarea( $el_textarea );
     // sets smooth transition

@@ -73,10 +73,12 @@ ul, li,
 
 .date_time {
     font-style: italic;
+    padding-right: 0px;
+    font-size: 11px;
 }
 
 .message {
-    padding-top: 5px;
+    padding-top: 2px;
 }
 
 .tab-content {
@@ -157,10 +159,16 @@ a:hover, a:visited {
 }
 
 .scroller-right {
-   float: right;
+    float: right;
 }
 
 .scroller-left {
-   float: left;
+    float: left;
 }
+
+.message-height {
+    padding-right: 0px;
+}
+
+
 
