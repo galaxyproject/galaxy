@@ -361,7 +361,7 @@ var utils = {
                //"<div class='user_message'>" + unescape( original_message ) +
                //"</div>";
         var gravatar_col_content = '' +
-               '<img src="https://s.gravatar.com/avatar/' + user.gravatar + '?s=30" />' +
+               '<img src="https://s.gravatar.com/avatar/' + user.gravatar + '?s=32&d=identicon" />' +
                '';
 
         var message_col_content = '<div class="row">'+
