@@ -808,7 +808,7 @@ def asbool(obj):
 
 
 def string_as_bool( string ):
-    if str( string ).lower() in ( 'true', 'yes', 'on' ):
+    if str( string ).lower() in ( 'true', 'yes', 'on', '1' ):
         return True
     else:
         return False

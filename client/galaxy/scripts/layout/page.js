@@ -48,6 +48,7 @@ var PageLayoutView = Backbone.View.extend( BaseMVC.LoggableMixin ).extend({
         this.renderMessageBox();
         this.renderInactivityBox();
         this.renderPanels();
+        this._checkCommunicationServerOnline();
         return this;
     },
 
@@ -131,7 +132,35 @@ var PageLayoutView = Backbone.View.extend( BaseMVC.LoggableMixin ).extend({
         }
     },
 
-    toString : function() { return 'PageLayoutView'; }
+    toString : function() { return 'PageLayoutView'; },
+
+    /** Check if the communication server is online and show the icon otherwise hide the icon */
+    _checkCommunicationServerOnline: function(){
+        var host = window.Galaxy.config.communication_server_host,
+            port = window.Galaxy.config.communication_server_port,
+            $chat_icon_element = $( "#show-chat-online" );
+        /** Check if the user has deactivated the communication in it's personal settings */
+        if (window.Galaxy.user.attributes.preferences !== undefined && window.Galaxy.user.attributes.preferences.communication_server === '1') {
+            // See if the configured communication server is available
+            $.ajax({
+                url: host + ":" + port,
+            })
+            .success( function( data ) { 
+                    // enable communication only when a user is logged in
+                    if( window.Galaxy.user.id !== null ) {
+                        if( $chat_icon_element.css( "visibility")  === "hidden" ) {
+                            $chat_icon_element.css( "visibility", "visible" ); 
+                        }
+                    }
+            })
+            .error( function( data ) { 
+                // hide the communication icon if the communication server is not available
+                $chat_icon_element.css( "visibility", "hidden" ); 
+            });
+        } else {
+            $chat_icon_element.css( "visibility", "hidden" ); 
+        }
+    },
 });
 
 // ============================================================================

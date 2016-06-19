@@ -17,6 +17,7 @@ from sqlalchemy import and_, or_, true, func
 from galaxy import model
 from galaxy import util
 from galaxy import web
+from galaxy.util import string_as_bool
 from galaxy.exceptions import ObjectInvalid
 from galaxy.security.validate_user_input import (transform_publicname,
                                                  validate_email,
@@ -1168,6 +1169,47 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                     token=token,
                                     status=status,
                                     message=message )
+
+    @web.expose
+    def change_communication( self, trans, cntrller, **kwd):
+        """
+            Provides a form with which the user can activate/deactivate
+            the commnication server.
+        """
+        params = util.Params( kwd )
+        is_admin = cntrller == 'admin' and trans.user_is_admin()
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        user_id = params.get( 'user_id', None )
+        activated = ''
+
+        if user_id and is_admin:
+            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+        else:
+            user = trans.user
+
+        if user and params.get( 'change_communication_button', False ):
+            communication_enabled = kwd.get( 'enable_communication_server', False )
+            if communication_enabled:
+                activated = 'checked'
+                user.preferences['communication_server'] = True
+                message = 'Your communication settings has been updated and activated.'
+            else:
+                activated = ''
+                user.preferences['communication_server'] = False
+                message = 'Your communication settings has been updated and deactivated.'
+            trans.sa_session.add( user )
+            trans.sa_session.flush()
+        else:
+            if string_as_bool( user.preferences.get('communication_server', '0') ):
+                activated = 'checked'
+
+        return trans.fill_template( '/user/communication_settings.mako',
+                                    cntrller=cntrller,
+                                    status=status,
+                                    activated=activated,
+                                    message=message )
+
 
     @web.expose
     def reset_password( self, trans, email=None, **kwd ):
