@@ -60,7 +60,7 @@ def verify_tools( app, url, galaxy_config_file=None, engine_options={} ):
                     config_arg = " -c %s" % galaxy_config_file
                 # FIXME: this doesn't seem right.
                 manage_tools = os.path.abspath( os.path.join( os.path.dirname( __file__ ), 'scripts', 'manage_tools.py' ) )
-                cmd = 'python %s%s upgrade' % (manage_tools, config_arg)
+                cmd = '%s %s%s upgrade' % (sys.executable, manage_tools, config_arg)
                 proc = subprocess.Popen( args=cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT )
                 return_code = proc.wait()
                 output = proc.stdout.read( 32768 )

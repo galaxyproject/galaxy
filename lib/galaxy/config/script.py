@@ -27,9 +27,11 @@ HELP_INSTALL = ("Install optional dependencies required by specified configurati
 HELP_HOST = ('Host to bind Galaxy to - defaults to localhost. Specify an IP '
              'address or "all" to listen on all interfaces.')
 HELP_PORT = ("Port to bind Galaxy to.")
+HELP_DB_CONN = ('Galaxy database connection URI.')
 
 DEFAULT_HOST = "localhost"
 DEFAULT_INI = "galaxy.ini"
+DEFAULT_DB_CONN = 'sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE'
 
 SAMPLES_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'sample'))
 GALAXY_CONFIG_TEMPLATE_FILE = os.path.join(SAMPLES_PATH, 'galaxy.ini.sample')
@@ -47,6 +49,7 @@ GALAXY_CONFIG_SUBSTITUTIONS = {
     'static-map = /static/style=/path/to/galaxy/web/framework/static/style/blue': 'static-map = /static/style=${static_path}/style/blue',
     '#config_dir = None': 'config_dir = ${config_dir}',
     '#data_dir = None': 'data_dir = ${data_dir}',
+    '#database_connection = sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE': 'database_connection = ${database_connection}',
 }
 
 
@@ -69,6 +72,9 @@ def main(argv=None):
     arg_parser.add_argument("--port",
                             default="8080",
                             help=HELP_PORT)
+    arg_parser.add_argument("--db-conn",
+                            default=DEFAULT_DB_CONN,
+                            help=HELP_DB_CONN)
     arg_parser.add_argument("--install",
                             action="store_true",
                             help=HELP_INSTALL)
@@ -155,6 +161,7 @@ def _handle_galaxy_ini(args, config_dir, data_dir):
         config_dir=config_dir,
         data_dir=data_dir,
         static_path=STATIC_PATH,
+        database_connection=args.db_conn,
     )
 
     galaxy_config_template = []
