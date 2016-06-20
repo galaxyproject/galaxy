@@ -51,7 +51,7 @@ var View = Backbone.View.extend({
                         if ( dict && dict.operations ) {
                             var operations = dict.operations;
                             for ( var i in operations.show ) {
-                                self.table.get( operations.show[ i ] ).show();
+                                self.table.get( operations.show[ i ] ).fadeIn( 'fast' );
                             }
                             for ( var i in operations.hide ) {
                                 self.table.get( operations.hide[ i ] ).hide();
