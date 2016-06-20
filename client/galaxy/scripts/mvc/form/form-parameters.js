@@ -31,17 +31,12 @@ define(['utils/utils',
             'ftpfile'           : '_fieldFtp'
         },
 
-        initialize: function( app, options ) {
-            this.app = app;
-        },
-
         /** Returns an input field for a given field type
         */
         create: function( input_def ) {
             var fieldClass = this.types[ input_def.type ];
             var field = typeof( this[ fieldClass ] ) === 'function' ? this[ fieldClass ].call( this, input_def ) : null;
             if ( !field ) {
-                this.app.incompatible = true;
                 field = input_def.options ? this._fieldSelect( input_def ) : this._fieldText( input_def );
                 Galaxy.emit.debug('form-parameters::_addRow()', 'Auto matched field type (' + input_def.type + ').');
             }
@@ -53,7 +48,6 @@ define(['utils/utils',
         /** Data input field
         */
         _fieldData: function( input_def ) {
-            var self = this;
             return new SelectContent.View({
                 id          : 'field-' + input_def.id,
                 extensions  : input_def.extensions,
@@ -62,9 +56,7 @@ define(['utils/utils',
                 type        : input_def.type,
                 flavor      : input_def.flavor,
                 data        : input_def.options,
-                onchange    : function() {
-                    self.app.trigger( 'change' );
-                }
+                onchange    : input_def.onchange
             });
         },
 
@@ -99,16 +91,13 @@ define(['utils/utils',
             }
 
             // create select field
-            var self = this;
             return new SelectClass.View({
                 id          : 'field-' + input_def.id,
                 data        : options,
                 error_text  : input_def.error_text || 'No options available',
                 multiple    : input_def.multiple,
                 optional    : input_def.optional,
-                onchange    : function() {
-                    self.app.trigger( 'change' );
-                }
+                onchange    : input_def.onchange
             });
         },
 
@@ -121,15 +110,12 @@ define(['utils/utils',
             }
 
             // create drill down field
-            var self = this;
             return new Ui.Drilldown.View({
                 id          : 'field-' + input_def.id,
                 data        : input_def.options,
                 display     : input_def.display,
                 optional    : input_def.optional,
-                onchange    : function() {
-                    self.app.trigger( 'change' );
-                }
+                onchange    : input_def.onchange
             });
         },
 
@@ -156,29 +142,23 @@ define(['utils/utils',
                 }
             }
             // create input element
-            var self = this;
             return new Ui.Input({
                 id          : 'field-' + input_def.id,
                 area        : input_def.area,
-                onchange    : function( new_value ) {
-                    input_def.onchange ? input_def.onchange( new_value ) : self.app.trigger( 'change' );
-                }
+                onchange    : input_def.onchange
             });
         },
 
         /** Slider field
         */
         _fieldSlider: function( input_def ) {
-            var self = this;
             return new Ui.Slider.View({
                 id          : 'field-' + input_def.id,
                 precise     : input_def.type == 'float',
                 is_workflow : input_def.is_workflow,
                 min         : input_def.min,
                 max         : input_def.max,
-                onchange    : function() {
-                    self.app.trigger( 'change' );
-                }
+                onchange    : input_def.onchange
             });
         },
 
@@ -194,54 +174,42 @@ define(['utils/utils',
         /** Boolean field
         */
         _fieldBoolean: function( input_def ) {
-            var self = this;
             return new Ui.RadioButton.View({
                 id          : 'field-' + input_def.id,
                 data        : [ { label : 'Yes', value : 'true'  },
                                 { label : 'No',  value : 'false' }],
-                onchange    : function() {
-                    self.app.trigger( 'change' );
-                }
+                onchange    : input_def.onchange
             });
         },
 
         /** Color picker field
         */
         _fieldColor: function( input_def ) {
-            var self = this;
             return new ColorPicker({
                 id          : 'field-' + input_def.id,
-                onchange    : function() {
-                    self.app.trigger( 'change' );
-                }
+                onchange    : input_def.onchange
             });
         },
 
         /** Library dataset field
         */
         _fieldLibrary: function( input_def ) {
-            var self = this;
             return new SelectLibrary.View({
                 id          : 'field-' + input_def.id,
                 optional    : input_def.optional,
                 multiple    : input_def.multiple,
-                onchange    : function() {
-                    self.app.trigger( 'change' );
-                }
+                onchange    : input_def.onchange
             });
         },
 
         /** FTP file field
         */
         _fieldFtp: function( input_def ) {
-            var self = this;
             return new SelectFtp.View({
                 id          : 'field-' + input_def.id,
                 optional    : input_def.optional,
                 multiple    : input_def.multiple,
-                onchange    : function() {
-                    self.app.trigger( 'change' );
-                }
+                onchange    : input_def.onchange
             });
         }
     });

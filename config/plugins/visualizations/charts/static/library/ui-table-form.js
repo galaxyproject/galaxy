@@ -1,81 +1,51 @@
-// dependencies
-define(['mvc/ui/ui-table', 'mvc/ui/ui-misc', 'utils/utils'],
-        function(Table, Ui, Utils) {
-
 /**
  *  This class takes a dictionary as input an creates an input form. It uses the Ui.Table element to organize and format the form elements.
  */
+define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/form/form-parameters', 'utils/utils' ], function( Table, Ui, Parameters, Utils ) {
 var View = Backbone.View.extend({
-    // options
     optionsDefault: {
         title       : '',
         content     : '',
         mode        : ''
     },
-    
-    // elements
-    list: [],
-    
-    // initialize
-    initialize: function(app, options) {
-        
-        // link app
-        this.app = app;
-        
-        // get options
-        this.options = Utils.merge(options, this.optionsDefault);
-        
-        // ui elements
-        this.table_title = new Ui.Label({title: this.options.title});
-        this.table = new Table.View({content: this.options.content});
 
-        // create element
-        var $view = $('<div class="ui-form"/>');
-        if (this.options.title) {
-            $view.append(this.table_title.$el);
-        }
-        $view.append(this.table.$el);
-        
-        // add element
-        this.setElement($view);
-    },
-    
-    // title
-    title: function(new_title) {
-        this.table_title.title(new_title);
-    },
-    
-    // update
-    update: function(settings, model) {
-        // reset table
-        this.table.delAll();
-        
-        // reset list
+    initialize: function( app, options ) {
+        this.app = app;
         this.list = [];
-        
-        // load settings elements into table
-        for (var id in settings) {
-            this._add(settings[id].id || id, settings[id], model);
+        this.options = Utils.merge( options, this.optionsDefault );
+        this.table_title = new Ui.Label( { title: this.options.title } );
+        this.table = new Table.View( { content: this.options.content } );
+        var $view = $( '<div/>' ).addClass( 'ui-form' );
+        if ( this.options.title ) {
+            $view.append( this.table_title.$el );
         }
-        
-        // trigger change
-        for (var id in this.list) {
-            this.list[id].trigger('change');
+        $view.append( this.table.$el );
+        this.setElement( $view );
+    },
+
+    /** Set title */
+    title: function( new_title ) {
+        this.table_title.title( new_title );
+    },
+
+    /** Update form */
+    update: function( settings, model ) {
+        this.table.delAll();
+        this.list = [];
+        for ( var id in settings ) {
+            this._add( settings[ id ].id || id, settings[ id ], model );
+        }
+        for ( var id in this.list ) {
+            this.list[ id ].trigger('change');
         }
     },
-    
-    // add table row
-    _add: function(id, settings_def, model) {
-        // link this
+
+    /** Add table row */
+    _add: function( id, settings_def, model ) {
         var self = this;
-        
-        // field wrapper
         var field = null;
-        
-        // create select field
         var type = settings_def.type;
-        switch(type) {
-            // text input field
+        switch( type ) {
             case 'text' :
                 field = new Ui.Input({
                     id          : 'field-' + id,
@@ -137,38 +107,6 @@ var View = Backbone.View.extend({
                         }
                     }
                 });
-                break;
-            case 'dataset':
-                field = new Ui.Select.View({
-                    id          : 'field-' + id,
-                    onchange    : function(value) {
-                        // set new value
-                        model.set(id, value);
-                    }
-                });
-                
-                // link refresh event
-                self.app.datasets.on('all', function() {
-                    // identify selectables
-                    var selectable = [];
-                    self.app.datasets.each(function(dataset) {
-                        if (dataset.get('datatype_id') == settings_def.data) {
-                            selectable.push({value: dataset.get('id'), label: dataset.get('name')});
-                        }
-                    });
-                    
-                    // update select field
-                    field.update(selectable);
-                    
-                    // set value
-                    if (!model.get(id)) {
-                        model.set(id, field.first());
-                    }
-                    field.value(model.get(id));
-                });
-                
-                // trigger change
-                self.app.datasets.trigger('all.datasets');
                 break;
             // slider input field
             case 'textarea' :
