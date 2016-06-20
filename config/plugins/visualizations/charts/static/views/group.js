@@ -1,8 +1,7 @@
 /**
  *  This class renders the data group selection fields.
  */
-define([ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'utils/utils' ],
-        function( Table, Ui, Utils ) {
+define([ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'utils/utils' ], function( Table, Ui, Utils ) {
     return Backbone.View.extend({
         initialize: function( app, options ) {
             var self = this;
@@ -28,7 +27,7 @@ define([ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'utils/utils' ],
             this._refreshGroupKey();
             this._refreshGroup();
         },
-        
+
         /** Update group selection table */
         _refreshTable: function() {
             var self = this;
@@ -70,7 +69,7 @@ define([ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'utils/utils' ],
                 });
             });
         },
-        
+
         /** Add row */
         _addRow: function( id, dataset, select_list, column_definition ) {
             var self = this;
@@ -134,20 +133,18 @@ define([ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'utils/utils' ],
             });
             select.show();
         },
-        
-        /** update
+
+        /** Update group attributes */
         _refreshGroup: function() {
-            this.group.set('date', Utils.time());
+            this.group.set( 'date', Utils.time() );
         },
-        
-        // update group key
+
+        /** Update group key */
         _refreshGroupKey: function() {
-            var key_text = this.group.get('key');
-            if (key_text === undefined) {
-                key_text = '';
-            }
-            if (key_text != this.group_key.value()) {
-                this.group_key.value(key_text);
+            var key_text = this.group.get( 'key' );
+            key_text === undefined ? '' : key_text;
+            if ( key_text != this.group_key.value() ) {
+                this.group_key.value( key_text );
             }
         }
     });
