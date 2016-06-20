@@ -192,19 +192,19 @@ define([ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils',
             }
             var valid = true;
             var chart_def = this.chart.definition;
-            this.chart.groups.each(function( group ) {
+            this.chart.groups.each( function( group ) {
                 if ( valid ) {
-                    for (var key in chart_def.columns) {
-                        if (group.attributes[key] === '__null__') {
-                            self.message.update({status: 'danger', message: 'This chart type requires column types not found in your tabular file.'});
-                            self.tabs.show(group.id);
+                    for ( var key in chart_def.columns ) {
+                        if ( group.attributes[ key ] === '__null__' ) {
+                            self.message.update( { status: 'danger', message: 'This chart type requires column types not found in your tabular file.' } );
+                            self.tabs.show( group.id );
                             valid = false;
                         }
                     }
                 }
             });
             if ( valid ) {
-                this.app.go('viewer');
+                this.app.go( 'viewer' );
                 this.app.deferred.execute( function() {
                     self.app.storage.save();
                     self.chart.trigger( 'redraw' );
