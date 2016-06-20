@@ -14,7 +14,13 @@ define([ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ],
             this.app = app;
             this.chart = this.app.chart;
             this.options = options;
-            this.setElement( $( this._template() ) );
+            this.setElement( $( '<div/>' ).addClass( 'charts-viewport' )
+                                          .append( $( '<div/>' ).addClass( 'info' )
+                                                                .append( $( '<span/>' ).addClass( 'icon' ) )
+                                                                .append( $( '<span/>' ).addClass( 'text' ) ) ) );
+            this.$info = this.$( '.info' );
+            this.$icon = this.$( '.icon' );
+            this.$text = this.$( '.text' );
 
             // use full screen for viewer
             this._fullscreen( this.$el, 50 );
@@ -92,6 +98,14 @@ define([ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ],
             this.canvas_list = [];
             for ( var i = 0; i < n; i++ ) {
                 var container_el = $( this._templateContainer( tag, parseInt( 100 / n ) ) );
+
+
+                '<div class="charts-viewport-container" style="width:' + width + '%;">' +
+                        '<div id="menu"/>' +
+                        '<' + tag + ' id="' + Utils.uid() + '" class="charts-viewport-canvas">' +
+                    '</div>'
+
+
                 this.$el.append( container_el );
                 this.container_list[ i ] = container_el;
                 this.canvas_list[ i ] = container_el.find( '.charts-viewport-canvas' ).attr( 'id' );
@@ -139,106 +153,47 @@ define([ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ],
             });
         },
 
-        //
-        // REQUEST STRING FUNCTIONS
-        //
-        // create default chart request
-        _defaultRequestString: function(chart) {
-        
-            // configure request
+        /** Creates default chart request */
+        _defaultRequestString: function( chart ) {
             var request_string = '';
-            
-            // add groups to data request
             var group_index = 0;
             var self = this;
-            chart.groups.each(function(group) {
-                // increase group counter
+            chart.groups.each( function( group ) {
                 group_index++;
-                
-                // add selected columns to column string
-                for (var key in self.chart_definition.columns) {
-                    request_string += key + '_' + group_index + ':' + (parseInt(group.get(key)) + 1) + ', ';
+                for ( var key in self.chart_definition.columns ) {
+                    request_string += key + '_' + group_index + ':' + ( parseInt( group.get( key ) ) + 1 ) + ', ';
                 }
             });
-            
-            // return
-            return request_string.substring(0, request_string.length - 2);
-        },
-        
-        // create default chart request
-        _defaultSettingsString: function(chart) {
-        
-            // configure settings
-            var settings_string = '';
-            
-            // add settings to settings string
-            for (key in chart.settings.attributes) {
-                settings_string += key + ':' + chart.settings.get(key) + ', ';
-            };
-            
-            // return
-            return settings_string.substring(0, settings_string.length - 2);
+            return request_string.substring( 0, request_string.length - 2 );
         },
 
-        // create default chart request
-        _defaultRequestDictionary: function(chart) {
-        
-            // configure request
-            var request_dictionary = {
-                groups : []
+        /** Creates default settings string for charts which require a job execution */
+        _defaultSettingsString: function( chart ) {
+            var settings_string = '';
+            for ( key in chart.settings.attributes ) {
+                settings_string += key + ':' + chart.settings.get( key ) + ', ';
             };
-            
-            // update request dataset id
-            if (this.chart_definition.execute) {
-                request_dictionary.id = chart.get('dataset_id_job');
-            } else {
-                request_dictionary.id = chart.get('dataset_id');
-            }
-            
-            // add groups to data request
+            return settings_string.substring( 0, settings_string.length - 2 );
+        },
+
+        /** Create default data request dictionary */
+        _defaultRequestDictionary: function( chart ) {
+            var request_dictionary = { groups : [] };
+            request_dictionary.id = this.chart_definition.execute ? chart.get( 'dataset_id_job' ) : chart.get( 'dataset_id' );
             var group_index = 0;
             var self = this;
-            chart.groups.each(function(group) {
-
-                // add columns
+            chart.groups.each( function( group ) {
                 var columns = {};
-                for (var column_key in self.chart_definition.columns) {
-                    // get settings for column
-                    var column_settings = self.chart_definition.columns[column_key];
-                    
-                    // add to columns
-                    columns[column_key] = Utils.merge ({
-                        index : group.get(column_key)
-                    }, column_settings);
+                for ( var column_key in self.chart_definition.columns ) {
+                    var column_settings = self.chart_definition.columns[ column_key ];
+                    columns[ column_key ] = Utils.merge({ index : group.get( column_key ) }, column_settings );
                 }
-                
-                // add group data
                 request_dictionary.groups.push({
-                    key     : (++group_index) + ':' + group.get('key'),
+                    key     : ( ++group_index ) + ':' + group.get( 'key' ),
                     columns : columns
                 });
             });
-            
-            // return
             return request_dictionary;
-        },
-        
-        // template
-        _template: function() {
-            return  '<div class="charts-viewport">' +
-                        '<div id="info" class="info">' +
-                            '<span id="icon" class="icon"/>' +
-                            '<span id="text" class="text" />' +
-                        '</div>' +
-                    '</div>';
-        },
-        
-        // template svg/div element
-        _templateContainer: function(tag, width) {
-            return  '<div class="charts-viewport-container" style="width:' + width + '%;">' +
-                        '<div id="menu"/>' +
-                        '<' + tag + ' id="' + Utils.uid() + '" class="charts-viewport-canvas">' +
-                    '</div>';
         }
         
     });
