@@ -3770,7 +3770,11 @@ class WorkflowStep( object ):
             new_conn.output_step = step_mapping[old_conn.output_step_id]
             if old_conn.input_subworkflow_step_id:
                 new_conn.input_subworkflow_step = subworkflow_step_mapping[old_conn.input_subworkflow_step_id]
-
+        for orig_pja in self.post_job_actions:
+            PostJobAction( orig_pja.action_type,
+                           copied_step,
+                           output_name=orig_pja.output_name,
+                           action_arguments=orig_pja.action_arguments )
         copied_step.workflow_outputs = copy_list(self.workflow_outputs, copied_step)
 
     def log_str(self):
