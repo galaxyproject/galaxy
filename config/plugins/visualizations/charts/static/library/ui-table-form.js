@@ -15,10 +15,9 @@ var View = Backbone.View.extend({
         this.options = Utils.merge( options, this.optionsDefault );
         this.table_title = new Ui.Label( { title: this.options.title } );
         this.table = new Table.View( { content: this.options.content } );
+        this.parameters = new Parameters();
         var $view = $( '<div/>' ).addClass( 'ui-form' );
-        if ( this.options.title ) {
-            $view.append( this.table_title.$el );
-        }
+        this.options.title && $view.append( this.table_title.$el );
         $view.append( this.table.$el );
         this.setElement( $view );
     },
@@ -43,135 +42,48 @@ var View = Backbone.View.extend({
     /** Add table row */
     _add: function( id, settings_def, model ) {
         var self = this;
-        var field = null;
-        var type = settings_def.type;
-        switch( type ) {
-            case 'text' :
-                field = new Ui.Input({
-                    id          : 'field-' + id,
-                    placeholder : settings_def.placeholder,
-                    value       : model.get(id),
-                    onchange    : function(value) {
-                        model.set(id, value);
-                    }
-                });
-                break;
-            // radiobox field
-            case 'radiobutton' :
-                field = new Ui.RadioButton.View({
-                    id          : 'field-' + id,
-                    data        : settings_def.data,
-                    value       : model.get(id),
-                    onchange    : function(value) {
-                        // set new value
-                        model.set(id, value);
-                        
-                        // find selected dictionary
-                        var dict = _.findWhere(settings_def.data, {value: value});
-                        if (dict && dict.operations) {
+        if ( settings_def.type !== 'separator' ) {
+            switch( settings_def.type ) {
+                case 'select':
+                    settings_def.onchange = function( new_value ) {
+                        model.set( id, new_value );
+                        var dict = _.findWhere( settings_def.data, { value: new_value } );
+                        if ( dict && dict.operations ) {
                             var operations = dict.operations;
-                            for (var i in operations.show) {
-                                var target = operations.show[i];
-                                self.table.get(target).show();
+                            for ( var i in operations.show ) {
+                                self.table.get( operations.show[ i ] ).show();
                             }
-                            for (var i in operations.hide) {
-                                var target = operations.hide[i];
-                                self.table.get(target).hide();
+                            for ( var i in operations.hide ) {
+                                self.table.get( operations.hide[ i ] ).hide();
                             }
                         }
-                    }
-                });
-                break;
-            // select field
-            case 'select' :
-                field = new Ui.Select.View({
-                    id          : 'field-' + id,
-                    data        : settings_def.data,
-                    value       : model.get(id),
-                    onchange    : function(value) {
-                        // set new value
-                        model.set(id, value);
-                        
-                        // find selected dictionary
-                        var dict = _.findWhere(settings_def.data, {value: value});
-                        if (dict && dict.operations) {
-                            var operations = dict.operations;
-                            for (var i in operations.show) {
-                                var target = operations.show[i];
-                                self.table.get(target).show();
-                            }
-                            for (var i in operations.hide) {
-                                var target = operations.hide[i];
-                                self.table.get(target).hide();
-                            }
-                        }
-                    }
-                });
-                break;
-            // slider input field
-            case 'textarea' :
-                field = new Ui.Textarea({
-                    id          : 'field-' + id,
-                    onchange    : function() {
-                        model.set(id, field.value());
-                    }
-                });
-                break;
-
-            // separator
-            case 'separator' :
-                field = $('<div/>');
-                break;
-                
-            // default
-            default:
-                field = new Ui.Input({
-                    id          : 'field-' + id,
-                    placeholder : settings_def.placeholder,
-                    type        : settings_def.type,
-                    onchange    : function() {
-                        model.set(id, field.value());
-                    }
-                });
-        }
-        
-        // set value
-        if (type != 'separator') {
-            if (!model.get(id)) {
-                model.set(id, settings_def.init);
+                    };
+                    break;
+                default:
+                    settings_def.onchange = function( new_value ) { model.set( id, new_value ) };
             }
-            field.value(model.get(id));
-            
-            // add list
-            this.list[id] = field;
-            
-            // combine field and info
-            var $input = $('<div/>');
-            $input.append(field.$el);
-            if (settings_def.info) {
-                $input.append('<div class="ui-form-info">' + settings_def.info + '</div>');
+            settings_def.id = id;
+            settings_def.value = model.get( id, settings_def.init );
+            model.set( id, settings_def.value );
+            var field = this.parameters.create( settings_def );
+            var $input = $( '<div/>' ).append( field.$el );
+            if ( settings_def.info ) {
+                $input.append( '<div class="ui-form-info">' + settings_def.info + '</div>' );
             }
-            
-            // add row to table
-            if (this.options.style == 'bold') {
-                this.table.add(new Ui.Label({title: settings_def.title, cls: 'form-label'}).$el);
-                this.table.add($input);
+            if ( this.options.style == 'bold' ) {
+                this.table.add( new Ui.Label( { title: settings_def.title, cls: 'form-label' } ).$el );
+                this.table.add( $input );
             } else {
-                this.table.add('<span class="ui-form-title">' + settings_def.title + '</span>', '25%');
-                this.table.add($input);
+                this.table.add( '<span class="ui-form-title">' + settings_def.title + '</span>', '25%' );
+                this.table.add( $input );
             }
+            this.list[ id ] = field;
         } else {
-            this.table.add('<div class="ui-form-separator">' + settings_def.title + ':<div/>');
-            this.table.add($('<div/>'));
+            this.table.add( '<div class="ui-form-separator">' + settings_def.title + ':<div/>' );
+            this.table.add( $( '<div/>' ) );
         }
-        
-        // add to table
-        this.table.append(id);
-        
-        // show/hide
-        if (settings_def.hide) {
-            this.table.get(id).hide();
-        }
+        this.table.append( id );
+        settings_def.hide && this.table.get( id ).hide();
     }
 });
 

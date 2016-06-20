@@ -31,8 +31,7 @@ define(['utils/utils',
             'ftpfile'           : '_fieldFtp'
         },
 
-        /** Returns an input field for a given field type
-        */
+        /** Returns an input field for a given field type */
         create: function( input_def ) {
             var fieldClass = this.types[ input_def.type ];
             var field = typeof( this[ fieldClass ] ) === 'function' ? this[ fieldClass ].call( this, input_def ) : null;
@@ -45,8 +44,7 @@ define(['utils/utils',
             return field;
         },
 
-        /** Data input field
-        */
+        /** Data input field */
         _fieldData: function( input_def ) {
             return new SelectContent.View({
                 id          : 'field-' + input_def.id,
@@ -60,8 +58,7 @@ define(['utils/utils',
             });
         },
 
-        /** Select/Checkbox/Radio options field
-        */
+        /** Select/Checkbox/Radio options field */
         _fieldSelect: function ( input_def ) {
             // show text field e.g. in workflow editor
             if( input_def.is_workflow ) {
@@ -74,10 +71,12 @@ define(['utils/utils',
             }
 
             // configure options fields
-            var options = [];
-            _.each( input_def.options, function( option ) {
-                options.push( { label: option[ 0 ], value: option[ 1 ] } );
-            });
+            var options = input_def.data || [];
+            if( !options ) {
+                _.each( input_def.options, function( option ) {
+                    options.push( { label: option[ 0 ], value: option[ 1 ] } );
+                });
+            }
 
             // identify display type
             var SelectClass = Ui.Select;
@@ -87,6 +86,9 @@ define(['utils/utils',
                     break;
                 case 'radio':
                     SelectClass = Ui.Radio;
+                    break;
+                case 'radiobutton':
+                    SelectClass = Ui.RadioButton;
                     break;
             }
 
@@ -101,8 +103,7 @@ define(['utils/utils',
             });
         },
 
-        /** Drill down options field
-        */
+        /** Drill down options field */
         _fieldDrilldown: function ( input_def ) {
             // show text field e.g. in workflow editor
             if( input_def.is_workflow ) {
@@ -119,11 +120,10 @@ define(['utils/utils',
             });
         },
 
-        /** Text input field
-        */
+        /** Text input field */
         _fieldText: function( input_def ) {
             // field replaces e.g. a select field
-            if ( input_def.options ) {
+            if ( input_def.options && input_def.data ) {
                 input_def.area = input_def.multiple;
                 if ( Utils.isEmpty( input_def.value ) ) {
                     input_def.value = null;
@@ -145,12 +145,12 @@ define(['utils/utils',
             return new Ui.Input({
                 id          : 'field-' + input_def.id,
                 area        : input_def.area,
+                placeholder : input_def.placeholder,
                 onchange    : input_def.onchange
             });
         },
 
-        /** Slider field
-        */
+        /** Slider field */
         _fieldSlider: function( input_def ) {
             return new Ui.Slider.View({
                 id          : 'field-' + input_def.id,
@@ -162,8 +162,7 @@ define(['utils/utils',
             });
         },
 
-        /** Hidden field
-        */
+        /** Hidden field */
         _fieldHidden: function( input_def ) {
             return new Ui.Hidden({
                 id          : 'field-' + input_def.id,
@@ -171,8 +170,7 @@ define(['utils/utils',
             });
         },
 
-        /** Boolean field
-        */
+        /** Boolean field */
         _fieldBoolean: function( input_def ) {
             return new Ui.RadioButton.View({
                 id          : 'field-' + input_def.id,
@@ -182,8 +180,7 @@ define(['utils/utils',
             });
         },
 
-        /** Color picker field
-        */
+        /** Color picker field */
         _fieldColor: function( input_def ) {
             return new ColorPicker({
                 id          : 'field-' + input_def.id,
@@ -191,8 +188,7 @@ define(['utils/utils',
             });
         },
 
-        /** Library dataset field
-        */
+        /** Library dataset field */
         _fieldLibrary: function( input_def ) {
             return new SelectLibrary.View({
                 id          : 'field-' + input_def.id,
