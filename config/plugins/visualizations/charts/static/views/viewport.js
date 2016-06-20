@@ -3,13 +3,11 @@
  *  Additionally, this class creates default request strings and request dictionaries parsed to the visualization plugins.
  *  This is the last class of the charts core classes before handing control over to the visualization plugins.
  */
-define([ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ],
-        function( Portlet, Ui, Utils ) {
+define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Portlet, Ui, Utils ) {
     return Backbone.View.extend({
         // list of container/canvas elements
         container_list: [],
         canvas_list: [],
-
         initialize: function( app, options ) {
             this.app = app;
             this.chart = this.app.chart;
@@ -97,18 +95,14 @@ define([ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ],
             this.container_list = [];
             this.canvas_list = [];
             for ( var i = 0; i < n; i++ ) {
-                var container_el = $( this._templateContainer( tag, parseInt( 100 / n ) ) );
-
-
-                '<div class="charts-viewport-container" style="width:' + width + '%;">' +
-                        '<div id="menu"/>' +
-                        '<' + tag + ' id="' + Utils.uid() + '" class="charts-viewport-canvas">' +
-                    '</div>'
-
-
+                var container_id = Utils.uid();
+                var container_el = $( '<div/>' ).addClass( 'charts-viewport-container' )
+                                                .width( parseInt( 100 / n ) + '%' )
+                                                .append( $( '<div/>' ).attr( 'id', 'menu' ) )
+                                                .append( $( '<' + tag + ' class="charts-viewport-canvas" />' ).attr( 'id', container_id ) );
                 this.$el.append( container_el );
                 this.container_list[ i ] = container_el;
-                this.canvas_list[ i ] = container_el.find( '.charts-viewport-canvas' ).attr( 'id' );
+                this.canvas_list[ i ] = container_id;
             }
         },
 
@@ -195,7 +189,5 @@ define([ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ],
             });
             return request_dictionary;
         }
-        
     });
-
 });

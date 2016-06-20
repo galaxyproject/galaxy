@@ -37,7 +37,7 @@ define( [ 'plugin/models/groups' ], function( Groups ) {
         },
 
         state: function( value, info ) {
-            this.set( { 'state': value, 'state_info', info } );
+            this.set( { 'state': value, 'state_info': info } );
             this.trigger( 'set:state' );
             console.debug( 'Chart:state() - ' + info + ' (' + value + ')' );
         }

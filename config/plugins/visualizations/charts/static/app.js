@@ -1,10 +1,10 @@
 /**
  *  Main application class.
  */
-define([ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils',
-         'plugin/library/jobs', 'plugin/library/datasets', 'plugin/library/storage', 'utils/deferred',
-         'plugin/views/viewer', 'plugin/views/editor',
-         'plugin/models/config', 'plugin/models/chart', 'plugin/charts/types' ],
+define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils',
+          'plugin/library/jobs', 'plugin/library/datasets', 'plugin/library/storage', 'utils/deferred',
+          'plugin/views/viewer', 'plugin/views/editor',
+          'plugin/models/config', 'plugin/models/chart', 'plugin/charts/types' ],
         function( Modal, Portlet, Ui, Utils, Jobs, Datasets, Storage, Deferred,
                   ViewerView, EditorView, Config, Chart, Types ) {
     return Backbone.View.extend({
@@ -39,9 +39,9 @@ define([ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils'
                 this.chart.trigger( 'redraw' );
             }
         },
-        
+
         /** Loads a view and makes sure that all others are hidden */
-        go: function(view_id) {
+        go: function( view_id ) {
             $( '.tooltip' ).hide();
             switch ( view_id ) {
                 case 'editor' :
@@ -54,7 +54,7 @@ define([ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils'
                     break;
             }
         },
-        
+
         /** Returns root path */
         chartPath: function( chart_type ) {
             var path = chart_type.split( /_(.+)/ );

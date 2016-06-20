@@ -7,12 +7,12 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc' ], function( Utils, Ui ) {
             onchange    : null,
             ondblclick  : null
         },
-        
+
         events : {
             'click'     : '_onclick',
             'dblclick'  : '_ondblclick'
         },
-        
+
         initialize : function( app, options ) {
             var self = this;
             this.app = app;
@@ -30,7 +30,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc' ], function( Utils, Ui ) {
             this.library.value( 'small' );
             this.library.trigger( 'change' );
         },
-        
+
         /** Set/Get selected chart type */
         value: function( new_value ) {
             var before = this.$el.find( '.current' ).attr( 'id' );

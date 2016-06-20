@@ -1,7 +1,7 @@
 /**
  *  This class renders the chart configuration form.
  */
-define([ 'mvc/ui/ui-misc', 'plugin/library/ui-table-form', 'utils/utils' ], function( Ui, TableForm, Utils ) {
+define( [ 'mvc/ui/ui-misc', 'plugin/library/ui-table-form', 'utils/utils' ], function( Ui, TableForm, Utils ) {
     return Backbone.View.extend({
         initialize: function(app, options) {
             var self = this;

@@ -1,7 +1,7 @@
 /**
  *  This class renders the data group selection fields.
  */
-define([ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'utils/utils' ], function( Table, Ui, Utils ) {
+define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'utils/utils' ], function( Table, Ui, Utils ) {
     return Backbone.View.extend({
         initialize: function( app, options ) {
             var self = this;

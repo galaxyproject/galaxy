@@ -2,9 +2,9 @@
  *  The charts editor holds the tabs for selecting chart types, chart configuration
  *  and data group selections.
  */
-define([ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils',
-         'plugin/models/chart', 'plugin/models/group',
-         'plugin/views/group', 'plugin/views/settings', 'plugin/views/types' ],
+define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils',
+          'plugin/models/chart', 'plugin/models/group',
+          'plugin/views/group', 'plugin/views/settings', 'plugin/views/types' ],
     function( Tabs, Ui, Portlet, Utils, Chart, Group, GroupView, SettingsView, TypesView ) {
     return Backbone.View.extend({
         initialize: function( app, options ){
@@ -35,7 +35,7 @@ define([ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils',
                     })
                 }
             });
-            
+
             // grid with chart types
             this.types = new TypesView(app, {
                 onchange   : function(chart_type) {
@@ -52,7 +52,7 @@ define([ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils',
                     self._saveChart();
                 }
             });
-            
+
             // tab view
             this.tabs = new Tabs.View({
                 title_new       : 'Add Data',
@@ -61,7 +61,7 @@ define([ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils',
                     self.tabs.show( group.id );
                 }
             });
-            
+
             // start tab
             this.title = new Ui.Input({
                 placeholder: 'Chart title',
@@ -77,7 +77,7 @@ define([ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils',
                                        .append( $( '<div/>' ).addClass( 'ui-form-info' ).html( 'This title will appear in the list of \'Saved Visualizations\'. Charts are saved upon creation.' ) )
                                        .append( this.types.$el.addClass( 'ui-margin-top' ) )
             });
-            
+
             // settings tab
             this.settings = new SettingsView( this.app );
             this.tabs.add({
@@ -85,13 +85,13 @@ define([ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils',
                 title   : 'Configuration',
                 $el     : this.settings.$el
             });
-            
+
             // set elements
             this.portlet.append( this.message.$el.addClass( 'ui-margin-top' ) );
             this.portlet.append( this.tabs.$el.addClass( 'ui-margin-top' ) );
             this.setElement( this.portlet.$el );
             this.tabs.hideOperation( 'back' );
-            
+
             // chart events
             this.chart.on( 'change:title', function( chart ) { self._refreshTitle() } );
             this.chart.on( 'change:type', function( chart ) { self.types.value( chart.get( 'type' ) ) } );
@@ -108,7 +108,7 @@ define([ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils',
         show: function() {
             this.$el.show();
         },
-        
+
         /** Hide editor */
         hide: function() {
             this.$el.hide();
@@ -122,7 +122,7 @@ define([ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils',
                 this.title.value( title );
             }
         },
-        
+
         /** Refresh group handler */
         _refreshGroupKey: function() {
             var self = this;
@@ -152,7 +152,7 @@ define([ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils',
             this._refreshGroupKey();
             this.chart.set( 'modified', true );
         },
-        
+
         /** Remove group */
         _removeGroup: function( group ) {
             this.tabs.del( group.id );
@@ -164,7 +164,7 @@ define([ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils',
         _removeAllGroups: function( group ) {
             this.tabs.delRemovable();
         },
-        
+
         /** Reset entire chart */
         _resetChart: function() {
             this.chart.set({
@@ -175,7 +175,7 @@ define([ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils',
             });
             this.portlet.hideOperation( 'back' );
         },
-        
+
         /** Save chart data */
         _saveChart: function() {
             var self = this;
