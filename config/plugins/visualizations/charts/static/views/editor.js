@@ -65,7 +65,8 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
             this.tabs = new Tabs.View( {} );
             this.tabs.add({
                 id      : 'main',
-                title   : '1: Start',
+                title   : 'Start',
+                icon    : 'fa fa-bars',
                 tooltip : 'Start by selecting a chart type.',
                 $el     : $( '<div/>' ).append( ( new Ui.Label( { title : 'Provide a chart title:' } ).$el ) )
                                        .append( this.title.$el )
@@ -74,13 +75,15 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
             });
             this.tabs.add({
                 id      : 'settings',
-                title   : '2: Customize',
+                title   : 'Customize',
+                icon    : 'fa-gear',
                 tooltip : 'Customize charts options.',
                 $el     : ( new SettingsView( this.app ) ).$el
             });
             this.tabs.add({
                 id      : 'groups',
-                title   : '3: Select data',
+                title   : 'Select data',
+                icon    : 'fa-database',
                 tooltip : 'Specify your data columns.',
                 $el     : ( new GroupsView( this.app ) ).$el
             });

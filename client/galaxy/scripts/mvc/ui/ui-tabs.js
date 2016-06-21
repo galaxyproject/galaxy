@@ -176,8 +176,11 @@ var View = Backbone.View.extend({
     /** Default tab templates */
     _template_tab: function( options ) {
         var tmpl =  '<li id="tab-' + options.id + '" class="tab-element">' +
-                        '<a id="tab-title-link-' + options.id + '" title="" href="#' + options.id + '" data-original-title="">' +
-                            '<span id="tab-title-text-' + options.id + '" class="tab-title-text">' + options.title + '</span>';
+                        '<a id="tab-title-link-' + options.id + '" title="" href="#' + options.id + '" data-original-title="">';
+        if ( options.icon ) {
+            tmpl +=         '<i class="ui-tabs-icon fa ' + options.icon + '" style="margin-right: 5px; font-size: 1.1em;"/>';
+        }
+        tmpl +=             '<span id="tab-title-text-' + options.id + '" class="tab-title-text">' + options.title + '</span>';
         if ( options.ondel ) {
             tmpl +=         '<i id="delete" class="ui-tabs-delete fa fa-minus-circle"/>';
         }
