@@ -84,7 +84,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
 
             // set elements
             this.portlet.append( this.message.$el );
-            this.portlet.append( this.tabs.$el.addClass( 'ui-margin-top' ) );
+            this.portlet.append( this.tabs.$el.addClass( 'ui-margin-top-large' ) );
             this.setElement( this.portlet.$el );
             this.tabs.hideOperation( 'back' );
 
