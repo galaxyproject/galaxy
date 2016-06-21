@@ -63,7 +63,7 @@ var View = Backbone.View.extend({
         var portlet = new Portlet.View({
             id              : options.id,
             title           : 'placeholder',
-            cls             : 'ui-portlet-repeat',
+            cls             : options.cls || 'ui-portlet-repeat',
             operations      : {
                 button_delete : button_delete
             }

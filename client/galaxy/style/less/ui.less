@@ -433,7 +433,7 @@
     }
 }
 
-.ui-portlet-section {
+.ui-portlet-panel {
     &:extend(.ui-portlet-repeat all);
     margin-top: @ui-margin-vertical;
     border-left: solid 3px @side-panel-bg;
@@ -441,6 +441,10 @@
         background: @side-panel-bg;
         border-bottom: solid darken(@side-panel-bg, 10%) 1px;
     }
+}
+
+.ui-portlet-section {
+    &:extend(.ui-portlet-panel all);
     .portlet-highlight {
         text-decoration: underline;
     }

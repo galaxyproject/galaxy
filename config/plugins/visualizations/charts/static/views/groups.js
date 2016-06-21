@@ -171,6 +171,7 @@ define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/form/form-repeat', 'plugin/m
             var self = this;
             this.repeat.add({
                 id      : group.id,
+                cls     : 'ui-portlet-panel',
                 $el     : ( new GroupView( this.app, { group: group } ) ).$el,
                 ondel   : function() { self.chart.groups.remove( group ) }
             });
