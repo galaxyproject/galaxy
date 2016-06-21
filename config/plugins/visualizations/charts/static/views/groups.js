@@ -1,8 +1,8 @@
 /**
- *  This class renders the data group selection fields.
+ *  This class renders the chart configuration form.
  */
-define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'utils/utils' ], function( Table, Ui, Utils ) {
-    return Backbone.View.extend({
+define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/form/form-repeat', 'plugin/models/group', 'utils/utils' ], function( Table, Ui, Repeat, Group, Utils ) {
+    var GroupView = Backbone.View.extend({
         initialize: function( app, options ) {
             var self = this;
             this.app = app;
@@ -146,6 +146,42 @@ define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'utils/utils' ], function( Table,
             if ( key_text != this.group_key.value() ) {
                 this.group_key.value( key_text );
             }
+        }
+    });
+
+    return Backbone.View.extend({
+        initialize: function( app, options ) {
+            var self = this;
+            this.app   = app;
+            this.chart = app.chart;
+            this.repeat = new Repeat.View({
+                title       : 'Data series',
+                title_new   : 'Data series',
+                onnew       : function() {
+                    self.chart.groups.add(  new Group( { id : Utils.uid() } ) )
+                }
+            });
+            this.setElement( this.repeat.$el );
+            this.chart.groups.on( 'add', function( group ) { self._addGroupView( group ) } )
+                             .on( 'remove', function( group ) { self._removeGroupView( group ) } );
+        },
+
+        /** Add group view */
+        _addGroupView: function( group ) {
+            var self = this;
+            var group_view = new GroupView( this.app, { group: group } );
+            this.repeat.add({
+                id      : group.id,
+                $el     : group_view.$el,
+                ondel   : function() { self.chart.groups.remove( group ) }
+            });
+            this.chart.set( 'modified', true );
+        },
+
+        /** Remove group view */
+        _removeGroupView: function( group ) {
+            this.repeat.del( group.id );
+            this.chart.set( 'modified', true );
         }
     });
 });

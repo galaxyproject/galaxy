@@ -3,7 +3,7 @@
  */
 define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/form/form-parameters', 'utils/utils' ], function( Table, Ui, Parameters, Utils ) {
     return Backbone.View.extend({
-        initialize: function(app, options) {
+        initialize: function( app, options ) {
             var self = this;
             this.app = app;
             this.chart = this.app.chart;
