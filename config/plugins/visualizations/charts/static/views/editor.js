@@ -66,7 +66,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
             this.tabs.add({
                 id      : 'main',
                 title   : '1: Start',
-                tooltip : 'Select a chart type.',
+                tooltip : 'Start by selecting a chart type.',
                 $el     : $( '<div/>' ).append( ( new Ui.Label( { title : 'Provide a chart title:' } ).$el ) )
                                        .append( this.title.$el )
                                        .append( $( '<div/>' ).addClass( 'ui-form-info' ).html( 'This title will appear in the list of \'Saved Visualizations\'. Charts are saved upon creation.' ) )
@@ -75,11 +75,13 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
             this.tabs.add({
                 id      : 'settings',
                 title   : '2: Customize',
+                tooltip : 'Customize charts options.',
                 $el     : ( new SettingsView( this.app ) ).$el
             });
             this.tabs.add({
                 id      : 'groups',
                 title   : '3: Select data',
+                tooltip : 'Specify your data columns.',
                 $el     : ( new GroupsView( this.app ) ).$el
             });
 

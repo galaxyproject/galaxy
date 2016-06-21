@@ -54,49 +54,41 @@ var View = Backbone.View.extend({
     add: function( options ) {
         var self = this;
         var id = options.id;
-        var $tab_title      = $( this._template_tab( options ) );
-        var $tab_content    = $( '<div/>' ).attr( 'id', options.id ).addClass( 'tab-pane' );
+        var $tab_title   = $( this._template_tab( options ) );
+        var $tab_content = $( '<div/>' ).attr( 'id', options.id ).addClass( 'tab-pane' );
 
-        // add to list
+        // hide new tab if maximum number of tabs has been reached
         this.list[ id ] = true;
+        if ( this.options.max && this.size() >= this.options.max ) {
+            this.$el.find( '#new-tab' ).hide();
+        }
 
-        // add a new tab either before the add-new-tab tab or behind the last tab
+        // insert tab before new tab or as last tab
         if ( this.options.onnew ) {
             this.$nav.find( '#new-tab' ).before( $tab_title );
         } else {
             this.$nav.append( $tab_title );
         }
 
-        // add content
-        this.$content.append( $tab_content.append( options.$el ) );
-
-        // activate this tab if this is the first tab
-        if ( this.size() == 1 ) {
-            $tab_title.addClass( 'active' );
-            $tab_content.addClass( 'active' );
-            this.first_tab = id;
-        }
-
-        // hide add tab
-        if ( this.options.max && this.size() >= this.options.max ) {
-            this.$el.find( '#new-tab' ).hide();
-        }
-
-        // add click event to remove tab
+        // assing delete callback if provided
         if ( options.ondel ) {
             $tab_title.find( '#delete' ).tooltip( { title: 'Delete this tab', placement: 'bottom', container: self.$el } )
                                         .on( 'click', function() { options.ondel() } );
         } else {
             $tab_title.tooltip( { title: options.tooltip, placement: 'bottom', container: self.$el } );
         }
-
-        // add custom click event handler
         $tab_title.on( 'click', function( e ) {
             e.preventDefault();
             options.onclick ? options.onclick() : self.show( id );
         });
+        this.$content.append( $tab_content.append( options.$el ) );
 
-        // initialize current id
+        // assign current/first tab
+        if ( this.size() == 1 ) {
+            $tab_title.addClass( 'active' );
+            $tab_content.addClass( 'active' );
+            this.first_tab = id;
+        }
         if ( !this.current_id ) {
             this.current_id = id;
         }
@@ -128,8 +120,8 @@ var View = Backbone.View.extend({
         if ( id ) {
             this.$( '#tab-' + this.current_id ).removeClass('active' );
             this.$( '#' + this.current_id ).removeClass('active' );
-            this.$( '#tab-' + id).addClass( 'active' );
-            this.$( '#' + id).addClass( 'active' );
+            this.$( '#tab-' + id ).addClass( 'active' );
+            this.$( '#' + id ).addClass( 'active' );
             this.current_id = id;
         }
         this.options.onchange && this.options.onchange( id );
