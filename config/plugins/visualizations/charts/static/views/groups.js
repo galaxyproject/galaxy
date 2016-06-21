@@ -15,7 +15,7 @@ define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/form/form-repeat', 'plugin/m
                 }
             });
             this.table = new Table.View( { content: 'No data column.' } );
-            this.setElement($('<div/>').append( ( new Ui.Label( { title: 'Provide a label:' } ) ).$el )
+            this.setElement($('<div/>').append( ( new Ui.Label( { title: 'Provide a label:', cls: 'ui-margin-top' } ) ).$el )
                                        .append( this.group_key.$el.addClass( 'ui-margin-bottom' ) )
                                        .append( ( new Ui.Label( { title: 'Select columns:' } ) ).$el.addClass( 'ui-margin-top' ) )
                                        .append( this.table.$el.addClass( 'ui-margin-bottom' ) ) );
@@ -169,10 +169,9 @@ define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/form/form-repeat', 'plugin/m
         /** Add group view */
         _addGroupView: function( group ) {
             var self = this;
-            var group_view = new GroupView( this.app, { group: group } );
             this.repeat.add({
                 id      : group.id,
-                $el     : group_view.$el,
+                $el     : ( new GroupView( this.app, { group: group } ) ).$el,
                 ondel   : function() { self.chart.groups.remove( group ) }
             });
             this.chart.set( 'modified', true );
