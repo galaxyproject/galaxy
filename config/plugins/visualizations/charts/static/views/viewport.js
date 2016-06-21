@@ -9,6 +9,7 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
         container_list: [],
         canvas_list: [],
         initialize: function( app, options ) {
+            var self = this;
             this.app = app;
             this.chart = this.app.chart;
             this.options = options;
@@ -44,13 +45,13 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
 
             // link status handler
             this.chart.on( 'set:state', function() {
-                var $info = self.$el.find( '#info' );
                 var $container = self.$el.find( '.charts-viewport-container' );
-                var $icon = $info.find( '#icon' );
-                var $info_text = $info.find( '#text' );
+                var $info = self.$info;
+                var $icon = self.$icon;
+                var $text = self.$text;
                 $icon.removeClass();
                 $info.show();
-                $info_text.html( self.chart.get( 'state_info' ) );
+                $text.html( self.chart.get( 'state_info' ) );
                 var state = self.chart.get( 'state' );
                 switch ( state ) {
                     case 'ok':
