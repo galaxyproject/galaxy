@@ -39,6 +39,11 @@ except ImportError:
     docutils_core = None
     docutils_html4css1 = None
 
+try:
+    import uwsgi
+except ImportError:
+    uwsgi = None
+
 from .inflection import English, Inflector
 inflector = Inflector(English)
 
@@ -1463,6 +1468,29 @@ def safe_relpath(path):
     if path.startswith(os.sep) or normpath(path).startswith(os.pardir):
         return False
     return True
+
+
+def _executable():
+    exe = sys.executable
+    if exe.endswith('uwsgi'):
+        virtualenv = None
+        if uwsgi is not None:
+            for name in ('home', 'virtualenv', 'venv', 'pyhome'):
+                if name in uwsgi.opt:
+                    virtualenv = uwsgi.opt[name]
+                    break
+        if virtualenv is None and 'VIRTUAL_ENV' in os.environ:
+            virtualenv = os.environ['VIRTUAL_ENV']
+        if virtualenv is not None:
+            exe = os.path.join(virtualenv, 'bin', 'python')
+        else:
+            exe = os.path.join(os.path.dirname(exe), 'python')
+            if not os.path.exists(exe):
+                exe = 'python'
+    return exe
+
+
+executable = _executable()
 
 
 class ExecutionTimer(object):
