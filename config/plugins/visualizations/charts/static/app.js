@@ -62,6 +62,12 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
                 return path[ 0 ] + '/' + path[ 1 ];
             }
             console.debug( 'FAILED app:chartPath() - Invalid format: ' + chart_type );
+        },
+
+        /** Message */
+        showModal: function( title, body ) {
+            var self = this;
+            this.modal.show( { title: title, body: body, buttons: { 'Close': function() { self.modal.hide() } } } );
         }
     });
 });

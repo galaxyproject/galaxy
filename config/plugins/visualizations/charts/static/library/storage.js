@@ -40,13 +40,7 @@
             this.vis.set( 'title', chart.get( 'title' ) || '' );
             this.vis.get( 'config' ).chart_dict = chart_dict;
             this.vis.save().fail(function( xhr, status, message ) {
-                                self.app.modal.show( {
-                                    title  : 'Saving failed.',
-                                    body   : 'An attempt to save this chart to the server failed. Please try again and contact the administrator.',
-                                    buttons: {
-                                        'Cancel' : function() { self.app.modal.hide() }
-                                    }
-                                });
+                                self.app.showModal( 'Saving failed.', 'An attempt to save this chart to the server failed. Please try again and contact the administrator.' );
                             })
                             .then( function( response ) {
                                 if ( response && response.id ) {
