@@ -164,15 +164,24 @@
 
 // tabs
 .ui-tabs {
-    .ui-tabs-add {
-        font-size       : 0.8em;
-        margin-right    : @ui-margin-horizontal;
+    .tab-operations {
+        float: right;
+        margin-bottom: 4px;
+        .ui-button-icon {
+            margin-left: 4px;
+        }
     }
-    
-    .ui-tabs-delete {
-        font-size       : 0.8em;
-        margin-left     : @ui-margin-horizontal;
-        cursor          : pointer;
+    .tab-element {
+        cursor: pointer;
+    }
+    .tab-icon {
+        font-size: 1.1em;
+        margin-right: @ui-margin-horizontal;
+    }
+    .tab-delete {
+        font-size: 0.8em;
+        margin-left: @ui-margin-horizontal;
+        cursor: pointer;
     }
 }
 

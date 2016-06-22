@@ -19,14 +19,15 @@ var View = Backbone.View.extend({
             onchange    : null
         });
         this.setElement( $( this._template( this.options ) ) );
-        this.$nav       = this.$( '.tab-navigation' );
-        this.$content   = this.$( '.tab-content' );
+        this.$nav           = this.$( '.tab-navigation' );
+        this.$content       = this.$( '.tab-content' );
+        this.$operations    = this.$nav.find( '.tab-operations' );
 
         // Renders tab operations
         if ( this.options.operations ) {
             $.each( this.options.operations, function( name, item ) {
                 item.$el.prop( 'id', name );
-                self.$nav.find( '.operations' ).append( item.$el );
+                self.$operations.append( item.$el );
             });
         }
 
@@ -35,6 +36,7 @@ var View = Backbone.View.extend({
             .tooltip( { title: 'Add a new tab', placement: 'bottom', container: self.$el } )
             .on( 'click', function( e ) { self.options.onnew() } )
         );
+        this.$tabnew = this.$nav.find( '.tab-new' );
 
         // Remove all tooltips on click
         this.$el.on( 'click', function() { $( '.tooltip' ).hide() } );
@@ -60,20 +62,20 @@ var View = Backbone.View.extend({
         // hide new tab if maximum number of tabs has been reached
         this.list[ id ] = true;
         if ( this.options.max && this.size() >= this.options.max ) {
-            this.$el.find( '#new-tab' ).hide();
+            this.$tabnew.hide();
         }
 
         // insert tab before new tab or as last tab
         if ( this.options.onnew ) {
-            this.$nav.find( '#new-tab' ).before( $tab_title );
+            this.$tabnew.before( $tab_title );
         } else {
             this.$nav.append( $tab_title );
         }
 
         // assing delete callback if provided
         if ( options.ondel ) {
-            $tab_title.find( '#delete' ).tooltip( { title: 'Delete this tab', placement: 'bottom', container: self.$el } )
-                                        .on( 'click', function() { options.ondel() } );
+            $tab_title.find( '.tab-delete' ).tooltip( { title: 'Delete this tab', placement: 'bottom', container: self.$el } )
+                                            .on( 'click', function() { options.ondel() } );
         } else {
             $tab_title.tooltip( { title: options.tooltip, placement: 'bottom', container: self.$el } );
         }
@@ -102,7 +104,7 @@ var View = Backbone.View.extend({
         this.first_tab != null && this.show( this.first_tab );
         this.list[ id ] && delete this.list[ id ];
         if ( this.size() < this.options.max ) {
-            this.$el.find( '#new-tab' ).show();
+            this.$el.find( '.ui-tabs-new' ).show();
         }
     },
 
@@ -165,38 +167,32 @@ var View = Backbone.View.extend({
 
     /** Main template */
     _template: function( options ) {
-        return  '<div class="ui-tabs tabbable tabs-left">' +
-                    '<ul id="tab-navigation" class="tab-navigation nav nav-tabs">' +
-                        '<div class="operations" style="float: right; margin-bottom: 4px;"></div>' +
-                    '</ul>'+
-                    '<div id="tab-content" class="tab-content"/>' +
-                '</div>';
+        return  $( '<div/>' ).addClass( 'ui-tabs tabbable tabs-left' )
+                             .append( $( '<ul/>' ).addClass( 'tab-navigation nav nav-tabs' )
+                                                  .append( $( '<div/>' ).addClass( 'tab-operations' ) ) )
+                             .append( $( '<div/>' ).addClass( 'tab-content' ) );
     },
 
     /** Default tab templates */
     _template_tab: function( options ) {
-        var tmpl =  '<li id="tab-' + options.id + '" class="tab-element">' +
-                        '<a id="tab-title-link-' + options.id + '" title="" href="#' + options.id + '" data-original-title="">';
-        if ( options.icon ) {
-            tmpl +=         '<i class="ui-tabs-icon fa ' + options.icon + '" style="margin-right: 5px; font-size: 1.1em;"/>';
-        }
-        tmpl +=             '<span id="tab-title-text-' + options.id + '" class="tab-title-text">' + options.title + '</span>';
-        if ( options.ondel ) {
-            tmpl +=         '<i id="delete" class="ui-tabs-delete fa fa-minus-circle"/>';
-        }
-        tmpl +=         '</a>' +
-                    '</li>';
-        return tmpl;
+        var $tmpl = $( '<li/>' ).addClass( 'tab-element' )
+                                .attr( 'id', 'tab-' + options.id )
+                                .append( $( '<a/>' ).attr( 'id', 'tab-title-link-' + options.id ) );
+        var $href = $tmpl.find( 'a' );
+        options.icon && $href.append( $( '<i/>' ).addClass( 'tab-icon fa' ).addClass( options.icon ) );
+        $href.append( $( '<span/>' ).attr( 'id', 'tab-title-text-' + options.id )
+                                    .addClass( 'tab-title-text' )
+                                    .append( options.title ) );
+        options.ondel && $href.append( $( '<i/>' ).addClass( 'tab-delete fa fa-minus-circle' ) );
+        return $tmpl;
     },
 
     /** Template for 'new' tab */
     _template_tab_new: function( options ) {
-        return  '<li id="new-tab">' +
-                    '<a href="javascript:void(0);">' +
-                        '<i class="ui-tabs-add fa fa-plus-circle"/>' +
-                            options.title_new +
-                    '</a>' +
-                '</li>';
+        return  $( '<li/>' ).addClass( 'tab-new' )
+                            .append( $( '<a/>' ).attr( 'href', 'javascript:void(0);' )
+                                                .append( $( '<i/>' ).addClass( 'tab-icon fa fa-plus-circle' ) )
+                                                .append( options.title_new ) );
     }
 });
 
