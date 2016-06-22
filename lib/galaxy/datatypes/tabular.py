@@ -56,13 +56,16 @@ class TabularData( data.Text ):
     def get_chunk(self, trans, dataset, chunk):
         ck_index = int(chunk)
         f = open(dataset.file_name)
+        t_start = (ck_index * trans.app.config.display_chunk_size)
         f.seek(ck_index * trans.app.config.display_chunk_size)
         # If we aren't at the start of the file, seek to next newline.  Do this better eventually.
         if f.tell() != 0:
             cursor = f.read(1)
             while cursor and cursor != '\n':
                 cursor = f.read(1)
-        ck_data = f.read(trans.app.config.display_chunk_size)
+        t_firstnewline = f.tell()
+        t_skipped = t_firstnewline - t_start
+        ck_data = f.read(trans.app.config.display_chunk_size - (t_skipped))
         cursor = f.read(1)
         while cursor and ck_data[-1] != '\n':
             ck_data += cursor
