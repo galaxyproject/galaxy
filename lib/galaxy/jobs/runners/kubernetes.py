@@ -267,7 +267,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             logs += "\n\n==== Pod " + pod.name + " log end   ===="
         logs_file_path = job_state.output_file
         logs_file = open(logs_file_path, mode="w")
-        logs_file.write(logs)
+        logs_file.write(logs.encode('utf8'))
         logs_file.close()
         return logs_file_path
 
