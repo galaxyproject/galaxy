@@ -1,36 +1,71 @@
 @import url(https://fonts.googleapis.com/css?family=Oxygen);
+@import url(https://fonts.googleapis.com/css?family=Consolas);
 @import url(https://fonts.googleapis.com/css?family=Droid+Serif);
 @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
 @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
 
 body {
-    font-family: 'Oxygen', 'PT Sans';
+    font-family: 'Oxygen', 'PT Sans', Serif;
 }
 h1, h2, h3 {
     font-weight: bold;
-    margin-bottom: 0;
 }
-.remark-slide-content h1 { font-size: 3em; }
-.remark-slide-content h2 { font-size: 2em; }
-.remark-slide-content h3 { font-size: 1.6em; }
+h1 {
+    font-size: 3em;
+    color: #ff9300;
+}
+h2 { font-size: 2em; }
+
+.title h1, h2 {
+    margin-bottom: 0px;
+    margin-top: 0px;
+    text-align: center;
+}
+
+.title p {
+    margin-top: 50px;
+    text-align: center;
+}
+
+h3 {
+    font-size: 1.8em;
+    position: absolute;
+    top: .5em;
+}
+
 .footnote {
     position: absolute;
-    bottom: 1em;
+    bottom: 3em;
 }
+
+i, em {
+    color: #ff9300;
+}
+
+.large {
+    font-size: 1.6em;
+}
+
 li p { line-height: 1.25em; }
-.red { color: #fa0000; }
-.large { font-size: 2em; }
+
+.smaller {
+    font-size: .8em;
+}
+
 a, a > code {
-    color: rgb(249, 38, 114);
+    color: #ff9300;
     text-decoration: none;
 }
-code {
-    background: #e7e8e2;
-    border-radius: 5px;
-}
+
 .remark-code, .remark-inline-code {
-    font-family: 'Ubuntu Mono';
+    font-family: 'Consolas';
+    color: #ff9300;
+    font-size: 1.1em;
 }
+.slightly-smaller {
+    font-size: .9em;
+}
+    
 .remark-code-line-highlighted     {
     background-color: #373832;
 }
@@ -46,21 +81,24 @@ code {
     clear: both;
 }
 #slideshow .slide .content code {
-    font-size: 0.8em;
 }
 #slideshow .slide .content pre code {
-    font-size: 0.9em;
-    padding: 15px;
 }
 .inverse {
-    background: #000;
+    background-color: #000;
+    background-repeat: no-repeat;
     color: #ffffff;
-    text-shadow: 0 0 20px #333;
 }
 .inverse h1, .inverse h2 {
     color: #f3f3f3;
     line-height: 0.8em;
 }
+
+.white {
+    background-color: #ffffff;
+    color: #000;
+}
+
 
 /* Slide-specific styling */
 #slide-inverse .footnote {

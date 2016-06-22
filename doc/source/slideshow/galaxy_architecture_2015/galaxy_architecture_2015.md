@@ -1,5 +1,5 @@
 layout: true
-class: inverse, middle
+class: inverse, middle, large
 
 ---
 class: special
@@ -10,8 +10,6 @@ Nate, James, John, Rémi
 .footnote[\#usegalaxy/@galaxyproject]
 
 ---
-
-class: middle
 
 ### Please Interrupt!
 
@@ -35,7 +33,7 @@ We're here to answer your question about Galaxy architecture!
 
 All Galaxy development happens on GitHub
 
-Contribution guidelines: https://github.com/galaxyproject/galaxy/blob/dev/CONTRIBUTING.md
+Contribution guidelines: http://bit.ly/gx-CONTRIBUTING-md
 
 ---
 
@@ -43,8 +41,12 @@ Contribution guidelines: https://github.com/galaxyproject/galaxy/blob/dev/CONTRI
 
 ---
 
-<!-- TODO: Work again on the image -->
-![Default-aligned image](images/family/team.png)
+class: white
+
+background-image: url(images/family/team.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
@@ -152,7 +154,7 @@ So by default Galaxy does not require:
 
 ---
 
-layout: false
+class: white
 
 background-image: url(images/server_client_old.mermaid.svg)
 background-position: center;
@@ -166,7 +168,7 @@ Webapp
 
 ---
 
-layout: false
+class: white
 
 background-image: url(images/server_client.mermaid.svg)
 background-position: center;
@@ -180,17 +182,32 @@ Many Grids
 
 ---
 
+class: white
+
 background-image: url(images/backbone-model-view.svg)
 background-position: center;
 background-repeat: no-repeat;
 background-size: contain;
- 
+
+### Backbone MVC
+
 ---
 
 background-image: url(images/wsgi_app.svg)
 background-position: center;
 background-repeat: no-repeat;
 background-size: contain;
+
+### Galaxy WSGI
+
+---
+
+### WSGI
+
+- Python interface for web servers defined by PEP 333 - https://www.python.org/dev/peps/pep-0333/.
+- Galaxy slowly moving from Paster to uwsgi to host the application.
+  - http://pythonpaste.org/
+  - https://uwsgi-docs.readthedocs.io/
 
 ---
 
@@ -204,14 +221,19 @@ background-size: contain;
 
 ---
 
+
+class: white
+
 background-image: url(images/sqla_arch_small.png)
 background-position: center;
 background-repeat: no-repeat;
 background-size: contain;
 
+### SQLAlchemy
+
 ---
 
-## Galaxy Model Migrations
+### Galaxy Model Migrations
 
 - A migration describes a linear list of database "diff"s to
   end up with the current Galaxy model.
@@ -224,14 +246,22 @@ background-size: contain;
 
 ---
 
-## Database Diagram
-
-background-image: url(images/sqla_arch_small.png)
+class: white
+background-image: url(images/galaxy_schema.png)
 background-position: center;
 background-repeat: no-repeat;
 background-size: contain;
 
+### Database Diagram
+
 https://wiki.galaxyproject.org/Admin/Internals/DataModel
+
+---
+
+background-image: url(images/hda.svg)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
 
 ---
 
