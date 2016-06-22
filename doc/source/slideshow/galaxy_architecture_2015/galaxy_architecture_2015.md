@@ -3,11 +3,11 @@ class: inverse, middle
 
 ---
 class: special
-# Galaxy Architecture 2015
+# Galaxy Architecture
 
 Nate, James, John, Rémi
 
-<!--- Add the logo and the Twitter / IRC  mentions --->
+.footnote[\#usegalaxy/@galaxyproject]
 
 ---
 
@@ -19,7 +19,7 @@ We're here to answer your question about Galaxy architecture!
 
 ---
 
-## 0. Getting involved in Galaxy
+## Getting involved in Galaxy
 
 ---
 
@@ -97,7 +97,7 @@ github.com/galaxyproject/**bioblend**
 
 ---
 
-## 2. Galaxy app architecture
+## Galaxy app architecture
 
 ---
 
@@ -107,11 +107,10 @@ github.com/galaxyproject/**bioblend**
 Whereas the architecture of the frontend (Web UI) aims for consistency and is
 highly opinionated, the backend (Python server) is guided by flexibility and is meant to be driven by plugins whenever possible.
 
-  
 ???
 
-Though an imperfect abstraction... i none light, the organizational principles
-that guide frontend and backend development of Galaxy could be seen as
+Though an imperfect abstraction... maybe it is beneficial to think of the organizational
+principles that guide frontend and backend development of Galaxy as
 diametrically opposite.
 
 The frontend architecture is guided by the principle that the end user experience
@@ -142,7 +141,7 @@ A deployer of Galaxy can plug
 ### A Plugin Driven Backend but...
 
 Galaxy has long been guided by the principle that cloning it and calling
-the ``run.sh`` should "just work" and should work quickly.
+the `run.sh` should "just work" and should work quickly.
 
 So by default Galaxy does not require:
 
@@ -155,25 +154,84 @@ So by default Galaxy does not require:
 
 layout: false
 
+background-image: url(images/server_client_old.mermaid.svg)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
+
+???
+
+User management and admin things, Reports and Tool Shed 
+Webapp
+
+---
+
+layout: false
+
 background-image: url(images/server_client.mermaid.svg)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
+
+???
+
+Workflow, Data Libraries, Visualization, History, Tool Menu, 
+Many Grids
+
+---
+
+background-image: url(images/backbone-model-view.svg)
 background-position: center;
 background-repeat: no-repeat;
 background-size: contain;
  
 ---
 
-<!-- TODO: Work again on the image -->
-background-image: url(images/app_architecture/client_server.png)
+background-image: url(images/wsgi_app.svg)
 background-position: center;
 background-repeat: no-repeat;
 background-size: contain;
 
 ---
 
-background-image: url(images/app_architecture/front_management.png)
+## Galaxy Models
+
+- Database interactions powered by SQLAlchemy - http://www.sqlalchemy.org/.
+- Galaxy doesn't think in terms "rows" but "objects".
+- Classes for Galaxy model objects in `lib/galaxy/model/__init__.py`.
+- Classes mapped to objects in `lib/galaxy/model/mapping.py`
+  - Describes table definitions and relationships.
+
+---
+
+background-image: url(images/sqla_arch_small.png)
 background-position: center;
 background-repeat: no-repeat;
 background-size: contain;
+
+---
+
+## Galaxy Model Migrations
+
+- A migration describes a linear list of database "diff"s to
+  end up with the current Galaxy model.
+- Allow the schema to be migrated forward automatically.
+- Powered by sqlalchemy-migrate - https://sqlalchemy-migrate.readthedocs.io/en/latest/.
+- Each file in `lib/galaxy/model/migrate/versions/`
+  - `0124_job_state_history.py`
+  - `0125_workflow_step_tracking.py`
+  - `0126_password_reset.py`
+
+---
+
+## Database Diagram
+
+background-image: url(images/sqla_arch_small.png)
+background-position: center;
+background-repeat: no-repeat;
+background-size: contain;
+
+https://wiki.galaxyproject.org/Admin/Internals/DataModel
 
 ---
 

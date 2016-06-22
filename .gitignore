@@ -41,6 +41,9 @@ reports_webapp.lock
 reports_webapp.log
 reports_webapp.pid
 
+# Jupyter Runtime Files
+.ipynb_checkpoints
+
 # Config files
 universe_wsgi.ini
 reports_wsgi.ini
