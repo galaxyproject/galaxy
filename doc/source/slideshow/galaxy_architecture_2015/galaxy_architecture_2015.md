@@ -44,9 +44,6 @@ Contribution guidelines: http://bit.ly/gx-CONTRIBUTING-md
 class: white
 
 background-image: url(images/family/team.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
 
 ---
 
@@ -157,9 +154,6 @@ So by default Galaxy does not require:
 class: white
 
 background-image: url(images/server_client_old.mermaid.svg)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
 
 ???
 
@@ -171,9 +165,6 @@ Webapp
 class: white
 
 background-image: url(images/server_client.mermaid.svg)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
 
 ???
 
@@ -185,18 +176,12 @@ Many Grids
 class: white
 
 background-image: url(images/backbone-model-view.svg)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
 
 ### Backbone MVC
 
 ---
 
 background-image: url(images/wsgi_app.svg)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
 
 ### Galaxy WSGI
 
@@ -211,7 +196,11 @@ background-size: contain;
 
 ---
 
-## Galaxy Models
+background-image: url(images/wsgi_request.svg)
+
+---
+
+### Galaxy Models
 
 - Database interactions powered by SQLAlchemy - http://www.sqlalchemy.org/.
 - Galaxy doesn't think in terms "rows" but "objects".
@@ -221,15 +210,9 @@ background-size: contain;
 
 ---
 
-
 class: white
 
 background-image: url(images/sqla_arch_small.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
-
-### SQLAlchemy
 
 ---
 
@@ -248,9 +231,6 @@ background-size: contain;
 
 class: white
 background-image: url(images/galaxy_schema.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
 
 ### Database Diagram
 
@@ -259,403 +239,212 @@ https://wiki.galaxyproject.org/Admin/Internals/DataModel
 ---
 
 background-image: url(images/hda.svg)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
 
 ---
 
-background-image: url(images/app_architecture/chunks.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
-
----
-
-background-image: url(images/app_architecture/chunks_2.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
-
----
-
-background-image: url(images/app_architecture/engine.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
-
----
-
-background-image: url(images/app_architecture/job_management.png)
-background-position: center;
-background-repeat: no-repeat;
-background-size: contain;
-
----
-
-## 3. Galaxy components and object model
-
----
-
-Galaxy data model is not database entity driven
-
-Entities are defined in galaxy.model as objects
-
-SQLAlchemy is used for object relation mapping
-
-Mappings are defined in galaxy.model.mapping in two
-<br />
-parts - a table definition and a mapping between
-<br />
-objects and table including relationships
-
-Migrations allow the schema to be migrated forward
-<br />
-automatically
-
----
-
-![Default-aligned image](images/galaxy_components/data_model.png)
-https://wiki.galaxyproject.org/Admin/Internals/DataModel
-
----
-
-![Default-aligned image](images/galaxy_components/data_model2.png)
-
----
-
-### Core components
-![Default-aligned image](images/galaxy_components/core_components.png)
-
----
-
-### Core components: run analysis
-![Default-aligned image](images/galaxy_components/run_analysis.png)
+class: white
+background-image: url(images/hda_dataset.plantuml.svg)
 
 ---
 
 ### Metadata
-Structured data
 
-Different keys/types for different datatypes
+- Typed key-value pairs attached to HDA.
+- Keys and types defined at the datatype level.
+- Can be used by tools to dynamically control the tool form.
 
-Can be used by tools to dynamically control the
-<br />
-tool form
+???
 
----
-
-### Core components: workflow
-![Default-aligned image](images/galaxy_components/workflow.png)
+Slides for datatypes, example of meta data definitions...
 
 ---
 
-### Core components: workflow run
-![Default-aligned image](images/galaxy_components/workflow_run.png)
+background-image: url(images/workflow_definition.svg)
 
 ---
 
-### Data Libraries
-![Default-aligned image](images/galaxy_components/data_libraries.png)
+background-image: url(images/workflow_run.svg)
 
 ---
 
-### Data Libraries: Permissions
-![Default-aligned image](images/galaxy_components/permissions.png)
+background-image: url(images/libraries.svg)
 
 ---
 
-### Reference data "cache"
-![Default-aligned image](images/galaxy_components/data_cache.png)
+background-image: url(images/library_permissions.svg)
 
 ---
 
-### .special2[Visualization Plugins]
+background-image: url(images/data_managers.svg)
 
-Adding new visualizatons to a Galaxy instance:
+---
+
+class: normal
+
+.strike[```
+>>> fh = open( dataset.file_path, 'w' )
+>>> fh.write( ‘foo’ )
+>>> fh.close()
+>>> fh = open( dataset.file_path, ‘r’ )
+>>> fh.read()
+```]
+
+```
+>>> update_from_file( dataset, file_name=‘foo.txt’ )
+>>> get_data( dataset )
+>>> get_data( dataset, start=42, count=4096 )
+```
+
+---
+
+### Visualization Plugins
+
+Adding new visualizations to a Galaxy instance
+
 - Configuration file (XML)
-- Base template (Mako)
-- Additional static data *if needed* (CSS, JS, ...)
+- Base template (Mako or JavaScript)
+- Additional static data if needed (CSS, JS, …)
 
 ---
 
-### .special2[Visualization Plugins: Charts]
-![Default-aligned image](images/galaxy_components/viz_plugin_charts.png)
+class: smaller
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="Charts">
+    <data_sources>
+        <data_source>
+            <model_class>HistoryDatasetAssociation</model_class>
+            <test type="isinstance" test_attr="datatype" result_type="datatype">tabular.Tabular</test>
+            <test type="isinstance" test_attr="datatype" result_type="datatype">tabular.CSV</test>
+            <to_param param_attr="id">dataset_id</to_param>
+        </data_source>
+    </data_sources>
+    <params>
+        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+    </params>
+    <entry_point entry_point_type="mako">charts.mako</entry_point>
+</visualization>
+```
 
 ---
 
-### .special2[Visualization Plugins: Data]
+### Client Directories
 
-How do I *efficiently* access data for my viz?
-- Framework provides direct link to read the raw dataset
-- *or* use Data providers
-    - In config, assert that visualization requires a given type of data provider
-    - Data providers process data before sending to browser. Slice, filter, reformat, ...
+- Source stylesheets and JavaScript in `client/galaxy/{style|scripts}`
+- "Packed" scripts served by Galaxy stored in `static/{style|scripts}`
+  - webpack builds these "compiled" artifacts
 
----
-
-### .special2[Interactive Environments]
-Galaxy side is identical to interactive
-<br />
-environments: config and base template
-- Within the base template, launch a Docker container running a web accessible process
-- Build a UI that accesses that process through a proxy
+Upshot - modify files in `client` and rebuild with `make client` before 
+deployment.
 
 ---
 
-### .special2[Dataset Collections]
-Hundreds or **thousands** of similar datasets are
-<br />
-unwiedly, how do you get a handle on them?
-- Group datasets into a single unit
-- Perform complex operations on that unit
-    - Operations are performed on each group element
-    - Output of each operation is a new group
+### Building the Client - Makefile Targets
+
+class: normal
+
+```
+client: grunt style ## Rebuild all client-side artifacts
+
+grunt: npm-deps ## Calls out to Grunt to build client
+  cd client && node_modules/grunt-cli/bin/grunt
+
+style: npm-deps ## Calls the style task of Grunt
+  cd client && node_modules/grunt-cli/bin/grunt style
+
+npm-deps: ## Install NodeJS dependencies.
+  cd client && npm install
+```
 
 ---
 
-![Default-aligned image](images/galaxy_components/dataset_collections.png)
+### grunt
+
+Build tool for JavaScript, tasks are defined in `client/Gruntfile.js`. The default task is
+
+.smaller[```grunt.registerTask( 'default', [ 'check-modules', 'uglify', 'webpack' ] );```]
+
+- `check-modules` Verifies node dependencies are correct and exact.
+- `uglify` Compresses JavaScript modules in `client` and move to `static` and creates source maps.
+   - https://github.com/mishoo/UglifyJS
+   - JavaScript loads much faster but difficult to debug by default
+   - Source maps re-enable proper stack traces.
+- `webpack` Bundles modules together into a single JavaScript file - quickly loadable.
 
 ---
 
-### Map/reduce in workflows
-![Default-aligned image](images/galaxy_components/map_workflow.png)
+### JavaScript Modules - The Problem
+
+From http://requirejs.org/docs/why.html:
+
+- Web sites are turning into Web apps
+- Code complexity grows as the site gets bigger
+- Assembly gets harder
+- Developer wants discrete JS files/modules
+- Deployment wants optimized code in just one or a few HTTP calls
 
 ---
 
-### Histories
-![Default-aligned image](images/galaxy_components/histories.png)
+### JavaScript Modules - The Solution
 
----
+From http://requirejs.org/docs/why.html:
 
-### .special2[Dataset Collections]
-![Default-aligned image](images/galaxy_components/dataset_collections_history.png)
+ - Some sort of #include/import/require
+ - Ability to load nested dependencies
+ - Ease of use for developer but then backed by an optimization tool that helps deployment
 
----
-
-### Object Store
-![Default-aligned image](images/galaxy_components/object_store1.png)
-
----
-
-### Object Store
-![Default-aligned image](images/galaxy_components/object_store2.png)
-
----
-
-## 4. Galaxy startup
-
----
-
-### Pre-startup
-![Default-aligned image](images/galaxy_components/object_store2.png)
-
----
-
-### First run: Initialize configs
-![Default-aligned image](images/galaxy_components/object_store2.png)
-
----
-
-### First run: Fetch eggs
-![Default-aligned image](images/galaxy_components/object_store2.png)
-
----
-
-### Every run: Load the application
-![Default-aligned image](images/galaxy_components/object_store2.png)
-
----
-
-### Every run: Load database migrations
-![Default-aligned image](images/galaxy_components/object_store2.png)
-
----
-
-### First run: Initialize database
-![Default-aligned image](images/galaxy_components/object_store2.png)
-
----
-
-Everything after here happens every time
-
----
-
-### Load tool migrations
-![Default-aligned image](images/galaxy_components/object_store2.png)
-
----
-
-### Load datatypes
-![Default-aligned image](images/galaxy_components/object_store2.png)
-
----
-
-### Load datatypes sniffers
-![Default-aligned image](images/galaxy_components/object_store2.png)
-
----
-
-### Load build (display) sites
-![Default-aligned image](images/galaxy_components/object_store2.png)
-
----
-
-### Load data tables
-![Default-aligned image](images/galaxy_components/object_store2.png)
-
----
-
-### Read job configuration file
-![Default-aligned image](images/galaxy_components/object_store2.png)
-* config/job_conf.xml will automatically be read if created, see
-<br />
-job_conf_xml.sample_advanced for fully documented examples of all
-<br />
-possible configurations
-
----
-
-### Load tools
-![Default-aligned image](images/galaxy_components/object_store2.png)
-* shed_tool_conf.xml is empty on the first run so
-<br />
-only tools provided with Galaxy are loaded, but
-<br />
-after tools are installed from the Tool Shed, they
-<br />
-will load here
-
----
-
-### Associate display apps with datatypes
-![Default-aligned image](images/galaxy_components/object_store2.png)
-
----
-
-### Load implicit datatype converters
-![Default-aligned image](images/galaxy_components/object_store2.png)
-* A few internal operations are defined as tools to allow them to run via Galaxy'
-<br />
-s job system, and are loaded here as well
-
----
-
-### Load visualization plugins
-![Default-aligned image](images/galaxy_components/object_store2.png)
-
----
-
-### Initialize job handlers
-![Default-aligned image](images/galaxy_components/object_store2.png)
-
----
-
-### Initialize web controllers
-![Default-aligned image](images/galaxy_components/object_store2.png)
-
----
-
-### Load WSGI middleware
-![Default-aligned image](images/galaxy_components/object_store2.png)
-
----
-
-serving on http://127.0.0.1:8080
-
----
-
-## 5. A Galaxy request
-
----
-
-### Beginning of request
-- TCP connection from client on port 80
-- WSGI server is responsible for picking up the
-<br />
-connection, parsing HTTP headers, and
-<br />
-reformatting them into a dictionary according
-<br />
-to the WSGI spec, this dict is called "environ"
-- In a default Galaxy install this is *currently*
-Paste#http
-
----
-
-### Middleware
-- The WSGI interface is based around function
-<br />
-calls: def app( environ, start_response ): ...
-- Middleware act as filters, modify the environ
-<br />
-and then pass through to the next webapp
-- Galaxy uses several middleware components
-galaxy.webapps.galaxy.buildapp#wrap_in_middleware
-<br />
-error handling, logging, proxy hostname, debug, static, ...
-
----
-
-### WebApplication (galaxy.web.framework.base#WebApplication)
-- Galaxy's custom web framework, shares a lot
-<br />
-of ideas with Pylons
-- __call__ method supports the WSGI spec
-    - Takes environ and creates a wrapper object
-    <br />
-    GalaxyWebTransaction -- ** this is the ubiquitous trans! **
-
----
-
+Enter RequireJS an implementation of AMD.
 
 
 ---
 
+class: normal
 
+### JavaScript Modules - Galaxy AMD Example
 
----
+```javascript
+/**
+    This is the workflow tool form.
+*/
+define(['utils/utils', 'mvc/tool/tool-form-base'],
+    function(Utils, ToolFormBase) {
 
+    // create form view
+    var View = ToolFormBase.extend({
+      ...
+    });
 
-
----
-
-
-
----
-
-
-
----
-
-
-
----
-
-
-
----
-
-
+    return {
+        View: View
+    };
+});
+```
 
 ---
 
-
-
----
-
-
+class: white
+background-image: url(images/what-is-webpack.svg)
 
 ---
 
+class: normal
 
+### webpack in Galaxy
+
+- Turns Galaxy modules into an "app".
+- Builds two bundles currently - a common set of libraries and an analysis "app".
+- https://github.com/galaxyproject/galaxy/issues/1041
+- https://github.com/galaxyproject/galaxy/pull/1144
 
 ---
 
-
-
----
-
-
+class: white
+background-image: url(images/jsload.png)
 
 ---
+
+### StyleSheets
+
+- 

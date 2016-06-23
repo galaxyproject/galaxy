@@ -48,6 +48,10 @@ i, em {
 
 li p { line-height: 1.25em; }
 
+.normal {
+    font-size: 1em;
+}
+
 .smaller {
     font-size: .8em;
 }
@@ -84,9 +88,12 @@ a, a > code {
 }
 #slideshow .slide .content pre code {
 }
+
 .inverse {
     background-color: #000;
     background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
     color: #ffffff;
 }
 .inverse h1, .inverse h2 {
@@ -96,9 +103,15 @@ a, a > code {
 
 .white {
     background-color: #ffffff;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
     color: #000;
 }
 
+.strike {
+    text-decoration: line-through;
+}
 
 /* Slide-specific styling */
 #slide-inverse .footnote {
