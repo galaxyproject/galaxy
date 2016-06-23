@@ -1,4 +1,17 @@
-define( [ 'plugin/models/groups' ], function( Groups ) {
+define( [], function() {
+    var Groups = Backbone.Collection.extend({
+        model: Backbone.Model.extend({
+            defaults : {
+                key     : 'Data label',
+                date    : ''
+            },
+
+            reset: function(){
+                this.clear( { silent: true } ).set( this.defaults );
+                this.trigger( 'reset', this );
+            }
+        })
+    });
     return Backbone.Model.extend({
         defaults : {
             id              : null,

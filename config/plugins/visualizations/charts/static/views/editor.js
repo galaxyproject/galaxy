@@ -3,9 +3,8 @@
  *  and data group selections.
  */
 define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils',
-          'plugin/models/chart', 'plugin/models/group',
-          'plugin/views/settings', 'plugin/views/groups', 'plugin/views/types' ],
-    function( Tabs, Ui, Portlet, Utils, Chart, Group, SettingsView, GroupsView, TypesView ) {
+          'plugin/models/chart', 'plugin/views/settings', 'plugin/views/groups', 'plugin/views/types' ],
+    function( Tabs, Ui, Portlet, Utils, Chart, SettingsView, GroupsView, TypesView ) {
     return Backbone.View.extend({
         initialize: function( app, options ){
             var self = this;
@@ -127,6 +126,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                 'dataset_id'    : this.app.options.config.dataset_id,
                 'title'         : 'New Chart'
             });
+            this.chart.groups.add( { id : Utils.uid() } );
             this.portlet.hideOperation( 'back' );
         },
 
@@ -139,7 +139,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                 date        : Utils.time()
             });
             if ( this.chart.groups.length == 0 ) {
-                this.message.update( { message: 'Please select data columns before drawing the chart.' } );
+                this.message.update( { message: 'Please specify data columns before drawing the chart.' } );
                 this.tabs.show( 'groups' );
                 return;
             }
@@ -150,7 +150,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                     for ( var key in chart_def.columns ) {
                         if ( group.attributes[ key ] === '__null__' ) {
                             self.message.update( { status: 'danger', message: 'This chart type requires column types not found in your tabular file.' } );
-                            self.tabs.show( group.id );
+                            self.tabs.show( 'groups' );
                             valid = false;
                         }
                     }

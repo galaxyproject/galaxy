@@ -1,7 +1,7 @@
 /**
  *  This class renders the chart configuration form.
  */
-define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/form/form-repeat', 'plugin/models/group', 'utils/utils' ], function( Table, Ui, Repeat, Group, Utils ) {
+define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/form/form-repeat', 'utils/utils' ], function( Table, Ui, Repeat, Utils ) {
     var GroupView = Backbone.View.extend({
         initialize: function( app, options ) {
             var self = this;
@@ -157,8 +157,9 @@ define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/form/form-repeat', 'plugin/m
             this.repeat = new Repeat.View({
                 title       : 'Data series',
                 title_new   : 'Data series',
+                min         : 1,
                 onnew       : function() {
-                    self.chart.groups.add(  new Group( { id : Utils.uid() } ) )
+                    self.chart.groups.add( { id : Utils.uid() } );
                 }
             });
             this.setElement( this.repeat.$el );

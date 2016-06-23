@@ -1,8 +1,8 @@
 /**
  *  This class saves and loads a chart through the api.
  */
- define( [ 'utils/utils', 'plugin/models/chart', 'plugin/models/group', 'mvc/visualization/visualization-model' ],
-         function( Utils, Chart, Group ) {
+ define( [ 'utils/utils', 'plugin/models/chart', 'mvc/visualization/visualization-model' ],
+         function( Utils, Chart ) {
     return Backbone.Model.extend({
         vis: null,
 
@@ -73,7 +73,7 @@
             this.chart.state( 'ok', 'Loading saved visualization...' );
             this.chart.settings.set( chart_dict.settings );
             for ( var j in chart_dict.groups ) {
-                this.chart.groups.add( new Group( chart_dict.groups[ j ] ) );
+                this.chart.groups.add( chart_dict.groups[ j ] );
             }
             this.chart.set( 'modified', false );
             console.debug('Storage::load() - Loading chart type ' + chart_type + '.');
