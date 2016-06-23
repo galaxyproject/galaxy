@@ -70,11 +70,12 @@ define(['utils/utils',
                 input_def.error_text = 'Missing columns in referenced dataset.'
             }
 
-            // configure options fields
-            var options = input_def.data || [];
-            if( !options ) {
+            // identify available options
+            var data = input_def.data;
+            if( !data ) {
+                data = [];
                 _.each( input_def.options, function( option ) {
-                    options.push( { label: option[ 0 ], value: option[ 1 ] } );
+                    data.push( { label: option[ 0 ], value: option[ 1 ] } );
                 });
             }
 
@@ -95,7 +96,7 @@ define(['utils/utils',
             // create select field
             return new SelectClass.View({
                 id          : 'field-' + input_def.id,
-                data        : options,
+                data        : data,
                 error_text  : input_def.error_text || 'No options available',
                 multiple    : input_def.multiple,
                 optional    : input_def.optional,
