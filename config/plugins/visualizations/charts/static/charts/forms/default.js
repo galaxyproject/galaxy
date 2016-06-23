@@ -247,7 +247,13 @@ return {
                 }
             ]
         }
-    }
+    },
+    series      : [{
+        name        : 'key',
+        label       : 'Provide a label',
+        type        : 'text',
+        placeholder : 'Data label'
+    }]
 };
 
 });

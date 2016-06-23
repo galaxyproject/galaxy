@@ -72,9 +72,8 @@
             this.chart.set( chart_dict.attributes );
             this.chart.state( 'ok', 'Loading saved visualization...' );
             this.chart.settings.set( chart_dict.settings );
-            for ( var j in chart_dict.groups ) {
-                this.chart.groups.add( chart_dict.groups[ j ] );
-            }
+            this.chart.groups.reset();
+            this.chart.groups.add( chart_dict.groups );
             this.chart.set( 'modified', false );
             console.debug('Storage::load() - Loading chart type ' + chart_type + '.');
             return true;

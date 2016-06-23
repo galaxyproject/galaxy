@@ -126,6 +126,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                 'dataset_id'    : this.app.options.config.dataset_id,
                 'title'         : 'New Chart'
             });
+            this.chart.groups.reset();
             this.chart.groups.add( { id : Utils.uid() } );
             this.portlet.hideOperation( 'back' );
         },

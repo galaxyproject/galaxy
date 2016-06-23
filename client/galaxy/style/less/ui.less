@@ -490,6 +490,14 @@
     max-width: 900px;
 }
 
+.ui-portlet-plain {
+    &:extend(.ui-portlet all);
+    border: none;
+    .portlet-content {
+        padding: 0px;
+    }
+}
+
 // popovers
 .ui-popover {
     max-width: 700px;
