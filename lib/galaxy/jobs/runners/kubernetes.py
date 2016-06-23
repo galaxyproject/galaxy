@@ -7,6 +7,7 @@ import logging
 from galaxy import model
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 from os import environ as os_environ
+from six import text_type
 
 # pykube imports:
 try:
@@ -267,7 +268,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             logs += "\n\n==== Pod " + pod.name + " log end   ===="
         logs_file_path = job_state.output_file
         logs_file = open(logs_file_path, mode="w")
-        logs_file.write(logs.encode('utf8'))
+        if isinstance(logs, text_type):
+            logs = logs.encode('utf8')
+        logs_file.write(logs)
         logs_file.close()
         return logs_file_path
 
