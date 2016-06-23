@@ -5,6 +5,7 @@
     > .controls {
         margin: 8px 8px 1px;
         padding: 0px;
+        flex: 0 0 auto;
 
         .title {
             margin-bottom: 4px;
@@ -108,9 +109,6 @@
             text-align: center;
             margin: 0;
             border-top: 1px solid @btn-default-border;
-            &:not(:last-child) {
-                border-bottom: 1px solid @btn-default-border;
-            }
 
             button {
                 margin: 0;
@@ -168,9 +166,6 @@
                 color: @btn-default-color;
             }
         }
-        .search+.list-pagination {
-            background: blue;
-        }
     }
 
     // the help text that appears above the drop target
@@ -212,7 +207,7 @@
     .contents-loading-indicator {
         display: inline-block;
         width: 100%;
-        padding: 8px;
+        padding: 16px;
         text-align: center;
         color: grey;
     }

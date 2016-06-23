@@ -165,12 +165,13 @@ var HistoryView = _super.extend(
     _showLoadingIndicator : function( msg, speed, callback ){
         console.log( '_showLoadingIndicator:' );
         var $indicator = $( '<div class="loading-indicator"/>' );
-        this.$el.html( $indicator.text( msg ).show( !_.isUndefined( speed )? speed : this.fxSpeed ) );
+        this.$el.html( $indicator.text( msg ).slideDown( !_.isUndefined( speed )? speed : this.fxSpeed ) );
     },
 
     /** hide the loading indicator */
     _hideLoadingIndicator : function( speed ){
-        this.$( '.loading-indicator' ).hide( !_.isUndefined( speed )? speed : this.fxSpeed, function(){
+        // make speed a bit slower to compensate for slow rendering of up to 500 contents
+        this.$( '.loading-indicator' ).slideUp( !_.isUndefined( speed )? speed : ( this.fxSpeed + 200 ), function(){
             $( this ).remove();
         });
     },

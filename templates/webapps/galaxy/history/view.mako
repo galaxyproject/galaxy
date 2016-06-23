@@ -39,6 +39,7 @@ ${parent.stylesheets()}
     }
 %endif
 #history-view-controls {
+    flex: 0 0 44px;
     background-color: white;
     border-bottom: 1px solid #DDD;
     width: 100%;
