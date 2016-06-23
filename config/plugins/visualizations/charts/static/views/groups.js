@@ -24,7 +24,7 @@ define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/f
                 inputs  : inputs,
                 cls     : 'ui-portlet-plain',
                 onchange: function() {
-                    self.group.set( self.form.data.create() )
+                    self.group.set( self.form.data.create() );
                     self.chart.set( 'modified', true );
                 }
             } );
