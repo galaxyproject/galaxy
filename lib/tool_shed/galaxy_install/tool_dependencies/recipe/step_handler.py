@@ -82,7 +82,7 @@ class CompressedFile( object ):
                     if os.path.exists( absolute_filepath ):
                         os.chmod( absolute_filepath, unix_permissions )
                     else:
-                        log.warn("Unable to change permission on extracted file '%s' as it does not exist" % absolute_filepath)
+                        log.warning("Unable to change permission on extracted file '%s' as it does not exist" % absolute_filepath)
         return os.path.abspath( os.path.join( extraction_path, common_prefix ) )
 
     def getmembers_tar( self ):
@@ -179,7 +179,7 @@ class Download( object ):
                     err_msg = 'Downloading from URL %s took longer than the defined timeout period of %.1f seconds.' % \
                         ( str( download_url ), basic_util.NO_OUTPUT_TIMEOUT )
                     raise Exception( err_msg )
-        except Exception, e:
+        except Exception as e:
             err_msg = err_msg = 'Error downloading from URL\n%s:\n%s' % ( str( download_url ), str( e ) )
             raise Exception( err_msg )
         finally:
@@ -239,10 +239,10 @@ class RecipeStep( object ):
 
     def execute_step( self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
                       install_environment, work_dir, current_dir=None, initial_download=False ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method")
 
     def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
 
 class AssertDirectoryExecutable( RecipeStep ):
@@ -605,7 +605,7 @@ class DownloadBinary( Download, RecipeStep ):
                 # Set actions to the same, so that the current download_binary doesn't get re-run in the
                 # next stage.  TODO: this may no longer be necessary...
                 actions = [ item for item in filtered_actions ]
-        except Exception, e:
+        except Exception as e:
             log.exception( str( e ) )
             if initial_download:
                 # No binary exists, or there was an error downloading the binary from the generated URL.
@@ -847,23 +847,17 @@ class MoveDirectoryFiles( RecipeStep ):
 
     def move_directory_files( self, current_dir, source_dir, destination_dir ):
         source_directory = os.path.abspath( os.path.join( current_dir, source_dir ) )
-        destination_directory = os.path.join( destination_dir )
-        if not os.path.isdir( destination_directory ):
-            os.makedirs( destination_directory )
-        symlinks = []
-        regular_files = []
-        for file_name in os.listdir( source_directory ):
-            source_file = os.path.join( source_directory, file_name )
-            destination_file = os.path.join( destination_directory, file_name )
-            files_tuple = ( source_file, destination_file )
-            if os.path.islink( source_file ):
-                symlinks.append( files_tuple )
+        destination_directory = os.path.abspath(os.path.join(destination_dir))
+        if not os.path.isdir(destination_directory):
+            os.makedirs(destination_directory)
+        for dir_entry in os.listdir(source_directory):
+            source_entry = os.path.join(source_directory, dir_entry)
+            if os.path.islink(source_entry):
+                destination_entry = os.path.join(destination_directory, dir_entry)
+                os.symlink(os.readlink(source_entry), destination_entry)
+                os.remove(source_entry)
             else:
-                regular_files.append( files_tuple )
-        for source_file, destination_file in symlinks:
-            shutil.move( source_file, destination_file )
-        for source_file, destination_file in regular_files:
-            shutil.move( source_file, destination_file )
+                shutil.move(source_entry, destination_directory)
 
     def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # <action type="move_directory_files">

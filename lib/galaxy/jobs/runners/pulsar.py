@@ -18,6 +18,7 @@ from pulsar.client import ClientJobDescription
 from pulsar.client import PulsarOutputs
 from pulsar.client import ClientOutputs
 from pulsar.client import PathMapper
+from pulsar.client import PulsarClientTransportError
 
 import pulsar.core
 
@@ -62,6 +63,10 @@ PULSAR_PARAM_SPECS = dict(
         map=specs.to_str_or_none,
         valid=specs.is_in("urllib", "curl", None),
         default=None
+    ),
+    transport_timeout=dict(
+        map=lambda val: None if val == "None" else int(val),
+        default=None,
     ),
     cache=dict(
         map=specs.to_bool_or_none,
@@ -191,7 +196,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             client_manager_kwargs[ "file_cache" ] = None
 
         for kwd in self.runner_params.keys():
-            if kwd.startswith( 'amqp_' ):
+            if kwd.startswith( 'amqp_' ) or kwd.startswith( 'transport_' ):
                 client_manager_kwargs[ kwd ] = self.runner_params[ kwd ]
         self.client_manager = build_client_manager(**client_manager_kwargs)
 
@@ -224,6 +229,9 @@ class PulsarJobRunner( AsynchronousJobRunner ):
         try:
             client = self.get_client_from_state(job_state)
             status = client.get_status()
+        except PulsarClientTransportError as exc:
+            log.error("Communication error with Pulsar server on state check, will retry: %s", exc)
+            return job_state
         except Exception:
             # An orphaned job was put into the queue at app startup, so remote server went down
             # either way we are done I guess.
@@ -377,7 +385,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
         for key, value in self.destination_defaults.iteritems():
             if key in params:
                 if value is PARAMETER_SPECIFICATION_IGNORED:
-                    log.warn( "Pulsar runner in selected configuration ignores parameter %s" % key )
+                    log.warning( "Pulsar runner in selected configuration ignores parameter %s" % key )
                 continue
             # if self.runner_params.get( key, None ):
             #    # Let plugin define defaults for some parameters -
@@ -451,6 +459,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             client = self.get_client_from_state(job_state)
             run_results = client.full_status()
             remote_working_directory = run_results.get("working_directory", None)
+            remote_metadata_directory = run_results.get("metadata_directory", None)
             stdout = run_results.get('stdout', '')
             stderr = run_results.get('stderr', '')
             exit_code = run_results.get('returncode', None)
@@ -482,7 +491,8 @@ class PulsarJobRunner( AsynchronousJobRunner ):
                 stdout,
                 stderr,
                 exit_code,
-                remote_working_directory=remote_working_directory
+                remote_working_directory=remote_working_directory,
+                remote_metadata_directory=remote_metadata_directory,
             )
         except Exception:
             log.exception("Job wrapper finish method failed")
@@ -666,7 +676,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             if PulsarJobRunner.__use_remote_datatypes_conf( client ):
                 remote_datatypes_config = remote_system_properties.get('galaxy_datatypes_config_file', None)
                 if not remote_datatypes_config:
-                    log.warn(NO_REMOTE_DATATYPES_CONFIG)
+                    log.warning(NO_REMOTE_DATATYPES_CONFIG)
                     remote_datatypes_config = os.path.join(remote_galaxy_home, 'datatypes_conf.xml')
                 metadata_kwds['datatypes_config'] = remote_datatypes_config
             else:

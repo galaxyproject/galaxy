@@ -251,7 +251,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         try:
             stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(self.decode_id(workflow_id))
-        except Exception, e:
+        except Exception as e:
             trans.response.status = 400
             return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, str( e ))
 
@@ -334,7 +334,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         } )
 
         # create tool model and default tool state (if missing)
-        tool_model = module.tool.to_json( trans, tool_inputs, workflow_mode=True )
+        tool_model = module.tool.to_json( trans, tool_inputs, workflow_building_mode=True )
         module.update_state( tool_model[ 'state_inputs' ] )
         return {
             'tool_model'        : tool_model,

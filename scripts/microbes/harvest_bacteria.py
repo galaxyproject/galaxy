@@ -75,7 +75,7 @@ def get_chroms_by_project_id( org_num, base_url="http://www.ncbi.nlm.nih.gov/ent
         return None
 
     chroms = []
-    for chr_row in BeautifulSoup( html ).findAll( "tr", { "class" : "vvv" } ):
+    for chr_row in BeautifulSoup( html ).findAll( "tr", { "class": "vvv" } ):
         chr_row = str( chr_row ).replace( "\n", "" ).replace( "\r", "" )
         fields2 = chr_row.split( "</td>" )
         refseq = fields2[1].split( "</a>" )[0].split( ">" )[-1]
@@ -170,7 +170,7 @@ def process_Genbank( filename, org_num, refseq ):
 def process_Glimmer3( filename, org_num, refseq ):
     try:
         glimmer3_bed = get_bed_from_glimmer3( filename, refseq )
-    except Exception, e:
+    except Exception as e:
         print "Converting Glimmer3 to bed FAILED! For chrom:", refseq, "file:", filename, e
         glimmer3_bed = []
     glimmer3_bed_file = open( os.path.join( os.path.split( filename )[0], "%s.Glimmer3.bed" % refseq ), 'wb+' )
@@ -181,7 +181,7 @@ def process_Glimmer3( filename, org_num, refseq ):
 def process_GeneMarkHMM( filename, org_num, refseq ):
     try:
         geneMarkHMM_bed = get_bed_from_GeneMarkHMM( filename, refseq )
-    except Exception, e:
+    except Exception as e:
         print "Converting GeneMarkHMM to bed FAILED! For chrom:", refseq, "file:", filename, e
         geneMarkHMM_bed = []
     geneMarkHMM_bed_bed_file = open( os.path.join( os.path.split( filename )[0], "%s.GeneMarkHMM.bed" % refseq ), 'wb+' )
@@ -192,7 +192,7 @@ def process_GeneMarkHMM( filename, org_num, refseq ):
 def process_GeneMark( filename, org_num, refseq ):
     try:
         geneMark_bed = get_bed_from_GeneMark( filename, refseq )
-    except Exception, e:
+    except Exception as e:
         print "Converting GeneMark to bed FAILED! For chrom:", refseq, "file:", filename, e
         geneMark_bed = []
     geneMark_bed_bed_file = open( os.path.join( os.path.split( filename )[0], "%s.GeneMark.bed" % refseq ), 'wb+' )

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-
 """
 Script that imports locally stored data as a new dataset for the user
 Usage: import id outputfile
 """
+from __future__ import print_function
+
 import os
 import sys
 
@@ -35,10 +36,10 @@ id2name = {
 
 fname = id2name.get(dataid, '')
 if not fname:
-    print 'Importing invalid data %s' % dataid
+    print('Importing invalid data %s' % dataid)
     sys.exit()
 else:
-    print 'Imported %s' % fname
+    print('Imported %s' % fname)
 
 # this path is hardcoded
 inp_name = os.path.join('database', 'import', fname)
@@ -46,7 +47,7 @@ inp_name = os.path.join('database', 'import', fname)
 try:
     inp = open(inp_name, 'rt')
 except:
-    print 'Could not find file %s' % inp_name
+    print('Could not find file %s' % inp_name)
     sys.exit()
 
 out = open(out_name, 'wt')

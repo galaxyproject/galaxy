@@ -14,7 +14,7 @@ def __main__():
     out.write( "##gff-version 2\n" )
     out.write( "##bed_to_gff_converter.py\n\n" )
     i = 0
-    for i, line in enumerate( file( input_name ) ):
+    for i, line in enumerate( open( input_name ) ):
         complete_bed = False
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( '#' ) and not line.startswith( 'track' ) and not line.startswith( 'browser' ):

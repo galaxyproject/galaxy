@@ -408,6 +408,7 @@ class Taxonomy( Tabular ):
 @dataproviders.decorators.has_dataproviders
 class Sam( Tabular ):
     edam_format = "format_2573"
+    edam_data = "data_0863"
     file_ext = 'sam'
     track_type = "ReadTrack"
     data_sources = { "data": "bam", "index": "bigwig" }
@@ -1047,7 +1048,7 @@ class ConnectivityTable( Tabular ):
     def set_meta( self, dataset, **kwd ):
         data_lines = 0
 
-        for line in file( dataset.file_name ):
+        for line in open( dataset.file_name ):
             data_lines += 1
 
         dataset.metadata.data_lines = data_lines

@@ -32,7 +32,7 @@ def upgrade(migrate_engine):
         # Create
         c.create( RepositoryMetadata_table )
         assert c is RepositoryMetadata_table.c.tool_versions
-    except Exception, e:
+    except Exception as e:
         print "Adding tool_versions column to the repository_metadata table failed: %s" % str( e )
 
 
@@ -43,5 +43,5 @@ def downgrade(migrate_engine):
     RepositoryMetadata_table = Table( "repository_metadata", metadata, autoload=True )
     try:
         RepositoryMetadata_table.c.tool_versions.drop()
-    except Exception, e:
+    except Exception as e:
         print "Dropping column tool_versions from the repository_metadata table failed: %s" % str( e )

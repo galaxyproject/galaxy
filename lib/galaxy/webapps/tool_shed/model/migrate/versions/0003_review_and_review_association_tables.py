@@ -35,7 +35,7 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         ToolRatingAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating tool_rating_association table failed: %s" % str( e ) )
 
 
@@ -45,5 +45,5 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         ToolRatingAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping tool_rating_association table failed: %s" % str( e ) )

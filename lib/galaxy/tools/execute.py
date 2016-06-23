@@ -46,6 +46,17 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
     burst_at = getattr( config, 'tool_submission_burst_at', 10 )
     burst_threads = getattr( config, 'tool_submission_burst_threads', 1 )
 
+    tool_action = tool.action
+    if hasattr( tool_action, "check_inputs_ready" ):
+        for params in execution_tracker.param_combinations:
+            # This will throw an exception if the tool is not ready.
+            tool_action.check_inputs_ready(
+                tool,
+                trans,
+                params,
+                history
+            )
+
     job_count = len(execution_tracker.param_combinations)
     if job_count < burst_at or burst_threads < 2:
         for params in execution_tracker.param_combinations:
@@ -109,7 +120,7 @@ class ToolExecutionTracker( object ):
     def record_error( self, error ):
         self.failed_jobs += 1
         message = "There was a failure executing a job for tool [%s] - %s"
-        log.warn(message, self.tool.id, error)
+        log.warning(message, self.tool.id, error)
         self.execution_errors.append( error )
 
     def create_output_collections( self, trans, history, params ):
@@ -137,7 +148,7 @@ class ToolExecutionTracker( object ):
             if not len( structure ) == len( outputs ):
                 # Output does not have the same structure, if all jobs were
                 # successfully submitted this shouldn't have happened.
-                log.warn( "Problem matching up datasets while attempting to create implicit dataset collections")
+                log.warning( "Problem matching up datasets while attempting to create implicit dataset collections")
                 continue
             output = self.tool.outputs[ output_name ]
             element_identifiers = structure.element_identifiers_for_outputs( trans, outputs )

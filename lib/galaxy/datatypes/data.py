@@ -64,6 +64,7 @@ class Data( object ):
     <class 'galaxy.model.metadata.MetadataParameter'>
 
     """
+    edam_data = "data_0006"
     edam_format = "format_1915"
     # Data is not chunkable by default.
     CHUNKABLE = False
@@ -123,7 +124,7 @@ class Data( object ):
     def get_raw_data( self, dataset ):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
         try:
-            return file(dataset.file_name, 'rb').read(-1)
+            return open(dataset.file_name, 'rb').read(-1)
         except OSError:
             log.exception('%s reading a file that does not exist %s' % (self.__class__.__name__, dataset.file_name))
             return ''
@@ -688,7 +689,7 @@ class Text( Data ):
         os.close(fd)
         # rewrite the file with unix newlines
         fp = open(dataset.file_name, 'w')
-        for line in file(temp_name, "U"):
+        for line in open(temp_name, "U"):
             line = line.strip() + '\n'
             fp.write(line)
         fp.close()
@@ -700,7 +701,7 @@ class Text( Data ):
         os.close(fd)
         # rewrite the file with unix newlines
         fp = open(dataset.file_name, 'w')
-        for line in file(temp_name, "U"):
+        for line in open(temp_name, "U"):
             line = line.strip() + '\n'
             fp.write(line)
         fp.close()
@@ -734,7 +735,7 @@ class Text( Data ):
         skipping all blank lines and comments.
         """
         data_lines = 0
-        for line in file( dataset.file_name ):
+        for line in open( dataset.file_name ):
             line = line.strip()
             if line and not line.startswith( '#' ):
                 data_lines += 1
@@ -867,6 +868,8 @@ class Text( Data ):
 
 class GenericAsn1( Text ):
     """Class for generic ASN.1 text format"""
+    edam_data = "data_0849"
+    edam_format = "format_1966"
     file_ext = 'asn1'
 
 
@@ -880,6 +883,7 @@ class LineCount( Text ):
 
 class Newick( Text ):
     """New Hampshire/Newick Format"""
+    edam_data = "data_0872"
     edam_format = "format_1910"
     file_ext = "nhx"
 
@@ -904,6 +908,7 @@ class Newick( Text ):
 
 class Nexus( Text ):
     """Nexus format as used By Paup, Mr Bayes, etc"""
+    edam_data = "data_0872"
     edam_format = "format_1912"
     file_ext = "nex"
 

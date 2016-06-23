@@ -1,7 +1,7 @@
 <%namespace name="masthead" file="/webapps/galaxy/galaxy.masthead.mako"/>
 <%namespace name="galaxy_client" file="/galaxy_client_app.mako" />
 
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 
 ## inject parameters parsed by controller config dictionary
 <%
@@ -26,10 +26,10 @@
 %>
 
 <%def name="stylesheets()">
-   ## load default style
-   ${h.css("base")}
+    ## load default style
+    ${h.css("base")}
 
-   ## modify default style
+    ## modify default style
     <style type="text/css">
     #center {
         %if not self.galaxy_config['left_panel']:
@@ -52,6 +52,16 @@
 </%def>
 
 <%def name="javascripts()">
+    ## Send errors to Sentry server if configured
+    %if app.config.sentry_dsn:
+        ${h.js( "libs/raven" )}
+        <script>
+            Raven.config('${app.config.sentry_dsn_public}').install();
+            %if trans.user:
+                Raven.setUser( { email: "${trans.user.email | h}" } );
+            %endif
+        </script>
+    %endif
 
     ## load jscript libraries
     ${h.js(
@@ -62,38 +72,14 @@
         'libs/require',
     )}
 
-    ## send errors to Sntry server if configured
-    %if app.config.sentry_dsn:
-        ${h.js( "libs/tracekit", "libs/raven" )}
-        <script>
-            Raven.config('${app.config.sentry_dsn_public}').install();
-            %if trans.user:
-                Raven.setUser( { email: "${trans.user.email|h}" } );
-            %endif
-        </script>
-    %endif
-
-    ## make sure console exists
     <script type="text/javascript">
-        // console protection
-        window.console = window.console ||
-        {
-            log     : function(){},
-            debug   : function(){},
-            info    : function(){},
-            warn    : function(){},
-            error   : function(){},
-            assert  : function(){}
-        };
-    </script>
-
-    ## default script wrapper
-    <script type="text/javascript">
-        ## configure require
+        // configure require
         // due to our using both script tags and require, we need to access the same jq in both for plugin retention
         define( 'jquery', [], function(){ return jQuery; })
         require.config({
-            baseUrl: "${h.url_for('/static/scripts') }",
+            baseUrl: "${h.url_for('/static/scripts')}",
+            // cache buster based on templated server (re)start time
+            urlArgs: 'v=${app.server_starttime}',
             shim: {
                 "libs/underscore": { exports: "_" },
                 "libs/backbone": {
@@ -102,11 +88,21 @@
                 },
                 "libs/d3": { exports: "d3" },
             },
-            // cache buster based on templated server (re)start time
-            urlArgs: 'v=${app.server_starttime}'
         });
-        var galaxy_config = ${ h.dumps( self.galaxy_config ) };
 
+        // console protection
+        // TODO: Only needed for IE <9 which I believe we dropped
+        window.console = window.console || {
+            log     : function(){},
+            debug   : function(){},
+            info    : function(){},
+            warn    : function(){},
+            error   : function(){},
+            assert  : function(){}
+        };
+
+        // extra configuration global
+        var galaxy_config = ${ h.dumps( self.galaxy_config ) };
     </script>
 
 </%def>
@@ -124,19 +120,13 @@
                     });
                 });
             } else {
-                console.log("'galaxy_config.app.jscript' missing.");
+                console.error("'galaxy_config.app.jscript' missing.");
             }
         });
     </script>
 
     ## load the Galaxy global js var and run 'app' from above
     ${ galaxy_client.load( app='app' ) }
-
-    ## alternate call where the module calls itself when included (no call to GalaxyApp()) - the above won't be needed
-    ##precondition: module must call jq onready itself
-    ##${ galaxy_client.load( app=( app_config[ 'jscript' ] if 'jscript' in app_config else None )) }
-
-    ##TODO: at that point, we can think about optimizing the various apps
 </%def>
 
 ## default late-load javascripts
@@ -162,18 +152,17 @@
 ## document
 <html>
     <head>
-        <title>
-            %if self.galaxy_config['title']:
-                ${self.galaxy_config['title']}
-            %endif
-            </title>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-
+        <meta charset="UTF-8">
         ## for mobile browsers, don't scale up
         <meta name = "viewport" content = "maximum-scale=1.0">
-
         ## force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
-        <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+        <meta http-equiv="x-ua-compatible" content="ie=edge,chrome=1">
+
+        <title>
+        %if self.galaxy_config['title']:
+            ${self.galaxy_config['title']}
+        %endif
+        </title>
 
         ${self.stylesheets()}
         ${self.javascripts()}

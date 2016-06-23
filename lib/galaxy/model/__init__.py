@@ -34,11 +34,10 @@ from galaxy.util.dictifiable import Dictifiable
 from galaxy.security import get_permitted_actions
 from galaxy.util import Params, restore_text, send_mail
 from galaxy.util import ready_name_for_url, unique_id
-from galaxy.util import unicodify
+from galaxy.util import unicodify, directory_hash_id
 from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.util.bunch import Bunch
-from galaxy.util.directory_hash import directory_hash_id
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
@@ -1572,7 +1571,7 @@ class LibraryPermissions( object ):
         if isinstance( library_item, Library ):
             self.library = library_item
         else:
-            raise "Invalid Library specified: %s" % library_item.__class__.__name__
+            raise Exception( "Invalid Library specified: %s" % library_item.__class__.__name__ )
         self.role = role
 
 
@@ -1582,7 +1581,7 @@ class LibraryFolderPermissions( object ):
         if isinstance( library_item, LibraryFolder ):
             self.folder = library_item
         else:
-            raise "Invalid LibraryFolder specified: %s" % library_item.__class__.__name__
+            raise Exception( "Invalid LibraryFolder specified: %s" % library_item.__class__.__name__ )
         self.role = role
 
 
@@ -1592,7 +1591,7 @@ class LibraryDatasetPermissions( object ):
         if isinstance( library_item, LibraryDataset ):
             self.library_dataset = library_item
         else:
-            raise "Invalid LibraryDataset specified: %s" % library_item.__class__.__name__
+            raise Exception( "Invalid LibraryDataset specified: %s" % library_item.__class__.__name__ )
         self.role = role
 
 
@@ -1602,7 +1601,7 @@ class LibraryDatasetDatasetAssociationPermissions( object ):
         if isinstance( library_item, LibraryDatasetDatasetAssociation ):
             self.library_dataset_dataset_association = library_item
         else:
-            raise "Invalid LibraryDatasetDatasetAssociation specified: %s" % library_item.__class__.__name__
+            raise Exception( "Invalid LibraryDatasetDatasetAssociation specified: %s" % library_item.__class__.__name__ )
         self.role = role
 
 
@@ -1648,6 +1647,16 @@ class Dataset( StorableObject ):
         states.SETTING_METADATA
     )
     ready_states = tuple( set( states.__dict__.values() ) - set( non_ready_states ) )
+    valid_input_states = tuple(
+        set( states.__dict__.values() ) - set( [states.ERROR, states.DISCARDED] )
+    )
+    terminal_states = (
+        states.OK,
+        states.EMPTY,
+        states.ERROR,
+        states.DISCARDED,
+        states.FAILED_METADATA,
+    )
 
     conversion_messages = Bunch( PENDING="pending",
                                  NO_DATA="no data",
@@ -2079,7 +2088,7 @@ class DatasetInstance( object ):
                 return fake_hda
 
     def clear_associated_files( self, metadata_safe=False, purge=False ):
-        raise 'Unimplemented'
+        raise Exception( "Unimplemented" )
 
     def get_child_by_designation(self, designation):
         for child in self.children:
@@ -2127,6 +2136,10 @@ class DatasetInstance( object ):
         return True
 
     @property
+    def is_ok(self):
+        return self.state == self.states.OK
+
+    @property
     def is_pending( self ):
         """
         Return true if the dataset is neither ready nor in error
@@ -2160,14 +2173,14 @@ class DatasetInstance( object ):
                 if cp_from_ldda:
                     lst.append( (cp_from_ldda, "(Data Library)") )
                     return _source_dataset_chain( cp_from_ldda, lst )
-            except Exception, e:
+            except Exception as e:
                 log.warning( e )
             try:
                 cp_from_hda = dataset.copied_from_history_dataset_association
                 if cp_from_hda:
                     lst.append( (cp_from_hda, cp_from_hda.history.name) )
                     return _source_dataset_chain( cp_from_hda, lst )
-            except Exception, e:
+            except Exception as e:
                 log.warning( e )
             return lst
         return _source_dataset_chain( self, [] )
@@ -2237,7 +2250,7 @@ class DatasetInstance( object ):
             converted_dataset = self.get_converted_dataset( trans, target_type )
         except NoConverterException:
             return self.conversion_messages.NO_CONVERTER
-        except ConverterDependencyException, dep_error:
+        except ConverterDependencyException as dep_error:
             return { 'kind': self.conversion_messages.ERROR, 'message': dep_error.value }
 
         # Check dataset state and return any messages.
@@ -3066,7 +3079,7 @@ class ImplicitlyConvertedDatasetAssociation( object ):
             self.purged = True
             try:
                 os.unlink( self.file_name )
-            except Exception, e:
+            except Exception as e:
                 log.error( "Failed to purge associated file (%s) from disk: %s" % ( self.file_name, e ) )
 
 
@@ -3186,6 +3199,14 @@ class DatasetCollectionInstance( object, HasName ):
     def state( self ):
         return self.collection.state
 
+    @property
+    def populated( self ):
+        return self.collection.populated
+
+    @property
+    def dataset_instances( self ):
+        return self.collection.dataset_instances
+
     def display_name( self ):
         return self.get_display_name()
 
@@ -3194,7 +3215,7 @@ class DatasetCollectionInstance( object, HasName ):
             id=self.id,
             name=self.name,
             collection_type=self.collection.collection_type,
-            populated=self.collection.populated,
+            populated=self.populated,
             populated_state=self.collection.populated_state,
             populated_state_message=self.collection.populated_state_message,
             type="collection",  # contents type (distinguished from file or folder (in case of library))
@@ -3749,7 +3770,11 @@ class WorkflowStep( object ):
             new_conn.output_step = step_mapping[old_conn.output_step_id]
             if old_conn.input_subworkflow_step_id:
                 new_conn.input_subworkflow_step = subworkflow_step_mapping[old_conn.input_subworkflow_step_id]
-
+        for orig_pja in self.post_job_actions:
+            PostJobAction( orig_pja.action_type,
+                           copied_step,
+                           output_name=orig_pja.output_name,
+                           action_arguments=orig_pja.action_arguments )
         copied_step.workflow_outputs = copy_list(self.workflow_outputs, copied_step)
 
     def log_str(self):
@@ -4109,7 +4134,7 @@ class MetadataFile( StorableObject ):
             # Create directory if it does not exist
             try:
                 os.makedirs( path )
-            except OSError, e:
+            except OSError as e:
                 # File Exists is okay, otherwise reraise
                 if e.errno != errno.EEXIST:
                     raise
@@ -4408,7 +4433,7 @@ All samples in state:     %(sample_state)s
             try:
                 send_mail( frm, to, subject, body, trans.app.config )
                 comments = "Email notification sent to %s." % ", ".join( to ).strip().strip( ',' )
-            except Exception, e:
+            except Exception as e:
                 comments = "Email notification failed. (%s)" % str(e)
             # update the request history with the email notification event
         elif not trans.app.config.smtp_server:

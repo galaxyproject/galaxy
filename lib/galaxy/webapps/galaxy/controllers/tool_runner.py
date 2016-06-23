@@ -76,7 +76,7 @@ class ToolRunner( BaseUIController ):
         history = tool.get_default_history_by_trans( trans, create=True )
         try:
             vars = tool.handle_input( trans, params.__dict__, history=history )
-        except Exception, e:
+        except Exception as e:
             error( str( e ) )
         if len( params ) > 0:
             trans.log_event( 'Tool params: %s' % ( str( params ) ), tool_id=tool_id )

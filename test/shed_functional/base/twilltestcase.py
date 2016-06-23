@@ -260,7 +260,7 @@ class ShedTwillTestCase( TwillTestCase ):
         commands.commit( ui.ui(), hgrepo, **options )
         #  Try pushing multiple times as it transiently fails on Jenkins.
         #  TODO: Figure out why that happens
-        for i in range(2):
+        for i in range(5):
             try:
                 commands.push( ui.ui(), hgrepo, dest=url )
             except Exception as e:
@@ -628,7 +628,7 @@ class ShedTwillTestCase( TwillTestCase ):
         dependency_template = string.Template( common.complex_repository_dependency_template )
         repository_dependency_xml = dependency_template.safe_substitute( package=package, version=version, dependency_lines='\n'.join( dependency_entries ) )
         # Save the generated xml to the specified location.
-        file( file_path, 'w' ).write( repository_dependency_xml )
+        open( file_path, 'w' ).write( repository_dependency_xml )
 
     def generate_simple_dependency_xml( self,
                                         repository_tuples,
@@ -661,7 +661,7 @@ class ShedTwillTestCase( TwillTestCase ):
         repository_dependency_xml = template_parser.safe_substitute( description=description, dependency_lines='\n'.join( dependency_entries ) )
         # Save the generated xml to the specified location.
         full_path = os.path.join( filepath, filename )
-        file( full_path, 'w' ).write( repository_dependency_xml )
+        open( full_path, 'w' ).write( repository_dependency_xml )
 
     def generate_temp_path( self, test_script_path, additional_paths=[] ):
         temp_path = os.path.join( self.tool_shed_test_tmp_dir, test_script_path, os.sep.join( additional_paths ) )
@@ -699,6 +699,12 @@ class ShedTwillTestCase( TwillTestCase ):
         else:
             last_review = None
         return last_review
+
+    def get_repositories_category_api( self, categories, strings_displayed=None, strings_not_displayed=None ):
+        for category in categories:
+            url = '/api/categories/%s/repositories' % self.security.encode_id( category.id )
+            self.visit_url( url )
+            self.check_for_strings( strings_displayed, strings_not_displayed )
 
     def get_tool_dependency_path( self, tool_dependency_name, tool_dependency_version, repository ):
         '''Return the absolute path for an installed tool dependency.'''
@@ -1320,7 +1326,7 @@ class ShedTwillTestCase( TwillTestCase ):
         #    try:
         #        self.check_for_strings( strings_displayed, strings_not_displayed )
         #        break
-        #    except Exception, e:
+        #    except Exception as e:
         #        if i == 4:
         #            raise e
         #        else:

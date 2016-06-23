@@ -80,7 +80,7 @@ class EmailAction(DefaultJobAction):
         body = "Your Galaxy job generating dataset '%s' is complete as of %s." % (outdata, datetime.datetime.now().strftime( "%I:%M" ))
         try:
             send_mail( frm, to, subject, body, app.config )
-        except Exception, e:
+        except Exception as e:
             log.error("EmailAction PJA Failed, exception: %s" % e)
 
     @classmethod
@@ -427,10 +427,12 @@ class DeleteIntermediatesAction(DefaultJobAction):
                 else:
                     log.debug("No job found yet for wfi_step %s, (step %s)" % (wfi_step, wfi_step.workflow_step))
             for j2c in jobs_to_check:
-                creating_jobs = [(x, x.dataset.creating_job) for x in j2c.input_datasets if x.dataset.creating_job]
-                for (x, creating_job) in creating_jobs:
-                    sa_session.refresh(creating_job)
-                    sa_session.refresh(x)
+                sa_session.refresh(j2c)
+                creating_jobs = []
+                for input_dataset in j2c.input_datasets:
+                    sa_session.refresh(input_dataset)
+                    sa_session.refresh(input_dataset.dataset.creating_job)
+                    creating_jobs.append( (input_dataset, input_dataset.dataset.creating_job) )
                 for input_dataset in [x.dataset for (x, creating_job) in creating_jobs if creating_job.workflow_invocation_step and creating_job.workflow_invocation_step.workflow_invocation == wfi]:
                     safe_to_delete = True
                     for job_to_check in [d_j.job for d_j in input_dataset.dependent_jobs]:

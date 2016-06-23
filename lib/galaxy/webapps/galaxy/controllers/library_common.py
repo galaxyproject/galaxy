@@ -34,7 +34,7 @@ try:
     # The following must be defined exactly like the
     # schema in ~/scripts/data_libraries/build_whoosh_index.py
     schema = Schema( id=STORED, name=TEXT, info=TEXT, dbkey=TEXT, message=TEXT )
-except ImportError, e:
+except ImportError as e:
     whoosh_search_enabled = False
     schema = None
 
@@ -151,7 +151,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                 current_user_roles=current_user_roles,
                                                 message=escape( message ),
                                                 status=escape( status ) )
-            except Exception, e:
+            except Exception as e:
                 message = 'Error attempting to display contents of library (%s): %s.' % ( escape( str( library.name ) ), str( e ) )
                 status = 'error'
         default_action = kwd.get( 'default_action', None )
@@ -1196,7 +1196,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         path = os.path.abspath( os.path.join( os.path.dirname( path ), link_path ) )
                 if os.path.isfile( path ):
                     files.append( path )
-        except Exception, e:
+        except Exception as e:
             message = "Unable to get file list for configured %s, error: %s" % ( import_dir_desc, str( e ) )
             response_code = 500
             return None, response_code, message
@@ -2751,7 +2751,7 @@ def lucene_search( trans, cntrller, search_term, search_url, **kwd ):
     status = kwd.get( 'status', 'done' )
     full_url = "%s/find?%s" % ( search_url, urllib.urlencode( { "kwd" : search_term } ) )
     response = urllib2.urlopen( full_url )
-    ldda_ids = util.json.loads( response.read() )[ "ids" ]
+    ldda_ids = loads( response.read() )[ "ids" ]
     response.close()
     lddas = [ trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id ) for ldda_id in ldda_ids ]
     return status, message, get_sorted_accessible_library_items( trans, cntrller, lddas, 'name' )

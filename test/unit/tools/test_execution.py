@@ -60,7 +60,7 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
         self.tool_action.raise_exception( )
         try:
             self.__handle_with_incoming( param1="moo" )
-        except Exception, e:
+        except Exception as e:
             assert 'Error executing tool' in str( e )
 
     def test_execute_errors( self ):
@@ -68,7 +68,7 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
         self.tool_action.return_error( )
         try:
             self.__handle_with_incoming( param1="moo" )
-        except Exception, e:
+        except Exception as e:
             assert 'Test Error Message' in str( e )
 
     def test_redirect( self ):
@@ -91,7 +91,7 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
         self._init_tool( tools_support.SIMPLE_TOOL_CONTENTS )
         try:
             self.__handle_with_incoming( param1="moo", rerun_remap_job_id='123' )
-        except Exception, e:
+        except Exception as e:
             assert 'invalid job' in str( e )
 
     def test_data_param_execute( self ):

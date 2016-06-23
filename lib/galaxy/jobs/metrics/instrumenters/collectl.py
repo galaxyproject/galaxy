@@ -8,7 +8,6 @@ from ..collectl import cli
 from ..collectl import processes
 
 from galaxy import util
-from galaxy.util import directory_hash
 
 import logging
 log = logging.getLogger( __name__ )
@@ -109,7 +108,7 @@ class CollectlPlugin( InstrumentPlugin ):
         )
 
         if self.saved_logs_path:
-            destination_rel_dir = os.path.join( *directory_hash.directory_hash_id( job_id ) )
+            destination_rel_dir = os.path.join( *util.directory_hash_id( job_id ) )
             destination_rel_path = os.path.join( destination_rel_dir, rel_path )
             destination_path = os.path.join( self.saved_logs_path, destination_rel_path )
             destination_dir = os.path.dirname( destination_path )

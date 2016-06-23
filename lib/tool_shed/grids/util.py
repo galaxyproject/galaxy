@@ -1,7 +1,7 @@
 import logging
 
 from galaxy.web.form_builder import SelectField
-from tool_shed.util import hg_util, metadata_util, shed_util_common as suc
+from tool_shed.util import hg_util, metadata_util
 
 log = logging.getLogger( __name__ )
 
@@ -118,7 +118,7 @@ def get_latest_downloadable_repository_metadata( trans, repository ):
     tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
     repository_metadata = None
     try:
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, encoded_repository_id, tip_ctx )
+        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app, encoded_repository_id, tip_ctx )
         if repository_metadata is not None and repository_metadata.downloadable:
             return repository_metadata
         return None
@@ -129,9 +129,9 @@ def get_latest_downloadable_repository_metadata( trans, repository ):
                                                                                                downloadable=True )
         if latest_downloadable_revision == hg_util.INITIAL_CHANGELOG_HASH:
             return None
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
-                                                                                 encoded_repository_id,
-                                                                                 latest_downloadable_revision )
+        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app,
+                                                                                           encoded_repository_id,
+                                                                                           latest_downloadable_revision )
         if repository_metadata is not None and repository_metadata.downloadable:
             return repository_metadata
         return None
@@ -159,7 +159,7 @@ def get_latest_repository_metadata( trans, repository ):
     repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
     tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
     try:
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, encoded_repository_id, tip_ctx )
+        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app, encoded_repository_id, tip_ctx )
         return repository_metadata
     except:
         latest_downloadable_revision = metadata_util.get_previous_metadata_changeset_revision( repository,
@@ -168,9 +168,9 @@ def get_latest_repository_metadata( trans, repository ):
                                                                                                downloadable=False )
         if latest_downloadable_revision == hg_util.INITIAL_CHANGELOG_HASH:
             return None
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
-                                                                                 encoded_repository_id,
-                                                                                 latest_downloadable_revision )
+        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( trans.app,
+                                                                                           encoded_repository_id,
+                                                                                           latest_downloadable_revision )
         return repository_metadata
 
 

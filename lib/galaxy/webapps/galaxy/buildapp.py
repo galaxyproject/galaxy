@@ -299,7 +299,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'datatype',
                             'datatypes',
                             path_prefix='/api',
-                            collection={ 'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET', 'edam_formats': 'GET' },
+                            collection={ 'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET', 'edam_data': 'GET', 'edam_formats': 'GET' },
                             parent_resources=dict( member_name='datatype', collection_name='datatypes' ) )
     webapp.mapper.resource( 'search', 'search', path_prefix='/api' )
     webapp.mapper.resource( 'page', 'pages', path_prefix="/api")
@@ -715,6 +715,15 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     # other middleware):
     app = httpexceptions.make_middleware( app, conf )
     log.debug( "Enabling 'httpexceptions' middleware" )
+    # Statsd request timing and profiling
+    statsd_host = conf.get('statsd_host', None)
+    if statsd_host:
+        from galaxy.web.framework.middleware.statsd import StatsdMiddleware
+        app = StatsdMiddleware( app,
+                                statsd_host,
+                                conf.get('statsd_port', 8125),
+                                conf.get('statsd_prefix', 'galaxy') )
+        log.debug( "Enabling 'statsd' middleware" )
     # If we're using remote_user authentication, add middleware that
     # protects Galaxy from improperly configured authentication in the
     # upstream server
@@ -776,16 +785,6 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         from galaxy.web.framework.middleware.translogger import TransLogger
         app = TransLogger( app )
         log.debug( "Enabling 'trans logger' middleware" )
-    # Statsd request timing and profiling
-    statsd_host = conf.get('statsd_host', None)
-    if statsd_host:
-        from galaxy.web.framework.middleware.statsd import StatsdMiddleware
-        app = StatsdMiddleware( app,
-                                statsd_host,
-                                conf.get('statsd_port', 8125),
-                                conf.get('statsd_prefix', 'galaxy') )
-        log.debug( "Enabling 'statsd' middleware" )
-
     # X-Forwarded-Host handling
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = XForwardedHostMiddleware( app )

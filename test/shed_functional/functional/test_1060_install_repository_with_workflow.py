@@ -46,12 +46,12 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
                                                     category_id=self.security.encode_id( category.id ),
                                                     strings_displayed=[] )
         if self.repository_is_new( repository ):
-            workflow = file( self.get_filename( 'filtering_workflow/Workflow_for_0060_filter_workflow_repository.ga' ), 'r' ).read()
+            workflow = open( self.get_filename( 'filtering_workflow/Workflow_for_0060_filter_workflow_repository.ga' ), 'r' ).read()
             workflow = workflow.replace(  '__TEST_TOOL_SHED_URL__', self.url.replace( 'http://', '' ) )
             workflow_filepath = self.generate_temp_path( 'test_1060', additional_paths=[ 'filtering_workflow' ] )
             if not os.path.exists( workflow_filepath ):
                 os.makedirs( workflow_filepath )
-            file( os.path.join( workflow_filepath, workflow_filename ), 'w+' ).write( workflow )
+            open( os.path.join( workflow_filepath, workflow_filename ), 'w+' ).write( workflow )
             self.upload_file( repository,
                               filename=workflow_filename,
                               filepath=workflow_filepath,
@@ -105,14 +105,14 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
                                                     category_id=self.security.encode_id( category.id ),
                                                     strings_displayed=[] )
         if self.repository_is_new( repository ):
-            workflow = file( self.get_filename( 'filtering_workflow/Workflow_for_0060_filter_workflow_repository.ga' ), 'r' ).read()
+            workflow = open( self.get_filename( 'filtering_workflow/Workflow_for_0060_filter_workflow_repository.ga' ), 'r' ).read()
             workflow = workflow.replace(  '__TEST_TOOL_SHED_URL__', self.url.replace( 'http://', '' ) )
             workflow = workflow.replace( 'Workflow for 0060_filter_workflow_repository',
                                          'New workflow for 0060_filter_workflow_repository' )
             workflow_filepath = self.generate_temp_path( 'test_0060', additional_paths=[ 'filtering_workflow_2' ] )
             if not os.path.exists( workflow_filepath ):
                 os.makedirs( workflow_filepath )
-            file( os.path.join( workflow_filepath, workflow_filename ), 'w+' ).write( workflow )
+            open( os.path.join( workflow_filepath, workflow_filename ), 'w+' ).write( workflow )
             self.upload_file( repository,
                               filename=workflow_filename,
                               filepath=workflow_filepath,

@@ -32,7 +32,7 @@ def main( options ):
     url = '%s/api/repositories/new/import_capsule' % base_tool_shed_url
     try:
         submit( url, data, api_key )
-    except Exception, e:
+    except Exception as e:
         log.exception( str( e ) )
         sys.exit( 1 )
 

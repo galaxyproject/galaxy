@@ -136,7 +136,7 @@ class ASync( BaseUIController ):
                 if not text.endswith('OK'):
                     raise Exception( text )
                 data.state = data.blurb = data.states.RUNNING
-            except Exception, e:
+            except Exception as e:
                 data.info = str(e)
                 data.state = data.blurb = data.states.ERROR
 

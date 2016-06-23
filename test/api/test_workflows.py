@@ -5,7 +5,7 @@ from collections import namedtuple
 from uuid import uuid4
 
 from base import api
-from base.test_data import TestDataResolver
+from galaxy.tools.verify.test_data import TestDataResolver
 from galaxy.exceptions import error_codes
 from .helpers import WorkflowPopulator
 from .helpers import DatasetPopulator
@@ -809,6 +809,49 @@ test_data:
 
         content = self.dataset_populator.get_history_dataset_content( history_id )
         self.assertEquals("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\nchr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
+
+    @skip_without_tool( "cat1" )
+    @skip_without_tool( "collection_paired_test" )
+    def test_workflow_run_zip_collections( self ):
+        # A more advanced output collection workflow, testing regression of
+        # https://github.com/galaxyproject/galaxy/issues/776
+        history_id = self.dataset_populator.new_history()
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  - label: test_input_1
+    type: input
+  - label: test_input_2
+    type: input
+  - label: first_cat
+    tool_id: cat1
+    state:
+      input1:
+        $link: test_input_1
+  - label: zip_it
+    tool_id: "__ZIP_COLLECTION__"
+    state:
+      input_forward:
+        $link: first_cat#out_file1
+      input_reverse:
+        $link: test_input_2
+  - label: concat_pair
+    tool_id: collection_paired_test
+    state:
+      f1:
+        $link: zip_it#output
+""")
+        hda1 = self.dataset_populator.new_dataset( history_id, content="samp1\t10.0\nsamp2\t20.0\n" )
+        hda2 = self.dataset_populator.new_dataset( history_id, content="samp1\t20.0\nsamp2\t40.0\n" )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        inputs = {
+            '0': self._ds_entry(hda1),
+            '1': self._ds_entry(hda2),
+        }
+        invocation_id = self.__invoke_workflow( history_id, workflow_id, inputs )
+        self.wait_for_invocation_and_jobs( history_id, workflow_id, invocation_id )
+        content = self.dataset_populator.get_history_dataset_content( history_id )
+        self.assertEquals(content.strip(), "samp1\t10.0\nsamp2\t20.0\nsamp1\t20.0\nsamp2\t40.0")
 
     def test_workflow_request( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_queue" )

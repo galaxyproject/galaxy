@@ -32,7 +32,7 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         UserPreference_table.create()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Creating user_preference table failed: %s" % str( e ) )
 
@@ -42,6 +42,6 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         UserPreference_table.drop()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Dropping user_preference table failed: %s" % str( e ) )

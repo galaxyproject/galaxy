@@ -22,7 +22,7 @@ try:
     schema = Schema( id=STORED, name=TEXT, info=TEXT, dbkey=TEXT, message=TEXT )
     import galaxy.model.mapping
     from galaxy import config, model
-except ImportError, e:
+except ImportError:
     whoosh_search_enabled = False
     schema = None
 
@@ -67,7 +67,7 @@ def get_lddas( sa_session ):
 
 
 def get_sa_session_and_needed_config_settings( ini_file ):
-    conf_parser = ConfigParser.ConfigParser( { 'here' : os.getcwd() } )
+    conf_parser = ConfigParser.ConfigParser( { 'here': os.getcwd() } )
     conf_parser.read( ini_file )
     kwds = dict()
     for key, value in conf_parser.items( "app:main" ):

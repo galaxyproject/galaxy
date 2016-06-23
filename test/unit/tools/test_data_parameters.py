@@ -193,6 +193,7 @@ class MockHistoryDatasetAssociation( object ):
     def __init__( self, test_dataset=None, name="Test Dataset", id=1 ):
         if not test_dataset:
             test_dataset = model.Dataset()
+            test_dataset.state = model.Dataset.states.OK
         self.states = model.HistoryDatasetAssociation.states
         self.deleted = False
         self.dataset = test_dataset

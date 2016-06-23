@@ -25,8 +25,11 @@ from .dataset_matcher import DatasetCollectionMatcher
 from galaxy.web import url_for
 from galaxy.util.dictifiable import Dictifiable
 import galaxy.model
+from galaxy.util.bunch import Bunch
 
 log = logging.getLogger(__name__)
+
+workflow_building_modes = Bunch( DISABLED=False, ENABLED=True, USE_HISTORY=1 )
 
 WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile( '''\$\{.+?\}''' )
 
@@ -171,7 +174,9 @@ class ToolParameter( object, Dictifiable ):
         Convert a value to a text representation suitable for displaying to
         the user
         """
-        return unicodify( value )
+        if value:
+            return unicodify( value )
+        return "Not available."
 
     def to_param_dict_string( self, value, other_values={} ):
         """Called via __str__ when used in the Cheetah template"""
@@ -264,7 +269,7 @@ class TextToolParameter( ToolParameter ):
 
     def validate( self, value, trans=None ):
         search = self.type == "text"
-        if not ( trans and trans.workflow_building_mode and contains_workflow_parameter(value, search=search) ):
+        if not ( trans and trans.workflow_building_mode is workflow_building_modes.ENABLED and contains_workflow_parameter(value, search=search) ):
             return super( TextToolParameter, self ).validate( value, trans )
 
     def get_initial_value( self, trans, other_values ):
@@ -331,11 +336,11 @@ class IntegerToolParameter( TextToolParameter ):
         try:
             return int( value )
         except:
-            if contains_workflow_parameter( value ) and trans.workflow_building_mode:
+            if contains_workflow_parameter( value ) and trans.workflow_building_mode is workflow_building_modes.ENABLED:
                 return value
             if not value and self.optional:
                 return ""
-            if trans.workflow_building_mode:
+            if trans.workflow_building_mode is workflow_building_modes.ENABLED:
                 raise ValueError( "An integer or workflow parameter e.g. ${name} is required" )
             else:
                 raise ValueError( "An integer is required" )
@@ -343,7 +348,7 @@ class IntegerToolParameter( TextToolParameter ):
     def to_python( self, value, app ):
         try:
             return int( value )
-        except Exception, err:
+        except Exception as err:
             if contains_workflow_parameter(value):
                 return value
             if not value and self.optional:
@@ -411,11 +416,11 @@ class FloatToolParameter( TextToolParameter ):
         try:
             return float( value )
         except:
-            if contains_workflow_parameter( value ) and trans.workflow_building_mode:
+            if contains_workflow_parameter( value ) and trans.workflow_building_mode is workflow_building_modes.ENABLED:
                 return value
             if not value and self.optional:
                 return ""
-            if trans and trans.workflow_building_mode:
+            if trans and trans.workflow_building_mode is workflow_building_modes.ENABLED:
                 raise ValueError( "A real number or workflow parameter e.g. ${name} is required" )
             else:
                 raise ValueError( "A real number is required" )
@@ -423,7 +428,7 @@ class FloatToolParameter( TextToolParameter ):
     def to_python( self, value, app ):
         try:
             return float( value )
-        except Exception, err:
+        except Exception as err:
             if contains_workflow_parameter(value):
                 return value
             if not value and self.optional:
@@ -850,7 +855,7 @@ class SelectToolParameter( ToolParameter ):
             call_other_values = self._get_dynamic_options_call_other_values( trans, other_values )
             try:
                 return eval( self.dynamic_options, self.tool.code_namespace, call_other_values )
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Error determining dynamic options for parameter '%s' in tool '%s':", self.name, self.tool.id, exc_info=e )
                 return []
         else:
@@ -863,7 +868,7 @@ class SelectToolParameter( ToolParameter ):
             try:
                 call_other_values = self._get_dynamic_options_call_other_values( trans, other_values )
                 return set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, call_other_values ) )
-            except Exception, e:
+            except Exception as e:
                 log.debug( 'Determining legal values failed for "%s": %s', self.name, e )
                 return set()
         else:
@@ -894,7 +899,12 @@ class SelectToolParameter( ToolParameter ):
 
     def from_json( self, value, trans, other_values={} ):
         legal_values = self.get_legal_values( trans, other_values )
-        if len(list(legal_values)) == 0 and trans.workflow_building_mode:
+        workflow_building_mode = trans.workflow_building_mode
+        for context_value in other_values.itervalues():
+            if isinstance( context_value, RuntimeValue ):
+                workflow_building_mode = True
+                break
+        if len( list( legal_values ) ) == 0 and workflow_building_mode:
             if self.multiple:
                 # While it is generally allowed that a select value can be '',
                 # we do not allow this to be the case in a dynamically
@@ -986,7 +996,9 @@ class SelectToolParameter( ToolParameter ):
             for t, v, s in options:
                 if v in value:
                     rval.append( t )
-        return "\n".join( rval )
+        if rval:
+            return "\n".join( rval )
+        return "Nothing selected."
 
     def get_dependencies( self ):
         """
@@ -1001,15 +1013,7 @@ class SelectToolParameter( ToolParameter ):
         d = super( SelectToolParameter, self ).to_dict( trans )
 
         # Get options, value.
-        options = []
-        try:
-            options = self.get_options( trans, other_values )
-        except AssertionError:
-            # we dont/cant set other_values (the {} above), so params that require other params to be filled will error:
-            #       required dependency in filter_options
-            #       associated DataToolParam in get_column_list
-            pass
-
+        options = self.get_options( trans, other_values )
         d[ 'options' ] = options
         if options:
             value = options[0][1]
@@ -1191,10 +1195,8 @@ class ColumnListParameter( SelectToolParameter ):
         Generate a select list containing the columns of the associated
         dataset (if found).
         """
-        # No value indicates a configuration error
-        assert self.data_ref in other_values, "Value for associated data reference not found (data_ref)."
         # Get the value of the associated data reference (a dataset)
-        dataset = other_values[ self.data_ref ]
+        dataset = other_values.get( self.data_ref, None )
         # Check if a dataset is selected
         if not dataset:
             return []
@@ -1228,8 +1230,7 @@ class ColumnListParameter( SelectToolParameter ):
         """
         options = []
         if self.usecolnames:  # read first row - assume is a header with metadata useful for making good choices
-            assert self.data_ref in other_values, "Value for associated data reference not found (data_ref)."
-            dataset = other_values[ self.data_ref ]
+            dataset = other_values.get( self.data_ref, None )
             try:
                 head = open( dataset.get_file_name(), 'r' ).readline()
                 cnames = head.rstrip().split( '\t' )
@@ -1256,6 +1257,8 @@ class ColumnListParameter( SelectToolParameter ):
         return SelectToolParameter.get_initial_value( self, trans, other_values )
 
     def get_legal_values( self, trans, other_values ):
+        if self.data_ref not in other_values:
+            raise ValueError( "Value for associated data reference not found (data_ref)." )
         return set( self.get_column_list( trans, other_values ) )
 
     def get_dependencies( self ):
@@ -1484,15 +1487,16 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                     value = value.split( "\n" )
             return value
         if not value and not self.optional:
-            raise ValueError( "An invalid option was selected for %s, 'None', please verify" % (self.name) )
+            raise ValueError( "An invalid option was selected for %s, please verify." % (self.name) )
         if not value:
             return None
         if not isinstance( value, list ):
             value = [ value ]
-        if not( self.repeat ) and len( value ) > 1:
-            assert self.multiple, "Multiple values provided but parameter %s is not expecting multiple values" % self.name
+        if not self.repeat and len( value ) > 1 and not self.multiple:
+            raise ValueError( "Multiple values provided but parameter %s is not expecting multiple values." % self.name )
         rval = []
-        assert legal_values, "Parameter %s requires a value, but has no legal values defined" % self.name
+        if not legal_values:
+            raise ValueError( "Parameter %s requires a value, but has no legal values defined." % self.name )
         for val in value:
             if val not in legal_values:
                 raise ValueError( "An invalid option was selected for %s, %r, please verify" % ( self.name, val ) )
@@ -1529,9 +1533,8 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             for val in value:
                 options = get_options_list( val )
                 rval.extend( options )
-        if len( rval ) > 1:
-            if not self.repeat:
-                assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
+        if not self.repeat and len( rval ) > 1 and not self.multiple:
+            raise ValueError( "Multiple values provided but parameter %s is not expecting multiple values." % self.name )
         rval = self.separator.join( map( value_map, rval ) )
         if self.tool is None or self.tool.options.sanitize:
             if self.sanitizer:
@@ -1583,7 +1586,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             rval = []
             for val in value:
                 rval.append( get_option_display( val, self.options ) or val )
-        return "\n".join( map( str, rval ) )
+        if rval:
+            return "\n".join( map( str, rval ) )
+        return "Nothing selected."
 
     def get_dependencies( self ):
         """
@@ -1594,15 +1599,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         # skip SelectToolParameter (the immediate parent) bc we need to get options in a different way here
         d = ToolParameter.to_dict( self, trans )
-
-        options = []
-        try:
-            options = self.get_options( trans=trans, other_values=other_values )
-        except KeyError:
-            # will sometimes error if self.is_dynamic and self.filtered
-            #   bc we dont/cant fill out other_values above ({})
-            pass
-        d['options'] = options
+        d['options'] = self.get_options( trans=trans, other_values=other_values )
         d['display'] = self.display
         return d
 
@@ -1871,7 +1868,7 @@ class DataToolParameter( BaseDataToolParameter ):
         return ''
 
     def from_json( self, value, trans, other_values={} ):
-        if trans.workflow_building_mode:
+        if trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return None
         if not value and not self.optional:
             raise ValueError( "History does not include a dataset of the required format / build" )
@@ -1937,8 +1934,11 @@ class DataToolParameter( BaseDataToolParameter ):
                     raise ValueError( "The previously selected dataset has entered an unusable state" )
         if not self.multiple:
             if len( values ) > 1:
-                raise ValueError( "More than one dataset supplied to single input dataset parameter.")
-            rval = values[ 0 ]
+                raise ValueError( "More than one dataset supplied to single input dataset parameter." )
+            if len( values ) > 0:
+                rval = values[ 0 ]
+            else:
+                raise ValueError( "Invalid dataset supplied to single input dataset parameter." )
         return rval
 
     def to_param_dict_string( self, value, other_values={} ):
@@ -1954,7 +1954,7 @@ class DataToolParameter( BaseDataToolParameter ):
                 return ", ".join( [ "%s: %s" % ( item.hid, item.name ) for item in value ] )
             except:
                 pass
-        return "No dataset"
+        return "No dataset."
 
     def validate( self, value, trans=None ):
         dataset_count = 0
@@ -2035,10 +2035,13 @@ class DataToolParameter( BaseDataToolParameter ):
         d = super( DataToolParameter, self ).to_dict( trans )
         extensions = self.extensions
         all_edam_formats = self._datatypes_registery( trans, self.tool ).edam_formats
+        all_edam_data = self._datatypes_registery( trans, self.tool ).edam_data
         edam_formats = map(lambda ext: all_edam_formats.get(ext, None),
                            extensions)
+        edam_data = map(lambda ext: all_edam_data.get(ext, None), extensions)
+
         d['extensions'] = extensions
-        d['edam_formats'] = edam_formats
+        d['edam'] = {'edam_formats': edam_formats, 'edam_data': edam_data}
         d['multiple'] = self.multiple
         if self.multiple:
             # For consistency, should these just always be in the dict?
@@ -2048,7 +2051,7 @@ class DataToolParameter( BaseDataToolParameter ):
 
         # return dictionary without options if context is unavailable
         history = trans.history
-        if history is None or trans.workflow_building_mode:
+        if history is None or trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return d
 
         # prepare dataset/collection matching
@@ -2149,7 +2152,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         return field
 
     def from_json( self, value, trans, other_values={} ):
-        if trans.workflow_building_mode:
+        if trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return None
         if not value and not self.optional:
             raise ValueError( "History does not include a dataset collection of the correct type or containing the correct types of datasets" )
@@ -2210,7 +2213,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
         # return dictionary without options if context is unavailable
         history = trans.history
-        if history is None or trans.workflow_building_mode or other_values is None:
+        if history is None or trans.workflow_building_mode is workflow_building_modes.ENABLED or other_values is None:
             return d
 
         # prepare dataset/collection matching

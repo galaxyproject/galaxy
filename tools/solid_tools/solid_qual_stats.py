@@ -18,7 +18,7 @@ def unzip( filename ):
     zip_file = zipfile.ZipFile( filename, 'r' )
     tmpfilename = tempfile.NamedTemporaryFile().name
     for name in zip_file.namelist():
-        file( tmpfilename, 'a' ).write( zip_file.read( name ) )
+        open( tmpfilename, 'a' ).write( zip_file.read( name ) )
     zip_file.close()
     return tmpfilename
 
@@ -35,7 +35,7 @@ def __main__():
     readlen = None
     invalid_lines = 0
     j = 0
-    for line in file( infile_name ):
+    for line in open( infile_name ):
         line = line.strip()
         if not(line) or line.startswith("#") or line.startswith(">"):
             continue

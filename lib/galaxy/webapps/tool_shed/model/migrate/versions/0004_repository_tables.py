@@ -53,15 +53,15 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         Repository_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating repository table failed: %s" % str( e ) )
     try:
         RepositoryRatingAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating repository_rating_association table failed: %s" % str( e ) )
     try:
         RepositoryCategoryAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating repository_category_association table failed: %s" % str( e ) )
 
 
@@ -71,13 +71,13 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         Repository_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping repository table failed: %s" % str( e ) )
     try:
         RepositoryRatingAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping repository_rating_association table failed: %s" % str( e ) )
     try:
         RepositoryCategoryAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping repository_category_association table failed: %s" % str( e ) )

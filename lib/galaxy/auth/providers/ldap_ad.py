@@ -135,7 +135,7 @@ class LDAP(AuthProvider):
 
                 # parse results
                 if suser is None or len(suser) == 0:
-                    log.warn('LDAP authenticate: search returned no results')
+                    log.warning('LDAP authenticate: search returned no results')
                     return (failure_mode, '', '')
                 dn, attrs = suser[0]
                 log.debug(("LDAP authenticate: dn is %s" % dn))
@@ -169,7 +169,7 @@ class LDAP(AuthProvider):
             if whoami is None:
                 raise RuntimeError('LDAP authenticate: anonymous bind')
         except Exception:
-            log.warn('LDAP authenticate: bind exception', exc_info=True)
+            log.warning('LDAP authenticate: bind exception', exc_info=True)
             return (failure_mode, '', '')
 
         log.debug('LDAP authentication successful')

@@ -131,6 +131,7 @@ class DatasetMatcherTestCase( TestCase, tools_support.UsesApp ):
         self.tool = bunch.Bunch(
             app=self.app,
             tool_type="default",
+            valid_input_states=model.Dataset.valid_input_states,
         )
         self.current_user_roles = []
         self.other_values = {}

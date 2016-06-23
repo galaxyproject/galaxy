@@ -80,7 +80,7 @@ def read_inputfile(filename, samples):
             v = input[position]
             v[sample] = (allele1, allele2)
         else:
-            v = {sample : (allele1, allele2)}
+            v = {sample: (allele1, allele2)}
             input[position] = v
 
     file.close()
@@ -272,7 +272,7 @@ if __name__ == "__main__":
     try:
         opts, args = getopt(argv[1:], "hds:r:f:",
                             ["help", "debug", "rsquare=", "freq=", "sample="])
-    except GetoptError, err:
+    except GetoptError as err:
         print str(err)
         usage()
         exit(2)

@@ -539,9 +539,14 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         else:
             remove_from_dict( self._tool_panel, self._integrated_tool_panel )
 
+    def _path_template_kwds( self ):
+        return {}
+
     def _load_tool_tag_set( self, item, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None, index=None, internal=False ):
         try:
-            path = item.get( "file" )
+            path_template = item.get( "file" )
+            template_kwds = self._path_template_kwds()
+            path = string.Template(path_template).safe_substitute(**template_kwds)
             repository_id = None
 
             tool_shed_repository = None

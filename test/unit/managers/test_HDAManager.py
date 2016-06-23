@@ -504,7 +504,24 @@ class HDASerializerTestCase( HDATestCase ):
         serialized = self.hda_serializer.serialize( hda, keys, user=self.admin_user )
         self.assertTrue( 'file_name' in serialized )
 
-        # TODO: test extra_files_path as well
+    def test_serializing_inaccessible( self ):
+        owner = self.user_manager.create( **user2_data )
+        non_owner = self.user_manager.create( **user3_data )
+
+        history1 = self.history_manager.create( name='history1', user=owner )
+        dataset1 = self.dataset_manager.create()
+        item1 = self.hda_manager.create( history1, dataset1 )
+
+        keys_in_inaccessible_view = self.hda_serializer._view_to_keys( 'inaccessible' )
+
+        self.log( 'file_name should be included if app configured to do so' )
+        self.dataset_manager.permissions.set_private_to_one_user( dataset1, owner )
+        # request random crap
+        serialized = self.hda_serializer.serialize_to_view( item1, view='detailed',
+            keys=[ 'file_path', 'visualizations' ], user=non_owner )
+        self.assertEqual( sorted( keys_in_inaccessible_view ), sorted( serialized.keys() ) )
+
+    # TODO: test extra_files_path as well
 
 
 # =============================================================================

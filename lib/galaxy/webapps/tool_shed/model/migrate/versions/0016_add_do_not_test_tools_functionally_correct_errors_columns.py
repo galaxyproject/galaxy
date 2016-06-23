@@ -37,7 +37,7 @@ def upgrade(migrate_engine):
         elif migrate_engine.name in ['postgresql', 'postgres']:
             default_false = "false"
         migrate_engine.execute( "UPDATE repository_metadata SET tools_functionally_correct=%s" % default_false )
-    except Exception, e:
+    except Exception as e:
         print "Adding tools_functionally_correct column to the repository_metadata table failed: %s" % str( e )
         log.debug( "Adding tools_functionally_correct column to the repository_metadata table failed: %s" % str( e ) )
     c = Column( "do_not_test", Boolean, default=False, index=True )
@@ -51,7 +51,7 @@ def upgrade(migrate_engine):
         elif migrate_engine.name in ['postgresql', 'postgres']:
             default_false = "false"
         migrate_engine.execute( "UPDATE repository_metadata SET do_not_test=%s" % default_false )
-    except Exception, e:
+    except Exception as e:
         print "Adding do_not_test column to the repository_metadata table failed: %s" % str( e )
         log.debug( "Adding do_not_test column to the repository_metadata table failed: %s" % str( e ) )
     c = Column( "time_last_tested", DateTime, default=None, nullable=True )
@@ -59,7 +59,7 @@ def upgrade(migrate_engine):
         # Create time_last_tested column
         c.create( RepositoryMetadata_table, index_name="ix_repository_metadata_tlt")
         assert c is RepositoryMetadata_table.c.time_last_tested
-    except Exception, e:
+    except Exception as e:
         print "Adding time_last_tested column to the repository_metadata table failed: %s" % str( e )
         log.debug( "Adding time_last_tested column to the repository_metadata table failed: %s" % str( e ) )
     c = Column( "tool_test_errors", JSONType, nullable=True )
@@ -67,7 +67,7 @@ def upgrade(migrate_engine):
         # Create tool_test_errors column
         c.create( RepositoryMetadata_table, index_name="ix_repository_metadata_tte")
         assert c is RepositoryMetadata_table.c.tool_test_errors
-    except Exception, e:
+    except Exception as e:
         print "Adding tool_test_errors column to the repository_metadata table failed: %s" % str( e )
         log.debug( "Adding tool_test_errors column to the repository_metadata table failed: %s" % str( e ) )
 
@@ -79,21 +79,21 @@ def downgrade(migrate_engine):
     RepositoryMetadata_table = Table( "repository_metadata", metadata, autoload=True )
     try:
         RepositoryMetadata_table.c.tool_test_errors.drop()
-    except Exception, e:
+    except Exception as e:
         print "Dropping column tool_test_errors from the repository_metadata table failed: %s" % str( e )
         log.debug( "Dropping column tool_test_errors from the repository_metadata table failed: %s" % str( e ) )
     try:
         RepositoryMetadata_table.c.time_last_tested.drop()
-    except Exception, e:
+    except Exception as e:
         print "Dropping column time_last_tested from the repository_metadata table failed: %s" % str( e )
         log.debug( "Dropping column time_last_tested from the repository_metadata table failed: %s" % str( e ) )
     try:
         RepositoryMetadata_table.c.do_not_test.drop()
-    except Exception, e:
+    except Exception as e:
         print "Dropping column do_not_test from the repository_metadata table failed: %s" % str( e )
         log.debug( "Dropping column do_not_test from the repository_metadata table failed: %s" % str( e ) )
     try:
         RepositoryMetadata_table.c.tools_functionally_correct.drop()
-    except Exception, e:
+    except Exception as e:
         print "Dropping column tools_functionally_correct from the repository_metadata table failed: %s" % str( e )
         log.debug( "Dropping column tools_functionally_correct from the repository_metadata table failed: %s" % str( e ) )

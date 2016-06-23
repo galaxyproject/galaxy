@@ -43,7 +43,7 @@ class FolderManager( object ):
             raise InconsistentDatabase( 'Multiple folders found with the same id.' )
         except NoResultFound:
             raise RequestParameterInvalidException( 'No folder found with the id provided.' )
-        except Exception, e:
+        except Exception as e:
             raise InternalServerError( 'Error loading from the database.' + str( e ) )
         folder = self.secure( trans, folder, check_manageable, check_accessible )
         return folder
