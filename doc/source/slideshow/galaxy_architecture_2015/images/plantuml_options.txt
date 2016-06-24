@@ -1,0 +1,8 @@
+skinparam handwritten true
+
+skinparam class {
+    ArrowFontColor LightOrange
+    BackgroundColor LightOrange
+    ArrowColor Orange
+    BorderColor DarkOrange
+}
