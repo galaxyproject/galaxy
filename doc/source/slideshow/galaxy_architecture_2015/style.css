@@ -27,6 +27,12 @@ h2 { font-size: 2em; }
     text-align: center;
 }
 
+.centered {
+    text-align: center;
+}
+
+
+
 h3 {
     font-size: 1.8em;
     position: absolute;
@@ -36,10 +42,6 @@ h3 {
 .footnote {
     position: absolute;
     bottom: 3em;
-}
-
-i, em {
-    color: #ff9300;
 }
 
 .large {
@@ -96,6 +98,11 @@ a, a > code {
     background-size: contain;
     color: #ffffff;
 }
+
+i, em, b, strong {
+    color: #ff9300;
+}
+
 .inverse h1, .inverse h2 {
     color: #f3f3f3;
     line-height: 0.8em;

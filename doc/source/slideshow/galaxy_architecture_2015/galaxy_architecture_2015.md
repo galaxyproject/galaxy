@@ -7,7 +7,7 @@ class: special
 
 Nate, James, John, Rémi
 
-.footnote[\#usegalaxy/@galaxyproject]
+.footnote[\#usegalaxy / @galaxyproject]
 
 ---
 
@@ -37,7 +37,7 @@ Contribution guidelines: http://bit.ly/gx-CONTRIBUTING-md
 
 ---
 
-## 1. The family of /galaxyproject projects
+## The **/galaxyproject** projects
 
 ---
 
@@ -48,58 +48,103 @@ background-image: url(images/family/team.png)
 ---
 
 github.com/galaxyproject/**galaxy**
-<br />
-#### The main Galaxy application. Web interface, database model, job running, etc. Also includes other web applications including the **ToolShed** and **Reports**
+
+The main Galaxy application. Web interface, database model, job running, etc. Also includes other web applications including the **ToolShed** and **Reports**
 
 ---
 
 github.com/galaxyproject/**cloudman**
-#### Galaxy CloudMan 
+
+Galaxy CloudMan - a web application which manages a Galaxy cluster in
+the cloud.
 
 github.com/galaxyproject/**cloudlaunch**
-#### CloudLaunch web application to make it wasy to launch images on a cloud, drives *https://launch.usegalaxy.org*
+
+CloudLaunch web application to make it wasy to launch images on a cloud, drives *https://launch.usegalaxy.org*
 
 ---
 
 github.com/galaxyproject/**tools-{devteam,iuc}**
-#### Galaxy tools maintained by *devteam* (ths PSU/Hopkins group) and *iuc* (the "Intergalactic Utilities Commission"). A variety of tools, generally of high quality including the core tools for Galaxy main. Demonstrates **current tool development best practices** - development on github and then deployed to test/main ToolSheds
+
+Galaxy tools maintained by *devteam* (ths PSU/Hopkins group) and *iuc* (
+the "Intergalactic Utilities Commission"). A variety of tools, 
+generally of high quality including the core tools for Galaxy main. 
+Demonstrates *current tool development best practices* - development on 
+github and then deployed to test/main ToolSheds
 
 ---
 
 github.com/galaxyproject/**starforge**
-#### Build Galaxy Tool dependencies for the ToolShed in Docker containers
-#### Build Galaxy framework dependencies as Python wheels
+
+Build Galaxy Tool dependencies for the ToolShed in Docker containers
+
+Build Galaxy framework dependencies as Python wheels
 
 ---
 
 github.com/galaxyproject/**planemo**
-#### Commande line utilities to assist in the development of Galaxy tools. Linting, testing, deploying to ToolSheds... ***The best practice approach for Galaxy tool development!***
+
+Commande line utilities to assist in the development of Galaxy tools. 
+Linting, testing, deploying to ToolSheds... *The best practice approach 
+for Galaxy tool development!*
+
 github.com/galaxyproject/**planemo-machine**
-#### Builds Galaxy environments for Galaxy tool development including Docker container, virtual machines, Google compute images
+
+Builds Galaxy environments for Galaxy tool development including Docker 
+container, virtual machines, Google compute images
 
 ---
 
 github.com/galaxyproject/**{ansible-\*, \*-playbook}**
-#### Ansible components to automate almost every aspect of Galaxy installation and maintenance.
-#### Ansible is an advanced configuration management system
-#### These playbooks are used to maintain Galaxy main, cloud images, virtual machines, ...
+
+Ansible components to automate almost every aspect of Galaxy installation and maintenance.
+
+Ansible is an advanced configuration management system
+
+These playbooks are used to maintain Galaxy main, cloud images, virtual machines, ...
 
 ---
 
 github.com/galaxyproject/**pulsar**
-#### Distributed job execution engine for Galaxy. Allows staging data, scripts, configuration. Can run jobs on Windows machines. Can act as its own queuing system or access an existing cluster DRM
+
+Distributed job execution engine for Galaxy. Allows staging data, scripts, configuration. Can run jobs on Windows machines. Can act as its own queuing system or access an existing cluster DRM
 
 ---
 
 github.com/galaxyproject/**bioblend**
-#### Official Python client for the Galaxy, ToolShed, and CloudMan APIs
 
+Official Python client for the Galaxy, ToolShed, and CloudMan APIs.
+
+Best documented path to scripting the Galaxy API.
+
+---
+
+- github.com/**tripal/blend4php**
+- github.com/**jmchilton/blend4j**
+- github.com/**chapmanb/clj-blend**
+
+Galaxy API bindings for other languages.
+
+---
+
+github.com/**bgruening/docker-galaxy-stable**
+
+High quality Docker containers for stable Galaxy environments.
+
+Releases corresponding to each new version of Galaxy.
+
+Many flavors available.
+
+---
+
+class: white
+background-image: url(images/docker-chart.png)
+  
 ---
 
 ## Galaxy app architecture
 
 ---
-
 
 ### Aspirational Principles of Galaxy Architecture
 
@@ -133,7 +178,16 @@ flexibility is paramount.
 
 ### A Plugin Driven Backend
 
-A deployer of Galaxy can plug
+Galaxy's backend is in many ways driven by pluggable interfaces and
+can be adapted to many different technologies.
+
+- SQLAlchemy allows using sqlite, postgres, or MySQL for a database.
+- Many different cluster backends or job managers are supported.
+- Different frontend proxies (e.g. nginx) are supported as well as web
+  application containers (e.g. uWSGI).
+- Different storage strategies and technologies are supported (e.g. S3).
+- Tools, job metrics, tool dependency resolution, workflow modules, 
+  datatype definitions are all plugin driven.
 
 ---
 
@@ -152,7 +206,6 @@ So by default Galaxy does not require:
 ---
 
 class: white
-
 background-image: url(images/server_client_old.mermaid.svg)
 
 ???
@@ -205,7 +258,7 @@ background-image: url(images/wsgi_request.svg)
 - Database interactions powered by SQLAlchemy - http://www.sqlalchemy.org/.
 - Galaxy doesn't think in terms "rows" but "objects".
 - Classes for Galaxy model objects in `lib/galaxy/model/__init__.py`.
-- Classes mapped to objects in `lib/galaxy/model/mapping.py`
+- Classes mapped to tables in `lib/galaxy/model/mapping.py`
   - Describes table definitions and relationships.
 
 ---
@@ -297,6 +350,10 @@ class: normal
 
 ---
 
+background-image: url(images/objectstore_diagram.svg)
+
+---
+
 ### Visualization Plugins
 
 Adding new visualizations to a Galaxy instance
@@ -327,6 +384,34 @@ class: smaller
     <entry_point entry_point_type="mako">charts.mako</entry_point>
 </visualization>
 ```
+
+---
+
+### Data Providers
+
+How do I efficiently access data for my viz?
+Framework provides direct link to read the raw dataset
+or use Data providers
+In config, assert that visualization requires a given type of data providers
+Data providers process data before sending to browser. Slice, filter, reformat, ...
+
+---
+
+### Interactive Environments
+
+Galaxy side is identical to interactive environments: config and base template
+Within the base template, launch a Docker container running a web accessible process
+Build a UI that accesses that process through a proxy
+
+---
+
+### Dataset Collections
+
+Hundreds or thousands of similar datasets are unwieldy, how do you get a handle on them?
+Group datasets into a single unit
+Perform complex operations on that unit
+Operations are performed on each group element
+Output of each operation is a new group
 
 ---
 
@@ -445,6 +530,132 @@ background-image: url(images/jsload.png)
 
 ---
 
-### StyleSheets
+### Stylesheets
 
-- 
+- Galaxy uses the less CSS preprocessor - http://lesscss.org/
+- Rebuild style with `make style`
+- Less files in `client/galaxy/style/less`
+- Build happens with grunt recipe in `client/grunt-tasks/style.js`
+
+---
+
+## Dependencies
+
+---
+
+class: normal
+
+### Dependencies - Python
+
+`script/common_startup.sh` sets up a `virtualenv` with required dependencies in `$GALAXY_ROOT/.venv` (or `$GALAXY_VIRTUAL_ENV` if set).
+
+- Check for existing virtual environment, if it doesn't exist check for `virtualenv`.
+- If `virtualenv` exists, use it. Otherwise download it as a script and setup a virtual environment using it.
+- `. "$GALAXY_VIRTUAL_ENV/bin/activate"`
+- Upgrade to latest `pip` to allow use of binary wheels.
+- `pip install -r requirements.txt --index-url https://wheels.galaxyproject.org/simple`
+- Install dozens of dependencies.
+
+---
+
+### Dependencies - JavaScript
+
+These come bundled with Galaxy, so do not need to be fetched at runtime.
+
+- Dependencies are defined `galaxy/client/bower.json`.
+- Bower (https://bower.io/) is used to re-fetch these.
+- `cd client; grunt install-libs`
+
+---
+
+## Galaxy Startup Process
+
+---
+
+## Production Galaxy - usegalaxy.org
+
+---
+
+class: centered
+
+.pull-left[
+#### Default
+
+SQLite
+
+Paste#http
+
+Single process
+
+Single host
+
+Local jobs
+
+]
+
+.pull-right[
+#### Production
+
+PostgreSQL
+
+uWSGI / nginx
+
+Multiple processes
+
+Multiple hosts
+
+Jobs across many clusters
+]
+
+*http://usegalaxy.org/production*
+
+---
+
+### postgres
+
+- Database server can scale way beyond default sqlite
+- https://www.postgresql.org/
+- github.com/galaxyproject/usegalaxy-playbook -> `roles/galaxyprojectdotorg.postgresql`
+
+---
+
+### nginx (or Apache)
+
+- Optimized servers for static content
+- https://www.nginx.com/resources/wiki/
+- github.com/galaxyproject/usegalaxy-playbook -> `templates/nginx/usegalaxy.j2`
+
+---
+
+### Multi-processes
+
+Threads in Python are limited by the [GIL](https://wiki.python.org/moin/GlobalInterpreterLock).
+
+Running multiple processes of Galaxy and seperate processes for web handling
+and job processing works around this.
+
+This used to be an important detail - but uWSGI makes things a lot easier.
+
+---
+
+### Cluster Support
+
+background-image: url(images/cluster_support.svg)
+
+???
+
+Pulsar discussion?
+
+---
+
+background-image: url(images/usegalaxy_webservers.svg)
+
+---
+
+background-image: url(images/usegalaxyorg.svg)
+
+---
+
+## Q & A
+
+---

@@ -5,7 +5,7 @@ class HistoryDatasetAssociation {
     dataset_id: integer
     state: string
     name: string
-    info; string
+    info: string
 }
 
 class Dataset {
