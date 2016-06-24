@@ -1,4 +1,7 @@
 @startuml
+
+!include plantuml_options.txt
+
 class HistoryDatasetAssociation {
     hid: integer
     history_id: integer

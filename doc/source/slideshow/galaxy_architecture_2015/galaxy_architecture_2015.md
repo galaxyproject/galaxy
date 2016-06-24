@@ -295,7 +295,6 @@ background-image: url(images/hda.svg)
 
 ---
 
-class: white
 background-image: url(images/hda_dataset.plantuml.svg)
 
 ---
@@ -309,6 +308,10 @@ background-image: url(images/hda_dataset.plantuml.svg)
 ???
 
 Slides for datatypes, example of meta data definitions...
+
+---
+
+background-image: url(images/hda_hdca.plantuml.svg)
 
 ---
 
@@ -351,6 +354,10 @@ class: normal
 ---
 
 background-image: url(images/objectstore_diagram.svg)
+
+---
+
+background-image: url(images/objectstore.plantuml.svg)
 
 ---
 
@@ -448,7 +455,7 @@ npm-deps: ## Install NodeJS dependencies.
 ### grunt
 
 Build tool for JavaScript, tasks are defined in `client/Gruntfile.js`. The default task is
-
+  
 .smaller[```grunt.registerTask( 'default', [ 'check-modules', 'uglify', 'webpack' ] );```]
 
 - `check-modules` Verifies node dependencies are correct and exact.
@@ -514,8 +521,6 @@ background-image: url(images/what-is-webpack.svg)
 
 ---
 
-class: normal
-
 ### webpack in Galaxy
 
 - Turns Galaxy modules into an "app".
@@ -542,9 +547,7 @@ background-image: url(images/jsload.png)
 ## Dependencies
 
 ---
-
-class: normal
-
+  
 ### Dependencies - Python
 
 `script/common_startup.sh` sets up a `virtualenv` with required dependencies in `$GALAXY_ROOT/.venv` (or `$GALAXY_VIRTUAL_ENV` if set).
