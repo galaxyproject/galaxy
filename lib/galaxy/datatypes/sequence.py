@@ -8,6 +8,8 @@ import logging
 import os
 import re
 import string
+import subprocess
+import tempfile
 from cgi import escape
 
 from galaxy import util
@@ -553,8 +555,13 @@ class Fastq ( Sequence ):
     """Class representing a generic FASTQ sequence"""
     edam_format = "format_1930"
     file_ext = "fastq"
+    
+    MetadataElement( name="squashfs_img", desc="Compressed archive", param=metadata.MetadataParameter, file_ext="img", readonly=False, no_value=None, visible=False, optional=True )
+    MetadataElement( name="squashfs_mount_path", desc="Compressed archive mount target", param=metadata.MetadataParameter, file_ext="mnt", readonly=False, no_value=None, visible=False, optional=True )
+    MetadataElement( name="squashfs_mount_img", desc="Compressed archive file target", param=metadata.MetadataParameter, file_ext="dat", readonly=False, no_value=None, visible=False, optional=True )
+    
 
-    def set_meta( self, dataset, **kwd ):
+    def set_meta( self, dataset, overwrite=True, **kwd ):
         """
         Set the number of sequences and the number of data lines
         in dataset.
@@ -585,6 +592,59 @@ class Fastq ( Sequence ):
             sequences += 1
         dataset.metadata.data_lines = data_lines
         dataset.metadata.sequences = sequences
+        
+        self.squash_compress(dataset)
+    
+    def squash_compress(self,dataset):
+        squashfs_image = dataset.metadata.squashfs_img
+        
+        if not squashfs_image:
+            # @todo descide what file name should be chosen - preferable .dat.img ?
+            squashfs_image = dataset.file_name+".img"
+            mount_path = dataset.file_name+".mnt"
+            mount_target = mount_path + "/" + os.path.basename(dataset.file_name)
+            
+            # make squashfs archive
+            stderr_name = tempfile.NamedTemporaryFile( prefix="sq_compress" ).name
+            command = ['mksquashfs',dataset.file_name, squashfs_image, '-b', '1048576', '-comp' ,'xz' ,'-Xdict-size', '100%']
+            try:
+                exit_code = subprocess.call( args=command, stderr=open( stderr_name, 'wb' ) )
+            except Exception as e:
+                log.warning( '%s, sniff Exception: %s', self, e )
+            
+            # make mount dir
+            os.mkdir(mount_path)
+            
+            dataset.metadata.squashfs_img = squashfs_image
+            dataset.metadata.squashfs_mount_path = mount_path
+            dataset.metadata.squashfs_mount_img = mount_target
+            
+            # move old file
+            os.rename(dataset.file_name, dataset.file_name+".bak")
+        
+        if dataset.metadata.squashfs_img:
+            self.squash_mount(dataset,log)
+            
+            os.symlink(dataset.metadata.squashfs_mount_img, dataset.file_name)
+            
+            if os.path.isfile(dataset.file_name):
+                os.remove( dataset.file_name+".bak")
+                return True
+            else:
+                # Move file back if everything went wrong
+                os.remove(dataset.file_name)
+                os.rename(dataset.file_name+".bak", dataset.file_name)
+                return False
+        else:
+            return False
+
+    def squash_mount(self,dataset,log):
+        stderr_name = tempfile.NamedTemporaryFile( prefix="sq_mnt" ).name
+        command = ['squashfuse', dataset.metadata.squashfs_img , dataset.metadata.squashfs_mount_path]
+        try:
+            exit_code = subprocess.call( args=command, stderr=open( stderr_name, 'wb' ) )
+        except Exception as e:
+            log.warning( '%s, sniff Exception: %s', self, e )
 
     def sniff( self, filename ):
         """
