@@ -6,3 +6,10 @@ skinparam class {
     ArrowColor Orange
     BorderColor DarkOrange
 }
+
+skinparam object {
+    ArrowFontColor LightOrange
+    BackgroundColor LightOrange
+    ArrowColor Orange
+    BorderColor DarkOrange
+}

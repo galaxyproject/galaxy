@@ -67,9 +67,9 @@ CloudLaunch web application to make it wasy to launch images on a cloud, drives 
 github.com/galaxyproject/**tools-{devteam,iuc}**
 
 Galaxy tools maintained by *devteam* (ths PSU/Hopkins group) and *iuc* (
-the "Intergalactic Utilities Commission"). A variety of tools, 
-generally of high quality including the core tools for Galaxy main. 
-Demonstrates *current tool development best practices* - development on 
+the "Intergalactic Utilities Commission"). A variety of tools,
+generally of high quality including the core tools for Galaxy main.
+Demonstrates *current tool development best practices* - development on
 github and then deployed to test/main ToolSheds
 
 ---
@@ -84,13 +84,13 @@ Build Galaxy framework dependencies as Python wheels
 
 github.com/galaxyproject/**planemo**
 
-Commande line utilities to assist in the development of Galaxy tools. 
-Linting, testing, deploying to ToolSheds... *The best practice approach 
+Commande line utilities to assist in the development of Galaxy tools.
+Linting, testing, deploying to ToolSheds... *The best practice approach
 for Galaxy tool development!*
 
 github.com/galaxyproject/**planemo-machine**
 
-Builds Galaxy environments for Galaxy tool development including Docker 
+Builds Galaxy environments for Galaxy tool development including Docker
 container, virtual machines, Google compute images
 
 ---
@@ -139,10 +139,10 @@ Many flavors available.
 
 class: white
 background-image: url(images/docker-chart.png)
-  
+
 ---
 
-## Galaxy app architecture
+## Principles
 
 ---
 
@@ -159,7 +159,7 @@ diametrically opposite.
 
 The frontend architecture is guided by the principle that the end user experience
 should be as simple and consistent as possible. The backend has been deployed at
-so many different sites and targetting so many different technologies - that 
+so many different sites and targeting so many different technologies - that
 flexibility is paramount.
 
 ---
@@ -168,7 +168,7 @@ flexibility is paramount.
 
 - The target audience is a bench scientist - no knowledge of programming, paths, or command lines should be assumed.
 - Consistent colors, fonts, themes, etc...
-- Reusable libraris for presenting common widgets such as forms and grids.
+- Reusable libraries for presenting common widgets such as forms and grids.
 - Tied to specific technologies:
   - JavaScript driven.
   - Backbone for MVC.
@@ -186,7 +186,7 @@ can be adapted to many different technologies.
 - Different frontend proxies (e.g. nginx) are supported as well as web
   application containers (e.g. uWSGI).
 - Different storage strategies and technologies are supported (e.g. S3).
-- Tools, job metrics, tool dependency resolution, workflow modules, 
+- Tools, job metrics, tool dependency resolution, workflow modules,
   datatype definitions are all plugin driven.
 
 ---
@@ -205,12 +205,16 @@ So by default Galaxy does not require:
 
 ---
 
+## Communication
+
+---
+
 class: white
 background-image: url(images/server_client_old.mermaid.svg)
 
 ???
 
-User management and admin things, Reports and Tool Shed 
+User management and admin things, Reports and Tool Shed
 Webapp
 
 ---
@@ -221,7 +225,7 @@ background-image: url(images/server_client.mermaid.svg)
 
 ???
 
-Workflow, Data Libraries, Visualization, History, Tool Menu, 
+Workflow, Data Libraries, Visualization, History, Tool Menu,
 Many Grids
 
 ---
@@ -250,6 +254,117 @@ background-image: url(images/wsgi_app.svg)
 ---
 
 background-image: url(images/wsgi_request.svg)
+
+---
+
+### Galaxy WSGI Middleware
+
+A WSGI function:
+
+`def app(environ, start_response):`
+
+- Middleware act as filters, modify the environ and then pass through to the next webapp
+- Galaxy uses several middleware components defined in the `wrap_in_middleware`
+  function of `galaxy.webapps.galaxy.buildapp`.
+
+---
+
+class: normal
+
+### Galaxy's WSGI Middleware
+
+Middleware configured in `galaxy.webapps.galaxy.buildapp#wrap_in_middleware`.
+
+- `paste.httpexceptions#make_middleware`
+- `galaxy.web.framework.middleware.remoteuser#RemoteUser` (if configured)
+- `paste.recursive#RecursiveMiddleware`
+- `galaxy.web.framework.middleware.sentry#Sentry` (if configured)
+- Various debugging middleware (linting, interactive exceptions, etc...)
+- `galaxy.web.framework.middleware.statsd#StatsdMiddleware` (if configured)
+- `galaxy.web.framework.middleware.xforwardedhost#XForwardedHostMiddleware`
+- `galaxy.web.framework.middleware.request_id#RequestIDMiddleware`
+
+---
+
+background-image: url(images/webapp.plantuml.svg)
+
+---
+
+class: normal
+
+### Routes
+
+Setup on `webapp` in `galaxy.web.webapps.galaxy.buildapp.py`.
+
+```python
+webapp.add_route(
+    '/datasets/:dataset_id/display/{filename:.+?}',
+    controller='dataset', action='display',
+    dataset_id=None, filename=None
+)
+```
+
+URL `/datasets/278043/display` matches this route, so `handle_request` will
+
+- lookup the controller named “dataset”
+- look for a method named “display” that is exposed
+- call it, passing dataset_id and filename as keyword arg
+
+Uses popular Routes library (https://pypi.python.org/pypi/Routes).
+
+---
+
+class: normal
+
+Simplified `handle_request` from `lib/galaxy/web/framework/base.py`.
+
+```python
+def handle_request(self, environ, start_response):
+    path_info = environ.get( 'PATH_INFO', '' )
+    map = self.mapper.match( path_info, environ )
+    if path_info.startswith('/api'):
+        controllers = self.api_controllers
+    else:
+        controllers = self.controllers
+
+    trans = self.transaction_factory( environ )
+
+    controller_name = map.pop( 'controller', None )
+    controller = controllers.get( controller_name, None )
+
+    # Resolve action method on controller
+    action = map.pop( 'action', 'index' )
+    method = getattr( controller, action, None )
+
+    kwargs = trans.request.params.mixed()
+    # Read controller arguments from mapper match
+    kwargs.update( map )
+
+    body = method( trans, **kwargs )
+    # Body may be a file, string, etc... respond with it.
+```
+
+---
+
+### API Controllers
+
+- `lib/galaxy/webapps/galaxy/controllers/api/`
+- Exposed method take `trans` and request parameters and return a JSON response.
+- Ideally these are *thin*
+  - Focused on "web things" - adapting parameters and responses and move
+    "business logic" to components not bound to web functionality.
+
+---
+
+### Legacy Controllers
+
+- `lib/galaxy/webapps/galaxy/controllers/`
+- Return arbitrary content - JSON, HTML, etc....
+- Ideally nearly all of these will go away.
+
+---
+
+## Application Components
 
 ---
 
@@ -428,7 +543,7 @@ Output of each operation is a new group
 - "Packed" scripts served by Galaxy stored in `static/{style|scripts}`
   - webpack builds these "compiled" artifacts
 
-Upshot - modify files in `client` and rebuild with `make client` before 
+Upshot - modify files in `client` and rebuild with `make client` before
 deployment.
 
 ---
@@ -455,7 +570,7 @@ npm-deps: ## Install NodeJS dependencies.
 ### grunt
 
 Build tool for JavaScript, tasks are defined in `client/Gruntfile.js`. The default task is
-  
+
 .smaller[```grunt.registerTask( 'default', [ 'check-modules', 'uglify', 'webpack' ] );```]
 
 - `check-modules` Verifies node dependencies are correct and exact.
@@ -547,7 +662,7 @@ background-image: url(images/jsload.png)
 ## Dependencies
 
 ---
-  
+
 ### Dependencies - Python
 
 `script/common_startup.sh` sets up a `virtualenv` with required dependencies in `$GALAXY_ROOT/.venv` (or `$GALAXY_VIRTUAL_ENV` if set).
