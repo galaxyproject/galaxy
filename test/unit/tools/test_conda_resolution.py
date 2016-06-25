@@ -48,7 +48,7 @@ def test_conda_resolution_failure():
     conda issue has been fixed.
     """
 
-    base_path = mkdtemp(prefix='x'*80)  # a ridiculously long prefix
+    base_path = mkdtemp(prefix='x' * 80)  # a ridiculously long prefix
     try:
         job_dir = os.path.join(base_path, "000")
         dependency_manager = DependencyManager(base_path)
