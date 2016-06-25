@@ -89,7 +89,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             "spec": self.__get_k8s_job_spec(job_wrapper)
         }
 
+        # Checks if job exists
+        job = Job(self._pykube_api, k8s_job_obj)
+        if job.exists():
+            job.delete()
         # Creates the Kubernetes Job
+        # TODO if a job with that ID exists, what should we do?
+        # TODO do we trust that this is the same job and use that?
+        # TODO or create a new job as we cannot make sure
         Job(self._pykube_api, k8s_job_obj).create()
 
         # define job attributes in the AsyncronousJobState for follow-up
