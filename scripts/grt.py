@@ -17,6 +17,7 @@ from galaxy.model import mapping
 sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.ini.sample'))
 default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.ini'))
 
+
 def init(config):
     if config.startswith('/'):
         config = os.path.abspath(config)
@@ -160,7 +161,7 @@ if __name__ == '__main__':
             req = urllib2.urlopen(config_dict['grt_url'], data=json.dumps(grt_report_data))
 
         except urllib2.HTTPError, htpe:
-            #print htpe.reason
+            # print htpe.reason
             print htpe.read()
             exit(1)
 
