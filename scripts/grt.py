@@ -96,7 +96,7 @@ if __name__ == '__main__':
 
         metrics = kw_metrics(job)
 
-        wanted_metrics = ('cpuinfo_cores_allocated', 'core_runtime_seconds')
+        wanted_metrics = ('core_galaxy_slots', 'core_runtime_seconds')
 
         grt_metrics = {
             k: int(metrics.get(k, 0))
