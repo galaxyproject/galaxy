@@ -47,6 +47,7 @@ lib/tool_shed/tools/
 lib/tool_shed/util/
 lib/tool_shed/utility_containers/
 scripts/api/common.py
+scripts/api/data_manager_example_execute.py
 scripts/api/display.py
 scripts/api/workflow_execute_parameters.py
 scripts/auth/
@@ -74,3 +75,7 @@ test/api/test_datasets.py
 test/api/test_tool_data.py
 test/api/test_workflow_extraction.py
 test/api/test_workflows.py
+test/shed_functional/base/twilltestcase.py
+test/shed_functional/functional_tests.py
+test/unit/datatypes/dataproviders/test_base_dataproviders.py
+test/unit/datatypes/dataproviders/test_line_dataproviders.py

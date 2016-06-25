@@ -6,7 +6,7 @@ import string
 import tarfile
 import tempfile
 import time
-import urllib
+from six.moves.urllib.parse import urlencode, quote_plus
 from json import loads
 
 import twill.commands as tc
@@ -412,7 +412,7 @@ class ShedTwillTestCase( TwillTestCase ):
             for data_manager_name in data_manager_names:
                 assert data_manager_name in data_managers, "The requested Data Manager '%s' was not found in repository metadata." % data_manager_name
         else:
-            data_manager_name = data_managers.keys()
+            data_manager_name = list(data_managers.keys())
         for data_manager_name in data_manager_names:
             url = '/data_manager/manage_data_manager?id=%s' % data_managers[data_manager_name]['guid']
             self.visit_galaxy_url( url )
@@ -427,7 +427,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_galaxy_url( url )
         strings_displayed.append( str( installed_repository.installed_changeset_revision ) )
         # Every place Galaxy's XXXX tool appears in attribute - need to quote.
-        strings_displayed = map( lambda x: x.replace("'", "&#39;"), strings_displayed )
+        strings_displayed = [x.replace("'", "&#39;") for x in strings_displayed]
         self.check_for_strings( strings_displayed, strings_not_displayed )
 
     def display_installed_workflow_image( self, repository, workflow_name, strings_displayed=None, strings_not_displayed=None ):
@@ -818,7 +818,7 @@ class ShedTwillTestCase( TwillTestCase ):
 
     def get_tool_panel_section_from_api( self, metadata ):
         tool_metadata = metadata[ 'tools' ]
-        tool_guid = urllib.quote_plus( tool_metadata[ 0 ][ 'guid' ], safe='' )
+        tool_guid = quote_plus( tool_metadata[ 0 ][ 'guid' ], safe='' )
         api_url = '/%s' % '/'.join( [ 'api', 'tools', tool_guid ] )
         self.visit_galaxy_url( api_url )
         tool_dict = loads( self.last_page() )
@@ -1020,12 +1020,12 @@ class ShedTwillTestCase( TwillTestCase ):
         self.check_for_strings( strings_displayed, strings_not_displayed )
 
     def load_checkable_revisions( self, strings_displayed=None, strings_not_displayed=None ):
-        params = urllib.urlencode( dict( do_not_test='false',
-                                         downloadable='true',
-                                         includes_tools='true',
-                                         malicious='false',
-                                         missing_test_components='false',
-                                         skip_tool_test='false' ) )
+        params = urlencode( dict( do_not_test='false',
+                                  downloadable='true',
+                                  includes_tools='true',
+                                  malicious='false',
+                                  missing_test_components='false',
+                                  skip_tool_test='false' ) )
         api_url = '%s?%s' % ( '/'.join( [ self.url, 'api', 'repository_revisions' ] ), params )
         self.visit_url( api_url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
@@ -1215,7 +1215,7 @@ class ShedTwillTestCase( TwillTestCase ):
             kwd[ field_name ] = str( field_value )
         else:
             if field_name in kwd:
-                log.debug( 'No field %s in form %s, discarding from return value.' % ( str( control ), str( form_id ) ) )
+                log.debug( 'No field %s in form %s, discarding from return value.' % ( str( controls ), str( form_id ) ) )
                 del( kwd[ field_name ] )
         return kwd
 
