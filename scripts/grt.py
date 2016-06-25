@@ -7,6 +7,7 @@ import urllib2
 from ConfigParser import ConfigParser
 import argparse
 import sqlalchemy as sa
+import yaml
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
@@ -15,7 +16,7 @@ from galaxy.objectstore import build_object_store_from_config
 from galaxy.model import mapping
 
 default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'config/galaxy.ini'))
-
+grt_ini = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.ini'))
 
 def init(config):
     config = os.path.abspath(config)
@@ -52,19 +53,28 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--config', dest='config', help='Path to Galaxy config file (config/galaxy.ini)', default=default_config)
     parser.add_argument('--dry-run', dest='dryrun', help='Dry run (show data to be sent, but do not send)', action='store_true', default=False)
     parser.add_argument('--grt-url', dest='grt_url', help='GRT Server (You can run your own!)', default='https://radio-telescope.galaxyproject.org/api/v1/upload')
-    parser.add_argument('--days', type=int, help="Number of days of data to submit", default=7)
     args = parser.parse_args()
+
+    print 'Loading GRT ini...'
+    try:
+        with open(grt_ini) as f:
+            grt_config = yaml.load(f)
+    except:
+        grt_config = dict()
+
+    # set to 0 by default
+    if not grt_config.has_key('last_job_id_sent'):
+        grt_config['last_job_id_sent'] = 0
 
     print 'Loading Galaxy...'
     model, object_store, engine = init(args.config)
     sa_session = model.context.current
 
-    # Fetch jobs COMPLETED with status OK in the past week.
-    since = datetime.datetime.now() - datetime.timedelta(days=args.days)
+    # Fetch jobs COMPLETED with status OK that have not yet been sent.
     jobs = sa_session.query(model.Job)\
         .filter(sa.and_(
             model.Job.table.c.state == "ok",
-            model.Job.table.c.update_time > since
+            model.Job.table.c.id > grt_config['last_job_id_sent']
         ))\
         .all()
 
@@ -110,6 +120,9 @@ if __name__ == '__main__':
         }
         grt_jobs_data.append(job_data)
 
+    if len(jobs) > 0:
+        grt_config['last_job_id_sent'] = jobs[-1].id
+
     grt_report_data = {
         'meta': {
             'version': 1,
@@ -136,6 +149,12 @@ if __name__ == '__main__':
     else:
         try:
             req = urllib2.urlopen(args.grt_url, data=json.dumps(grt_report_data))
+
         except urllib2.HTTPError, htpe:
-            print htpe.reason
+            #print htpe.reason
             print htpe.read()
+            exit(1)
+
+        # Update grt.ini with last id of job (prevent duplicates from being sent)
+        with open(grt_ini, 'w') as f:
+            yaml.dump(grt_config, f, default_flow_style=False)
