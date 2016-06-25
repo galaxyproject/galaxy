@@ -158,7 +158,7 @@ accordingly.
 .. code-block:: apache
 
     # Project Jupyter specific. Other IEs may require their own routes.
-    ProxyPass        /galaxy/gie_proxy/ipython/api/kernels ws://localhost:8800/galaxy/gie_proxy/ipython/api/kernels
+    ProxyPass        /galaxy/gie_proxy/jupyter/ipython/api/kernels ws://localhost:8800/galaxy/gie_proxy/jupyter/ipython/api/kernels
 
     # Global GIE configuration
     ProxyPass        /galaxy/gie_proxy http://localhost:8800/galaxy/gie_proxy
@@ -181,8 +181,8 @@ Please note you will need to be using apache2.4 with ``mod_proxy_wstunnel``.
     }
 
     # Project Jupyter / IPython specific. Other IEs may require their own routes.
-    location /galaxy/gie_proxy/ipython/api/kernels {
-        proxy_pass http://localhost:8800/galaxy/gie_proxy/ipython/api/kernels;
+    location ~ ^/galaxy/gie_proxy/jupyter/(?<nbtype>[^/]+)/api/kernels(?<rest>.*?)$ {
+        proxy_pass http://localhost:8800/galaxy/gie_proxy/$nbtype/api/kernels$rest;
         proxy_redirect off;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
