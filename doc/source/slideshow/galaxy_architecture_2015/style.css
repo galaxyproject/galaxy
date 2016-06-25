@@ -48,6 +48,11 @@ h3 {
     font-size: 1.6em;
 }
 
+.larger {
+    font-size: 2em;
+}
+
+
 li p { line-height: 1.25em; }
 
 .normal {
