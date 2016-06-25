@@ -16,6 +16,7 @@ from galaxy.objectstore import build_object_store_from_config
 from galaxy.model import mapping
 
 default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'config/galaxy.ini'))
+sample_grt_ini = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.ini.sample'))
 grt_ini = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.ini'))
 
 def init(config):
@@ -60,7 +61,8 @@ if __name__ == '__main__':
         with open(grt_ini) as f:
             grt_config = yaml.load(f)
     except:
-        grt_config = dict()
+        with open(sample_grt_ini) as f:
+            grt_config = yaml.load(f)
 
     # set to 0 by default
     if not grt_config.has_key('last_job_id_sent'):
@@ -91,7 +93,7 @@ if __name__ == '__main__':
 
     # For every job
     for job in jobs:
-        if job.tool_id == '__SET_METADATA__':
+        if job.tool_id in grt_config['tool_blacklist']:
             continue
 
         # Append an active user, we'll reduce at the end
