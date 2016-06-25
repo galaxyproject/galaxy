@@ -22,13 +22,8 @@ define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/f
             });
             this.form = new Form( {
                 inputs  : inputs,
-                cls     : 'ui-portlet-plain',
-                onchange: function() {
-                    self.group.set( self.form.data.create() );
-                    self.chart.set( 'modified', true );
-                }
+                cls     : 'ui-portlet-plain'
             } );
-            this.form.data.set( this.group )
             this.$el.empty().append( this.form.$el );
             var dataset_id = this.chart.get( 'dataset_id' );
             var chart_type = this.chart.get( 'type' );
@@ -57,6 +52,11 @@ define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/f
                                 }
                             }
                             self.chart.state( 'ok', 'Metadata initialized...' );
+                            self.form.data.set( self.group );
+                            self.form.setOnChange( function() {
+                                self.group.set( self.form.data.create() );
+                                self.chart.set( 'modified', true );
+                            });
                             process.resolve();
                         }
                     });

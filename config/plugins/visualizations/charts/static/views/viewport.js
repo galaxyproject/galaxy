@@ -181,12 +181,12 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
                 var columns = {};
                 for ( var column_key in self.chart_definition.columns ) {
                     var column_settings = self.chart_definition.columns[ column_key ];
-                    columns[ column_key ] = Utils.merge({ index : group.get( column_key ) }, column_settings );
+                    columns[ column_key ] = Utils.merge( { index : group.get( column_key ) }, column_settings );
                 }
-                request_dictionary.groups.push({
+                request_dictionary.groups.push( Utils.merge({
                     key     : ( ++group_index ) + ':' + group.get( 'key' ),
                     columns : columns
-                });
+                }, group.attributes ));
             });
             return request_dictionary;
         }
