@@ -447,7 +447,6 @@ var TracksterView = Backbone.View.extend(
             error: function() { alert( "Could not add this dataset to browser." ); },
 
             success: function(table_html) {
-                console.debug( 'success' );
                 function view_in_saved(){
                     // Show new modal with saved visualizations.
                     Galaxy.modal.show({

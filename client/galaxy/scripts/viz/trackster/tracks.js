@@ -1,5 +1,6 @@
 define([
     "libs/underscore",
+    "libs/canvas2svg",
     "viz/visualization",
     "viz/viz_views",
     "viz/trackster/util",
@@ -10,7 +11,7 @@ define([
     "mvc/tool/tools",
     "utils/config",
     "ui/editable-text",
-], function(_, visualization, viz_views, util, slotting, painters, filters_mod, data, tools_mod, config_mod) {
+], function(_, C2S_mod, visualization, viz_views, util, slotting, painters, filters_mod, data, tools_mod, config_mod) {
 
 
 var extend = _.extend;
@@ -3035,15 +3036,27 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             // Height is specified in options or is the height found above.
             canvas.height = (options.height || height);
             var ctx = canvas.getContext('2d');
-            ctx.translate(track.left_offset, 0);
             if (drawables.length > 1) {
                 ctx.globalAlpha = 0.5;
                 ctx.globalCompositeOperation = "source-over";
             }
+            ctx.translate(track.left_offset, 0);
+            if (canvas.manager.svg == true) {
+                var ctx2 = C2S(canvas.width, canvas.height);
+                ctx2.canvas.width = canvas.width;
+                ctx2.canvas.height = canvas.height;
+                ctx2.canvas.manager = ctx.canvas.manager;
+                ctx2.translate(track.left_offset, 0);
+            } else {
+                var ctx2 = ctx;
+            };
             _.each(drawables, function(d, i) {
-                tile = d.draw_tile(tracks_data[i], ctx, drawing_modes[i], region, w_scale, seq_data);
+                tile = d.draw_tile(tracks_data[i], ctx2, drawing_modes[i], region, w_scale, seq_data);
             });
-
+            if (canvas.manager.svg == true) {
+                var svg = ctx2.getSvg();
+                tile.html_elt.append(svg);
+            };
             // Don't cache, show if no tile.
             if (tile !== undefined) {
                 track.tile_cache.set_elt(key, tile);
