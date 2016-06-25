@@ -64,3 +64,8 @@ tools/evolution/
 tools/sr_mapping/
 tools/stats/aggregate_scores_in_intervals.py
 tools/visualization/
+test/api/helpers.py
+test/api/test_datasets.py
+test/api/test_tool_data.py
+test/api/test_workflow_extraction.py
+test/api/test_workflows.py
