@@ -81,6 +81,9 @@ if __name__ == '__main__':
 
     # For every job
     for job in jobs:
+        if job.tool_id == '__SET_METADATA__':
+            continue
+
         # Append an active user, we'll reduce at the end
         active_users.append(job.user_id)
 
