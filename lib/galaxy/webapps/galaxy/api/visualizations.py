@@ -15,7 +15,7 @@ from galaxy.web import _future_expose_api as expose_api
 from galaxy import web
 from galaxy import util
 from galaxy import exceptions
-
+import json
 import logging
 log = logging.getLogger( __name__ )
 
@@ -136,7 +136,7 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, Shara
         latest_config = visualization.latest_revision.config
         if( ( title != visualization.latest_revision.title ) or
                 ( dbkey != visualization.latest_revision.dbkey ) or
-                ( util.json.dumps( config ) != util.json.dumps( latest_config ) ) ):
+                ( json.dumps( config ) != json.dumps( latest_config ) ) ):
             revision = self.add_visualization_revision( trans, visualization, config, title, dbkey )
             rval = { 'id' : id, 'revision' : revision.id }
 

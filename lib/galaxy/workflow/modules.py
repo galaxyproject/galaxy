@@ -19,6 +19,7 @@ from galaxy.tools.parameters.basic import (
 )
 from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.tools import DefaultToolState
+from galaxy.tools import ToolInputsNotReadyException
 from galaxy.util import odict
 from galaxy.util.bunch import Bunch
 from galaxy.web.framework import formbuilder
@@ -1066,14 +1067,18 @@ class ToolModule( WorkflowModule ):
                 raise exceptions.MessageException( message )
             param_combinations.append( execution_state.inputs )
 
-        execution_tracker = execute(
-            trans=self.trans,
-            tool=tool,
-            param_combinations=param_combinations,
-            history=invocation.history,
-            collection_info=collection_info,
-            workflow_invocation_uuid=invocation.uuid.hex
-        )
+        try:
+            execution_tracker = execute(
+                trans=self.trans,
+                tool=tool,
+                param_combinations=param_combinations,
+                history=invocation.history,
+                collection_info=collection_info,
+                workflow_invocation_uuid=invocation.uuid.hex
+            )
+        except ToolInputsNotReadyException:
+            raise DelayedWorkflowEvaluation()
+
         if collection_info:
             step_outputs = dict( execution_tracker.implicit_collections )
         else:

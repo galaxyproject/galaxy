@@ -1,0 +1,23 @@
+<tool id="__UNZIP_COLLECTION__"
+      name="Unzip Collection"
+      version="1.0.0"
+      tool_type="unzip_collection">
+  <type class="UnzipCollectionTool" module="galaxy.tools" />
+  <action module="galaxy.tools.actions.model_operations"
+          class="ModelOperationToolAction"/>
+  <inputs>
+    <param type="data_collection" collection_type="paired" name="input" label="Input Paired Dataset" />
+  </inputs>
+  <outputs>
+    <data name="forward" label="${on_string} (forward)" />
+    <data name="reverse" label="${on_string} (reverse)" />
+  </outputs>
+  <help>
+    This tool takes a paired dataset collection and builds two datasets
+    from it. If mapped over a list of paired datasets, this tool will
+    produce two lists of datasets.
+
+    This tool will create new history datasets from your collection
+    but your quota usage will not increase.
+  </help>
+</tool>

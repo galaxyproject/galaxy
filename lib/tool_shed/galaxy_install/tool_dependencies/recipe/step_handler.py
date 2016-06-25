@@ -847,23 +847,17 @@ class MoveDirectoryFiles( RecipeStep ):
 
     def move_directory_files( self, current_dir, source_dir, destination_dir ):
         source_directory = os.path.abspath( os.path.join( current_dir, source_dir ) )
-        destination_directory = os.path.join( destination_dir )
-        if not os.path.isdir( destination_directory ):
-            os.makedirs( destination_directory )
-        symlinks = []
-        regular_files = []
-        for file_name in os.listdir( source_directory ):
-            source_file = os.path.join( source_directory, file_name )
-            destination_file = os.path.join( destination_directory, file_name )
-            files_tuple = ( source_file, destination_file )
-            if os.path.islink( source_file ):
-                symlinks.append( files_tuple )
+        destination_directory = os.path.abspath(os.path.join(destination_dir))
+        if not os.path.isdir(destination_directory):
+            os.makedirs(destination_directory)
+        for dir_entry in os.listdir(source_directory):
+            source_entry = os.path.join(source_directory, dir_entry)
+            if os.path.islink(source_entry):
+                destination_entry = os.path.join(destination_directory, dir_entry)
+                os.symlink(os.readlink(source_entry), destination_entry)
+                os.remove(source_entry)
             else:
-                regular_files.append( files_tuple )
-        for source_file, destination_file in symlinks:
-            shutil.move( source_file, destination_file )
-        for source_file, destination_file in regular_files:
-            shutil.move( source_file, destination_file )
+                shutil.move(source_entry, destination_directory)
 
     def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # <action type="move_directory_files">

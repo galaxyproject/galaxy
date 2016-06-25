@@ -265,7 +265,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             data = history.datasets[ int( hid ) - 1 ]
             id = None
         elif dataset_id is not None:
-            id = trans.app.security.decode_id( dataset_id )
+            id = self.decode_id( dataset_id )
             data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
         else:
             trans.log_event( "dataset_id and hid are both None, cannot load a dataset to edit" )
@@ -795,7 +795,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         status = 'done'
         id = None
         try:
-            id = trans.app.security.decode_id( dataset_id )
+            id = self.decode_id( dataset_id )
             hda = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             assert hda, 'Invalid HDA: %s' % id
             # Walk up parent datasets to find the containing history
@@ -822,7 +822,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         status = 'done'
         id = None
         try:
-            id = trans.app.security.decode_id( dataset_id )
+            id = self.decode_id( dataset_id )
             history = trans.get_history()
             hda = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             assert hda and hda.undeletable, 'Invalid HDA: %s' % id
@@ -845,7 +845,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
 
     def _unhide( self, trans, dataset_id ):
         try:
-            id = trans.app.security.decode_id( dataset_id )
+            id = self.decode_id( dataset_id )
         except:
             return False
         history = trans.get_history()
@@ -867,7 +867,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         message = None
         status = 'done'
         try:
-            id = trans.app.security.decode_id( dataset_id )
+            id = self.decode_id( dataset_id )
             user = trans.get_user()
             hda = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             # Invalid HDA
@@ -1043,8 +1043,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                 source_content_ids = source_content_ids.split(",")
             encoded_dataset_collection_ids = [ s[ len("dataset_collection|"): ] for s in source_content_ids if s.startswith("dataset_collection|") ]
             encoded_dataset_ids = [ s[ len("dataset|"): ] for s in source_content_ids if s.startswith("dataset|") ]
-            decoded_dataset_collection_ids = set(map( trans.security.decode_id, encoded_dataset_collection_ids ))
-            decoded_dataset_ids = set(map( trans.security.decode_id, encoded_dataset_ids ))
+            decoded_dataset_collection_ids = set(map( self.decode_id, encoded_dataset_collection_ids ))
+            decoded_dataset_ids = set(map( self.decode_id, encoded_dataset_ids ))
         else:
             decoded_dataset_collection_ids = []
             decoded_dataset_ids = []

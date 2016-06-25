@@ -34,11 +34,10 @@ from galaxy.util.dictifiable import Dictifiable
 from galaxy.security import get_permitted_actions
 from galaxy.util import Params, restore_text, send_mail
 from galaxy.util import ready_name_for_url, unique_id
-from galaxy.util import unicodify
+from galaxy.util import unicodify, directory_hash_id
 from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.util.bunch import Bunch
-from galaxy.util.directory_hash import directory_hash_id
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
@@ -1648,6 +1647,16 @@ class Dataset( StorableObject ):
         states.SETTING_METADATA
     )
     ready_states = tuple( set( states.__dict__.values() ) - set( non_ready_states ) )
+    valid_input_states = tuple(
+        set( states.__dict__.values() ) - set( [states.ERROR, states.DISCARDED] )
+    )
+    terminal_states = (
+        states.OK,
+        states.EMPTY,
+        states.ERROR,
+        states.DISCARDED,
+        states.FAILED_METADATA,
+    )
 
     conversion_messages = Bunch( PENDING="pending",
                                  NO_DATA="no data",
@@ -2125,6 +2134,10 @@ class DatasetInstance( object ):
         if self.purged:
             return False
         return True
+
+    @property
+    def is_ok(self):
+        return self.state == self.states.OK
 
     @property
     def is_pending( self ):
@@ -3186,6 +3199,14 @@ class DatasetCollectionInstance( object, HasName ):
     def state( self ):
         return self.collection.state
 
+    @property
+    def populated( self ):
+        return self.collection.populated
+
+    @property
+    def dataset_instances( self ):
+        return self.collection.dataset_instances
+
     def display_name( self ):
         return self.get_display_name()
 
@@ -3194,7 +3215,7 @@ class DatasetCollectionInstance( object, HasName ):
             id=self.id,
             name=self.name,
             collection_type=self.collection.collection_type,
-            populated=self.collection.populated,
+            populated=self.populated,
             populated_state=self.collection.populated_state,
             populated_state_message=self.collection.populated_state_message,
             type="collection",  # contents type (distinguished from file or folder (in case of library))
@@ -3749,7 +3770,11 @@ class WorkflowStep( object ):
             new_conn.output_step = step_mapping[old_conn.output_step_id]
             if old_conn.input_subworkflow_step_id:
                 new_conn.input_subworkflow_step = subworkflow_step_mapping[old_conn.input_subworkflow_step_id]
-
+        for orig_pja in self.post_job_actions:
+            PostJobAction( orig_pja.action_type,
+                           copied_step,
+                           output_name=orig_pja.output_name,
+                           action_arguments=orig_pja.action_arguments )
         copied_step.workflow_outputs = copy_list(self.workflow_outputs, copied_step)
 
     def log_str(self):
