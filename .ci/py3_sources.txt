@@ -4,6 +4,7 @@ lib/galaxy/actions/
 lib/galaxy/auth/
 lib/galaxy/config.py
 lib/galaxy/dataset_collections/
+lib/galaxy/datatypes/binary.py
 lib/galaxy/datatypes/converters/interval_to_coverage.py
 lib/galaxy/dependencies/
 lib/galaxy/eggs/

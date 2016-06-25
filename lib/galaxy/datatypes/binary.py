@@ -1,4 +1,5 @@
 """Binary classes"""
+from __future__ import print_function
 
 import binascii
 import gzip
@@ -234,7 +235,7 @@ class Bam( Binary ):
                 shutil.rmtree(tmp_dir)  # clean up
                 raise Exception( "Error merging BAM files: %s" % stderr )
             else:
-                print stderr
+                print(stderr)
         os.unlink(stderr_name)
         os.rmdir(tmp_dir)
 
@@ -322,7 +323,7 @@ class Bam( Binary ):
                 shutil.rmtree( tmp_dir)  # clean up
                 raise Exception( "Error Grooming BAM file contents: %s" % stderr )
             else:
-                print stderr
+                print(stderr)
         # Move samtools_created_sorted_file_name to our output dataset location
         shutil.move( samtools_created_sorted_file_name, file_name )
         # Remove temp file and empty temporary directory
@@ -365,7 +366,7 @@ class Bam( Binary ):
                 os.unlink( stderr_name )  # clean up
                 raise Exception( "Error Setting BAM Metadata: %s" % stderr )
             else:
-                print stderr
+                print(stderr)
         dataset.metadata.bam_index = index_file
         # Remove temp file
         os.unlink( stderr_name )
@@ -932,7 +933,7 @@ class GeminiSQLite( SQlite ):
                 c = conn.cursor()
                 tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
                 result = c.execute( tables_query ).fetchall()
-                result = map( lambda x: x[0], result )
+                result = [_[0] for _ in result]
                 for table_name in gemini_table_names:
                     if table_name not in result:
                         return False
@@ -971,7 +972,7 @@ class MzSQlite( SQlite ):
                 c = conn.cursor()
                 tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
                 result = c.execute( tables_query ).fetchall()
-                result = map( lambda x: x[0], result )
+                result = [_[0] for _ in result]
                 for table_name in mz_table_names:
                     if table_name not in result:
                         return False
@@ -1006,7 +1007,7 @@ class IdpDB( SQlite ):
                 c = conn.cursor()
                 tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
                 result = c.execute( tables_query ).fetchall()
-                result = map( lambda x: x[0], result )
+                result = [_[0] for _ in result]
                 for table_name in mz_table_names:
                     if table_name not in result:
                         return False
