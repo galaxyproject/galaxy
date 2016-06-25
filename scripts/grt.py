@@ -132,7 +132,6 @@ if __name__ == '__main__':
             'active_users': len(set(active_users)),
             'total_users': sa_session.query(model.User).count(),
             'recent_jobs': len(jobs),
-            'days': args.days,
         },
         'tools': [
             {
