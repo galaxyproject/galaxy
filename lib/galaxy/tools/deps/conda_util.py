@@ -330,7 +330,7 @@ def is_conda_target_installed(conda_target, conda_context=None):
         conda_context.export_list(conda_target.install_environment, package_list_file)
         search_pattern = conda_target.package_specifier + '='
         with open(package_list_file) as input_file:
-            for line in open(package_list_file):
+            for line in input_file:
                 if line.startswith(search_pattern):
                     return True
             else:
