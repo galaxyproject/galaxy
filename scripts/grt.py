@@ -2,7 +2,6 @@
 import os
 import sys
 import json
-import datetime
 import urllib2
 from ConfigParser import ConfigParser
 import argparse
@@ -60,14 +59,14 @@ if __name__ == '__main__':
 
     print 'Loading GRT ini...'
     try:
-        with open(config) as f:
+        with open(args.config) as f:
             config_dict = yaml.load(f)
     except:
         with open(sample_config) as f:
             config_dict = yaml.load(f)
 
     # set to 0 by default
-    if not config_dict.has_key('last_job_id_sent'):
+    if 'last_job_id_sent' not in config_dict:
         config_dict['last_job_id_sent'] = 0
 
     if args.instance_id:
