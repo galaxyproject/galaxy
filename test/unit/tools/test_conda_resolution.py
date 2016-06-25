@@ -43,7 +43,7 @@ def test_conda_resolution():
 
 @skip_unless_environ("GALAXY_TEST_INCLUDE_SLOW")
 def test_conda_resolution_failure():
-    """This test is specifcially designed to trigger https://github.com/rtfd/readthedocs.org/issues/1902
+    """This test is specifically designed to trigger https://github.com/rtfd/readthedocs.org/issues/1902
     and thus it expects the install to fail. If this test fails it is a sign that the upstream
     conda issue has been fixed.
     """

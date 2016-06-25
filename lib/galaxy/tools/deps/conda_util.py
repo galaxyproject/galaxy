@@ -324,20 +324,22 @@ def is_target_available(conda_target, conda_context=None):
 
 def is_conda_target_installed(conda_target, conda_context=None):
     conda_context = _ensure_conda_context(conda_context)
+    # fail by default
+    success = False
     if conda_context.has_env(conda_target.install_environment):
-        tempdir = tempfile.mkdtemp(prefix="jobdeps")
-        package_list_file = os.path.join(tempdir, 'installed')
+        # because export_list directs output to a file we
+        # need to make a temporary file, not use StringIO
+        f, package_list_file = tempfile.mkstemp(suffix='.env_packages')
+        os.close(f)
         conda_context.export_list(conda_target.install_environment, package_list_file)
         search_pattern = conda_target.package_specifier + '='
         with open(package_list_file) as input_file:
             for line in input_file:
                 if line.startswith(search_pattern):
-                    return True
-            else:
-                # got to the end of the loop without finding the package
-                return False
-    else:
-        return False
+                    success = True
+                    break
+        os.remove(package_list_file)
+    return success
 
 
 def filter_installed_targets(conda_targets, conda_context=None):
