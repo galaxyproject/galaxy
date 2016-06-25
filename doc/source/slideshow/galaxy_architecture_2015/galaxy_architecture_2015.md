@@ -11,9 +11,11 @@ Nate, James, John, Rémi
 
 ---
 
+class: larger
+
 ### Please Interrupt!
 
-We're here to answer your question about Galaxy architecture!
+We're here to answer your questions about Galaxy architecture!
 
 ---
 
@@ -21,11 +23,13 @@ We're here to answer your question about Galaxy architecture!
 
 ---
 
-**IRC**: irc.freenode.net#galaxyproject
-<br />
-.special2[**GitHub**].special[:] github.com/galaxyproject
-<br />
-**Twitter**: #usegalaxy, @galaxyproject
+class: larger
+
+**IRC:** irc.freenode.net#galaxyproject
+
+**GitHub:** github.com/galaxyproject
+
+**Twitter:**: #usegalaxy, @galaxyproject
 
 ---
 
@@ -42,7 +46,6 @@ Contribution guidelines: http://bit.ly/gx-CONTRIBUTING-md
 ---
 
 class: white
-
 background-image: url(images/family/team.png)
 
 ---
@@ -64,13 +67,40 @@ CloudLaunch web application to make it wasy to launch images on a cloud, drives 
 
 ---
 
-github.com/galaxyproject/**tools-{devteam,iuc}**
+github.com/galaxyproject/**tools-iuc**
 
-Galaxy tools maintained by *devteam* (ths PSU/Hopkins group) and *iuc* (
-the "Intergalactic Utilities Commission"). A variety of tools,
-generally of high quality including the core tools for Galaxy main.
+Galaxy tools maintained by *iuc* (the "Intergalactic Utilities Commission").
+
+A variety of tools, generally of high quality including many of the core tools for Galaxy main.
+
 Demonstrates *current tool development best practices* - development on
 github and then deployed to test/main ToolSheds
+
+github.com/galaxyproject/**tools-devteam**
+
+Many older tools appearing on usegalaxy.org.
+
+
+---
+
+### Tools Aside - More Repositories
+
+Other repositories with high quality tools:
+
+ * [Björn Grüning's repo](https://github.com/bgruening/galaxytools)
+ * Peter Cock's repos:
+   * [blast repo](https://github.com/peterjc/galaxy_blast)
+   * [pico repo](https://github.com/peterjc/pico_galaxy)
+   * [mira repo](https://github.com/peterjc/galaxy_mira)
+ * [ENCODE tools](https://github.com/modENCODE-DCC/Galaxy)
+ * [Biopython repo](https://github.com/biopython/galaxy_packages)
+ * [Galaxy Proteomics repo](https://github.com/galaxyproteomics/tools-galaxyp)
+ * [Colibread Galaxy Tools](https://github.com/genouest/tools-colibread)
+ * [Greg von Kuster's repo](https://github.com/gregvonkuster/galaxy-csg)
+ * [TGAC repo](https://github.com/TGAC/tgac-galaxytools)
+ * [AAFC-MBB Canada repo](https://github.com/AAFC-MBB/Galaxy/tree/master/wrappers)
+ * [Mark Einon's repo](https://github.com/einon/galaxy-tools)
+
 
 ---
 
@@ -107,7 +137,13 @@ These playbooks are used to maintain Galaxy main, cloud images, virtual machines
 
 github.com/galaxyproject/**pulsar**
 
-Distributed job execution engine for Galaxy. Allows staging data, scripts, configuration. Can run jobs on Windows machines. Can act as its own queuing system or access an existing cluster DRM
+Distributed job execution engine for Galaxy.
+
+Stages data, scripts, configuration.
+
+Can run jobs on Windows machines.
+
+Can act as its own queuing system or access an existing cluster DRM.
 
 ---
 
@@ -119,7 +155,7 @@ Best documented path to scripting the Galaxy API.
 
 ---
 
-- github.com/**tripal/blend4php**
+- github.com/galaxyproject/**blend4php**
 - github.com/**jmchilton/blend4j**
 - github.com/**chapmanb/clj-blend**
 
@@ -166,19 +202,19 @@ flexibility is paramount.
 
 ### An Opinionated Frontend
 
-- The target audience is a bench scientist - no knowledge of programming, paths, or command lines should be assumed.
+- The target audience is a *bench scientist* - no knowledge of programming, paths, or command lines should be assumed.
 - Consistent colors, fonts, themes, etc...
-- Reusable libraries for presenting common widgets such as forms and grids.
+- Reusable components for presenting common widgets - from the generic (forms and grids) to the specific (tools and histories).
 - Tied to specific technologies:
-  - JavaScript driven.
-  - Backbone for MVC.
-  - RequireJS for module loading.
+  - JavaScript driven
+  - Backbone for MVC
+  - webpack & RequireJS for modules
 
 ---
 
 ### A Plugin Driven Backend
 
-Galaxy's backend is in many ways driven by pluggable interfaces and
+Galaxy's backend is in many ways driven by *pluggable interfaces* and
 can be adapted to many different technologies.
 
 - SQLAlchemy allows using sqlite, postgres, or MySQL for a database.
@@ -186,8 +222,14 @@ can be adapted to many different technologies.
 - Different frontend proxies (e.g. nginx) are supported as well as web
   application containers (e.g. uWSGI).
 - Different storage strategies and technologies are supported (e.g. S3).
-- Tools, job metrics, tool dependency resolution, workflow modules,
+- Tool definitions, job metrics, stat middleware, tool dependency resolution, workflow modules,
   datatype definitions are all plugin driven.
+
+???
+
+If the chief architectual principle guiding the frontend is a fast and accessible
+experience for the bench scientist, perhaps for the backend it is allowing 
+deployment on many different platforms and a different scales.
 
 ---
 
@@ -198,24 +240,14 @@ the `run.sh` should "just work" and should work quickly.
 
 So by default Galaxy does not require:
 
- - Compilation - it fetches binary wheels.
+ - Compilation - it fetches *binary wheels*.
  - A job manager - Galaxy can act as one.
  - An external database server - Galaxy can use an sqlite database.
  - A web proxy or external Python web server.
 
 ---
 
-## Communication
-
----
-
-class: white
-background-image: url(images/server_client_old.mermaid.svg)
-
-???
-
-User management and admin things, Reports and Tool Shed
-Webapp
+## Web Frameworks
 
 ---
 
@@ -238,6 +270,16 @@ background-image: url(images/backbone-model-view.svg)
 
 ---
 
+class: white
+background-image: url(images/server_client_old.mermaid.svg)
+
+???
+
+User management and admin things, Reports and Tool Shed
+Webapp
+
+---
+
 background-image: url(images/wsgi_app.svg)
 
 ### Galaxy WSGI
@@ -247,7 +289,7 @@ background-image: url(images/wsgi_app.svg)
 ### WSGI
 
 - Python interface for web servers defined by PEP 333 - https://www.python.org/dev/peps/pep-0333/.
-- Galaxy slowly moving from Paster to uwsgi to host the application.
+- Galaxy moving from Paster to uwsgi to host the application.
   - http://pythonpaste.org/
   - https://uwsgi-docs.readthedocs.io/
 
@@ -263,7 +305,7 @@ A WSGI function:
 
 `def app(environ, start_response):`
 
-- Middleware act as filters, modify the environ and then pass through to the next webapp
+- Middleware act as filters, modify the `environ` and then pass through to the next webapp
 - Galaxy uses several middleware components defined in the `wrap_in_middleware`
   function of `galaxy.webapps.galaxy.buildapp`.
 
@@ -359,8 +401,9 @@ def handle_request(self, environ, start_response):
 ### Legacy Controllers
 
 - `lib/galaxy/webapps/galaxy/controllers/`
-- Return arbitrary content - JSON, HTML, etc....
-- Ideally nearly all of these will go away.
+- Return arbitrary content - JSON, HTML, etc...
+- Render HTML components using [mako](http://www.makotemplates.org/) templates (see `templates/`)
+- The usage of these should decrease over time.
 
 ---
 
@@ -452,6 +495,8 @@ background-image: url(images/data_managers.svg)
 
 class: normal
 
+### Object Store
+
 .strike[```
 >>> fh = open( dataset.file_path, 'w' )
 >>> fh.write( ‘foo’ )
@@ -465,10 +510,6 @@ class: normal
 >>> get_data( dataset )
 >>> get_data( dataset, start=42, count=4096 )
 ```
-
----
-
-background-image: url(images/objectstore_diagram.svg)
 
 ---
 
@@ -509,21 +550,49 @@ class: smaller
 
 ---
 
+### Visualization Examples
+
+All in `config/plugins/visualizations`:
+
+- `csg` - Chemical structure viewer
+- `graphviz` - Visualize graph data using [cytoscape.js](http://www.cytoscape.org/)
+- `charts` - A more elobrate builds on more Galaxy abstractions.
+- `trackster` - Genome browser, deeply tied to Galaxy internals.
+
+---
+
 ### Data Providers
 
-How do I efficiently access data for my viz?
+Provide efficient access to data for viz & API
+
 Framework provides direct link to read the raw dataset
-or use Data providers
+or use data providers to adapt it
+
 In config, assert that visualization requires a given type of data providers
-Data providers process data before sending to browser. Slice, filter, reformat, ...
+
+Data providers process data before sending to browser - slice, filter, reformat, ...
 
 ---
 
 ### Interactive Environments
 
-Galaxy side is identical to interactive environments: config and base template
-Within the base template, launch a Docker container running a web accessible process
+Similar to vizualizations: config and template
+
+Within the base template, launch a Docker container running a web accessible
+process
+
 Build a UI that accesses that process through a proxy
+
+---
+
+### Interactive Environments - Examples
+
+All in `config/plugins/interactive_environments`:
+
+- `jupyter`
+- `rstudio`
+- `phinch`
+- `bam_iobio`
 
 ---
 
