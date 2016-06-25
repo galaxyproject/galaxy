@@ -73,7 +73,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job_destination = job_wrapper.job_destination
 
         # Construction of the Kubernetes Job object follows: http://kubernetes.io/docs/user-guide/persistent-volumes/
-        k8s_job_name = self.__produce_unique_k8s_job_name(job_wrapper)
+        k8s_job_name = self.__produce_unique_k8s_job_name(job_wrapper.get_id_tag())
         k8s_job_obj = {
             "apiVersion": "extensions/v1beta1",
             "kind": "Job",
@@ -108,9 +108,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         external_runjob_script = None
         return external_runjob_script
 
-    def __produce_unique_k8s_job_name(self, job_wrapper):
+    def __produce_unique_k8s_job_name(self, galaxy_internal_job_id):
         # wrapper.get_id_tag() instead of job_id for compatibility with TaskWrappers.
-        return "galaxy-" + job_wrapper.get_id_tag()
+        return "galaxy-" + galaxy_internal_job_id
 
     def __get_k8s_job_spec(self, job_wrapper):
         """Creates the k8s Job spec. For a Job spec, the only requirement is to have a .spec.template."""
@@ -123,7 +123,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         (see pod selector) and an appropriate restart policy."""
         k8s_spec_template = {
             "metadata": {
-                "labels": {"app": self.__produce_unique_k8s_job_name(job_wrapper)}
+                "labels": {"app": self.__produce_unique_k8s_job_name(job_wrapper.get_id_tag())}
             },
             "spec": {
                 "volumes": self.__get_k8s_mountable_volumes(job_wrapper),
