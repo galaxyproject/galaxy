@@ -53,6 +53,7 @@ test/functional/
 test/integration/
 test/manual/
 test/unit/managers/base.py
+test/unit/test_galaxy_mapping.py
 test/unit/tools/test_actions.py
 test/unit/workflows/test_run_parameters.py
 tool_list.py
